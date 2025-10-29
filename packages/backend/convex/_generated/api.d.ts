@@ -22,6 +22,7 @@ import type * as locations from "../locations.js";
 import type * as media from "../media.js";
 import type * as organizations from "../organizations.js";
 import type * as roles from "../roles.js";
+import type * as seed from "../seed.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as users from "../users.js";
 import type * as utils_permissions from "../utils/permissions.js";
@@ -56,6 +57,7 @@ declare const fullApi: ApiFromModules<{
   media: typeof media;
   organizations: typeof organizations;
   roles: typeof roles;
+  seed: typeof seed;
   subscriptions: typeof subscriptions;
   users: typeof users;
   "utils/permissions": typeof utils_permissions;
