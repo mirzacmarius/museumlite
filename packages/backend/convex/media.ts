@@ -236,7 +236,6 @@ export const list = query({
       throw new Error("Collection not found");
     }
 
-    const { requirePermission } = await import("./utils/permissions");
     await requirePermission(
       ctx,
       collection.organizationId,
@@ -434,7 +433,6 @@ export const getThumbnailUrl = query({
       return null;
     }
 
-    const { requirePermission } = await import("./utils/permissions");
     await requirePermission(ctx, media.organizationId, "media.read");
 
     if (media.thumbnailStorageId) {
