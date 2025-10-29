@@ -542,17 +542,44 @@ export const seedDatabase = internalAction({
 
     console.log("✅ Created locations for all organizations");
 
-    // Assign some collections to locations
+    // Assign collections to locations
     await ctx.runMutation(internal.seed.assignCollectionsToLocations, {
       collections: [
+        // Metropolitan Museum of Art
         { orgSlug: "met-museum", accessionNumber: "MET-2024-001", locationName: "Gallery 815" },
+        { orgSlug: "met-museum", accessionNumber: "MET-2024-002", locationName: "Storage Vault A" },
+        { orgSlug: "met-museum", accessionNumber: "MET-2024-003", locationName: "Gallery 815" },
+        { orgSlug: "met-museum", accessionNumber: "MET-2024-004", locationName: "European Paintings Wing" },
+        
+        // British Museum
         { orgSlug: "british-museum", accessionNumber: "BM-2024-001", locationName: "Room 4" },
+        { orgSlug: "british-museum", accessionNumber: "BM-2024-002", locationName: "Great Court" },
+        { orgSlug: "british-museum", accessionNumber: "BM-2024-003", locationName: "Conservation Lab" },
+        { orgSlug: "british-museum", accessionNumber: "BM-2024-004", locationName: "Egyptian Gallery" },
+        
+        // Library of Congress
         { orgSlug: "library-of-congress", accessionNumber: "LOC-2024-001", locationName: "Rare Book Room" },
+        { orgSlug: "library-of-congress", accessionNumber: "LOC-2024-002", locationName: "Vault 1" },
+        { orgSlug: "library-of-congress", accessionNumber: "LOC-2024-003", locationName: "Rare Book Room" },
+        { orgSlug: "library-of-congress", accessionNumber: "LOC-2024-004", locationName: "Exhibition Hall" },
+        
+        // The Getty Museum
         { orgSlug: "getty-museum", accessionNumber: "GETTY-2024-001", locationName: "Gallery 204" },
+        { orgSlug: "getty-museum", accessionNumber: "GETTY-2024-002", locationName: "Storage Facility" },
+        { orgSlug: "getty-museum", accessionNumber: "GETTY-2024-003", locationName: "Paintings Gallery" },
+        { orgSlug: "getty-museum", accessionNumber: "GETTY-2024-004", locationName: "Gallery 204" },
+        
+        // Private Collection - Smith Estate
         { orgSlug: "smith-collection", accessionNumber: "SMITH-2024-001", locationName: "Living Room" },
+        { orgSlug: "smith-collection", accessionNumber: "SMITH-2024-002", locationName: "Study" },
+        { orgSlug: "smith-collection", accessionNumber: "SMITH-2024-003", locationName: "Living Room" },
+        { orgSlug: "smith-collection", accessionNumber: "SMITH-2024-004", locationName: "Climate-Controlled Storage" },
+        { orgSlug: "smith-collection", accessionNumber: "SMITH-2024-005", locationName: "Living Room" },
       ],
       locationIds,
     });
+
+    console.log("✅ Assigned all collections to locations");
 
     // Create some accessions
     await ctx.runMutation(internal.seed.createAccessions, {
@@ -861,6 +888,19 @@ export const createLocation = internalMutation({
   },
   returns: v.id("locations"),
   handler: async (ctx, args) => {
+    // Check if location already exists
+    const existing = await ctx.db
+      .query("locations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => q.eq(q.field("name"), args.name))
+      .first();
+
+    if (existing) {
+      return existing._id;
+    }
+
     return await ctx.db.insert("locations", {
       organizationId: args.organizationId,
       name: args.name,

@@ -6,7 +6,14 @@ import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useMutation } from "convex/react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
+import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -26,6 +33,7 @@ interface CollectionFormData {
   condition?: string;
   provenance?: string;
   exhibitionHistory?: string;
+  currentLocationId?: string;
 }
 
 export default function CollectionFormPage() {
@@ -46,7 +54,18 @@ export default function CollectionFormPage() {
     condition: "",
     provenance: "",
     exhibitionHistory: "",
+    currentLocationId: "",
   });
+
+  const rootLocations = useQuery(
+    api.locations.list,
+    currentOrganizationId
+      ? {
+          organizationId: currentOrganizationId as any,
+          parentLocationId: "root",
+        }
+      : "skip",
+  );
 
   if (!currentOrganizationId) {
     return (
@@ -70,6 +89,9 @@ export default function CollectionFormPage() {
       await createCollection({
         organizationId: currentOrganizationId,
         ...formData,
+        currentLocationId: formData.currentLocationId
+          ? (formData.currentLocationId as any)
+          : undefined,
       });
       router.push("/collections");
     } catch (error) {
@@ -220,6 +242,33 @@ export default function CollectionFormPage() {
                       }
                       placeholder="e.g., 50 x 60 cm"
                     />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium">
+                      Location
+                    </label>
+                    <Select
+                      value={formData.currentLocationId || "__none__"}
+                      onValueChange={(value) =>
+                        updateField(
+                          "currentLocationId",
+                          value === "__none__" ? "" : value,
+                        )
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a location (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">None</SelectItem>
+                        {rootLocations?.map((loc) => (
+                          <SelectItem key={loc._id} value={loc._id}>
+                            {loc.name} ({loc.type})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 

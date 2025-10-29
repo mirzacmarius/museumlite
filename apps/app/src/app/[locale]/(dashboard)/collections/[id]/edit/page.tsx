@@ -6,6 +6,13 @@ import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
 import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
@@ -25,6 +32,7 @@ interface CollectionFormData {
   condition?: string;
   provenance?: string;
   exhibitionHistory?: string;
+  currentLocationId?: string;
 }
 
 export default function CollectionEditPage() {
@@ -53,7 +61,18 @@ export default function CollectionEditPage() {
     condition: "",
     provenance: "",
     exhibitionHistory: "",
+    currentLocationId: "",
   });
+
+  const rootLocations = useQuery(
+    api.locations.list,
+    currentOrganizationId
+      ? {
+          organizationId: currentOrganizationId as any,
+          parentLocationId: "root",
+        }
+      : "skip",
+  );
 
   // Load existing data
   useEffect(() => {
@@ -71,6 +90,7 @@ export default function CollectionEditPage() {
         condition: collection.condition || "",
         provenance: collection.provenance || "",
         exhibitionHistory: collection.exhibitionHistory || "",
+        currentLocationId: collection.currentLocationId || "",
       });
     }
   }, [collection]);
@@ -113,6 +133,9 @@ export default function CollectionEditPage() {
       await updateCollection({
         collectionId: collectionId as any,
         ...formData,
+        currentLocationId: formData.currentLocationId
+          ? (formData.currentLocationId as any)
+          : undefined,
       });
       router.push(`/collections/${collectionId}`);
     } catch (error) {
@@ -264,6 +287,33 @@ export default function CollectionEditPage() {
                       }
                       placeholder="e.g., 50 x 60 cm"
                     />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium">
+                      Location
+                    </label>
+                    <Select
+                      value={formData.currentLocationId || "__none__"}
+                      onValueChange={(value) =>
+                        updateField(
+                          "currentLocationId",
+                          value === "__none__" ? "" : value,
+                        )
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a location (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">None</SelectItem>
+                        {rootLocations?.map((loc) => (
+                          <SelectItem key={loc._id} value={loc._id}>
+                            {loc.name} ({loc.type})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 

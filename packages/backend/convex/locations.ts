@@ -196,7 +196,6 @@ export const get = query({
       return null;
     }
 
-    const { requirePermission } = await import("./utils/permissions");
     await requirePermission(
       ctx,
       location.organizationId,
@@ -522,7 +521,6 @@ export const getObjectsAtLocation = query({
       throw new Error("Location not found");
     }
 
-    const { requirePermission } = await import("./utils/permissions");
     await requirePermission(ctx, location.organizationId, "locations.read");
 
     const objects = await ctx.db

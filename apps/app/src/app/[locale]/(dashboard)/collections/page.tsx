@@ -6,7 +6,7 @@ import { Button } from "@v1/ui/button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useQuery } from "convex/react";
-import { Plus, Building2 } from "lucide-react";
+import { Plus, Building2, MapPin } from "lucide-react";
 import Link from "next/link";
 
 export default function CollectionsPage() {
@@ -151,29 +151,64 @@ function CollectionList({
     <div className="p-6">
       <div className="space-y-4">
         {collections.page.map((item) => (
-          <Link
+          <CollectionListItem
             key={item._id}
-            href={`/collections/${item._id}`}
-            className="block rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium">{item.title}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {item.accessionNumber}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-medium">{item.objectType}</p>
-                <p className="text-xs text-muted-foreground capitalize">
-                  {item.status}
-                </p>
-              </div>
-            </div>
-          </Link>
+            item={item}
+            organizationId={organizationId}
+          />
         ))}
       </div>
     </div>
+  );
+}
+
+function CollectionListItem({
+  item,
+  organizationId,
+}: {
+  item: {
+    _id: string;
+    accessionNumber: string;
+    title: string;
+    objectType?: string;
+    currentLocationId?: string;
+    status: string;
+  };
+  organizationId: string;
+}) {
+  const locationPath = useQuery(
+    api.locations.getLocationPath,
+    item.currentLocationId && organizationId
+      ? { locationId: item.currentLocationId as any }
+      : "skip",
+  );
+
+  return (
+    <Link
+      href={`/collections/${item._id}`}
+      className="block rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent"
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <h3 className="font-medium">{item.title}</h3>
+          <div className="mt-1 flex items-center gap-4 text-sm text-muted-foreground">
+            <span>{item.accessionNumber}</span>
+            {locationPath && locationPath.length > 0 && (
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {locationPath.map((loc) => loc.name).join(" → ")}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-sm font-medium">{item.objectType || "—"}</p>
+          <p className="text-xs text-muted-foreground capitalize">
+            {item.status}
+          </p>
+        </div>
+      </div>
+    </Link>
   );
 }
 

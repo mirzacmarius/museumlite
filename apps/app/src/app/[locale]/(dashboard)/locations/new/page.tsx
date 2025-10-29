@@ -1,0 +1,214 @@
+"use client";
+
+import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { api } from "@v1/backend/convex/_generated/api";
+import { Button } from "@v1/ui/button";
+import { Input } from "@v1/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { useQuery, useMutation } from "convex/react";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+
+export default function NewLocationPage() {
+  const router = useRouter();
+  const { currentOrganizationId } = useOrganization();
+  const [name, setName] = useState("");
+  const [type, setType] = useState("");
+  const [parentLocationId, setParentLocationId] = useState<
+    string | undefined
+  >(undefined);
+  const [address, setAddress] = useState("");
+  const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const locationTypes = useQuery(
+    api.locations.getLocationTypes,
+    currentOrganizationId
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
+  );
+
+  const rootLocations = useQuery(
+    api.locations.list,
+    currentOrganizationId
+      ? {
+          organizationId: currentOrganizationId as Id<"organizations">,
+          parentLocationId: "root",
+        }
+      : "skip",
+  );
+
+  const createLocation = useMutation(api.locations.create);
+
+  if (!currentOrganizationId) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <p className="text-muted-foreground">
+          Please select an organization to create a location.
+        </p>
+      </div>
+    );
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !type) {
+      alert("Please fill in all required fields");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await createLocation({
+        organizationId: currentOrganizationId as Id<"organizations">,
+        name,
+        type,
+        parentLocationId: parentLocationId
+          ? (parentLocationId as Id<"locations">)
+          : undefined,
+        address: address || undefined,
+        notes: notes || undefined,
+      });
+      router.push("/locations");
+    } catch (error) {
+      alert(
+        error instanceof Error ? error.message : "Failed to create location",
+      );
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <Header title="New Location" description="Create a new location" />
+      <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
+        <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+          <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
+            <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/locations">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Locations
+                </Link>
+              </Button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6">
+              <div className="mx-auto max-w-2xl space-y-6">
+                <div className="space-y-2">
+                  <label htmlFor="name" className="text-sm font-medium">
+                    Location Name *
+                  </label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g., Main Building, Gallery 815"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="type" className="text-sm font-medium">
+                    Location Type *
+                  </label>
+                  <Select value={type} onValueChange={setType} required>
+                    <SelectTrigger id="type">
+                      <SelectValue placeholder="Select a location type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locationTypes?.map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {t.charAt(0).toUpperCase() + t.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="parent" className="text-sm font-medium">
+                    Parent Location
+                  </label>
+                  <Select
+                    value={parentLocationId || "__none__"}
+                    onValueChange={(value) =>
+                      setParentLocationId(value === "__none__" ? undefined : value)
+                    }
+                  >
+                    <SelectTrigger id="parent">
+                      <SelectValue placeholder="Select a parent location (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">None (Root Location)</SelectItem>
+                      {rootLocations?.map((loc) => (
+                        <SelectItem key={loc._id} value={loc._id}>
+                          {loc.name} ({loc.type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Leave empty to create a root-level location
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="address" className="text-sm font-medium">
+                    Address
+                  </label>
+                  <Input
+                    id="address"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="e.g., 123 Museum Street, New York, NY"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="notes" className="text-sm font-medium">
+                    Notes
+                  </label>
+                  <textarea
+                    id="notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Additional notes about this location..."
+                    className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.back()}
+                  >
+                    Cancel
+                  </Button>
+                  <PermissionGate permission="locations.create">
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? "Creating..." : "Create Location"}
+                    </Button>
+                  </PermissionGate>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+

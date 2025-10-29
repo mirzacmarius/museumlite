@@ -6,16 +6,28 @@ import { Button } from "@v1/ui/button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useQuery } from "convex/react";
-import { ArrowLeft, Edit, Image as ImageIcon, History, Handshake } from "lucide-react";
+import {
+  ArrowLeft,
+  Edit,
+  Image as ImageIcon,
+  History,
+  Handshake,
+  MapPin,
+  Move,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { MoveObjectDialog } from "@/app/[locale]/(dashboard)/locations/_components/move-object-dialog";
 
 export default function CollectionDetailPage() {
   const params = useParams();
   const collectionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
-  const [activeTab, setActiveTab] = useState<"details" | "media" | "history" | "loans">("details");
+  const [activeTab, setActiveTab] = useState<
+    "details" | "media" | "history" | "loans"
+  >("details");
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
 
   const collection = useQuery(
     api.collections.get,
@@ -74,14 +86,25 @@ export default function CollectionDetailPage() {
                   </p>
                 </div>
               </div>
-              <PermissionGate permission="collections.update">
-                <Button variant="outline" asChild>
-                  <Link href={`/collections/${collectionId}/edit`}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </Link>
-                </Button>
-              </PermissionGate>
+              <div className="flex gap-2">
+                <PermissionGate permission="locations.update">
+                  <Button
+                    variant="outline"
+                    onClick={() => setMoveDialogOpen(true)}
+                  >
+                    <Move className="mr-2 h-4 w-4" />
+                    Move
+                  </Button>
+                </PermissionGate>
+                <PermissionGate permission="collections.update">
+                  <Button variant="outline" asChild>
+                    <Link href={`/collections/${collectionId}/edit`}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit
+                    </Link>
+                  </Button>
+                </PermissionGate>
+              </div>
             </div>
 
             <div className="flex w-full px-6">
@@ -153,6 +176,15 @@ export default function CollectionDetailPage() {
           </div>
         </div>
       </div>
+      <MoveObjectDialog
+        collectionId={collectionId}
+        currentLocationId={collection.currentLocationId}
+        open={moveDialogOpen}
+        onOpenChange={setMoveDialogOpen}
+        onSuccess={() => {
+          // Refresh will happen automatically via Convex subscription
+        }}
+      />
     </>
   );
 }
@@ -164,6 +196,13 @@ function CollectionDetails({
     Awaited<ReturnType<typeof api.collections.get>>
   >;
 }) {
+  const locationPath = useQuery(
+    api.locations.getLocationPath,
+    collection.currentLocationId
+      ? { locationId: collection.currentLocationId }
+      : "skip",
+  );
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-6">
@@ -202,6 +241,22 @@ function CollectionDetails({
             Status
           </label>
           <p className="mt-1 text-sm capitalize">{collection.status}</p>
+        </div>
+        <div>
+          <label className="text-sm font-medium text-muted-foreground">
+            Current Location
+          </label>
+          {locationPath && locationPath.length > 0 ? (
+            <Link
+              href={`/locations/${collection.currentLocationId}`}
+              className="mt-1 flex items-center gap-2 text-sm text-primary hover:underline"
+            >
+              <MapPin className="h-4 w-4" />
+              {locationPath.map((loc) => loc.name).join(" → ")}
+            </Link>
+          ) : (
+            <p className="mt-1 text-sm text-muted-foreground">No location assigned</p>
+          )}
         </div>
         <div>
           <label className="text-sm font-medium text-muted-foreground">

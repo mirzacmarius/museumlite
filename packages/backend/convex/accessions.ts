@@ -231,13 +231,15 @@ export const get = query({
       ),
       notes: v.optional(v.string()),
       workflowStep: v.optional(v.number()),
-      workflowHistory: v.array(
-        v.object({
-          step: v.number(),
-          approvedBy: v.id("users"),
-          approvedAt: v.number(),
-          comment: v.optional(v.string()),
-        }),
+      workflowHistory: v.optional(
+        v.array(
+          v.object({
+            step: v.number(),
+            approvedBy: v.id("users"),
+            approvedAt: v.number(),
+            comment: v.optional(v.string()),
+          }),
+        ),
       ),
     }),
     v.null(),
@@ -254,7 +256,11 @@ export const get = query({
       "collections.read",
     );
 
-    return accession;
+    // Ensure workflowHistory is always an array (even if empty)
+    return {
+      ...accession,
+      workflowHistory: accession.workflowHistory ?? [],
+    };
   },
 });
 
