@@ -1,0 +1,95 @@
+"use client";
+
+import { api } from "@v1/backend/convex/_generated/api";
+import { Button } from "@v1/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@v1/ui/dropdown-menu";
+import { Check, ChevronDown, Building2, Plus } from "lucide-react";
+import { useOrganization } from "./organization-provider";
+import { useRouter } from "next/navigation";
+
+export function OrganizationSwitcher() {
+  const {
+    organizations,
+    currentOrganizationId,
+    setCurrentOrganizationId,
+    isLoading,
+  } = useOrganization();
+  const router = useRouter();
+
+  if (isLoading) {
+    return (
+      <Button variant="ghost" className="gap-2 px-2" disabled>
+        <Building2 className="h-4 w-4" />
+        <span className="text-sm font-medium">Loading...</span>
+      </Button>
+    );
+  }
+
+  if (organizations.length === 0) {
+    return (
+      <Button variant="ghost" className="gap-2 px-2" asChild>
+        <a href="/organizations/new">
+          <Plus className="h-4 w-4" />
+          <span className="text-sm font-medium">Create Organization</span>
+        </a>
+      </Button>
+    );
+  }
+
+  const currentOrg = organizations.find(
+    (org) => org._id === currentOrganizationId,
+  );
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="gap-2 px-2">
+          <Building2 className="h-4 w-4" />
+          <span className="text-sm font-medium">
+            {currentOrg?.name || "Select Organization"}
+          </span>
+          <ChevronDown className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-56">
+        <DropdownMenuLabel>Organizations</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {organizations.map((org) => (
+          <DropdownMenuItem
+            key={org._id}
+            onClick={() => setCurrentOrganizationId(org._id)}
+            className="cursor-pointer"
+          >
+            <div className="flex w-full items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">{org.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {org.role.name}
+                </span>
+              </div>
+              {currentOrganizationId === org._id && (
+                <Check className="h-4 w-4" />
+              )}
+            </div>
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => router.push("/organizations/new")}
+          className="cursor-pointer"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          <span>Create New Organization</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+

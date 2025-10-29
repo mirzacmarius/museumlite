@@ -1,8 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
-import type { Id } from "../_generated/dataModel";
+import { mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -958,6 +958,67 @@ export const deleteLoanDocument = mutation({
     await ctx.db.delete(args.documentId);
 
     return null;
+  },
+});
+
+/**
+ * Get loans for a specific collection object
+ */
+export const getLoansForCollection = query({
+  args: {
+    collectionId: v.id("collections"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("loans"),
+      loanNumber: v.string(),
+      type: v.union(v.literal("incoming"), v.literal("outgoing")),
+      lenderBorrowerName: v.string(),
+      startDate: v.number(),
+      endDate: v.optional(v.number()),
+      status: v.union(
+        v.literal("pending"),
+        v.literal("active"),
+        v.literal("returned"),
+        v.literal("cancelled"),
+      ),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      throw new Error("Collection not found");
+    }
+
+    await requirePermission(ctx, collection.organizationId, "loans.read");
+
+    // Get all loan items for this collection
+    const loanItems = await ctx.db
+      .query("loanItems")
+      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .collect();
+
+    // Get unique loan IDs
+    const loanIds = [...new Set(loanItems.map((item) => item.loanId))];
+
+    // Get loan details
+    const loans = await Promise.all(
+      loanIds.map(async (loanId) => {
+        const loan = await ctx.db.get(loanId);
+        if (!loan) return null;
+        return {
+          _id: loan._id,
+          loanNumber: loan.loanNumber,
+          type: loan.type,
+          lenderBorrowerName: loan.lenderBorrowerName,
+          startDate: loan.startDate,
+          endDate: loan.endDate,
+          status: loan.status,
+        };
+      }),
+    );
+
+    return loans.filter((loan): loan is NonNullable<typeof loan> => loan !== null);
   },
 });
 

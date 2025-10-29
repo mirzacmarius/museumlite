@@ -1,7 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
-import type { Id } from "../_generated/dataModel";
+import { mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { hasPermission, getUserPermissions as getUserPerms, requirePermission } from "./utils/permissions";
 
 /**
  * Create a custom role
@@ -21,7 +22,6 @@ export const createRole = mutation({
     }
 
     // Check permission
-    const { requirePermission } = await import("./utils/permissions");
     await requirePermission(ctx, args.organizationId, "users.manage_roles");
 
     // Check if role name already exists for this organization
@@ -387,7 +387,6 @@ export const checkPermission = query({
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
-    const { hasPermission } = await import("./utils/permissions");
     return await hasPermission(ctx, args.organizationId, args.permissionName);
   },
 });
@@ -401,10 +400,7 @@ export const getUserPermissions = query({
   },
   returns: v.array(v.string()),
   handler: async (ctx, args) => {
-    const { getUserPermissions: getPerms } = await import(
-      "./utils/permissions"
-    );
-    return await getPerms(ctx, args.organizationId);
+    return await getUserPerms(ctx, args.organizationId);
   },
 });
 

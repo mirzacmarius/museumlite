@@ -1,8 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query, internalMutation } from "../_generated/server";
-import { internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
+import { mutation, query, internalMutation } from "./_generated/server";
+import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { requirePermission } from "./utils/permissions";
 
 const MAX_SMALL_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -493,9 +493,9 @@ export const getUploadProgress = query({
 });
 
 /**
- * Validate file type
+ * Validate file type query
  */
-export const validateFileType = query({
+export const checkFileType = query({
   args: {
     mimeType: v.string(),
   },

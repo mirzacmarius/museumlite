@@ -4,6 +4,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { CheckoutLink } from "@convex-dev/polar/react";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button, buttonVariants } from "@v1/ui/button";
+import { Input } from "@v1/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +15,7 @@ import {
 } from "@v1/ui/dropdown-menu";
 import { Logo } from "@v1/ui/logo";
 import { cn } from "@v1/ui/utils";
-import { type Preloaded, usePreloadedQuery } from "convex/react";
+import { type Preloaded, usePreloadedQuery, useMutation } from "convex/react";
 import {
   Check,
   ChevronDown,
@@ -22,12 +23,18 @@ import {
   LogOut,
   Settings,
   Slash,
+  Plus,
+  Building2,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LanguageSwitcher } from "./language-switcher";
 import { ThemeSwitcher } from "./theme-switcher";
+import { OrganizationSwitcher } from "@/components/organization-switcher";
+import { useOrganization } from "@/components/organization-provider";
+import { MapPin, Archive, FileCheck, FileX, Handshake } from "lucide-react";
+import { useState } from "react";
 
 export function Navigation({
   preloadedUser,
@@ -42,6 +49,12 @@ export function Navigation({
   const isDashboardPath = pathname === "/";
   const isSettingsPath = pathname === "/settings";
   const isBillingPath = pathname === "/settings/billing";
+  const { organizations, currentOrganizationId, setCurrentOrganizationId, isLoading: orgsLoading } = useOrganization();
+  const createOrganization = useMutation(api.organizations.create);
+  const [newOrgName, setNewOrgName] = useState("");
+  const [isCreatingOrg, setIsCreatingOrg] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isPersonalAccountOpen, setIsPersonalAccountOpen] = useState(false);
 
   const user = usePreloadedQuery(preloadedUser);
   const products = usePreloadedQuery(preloadedProducts);
@@ -52,6 +65,29 @@ export function Navigation({
   const yearlyProProduct = products?.find(
     (product) => product.recurringInterval === "year",
   );
+
+  const handleCreateOrganization = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newOrgName.trim()) return;
+    
+    setIsCreatingOrg(true);
+    try {
+      const slug = newOrgName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+      const organizationId = await createOrganization({
+        name: newOrgName.trim(),
+        slug,
+        type: "museum", // Default type
+      });
+      setCurrentOrganizationId(organizationId as any);
+      setNewOrgName("");
+      setShowCreateForm(false);
+      setIsPersonalAccountOpen(false); // Close dropdown after creation
+    } catch (error) {
+      console.error("Failed to create organization:", error);
+    } finally {
+      setIsCreatingOrg(false);
+    }
+  };
 
   if (!user) {
     return null;
@@ -65,7 +101,13 @@ export function Navigation({
             <Image src="/logo.png" alt="logo" width={50} height={50} />
           </Link>
           <Slash className="h-6 w-6 -rotate-12 stroke-[1.5px] text-primary/10" />
-          <DropdownMenu modal={false}>
+          <DropdownMenu modal={false} open={isPersonalAccountOpen} onOpenChange={(open) => {
+            // Prevent closing when form is shown
+            if (showCreateForm && !open) {
+              return;
+            }
+            setIsPersonalAccountOpen(open);
+          }}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
@@ -134,6 +176,95 @@ export function Navigation({
                   </Button>
                 )}
               </DropdownMenuItem>
+
+              <DropdownMenuSeparator className="mx-0 my-2" />
+
+              {/* Organizations Section */}
+              <DropdownMenuLabel className="text-xs font-normal text-primary/60">
+                Organizations
+              </DropdownMenuLabel>
+              
+              {orgsLoading ? (
+                <DropdownMenuItem className="h-9 w-full cursor-default justify-center rounded-md px-2">
+                  <span className="text-sm text-primary/60">Loading...</span>
+                </DropdownMenuItem>
+              ) : organizations.length > 0 ? (
+                organizations.map((org) => (
+                  <DropdownMenuItem
+                    key={org._id}
+                    onClick={() => setCurrentOrganizationId(org._id)}
+                    className={cn(
+                      "group h-10 w-full cursor-pointer justify-between rounded-md px-2",
+                      currentOrganizationId === org._id && "bg-secondary"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="h-6 w-6 rounded-full bg-gradient-to-br from-orange-400 from-10% via-pink-500 to-purple-500 flex-shrink-0" />
+                      <span className="text-sm font-medium text-primary/80 group-hover:text-primary group-focus:text-primary">
+                        {org.name}
+                      </span>
+                    </div>
+                    {currentOrganizationId === org._id && (
+                      <Check className="h-[18px] w-[18px] stroke-[1.5px] text-primary/60" />
+                    )}
+                  </DropdownMenuItem>
+                ))
+              ) : null}
+
+              {/* Create Organization Form */}
+              {showCreateForm ? (
+                <div className="p-2">
+                  <form onSubmit={handleCreateOrganization} className="w-full space-y-2" onMouseDown={(e) => e.stopPropagation()}>
+                    <Input
+                      placeholder="Organization name"
+                      value={newOrgName}
+                      onChange={(e) => setNewOrgName(e.target.value)}
+                      className="h-8"
+                      autoFocus
+                      disabled={isCreatingOrg}
+                      onFocus={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        type="submit"
+                        size="sm"
+                        className="h-7 flex-1"
+                        disabled={!newOrgName.trim() || isCreatingOrg}
+                        onMouseDown={(e) => e.stopPropagation()}
+                      >
+                        {isCreatingOrg ? "Creating..." : "Create"}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="h-7"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowCreateForm(false);
+                          setNewOrgName("");
+                          setIsPersonalAccountOpen(false); // Close dropdown when canceling
+                        }}
+                        disabled={isCreatingOrg}
+                        onMouseDown={(e) => e.stopPropagation()}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                <DropdownMenuItem
+                  onClick={() => setShowCreateForm(true)}
+                  className="group h-9 w-full cursor-pointer rounded-md px-2"
+                >
+                  <Plus className="mr-2 h-4 w-4 text-primary/60 group-hover:text-primary group-focus:text-primary" />
+                  <span className="text-sm text-primary/60 group-hover:text-primary group-focus:text-primary">
+                    Create new organization
+                  </span>
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -231,50 +362,146 @@ export function Navigation({
       </div>
 
       <div className="mx-auto flex w-full max-w-screen-xl items-center gap-3">
-        <div
-          className={cn(
-            "flex h-12 items-center border-b-2",
-            isDashboardPath ? "border-primary" : "border-transparent",
-          )}
-        >
-          <Link
-            href="/"
-            className={cn(
-              `${buttonVariants({ variant: "ghost", size: "sm" })} text-primary/80`,
-            )}
-          >
-            Dashboard
-          </Link>
+        <div className="flex items-center gap-2">
+          <OrganizationSwitcher />
         </div>
-        <div
-          className={cn(
-            "flex h-12 items-center border-b-2",
-            isSettingsPath ? "border-primary" : "border-transparent",
-          )}
-        >
-          <Link
-            href="/settings"
+        <div className="flex-1" />
+        <div className="flex h-12 items-center gap-1">
+          <div
             className={cn(
-              `${buttonVariants({ variant: "ghost", size: "sm" })} text-primary/80`,
+              "flex h-12 items-center border-b-2",
+              isDashboardPath ? "border-primary" : "border-transparent",
             )}
           >
-            Settings
-          </Link>
-        </div>
-        <div
-          className={cn(
-            "flex h-12 items-center border-b-2",
-            isBillingPath ? "border-primary" : "border-transparent",
-          )}
-        >
-          <Link
-            href="/settings/billing"
+            <Link
+              href="/"
+              className={cn(
+                `${buttonVariants({ variant: "ghost", size: "sm" })} text-primary/80`,
+              )}
+            >
+              Dashboard
+            </Link>
+          </div>
+          <div
             className={cn(
-              `${buttonVariants({ variant: "ghost", size: "sm" })} text-primary/80`,
+              "flex h-12 items-center border-b-2",
+              pathname?.startsWith("/collections")
+                ? "border-primary"
+                : "border-transparent",
             )}
           >
-            Billing
-          </Link>
+            <Link
+              href="/collections"
+              className={cn(
+                `${buttonVariants({ variant: "ghost", size: "sm" })} text-primary/80 gap-2`,
+              )}
+            >
+              <Archive className="h-4 w-4" />
+              Collections
+            </Link>
+          </div>
+          <div
+            className={cn(
+              "flex h-12 items-center border-b-2",
+              pathname?.startsWith("/locations")
+                ? "border-primary"
+                : "border-transparent",
+            )}
+          >
+            <Link
+              href="/locations"
+              className={cn(
+                `${buttonVariants({ variant: "ghost", size: "sm" })} text-primary/80 gap-2`,
+              )}
+            >
+              <MapPin className="h-4 w-4" />
+              Locations
+            </Link>
+          </div>
+          <div
+            className={cn(
+              "flex h-12 items-center border-b-2",
+              pathname?.startsWith("/accessions")
+                ? "border-primary"
+                : "border-transparent",
+            )}
+          >
+            <Link
+              href="/accessions"
+              className={cn(
+                `${buttonVariants({ variant: "ghost", size: "sm" })} text-primary/80 gap-2`,
+              )}
+            >
+              <FileCheck className="h-4 w-4" />
+              Accessions
+            </Link>
+          </div>
+          <div
+            className={cn(
+              "flex h-12 items-center border-b-2",
+              pathname?.startsWith("/deaccessions")
+                ? "border-primary"
+                : "border-transparent",
+            )}
+          >
+            <Link
+              href="/deaccessions"
+              className={cn(
+                `${buttonVariants({ variant: "ghost", size: "sm" })} text-primary/80 gap-2`,
+              )}
+            >
+              <FileX className="h-4 w-4" />
+              Deaccessions
+            </Link>
+          </div>
+          <div
+            className={cn(
+              "flex h-12 items-center border-b-2",
+              pathname?.startsWith("/loans")
+                ? "border-primary"
+                : "border-transparent",
+            )}
+          >
+            <Link
+              href="/loans"
+              className={cn(
+                `${buttonVariants({ variant: "ghost", size: "sm" })} text-primary/80 gap-2`,
+              )}
+            >
+              <Handshake className="h-4 w-4" />
+              Loans
+            </Link>
+          </div>
+          <div
+            className={cn(
+              "flex h-12 items-center border-b-2",
+              isSettingsPath ? "border-primary" : "border-transparent",
+            )}
+          >
+            <Link
+              href="/settings"
+              className={cn(
+                `${buttonVariants({ variant: "ghost", size: "sm" })} text-primary/80`,
+              )}
+            >
+              Settings
+            </Link>
+          </div>
+          <div
+            className={cn(
+              "flex h-12 items-center border-b-2",
+              isBillingPath ? "border-primary" : "border-transparent",
+            )}
+          >
+            <Link
+              href="/settings/billing"
+              className={cn(
+                `${buttonVariants({ variant: "ghost", size: "sm" })} text-primary/80`,
+              )}
+            >
+              Billing
+            </Link>
+          </div>
         </div>
       </div>
     </nav>

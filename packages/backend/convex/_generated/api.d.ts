@@ -8,12 +8,20 @@
  * @module
  */
 
+import type * as accessions from "../accessions.js";
 import type * as auth from "../auth.js";
+import type * as collections from "../collections.js";
+import type * as deaccessions from "../deaccessions.js";
 import type * as email_index from "../email/index.js";
 import type * as email_templates_subscriptionEmail from "../email/templates/subscriptionEmail.js";
 import type * as env from "../env.js";
 import type * as http from "../http.js";
 import type * as init from "../init.js";
+import type * as loans from "../loans.js";
+import type * as locations from "../locations.js";
+import type * as media from "../media.js";
+import type * as organizations from "../organizations.js";
+import type * as roles from "../roles.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as users from "../users.js";
 import type * as utils_permissions from "../utils/permissions.js";
@@ -34,12 +42,20 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  accessions: typeof accessions;
   auth: typeof auth;
+  collections: typeof collections;
+  deaccessions: typeof deaccessions;
   "email/index": typeof email_index;
   "email/templates/subscriptionEmail": typeof email_templates_subscriptionEmail;
   env: typeof env;
   http: typeof http;
   init: typeof init;
+  loans: typeof loans;
+  locations: typeof locations;
+  media: typeof media;
+  organizations: typeof organizations;
+  roles: typeof roles;
   subscriptions: typeof subscriptions;
   users: typeof users;
   "utils/permissions": typeof utils_permissions;

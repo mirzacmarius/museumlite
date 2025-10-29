@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
-import type { Id } from "../_generated/dataModel";
+import { mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -572,3 +572,58 @@ export const getLocationTypes = query({
   },
 });
 
+/**
+ * Get location history for a collection object
+ */
+export const getCollectionLocationHistory = query({
+  args: {
+    collectionId: v.id("collections"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("locationHistory"),
+      fromLocationId: v.optional(v.id("locations")),
+      toLocationId: v.id("locations"),
+      movedBy: v.id("users"),
+      movedAt: v.number(),
+      reason: v.optional(v.string()),
+      notes: v.optional(v.string()),
+      fromLocationName: v.optional(v.string()),
+      toLocationName: v.string(),
+      movedByName: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      throw new Error("Collection not found");
+    }
+
+    await requirePermission(ctx, collection.organizationId, "collections.read");
+
+    const history = await ctx.db
+      .query("locationHistory")
+      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .order("desc")
+      .collect();
+
+    const enrichedHistory = await Promise.all(
+      history.map(async (entry) => {
+        const fromLocation = entry.fromLocationId
+          ? await ctx.db.get(entry.fromLocationId)
+          : null;
+        const toLocation = await ctx.db.get(entry.toLocationId);
+        const movedBy = await ctx.db.get(entry.movedBy);
+
+        return {
+          ...entry,
+          fromLocationName: fromLocation?.name || undefined,
+          toLocationName: toLocation?.name || "",
+          movedByName: movedBy?.name || movedBy?.username || undefined,
+        };
+      }),
+    );
+
+    return enrichedHistory;
+  },
+});

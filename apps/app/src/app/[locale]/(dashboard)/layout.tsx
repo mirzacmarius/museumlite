@@ -2,6 +2,7 @@ import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@v1/backend/convex/_generated/api";
 import { fetchQuery, preloadQuery } from "convex/nextjs";
 import { redirect } from "next/navigation";
+import { OrganizationProvider } from "@/components/organization-provider";
 import { Navigation } from "./_components/navigation";
 
 export default async function Layout({
@@ -27,11 +28,14 @@ export default async function Layout({
   );
   return (
     <div className="flex min-h-[100vh] w-full flex-col bg-secondary dark:bg-black">
-      <Navigation
-        preloadedUser={preloadedUser}
-        preloadedProducts={preloadedProducts}
-      />
-      {children}
+      <OrganizationProvider>
+        <Navigation
+          preloadedUser={preloadedUser}
+          preloadedProducts={preloadedProducts}
+        />
+        {children}
+      </OrganizationProvider>
     </div>
   );
 }
+
