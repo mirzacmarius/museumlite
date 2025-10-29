@@ -135,7 +135,9 @@ Locations: create, read, update, delete
 Media: upload, read, delete
 Users: invite, manage_roles, remove
 Organization: manage_settings, view_analytics
-Phase 2: Backend Functions
+
+### Phase 2: Backend Functions
+
 Organization Management (packages/backend/convex/organizations.ts)
 create: Create new organization
 get: Get organization by ID
@@ -208,7 +210,9 @@ getCurrentUserOrganization: Get user's organization context
 requirePermission: Assert user has permission
 getUserRole: Get user's role in organization
 canAccess: Check if user can access resource
-Phase 3: Frontend Components & Pages
+
+### Phase 3: Frontend Components & Pages
+
 Layout Updates (apps/app/src/app/[locale]/(dashboard)/)
 Update navigation with new menu items: Collections, Loans, Locations, Accessions, Deaccessions, Users
 Add organization switcher component
@@ -261,7 +265,9 @@ media-upload.tsx: File upload component
 location-selector.tsx: Hierarchical location picker
 audit-log.tsx: Display audit trail
 notification-bell.tsx: Notification center
-Phase 4: Advanced Features
+
+### Phase 4: Advanced Features
+
 Search & Filtering
 Full-text search across all object fields
 Advanced filters (date range, location, status, type)
@@ -280,7 +286,9 @@ Accession number uniqueness validation
 Required field validation
 Date consistency checks
 Location validation
-Phase 5: Infrastructure & Polish
+
+### Phase 5: Infrastructure & Polish
+
 Performance Optimization
 Pagination for large datasets
 Image optimization (thumbnails, lazy loading)
