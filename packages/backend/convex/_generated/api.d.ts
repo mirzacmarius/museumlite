@@ -16,6 +16,7 @@ import type * as http from "../http.js";
 import type * as init from "../init.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as users from "../users.js";
+import type * as utils_permissions from "../utils/permissions.js";
 import type * as utils_validators from "../utils/validators.js";
 import type * as web from "../web.js";
 
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   init: typeof init;
   subscriptions: typeof subscriptions;
   users: typeof users;
+  "utils/permissions": typeof utils_permissions;
   "utils/validators": typeof utils_validators;
   web: typeof web;
 }>;
