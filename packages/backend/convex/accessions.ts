@@ -210,6 +210,7 @@ export const get = query({
   returns: v.union(
     v.object({
       _id: v.id("accessions"),
+      _creationTime: v.number(),
       organizationId: v.id("organizations"),
       collectionId: v.optional(v.id("collections")),
       accessionNumber: v.string(),
