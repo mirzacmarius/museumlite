@@ -1,0 +1,560 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { v } from "convex/values";
+import { mutation, query, internalMutation } from "../_generated/server";
+import { internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
+import { requirePermission } from "./utils/permissions";
+
+const MAX_SMALL_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+/**
+ * Valid file types by category
+ */
+const FILE_TYPES = {
+  images: ["image/jpeg", "image/png", "image/webp", "image/tiff"],
+  documents: [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ],
+  videos: ["video/mp4", "video/webm"],
+  "3d": [
+    "model/obj",
+    "model/gltf+json",
+    "application/x-fbx",
+    "model/gltf-binary",
+  ],
+} as const;
+
+/**
+ * Validate file type
+ */
+function validateFileType(mimeType: string): boolean {
+  return Object.values(FILE_TYPES)
+    .flat()
+    .includes(mimeType as any);
+}
+
+/**
+ * Get file category from mime type
+ */
+function getFileCategory(mimeType: string): string {
+  if (FILE_TYPES.images.includes(mimeType as any)) return "image";
+  if (FILE_TYPES.documents.includes(mimeType as any)) return "document";
+  if (FILE_TYPES.videos.includes(mimeType as any)) return "video";
+  if (FILE_TYPES["3d"].includes(mimeType as any)) return "3d";
+  return "other";
+}
+
+/**
+ * Generate upload URL for file
+ */
+export const generateUploadUrl = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    collectionId: v.id("collections"),
+    fileName: v.string(),
+    fileSize: v.number(),
+    mimeType: v.string(),
+  },
+  returns: v.object({
+    uploadUrl: v.string(),
+    storageId: v.optional(v.id("_storage")),
+    isChunked: v.boolean(),
+    chunkId: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Check permission
+    await requirePermission(ctx, args.organizationId, "media.upload");
+
+    // Validate file type
+    if (!validateFileType(args.mimeType)) {
+      throw new Error(`Unsupported file type: ${args.mimeType}`);
+    }
+
+    const isLargeFile = args.fileSize > MAX_SMALL_FILE_SIZE;
+    const fileCategory = getFileCategory(args.mimeType);
+
+    if (isLargeFile) {
+      // For large files, generate upload URL
+      // Note: Client should handle chunked uploads externally if needed
+      // For now, Convex storage handles large files directly
+      const uploadUrl = await ctx.storage.generateUploadUrl();
+      const chunkId = `chunk_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+      return {
+        uploadUrl,
+        isChunked: true,
+        chunkId,
+      };
+    } else {
+      // Small files - direct upload
+      const uploadUrl = await ctx.storage.generateUploadUrl();
+      return {
+        uploadUrl,
+        isChunked: false,
+      };
+    }
+  },
+});
+
+/**
+ * Create media record after upload
+ */
+export const create = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    collectionId: v.id("collections"),
+    storageId: v.id("_storage"),
+    fileName: v.string(),
+    fileSize: v.number(),
+    mimeType: v.string(),
+    isPrimary: v.optional(v.boolean()),
+    caption: v.optional(v.string()),
+    photographer: v.optional(v.string()),
+    copyright: v.optional(v.string()),
+    chunkId: v.optional(v.string()),
+  },
+  returns: v.id("mediaFiles"),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Check permission
+    await requirePermission(ctx, args.organizationId, "media.upload");
+
+    const fileCategory = getFileCategory(args.mimeType);
+
+    // If this is a chunked upload, update existing record
+    if (args.chunkId) {
+      const existing = await ctx.db
+        .query("mediaFiles")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .filter((q) => q.eq(q.field("chunkedUploadId"), args.chunkId))
+        .first();
+
+      if (existing) {
+        await ctx.db.patch(existing._id, {
+          storageId: args.storageId,
+          uploadStatus: "completed",
+        });
+
+        // If it's a primary image and <50MB, schedule thumbnail generation
+        if (
+          existing.isPrimary &&
+          args.fileSize < MAX_SMALL_FILE_SIZE &&
+          fileCategory === "image"
+        ) {
+          await ctx.scheduler.runAfter(
+            0,
+            internal.media.generateThumbnail,
+            {
+              mediaId: existing._id,
+            },
+          );
+        }
+
+        return existing._id;
+      }
+    }
+
+    // Create new media record
+    const mediaId = await ctx.db.insert("mediaFiles", {
+      collectionId: args.collectionId,
+      organizationId: args.organizationId,
+      storageId: args.storageId,
+      fileName: args.fileName,
+      fileType: fileCategory,
+      fileSize: args.fileSize,
+      mimeType: args.mimeType,
+      isPrimary: args.isPrimary ?? false,
+      caption: args.caption,
+      photographer: args.photographer,
+      copyright: args.copyright,
+      uploadedBy: userId,
+      uploadedAt: Date.now(),
+      uploadStatus: "completed",
+    });
+
+    // If it's a primary image and <50MB, schedule thumbnail generation
+    if (
+      args.isPrimary &&
+      args.fileSize < MAX_SMALL_FILE_SIZE &&
+      fileCategory === "image"
+    ) {
+      await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
+        mediaId,
+      });
+    }
+
+    return mediaId;
+  },
+});
+
+/**
+ * List media for a collection object
+ */
+export const list = query({
+  args: {
+    collectionId: v.id("collections"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("mediaFiles"),
+      storageId: v.id("_storage"),
+      thumbnailStorageId: v.optional(v.id("_storage")),
+      fileName: v.string(),
+      fileType: v.string(),
+      fileSize: v.number(),
+      mimeType: v.string(),
+      isPrimary: v.boolean(),
+      caption: v.optional(v.string()),
+      photographer: v.optional(v.string()),
+      copyright: v.optional(v.string()),
+      url: v.union(v.string(), v.null()),
+      thumbnailUrl: v.union(v.string(), v.null()),
+      uploadStatus: v.union(
+        v.literal("pending"),
+        v.literal("processing"),
+        v.literal("completed"),
+        v.literal("failed"),
+      ),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      throw new Error("Collection not found");
+    }
+
+    const { requirePermission } = await import("./utils/permissions");
+    await requirePermission(
+      ctx,
+      collection.organizationId,
+      "media.read",
+    );
+
+    const mediaFiles = await ctx.db
+      .query("mediaFiles")
+      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .collect();
+
+    const mediaWithUrls = await Promise.all(
+      mediaFiles.map(async (media) => {
+        const url = await ctx.storage.getUrl(media.storageId);
+        const thumbnailUrl = media.thumbnailStorageId
+          ? await ctx.storage.getUrl(media.thumbnailStorageId)
+          : null;
+
+        return {
+          _id: media._id,
+          storageId: media.storageId,
+          thumbnailStorageId: media.thumbnailStorageId,
+          fileName: media.fileName,
+          fileType: media.fileType,
+          fileSize: media.fileSize,
+          mimeType: media.mimeType,
+          isPrimary: media.isPrimary,
+          caption: media.caption,
+          photographer: media.photographer,
+          copyright: media.copyright,
+          url,
+          thumbnailUrl,
+          uploadStatus: media.uploadStatus,
+        };
+      }),
+    );
+
+    return mediaWithUrls;
+  },
+});
+
+/**
+ * Update media metadata
+ */
+export const update = mutation({
+  args: {
+    mediaId: v.id("mediaFiles"),
+    caption: v.optional(v.string()),
+    photographer: v.optional(v.string()),
+    copyright: v.optional(v.string()),
+    isPrimary: v.optional(v.boolean()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const media = await ctx.db.get(args.mediaId);
+    if (!media) {
+      throw new Error("Media not found");
+    }
+
+    // Check permission
+    await requirePermission(
+      ctx,
+      media.organizationId,
+      "media.upload", // Using upload permission for updates
+    );
+
+    const updates: {
+      caption?: string;
+      photographer?: string;
+      copyright?: string;
+      isPrimary?: boolean;
+    } = {};
+
+    if (args.caption !== undefined) updates.caption = args.caption;
+    if (args.photographer !== undefined)
+      updates.photographer = args.photographer;
+    if (args.copyright !== undefined) updates.copyright = args.copyright;
+    if (args.isPrimary !== undefined) {
+      updates.isPrimary = args.isPrimary;
+
+      // If setting as primary and it's an image <50MB, generate thumbnail
+      if (args.isPrimary && media.fileType === "image" && media.fileSize < MAX_SMALL_FILE_SIZE) {
+        await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
+          mediaId: args.mediaId,
+        });
+      }
+    }
+
+    await ctx.db.patch(args.mediaId, updates);
+
+    return null;
+  },
+});
+
+/**
+ * Delete media file
+ */
+export const deleteMedia = mutation({
+  args: {
+    mediaId: v.id("mediaFiles"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const media = await ctx.db.get(args.mediaId);
+    if (!media) {
+      throw new Error("Media not found");
+    }
+
+    // Check permission
+    await requirePermission(ctx, media.organizationId, "media.delete");
+
+    // Delete from storage
+    await ctx.storage.delete(media.storageId);
+    if (media.thumbnailStorageId) {
+      await ctx.storage.delete(media.thumbnailStorageId);
+    }
+
+    // Delete record
+    await ctx.db.delete(args.mediaId);
+
+    return null;
+  },
+});
+
+/**
+ * Set primary image
+ */
+export const setPrimary = mutation({
+  args: {
+    mediaId: v.id("mediaFiles"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const media = await ctx.db.get(args.mediaId);
+    if (!media) {
+      throw new Error("Media not found");
+    }
+
+    // Check permission
+    await requirePermission(ctx, media.organizationId, "media.upload");
+
+    // Unset other primary images for this collection
+    const otherMedia = await ctx.db
+      .query("mediaFiles")
+      .withIndex("by_collection", (q) => q.eq("collectionId", media.collectionId))
+      .filter((q) => q.eq(q.field("isPrimary"), true))
+      .collect();
+
+    for (const m of otherMedia) {
+      if (m._id !== args.mediaId) {
+        await ctx.db.patch(m._id, { isPrimary: false });
+      }
+    }
+
+    // Set this as primary
+    await ctx.db.patch(args.mediaId, { isPrimary: true });
+
+    // Generate thumbnail if image <50MB
+    if (media.fileType === "image" && media.fileSize < MAX_SMALL_FILE_SIZE) {
+      await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
+        mediaId: args.mediaId,
+      });
+    }
+
+    return null;
+  },
+});
+
+/**
+ * Get thumbnail URL
+ */
+export const getThumbnailUrl = query({
+  args: {
+    mediaId: v.id("mediaFiles"),
+  },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, args) => {
+    const media = await ctx.db.get(args.mediaId);
+    if (!media) {
+      return null;
+    }
+
+    const { requirePermission } = await import("./utils/permissions");
+    await requirePermission(ctx, media.organizationId, "media.read");
+
+    if (media.thumbnailStorageId) {
+      return await ctx.storage.getUrl(media.thumbnailStorageId);
+    }
+
+    // Fallback to original if no thumbnail
+    return await ctx.storage.getUrl(media.storageId);
+  },
+});
+
+/**
+ * Get upload progress for large files
+ */
+export const getUploadProgress = query({
+  args: {
+    chunkId: v.string(),
+  },
+  returns: v.union(
+    v.object({
+      progress: v.number(),
+      status: v.union(
+        v.literal("pending"),
+        v.literal("processing"),
+        v.literal("completed"),
+        v.literal("failed"),
+      ),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const media = await ctx.db
+      .query("mediaFiles")
+      .filter((q) => q.eq(q.field("chunkedUploadId"), args.chunkId))
+      .first();
+
+    if (!media) {
+      return null;
+    }
+
+    // Calculate progress based on upload status
+    let progress = 0;
+    if (media.uploadStatus === "completed") {
+      progress = 100;
+    } else if (media.uploadStatus === "processing") {
+      progress = 50;
+    } else if (media.uploadStatus === "failed") {
+      progress = 0;
+    }
+
+    return {
+      progress,
+      status: media.uploadStatus,
+    };
+  },
+});
+
+/**
+ * Validate file type
+ */
+export const validateFileType = query({
+  args: {
+    mimeType: v.string(),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    return validateFileType(args.mimeType);
+  },
+});
+
+/**
+ * Internal: Generate thumbnail for primary images
+ * Note: This is a placeholder - actual thumbnail generation would require
+ * an action with image processing library (sharp, jimp, etc.)
+ */
+export const generateThumbnail = internalMutation({
+  args: {
+    mediaId: v.id("mediaFiles"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const media = await ctx.db.get(args.mediaId);
+    if (!media) {
+      return null;
+    }
+
+    // Only generate thumbnails for images <50MB
+    if (media.fileType !== "image" || media.fileSize >= MAX_SMALL_FILE_SIZE) {
+      return null;
+    }
+
+    // Mark as processing
+    await ctx.db.patch(args.mediaId, {
+      uploadStatus: "processing",
+    });
+
+    try {
+      // TODO: Implement actual thumbnail generation using an action
+      // For now, we'll just mark it as completed
+      // In production, this would:
+      // 1. Download the image from storage
+      // 2. Resize it to thumbnail size (e.g., 300x300)
+      // 3. Upload the thumbnail
+      // 4. Store the thumbnail storage ID
+
+      // Placeholder: Keep existing implementation simple
+      // Actual implementation would use ctx.runAction to call an action
+      // that uses Node.js image processing libraries
+
+      await ctx.db.patch(args.mediaId, {
+        uploadStatus: "completed",
+        // thumbnailStorageId would be set here after processing
+      });
+    } catch (error) {
+      await ctx.db.patch(args.mediaId, {
+        uploadStatus: "failed",
+      });
+    }
+
+    return null;
+  },
+});
+
