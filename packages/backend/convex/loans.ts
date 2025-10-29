@@ -618,3 +618,346 @@ export const cancel = mutation({
   },
 });
 
+/**
+ * Create detailed condition report for loan item
+ */
+export const createConditionReport = mutation({
+  args: {
+    loanItemId: v.id("loanItems"),
+    reportType: v.union(v.literal("out"), v.literal("in")),
+    conditionDescription: v.string(),
+    damages: v.optional(
+      v.array(
+        v.object({
+          type: v.string(),
+          location: v.string(),
+          severity: v.string(),
+          notes: v.optional(v.string()),
+        }),
+      ),
+    ),
+    photos: v.optional(v.array(v.id("_storage"))),
+  },
+  returns: v.id("conditionReports"),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const loanItem = await ctx.db.get(args.loanItemId);
+    if (!loanItem) {
+      throw new Error("Loan item not found");
+    }
+
+    const loan = await ctx.db.get(loanItem.loanId);
+    if (!loan) {
+      throw new Error("Loan not found");
+    }
+
+    // Check if loan uses detailed condition reports
+    if (!loan.useDetailedConditionReports) {
+      throw new Error("Loan does not use detailed condition reports");
+    }
+
+    // Check permission
+    await requirePermission(ctx, loan.organizationId, "loans.update");
+
+    const reportId = await ctx.db.insert("conditionReports", {
+      loanItemId: args.loanItemId,
+      reportType: args.reportType,
+      conditionDescription: args.conditionDescription,
+      damages: args.damages,
+      photos: args.photos,
+      assessedBy: userId,
+      assessedAt: Date.now(),
+    });
+
+    // Link report to loan item
+    await ctx.db.patch(args.loanItemId, {
+      conditionReportId: reportId,
+    });
+
+    return reportId;
+  },
+});
+
+/**
+ * Update condition report
+ */
+export const updateConditionReport = mutation({
+  args: {
+    reportId: v.id("conditionReports"),
+    conditionDescription: v.optional(v.string()),
+    damages: v.optional(
+      v.array(
+        v.object({
+          type: v.string(),
+          location: v.string(),
+          severity: v.string(),
+          notes: v.optional(v.string()),
+        }),
+      ),
+    ),
+    photos: v.optional(v.array(v.id("_storage"))),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const report = await ctx.db.get(args.reportId);
+    if (!report) {
+      throw new Error("Condition report not found");
+    }
+
+    const loanItem = await ctx.db.get(report.loanItemId);
+    if (!loanItem) {
+      throw new Error("Loan item not found");
+    }
+
+    const loan = await ctx.db.get(loanItem.loanId);
+    if (!loan) {
+      throw new Error("Loan not found");
+    }
+
+    // Check permission
+    await requirePermission(ctx, loan.organizationId, "loans.update");
+
+    const updates: {
+      conditionDescription?: string;
+      damages?: Array<{
+        type: string;
+        location: string;
+        severity: string;
+        notes?: string;
+      }>;
+      photos?: Array<Id<"_storage">>;
+    } = {};
+
+    if (args.conditionDescription !== undefined)
+      updates.conditionDescription = args.conditionDescription;
+    if (args.damages !== undefined) updates.damages = args.damages;
+    if (args.photos !== undefined) updates.photos = args.photos;
+
+    await ctx.db.patch(args.reportId, updates);
+
+    return null;
+  },
+});
+
+/**
+ * Get condition report
+ */
+export const getConditionReport = query({
+  args: {
+    reportId: v.id("conditionReports"),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id("conditionReports"),
+      loanItemId: v.id("loanItems"),
+      reportType: v.union(v.literal("out"), v.literal("in")),
+      conditionDescription: v.string(),
+      damages: v.optional(
+        v.array(
+          v.object({
+            type: v.string(),
+            location: v.string(),
+            severity: v.string(),
+            notes: v.optional(v.string()),
+          }),
+        ),
+      ),
+      photos: v.optional(v.array(v.id("_storage"))),
+      photoUrls: v.optional(v.array(v.union(v.string(), v.null()))),
+      assessedBy: v.id("users"),
+      assessedAt: v.number(),
+      assessorName: v.optional(v.string()),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const report = await ctx.db.get(args.reportId);
+    if (!report) {
+      return null;
+    }
+
+    const loanItem = await ctx.db.get(report.loanItemId);
+    if (!loanItem) {
+      return null;
+    }
+
+    const loan = await ctx.db.get(loanItem.loanId);
+    if (!loan) {
+      return null;
+    }
+
+    await requirePermission(ctx, loan.organizationId, "loans.read");
+
+    // Get photo URLs
+    const photoUrls = report.photos
+      ? await Promise.all(
+          report.photos.map(async (photoId) =>
+            ctx.storage.getUrl(photoId),
+          ),
+        )
+      : undefined;
+
+    // Get assessor name
+    const assessor = await ctx.db.get(report.assessedBy);
+
+    return {
+      _id: report._id,
+      loanItemId: report.loanItemId,
+      reportType: report.reportType,
+      conditionDescription: report.conditionDescription,
+      damages: report.damages,
+      photos: report.photos,
+      photoUrls,
+      assessedBy: report.assessedBy,
+      assessedAt: report.assessedAt,
+      assessorName: assessor?.name || assessor?.username || undefined,
+    };
+  },
+});
+
+/**
+ * Upload loan document
+ */
+export const uploadLoanDocument = mutation({
+  args: {
+    loanId: v.id("loans"),
+    storageId: v.id("_storage"),
+    documentType: v.union(
+      v.literal("agreement"),
+      v.literal("insurance"),
+      v.literal("other"),
+    ),
+    fileName: v.string(),
+  },
+  returns: v.id("loanDocuments"),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const loan = await ctx.db.get(args.loanId);
+    if (!loan) {
+      throw new Error("Loan not found");
+    }
+
+    // Check permission
+    await requirePermission(ctx, loan.organizationId, "loans.update");
+
+    const documentId = await ctx.db.insert("loanDocuments", {
+      loanId: args.loanId,
+      storageId: args.storageId,
+      documentType: args.documentType,
+      fileName: args.fileName,
+      uploadedBy: userId,
+      uploadedAt: Date.now(),
+    });
+
+    return documentId;
+  },
+});
+
+/**
+ * List loan documents
+ */
+export const listLoanDocuments = query({
+  args: {
+    loanId: v.id("loans"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("loanDocuments"),
+      storageId: v.id("_storage"),
+      documentType: v.union(
+        v.literal("agreement"),
+        v.literal("insurance"),
+        v.literal("other"),
+      ),
+      fileName: v.string(),
+      url: v.union(v.string(), v.null()),
+      uploadedBy: v.id("users"),
+      uploadedAt: v.number(),
+      uploaderName: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const loan = await ctx.db.get(args.loanId);
+    if (!loan) {
+      throw new Error("Loan not found");
+    }
+
+    await requirePermission(ctx, loan.organizationId, "loans.read");
+
+    const documents = await ctx.db
+      .query("loanDocuments")
+      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+      .collect();
+
+    const documentsWithUrls = await Promise.all(
+      documents.map(async (doc) => {
+        const url = await ctx.storage.getUrl(doc.storageId);
+        const uploader = await ctx.db.get(doc.uploadedBy);
+
+        return {
+          _id: doc._id,
+          storageId: doc.storageId,
+          documentType: doc.documentType,
+          fileName: doc.fileName,
+          url,
+          uploadedBy: doc.uploadedBy,
+          uploadedAt: doc.uploadedAt,
+          uploaderName: uploader?.name || uploader?.username || undefined,
+        };
+      }),
+    );
+
+    return documentsWithUrls;
+  },
+});
+
+/**
+ * Delete loan document
+ */
+export const deleteLoanDocument = mutation({
+  args: {
+    documentId: v.id("loanDocuments"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const document = await ctx.db.get(args.documentId);
+    if (!document) {
+      throw new Error("Document not found");
+    }
+
+    const loan = await ctx.db.get(document.loanId);
+    if (!loan) {
+      throw new Error("Loan not found");
+    }
+
+    // Check permission
+    await requirePermission(ctx, loan.organizationId, "loans.update");
+
+    // Delete from storage
+    await ctx.storage.delete(document.storageId);
+
+    // Delete record
+    await ctx.db.delete(args.documentId);
+
+    return null;
+  },
+});
+
