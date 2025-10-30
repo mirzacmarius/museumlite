@@ -16,7 +16,8 @@ import {
 } from "@v1/ui/select";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useMutation, useQuery } from "convex/react";
+import { CollectionSelector } from "@/components/collection-selector";
+import { useMutation } from "convex/react";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -38,15 +39,6 @@ export default function NewDeaccessionPage() {
     notes: "",
   });
 
-  const collections = useQuery(
-    api.collections.list,
-    currentOrganizationId
-      ? {
-          organizationId: currentOrganizationId as any,
-          paginationOpts: { numItems: 1000, cursor: null },
-        }
-      : "skip",
-  );
 
   if (!currentOrganizationId) {
     return (
@@ -120,34 +112,17 @@ export default function NewDeaccessionPage() {
                 </div>
               )}
               <div className="mx-auto max-w-2xl space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="collectionId">
-                    Collection Object *
-                  </Label>
-                  <Select
-                    value={formData.collectionId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, collectionId: value })
-                    }
-                  >
-                    <SelectTrigger id="collectionId">
-                      <SelectValue placeholder="Select a collection object" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {collections?.page.map((collection) => (
-                        <SelectItem
-                          key={collection._id}
-                          value={collection._id}
-                        >
-                          {collection.accessionNumber} - {collection.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Select the collection object to deaccession
-                  </p>
-                </div>
+                <CollectionSelector
+                  organizationId={currentOrganizationId}
+                  value={formData.collectionId}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, collectionId: value })
+                  }
+                  placeholder="Select a collection object"
+                  label="Collection Object"
+                  required
+                  excludeDeaccessioned
+                />
 
                 <div className="space-y-2">
                   <Label htmlFor="deaccessionNumber">

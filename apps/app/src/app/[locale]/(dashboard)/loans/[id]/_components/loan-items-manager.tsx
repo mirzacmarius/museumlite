@@ -22,18 +22,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@v1/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@v1/ui/select";
 import { Input } from "@v1/ui/input";
+import { Label } from "@v1/ui/label";
 import { PermissionGate } from "@/components/permission-gate";
 import { useQuery, useMutation } from "convex/react";
-import { Plus, X, Trash2, ExternalLink } from "lucide-react";
-import { useState } from "react";
+import { Plus, X, Trash2, ExternalLink, Search } from "lucide-react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
@@ -64,13 +58,16 @@ export function LoanItemsManager({
   );
   const [conditionOut, setConditionOut] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const collections = useQuery(
     api.collections.list,
-    organizationId
+    organizationId && isAddDialogOpen
       ? {
           organizationId: organizationId as any,
-          paginationOpts: { numItems: 1000, cursor: null },
+          paginationOpts: { numItems: 100, cursor: null },
+          status: "active",
+          search: searchQuery || undefined,
         }
       : "skip",
   );
@@ -78,16 +75,27 @@ export function LoanItemsManager({
   const addItems = useMutation(api.loans.addItems);
   const removeItems = useMutation(api.loans.removeItems);
 
-  // Filter out collections that are already in active loans
-  const availableCollections =
-    collections?.page.filter((collection) => {
-      // Only show active collections
-      if (collection.status !== "active") return false;
+  // Filter out collections that are already in this loan
+  const availableCollections = useMemo(() => {
+    if (!collections?.page) return [];
+    return collections.page.filter((collection) => {
       // Don't show collections already in this loan
       return !loanItems.some(
         (item) => item.collectionId === collection._id,
       );
-    }) ?? [];
+    });
+  }, [collections, loanItems]);
+
+  // Reset search when dialog closes
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsAddDialogOpen(open);
+    if (!open) {
+      setSearchQuery("");
+      setSelectedCollectionIds([]);
+      setConditionOut("");
+      setError(null);
+    }
+  };
 
   const canAddItems =
     loanStatus === "pending" || loanStatus === "active";
@@ -145,55 +153,97 @@ export function LoanItemsManager({
         </h3>
         {canAddItems && (
           <PermissionGate permission="loans.update">
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <Dialog open={isAddDialogOpen} onOpenChange={handleDialogOpenChange}>
               <DialogTrigger asChild>
                 <Button size="sm">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Items
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Add Items to Loan</DialogTitle>
                   <DialogDescription>
-                    Select collections to add to this loan
+                    Search and select collections to add to this loan
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Select Collections *
-                    </label>
-                    <Select
-                      onValueChange={(value) => {
-                        if (!selectedCollectionIds.includes(value)) {
-                          setSelectedCollectionIds([
-                            ...selectedCollectionIds,
-                            value,
-                          ]);
-                        }
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a collection" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableCollections.map((collection) => (
-                          <SelectItem
-                            key={collection._id}
-                            value={collection._id}
-                            disabled={selectedCollectionIds.includes(
-                              collection._id,
-                            )}
-                          >
-                            {collection.accessionNumber} - {collection.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label>
+                      Search and Select Collections *
+                    </Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder="Search by accession number or title..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                    {collections === undefined ? (
+                      <p className="text-sm text-muted-foreground">
+                        Loading collections...
+                      </p>
+                    ) : availableCollections.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        {searchQuery
+                          ? "No collections found matching your search"
+                          : "No available collections to add"}
+                      </p>
+                    ) : (
+                      <div className="max-h-[200px] space-y-1 overflow-y-auto rounded-md border border-border p-2">
+                        {availableCollections.map((collection) => {
+                          const isSelected = selectedCollectionIds.includes(
+                            collection._id,
+                          );
+                          return (
+                            <button
+                              key={collection._id}
+                              type="button"
+                              onClick={() => {
+                                if (isSelected) {
+                                  setSelectedCollectionIds(
+                                    selectedCollectionIds.filter(
+                                      (id) => id !== collection._id,
+                                    ),
+                                  );
+                                } else {
+                                  setSelectedCollectionIds([
+                                    ...selectedCollectionIds,
+                                    collection._id,
+                                  ]);
+                                }
+                              }}
+                              className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                                isSelected
+                                  ? "bg-primary text-primary-foreground"
+                                  : "hover:bg-accent"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="font-medium">
+                                    {collection.accessionNumber}
+                                  </span>
+                                  <span className="ml-2 text-muted-foreground">
+                                    {collection.title}
+                                  </span>
+                                </div>
+                                {isSelected && (
+                                  <X className="h-4 w-4" />
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                     {selectedCollectionIds.length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-sm font-medium">Selected:</p>
+                        <Label className="text-sm font-medium">
+                          Selected ({selectedCollectionIds.length}):
+                        </Label>
                         <div className="flex flex-wrap gap-2">
                           {selectedCollectionIds.map((id) => {
                             const collection = collections?.page.find(
@@ -209,6 +259,7 @@ export function LoanItemsManager({
                                   {collection?.title}
                                 </span>
                                 <button
+                                  type="button"
                                   onClick={() =>
                                     setSelectedCollectionIds(
                                       selectedCollectionIds.filter(
@@ -228,15 +279,18 @@ export function LoanItemsManager({
                     )}
                   </div>
                   <div className="space-y-2">
-                    <label htmlFor="conditionOut" className="text-sm font-medium">
+                    <Label htmlFor="conditionOut">
                       Condition Out (Optional)
-                    </label>
+                    </Label>
                     <Input
                       id="conditionOut"
                       value={conditionOut}
                       onChange={(e) => setConditionOut(e.target.value)}
                       placeholder="Condition when leaving"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      This condition will be applied to all selected items
+                    </p>
                   </div>
                 </div>
                 <DialogFooter>
