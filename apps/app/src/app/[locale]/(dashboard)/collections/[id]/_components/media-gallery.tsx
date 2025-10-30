@@ -29,7 +29,7 @@ import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useMutation, useQuery } from "convex/react";
 import { Upload, Image as ImageIcon, X, Star, StarOff, Edit, Trash2 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useUploadFiles } from "@xixixao/uploadstuff/react";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
@@ -54,47 +54,33 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Store file info for use in onUploadComplete
-  const fileInfoRef = useRef<{
-    name: string;
-    size: number;
-    type: string;
-  } | null>(null);
+  // Store files in a ref so they're accessible in the generateUploadUrl callback
+  const filesRef = useRef<File[]>([]);
 
   const { startUpload } = useUploadFiles(
-    async (files?: File[]) => {
+    async () => {
       if (!currentOrganizationId) {
         throw new Error("Organization missing");
       }
 
-      // Get file info from either the parameter or the ref
-      let fileInfo: { name: string; size: number; type: string };
+      // Get the current file from the ref
+      // useUploadFiles calls this function once per file, so we process files sequentially
+      const file = filesRef.current.shift();
       
-      if (files && Array.isArray(files) && files.length > 0) {
-        const file = files[0];
-        fileInfo = {
-          name: file.name,
-          size: file.size,
-          type: file.type,
-        };
-        // Also store in ref for potential future use
-        fileInfoRef.current = fileInfo;
-      } else if (fileInfoRef.current) {
-        fileInfo = fileInfoRef.current;
-      } else {
-        throw new Error("File information not available");
+      if (!file) {
+        throw new Error("No file available for upload");
       }
 
       const result = await generateUploadUrl({
         organizationId: currentOrganizationId as Id<"organizations">,
         collectionId: collectionId as Id<"collections">,
-        fileName: fileInfo.name,
-        fileSize: fileInfo.size,
-        mimeType: fileInfo.type,
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
       });
 
       if (!result.uploadUrl) {
-        throw new Error("Failed to generate upload URL");
+        throw new Error(`Failed to generate upload URL for ${file.name}`);
       }
 
       return result.uploadUrl;
@@ -113,39 +99,49 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
             return;
           }
 
-          const file = uploaded[0];
-          if (!file) {
-            setError("Upload completed but no file data returned");
-            return;
-          }
+          // Determine if this is the first media (for setting primary)
+          const isFirstMedia = !media || (Array.isArray(media) && media.length === 0);
 
-          // Extract storageId from uploadstuff response
-          // According to Convex docs and uploadstuff, the response is wrapped in file.response
-          // Convex returns { storageId: Id<"_storage"> } in the JSON response
-          const storageId = (file.response as { storageId: Id<"_storage"> })?.storageId;
+          // Process all uploaded files
+          await Promise.all(
+            uploaded.map(async (file, index) => {
+              if (!file) {
+                throw new Error("Upload completed but file data is missing");
+              }
 
-          if (!storageId) {
-            setError("Upload completed but no storage ID returned");
-            return;
-          }
+              // Extract storageId from uploadstuff response
+              // According to Convex docs and uploadstuff, the response is wrapped in file.response
+              // Convex returns { storageId: Id<"_storage"> } in the JSON response
+              const storageId = (file.response as { storageId: Id<"_storage"> })?.storageId;
 
-          await createMedia({
-            organizationId: currentOrganizationId as Id<"organizations">,
-            collectionId: collectionId as Id<"collections">,
-            storageId: storageId,
-            fileName: file.name || "unknown",
-            fileSize: file.size || 0,
-            mimeType: file.type || "application/octet-stream",
-            isPrimary: !media || (Array.isArray(media) && media.length === 0), // Set as primary if it's the first image
-          });
+              if (!storageId) {
+                throw new Error(`Upload completed but no storage ID returned for ${file.name}`);
+              }
+
+              // Set the first uploaded file as primary if this is the first media
+              await createMedia({
+                organizationId: currentOrganizationId as Id<"organizations">,
+                collectionId: collectionId as Id<"collections">,
+                storageId: storageId,
+                fileName: file.name || "unknown",
+                fileSize: file.size || 0,
+                mimeType: file.type || "application/octet-stream",
+                isPrimary: isFirstMedia && index === 0, // Set first file as primary if it's the first media
+              });
+            }),
+          );
         } catch (err) {
           setError(
-            err instanceof Error ? err.message : "Failed to create media record",
+            err instanceof Error ? err.message : "Failed to create media records",
           );
         }
       },
       onUploadError: (error) => {
-        setError(error?.message || "Upload failed");
+        setError(
+          error && typeof error === "object" && "message" in error
+            ? String(error.message)
+            : "Upload failed",
+        );
       },
     },
   );
@@ -161,20 +157,18 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
       if (!files || files.length === 0) {
         return;
       }
-      const file = files[0];
-      if (!file) {
-        setError("No file selected");
-        return;
-      }
 
-      // Store file info for use in generateUploadUrl
-      fileInfoRef.current = {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-      };
+      // Store files in ref for use by generateUploadUrl callback
+      // Make a copy so we don't modify the original array
+      filesRef.current = [...files];
 
+      // Upload all selected files
       startUpload(files);
+      
+      // Reset the input so the same files can be selected again if needed
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to process file selection",
@@ -259,7 +253,7 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {mediaArray.map((file) => (
             <div
               key={file._id}
@@ -413,6 +407,15 @@ function MediaEditDialog({
     copyright: media.copyright || "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Sync formData when media prop changes (e.g., when editing different items)
+  useEffect(() => {
+    setFormData({
+      caption: media.caption || "",
+      photographer: media.photographer || "",
+      copyright: media.copyright || "",
+    });
+  }, [media._id, media.caption, media.photographer, media.copyright]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
