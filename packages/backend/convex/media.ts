@@ -445,6 +445,47 @@ export const getThumbnailUrl = query({
 });
 
 /**
+ * Get primary image thumbnail URL for a collection object
+ */
+export const getPrimaryImageUrl = query({
+  args: {
+    collectionId: v.id("collections"),
+  },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      return null;
+    }
+
+    await requirePermission(ctx, collection.organizationId, "media.read");
+
+    // Find primary image for this collection
+    const primaryMedia = await ctx.db
+      .query("mediaFiles")
+      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .filter((q) => q.eq(q.field("isPrimary"), true))
+      .first();
+
+    if (!primaryMedia) {
+      return null;
+    }
+
+    // Return thumbnail URL if available, otherwise fallback to original
+    if (primaryMedia.thumbnailStorageId) {
+      return await ctx.storage.getUrl(primaryMedia.thumbnailStorageId);
+    }
+
+    // Only return original URL if it's an image type
+    if (primaryMedia.fileType === "image") {
+      return await ctx.storage.getUrl(primaryMedia.storageId);
+    }
+
+    return null;
+  },
+});
+
+/**
  * Get upload progress for large files
  */
 export const getUploadProgress = query({
@@ -503,10 +544,10 @@ export const checkFileType = query({
   },
 });
 
+
 /**
  * Internal: Generate thumbnail for primary images
- * Note: This is a placeholder - actual thumbnail generation would require
- * an action with image processing library (sharp, jimp, etc.)
+ * Schedules the thumbnail processing action and updates the media record
  */
 export const generateThumbnail = internalMutation({
   args: {
@@ -524,29 +565,40 @@ export const generateThumbnail = internalMutation({
       return null;
     }
 
+    // Skip if thumbnail already exists
+    if (media.thumbnailStorageId) {
+      return null;
+    }
+
     // Mark as processing
     await ctx.db.patch(args.mediaId, {
       uploadStatus: "processing",
     });
 
     try {
-      // TODO: Implement actual thumbnail generation using an action
-      // For now, we'll just mark it as completed
-      // In production, this would:
-      // 1. Download the image from storage
-      // 2. Resize it to thumbnail size (e.g., 300x300)
-      // 3. Upload the thumbnail
-      // 4. Store the thumbnail storage ID
+      // Call the action to process the thumbnail
+      const thumbnailStorageId = await ctx.runAction(
+        internal.mediaThumbnails.processThumbnail,
+        {
+          mediaId: args.mediaId,
+          storageId: media.storageId,
+        },
+      );
 
-      // Placeholder: Keep existing implementation simple
-      // Actual implementation would use ctx.runAction to call an action
-      // that uses Node.js image processing libraries
-
-      await ctx.db.patch(args.mediaId, {
-        uploadStatus: "completed",
-        // thumbnailStorageId would be set here after processing
-      });
+      if (thumbnailStorageId) {
+        // Update media record with thumbnail storage ID
+        await ctx.db.patch(args.mediaId, {
+          uploadStatus: "completed",
+          thumbnailStorageId,
+        });
+      } else {
+        // If processing failed, mark as failed
+        await ctx.db.patch(args.mediaId, {
+          uploadStatus: "failed",
+        });
+      }
     } catch (error) {
+      console.error("Error generating thumbnail:", error);
       await ctx.db.patch(args.mediaId, {
         uploadStatus: "failed",
       });

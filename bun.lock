@@ -96,6 +96,7 @@
         "convex": "^1.19.2",
         "convex-helpers": "^0.1.63",
         "openai": "^4.61.1",
+        "sharp": "^0.34.4",
         "standardwebhooks": "^1.0.0",
       },
     },

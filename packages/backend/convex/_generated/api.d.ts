@@ -20,6 +20,7 @@ import type * as init from "../init.js";
 import type * as loans from "../loans.js";
 import type * as locations from "../locations.js";
 import type * as media from "../media.js";
+import type * as mediaThumbnails from "../mediaThumbnails.js";
 import type * as organizations from "../organizations.js";
 import type * as roles from "../roles.js";
 import type * as seed from "../seed.js";
@@ -55,6 +56,7 @@ declare const fullApi: ApiFromModules<{
   loans: typeof loans;
   locations: typeof locations;
   media: typeof media;
+  mediaThumbnails: typeof mediaThumbnails;
   organizations: typeof organizations;
   roles: typeof roles;
   seed: typeof seed;

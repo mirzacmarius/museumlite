@@ -183,29 +183,53 @@ function CollectionListItem({
       : "skip",
   );
 
+  const primaryImageUrl = useQuery(
+    api.media.getPrimaryImageUrl,
+    { collectionId: item._id as any },
+  );
+
   return (
     <Link
       href={`/collections/${item._id}`}
       className="block rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent"
     >
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <h3 className="font-medium">{item.title}</h3>
-          <div className="mt-1 flex items-center gap-4 text-sm text-muted-foreground">
-            <span>{item.accessionNumber}</span>
-            {locationPath && locationPath.length > 0 && (
-              <span className="flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                {locationPath.map((loc) => loc.name).join(" → ")}
-              </span>
-            )}
-          </div>
+      <div className="flex items-center gap-4">
+        {/* Primary Image Thumbnail */}
+        <div className="flex h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+          {primaryImageUrl ? (
+            <img
+              src={primaryImageUrl}
+              alt={item.title}
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <Building2 className="h-6 w-6 text-muted-foreground" />
+            </div>
+          )}
         </div>
-        <div className="text-right">
-          <p className="text-sm font-medium">{item.objectType || "—"}</p>
-          <p className="text-xs text-muted-foreground capitalize">
-            {item.status}
-          </p>
+
+        {/* Content */}
+        <div className="flex flex-1 items-center justify-between">
+          <div className="flex-1">
+            <h3 className="font-medium">{item.title}</h3>
+            <div className="mt-1 flex items-center gap-4 text-sm text-muted-foreground">
+              <span>{item.accessionNumber}</span>
+              {locationPath && locationPath.length > 0 && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  {locationPath.map((loc) => loc.name).join(" → ")}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-sm font-medium">{item.objectType || "—"}</p>
+            <p className="text-xs text-muted-foreground capitalize">
+              {item.status}
+            </p>
+          </div>
         </div>
       </div>
     </Link>
