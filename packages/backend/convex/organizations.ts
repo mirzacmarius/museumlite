@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { requirePermission } from "./utils/permissions";
 
 /**
  * Create new organization
@@ -204,7 +205,6 @@ export const update = mutation({
     }
 
     // Check permission
-    const { requirePermission } = await import("./utils/permissions");
     await requirePermission(ctx, args.organizationId, "organization.manage_settings");
 
     const updates: {
@@ -279,7 +279,6 @@ export const updateWorkflowConfig = mutation({
     }
 
     // Check permission
-    const { requirePermission } = await import("./utils/permissions");
     await requirePermission(ctx, args.organizationId, "organization.manage_settings");
 
     // Check if workflow config exists
@@ -326,7 +325,6 @@ export const updateAccessionNumberFormat = mutation({
     }
 
     // Check permission
-    const { requirePermission } = await import("./utils/permissions");
     await requirePermission(ctx, args.organizationId, "organization.manage_settings");
 
     const org = await ctx.db.get(args.organizationId);
@@ -428,7 +426,6 @@ export const inviteUser = mutation({
     }
 
     // Check permission
-    const { requirePermission } = await import("./utils/permissions");
     await requirePermission(ctx, args.organizationId, "users.invite");
 
     // Find user by email
@@ -483,7 +480,6 @@ export const removeUser = mutation({
     }
 
     // Check permission
-    const { requirePermission } = await import("./utils/permissions");
     await requirePermission(ctx, args.organizationId, "users.remove");
 
     // Find user organization
@@ -520,7 +516,6 @@ export const updateUserRole = mutation({
     }
 
     // Check permission
-    const { requirePermission } = await import("./utils/permissions");
     await requirePermission(ctx, args.organizationId, "users.manage_roles");
 
     // Find user organization
@@ -540,6 +535,69 @@ export const updateUserRole = mutation({
     });
 
     return null;
+  },
+});
+
+/**
+ * List users in an organization
+ */
+export const listOrganizationUsers = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("users"),
+      name: v.optional(v.string()),
+      email: v.optional(v.string()),
+      image: v.optional(v.string()),
+      userOrganizationId: v.id("userOrganizations"),
+      role: v.object({
+        _id: v.id("roles"),
+        name: v.string(),
+        description: v.optional(v.string()),
+        isSystemRole: v.boolean(),
+      }),
+      joinedAt: v.number(),
+      invitedBy: v.optional(v.id("users")),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const userOrganizations = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const usersWithRoles = await Promise.all(
+      userOrganizations.map(async (uo) => {
+        const user = await ctx.db.get(uo.userId);
+        const role = await ctx.db.get(uo.roleId);
+        if (!user || !role) {
+          return null;
+        }
+        return {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          userOrganizationId: uo._id,
+          role: {
+            _id: role._id,
+            name: role.name,
+            description: role.description,
+            isSystemRole: role.isSystemRole,
+          },
+          joinedAt: uo.joinedAt,
+          invitedBy: uo.invitedBy,
+        };
+      }),
+    );
+
+    return usersWithRoles.filter(
+      (u): u is NonNullable<typeof u> => u !== null,
+    );
   },
 });
 

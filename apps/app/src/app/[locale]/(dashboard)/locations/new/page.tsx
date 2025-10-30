@@ -4,6 +4,8 @@ import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
+import { Textarea } from "@v1/ui/textarea";
+import { Label } from "@v1/ui/label";
 import {
   Select,
   SelectContent,
@@ -31,6 +33,7 @@ export default function NewLocationPage() {
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const locationTypes = useQuery(
     api.locations.getLocationTypes,
@@ -63,8 +66,9 @@ export default function NewLocationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (!name || !type) {
-      alert("Please fill in all required fields");
+      setError("Please fill in all required fields");
       return;
     }
 
@@ -81,9 +85,9 @@ export default function NewLocationPage() {
         notes: notes || undefined,
       });
       router.push("/locations");
-    } catch (error) {
-      alert(
-        error instanceof Error ? error.message : "Failed to create location",
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to create location",
       );
       setIsSubmitting(false);
     }
@@ -105,11 +109,16 @@ export default function NewLocationPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6">
+              {error && (
+                <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
               <div className="mx-auto max-w-2xl space-y-6">
                 <div className="space-y-2">
-                  <label htmlFor="name" className="text-sm font-medium">
+                  <Label htmlFor="name">
                     Location Name *
-                  </label>
+                  </Label>
                   <Input
                     id="name"
                     value={name}
@@ -120,9 +129,9 @@ export default function NewLocationPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="type" className="text-sm font-medium">
+                  <Label htmlFor="type">
                     Location Type *
-                  </label>
+                  </Label>
                   <Select value={type} onValueChange={setType} required>
                     <SelectTrigger id="type">
                       <SelectValue placeholder="Select a location type" />
@@ -138,9 +147,9 @@ export default function NewLocationPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="parent" className="text-sm font-medium">
+                  <Label htmlFor="parent">
                     Parent Location
-                  </label>
+                  </Label>
                   <Select
                     value={parentLocationId || "__none__"}
                     onValueChange={(value) =>
@@ -165,9 +174,9 @@ export default function NewLocationPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="address" className="text-sm font-medium">
+                  <Label htmlFor="address">
                     Address
-                  </label>
+                  </Label>
                   <Input
                     id="address"
                     value={address}
@@ -177,15 +186,15 @@ export default function NewLocationPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="notes" className="text-sm font-medium">
+                  <Label htmlFor="notes">
                     Notes
-                  </label>
-                  <textarea
+                  </Label>
+                  <Textarea
                     id="notes"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Additional notes about this location..."
-                    className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    rows={4}
                   />
                 </div>
 

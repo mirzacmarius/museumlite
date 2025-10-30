@@ -217,6 +217,7 @@ export const listRoles = query({
       permissions: v.array(
         v.object({
           _id: v.id("permissions"),
+          _creationTime: v.number(),
           name: v.string(),
           description: v.optional(v.string()),
           category: v.union(
@@ -285,6 +286,7 @@ export const getRole = query({
       permissions: v.array(
         v.object({
           _id: v.id("permissions"),
+          _creationTime: v.number(),
           name: v.string(),
           description: v.optional(v.string()),
           category: v.union(
@@ -349,6 +351,7 @@ export const listPermissions = query({
   returns: v.array(
     v.object({
       _id: v.id("permissions"),
+      _creationTime: v.number(),
       name: v.string(),
       description: v.optional(v.string()),
       category: v.union(

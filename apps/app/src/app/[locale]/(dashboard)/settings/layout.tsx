@@ -4,12 +4,16 @@ import { buttonVariants } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { use } from "react";
 
 const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const t = useScopedI18n("settings.sidebar");
   const pathname = usePathname();
   const isSettingsPath = pathname === "/settings";
   const isBillingPath = pathname === "/settings/billing";
+  const isUsersPath = pathname === "/settings/users";
+  const isRolesPath = pathname === "/settings/roles";
+  const isOrganizationPath = pathname === "/settings/organization";
   return (
     <div className="flex h-full w-full px-6 py-8">
       <div className="mx-auto flex h-full w-full max-w-screen-xl gap-12">
@@ -27,6 +31,48 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
               )}
             >
               {t("general")}
+            </span>
+          </Link>
+          <Link
+            href="/settings/organization"
+            className={cn(
+              `${buttonVariants({ variant: "ghost" })} ${isOrganizationPath && "bg-primary/5"} justify-start rounded-md`,
+            )}
+          >
+            <span
+              className={cn(
+                `text-sm text-primary/80 ${isOrganizationPath && "font-medium text-primary"}`,
+              )}
+            >
+              Organization
+            </span>
+          </Link>
+          <Link
+            href="/settings/users"
+            className={cn(
+              `${buttonVariants({ variant: "ghost" })} ${isUsersPath && "bg-primary/5"} justify-start rounded-md`,
+            )}
+          >
+            <span
+              className={cn(
+                `text-sm text-primary/80 ${isUsersPath && "font-medium text-primary"}`,
+              )}
+            >
+              Users
+            </span>
+          </Link>
+          <Link
+            href="/settings/roles"
+            className={cn(
+              `${buttonVariants({ variant: "ghost" })} ${isRolesPath && "bg-primary/5"} justify-start rounded-md`,
+            )}
+          >
+            <span
+              className={cn(
+                `text-sm text-primary/80 ${isRolesPath && "font-medium text-primary"}`,
+              )}
+            >
+              Roles
             </span>
           </Link>
           <Link
@@ -53,9 +99,10 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
 export default function Layout({
   children,
   params,
-}: { children: React.ReactNode; params: { locale: string } }) {
+}: { children: React.ReactNode; params: Promise<{ locale: string }> }) {
+  const { locale } = use(params);
   return (
-    <I18nProviderClient locale={params.locale}>
+    <I18nProviderClient locale={locale}>
       <LayoutContainer>{children}</LayoutContainer>
     </I18nProviderClient>
   );

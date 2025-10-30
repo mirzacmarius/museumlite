@@ -4,6 +4,8 @@ import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
+import { Textarea } from "@v1/ui/textarea";
+import { Label } from "@v1/ui/label";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import {
@@ -150,10 +152,11 @@ export default function CollectionFormPage() {
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="mb-2 block text-sm font-medium">
+                    <Label htmlFor="title">
                       Title <span className="text-red-500">*</span>
-                    </label>
+                    </Label>
                     <Input
+                      id="title"
                       value={formData.title}
                       onChange={(e) => updateField("title", e.target.value)}
                       placeholder="Enter object title"
@@ -162,10 +165,11 @@ export default function CollectionFormPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium">
+                    <Label htmlFor="accessionNumber">
                       Accession Number
-                    </label>
+                    </Label>
                     <Input
+                      id="accessionNumber"
                       value={formData.accessionNumber || ""}
                       onChange={(e) =>
                         updateField("accessionNumber", e.target.value)
@@ -175,10 +179,11 @@ export default function CollectionFormPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium">
+                    <Label htmlFor="objectType">
                       Object Type
-                    </label>
+                    </Label>
                     <Input
+                      id="objectType"
                       value={formData.objectType || ""}
                       onChange={(e) => updateField("objectType", e.target.value)}
                       placeholder="e.g., Painting, Sculpture"
@@ -186,10 +191,11 @@ export default function CollectionFormPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium">
+                    <Label htmlFor="objectName">
                       Object Name
-                    </label>
+                    </Label>
                     <Input
+                      id="objectName"
                       value={formData.objectName || ""}
                       onChange={(e) => updateField("objectName", e.target.value)}
                       placeholder="e.g., Portrait"
@@ -197,10 +203,11 @@ export default function CollectionFormPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium">
+                    <Label htmlFor="culture">
                       Culture
-                    </label>
+                    </Label>
                     <Input
+                      id="culture"
                       value={formData.culture || ""}
                       onChange={(e) => updateField("culture", e.target.value)}
                       placeholder="e.g., French"
@@ -208,10 +215,11 @@ export default function CollectionFormPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium">
+                    <Label htmlFor="period">
                       Period
-                    </label>
+                    </Label>
                     <Input
+                      id="period"
                       value={formData.period || ""}
                       onChange={(e) => updateField("period", e.target.value)}
                       placeholder="e.g., 19th Century"
@@ -219,10 +227,11 @@ export default function CollectionFormPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium">
+                    <Label htmlFor="dateCreated">
                       Date Created
-                    </label>
+                    </Label>
                     <Input
+                      id="dateCreated"
                       value={formData.dateCreated || ""}
                       onChange={(e) =>
                         updateField("dateCreated", e.target.value)
@@ -232,10 +241,11 @@ export default function CollectionFormPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium">
+                    <Label htmlFor="materials">
                       Materials
-                    </label>
+                    </Label>
                     <Input
+                      id="materials"
                       value={formData.materials || ""}
                       onChange={(e) => updateField("materials", e.target.value)}
                       placeholder="e.g., Oil on canvas"
@@ -243,10 +253,11 @@ export default function CollectionFormPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium">
+                    <Label htmlFor="dimensions">
                       Dimensions
-                    </label>
+                    </Label>
                     <Input
+                      id="dimensions"
                       value={formData.dimensions || ""}
                       onChange={(e) =>
                         updateField("dimensions", e.target.value)
@@ -256,9 +267,9 @@ export default function CollectionFormPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium">
+                    <Label htmlFor="currentLocationId">
                       Location
-                    </label>
+                    </Label>
                     <Select
                       value={formData.currentLocationId || "__none__"}
                       onValueChange={(value) =>
@@ -268,7 +279,7 @@ export default function CollectionFormPage() {
                         )
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger id="currentLocationId">
                         <SelectValue placeholder="Select a location (optional)" />
                       </SelectTrigger>
                       <SelectContent>
@@ -284,23 +295,24 @@ export default function CollectionFormPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium">
+                  <Label htmlFor="description">
                     Description
-                  </label>
-                  <textarea
+                  </Label>
+                  <Textarea
+                    id="description"
                     value={formData.description || ""}
                     onChange={(e) => updateField("description", e.target.value)}
                     rows={4}
-                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     placeholder="Enter detailed description"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium">
+                  <Label htmlFor="condition">
                     Condition
-                  </label>
+                  </Label>
                   <Input
+                    id="condition"
                     value={formData.condition || ""}
                     onChange={(e) => updateField("condition", e.target.value)}
                     placeholder="e.g., Excellent, Good, Fair"
@@ -308,29 +320,29 @@ export default function CollectionFormPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium">
+                  <Label htmlFor="provenance">
                     Provenance
-                  </label>
-                  <textarea
+                  </Label>
+                  <Textarea
+                    id="provenance"
                     value={formData.provenance || ""}
                     onChange={(e) => updateField("provenance", e.target.value)}
                     rows={3}
-                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     placeholder="Enter provenance information"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium">
+                  <Label htmlFor="exhibitionHistory">
                     Exhibition History
-                  </label>
-                  <textarea
+                  </Label>
+                  <Textarea
+                    id="exhibitionHistory"
                     value={formData.exhibitionHistory || ""}
                     onChange={(e) =>
                       updateField("exhibitionHistory", e.target.value)
                     }
                     rows={3}
-                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     placeholder="Enter exhibition history"
                   />
                 </div>

@@ -18,6 +18,8 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { Input } from "@v1/ui/input";
+import { Textarea } from "@v1/ui/textarea";
+import { Label } from "@v1/ui/label";
 import { useOrganization } from "@/components/organization-provider";
 import { useQuery, useMutation } from "convex/react";
 import { useState } from "react";
@@ -43,6 +45,7 @@ export function MoveObjectDialog({
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const rootLocations = useQuery(
     api.locations.list,
@@ -58,8 +61,9 @@ export function MoveObjectDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (!toLocationId) {
-      alert("Please select a location");
+      setError("Please select a location");
       return;
     }
 
@@ -76,9 +80,9 @@ export function MoveObjectDialog({
       setReason("");
       setNotes("");
       onSuccess?.();
-    } catch (error) {
-      alert(
-        error instanceof Error ? error.message : "Failed to move object",
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to move object",
       );
       setIsSubmitting(false);
     }
@@ -126,10 +130,15 @@ export function MoveObjectDialog({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {error && (
+              <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
             <div className="space-y-2">
-              <label htmlFor="location" className="text-sm font-medium">
+              <Label htmlFor="location">
                 Destination Location *
-              </label>
+              </Label>
               <Select value={toLocationId} onValueChange={setToLocationId} required>
                 <SelectTrigger id="location">
                   <SelectValue placeholder="Select a location" />
@@ -144,9 +153,9 @@ export function MoveObjectDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <label htmlFor="reason" className="text-sm font-medium">
+              <Label htmlFor="reason">
                 Reason
-              </label>
+              </Label>
               <Input
                 id="reason"
                 value={reason}
@@ -155,15 +164,15 @@ export function MoveObjectDialog({
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="notes" className="text-sm font-medium">
+              <Label htmlFor="notes">
                 Notes
-              </label>
-              <textarea
+              </Label>
+              <Textarea
                 id="notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Additional notes about this move..."
-                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                rows={4}
               />
             </div>
           </div>
