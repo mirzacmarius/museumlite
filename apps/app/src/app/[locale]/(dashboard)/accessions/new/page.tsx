@@ -4,6 +4,9 @@ import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
+import { Textarea } from "@v1/ui/textarea";
+import { Label } from "@v1/ui/label";
+import { DatePicker } from "@v1/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -24,9 +27,10 @@ export default function NewAccessionPage() {
   const { currentOrganizationId } = useOrganization();
   const createAccession = useMutation(api.accessions.create);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     accessionNumber: "",
-    dateReceived: new Date().toISOString().split("T")[0],
+    dateReceived: new Date(),
     source: "",
     method: "purchase" as "purchase" | "gift" | "loan" | "transfer",
     cost: "",
@@ -45,8 +49,9 @@ export default function NewAccessionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (!formData.source.trim()) {
-      alert("Source is required");
+      setError("Source is required");
       return;
     }
 
@@ -56,18 +61,18 @@ export default function NewAccessionPage() {
         organizationId: currentOrganizationId as any,
         accessionNumber:
           formData.accessionNumber || undefined,
-        dateReceived: new Date(formData.dateReceived).getTime(),
+        dateReceived: formData.dateReceived.getTime(),
         source: formData.source,
         method: formData.method,
         cost: formData.cost ? parseFloat(formData.cost) : undefined,
         notes: formData.notes || undefined,
       });
       router.push("/accessions");
-    } catch (error) {
-      console.error("Error creating accession:", error);
-      alert(
-        error instanceof Error
-          ? error.message
+    } catch (err) {
+      console.error("Error creating accession:", err);
+      setError(
+        err instanceof Error
+          ? err.message
           : "Failed to create accession. Please try again.",
       );
       setIsSubmitting(false);
@@ -93,11 +98,16 @@ export default function NewAccessionPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6">
+              {error && (
+                <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
               <div className="mx-auto max-w-2xl space-y-6">
                 <div className="space-y-2">
-                  <label htmlFor="accessionNumber" className="text-sm font-medium">
+                  <Label htmlFor="accessionNumber">
                     Accession Number
-                  </label>
+                  </Label>
                   <Input
                     id="accessionNumber"
                     value={formData.accessionNumber}
@@ -113,24 +123,26 @@ export default function NewAccessionPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label htmlFor="dateReceived" className="text-sm font-medium">
+                    <Label htmlFor="dateReceived">
                       Date Received *
-                    </label>
-                    <Input
+                    </Label>
+                    <DatePicker
                       id="dateReceived"
-                      type="date"
-                      value={formData.dateReceived}
-                      onChange={(e) =>
-                        setFormData({ ...formData, dateReceived: e.target.value })
+                      date={formData.dateReceived}
+                      onSelect={(date) =>
+                        setFormData({
+                          ...formData,
+                          dateReceived: date || new Date(),
+                        })
                       }
-                      required
+                      placeholder="Select date received"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label htmlFor="method" className="text-sm font-medium">
+                    <Label htmlFor="method">
                       Method *
-                    </label>
+                    </Label>
                     <Select
                       value={formData.method}
                       onValueChange={(value: any) =>
@@ -151,9 +163,9 @@ export default function NewAccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="source" className="text-sm font-medium">
+                  <Label htmlFor="source">
                     Source *
-                  </label>
+                  </Label>
                   <Input
                     id="source"
                     value={formData.source}
@@ -166,9 +178,9 @@ export default function NewAccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="cost" className="text-sm font-medium">
+                  <Label htmlFor="cost">
                     Cost
-                  </label>
+                  </Label>
                   <Input
                     id="cost"
                     type="number"
@@ -182,17 +194,16 @@ export default function NewAccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="notes" className="text-sm font-medium">
+                  <Label htmlFor="notes">
                     Notes
-                  </label>
-                  <textarea
+                  </Label>
+                  <Textarea
                     id="notes"
                     value={formData.notes}
                     onChange={(e) =>
                       setFormData({ ...formData, notes: e.target.value })
                     }
                     placeholder="Additional notes about this accession..."
-                    className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     rows={4}
                   />
                 </div>

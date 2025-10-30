@@ -3,6 +3,17 @@
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@v1/ui/alert-dialog";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useQuery, useMutation } from "convex/react";
@@ -10,12 +21,14 @@ import { ArrowLeft, Edit, MapPin, Archive, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ObjectsAtLocation } from "./_components/objects-at-location";
+import { useState } from "react";
 
 export default function LocationDetailPage() {
   const params = useParams();
   const router = useRouter();
   const locationId = params.id as string;
   const { currentOrganizationId } = useOrganization();
+  const [error, setError] = useState<string | null>(null);
 
   const location = useQuery(
     api.locations.get,
@@ -51,22 +64,13 @@ export default function LocationDetailPage() {
   }
 
   const handleDelete = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this location? This action cannot be undone.",
-      )
-    ) {
-      return;
-    }
-
+    setError(null);
     try {
       await deleteLocation({ locationId: locationId as any });
       router.push("/locations");
-    } catch (error) {
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Failed to delete location",
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to delete location",
       );
     }
   };
@@ -98,18 +102,43 @@ export default function LocationDetailPage() {
                   </Button>
                 </PermissionGate>
                 <PermissionGate permission="locations.delete">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDelete}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Location</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this location? This
+                          action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete}>
+                          Delete Location
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </PermissionGate>
               </div>
             </div>
+
+            {/* Error Display */}
+            {error && (
+              <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive mx-6 mt-4">
+                {error}
+              </div>
+            )}
 
             {/* Location Details */}
             <div className="p-6">

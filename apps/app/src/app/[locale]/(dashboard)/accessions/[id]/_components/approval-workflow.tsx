@@ -2,6 +2,19 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
+import { Textarea } from "@v1/ui/textarea";
+import { Label } from "@v1/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@v1/ui/alert-dialog";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useQuery, useMutation } from "convex/react";
@@ -17,6 +30,7 @@ export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
   const { currentOrganizationId } = useOrganization();
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const accession = useQuery(
     api.accessions.get,
@@ -32,17 +46,16 @@ export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
 
   const handleApprove = async () => {
     setIsSubmitting(true);
+    setError(null);
     try {
       await approveAccession({
         accessionId: accessionId as Id<"accessions">,
         comment: comment || undefined,
       });
       setComment("");
-    } catch (error) {
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Failed to approve accession",
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to approve accession",
       );
     } finally {
       setIsSubmitting(false);
@@ -50,20 +63,17 @@ export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
   };
 
   const handleReject = async () => {
-    if (!confirm("Are you sure you want to reject this accession?")) {
-      return;
-    }
-
     setIsSubmitting(true);
+    setError(null);
     try {
       await rejectAccession({
         accessionId: accessionId as Id<"accessions">,
         comment: comment || undefined,
       });
       setComment("");
-    } catch (error) {
-      alert(
-        error instanceof Error ? error.message : "Failed to reject accession",
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to reject accession",
       );
     } finally {
       setIsSubmitting(false);
@@ -73,17 +83,21 @@ export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">Approval Actions</h3>
+      {error && (
+        <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
       <div className="space-y-4">
         <div>
-          <label htmlFor="comment" className="text-sm font-medium">
+          <Label htmlFor="comment">
             Comment (optional)
-          </label>
-          <textarea
+          </Label>
+          <Textarea
             id="comment"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Add a comment or reason for approval/rejection..."
-            className="mt-2 flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             rows={3}
           />
         </div>
@@ -99,14 +113,32 @@ export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
                 ? `Approve Step ${accession.workflowStep}`
                 : "Approve"}
             </Button>
-            <Button
-              onClick={handleReject}
-              disabled={isSubmitting}
-              variant="destructive"
-            >
-              <XCircle className="mr-2 h-4 w-4" />
-              Reject
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  disabled={isSubmitting}
+                  variant="destructive"
+                >
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Reject
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Reject Accession</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to reject this accession? This action
+                    cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleReject}>
+                    Reject Accession
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </PermissionGate>
         </div>
       </div>

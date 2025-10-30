@@ -632,6 +632,59 @@ export const seedDatabase = internalAction({
 
     console.log("✅ Created accessions and loans");
 
+    // Create some deaccessions
+    await ctx.runMutation(internal.seed.createDeaccessions, {
+      deaccessions: [
+        {
+          orgSlug: "met-museum",
+          collectionAccessionNumber: "MET-2024-002",
+          dateDeaccessioned: Date.now() - 90 * 24 * 60 * 60 * 1000,
+          reason: "No longer fits collection mission",
+          method: "sale" as const,
+          disposition: "Sold to private collector",
+          status: "approved" as const,
+        },
+        {
+          orgSlug: "british-museum",
+          collectionAccessionNumber: "BM-2024-003",
+          dateDeaccessioned: Date.now() - 45 * 24 * 60 * 60 * 1000,
+          reason: "Condition deteriorated beyond restoration",
+          method: "destruction" as const,
+          status: "pending" as const,
+        },
+        {
+          orgSlug: "library-of-congress",
+          collectionAccessionNumber: "LOC-2024-004",
+          dateDeaccessioned: Date.now() - 120 * 24 * 60 * 60 * 1000,
+          reason: "Duplicate copy",
+          method: "transfer" as const,
+          disposition: "Transferred to Smithsonian",
+          status: "approved" as const,
+        },
+        {
+          orgSlug: "smith-collection",
+          collectionAccessionNumber: "SMITH-2024-003",
+          dateDeaccessioned: Date.now() - 15 * 24 * 60 * 60 * 1000,
+          reason: "Estate sale preparation",
+          method: "sale" as const,
+          status: "pending" as const,
+        },
+        {
+          orgSlug: "getty-museum",
+          collectionAccessionNumber: "GETTY-2024-004",
+          dateDeaccessioned: Date.now() - 200 * 24 * 60 * 60 * 1000,
+          reason: "Authentication concerns",
+          method: "donation" as const,
+          disposition: "Donated to regional museum",
+          status: "rejected" as const,
+        },
+      ],
+      userIds,
+      orgSlugToId,
+    });
+
+    console.log("✅ Created deaccessions");
+
     console.log("🎉 Database seeding completed successfully!");
     return null;
   },
@@ -1106,6 +1159,102 @@ export const createLoans = internalMutation({
             });
           }
         }
+      }
+    }
+
+    return null;
+  },
+});
+
+/**
+ * Create deaccessions
+ */
+export const createDeaccessions = internalMutation({
+  args: {
+    deaccessions: v.array(
+      v.object({
+        orgSlug: v.string(),
+        collectionAccessionNumber: v.string(),
+        dateDeaccessioned: v.number(),
+        reason: v.string(),
+        method: v.union(
+          v.literal("sale"),
+          v.literal("donation"),
+          v.literal("destruction"),
+          v.literal("transfer"),
+        ),
+        disposition: v.optional(v.string()),
+        status: v.union(
+          v.literal("pending"),
+          v.literal("approved"),
+          v.literal("rejected"),
+        ),
+      }),
+    ),
+    userIds: v.any(),
+    orgSlugToId: v.any(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    for (const deaccData of args.deaccessions) {
+      const orgId = (args.orgSlugToId as any)[deaccData.orgSlug] as Id<"organizations"> | undefined;
+      if (!orgId) continue;
+
+      const collection = await ctx.db
+        .query("collections")
+        .withIndex("by_organization_and_accessionNumber", (q) =>
+          q.eq("organizationId", orgId).eq("accessionNumber", deaccData.collectionAccessionNumber),
+        )
+        .first();
+
+      if (!collection) continue;
+
+      const userId = (args.userIds as any)[deaccData.orgSlug] as Id<"users"> | undefined;
+      if (!userId) continue;
+
+      const org = await ctx.db.get(orgId);
+      if (!org) continue;
+
+      const year = new Date(deaccData.dateDeaccessioned).getFullYear();
+      const orgSlug = org.slug.toUpperCase().substring(0, 3);
+      
+      // Count existing deaccessions for this org to generate unique number
+      const existing = await ctx.db
+        .query("deaccessions")
+        .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
+        .collect();
+      
+      const sequence = String(existing.length + 1).padStart(3, "0");
+      const deaccessionNumber = `DA-${orgSlug}-${year}-${sequence}`;
+
+      await ctx.db.insert("deaccessions", {
+        organizationId: orgId,
+        collectionId: collection._id,
+        deaccessionNumber,
+        dateDeaccessioned: deaccData.dateDeaccessioned,
+        reason: deaccData.reason,
+        method: deaccData.method,
+        disposition: deaccData.disposition,
+        status: deaccData.status,
+        approvedBy: deaccData.status === "approved" ? userId : undefined,
+        approvedAt: deaccData.status === "approved" ? Date.now() : undefined,
+        workflowHistory: deaccData.status === "approved" ? [
+          {
+            step: 1,
+            approvedBy: userId,
+            approvedAt: Date.now(),
+            comment: "Auto-approved in seed data",
+          },
+        ] : [],
+      });
+
+      // If approved, mark collection as deaccessioned
+      if (deaccData.status === "approved") {
+        await ctx.db.patch(collection._id, {
+          status: "deaccessioned",
+          lastModifiedBy: userId,
+          lastModifiedAt: Date.now(),
+        });
       }
     }
 

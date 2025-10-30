@@ -41,6 +41,7 @@ export default function CollectionFormPage() {
   const { currentOrganizationId } = useOrganization();
   const createCollection = useMutation(api.collections.create);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<CollectionFormData>({
     title: "",
     objectType: "",
@@ -79,8 +80,9 @@ export default function CollectionFormPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (!formData.title.trim()) {
-      alert("Title is required");
+      setError("Title is required");
       return;
     }
 
@@ -94,9 +96,13 @@ export default function CollectionFormPage() {
           : undefined,
       });
       router.push("/collections");
-    } catch (error) {
-      console.error("Error saving collection:", error);
-      alert("Failed to save collection. Please try again.");
+    } catch (err) {
+      console.error("Error saving collection:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to save collection. Please try again.",
+      );
       setIsSubmitting(false);
     }
   };
@@ -136,6 +142,11 @@ export default function CollectionFormPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6">
+              {error && (
+                <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-6">
                   <div>

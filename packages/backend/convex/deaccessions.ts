@@ -219,6 +219,7 @@ export const get = query({
   returns: v.union(
     v.object({
       _id: v.id("deaccessions"),
+      _creationTime: v.number(),
       organizationId: v.id("organizations"),
       collectionId: v.id("collections"),
       deaccessionNumber: v.string(),
@@ -240,13 +241,15 @@ export const get = query({
       ),
       notes: v.optional(v.string()),
       workflowStep: v.optional(v.number()),
-      workflowHistory: v.array(
-        v.object({
-          step: v.number(),
-          approvedBy: v.id("users"),
-          approvedAt: v.number(),
-          comment: v.optional(v.string()),
-        }),
+      workflowHistory: v.optional(
+        v.array(
+          v.object({
+            step: v.number(),
+            approvedBy: v.id("users"),
+            approvedAt: v.number(),
+            comment: v.optional(v.string()),
+          }),
+        ),
       ),
     }),
     v.null(),
@@ -263,7 +266,71 @@ export const get = query({
       "collections.read",
     );
 
-    return deaccession;
+    // Ensure workflowHistory is always an array (even if empty)
+    return {
+      ...deaccession,
+      workflowHistory: deaccession.workflowHistory ?? [],
+    };
+  },
+});
+
+/**
+ * Update deaccession (before approval)
+ */
+export const update = mutation({
+  args: {
+    deaccessionId: v.id("deaccessions"),
+    reason: v.optional(v.string()),
+    method: v.optional(
+      v.union(
+        v.literal("sale"),
+        v.literal("donation"),
+        v.literal("destruction"),
+        v.literal("transfer"),
+      ),
+    ),
+    disposition: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const deaccession = await ctx.db.get(args.deaccessionId);
+    if (!deaccession) {
+      throw new Error("Deaccession not found");
+    }
+
+    // Can only update if pending
+    if (deaccession.status !== "pending") {
+      throw new Error("Can only update pending deaccessions");
+    }
+
+    // Check permission
+    await requirePermission(
+      ctx,
+      deaccession.organizationId,
+      "collections.update",
+    );
+
+    const updates: {
+      reason?: string;
+      method?: "sale" | "donation" | "destruction" | "transfer";
+      disposition?: string;
+      notes?: string;
+    } = {};
+
+    if (args.reason !== undefined) updates.reason = args.reason;
+    if (args.method !== undefined) updates.method = args.method;
+    if (args.disposition !== undefined) updates.disposition = args.disposition;
+    if (args.notes !== undefined) updates.notes = args.notes;
+
+    await ctx.db.patch(args.deaccessionId, updates);
+
+    return null;
   },
 });
 
