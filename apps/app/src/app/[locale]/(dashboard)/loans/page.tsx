@@ -15,9 +15,11 @@ import {
   XCircle,
   ArrowUpRight,
   ArrowDownRight,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { Input } from "@v1/ui/input";
 
 type LoanStatus = "pending" | "active" | "returned" | "cancelled" | "all";
 type LoanType = "incoming" | "outgoing" | "all";
@@ -27,6 +29,7 @@ export default function LoansPage() {
     useOrganization();
   const [statusFilter, setStatusFilter] = useState<LoanStatus>("all");
   const [typeFilter, setTypeFilter] = useState<LoanType>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   if (isLoading) {
     return (
@@ -107,6 +110,19 @@ export default function LoansPage() {
             </div>
             <div className="flex w-full px-6">
               <div className="w-full border-b border-border" />
+            </div>
+
+            {/* Search Bar */}
+            <div className="border-b border-border px-6 py-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search by loan number, lender/borrower name, contact, notes, or terms..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </div>
 
             {/* Filters */}
@@ -209,6 +225,7 @@ export default function LoansPage() {
               organizationId={currentOrganizationId}
               statusFilter={statusFilter}
               typeFilter={typeFilter}
+              searchQuery={searchQuery}
             />
           </div>
         </div>
@@ -221,10 +238,12 @@ function LoanList({
   organizationId,
   statusFilter,
   typeFilter,
+  searchQuery,
 }: {
   organizationId: string;
   statusFilter: LoanStatus;
   typeFilter: LoanType;
+  searchQuery: string;
 }) {
   const loans = useQuery(
     api.loans.list,
@@ -234,6 +253,7 @@ function LoanList({
           paginationOpts: { numItems: 50, cursor: null },
           status: statusFilter === "all" ? undefined : statusFilter,
           type: typeFilter === "all" ? undefined : typeFilter,
+          search: searchQuery.trim() || undefined,
         }
       : "skip",
   );
@@ -253,9 +273,11 @@ function LoanList({
         <div className="text-center">
           <p className="text-muted-foreground">No loans found</p>
           <p className="mt-2 text-sm text-muted-foreground">
-            {statusFilter === "all" && typeFilter === "all"
-              ? "Create your first loan to get started"
-              : `No ${statusFilter !== "all" ? statusFilter : ""} ${typeFilter !== "all" ? typeFilter : ""} loans`}
+            {searchQuery
+              ? "Try adjusting your search query"
+              : statusFilter === "all" && typeFilter === "all"
+                ? "Create your first loan to get started"
+                : `No ${statusFilter !== "all" ? statusFilter : ""} ${typeFilter !== "all" ? typeFilter : ""} loans`}
           </p>
         </div>
         {statusFilter === "all" && typeFilter === "all" && (

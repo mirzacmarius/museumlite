@@ -301,6 +301,7 @@ export const list = query({
       ),
     ),
     type: v.optional(v.union(v.literal("incoming"), v.literal("outgoing"))),
+    search: v.optional(v.string()),
   },
   returns: v.object({
     page: v.array(
@@ -340,11 +341,41 @@ export const list = query({
       query = query.filter((q) => q.eq(q.field("type"), args.type));
     }
 
-    const results = await query.order("desc").paginate(args.paginationOpts);
+    // Collect all results for search filtering
+    let allResults = await query.collect();
+
+    // Apply search filter if provided
+    if (args.search) {
+      const searchLower = args.search.toLowerCase();
+      allResults = allResults.filter((loan) => {
+        return (
+          loan.loanNumber?.toLowerCase().includes(searchLower) ||
+          loan.lenderBorrowerName?.toLowerCase().includes(searchLower) ||
+          loan.lenderBorrowerContact?.toLowerCase().includes(searchLower) ||
+          loan.notes?.toLowerCase().includes(searchLower) ||
+          loan.terms?.toLowerCase().includes(searchLower) ||
+          false
+        );
+      });
+    }
+
+    // Sort by start date (newest first)
+    allResults.sort((a, b) => b.startDate - a.startDate);
+
+    // Handle pagination manually
+    const cursor = args.paginationOpts.cursor
+      ? parseInt(args.paginationOpts.cursor, 10)
+      : 0;
+    const startIndex = cursor;
+    const endIndex = Math.min(
+      startIndex + args.paginationOpts.numItems,
+      allResults.length,
+    );
+    const page = allResults.slice(startIndex, endIndex);
 
     // Get item counts for each loan
     const loansWithCounts = await Promise.all(
-      results.page.map(async (loan) => {
+      page.map(async (loan) => {
         const items = await ctx.db
           .query("loanItems")
           .withIndex("by_loan", (q) => q.eq("loanId", loan._id))
@@ -365,8 +396,8 @@ export const list = query({
 
     return {
       page: loansWithCounts,
-      isDone: results.isDone,
-      continueCursor: results.continueCursor,
+      isDone: endIndex >= allResults.length,
+      continueCursor: endIndex.toString(),
     };
   },
 });
