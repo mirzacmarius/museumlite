@@ -8,13 +8,7 @@ import { Textarea } from "@v1/ui/textarea";
 import { Label } from "@v1/ui/label";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@v1/ui/select";
+import { LocationSelector } from "@/components/location-selector";
 import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
@@ -67,15 +61,6 @@ export default function CollectionEditPage() {
     currentLocationId: "",
   });
 
-  const rootLocations = useQuery(
-    api.locations.list,
-    currentOrganizationId
-      ? {
-          organizationId: currentOrganizationId as any,
-          parentLocationId: "root",
-        }
-      : "skip",
-  );
 
   // Load existing data
   useEffect(() => {
@@ -315,27 +300,14 @@ export default function CollectionEditPage() {
                     <Label htmlFor="currentLocationId">
                       Location
                     </Label>
-                    <Select
-                      value={formData.currentLocationId || "__none__"}
+                    <LocationSelector
+                      organizationId={currentOrganizationId}
+                      value={formData.currentLocationId}
                       onValueChange={(value) =>
-                        updateField(
-                          "currentLocationId",
-                          value === "__none__" ? "" : value,
-                        )
+                        updateField("currentLocationId", value)
                       }
-                    >
-                      <SelectTrigger id="currentLocationId">
-                        <SelectValue placeholder="Select a location (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none__">None</SelectItem>
-                        {rootLocations?.map((loc) => (
-                          <SelectItem key={loc._id} value={loc._id}>
-                            {loc.name} ({loc.type})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Select a location (optional)"
+                    />
                   </div>
                 </div>
 

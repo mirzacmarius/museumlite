@@ -199,7 +199,14 @@ export const list = query({
     ),
     locationId: v.optional(v.id("locations")),
     objectType: v.optional(v.string()),
+    culture: v.optional(v.string()),
+    period: v.optional(v.string()),
+    materials: v.optional(v.string()),
     search: v.optional(v.string()),
+    dateCreatedFrom: v.optional(v.number()),
+    dateCreatedTo: v.optional(v.number()),
+    catalogedFrom: v.optional(v.number()),
+    catalogedTo: v.optional(v.number()),
   },
   returns: v.object({
     page: v.array(
@@ -230,7 +237,7 @@ export const list = query({
         q.eq("organizationId", args.organizationId),
       );
 
-    // Apply filters
+    // Apply database-level filters (can be efficiently filtered by Convex)
     if (args.status) {
       query = query.filter((q) => q.eq(q.field("status"), args.status));
     }
@@ -247,25 +254,80 @@ export const list = query({
       );
     }
 
-    if (args.search) {
-      // Use search index if available
-      const searchResults = await ctx.db
-        .query("collections")
-        .withSearchIndex("search_index", (q) =>
-          q
-            .search("title", args.search!)
-            .eq("organizationId", args.organizationId),
-        )
-        .collect();
-
-      const searchIds = new Set(searchResults.map((r) => r._id));
-      query = query.filter((q) => searchIds.has(q.field("_id")));
+    // Date range filters
+    if (args.catalogedFrom || args.catalogedTo) {
+      query = query.filter((q) => {
+        let condition = q.gte(q.field("catalogedAt"), args.catalogedFrom ?? 0);
+        if (args.catalogedTo) {
+          condition = q.and(
+            condition,
+            q.lte(q.field("catalogedAt"), args.catalogedTo),
+          );
+        }
+        return condition;
+      });
     }
 
-    const results = await query.order("desc").paginate(args.paginationOpts);
+    // Collect all results that match database-level filters
+    let allResults = await query.collect();
+
+    // Apply JavaScript-level filters (partial matching for text fields)
+    if (args.culture) {
+      const cultureLower = args.culture.toLowerCase();
+      allResults = allResults.filter(
+        (c) => c.culture?.toLowerCase().includes(cultureLower) ?? false,
+      );
+    }
+
+    if (args.period) {
+      const periodLower = args.period.toLowerCase();
+      allResults = allResults.filter(
+        (c) => c.period?.toLowerCase().includes(periodLower) ?? false,
+      );
+    }
+
+    if (args.materials) {
+      const materialsLower = args.materials.toLowerCase();
+      allResults = allResults.filter(
+        (c) => c.materials?.toLowerCase().includes(materialsLower) ?? false,
+      );
+    }
+
+    if (args.search) {
+      // Enhanced search: search across multiple fields
+      const searchLower = args.search.toLowerCase();
+      allResults = allResults.filter((collection) => {
+        return (
+          collection.title?.toLowerCase().includes(searchLower) ||
+          collection.accessionNumber?.toLowerCase().includes(searchLower) ||
+          collection.description?.toLowerCase().includes(searchLower) ||
+          collection.objectName?.toLowerCase().includes(searchLower) ||
+          collection.objectType?.toLowerCase().includes(searchLower) ||
+          collection.culture?.toLowerCase().includes(searchLower) ||
+          collection.period?.toLowerCase().includes(searchLower) ||
+          collection.materials?.toLowerCase().includes(searchLower) ||
+          collection.provenance?.toLowerCase().includes(searchLower) ||
+          false
+        );
+      });
+    }
+
+    // Sort by creation time (newest first)
+    allResults.sort((a, b) => b._creationTime - a._creationTime);
+
+    // Handle pagination manually
+    const cursor = args.paginationOpts.cursor
+      ? parseInt(args.paginationOpts.cursor, 10)
+      : 0;
+    const startIndex = cursor;
+    const endIndex = Math.min(
+      startIndex + args.paginationOpts.numItems,
+      allResults.length,
+    );
+    const page = allResults.slice(startIndex, endIndex);
 
     return {
-      page: results.page.map((item) => ({
+      page: page.map((item) => ({
         _id: item._id,
         accessionNumber: item.accessionNumber,
         title: item.title,
@@ -274,8 +336,8 @@ export const list = query({
         status: item.status,
         _creationTime: item._creationTime,
       })),
-      isDone: results.isDone,
-      continueCursor: results.continueCursor,
+      isDone: endIndex >= allResults.length,
+      continueCursor: endIndex.toString(),
     };
   },
 });

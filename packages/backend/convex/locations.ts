@@ -540,6 +540,83 @@ export const getObjectsAtLocation = query({
 });
 
 /**
+ * Get all locations with their full paths for hierarchical selector
+ */
+export const listAllWithPaths = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("locations"),
+      name: v.string(),
+      type: v.string(),
+      path: v.array(
+        v.object({
+          _id: v.id("locations"),
+          name: v.string(),
+          type: v.string(),
+        }),
+      ),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "locations.read");
+
+    // Get all active locations for the organization
+    const allLocations = await ctx.db
+      .query("locations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    // Build a map of location ID to location for quick lookup
+    const locationMap = new Map(
+      allLocations.map((loc) => [loc._id, loc]),
+    );
+
+    // Helper function to build path for a location
+    function buildPath(locationId: Id<"locations">): Array<{
+      _id: Id<"locations">;
+      name: string;
+      type: string;
+    }> {
+      const path: Array<{
+        _id: Id<"locations">;
+        name: string;
+        type: string;
+      }> = [];
+      let currentId: Id<"locations"> | undefined = locationId;
+
+      while (currentId) {
+        const location = locationMap.get(currentId);
+        if (!location) break;
+
+        path.unshift({
+          _id: location._id,
+          name: location.name,
+          type: location.type,
+        });
+
+        currentId = location.parentLocationId;
+      }
+
+      return path;
+    }
+
+    // Build result with paths
+    return allLocations.map((location) => ({
+      _id: location._id,
+      name: location.name,
+      type: location.type,
+      path: buildPath(location._id),
+    }));
+  },
+});
+
+/**
  * Get available location types for organization
  */
 export const getLocationTypes = query({
