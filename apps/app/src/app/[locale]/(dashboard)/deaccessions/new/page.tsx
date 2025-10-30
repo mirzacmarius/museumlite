@@ -4,6 +4,9 @@ import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
+import { Textarea } from "@v1/ui/textarea";
+import { Label } from "@v1/ui/label";
+import { DatePicker } from "@v1/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -24,10 +27,11 @@ export default function NewDeaccessionPage() {
   const { currentOrganizationId } = useOrganization();
   const createDeaccession = useMutation(api.deaccessions.create);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     collectionId: "",
     deaccessionNumber: "",
-    dateDeaccessioned: new Date().toISOString().split("T")[0],
+    dateDeaccessioned: new Date(),
     reason: "",
     method: "sale" as "sale" | "donation" | "destruction" | "transfer",
     disposition: "",
@@ -56,12 +60,13 @@ export default function NewDeaccessionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (!formData.collectionId.trim()) {
-      alert("Collection is required");
+      setError("Collection is required");
       return;
     }
     if (!formData.reason.trim()) {
-      alert("Reason is required");
+      setError("Reason is required");
       return;
     }
 
@@ -72,20 +77,18 @@ export default function NewDeaccessionPage() {
         collectionId: formData.collectionId as any,
         deaccessionNumber:
           formData.deaccessionNumber || undefined,
-        dateDeaccessioned: new Date(
-          formData.dateDeaccessioned,
-        ).getTime(),
+        dateDeaccessioned: formData.dateDeaccessioned.getTime(),
         reason: formData.reason,
         method: formData.method,
         disposition: formData.disposition || undefined,
         notes: formData.notes || undefined,
       });
       router.push("/deaccessions");
-    } catch (error) {
-      console.error("Error creating deaccession:", error);
-      alert(
-        error instanceof Error
-          ? error.message
+    } catch (err) {
+      console.error("Error creating deaccession:", err);
+      setError(
+        err instanceof Error
+          ? err.message
           : "Failed to create deaccession. Please try again.",
       );
       setIsSubmitting(false);
@@ -111,11 +114,16 @@ export default function NewDeaccessionPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6">
+              {error && (
+                <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
               <div className="mx-auto max-w-2xl space-y-6">
                 <div className="space-y-2">
-                  <label htmlFor="collectionId" className="text-sm font-medium">
+                  <Label htmlFor="collectionId">
                     Collection Object *
-                  </label>
+                  </Label>
                   <Select
                     value={formData.collectionId}
                     onValueChange={(value) =>
@@ -142,12 +150,9 @@ export default function NewDeaccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label
-                    htmlFor="deaccessionNumber"
-                    className="text-sm font-medium"
-                  >
+                  <Label htmlFor="deaccessionNumber">
                     Deaccession Number
-                  </label>
+                  </Label>
                   <Input
                     id="deaccessionNumber"
                     value={formData.deaccessionNumber}
@@ -166,30 +171,26 @@ export default function NewDeaccessionPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label
-                      htmlFor="dateDeaccessioned"
-                      className="text-sm font-medium"
-                    >
+                    <Label htmlFor="dateDeaccessioned">
                       Date Deaccessioned *
-                    </label>
-                    <Input
+                    </Label>
+                    <DatePicker
                       id="dateDeaccessioned"
-                      type="date"
-                      value={formData.dateDeaccessioned}
-                      onChange={(e) =>
+                      date={formData.dateDeaccessioned}
+                      onSelect={(date) =>
                         setFormData({
                           ...formData,
-                          dateDeaccessioned: e.target.value,
+                          dateDeaccessioned: date || new Date(),
                         })
                       }
-                      required
+                      placeholder="Select date deaccessioned"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label htmlFor="method" className="text-sm font-medium">
+                    <Label htmlFor="method">
                       Method *
-                    </label>
+                    </Label>
                     <Select
                       value={formData.method}
                       onValueChange={(value: any) =>
@@ -210,9 +211,9 @@ export default function NewDeaccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="reason" className="text-sm font-medium">
+                  <Label htmlFor="reason">
                     Reason *
-                  </label>
+                  </Label>
                   <Input
                     id="reason"
                     value={formData.reason}
@@ -225,9 +226,9 @@ export default function NewDeaccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="disposition" className="text-sm font-medium">
+                  <Label htmlFor="disposition">
                     Disposition
-                  </label>
+                  </Label>
                   <Input
                     id="disposition"
                     value={formData.disposition}
@@ -242,17 +243,16 @@ export default function NewDeaccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="notes" className="text-sm font-medium">
+                  <Label htmlFor="notes">
                     Notes
-                  </label>
-                  <textarea
+                  </Label>
+                  <Textarea
                     id="notes"
                     value={formData.notes}
                     onChange={(e) =>
                       setFormData({ ...formData, notes: e.target.value })
                     }
                     placeholder="Additional notes about this deaccession..."
-                    className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     rows={4}
                   />
                 </div>

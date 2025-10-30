@@ -4,6 +4,8 @@ import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
+import { Textarea } from "@v1/ui/textarea";
+import { Label } from "@v1/ui/label";
 import {
   Select,
   SelectContent,
@@ -32,6 +34,7 @@ export default function EditAccessionPage() {
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     source: "",
     method: "purchase" as "purchase" | "gift" | "loan" | "transfer",
@@ -104,8 +107,9 @@ export default function EditAccessionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (!formData.source.trim()) {
-      alert("Source is required");
+      setError("Source is required");
       return;
     }
 
@@ -119,11 +123,11 @@ export default function EditAccessionPage() {
         notes: formData.notes || undefined,
       });
       router.push(`/accessions/${accessionId}`);
-    } catch (error) {
-      console.error("Error updating accession:", error);
-      alert(
-        error instanceof Error
-          ? error.message
+    } catch (err) {
+      console.error("Error updating accession:", err);
+      setError(
+        err instanceof Error
+          ? err.message
           : "Failed to update accession. Please try again.",
       );
       setIsSubmitting(false);
@@ -146,9 +150,14 @@ export default function EditAccessionPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6">
+              {error && (
+                <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
               <div className="mx-auto max-w-2xl space-y-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Accession Number</label>
+                  <Label>Accession Number</Label>
                   <Input
                     value={accession.accessionNumber}
                     disabled
@@ -160,7 +169,7 @@ export default function EditAccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Date Received</label>
+                  <Label>Date Received</Label>
                   <Input
                     value={new Date(accession.dateReceived).toLocaleDateString()}
                     disabled
@@ -172,9 +181,9 @@ export default function EditAccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="source" className="text-sm font-medium">
+                  <Label htmlFor="source">
                     Source *
-                  </label>
+                  </Label>
                   <Input
                     id="source"
                     value={formData.source}
@@ -187,9 +196,9 @@ export default function EditAccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="method" className="text-sm font-medium">
+                  <Label htmlFor="method">
                     Method *
-                  </label>
+                  </Label>
                   <Select
                     value={formData.method}
                     onValueChange={(value: any) =>
@@ -209,9 +218,9 @@ export default function EditAccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="cost" className="text-sm font-medium">
+                  <Label htmlFor="cost">
                     Cost
-                  </label>
+                  </Label>
                   <Input
                     id="cost"
                     type="number"
@@ -225,17 +234,16 @@ export default function EditAccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="notes" className="text-sm font-medium">
+                  <Label htmlFor="notes">
                     Notes
-                  </label>
-                  <textarea
+                  </Label>
+                  <Textarea
                     id="notes"
                     value={formData.notes}
                     onChange={(e) =>
                       setFormData({ ...formData, notes: e.target.value })
                     }
                     placeholder="Additional notes about this accession..."
-                    className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     rows={4}
                   />
                 </div>

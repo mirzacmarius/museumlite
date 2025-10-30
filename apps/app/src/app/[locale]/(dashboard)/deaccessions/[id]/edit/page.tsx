@@ -4,6 +4,8 @@ import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
+import { Textarea } from "@v1/ui/textarea";
+import { Label } from "@v1/ui/label";
 import {
   Select,
   SelectContent,
@@ -32,6 +34,7 @@ export default function EditDeaccessionPage() {
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     reason: "",
     method: "sale" as "sale" | "donation" | "destruction" | "transfer",
@@ -107,8 +110,9 @@ export default function EditDeaccessionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (!formData.reason.trim()) {
-      alert("Reason is required");
+      setError("Reason is required");
       return;
     }
 
@@ -122,11 +126,11 @@ export default function EditDeaccessionPage() {
         notes: formData.notes || undefined,
       });
       router.push(`/deaccessions/${deaccessionId}`);
-    } catch (error) {
-      console.error("Error updating deaccession:", error);
-      alert(
-        error instanceof Error
-          ? error.message
+    } catch (err) {
+      console.error("Error updating deaccession:", err);
+      setError(
+        err instanceof Error
+          ? err.message
           : "Failed to update deaccession. Please try again.",
       );
       setIsSubmitting(false);
@@ -152,11 +156,14 @@ export default function EditDeaccessionPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6">
+              {error && (
+                <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
               <div className="mx-auto max-w-2xl space-y-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Deaccession Number
-                  </label>
+                  <Label>Deaccession Number</Label>
                   <Input
                     value={deaccession.deaccessionNumber}
                     disabled
@@ -168,9 +175,7 @@ export default function EditDeaccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Date Deaccessioned
-                  </label>
+                  <Label>Date Deaccessioned</Label>
                   <Input
                     value={new Date(
                       deaccession.dateDeaccessioned,
@@ -184,9 +189,9 @@ export default function EditDeaccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="reason" className="text-sm font-medium">
+                  <Label htmlFor="reason">
                     Reason *
-                  </label>
+                  </Label>
                   <Input
                     id="reason"
                     value={formData.reason}
@@ -199,9 +204,9 @@ export default function EditDeaccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="method" className="text-sm font-medium">
+                  <Label htmlFor="method">
                     Method *
-                  </label>
+                  </Label>
                   <Select
                     value={formData.method}
                     onValueChange={(value: any) =>
@@ -221,9 +226,9 @@ export default function EditDeaccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="disposition" className="text-sm font-medium">
+                  <Label htmlFor="disposition">
                     Disposition
-                  </label>
+                  </Label>
                   <Input
                     id="disposition"
                     value={formData.disposition}
@@ -238,17 +243,16 @@ export default function EditDeaccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="notes" className="text-sm font-medium">
+                  <Label htmlFor="notes">
                     Notes
-                  </label>
-                  <textarea
+                  </Label>
+                  <Textarea
                     id="notes"
                     value={formData.notes}
                     onChange={(e) =>
                       setFormData({ ...formData, notes: e.target.value })
                     }
                     placeholder="Additional notes about this deaccession..."
-                    className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     rows={4}
                   />
                 </div>
