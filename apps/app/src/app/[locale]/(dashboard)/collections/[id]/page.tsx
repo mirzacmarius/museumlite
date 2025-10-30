@@ -19,6 +19,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { MoveObjectDialog } from "@/app/[locale]/(dashboard)/locations/_components/move-object-dialog";
+import { MediaGallery } from "./_components/media-gallery";
 
 export default function CollectionDetailPage() {
   const params = useParams();
@@ -303,40 +304,7 @@ function CollectionDetails({
 }
 
 function CollectionMedia({ collectionId }: { collectionId: string }) {
-  const media = useQuery(api.media.list, { collectionId: collectionId as any });
-
-  if (media === undefined) {
-    return <p className="text-muted-foreground">Loading media...</p>;
-  }
-
-  if (media.length === 0) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">No media files</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-3 gap-4">
-      {media.map((file) => (
-        <div key={file._id} className="relative aspect-square overflow-hidden rounded-lg border">
-          {file.url && (
-            <img
-              src={file.thumbnailUrl || file.url}
-              alt={file.fileName}
-              className="h-full w-full object-cover"
-            />
-          )}
-          {file.isPrimary && (
-            <div className="absolute top-2 right-2 rounded bg-primary px-2 py-1 text-xs text-primary-foreground">
-              Primary
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
+  return <MediaGallery collectionId={collectionId} />;
 }
 
 function CollectionHistory({ collectionId }: { collectionId: string }) {

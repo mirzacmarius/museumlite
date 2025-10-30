@@ -580,6 +580,8 @@ export const getCollectionLocationHistory = query({
   returns: v.array(
     v.object({
       _id: v.id("locationHistory"),
+      _creationTime: v.number(),
+      collectionId: v.id("collections"),
       fromLocationId: v.optional(v.id("locations")),
       toLocationId: v.id("locations"),
       movedBy: v.id("users"),
