@@ -6,15 +6,25 @@ import { Button } from "@v1/ui/button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useQuery } from "convex/react";
-import { Plus, Building2, FileCheck, Clock, CheckCircle, XCircle } from "lucide-react";
+import {
+  Plus,
+  Building2,
+  FileCheck,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Search,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { Input } from "@v1/ui/input";
 
 type AccessionStatus = "pending" | "approved" | "rejected" | "all";
 
 export default function AccessionsPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const [statusFilter, setStatusFilter] = useState<AccessionStatus>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   if (isLoading) {
     return (
@@ -103,6 +113,19 @@ export default function AccessionsPage() {
               <div className="w-full border-b border-border" />
             </div>
 
+            {/* Search Bar */}
+            <div className="border-b border-border px-6 py-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search by accession number, source, or notes..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+
             {/* Status Filters */}
             <div className="flex gap-2 border-b border-border px-6">
               <button
@@ -153,6 +176,7 @@ export default function AccessionsPage() {
             <AccessionList
               organizationId={currentOrganizationId}
               statusFilter={statusFilter}
+              searchQuery={searchQuery}
             />
           </div>
         </div>
@@ -164,9 +188,11 @@ export default function AccessionsPage() {
 function AccessionList({
   organizationId,
   statusFilter,
+  searchQuery,
 }: {
   organizationId: string;
   statusFilter: AccessionStatus;
+  searchQuery: string;
 }) {
   const accessions = useQuery(
     api.accessions.list,
@@ -175,6 +201,7 @@ function AccessionList({
           organizationId: organizationId as any,
           paginationOpts: { numItems: 50, cursor: null },
           status: statusFilter === "all" ? undefined : statusFilter,
+          search: searchQuery.trim() || undefined,
         }
       : "skip",
   );
@@ -194,9 +221,11 @@ function AccessionList({
         <div className="text-center">
           <p className="text-muted-foreground">No accessions found</p>
           <p className="mt-2 text-sm text-muted-foreground">
-            {statusFilter === "all"
-              ? "Create your first accession to get started"
-              : `No ${statusFilter} accessions`}
+            {searchQuery
+              ? "Try adjusting your search query"
+              : statusFilter === "all"
+                ? "Create your first accession to get started"
+                : `No ${statusFilter} accessions`}
           </p>
         </div>
         {statusFilter === "all" && (

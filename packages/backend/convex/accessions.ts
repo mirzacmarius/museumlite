@@ -144,6 +144,7 @@ export const list = query({
         v.literal("rejected"),
       ),
     ),
+    search: v.optional(v.string()),
   },
   returns: v.object({
     page: v.array(
@@ -182,10 +183,38 @@ export const list = query({
       query = query.filter((q) => q.eq(q.field("status"), args.status));
     }
 
-    const results = await query.order("desc").paginate(args.paginationOpts);
+    // Collect all results for search filtering
+    let allResults = await query.collect();
+
+    // Apply search filter if provided
+    if (args.search) {
+      const searchLower = args.search.toLowerCase();
+      allResults = allResults.filter((accession) => {
+        return (
+          accession.accessionNumber?.toLowerCase().includes(searchLower) ||
+          accession.source?.toLowerCase().includes(searchLower) ||
+          accession.notes?.toLowerCase().includes(searchLower) ||
+          false
+        );
+      });
+    }
+
+    // Sort by date received (newest first)
+    allResults.sort((a, b) => b.dateReceived - a.dateReceived);
+
+    // Handle pagination manually
+    const cursor = args.paginationOpts.cursor
+      ? parseInt(args.paginationOpts.cursor, 10)
+      : 0;
+    const startIndex = cursor;
+    const endIndex = Math.min(
+      startIndex + args.paginationOpts.numItems,
+      allResults.length,
+    );
+    const page = allResults.slice(startIndex, endIndex);
 
     return {
-      page: results.page.map((item) => ({
+      page: page.map((item) => ({
         _id: item._id,
         accessionNumber: item.accessionNumber,
         dateReceived: item.dateReceived,
@@ -194,8 +223,8 @@ export const list = query({
         status: item.status,
         workflowStep: item.workflowStep,
       })),
-      isDone: results.isDone,
-      continueCursor: results.continueCursor,
+      isDone: endIndex >= allResults.length,
+      continueCursor: endIndex.toString(),
     };
   },
 });

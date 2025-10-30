@@ -13,9 +13,11 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { Input } from "@v1/ui/input";
 
 type DeaccessionStatus = "pending" | "approved" | "rejected" | "all";
 
@@ -24,6 +26,7 @@ export default function DeaccessionsPage() {
     useOrganization();
   const [statusFilter, setStatusFilter] =
     useState<DeaccessionStatus>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   if (isLoading) {
     return (
@@ -116,6 +119,19 @@ export default function DeaccessionsPage() {
               <div className="w-full border-b border-border" />
             </div>
 
+            {/* Search Bar */}
+            <div className="border-b border-border px-6 py-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search by deaccession number, reason, disposition, or notes..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+
             {/* Status Filters */}
             <div className="flex gap-2 border-b border-border px-6">
               <button
@@ -166,6 +182,7 @@ export default function DeaccessionsPage() {
             <DeaccessionList
               organizationId={currentOrganizationId}
               statusFilter={statusFilter}
+              searchQuery={searchQuery}
             />
           </div>
         </div>
@@ -177,9 +194,11 @@ export default function DeaccessionsPage() {
 function DeaccessionList({
   organizationId,
   statusFilter,
+  searchQuery,
 }: {
   organizationId: string;
   statusFilter: DeaccessionStatus;
+  searchQuery: string;
 }) {
   const deaccessions = useQuery(
     api.deaccessions.list,
@@ -188,6 +207,7 @@ function DeaccessionList({
           organizationId: organizationId as any,
           paginationOpts: { numItems: 50, cursor: null },
           status: statusFilter === "all" ? undefined : statusFilter,
+          search: searchQuery.trim() || undefined,
         }
       : "skip",
   );
@@ -207,9 +227,11 @@ function DeaccessionList({
         <div className="text-center">
           <p className="text-muted-foreground">No deaccessions found</p>
           <p className="mt-2 text-sm text-muted-foreground">
-            {statusFilter === "all"
-              ? "Create your first deaccession to get started"
-              : `No ${statusFilter} deaccessions`}
+            {searchQuery
+              ? "Try adjusting your search query"
+              : statusFilter === "all"
+                ? "Create your first deaccession to get started"
+                : `No ${statusFilter} deaccessions`}
           </p>
         </div>
         {statusFilter === "all" && (
