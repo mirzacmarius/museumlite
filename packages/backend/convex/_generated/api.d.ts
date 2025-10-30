@@ -11,6 +11,7 @@
 import type * as accessions from "../accessions.js";
 import type * as auth from "../auth.js";
 import type * as collections from "../collections.js";
+import type * as dashboard from "../dashboard.js";
 import type * as deaccessions from "../deaccessions.js";
 import type * as email_index from "../email/index.js";
 import type * as email_templates_subscriptionEmail from "../email/templates/subscriptionEmail.js";
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   accessions: typeof accessions;
   auth: typeof auth;
   collections: typeof collections;
+  dashboard: typeof dashboard;
   deaccessions: typeof deaccessions;
   "email/index": typeof email_index;
   "email/templates/subscriptionEmail": typeof email_templates_subscriptionEmail;
