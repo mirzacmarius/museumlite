@@ -56,6 +56,8 @@ export const create = mutation({
     insuranceValue: v.optional(v.number()),
     notes: v.optional(v.string()),
     useDetailedConditionReports: v.optional(v.boolean()),
+    collectionIds: v.optional(v.array(v.id("collections"))),
+    conditionOut: v.optional(v.string()),
   },
   returns: v.id("loans"),
   handler: async (ctx, args) => {
@@ -93,6 +95,55 @@ export const create = mutation({
       notes: args.notes,
       useDetailedConditionReports: args.useDetailedConditionReports ?? false,
     });
+
+    // Add items if provided
+    if (args.collectionIds && args.collectionIds.length > 0) {
+      // Verify collections belong to organization and are active
+      for (const collectionId of args.collectionIds) {
+        const collection = await ctx.db.get(collectionId);
+        if (!collection) {
+          throw new Error(`Collection ${collectionId} not found`);
+        }
+
+        if (collection.organizationId !== args.organizationId) {
+          throw new Error(
+            `Collection ${collectionId} does not belong to organization`,
+          );
+        }
+
+        if (collection.status !== "active") {
+          throw new Error(`Collection ${collectionId} is not active`);
+        }
+
+        // Check if already in a loan
+        const existingLoanItem = await ctx.db
+          .query("loanItems")
+          .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+          .filter((q) => {
+            return q.eq(q.field("collectionId"), collectionId);
+          })
+          .first();
+
+        if (existingLoanItem) {
+          const existingLoan = await ctx.db.get(existingLoanItem.loanId);
+          if (
+            existingLoan &&
+            (existingLoan.status === "pending" || existingLoan.status === "active")
+          ) {
+            throw new Error(
+              `Collection ${collectionId} is already in an active loan`,
+            );
+          }
+        }
+
+        // Create loan item
+        await ctx.db.insert("loanItems", {
+          loanId,
+          collectionId,
+          conditionOut: args.conditionOut,
+        });
+      }
+    }
 
     return loanId;
   },
