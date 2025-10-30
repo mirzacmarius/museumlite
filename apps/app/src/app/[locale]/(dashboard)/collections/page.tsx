@@ -17,7 +17,7 @@ import { PermissionGate } from "@/components/permission-gate";
 import { useQuery } from "convex/react";
 import { Plus, Building2, MapPin, Search, Filter, X } from "lucide-react";
 import Link from "next/link";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 
 export default function CollectionsPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
@@ -142,12 +142,23 @@ function CollectionFiltersAndList({
     materials: "",
   });
 
+  const [cursor, setCursor] = useState<string | null>(null);
+  const prevFiltersRef = useRef(filters);
+
+  // Reset cursor when filters change
+  useEffect(() => {
+    if (JSON.stringify(prevFiltersRef.current) !== JSON.stringify(filters)) {
+      prevFiltersRef.current = filters;
+      setCursor(null);
+    }
+  }, [filters]);
+
   const collections = useQuery(
     api.collections.list,
     organizationId
       ? {
           organizationId: organizationId as any,
-          paginationOpts: { numItems: 50, cursor: null },
+          paginationOpts: { numItems: 50, cursor },
           search: filters.search || undefined,
           status:
             filters.status !== "all"
@@ -316,6 +327,12 @@ function CollectionFiltersAndList({
       <CollectionList
         organizationId={organizationId}
         collections={collections}
+        onLoadMore={() => {
+          if (collections && !collections.isDone) {
+            setCursor(collections.continueCursor);
+          }
+        }}
+        onReset={() => setCursor(null)}
       />
     </div>
   );
@@ -324,6 +341,8 @@ function CollectionFiltersAndList({
 function CollectionList({
   organizationId,
   collections,
+  onLoadMore,
+  onReset,
 }: {
   organizationId: string;
   collections:
@@ -341,6 +360,8 @@ function CollectionList({
         continueCursor: string;
       }
     | undefined;
+  onLoadMore: () => void;
+  onReset: () => void;
 }) {
 
   if (collections === undefined) {
@@ -378,6 +399,18 @@ function CollectionList({
           />
         ))}
       </div>
+      {!collections.isDone && (
+        <div className="mt-6 flex justify-center">
+          <Button variant="outline" onClick={onLoadMore}>
+            Load More
+          </Button>
+        </div>
+      )}
+      {collections.page.length > 0 && (
+        <div className="mt-4 text-center text-sm text-muted-foreground">
+          Showing {collections.page.length} {collections.isDone ? "items" : "items (more available)"}
+        </div>
+      )}
     </div>
   );
 }

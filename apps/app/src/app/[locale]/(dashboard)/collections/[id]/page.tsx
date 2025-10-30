@@ -299,6 +299,15 @@ function CollectionDetails({
           <p className="mt-1 text-sm">{collection.provenance}</p>
         </div>
       )}
+
+      {collection.exhibitionHistory && (
+        <div>
+          <label className="text-sm font-medium text-muted-foreground">
+            Exhibition History
+          </label>
+          <p className="mt-1 text-sm">{collection.exhibitionHistory}</p>
+        </div>
+      )}
     </div>
   );
 }
