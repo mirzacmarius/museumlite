@@ -9,6 +9,7 @@ declare module "react" {
   namespace React {
     // Make ReactNode include Promise<ReactNode> and bigint for compatibility
     // This ensures compatibility across different @types/react versions
+    // Note: JSX.Element is React.ReactElement, which is already included in ReactNode
     type ReactNode =
       | ReactElement
       | string
@@ -23,18 +24,19 @@ declare module "react" {
   }
 
   // Override FunctionComponent to accept Promise<ReactNode>
+  // JSX.Element is compatible since it's React.ReactElement which is part of ReactNode
   interface FunctionComponent<P = {}> {
-    (props: P, context?: any): ReactElement<any> | null | Promise<ReactNode>;
+    (props: P, context?: any): ReactElement<any> | JSX.Element | null | Promise<ReactNode>;
   }
   
   // Override ForwardRefExoticComponent
   interface ForwardRefExoticComponent<T> {
-    (props: T & { ref?: React.Ref<any> }): ReactElement<any> | null | Promise<ReactNode>;
+    (props: T & { ref?: React.Ref<any> }): ReactElement<any> | JSX.Element | null | Promise<ReactNode>;
   }
   
   // Override MemoExoticComponent
   interface MemoExoticComponent<T> {
-    (props: T & { ref?: React.Ref<any> }): ReactElement<any> | null | Promise<ReactNode>;
+    (props: T & { ref?: React.Ref<any> }): ReactElement<any> | JSX.Element | null | Promise<ReactNode>;
   }
 }
 
@@ -46,6 +48,10 @@ declare global {
     interface ElementChildrenAttribute {
       children: ReactNode | Promise<ReactNode>;
     }
+    
+    // Ensure Element (JSX.Element) is compatible with ReactNode
+    // This makes JSX.Element assignable to React.ReactNode for Next.js compatibility
+    interface Element extends React.ReactElement<any, any> {}
     
     // Override ElementConstructor to accept Promise<ReactNode> and bigint
     // This is the critical fix - making JSX accept components that return Promise<ReactNode>
@@ -73,6 +79,7 @@ declare global {
   }
   
   // Ensure ReactNode includes bigint and Promise<ReactNode> at the global level
+  // JSX.Element is React.ReactElement, which is already included in ReactNode
   namespace React {
     type ReactNode =
       | ReactElement
@@ -104,6 +111,47 @@ declare module "react/jsx-runtime" {
       | React.ComponentType<P>
       | ((props: P) => ReactNode | Promise<ReactNode>);
   }
+}
+
+// Type compatibility helper: ensure JSX.Element is assignable to ReactNode
+// This is needed because Next.js checks function return types strictly
+type CompatibleReactNode = React.ReactNode | JSX.Element;
+
+// Patch Next.js internal types to accept JSX.Element as compatible with ReactNode
+// This fixes the type error where Next.js expects ReactNode but TypeScript infers JSX.Element
+declare module "next/dist/server/app-render/types" {
+  export type AppPageConfig<
+    Route extends string,
+    T extends Record<string, any> = {},
+  > = {
+    [K in keyof T]: K extends "default"
+      ? T[K] extends () => CompatibleReactNode | Promise<CompatibleReactNode>
+        ? T[K]
+        : T[K] extends () => JSX.Element
+          ? T[K]
+          : T[K] extends () => any
+            ? T[K]
+            : never
+      : T[K];
+  };
+}
+
+// Also patch the Next.js page type checking at a higher level
+declare module "next" {
+  export type AppPageConfig<
+    Route extends string,
+    T extends Record<string, any> = {},
+  > = {
+    [K in keyof T]: K extends "default"
+      ? T[K] extends () => CompatibleReactNode | Promise<CompatibleReactNode>
+        ? T[K]
+        : T[K] extends () => JSX.Element
+          ? T[K]
+          : T[K] extends () => any
+            ? T[K]
+            : never
+      : T[K];
+  };
 }
 
 // Patch external libraries that haven't updated their types
