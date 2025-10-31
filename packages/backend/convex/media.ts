@@ -576,27 +576,16 @@ export const generateThumbnail = internalMutation({
     });
 
     try {
-      // Call the action to process the thumbnail
-      const thumbnailStorageId = await ctx.runAction(
+      // Schedule the action to process the thumbnail
+      // The action will update the media record via an internal mutation when it completes
+      await ctx.scheduler.runAfter(
+        0,
         internal.mediaThumbnails.processThumbnail,
         {
           mediaId: args.mediaId,
           storageId: media.storageId,
         },
       );
-
-      if (thumbnailStorageId) {
-        // Update media record with thumbnail storage ID
-        await ctx.db.patch(args.mediaId, {
-          uploadStatus: "completed",
-          thumbnailStorageId,
-        });
-      } else {
-        // If processing failed, mark as failed
-        await ctx.db.patch(args.mediaId, {
-          uploadStatus: "failed",
-        });
-      }
     } catch (error) {
       console.error("Error generating thumbnail:", error);
       await ctx.db.patch(args.mediaId, {

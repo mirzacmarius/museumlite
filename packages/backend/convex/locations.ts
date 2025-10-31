@@ -301,7 +301,7 @@ export const update = mutation({
         if (currentParentId === args.locationId) {
           throw new Error("Cannot create circular location hierarchy");
         }
-        const currentParent = await ctx.db.get(currentParentId);
+        const currentParent: { parentLocationId?: Id<"locations"> } | null = await ctx.db.get(currentParentId);
         currentParentId = currentParent?.parentLocationId;
       }
     }
@@ -480,7 +480,7 @@ export const getLocationPath = query({
     let currentLocationId: Id<"locations"> | undefined = args.locationId;
 
     while (currentLocationId) {
-      const location = await ctx.db.get(currentLocationId);
+      const location: { _id: Id<"locations">; name: string; type: string; parentLocationId?: Id<"locations"> } | null = await ctx.db.get(currentLocationId);
       if (!location) break;
 
       path.unshift({

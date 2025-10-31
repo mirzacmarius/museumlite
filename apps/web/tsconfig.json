@@ -9,11 +9,13 @@
     "allowJs": true,
     "noEmit": true,
     "jsx": "preserve",
+    "skipLibCheck": true,
     "plugins": [
       {
         "name": "next"
       }
-    ]
+    ],
+    "typeRoots": ["../../node_modules/@types", "./node_modules/@types"]
   },
   "include": [
     "next-env.d.ts",
@@ -21,7 +23,8 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "tailwind.config.ts"
+    "tailwind.config.ts",
+    "src/react-19-fix.d.ts"
   ],
   "exclude": ["node_modules"]
 }

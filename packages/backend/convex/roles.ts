@@ -365,17 +365,14 @@ export const listPermissions = query({
     }),
   ),
   handler: async (ctx, args) => {
-    let query = ctx.db.query("permissions");
-
-    if (args.category) {
-      query = query.withIndex("by_category", (q) =>
-        q.eq("category", args.category!),
-      );
-    } else {
-      query = query;
-    }
-
-    const permissions = await query.collect();
+    const permissions = args.category
+      ? await ctx.db
+          .query("permissions")
+          .withIndex("by_category", (q) =>
+            q.eq("category", args.category!),
+          )
+          .collect()
+      : await ctx.db.query("permissions").collect();
     return permissions;
   },
 });

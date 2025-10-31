@@ -71,7 +71,7 @@ export const listOrganizationActivity = query({
       logs.map(async (log) => {
         const user = await ctx.db.get(log.userId);
         const userImage =
-          user?.imageId ? await ctx.storage.getUrl(user.imageId) : undefined;
+          user?.imageId ? (await ctx.storage.getUrl(user.imageId)) ?? undefined : undefined;
 
         return {
           _id: log._id,
