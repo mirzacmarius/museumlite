@@ -23,7 +23,7 @@ type Activity = {
   action: string;
   entityType: string;
   entityId: string;
-  changes?: unknown;
+  changes?: Record<string, unknown>;
   timestamp: number;
 };
 
@@ -53,7 +53,7 @@ export function ActivityList({
 }: ActivityListProps) {
   const [cursor, setCursor] = useState<string | undefined>();
   const [allActivities, setAllActivities] = useState<Activity[]>([]);
-  const lastProcessedCursor = useRef<string | undefined>();
+  const lastProcessedCursor = useRef<string | undefined>(undefined);
   const lastProcessedActivityIds = useRef<Set<string>>(new Set());
 
   const { activities, isDone, continueCursor } = useQuery(
@@ -105,8 +105,8 @@ export function ActivityList({
       const prevIds = lastProcessedActivityIds.current;
       if (
         prevIds.size === currentActivityIds.size &&
-        [...prevIds].every((id) => currentActivityIds.has(id)) &&
-        [...currentActivityIds].every((id) => prevIds.has(id))
+        [...prevIds].every((id) => currentActivityIds.has(id as Id<"auditLog">)) &&
+        [...currentActivityIds].every((id) => prevIds.has(id as Id<"auditLog">))
       ) {
         // Same activities, don't update to prevent infinite loop
         return;

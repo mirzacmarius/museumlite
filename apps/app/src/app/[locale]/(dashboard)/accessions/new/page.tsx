@@ -33,7 +33,7 @@ export default function NewAccessionPage() {
     accessionNumber: "",
     dateReceived: new Date(),
     source: "",
-    method: "purchase" as "purchase" | "gift" | "loan" | "transfer",
+    method: "purchase" as "purchase" | "gift" | "loan" | "transfer" | "donation" | "other" | "bequest",
     cost: "",
     notes: "",
   });
@@ -146,7 +146,7 @@ export default function NewAccessionPage() {
                     </Label>
                     <Select
                       value={formData.method}
-                      onValueChange={(value: "purchase" | "donation" | "bequest" | "transfer" | "loan" | "other") =>
+                      onValueChange={(value: "purchase" | "gift" | "loan" | "transfer" | "donation" | "other" | "bequest") =>
                         setFormData({ ...formData, method: value })
                       }
                     >

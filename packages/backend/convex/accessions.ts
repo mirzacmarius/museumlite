@@ -65,6 +65,9 @@ export const create = mutation({
       v.literal("gift"),
       v.literal("loan"),
       v.literal("transfer"),
+      v.literal("donation"),
+      v.literal("other"),
+      v.literal("bequest"),
     ),
     cost: v.optional(v.number()),
     notes: v.optional(v.string()),
@@ -316,6 +319,9 @@ export const get = query({
         v.literal("gift"),
         v.literal("loan"),
         v.literal("transfer"),
+        v.literal("donation"),
+        v.literal("other"),
+        v.literal("bequest"),
       ),
       cost: v.optional(v.number()),
       approvedBy: v.optional(v.id("users")),
@@ -373,6 +379,9 @@ export const update = mutation({
         v.literal("gift"),
         v.literal("loan"),
         v.literal("transfer"),
+        v.literal("donation"),
+        v.literal("other"),
+        v.literal("bequest"),
       ),
     ),
     cost: v.optional(v.number()),
@@ -404,7 +413,7 @@ export const update = mutation({
 
     const updates: {
       source?: string;
-      method?: "purchase" | "gift" | "loan" | "transfer";
+      method?: "purchase" | "gift" | "loan" | "transfer" | "donation" | "other" | "bequest";
       cost?: number;
       notes?: string;
     } = {};

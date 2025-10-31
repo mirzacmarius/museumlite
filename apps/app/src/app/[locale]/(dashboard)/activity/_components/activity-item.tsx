@@ -38,11 +38,11 @@ function formatActionDescription(
   parts.push(<strong key="entity-type">{entityType}</strong>);
 
   // Add entity identifier if available
-  if (changes?.name || changes?.title || changes?.accessionNumber) {
+  if (changes?.name || changes?.title || changes?.accessionNumber || changes?.method) {
     parts.push(" ");
     const identifier =
-      changes.name || changes.title || changes.accessionNumber;
-    parts.push(<strong key="identifier">{identifier}</strong>);
+      changes.name || changes.title || changes.accessionNumber || changes.method;
+    parts.push(<strong key="identifier">{String(identifier)}</strong>);
   } else {
     parts.push(" ");
     parts.push(<strong key="entity-id">{entityId.slice(-8)}</strong>);

@@ -228,7 +228,7 @@ export default function AccessionDetailPage() {
                     <div className="space-y-3">
                       {accession.workflowHistory.map((entry) => (
                         <div
-                          key={`${entry.timestamp}-${entry.action}-${entry.userId}`}
+                          key={`${entry.step}-${entry.approvedBy}-${entry.approvedAt}`}
                           className="rounded-lg border border-border bg-card p-4"
                         >
                           <div className="flex items-center justify-between">

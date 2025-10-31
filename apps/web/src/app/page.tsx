@@ -1,4 +1,3 @@
-import type React from "react";
 import { AnimatedText } from "@/components/animated-text";
 import { CopyText } from "@/components/copy-text";
 import {
@@ -9,7 +8,7 @@ import {
 } from "@v1/ui/tooltip";
 import Image from "next/image";
 
-export default function Page(): React.ReactNode {
+export default function Page() {
   return (
     <div className="h-screen w-screen flex flex-col items-center justify-center relative overflow-hidden">
       <div className="absolute -top-[118px] inset-0 bg-[linear-gradient(to_right,#222_1px,transparent_1px),linear-gradient(to_bottom,#222_1px,transparent_1px)] bg-[size:4.5rem_2rem] -z-10 [transform:perspective(1000px)_rotateX(-63deg)] h-[80%] pointer-events-none" />

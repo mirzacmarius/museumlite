@@ -38,7 +38,7 @@ export default function EditAccessionPage() {
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     source: "",
-    method: "purchase" as "purchase" | "gift" | "loan" | "transfer",
+    method: "purchase" as "purchase" | "gift" | "loan" | "transfer" | "donation" | "other" | "bequest",
     cost: "",
     notes: "",
   });
@@ -202,7 +202,7 @@ export default function EditAccessionPage() {
                   </Label>
                   <Select
                     value={formData.method}
-                    onValueChange={(value: "purchase" | "donation" | "bequest" | "transfer" | "loan" | "other") =>
+                    onValueChange={(value: "purchase" | "gift" | "loan" | "transfer" | "donation" | "other" | "bequest") =>
                       setFormData({ ...formData, method: value })
                     }
                   >
@@ -214,6 +214,9 @@ export default function EditAccessionPage() {
                       <SelectItem value="gift">Gift</SelectItem>
                       <SelectItem value="loan">Loan</SelectItem>
                       <SelectItem value="transfer">Transfer</SelectItem>
+                      <SelectItem value="donation">Donation</SelectItem>
+                      <SelectItem value="bequest">Bequest</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
