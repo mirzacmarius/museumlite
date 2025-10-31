@@ -29,10 +29,10 @@ async function generateDeaccessionNumber(
   // Count existing deaccessions this year
   const existing = await ctx.db
     .query("deaccessions")
-    .withIndex("by_organization", (q) =>
+    .withIndex("by_organization", (q: any) =>
       q.eq("organizationId", organizationId),
     )
-    .filter((q) =>
+    .filter((q: any) =>
       q.eq(
         q.field("deaccessionNumber"),
         `DA-${orgSlug}-${year}-001`,

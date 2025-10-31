@@ -26,10 +26,10 @@ async function generateLoanNumber(
   // Count existing loans this year
   const existing = await ctx.db
     .query("loans")
-    .withIndex("by_organization_and_type", (q) =>
+    .withIndex("by_organization_and_type", (q: any) =>
       q.eq("organizationId", organizationId).eq("type", type),
     )
-    .filter((q) =>
+    .filter((q: any) =>
       q.eq(
         q.field("loanNumber"),
         `${prefix}-${orgSlug}-${year}-001`,
@@ -409,7 +409,7 @@ export const list = query({
             .take(1);
           
           let collectionTitle = "";
-          if (items.length > 0) {
+          if (items.length > 0 && items[0]) {
             const collection = await ctx.db.get(items[0].collectionId);
             collectionTitle = collection?.title || "";
           }

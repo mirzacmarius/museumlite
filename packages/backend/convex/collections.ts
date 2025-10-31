@@ -32,10 +32,10 @@ async function generateAccessionNumber(
   // Count existing accessions this year
   const existing = await ctx.db
     .query("collections")
-    .withIndex("by_organization", (q) =>
+    .withIndex("by_organization", (q: any) =>
       q.eq("organizationId", organizationId),
     )
-    .filter((q) =>
+    .filter((q: any) =>
       q.eq(
         q.field("accessionNumber"),
         `${orgSlug}-${year}-001`,

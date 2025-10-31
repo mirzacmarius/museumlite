@@ -525,8 +525,9 @@ export const seedDatabase = internalAction({
       locationIds[locGroup.orgSlug] = {};
 
       for (const loc of locGroup.locations) {
-        const parentId = loc.parent
-          ? locationIds[locGroup.orgSlug][loc.parent]
+        const orgLocationIds = locationIds[locGroup.orgSlug];
+        const parentId = loc.parent && orgLocationIds
+          ? orgLocationIds[loc.parent]
           : undefined;
 
         const locId = await ctx.runMutation(internal.seed.createLocation, {
@@ -536,7 +537,9 @@ export const seedDatabase = internalAction({
           parentLocationId: parentId,
         });
 
-        locationIds[locGroup.orgSlug][loc.name] = locId;
+        if (orgLocationIds) {
+          orgLocationIds[loc.name] = locId;
+        }
       }
     }
 
