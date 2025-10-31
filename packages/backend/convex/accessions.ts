@@ -236,16 +236,33 @@ export const list = query({
     let allResults = await query.collect();
 
     // Apply search filter if provided
-    if (args.search) {
+    if (args.search && args.search.trim().length > 0) {
       const searchLower = args.search.toLowerCase();
-      allResults = allResults.filter((accession) => {
-        return (
-          accession.accessionNumber?.toLowerCase().includes(searchLower) ||
-          accession.source?.toLowerCase().includes(searchLower) ||
-          accession.notes?.toLowerCase().includes(searchLower) ||
-          false
-        );
-      });
+      // Get collection titles for accessions to include in search
+      const accessionsWithCollectionInfo = await Promise.all(
+        allResults.map(async (accession) => {
+          let collectionTitle = "";
+          if (accession.collectionId) {
+            const collection = await ctx.db.get(accession.collectionId);
+            collectionTitle = collection?.title || "";
+          }
+          
+          return { ...accession, collectionTitle };
+        }),
+      );
+      
+      allResults = accessionsWithCollectionInfo
+        .filter((accession) => {
+          return (
+            accession.accessionNumber?.toLowerCase().includes(searchLower) ||
+            accession.source?.toLowerCase().includes(searchLower) ||
+            accession.notes?.toLowerCase().includes(searchLower) ||
+            accession.collectionTitle?.toLowerCase().includes(searchLower) ||
+            accession.method?.toLowerCase().includes(searchLower) ||
+            false
+          );
+        })
+        .map(({ collectionTitle, ...accession }) => accession); // Remove temporary field
     }
 
     // Sort by date received (newest first)

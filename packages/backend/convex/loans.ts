@@ -398,18 +398,39 @@ export const list = query({
     let allResults = await query.collect();
 
     // Apply search filter if provided
-    if (args.search) {
+    if (args.search && args.search.trim().length > 0) {
       const searchLower = args.search.toLowerCase();
-      allResults = allResults.filter((loan) => {
-        return (
-          loan.loanNumber?.toLowerCase().includes(searchLower) ||
-          loan.lenderBorrowerName?.toLowerCase().includes(searchLower) ||
-          loan.lenderBorrowerContact?.toLowerCase().includes(searchLower) ||
-          loan.notes?.toLowerCase().includes(searchLower) ||
-          loan.terms?.toLowerCase().includes(searchLower) ||
-          false
-        );
-      });
+      // Get collection titles for loans to include in search
+      const loansWithCollectionInfo = await Promise.all(
+        allResults.map(async (loan) => {
+          const items = await ctx.db
+            .query("loanItems")
+            .withIndex("by_loan", (q) => q.eq("loanId", loan._id))
+            .take(1);
+          
+          let collectionTitle = "";
+          if (items.length > 0) {
+            const collection = await ctx.db.get(items[0].collectionId);
+            collectionTitle = collection?.title || "";
+          }
+          
+          return { ...loan, collectionTitle };
+        }),
+      );
+      
+      allResults = loansWithCollectionInfo
+        .filter((loan) => {
+          return (
+            loan.loanNumber?.toLowerCase().includes(searchLower) ||
+            loan.lenderBorrowerName?.toLowerCase().includes(searchLower) ||
+            loan.lenderBorrowerContact?.toLowerCase().includes(searchLower) ||
+            loan.notes?.toLowerCase().includes(searchLower) ||
+            loan.terms?.toLowerCase().includes(searchLower) ||
+            loan.collectionTitle?.toLowerCase().includes(searchLower) ||
+            false
+          );
+        })
+        .map(({ collectionTitle, ...loan }) => loan); // Remove temporary field
     }
 
     // Sort by start date (newest first)

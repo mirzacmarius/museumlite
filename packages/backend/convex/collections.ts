@@ -231,45 +231,118 @@ export const list = query({
     // Check permission
     await requirePermission(ctx, args.organizationId, "collections.read");
 
-    let query = ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      );
+    let allResults: Array<{
+      _id: Id<"collections">;
+      title: string;
+      accessionNumber: string;
+      objectType?: string;
+      currentLocationId?: Id<"locations">;
+      status: "active" | "loaned" | "deaccessioned";
+      culture?: string;
+      period?: string;
+      materials?: string;
+      description?: string;
+      objectName?: string;
+      provenance?: string;
+      catalogedAt: number;
+      _creationTime: number;
+    }>;
 
-    // Apply database-level filters (can be efficiently filtered by Convex)
-    if (args.status) {
-      query = query.filter((q) => q.eq(q.field("status"), args.status));
-    }
+    // Use searchIndex when search term is provided for better performance
+    if (args.search && args.search.trim().length > 0) {
+      // Use searchIndex for efficient full-text search on title
+      let searchQuery = ctx.db
+        .query("collections")
+        .withSearchIndex("search_index", (q) => {
+          let filter = q
+            .search("title", args.search!)
+            .eq("organizationId", args.organizationId);
+          
+          if (args.status) {
+            filter = filter.eq("status", args.status);
+          }
+          
+          return filter;
+        });
 
-    if (args.locationId) {
-      query = query.filter((q) =>
-        q.eq(q.field("currentLocationId"), args.locationId),
-      );
-    }
+      const searchResults = await searchQuery.collect();
 
-    if (args.objectType) {
-      query = query.filter((q) =>
-        q.eq(q.field("objectType"), args.objectType),
-      );
-    }
+      // Also search other fields that aren't in the searchIndex
+      const regularQuery = ctx.db
+        .query("collections")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        );
 
-    // Date range filters
-    if (args.catalogedFrom || args.catalogedTo) {
-      query = query.filter((q) => {
-        let condition = q.gte(q.field("catalogedAt"), args.catalogedFrom ?? 0);
-        if (args.catalogedTo) {
-          condition = q.and(
-            condition,
-            q.lte(q.field("catalogedAt"), args.catalogedTo),
-          );
-        }
-        return condition;
+      let filteredQuery = regularQuery;
+      if (args.status) {
+        filteredQuery = filteredQuery.filter((q) => q.eq(q.field("status"), args.status));
+      }
+
+      const allCollections = await filteredQuery.collect();
+      const searchLower = args.search.toLowerCase();
+      const searchResultIds = new Set(searchResults.map((r) => r._id));
+
+      // Find additional matches in fields not covered by searchIndex
+      const additionalResults = allCollections.filter((c) => {
+        if (searchResultIds.has(c._id)) return false;
+        
+        return (
+          c.accessionNumber?.toLowerCase().includes(searchLower) ||
+          c.description?.toLowerCase().includes(searchLower) ||
+          c.objectName?.toLowerCase().includes(searchLower) ||
+          c.objectType?.toLowerCase().includes(searchLower) ||
+          c.culture?.toLowerCase().includes(searchLower) ||
+          c.period?.toLowerCase().includes(searchLower) ||
+          c.materials?.toLowerCase().includes(searchLower) ||
+          c.provenance?.toLowerCase().includes(searchLower) ||
+          false
+        );
       });
-    }
 
-    // Collect all results that match database-level filters
-    let allResults = await query.collect();
+      // Combine and deduplicate
+      allResults = [...searchResults, ...additionalResults];
+    } else {
+      // No search term - use regular index
+      let query = ctx.db
+        .query("collections")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        );
+
+      // Apply database-level filters
+      if (args.status) {
+        query = query.filter((q) => q.eq(q.field("status"), args.status));
+      }
+
+      if (args.locationId) {
+        query = query.filter((q) =>
+          q.eq(q.field("currentLocationId"), args.locationId),
+        );
+      }
+
+      if (args.objectType) {
+        query = query.filter((q) =>
+          q.eq(q.field("objectType"), args.objectType),
+        );
+      }
+
+      // Date range filters
+      if (args.catalogedFrom || args.catalogedTo) {
+        query = query.filter((q) => {
+          let condition = q.gte(q.field("catalogedAt"), args.catalogedFrom ?? 0);
+          if (args.catalogedTo) {
+            condition = q.and(
+              condition,
+              q.lte(q.field("catalogedAt"), args.catalogedTo),
+            );
+          }
+          return condition;
+        });
+      }
+
+      allResults = await query.collect();
+    }
 
     // Apply JavaScript-level filters (partial matching for text fields)
     if (args.culture) {
@@ -293,22 +366,30 @@ export const list = query({
       );
     }
 
-    if (args.search) {
-      // Enhanced search: search across multiple fields
-      const searchLower = args.search.toLowerCase();
-      allResults = allResults.filter((collection) => {
-        return (
-          collection.title?.toLowerCase().includes(searchLower) ||
-          collection.accessionNumber?.toLowerCase().includes(searchLower) ||
-          collection.description?.toLowerCase().includes(searchLower) ||
-          collection.objectName?.toLowerCase().includes(searchLower) ||
-          collection.objectType?.toLowerCase().includes(searchLower) ||
-          collection.culture?.toLowerCase().includes(searchLower) ||
-          collection.period?.toLowerCase().includes(searchLower) ||
-          collection.materials?.toLowerCase().includes(searchLower) ||
-          collection.provenance?.toLowerCase().includes(searchLower) ||
-          false
-        );
+    // Apply location filter if not already applied (for search case)
+    if (args.locationId && args.search) {
+      allResults = allResults.filter(
+        (c) => c.currentLocationId === args.locationId,
+      );
+    }
+
+    // Apply objectType filter if not already applied (for search case)
+    if (args.objectType && args.search) {
+      allResults = allResults.filter(
+        (c) => c.objectType === args.objectType,
+      );
+    }
+
+    // Apply date range filters if not already applied (for search case)
+    if ((args.catalogedFrom || args.catalogedTo) && args.search) {
+      allResults = allResults.filter((c) => {
+        if (args.catalogedFrom && c.catalogedAt < args.catalogedFrom) {
+          return false;
+        }
+        if (args.catalogedTo && c.catalogedAt > args.catalogedTo) {
+          return false;
+        }
+        return true;
       });
     }
 
@@ -338,6 +419,127 @@ export const list = query({
       })),
       isDone: endIndex >= allResults.length,
       continueCursor: endIndex.toString(),
+    };
+  },
+});
+
+/**
+ * Search collections using searchIndex for better performance
+ * This is optimized for full-text search on the title field
+ */
+export const search = query({
+  args: {
+    organizationId: v.id("organizations"),
+    searchQuery: v.string(),
+    status: v.optional(
+      v.union(
+        v.literal("active"),
+        v.literal("loaned"),
+        v.literal("deaccessioned"),
+      ),
+    ),
+    limit: v.optional(v.number()),
+  },
+  returns: v.object({
+    results: v.array(
+      v.object({
+        _id: v.id("collections"),
+        accessionNumber: v.string(),
+        title: v.string(),
+        objectType: v.optional(v.string()),
+        currentLocationId: v.optional(v.id("locations")),
+        status: v.union(
+          v.literal("active"),
+          v.literal("loaned"),
+          v.literal("deaccessioned"),
+        ),
+        _creationTime: v.number(),
+      }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    // Check permission
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
+    const limit = args.limit ?? 50;
+
+    // Use searchIndex for efficient full-text search on title
+    let searchQuery = ctx.db
+      .query("collections")
+      .withSearchIndex("search_index", (q) => {
+        let filter = q
+          .search("title", args.searchQuery)
+          .eq("organizationId", args.organizationId);
+        
+        if (args.status) {
+          filter = filter.eq("status", args.status);
+        }
+        
+        return filter;
+      });
+
+    const results = await searchQuery.take(limit);
+
+    // Also search other fields that aren't in the searchIndex
+    // This extends the search to accession numbers and other fields
+    const additionalResults: typeof results = [];
+    
+    if (args.searchQuery.length > 0) {
+      const allCollections = await ctx.db
+        .query("collections")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .filter((q) => {
+          let condition = q.eq(q.field("organizationId"), args.organizationId);
+          if (args.status) {
+            condition = q.and(condition, q.eq(q.field("status"), args.status));
+          }
+          return condition;
+        })
+        .collect();
+
+      const searchLower = args.searchQuery.toLowerCase();
+      const resultIds = new Set(results.map((r) => r._id));
+      
+      const additional = allCollections
+        .filter((c) => {
+          // Skip if already in results
+          if (resultIds.has(c._id)) return false;
+          
+          // Search in accession number and other fields
+          return (
+            c.accessionNumber?.toLowerCase().includes(searchLower) ||
+            c.description?.toLowerCase().includes(searchLower) ||
+            c.objectName?.toLowerCase().includes(searchLower) ||
+            c.objectType?.toLowerCase().includes(searchLower) ||
+            false
+          );
+        })
+        .slice(0, Math.max(0, limit - results.length));
+      
+      additionalResults.push(...additional);
+    }
+
+    // Combine and deduplicate results
+    const combined = [...results, ...additionalResults];
+    const uniqueResults = Array.from(
+      new Map(combined.map((item) => [item._id, item])).values(),
+    );
+
+    // Sort by creation time (newest first)
+    uniqueResults.sort((a, b) => b._creationTime - a._creationTime);
+
+    return {
+      results: uniqueResults.slice(0, limit).map((item) => ({
+        _id: item._id,
+        accessionNumber: item.accessionNumber,
+        title: item.title,
+        objectType: item.objectType,
+        currentLocationId: item.currentLocationId,
+        status: item.status,
+        _creationTime: item._creationTime,
+      })),
     };
   },
 });

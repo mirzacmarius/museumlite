@@ -244,17 +244,33 @@ export const list = query({
     let allResults = await query.collect();
 
     // Apply search filter if provided
-    if (args.search) {
+    if (args.search && args.search.trim().length > 0) {
       const searchLower = args.search.toLowerCase();
-      allResults = allResults.filter((deaccession) => {
-        return (
-          deaccession.deaccessionNumber?.toLowerCase().includes(searchLower) ||
-          deaccession.reason?.toLowerCase().includes(searchLower) ||
-          deaccession.disposition?.toLowerCase().includes(searchLower) ||
-          deaccession.notes?.toLowerCase().includes(searchLower) ||
-          false
-        );
-      });
+      // Get collection titles for deaccessions to include in search
+      const deaccessionsWithCollectionInfo = await Promise.all(
+        allResults.map(async (deaccession) => {
+          const collection = await ctx.db.get(deaccession.collectionId);
+          const collectionTitle = collection?.title || "";
+          const accessionNumber = collection?.accessionNumber || "";
+          
+          return { ...deaccession, collectionTitle, accessionNumber };
+        }),
+      );
+      
+      allResults = deaccessionsWithCollectionInfo
+        .filter((deaccession) => {
+          return (
+            deaccession.deaccessionNumber?.toLowerCase().includes(searchLower) ||
+            deaccession.reason?.toLowerCase().includes(searchLower) ||
+            deaccession.disposition?.toLowerCase().includes(searchLower) ||
+            deaccession.notes?.toLowerCase().includes(searchLower) ||
+            deaccession.collectionTitle?.toLowerCase().includes(searchLower) ||
+            deaccession.accessionNumber?.toLowerCase().includes(searchLower) ||
+            deaccession.method?.toLowerCase().includes(searchLower) ||
+            false
+          );
+        })
+        .map(({ collectionTitle, accessionNumber, ...deaccession }) => deaccession); // Remove temporary fields
     }
 
     // Sort by date deaccessioned (newest first)
