@@ -1,17 +1,18 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@v1/ui/popover";
-import { useOrganization } from "./organization-provider";
+import { cn } from "@v1/ui/utils";
 import { useQuery, useMutation } from "convex/react";
 import { Bell, Check, CheckCheck } from "lucide-react";
-import { cn } from "@v1/ui/utils";
 import Link from "next/link";
+import { useOrganization } from "./organization-provider";
 
 function formatRelativeTime(timestamp: number): string {
   const now = Date.now();
@@ -39,7 +40,7 @@ export function NotificationBell() {
   const notificationsData = useQuery(
     api.audit.listNotifications,
     currentOrganizationId
-      ? { organizationId: currentOrganizationId as any, limit: 20 }
+      ? { organizationId: currentOrganizationId as Id<"organizations">, limit: 20 }
       : "skip",
   );
 
@@ -54,12 +55,12 @@ export function NotificationBell() {
   const unreadCount = notificationsData?.unreadCount ?? 0;
 
   const handleMarkRead = async (notificationId: string) => {
-    await markRead({ notificationId: notificationId as any });
+    await markRead({ notificationId: notificationId as Id<"notifications"> });
   };
 
   const handleMarkAllRead = async () => {
     if (!currentOrganizationId) return;
-    await markAllRead({ organizationId: currentOrganizationId as any });
+    await markAllRead({ organizationId: currentOrganizationId as Id<"organizations"> });
   };
 
   const getNotificationLink = (

@@ -65,8 +65,8 @@ export default function NewDeaccessionPage() {
     setIsSubmitting(true);
     try {
       await createDeaccession({
-        organizationId: currentOrganizationId as any,
-        collectionId: formData.collectionId as any,
+        organizationId: currentOrganizationId as Id<"organizations">,
+        collectionId: formData.collectionId as Id<"collections">,
         deaccessionNumber:
           formData.deaccessionNumber || undefined,
         dateDeaccessioned: formData.dateDeaccessioned.getTime(),
@@ -168,7 +168,7 @@ export default function NewDeaccessionPage() {
                     </Label>
                     <Select
                       value={formData.method}
-                      onValueChange={(value: any) =>
+                      onValueChange={(value: "sale" | "donation" | "destruction" | "transfer" | "other") =>
                         setFormData({ ...formData, method: value })
                       }
                     >

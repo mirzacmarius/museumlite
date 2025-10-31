@@ -2,6 +2,7 @@
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Textarea } from "@v1/ui/textarea";
@@ -24,7 +25,7 @@ export default function EditLoanPage() {
 
   const loan = useQuery(
     api.loans.get,
-    loanId ? { loanId: loanId as any } : "skip",
+    loanId ? { loanId: loanId as Id<"loans"> } : "skip",
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -116,7 +117,7 @@ export default function EditLoanPage() {
     setIsSubmitting(true);
     try {
       await updateLoan({
-        loanId: loanId as any,
+        loanId: loanId as Id<"loans">,
         lenderBorrowerName: formData.lenderBorrowerName,
         lenderBorrowerContact:
           formData.lenderBorrowerContact || undefined,
@@ -126,7 +127,7 @@ export default function EditLoanPage() {
           : undefined,
         terms: formData.terms || undefined,
         insuranceValue: formData.insuranceValue
-          ? parseFloat(formData.insuranceValue)
+          ? Number.parseFloat(formData.insuranceValue)
           : undefined,
         notes: formData.notes || undefined,
       });

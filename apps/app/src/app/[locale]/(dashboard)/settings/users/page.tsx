@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
@@ -42,14 +43,14 @@ export default function UsersSettingsPage() {
   const users = useQuery(
     api.organizations.listOrganizationUsers,
     currentOrganizationId
-      ? { organizationId: currentOrganizationId as any }
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
 
   const roles = useQuery(
     api.roles.listRoles,
     currentOrganizationId
-      ? { organizationId: currentOrganizationId as any }
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
 
@@ -84,9 +85,9 @@ export default function UsersSettingsPage() {
     setIsInviting(true);
     try {
       await inviteUser({
-        organizationId: currentOrganizationId as any,
+        organizationId: currentOrganizationId as Id<"organizations">,
         email: inviteEmail.trim(),
-        roleId: selectedRoleId as any,
+        roleId: selectedRoleId as Id<"roles">,
       });
       setInviteEmail("");
       setSelectedRoleId("");
@@ -114,8 +115,8 @@ export default function UsersSettingsPage() {
 
     try {
       await removeUser({
-        organizationId: currentOrganizationId as any,
-        userId: userId as any,
+        organizationId: currentOrganizationId as Id<"organizations">,
+        userId: userId as Id<"users">,
       });
     } catch (err) {
       console.error("Error removing user:", err);
@@ -133,9 +134,9 @@ export default function UsersSettingsPage() {
   ) => {
     try {
       await updateUserRole({
-        organizationId: currentOrganizationId as any,
-        userId: userId as any,
-        roleId: roleId as any,
+        organizationId: currentOrganizationId as Id<"organizations">,
+        userId: userId as Id<"users">,
+        roleId: roleId as Id<"roles">,
       });
     } catch (err) {
       console.error("Error updating user role:", err);

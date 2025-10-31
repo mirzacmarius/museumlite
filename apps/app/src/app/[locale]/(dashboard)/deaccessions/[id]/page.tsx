@@ -2,6 +2,7 @@
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
@@ -25,7 +26,7 @@ export default function DeaccessionDetailPage() {
 
   const deaccession = useQuery(
     api.deaccessions.get,
-    deaccessionId ? { deaccessionId: deaccessionId as any } : "skip",
+    deaccessionId ? { deaccessionId: deaccessionId as Id<"deaccessions"> } : "skip",
   );
 
   if (!currentOrganizationId) {
@@ -221,9 +222,9 @@ export default function DeaccessionDetailPage() {
                       Workflow History
                     </h3>
                     <div className="space-y-3">
-                      {deaccession.workflowHistory.map((entry, index) => (
+                      {deaccession.workflowHistory.map((entry) => (
                         <div
-                          key={index}
+                          key={`${entry.timestamp}-${entry.action}-${entry.userId}`}
                           className="rounded-lg border border-border bg-card p-4"
                         >
                           <div className="flex items-center justify-between">

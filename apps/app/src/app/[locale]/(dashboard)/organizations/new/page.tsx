@@ -2,6 +2,7 @@
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import {
@@ -11,10 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
+import { useOrganization } from "@/components/organization-provider";
 import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useOrganization } from "@/components/organization-provider";
 
 export default function NewOrganizationPage() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function NewOrganizationPage() {
       });
 
       // Set as current organization
-      setCurrentOrganizationId(organizationId as any);
+      setCurrentOrganizationId(organizationId as Id<"organizations">);
       
       // Redirect to dashboard
       router.push("/collections");

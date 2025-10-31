@@ -2,6 +2,7 @@
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Textarea } from "@v1/ui/textarea";
@@ -30,7 +31,7 @@ export default function EditDeaccessionPage() {
 
   const deaccession = useQuery(
     api.deaccessions.get,
-    deaccessionId ? { deaccessionId: deaccessionId as any } : "skip",
+    deaccessionId ? { deaccessionId: deaccessionId as Id<"deaccessions"> } : "skip",
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -119,7 +120,7 @@ export default function EditDeaccessionPage() {
     setIsSubmitting(true);
     try {
       await updateDeaccession({
-        deaccessionId: deaccessionId as any,
+        deaccessionId: deaccessionId as Id<"deaccessions">,
         reason: formData.reason,
         method: formData.method,
         disposition: formData.disposition || undefined,
@@ -209,7 +210,7 @@ export default function EditDeaccessionPage() {
                   </Label>
                   <Select
                     value={formData.method}
-                    onValueChange={(value: any) =>
+                    onValueChange={(value: "sale" | "donation" | "destruction" | "transfer" | "other") =>
                       setFormData({ ...formData, method: value })
                     }
                   >

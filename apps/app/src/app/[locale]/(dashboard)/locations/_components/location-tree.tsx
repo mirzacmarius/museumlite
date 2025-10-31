@@ -105,6 +105,7 @@ function LocationTreeNode({
       <div className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent">
         {hasChildren ? (
           <button
+            type="button"
             onClick={() => setIsExpanded(!isExpanded)}
             className="flex h-6 w-6 items-center justify-center rounded hover:bg-accent"
           >

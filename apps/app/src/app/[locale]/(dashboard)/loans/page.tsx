@@ -2,6 +2,7 @@
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
@@ -130,6 +131,7 @@ export default function LoansPage() {
               {/* Type Filters */}
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={() => setTypeFilter("all")}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     typeFilter === "all"
@@ -140,6 +142,7 @@ export default function LoansPage() {
                   All Types
                 </button>
                 <button
+                  type="button"
                   onClick={() => setTypeFilter("incoming")}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     typeFilter === "incoming"
@@ -151,6 +154,7 @@ export default function LoansPage() {
                   Incoming
                 </button>
                 <button
+                  type="button"
                   onClick={() => setTypeFilter("outgoing")}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     typeFilter === "outgoing"
@@ -166,6 +170,7 @@ export default function LoansPage() {
               {/* Status Filters */}
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={() => setStatusFilter("all")}
                   className={`px-4 py-3 text-sm font-medium transition-colors ${
                     statusFilter === "all"
@@ -176,6 +181,7 @@ export default function LoansPage() {
                   All
                 </button>
                 <button
+                  type="button"
                   onClick={() => setStatusFilter("pending")}
                   className={`px-4 py-3 text-sm font-medium transition-colors ${
                     statusFilter === "pending"
@@ -187,6 +193,7 @@ export default function LoansPage() {
                   Pending
                 </button>
                 <button
+                  type="button"
                   onClick={() => setStatusFilter("active")}
                   className={`px-4 py-3 text-sm font-medium transition-colors ${
                     statusFilter === "active"
@@ -198,6 +205,7 @@ export default function LoansPage() {
                   Active
                 </button>
                 <button
+                  type="button"
                   onClick={() => setStatusFilter("returned")}
                   className={`px-4 py-3 text-sm font-medium transition-colors ${
                     statusFilter === "returned"
@@ -208,6 +216,7 @@ export default function LoansPage() {
                   Returned
                 </button>
                 <button
+                  type="button"
                   onClick={() => setStatusFilter("cancelled")}
                   className={`px-4 py-3 text-sm font-medium transition-colors ${
                     statusFilter === "cancelled"
@@ -249,7 +258,7 @@ function LoanList({
     api.loans.list,
     organizationId
       ? {
-          organizationId: organizationId as any,
+          organizationId: organizationId as Id<"organizations">,
           paginationOpts: { numItems: 50, cursor: null },
           status: statusFilter === "all" ? undefined : statusFilter,
           type: typeFilter === "all" ? undefined : typeFilter,

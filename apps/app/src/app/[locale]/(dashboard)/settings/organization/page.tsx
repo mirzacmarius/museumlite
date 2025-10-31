@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Textarea } from "@v1/ui/textarea";
@@ -34,7 +35,7 @@ export default function OrganizationSettingsPage() {
   const organization = useQuery(
     api.organizations.get,
     currentOrganizationId
-      ? { organizationId: currentOrganizationId as any }
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
 
@@ -93,7 +94,7 @@ export default function OrganizationSettingsPage() {
     setIsSubmitting(true);
     try {
       await updateOrganization({
-        organizationId: currentOrganizationId as any,
+        organizationId: currentOrganizationId as Id<"organizations">,
         name: formData.name.trim(),
         settings: {
           accessionNumberFormat:
@@ -246,21 +247,25 @@ export default function OrganizationSettingsPage() {
                 <div className="space-y-2">
                   <Label>Custom Location Types</Label>
                   <div className="flex flex-wrap gap-2">
-                    {formData.locationTypes.map((type, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-1"
-                      >
-                        <span className="text-sm">{type}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveLocationType(index)}
-                          className="text-muted-foreground hover:text-destructive"
+                    {formData.locationTypes.map((type, index) => {
+                      // Use a combination of type and index for unique key since types might have duplicates
+                      const uniqueKey = `${type}-${index}`;
+                      return (
+                        <div
+                          key={uniqueKey}
+                          className="flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-1"
                         >
-                          ×
-                        </button>
-                      </div>
-                    ))}
+                          <span className="text-sm">{type}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveLocationType(index)}
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                   <Button
                     type="button"

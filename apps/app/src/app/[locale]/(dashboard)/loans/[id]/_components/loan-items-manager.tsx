@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -29,7 +30,6 @@ import { useQuery, useMutation } from "convex/react";
 import { Plus, X, Trash2, ExternalLink, Search } from "lucide-react";
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
 interface LoanItemsManagerProps {
   loanId: string;
@@ -64,7 +64,7 @@ export function LoanItemsManager({
     api.collections.list,
     organizationId && isAddDialogOpen
       ? {
-          organizationId: organizationId as any,
+          organizationId: organizationId as Id<"organizations">,
           paginationOpts: { numItems: 100, cursor: null },
           status: "active",
           search: searchQuery || undefined,

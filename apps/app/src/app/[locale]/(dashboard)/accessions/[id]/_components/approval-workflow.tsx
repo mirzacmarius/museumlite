@@ -34,7 +34,7 @@ export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
 
   const accession = useQuery(
     api.accessions.get,
-    accessionId ? { accessionId: accessionId as any } : "skip",
+    accessionId ? { accessionId: accessionId as Id<"accessions"> } : "skip",
   );
 
   const approveAccession = useMutation(api.accessions.approve);

@@ -2,6 +2,7 @@
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
@@ -27,7 +28,7 @@ export default function AccessionDetailPage() {
 
   const accession = useQuery(
     api.accessions.get,
-    accessionId ? { accessionId: accessionId as any } : "skip",
+    accessionId ? { accessionId: accessionId as Id<"accessions"> } : "skip",
   );
 
   if (!currentOrganizationId) {
@@ -225,9 +226,9 @@ export default function AccessionDetailPage() {
                       Workflow History
                     </h3>
                     <div className="space-y-3">
-                      {accession.workflowHistory.map((entry, index) => (
+                      {accession.workflowHistory.map((entry) => (
                         <div
-                          key={index}
+                          key={`${entry.timestamp}-${entry.action}-${entry.userId}`}
                           className="rounded-lg border border-border bg-card p-4"
                         >
                           <div className="flex items-center justify-between">

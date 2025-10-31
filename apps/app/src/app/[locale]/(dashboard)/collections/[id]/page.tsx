@@ -32,7 +32,7 @@ export default function CollectionDetailPage() {
 
   const collection = useQuery(
     api.collections.get,
-    collectionId ? { collectionId: collectionId as any } : "skip",
+    collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
   );
 
   if (!currentOrganizationId) {
@@ -115,6 +115,7 @@ export default function CollectionDetailPage() {
             {/* Tabs */}
             <div className="flex w-full gap-2 border-b border-border px-6">
               <button
+                type="button"
                 onClick={() => setActiveTab("details")}
                 className={`px-4 py-3 text-sm font-medium transition-colors ${
                   activeTab === "details"
@@ -125,6 +126,7 @@ export default function CollectionDetailPage() {
                 Details
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab("media")}
                 className={`px-4 py-3 text-sm font-medium transition-colors ${
                   activeTab === "media"
@@ -136,6 +138,7 @@ export default function CollectionDetailPage() {
                 Media
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab("history")}
                 className={`px-4 py-3 text-sm font-medium transition-colors ${
                   activeTab === "history"
@@ -147,6 +150,7 @@ export default function CollectionDetailPage() {
                 History
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab("loans")}
                 className={`px-4 py-3 text-sm font-medium transition-colors ${
                   activeTab === "loans"
@@ -319,7 +323,7 @@ function CollectionMedia({ collectionId }: { collectionId: string }) {
 function CollectionHistory({ collectionId }: { collectionId: string }) {
   const history = useQuery(
     api.locations.getCollectionLocationHistory,
-    collectionId ? { collectionId: collectionId as any } : "skip",
+    collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
   );
 
   if (history === undefined) {
@@ -367,7 +371,7 @@ function CollectionHistory({ collectionId }: { collectionId: string }) {
 function CollectionLoans({ collectionId }: { collectionId: string }) {
   const loans = useQuery(
     api.loans.getLoansForCollection,
-    collectionId ? { collectionId: collectionId as any } : "skip",
+    collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
   );
 
   if (loans === undefined) {

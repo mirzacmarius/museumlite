@@ -2,6 +2,7 @@
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useOrganization } from "@/components/organization-provider";
 import { useQuery } from "convex/react";
@@ -30,7 +31,7 @@ export default function DashboardPage() {
   const analytics = useQuery(
     api.dashboard.getAnalytics,
     currentOrganizationId
-      ? { organizationId: currentOrganizationId as any }
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
 

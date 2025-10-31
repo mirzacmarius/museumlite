@@ -2,6 +2,7 @@
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Textarea } from "@v1/ui/textarea";
@@ -21,7 +22,6 @@ import { ArrowLeft, Save, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
 export default function NewLoanPage() {
   const router = useRouter();
@@ -50,7 +50,7 @@ export default function NewLoanPage() {
     api.collections.list,
     currentOrganizationId
       ? {
-          organizationId: currentOrganizationId as any,
+          organizationId: currentOrganizationId as Id<"organizations">,
           paginationOpts: { numItems: 100, cursor: null },
           status: "active",
           search: collectionSearchQuery || undefined,
@@ -84,7 +84,7 @@ export default function NewLoanPage() {
     setIsSubmitting(true);
     try {
       await createLoan({
-        organizationId: currentOrganizationId as any,
+        organizationId: currentOrganizationId as Id<"organizations">,
         loanNumber: formData.loanNumber || undefined,
         type: formData.type,
         lenderBorrowerName: formData.lenderBorrowerName,
@@ -96,7 +96,7 @@ export default function NewLoanPage() {
           : undefined,
         terms: formData.terms || undefined,
         insuranceValue: formData.insuranceValue
-          ? parseFloat(formData.insuranceValue)
+          ? Number.parseFloat(formData.insuranceValue)
           : undefined,
         notes: formData.notes || undefined,
         collectionIds:
@@ -166,7 +166,7 @@ export default function NewLoanPage() {
                     </Label>
                     <Select
                       value={formData.type}
-                      onValueChange={(value: any) =>
+                      onValueChange={(value: "incoming" | "outgoing") =>
                         setFormData({ ...formData, type: value })
                       }
                     >

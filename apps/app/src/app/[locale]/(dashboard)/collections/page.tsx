@@ -157,7 +157,7 @@ function CollectionFiltersAndList({
     api.collections.list,
     organizationId
       ? {
-          organizationId: organizationId as any,
+          organizationId: organizationId as Id<"organizations">,
           paginationOpts: { numItems: 50, cursor },
           search: filters.search || undefined,
           status:
@@ -432,13 +432,13 @@ function CollectionListItem({
   const locationPath = useQuery(
     api.locations.getLocationPath,
     item.currentLocationId && organizationId
-      ? { locationId: item.currentLocationId as any }
+      ? { locationId: item.currentLocationId as Id<"locations"> }
       : "skip",
   );
 
   const primaryImageUrl = useQuery(
     api.media.getPrimaryImageUrl,
-    { collectionId: item._id as any },
+    { collectionId: item._id as Id<"collections"> },
   );
 
   return (

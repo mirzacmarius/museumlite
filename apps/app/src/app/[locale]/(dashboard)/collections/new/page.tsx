@@ -79,7 +79,7 @@ export default function CollectionFormPage() {
         organizationId: currentOrganizationId,
         ...formData,
         currentLocationId: formData.currentLocationId
-          ? (formData.currentLocationId as any)
+          ? (formData.currentLocationId as Id<"locations">)
           : undefined,
       });
       router.push("/collections");

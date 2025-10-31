@@ -14,8 +14,21 @@ interface ActivityListProps {
   endDate?: number;
 }
 
-function groupByMonth(activities: any[]) {
-  const groups: Record<string, typeof activities> = {};
+type Activity = {
+  _id: Id<"auditLog">;
+  userId: Id<"users">;
+  userName?: string;
+  userEmail?: string;
+  userImage?: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  changes?: unknown;
+  timestamp: number;
+};
+
+function groupByMonth(activities: Activity[]) {
+  const groups: Record<string, Activity[]> = {};
 
   for (const activity of activities) {
     const date = new Date(activity.timestamp);
@@ -39,7 +52,7 @@ export function ActivityList({
   endDate,
 }: ActivityListProps) {
   const [cursor, setCursor] = useState<string | undefined>();
-  const [allActivities, setAllActivities] = useState<any[]>([]);
+  const [allActivities, setAllActivities] = useState<Activity[]>([]);
   const lastProcessedCursor = useRef<string | undefined>();
   const lastProcessedActivityIds = useRef<Set<string>>(new Set());
 
@@ -67,7 +80,7 @@ export function ActivityList({
   useEffect(() => {
     if (!activities) return;
 
-    const currentActivityIds = new Set(activities.map((a: any) => a._id));
+    const currentActivityIds = new Set(activities.map((a) => a._id));
 
     if (cursor) {
       // Appending new page - prevent processing the same cursor twice
@@ -78,12 +91,12 @@ export function ActivityList({
       setAllActivities((prev) => {
         const existingIds = new Set(prev.map((a) => a._id));
         const newActivities = activities.filter(
-          (a: any) => !existingIds.has(a._id),
+          (a) => !existingIds.has(a._id),
         );
         // Only update if there are actually new activities
         if (newActivities.length === 0) return prev;
         // Update ref with new IDs
-        newActivities.forEach((a: any) => lastProcessedActivityIds.current.add(a._id));
+        newActivities.forEach((a) => lastProcessedActivityIds.current.add(a._id));
         return [...prev, ...newActivities];
       });
     } else {

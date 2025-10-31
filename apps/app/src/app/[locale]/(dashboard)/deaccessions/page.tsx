@@ -2,6 +2,7 @@
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
@@ -135,6 +136,7 @@ export default function DeaccessionsPage() {
             {/* Status Filters */}
             <div className="flex gap-2 border-b border-border px-6">
               <button
+                type="button"
                 onClick={() => setStatusFilter("all")}
                 className={`px-4 py-3 text-sm font-medium transition-colors ${
                   statusFilter === "all"
@@ -145,6 +147,7 @@ export default function DeaccessionsPage() {
                 All
               </button>
               <button
+                type="button"
                 onClick={() => setStatusFilter("pending")}
                 className={`px-4 py-3 text-sm font-medium transition-colors ${
                   statusFilter === "pending"
@@ -156,6 +159,7 @@ export default function DeaccessionsPage() {
                 Pending
               </button>
               <button
+                type="button"
                 onClick={() => setStatusFilter("approved")}
                 className={`px-4 py-3 text-sm font-medium transition-colors ${
                   statusFilter === "approved"
@@ -167,6 +171,7 @@ export default function DeaccessionsPage() {
                 Approved
               </button>
               <button
+                type="button"
                 onClick={() => setStatusFilter("rejected")}
                 className={`px-4 py-3 text-sm font-medium transition-colors ${
                   statusFilter === "rejected"
@@ -204,7 +209,7 @@ function DeaccessionList({
     api.deaccessions.list,
     organizationId
       ? {
-          organizationId: organizationId as any,
+          organizationId: organizationId as Id<"organizations">,
           paginationOpts: { numItems: 50, cursor: null },
           status: statusFilter === "all" ? undefined : statusFilter,
           search: searchQuery.trim() || undefined,

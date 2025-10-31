@@ -41,7 +41,7 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
   const { currentOrganizationId } = useOrganization();
   const media = useQuery(
     api.media.list,
-    collectionId ? { collectionId: collectionId as any } : "skip",
+    collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
   );
   const generateUploadUrl = useMutation(api.media.generateUploadUrl);
   const createMedia = useMutation(api.media.create);
@@ -272,7 +272,10 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
                       src={file.url}
                       className="h-full w-full object-cover"
                       controls={false}
-                    />
+                      aria-label={file.caption || file.fileName}
+                    >
+                      <track kind="captions" />
+                    </video>
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-muted">
                       <ImageIcon className="h-12 w-12 text-muted-foreground" />

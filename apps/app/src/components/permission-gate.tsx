@@ -1,8 +1,9 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
-import { type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useOrganization } from "./organization-provider";
 
 interface PermissionGateProps {
@@ -54,7 +55,7 @@ export function usePermission(
     api.roles.checkPermission,
     organizationId
       ? {
-          organizationId: organizationId as any,
+          organizationId: organizationId as Id<"organizations">,
           permissionName: permission,
         }
       : "skip",
@@ -71,7 +72,7 @@ export function useUserPermissions(organizationId: string | null): string[] {
     api.roles.getUserPermissions,
     organizationId
       ? {
-          organizationId: organizationId as any,
+          organizationId: organizationId as Id<"organizations">,
         }
       : "skip",
   );

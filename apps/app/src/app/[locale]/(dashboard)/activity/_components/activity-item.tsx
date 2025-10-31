@@ -9,7 +9,7 @@ interface ActivityItemProps {
   userName?: string;
   userImage?: string;
   timestamp: number;
-  changes?: any;
+  changes?: Record<string, unknown>;
 }
 
 function getActionIcon(entityType: string) {
@@ -25,7 +25,7 @@ function formatActionDescription(
   action: string,
   entityType: string,
   entityId: string,
-  changes?: any,
+  changes?: Record<string, unknown>,
 ): React.ReactNode {
   const parts: React.ReactNode[] = ["You "];
 

@@ -2,6 +2,7 @@
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Textarea } from "@v1/ui/textarea";
@@ -58,13 +59,13 @@ export default function NewAccessionPage() {
     setIsSubmitting(true);
     try {
       await createAccession({
-        organizationId: currentOrganizationId as any,
+        organizationId: currentOrganizationId as Id<"organizations">,
         accessionNumber:
           formData.accessionNumber || undefined,
         dateReceived: formData.dateReceived.getTime(),
         source: formData.source,
         method: formData.method,
-        cost: formData.cost ? parseFloat(formData.cost) : undefined,
+        cost: formData.cost ? Number.parseFloat(formData.cost) : undefined,
         notes: formData.notes || undefined,
       });
       router.push("/accessions");
@@ -145,7 +146,7 @@ export default function NewAccessionPage() {
                     </Label>
                     <Select
                       value={formData.method}
-                      onValueChange={(value: any) =>
+                      onValueChange={(value: "purchase" | "donation" | "bequest" | "transfer" | "loan" | "other") =>
                         setFormData({ ...formData, method: value })
                       }
                     >

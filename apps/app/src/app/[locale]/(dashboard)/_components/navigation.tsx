@@ -3,6 +3,7 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { CheckoutLink } from "@convex-dev/polar/react";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button, buttonVariants } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import {
@@ -81,7 +82,7 @@ export function Navigation({
         slug,
         type: "museum", // Default type
       });
-      setCurrentOrganizationId(organizationId as any);
+      setCurrentOrganizationId(organizationId as Id<"organizations">);
       setNewOrgName("");
       setShowCreateForm(false);
       setIsPersonalAccountOpen(false); // Close dropdown after creation

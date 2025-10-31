@@ -2,6 +2,7 @@
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
@@ -29,7 +30,7 @@ export default function LoanDetailPage() {
 
   const loan = useQuery(
     api.loans.get,
-    loanId ? { loanId: loanId as any } : "skip",
+    loanId ? { loanId: loanId as Id<"loans"> } : "skip",
   );
 
   if (!currentOrganizationId) {

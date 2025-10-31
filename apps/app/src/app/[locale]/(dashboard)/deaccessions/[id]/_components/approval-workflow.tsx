@@ -36,7 +36,7 @@ export function ApprovalWorkflow({
 
   const deaccession = useQuery(
     api.deaccessions.get,
-    deaccessionId ? { deaccessionId: deaccessionId as any } : "skip",
+    deaccessionId ? { deaccessionId: deaccessionId as Id<"deaccessions"> } : "skip",
   );
 
   const approveDeaccession = useMutation(api.deaccessions.approve);

@@ -2,6 +2,7 @@
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Textarea } from "@v1/ui/textarea";
@@ -30,7 +31,7 @@ export default function EditAccessionPage() {
 
   const accession = useQuery(
     api.accessions.get,
-    accessionId ? { accessionId: accessionId as any } : "skip",
+    accessionId ? { accessionId: accessionId as Id<"accessions"> } : "skip",
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -116,10 +117,10 @@ export default function EditAccessionPage() {
     setIsSubmitting(true);
     try {
       await updateAccession({
-        accessionId: accessionId as any,
+        accessionId: accessionId as Id<"accessions">,
         source: formData.source,
         method: formData.method,
-        cost: formData.cost ? parseFloat(formData.cost) : undefined,
+        cost: formData.cost ? Number.parseFloat(formData.cost) : undefined,
         notes: formData.notes || undefined,
       });
       router.push(`/accessions/${accessionId}`);
@@ -201,7 +202,7 @@ export default function EditAccessionPage() {
                   </Label>
                   <Select
                     value={formData.method}
-                    onValueChange={(value: any) =>
+                    onValueChange={(value: "purchase" | "donation" | "bequest" | "transfer" | "loan" | "other") =>
                       setFormData({ ...formData, method: value })
                     }
                   >

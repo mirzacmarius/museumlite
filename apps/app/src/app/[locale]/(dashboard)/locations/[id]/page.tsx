@@ -2,6 +2,7 @@
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import {
   AlertDialog,
@@ -32,7 +33,7 @@ export default function LocationDetailPage() {
 
   const location = useQuery(
     api.locations.get,
-    locationId ? { locationId: locationId as any } : "skip",
+    locationId ? { locationId: locationId as Id<"locations"> } : "skip",
   );
 
   const deleteLocation = useMutation(api.locations.deleteLocation);
@@ -66,7 +67,7 @@ export default function LocationDetailPage() {
   const handleDelete = async () => {
     setError(null);
     try {
-      await deleteLocation({ locationId: locationId as any });
+      await deleteLocation({ locationId: locationId as Id<"locations"> });
       router.push("/locations");
     } catch (err) {
       setError(

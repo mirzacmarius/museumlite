@@ -127,6 +127,7 @@ export function CollectionSelector({
               />
               {searchQuery && (
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     setSearchQuery("");

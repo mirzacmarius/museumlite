@@ -39,7 +39,7 @@ export default function EditLocationPage() {
 
   const location = useQuery(
     api.locations.get,
-    locationId ? { locationId: locationId as any } : "skip",
+    locationId ? { locationId: locationId as Id<"locations"> } : "skip",
   );
 
   const locationTypes = useQuery(

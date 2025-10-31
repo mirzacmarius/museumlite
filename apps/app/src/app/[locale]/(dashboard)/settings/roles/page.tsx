@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Textarea } from "@v1/ui/textarea";
@@ -20,7 +21,6 @@ import { PermissionGate } from "@/components/permission-gate";
 import { useMutation, useQuery } from "convex/react";
 import { Plus, Trash2, Edit } from "lucide-react";
 import { useState } from "react";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
 export default function RolesSettingsPage() {
   const { currentOrganizationId } = useOrganization();
@@ -43,7 +43,7 @@ export default function RolesSettingsPage() {
   const roles = useQuery(
     api.roles.listRoles,
     currentOrganizationId
-      ? { organizationId: currentOrganizationId as any }
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
 
@@ -92,7 +92,7 @@ export default function RolesSettingsPage() {
     setIsSubmitting(true);
     try {
       await createRole({
-        organizationId: currentOrganizationId as any,
+        organizationId: currentOrganizationId as Id<"organizations">,
         name: formData.name.trim(),
         description: formData.description.trim() || undefined,
         permissionIds: formData.selectedPermissions,

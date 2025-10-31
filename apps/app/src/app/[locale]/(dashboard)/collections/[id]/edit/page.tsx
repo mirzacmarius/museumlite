@@ -40,7 +40,7 @@ export default function CollectionEditPage() {
 
   const collection = useQuery(
     api.collections.get,
-    collectionId ? { collectionId: collectionId as any } : "skip",
+    collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -120,10 +120,10 @@ export default function CollectionEditPage() {
     setIsSubmitting(true);
     try {
       await updateCollection({
-        collectionId: collectionId as any,
+        collectionId: collectionId as Id<"collections">,
         ...formData,
         currentLocationId: formData.currentLocationId
-          ? (formData.currentLocationId as any)
+          ? (formData.currentLocationId as Id<"locations">)
           : undefined,
       });
       router.push(`/collections/${collectionId}`);

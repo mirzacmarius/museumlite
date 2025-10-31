@@ -47,6 +47,7 @@ export function ActivityFilters({
       {/* Type Filter */}
       <div className="flex flex-col gap-2">
         <button
+          type="button"
           className="flex items-center justify-between text-sm text-white/60 hover:text-white"
           onClick={() => {
             // Toggle the filter visibility
@@ -69,6 +70,7 @@ export function ActivityFilters({
           <div className="ml-4 flex flex-col gap-1">
             {entityTypes.map((type) => (
               <button
+                type="button"
                 key={type.value}
                 className={`text-left text-sm hover:text-white ${
                   selectedEntityType === type.value

@@ -91,7 +91,7 @@ export function MoveObjectDialog({
   // Flatten locations recursively for selection
   const flattenLocations = (
     locs: typeof rootLocations,
-    parent: string = "",
+    parent = "",
   ): Array<{ id: string; name: string; type: string }> => {
     if (!locs) return [];
     const result: Array<{ id: string; name: string; type: string }> = [];
@@ -107,7 +107,7 @@ export function MoveObjectDialog({
           children: undefined,
         }));
         result.push(
-          ...flattenLocations(childList as any, displayName),
+          ...flattenLocations(childList as typeof rootLocations, displayName),
         );
       }
     }
