@@ -724,3 +724,84 @@ export default function App() {
   return <div>Hello World</div>;
 }
 ```
+
+## Design System Rules (Vercel-inspired)
+
+When building Activity/Logs pages and similar interfaces, follow these Vercel-inspired design principles:
+
+### Color Scheme
+
+- **Background**: Black (#000000 or very dark gray) for main content areas
+- **Primary text**: White (#FFFFFF) for headings, main descriptions, active navigation
+- **Secondary text**: Light gray (#A0A0A0) for timestamps, filter labels, less emphasized details
+- **Borders**: Subtle light gray (white/10 opacity) for interactive elements
+
+### Typography
+
+- **Page titles**: Large (text-2xl or text-3xl), bold, white
+- **Section headers** (month groupings): Medium-sized (text-base), bold, white
+- **Body text**: Regular weight, white for primary content
+- **Key identifiers**: Bold within descriptions (organization names, IDs, variable names)
+- **Timestamps**: Smaller font (text-sm), light gray (text-white/60), regular weight
+
+### Layout
+
+- **Minimalist design**: Ample whitespace, clean layout
+- **Subtle borders**: Use `border-white/10` or similar, avoid heavy dividers between list items
+- **Two-column layout**: Narrow left panel (filters), wide right panel (content)
+- **Consistent spacing**: Use gap utilities (gap-4, gap-6, gap-12) for consistent spacing
+
+### Icons
+
+- **Simple monochromatic**: Light gray/white icons from lucide-react
+- **Consistent iconography**: Use appropriate icons for actions (GitBranch for organization, User for user actions, etc.)
+- **Size**: Standard h-4 w-4 for inline icons
+
+### Timestamps
+
+- **Right-aligned**: Use flexbox with justify-between
+- **Light gray color**: `text-white/60`
+- **Relative format**: Abbreviated format (e.g., "23h", "1d", "2w", "3mo")
+
+### Interactive Elements
+
+- **Subtle rounded corners**: Use `rounded-md` or `rounded-lg`
+- **Dark backgrounds**: Slightly different from main page (use `bg-black` or `bg-white/5`)
+- **Subtle borders**: `border-white/10` for buttons and dropdowns
+- **Hover states**: `hover:bg-white/5` for subtle feedback
+- **Underlined active navigation**: Use `border-b-2 border-primary` for active state
+
+### Filters
+
+- **Left panel**: Fixed width (w-64), collapsible sections
+- **Clear labels**: Bold section headers
+- **Date range dropdown**: Calendar icon on left, chevron on right
+- **Type filter**: Collapsible with chevron indicators
+
+### Pagination
+
+- **Centered "Load More" button**: Dark background (`bg-black`), white text, subtle border
+- **Rounded corners**: `rounded-md` or `rounded-lg`
+
+### Activity Descriptions
+
+- **Start with "You"**: White text, followed by action verb
+- **Bold important details**: Names, IDs, variables should be wrapped in `<strong>` tags
+- **Format**: "You [action] [entity type] [identifier]"
+
+### Implementation Example
+
+```tsx
+// Activity item with Vercel-style design
+<div className="flex items-start gap-3 py-3">
+  <div className="mt-0.5 flex-shrink-0">
+    <GitBranch className="h-4 w-4 text-white/60" />
+  </div>
+  <div className="flex flex-1 items-start justify-between gap-4">
+    <div className="flex-1 text-sm text-white">
+      You <strong>updated</strong> organization <strong>Acme Museum</strong>
+    </div>
+    <div className="text-sm text-white/60">23h</div>
+  </div>
+</div>
+```

@@ -221,3 +221,90 @@ export async function canApproveAtStep(
   return step.roleId === userOrganization.roleId;
 }
 
+/**
+ * Get users who should be notified for a workflow step
+ * Returns users with the required role for the next step
+ */
+export async function getUsersToNotifyForWorkflowStep(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  workflowType: "accession" | "deaccession",
+  stepNumber: number,
+): Promise<Id<"users">[]> {
+  // Get workflow config
+  const workflowConfig = await ctx.db
+    .query("workflowConfigs")
+    .withIndex("by_organization", (q) =>
+      q.eq("organizationId", organizationId),
+    )
+    .filter((q) => q.eq(q.field("workflowType"), workflowType))
+    .first();
+
+  if (!workflowConfig) {
+    // No workflow config - notify all users with approval permission
+    const permissionName =
+      workflowType === "accession"
+        ? "collections.approve_accession"
+        : "collections.approve_deaccession";
+
+    // Get all users in organization
+    const userOrgs = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect();
+
+    const userIds: Id<"users">[] = [];
+    for (const userOrg of userOrgs) {
+      const role = await ctx.db.get(userOrg.roleId);
+      if (!role) continue;
+
+      const rolePermissions = await ctx.db
+        .query("rolePermissions")
+        .withIndex("by_role", (q) => q.eq("roleId", role._id))
+        .collect();
+
+      const permissions = await Promise.all(
+        rolePermissions.map((rp) => ctx.db.get(rp.permissionId)),
+      );
+
+      const permissionNames = permissions
+        .filter((p): p is NonNullable<typeof p> => p !== null)
+        .map((p) => p.name);
+
+      if (permissionNames.includes(permissionName)) {
+        userIds.push(userOrg.userId);
+      }
+    }
+
+    return userIds;
+  }
+
+  // Find the step
+  const step = workflowConfig.steps.find(
+    (s) => s.stepNumber === stepNumber,
+  );
+
+  if (!step) {
+    return [];
+  }
+
+  // Get all users with the required role
+  const userOrgs = await ctx.db
+    .query("userOrganizations")
+    .withIndex("by_organization", (q) =>
+      q.eq("organizationId", organizationId),
+    )
+    .collect();
+
+  const userIds: Id<"users">[] = [];
+  for (const userOrg of userOrgs) {
+    if (userOrg.roleId === step.roleId) {
+      userIds.push(userOrg.userId);
+    }
+  }
+
+  return userIds;
+}
+

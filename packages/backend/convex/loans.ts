@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { requirePermission } from "./utils/permissions";
 
@@ -141,6 +142,58 @@ export const create = mutation({
           loanId,
           collectionId,
           conditionOut: args.conditionOut,
+        });
+      }
+    }
+
+    // Log audit action
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "created",
+      entityType: "loan",
+      entityId: loanId,
+      changes: { loanNumber, type: args.type, status: "pending" },
+    });
+
+    // Notify users with loan approval permission
+    const userOrgs = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    for (const userOrg of userOrgs) {
+      // Check if user has loan approval permission
+      const role = await ctx.db.get(userOrg.roleId);
+      if (!role) continue;
+
+      const rolePermissions = await ctx.db
+        .query("rolePermissions")
+        .withIndex("by_role", (q) => q.eq("roleId", role._id))
+        .collect();
+
+      const permissions = await Promise.all(
+        rolePermissions.map((rp) => ctx.db.get(rp.permissionId)),
+      );
+
+      const permissionNames = permissions
+        .filter((p): p is NonNullable<typeof p> => p !== null)
+        .map((p) => p.name);
+
+      if (
+        permissionNames.includes("loans.approve") &&
+        userOrg.userId !== userId
+      ) {
+        await ctx.runMutation(internal.audit.createNotificationInternal, {
+          organizationId: args.organizationId,
+          userId: userOrg.userId,
+          type: "workflow_pending",
+          title: "New Loan Requires Approval",
+          message: `Loan ${loanNumber} (${args.type}) is pending your approval.`,
+          relatedEntityType: "loan",
+          relatedEntityId: loanId,
         });
       }
     }
@@ -590,6 +643,38 @@ export const approve = mutation({
       approvedAt: Date.now(),
     });
 
+    // Log audit action
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: loan.organizationId,
+      userId,
+      action: "approved",
+      entityType: "loan",
+      entityId: args.loanId,
+      changes: { status: "active" },
+    });
+
+    // Notify all users in organization about loan approval
+    const userOrgs = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", loan.organizationId),
+      )
+      .collect();
+
+    for (const userOrg of userOrgs) {
+      if (userOrg.userId !== userId) {
+        await ctx.runMutation(internal.audit.createNotificationInternal, {
+          organizationId: loan.organizationId,
+          userId: userOrg.userId,
+          type: "workflow_approved",
+          title: "Loan Approved",
+          message: `Loan ${loan.loanNumber} has been approved and is now active.`,
+          relatedEntityType: "loan",
+          relatedEntityId: args.loanId,
+        });
+      }
+    }
+
     return null;
   },
 });
@@ -626,6 +711,16 @@ export const returnLoan = mutation({
       status: "returned",
     });
 
+    // Log audit action
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: loan.organizationId,
+      userId,
+      action: "returned",
+      entityType: "loan",
+      entityId: args.loanId,
+      changes: { status: "returned" },
+    });
+
     // Update collection statuses back to active
     const loanItems = await ctx.db
       .query("loanItems")
@@ -643,6 +738,28 @@ export const returnLoan = mutation({
       if (args.conditionIn !== undefined) {
         await ctx.db.patch(item._id, {
           conditionIn: args.conditionIn,
+        });
+      }
+    }
+
+    // Notify users about loan return
+    const userOrgs = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", loan.organizationId),
+      )
+      .collect();
+
+    for (const userOrg of userOrgs) {
+      if (userOrg.userId !== userId) {
+        await ctx.runMutation(internal.audit.createNotificationInternal, {
+          organizationId: loan.organizationId,
+          userId: userOrg.userId,
+          type: "loan_returned",
+          title: "Loan Returned",
+          message: `Loan ${loan.loanNumber} has been returned.`,
+          relatedEntityType: "loan",
+          relatedEntityId: args.loanId,
         });
       }
     }
@@ -682,6 +799,16 @@ export const cancel = mutation({
       status: "cancelled",
     });
 
+    // Log audit action
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: loan.organizationId,
+      userId,
+      action: "cancelled",
+      entityType: "loan",
+      entityId: args.loanId,
+      changes: { status: "cancelled" },
+    });
+
     // Update collection statuses back to active
     const loanItems = await ctx.db
       .query("loanItems")
@@ -694,6 +821,28 @@ export const cancel = mutation({
         lastModifiedBy: userId,
         lastModifiedAt: Date.now(),
       });
+    }
+
+    // Notify users about loan cancellation
+    const userOrgs = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", loan.organizationId),
+      )
+      .collect();
+
+    for (const userOrg of userOrgs) {
+      if (userOrg.userId !== userId) {
+        await ctx.runMutation(internal.audit.createNotificationInternal, {
+          organizationId: loan.organizationId,
+          userId: userOrg.userId,
+          type: "loan_cancelled",
+          title: "Loan Cancelled",
+          message: `Loan ${loan.loanNumber} has been cancelled.`,
+          relatedEntityType: "loan",
+          relatedEntityId: args.loanId,
+        });
+      }
     }
 
     return null;

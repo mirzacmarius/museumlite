@@ -35,4 +35,27 @@ export default {
       billing: "Facturation",
     },
   },
+  activity: {
+    title: "Activité",
+    headerTitle: "Activité",
+    headerDescription: "Voir tous les changements dans votre organisation",
+    filters: {
+      title: "Filtres",
+      dateRange: "Tout le temps",
+      type: "Type",
+    },
+    entityTypes: {
+      organization: "Organisation",
+      collection: "Collection",
+      loan: "Prêt",
+      accession: "Acquisition",
+      deaccession: "Désaccession",
+      location: "Emplacement",
+      user: "Utilisateur",
+    },
+    noActivity: "Aucune activité trouvée",
+    loadMore: "Charger plus",
+    selectOrganization: "Sélectionner une Organisation",
+    selectOrganizationDescription: "Veuillez sélectionner une organisation dans le menu déroulant ci-dessus pour voir l'activité.",
+  },
 } as const;

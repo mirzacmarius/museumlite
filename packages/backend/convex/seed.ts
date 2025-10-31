@@ -685,6 +685,30 @@ export const seedDatabase = internalAction({
 
     console.log("✅ Created deaccessions");
 
+    // Create audit log entries for activity tracking
+    await ctx.runMutation(internal.seed.createAuditLogs, {
+      userIds,
+      orgSlugToId,
+    });
+
+    console.log("✅ Created audit log entries");
+
+    // Create notifications
+    await ctx.runMutation(internal.seed.createNotifications, {
+      userIds,
+      orgSlugToId,
+    });
+
+    console.log("✅ Created notifications");
+
+    // Create condition reports for loan items
+    await ctx.runMutation(internal.seed.createConditionReports, {
+      userIds,
+      orgSlugToId,
+    });
+
+    console.log("✅ Created condition reports");
+
     console.log("🎉 Database seeding completed successfully!");
     return null;
   },
@@ -1255,6 +1279,337 @@ export const createDeaccessions = internalMutation({
           lastModifiedBy: userId,
           lastModifiedAt: Date.now(),
         });
+      }
+    }
+
+    return null;
+  },
+});
+
+/**
+ * Create audit log entries for activity tracking
+ */
+export const createAuditLogs = internalMutation({
+  args: {
+    userIds: v.any(),
+    orgSlugToId: v.any(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userIdsMap = args.userIds as Record<string, Id<"users">>;
+    const orgSlugToIdMap = args.orgSlugToId as Record<string, Id<"organizations">>;
+
+    // Get some collections and loans to create audit entries for
+    const organizations = await ctx.db.query("organizations").collect();
+    
+    for (const org of organizations) {
+      const userId = userIdsMap[org.slug];
+      if (!userId) continue;
+
+      // Get collections for this org
+      const collections = await ctx.db
+        .query("collections")
+        .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+        .take(5);
+
+      // Get loans for this org
+      const loans = await ctx.db
+        .query("loans")
+        .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+        .take(3);
+
+      // Get accessions for this org
+      const accessions = await ctx.db
+        .query("accessions")
+        .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+        .take(2);
+
+      // Get deaccessions for this org
+      const deaccessions = await ctx.db
+        .query("deaccessions")
+        .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+        .take(2);
+
+      // Create audit entries for collections
+      for (const collection of collections) {
+        const timestamps = [
+          Date.now() - 7 * 24 * 60 * 60 * 1000, // 7 days ago
+          Date.now() - 3 * 24 * 60 * 60 * 1000, // 3 days ago
+          Date.now() - 1 * 24 * 60 * 60 * 1000, // 1 day ago
+        ];
+
+        for (const timestamp of timestamps) {
+          await ctx.db.insert("auditLog", {
+            organizationId: org._id,
+            userId,
+            action: "updated",
+            entityType: "collection",
+            entityId: collection._id,
+            changes: {
+              field: Math.random() > 0.5 ? "description" : "condition",
+              oldValue: "Previous value",
+              newValue: "Updated value",
+            },
+            timestamp,
+          });
+        }
+
+        // Create entry for creation
+        await ctx.db.insert("auditLog", {
+          organizationId: org._id,
+          userId,
+          action: "created",
+          entityType: "collection",
+          entityId: collection._id,
+          timestamp: collection.catalogedAt,
+        });
+      }
+
+      // Create audit entries for loans
+      for (const loan of loans) {
+        await ctx.db.insert("auditLog", {
+          organizationId: org._id,
+          userId,
+          action: loan.status === "active" ? "approved" : "created",
+          entityType: "loan",
+          entityId: loan._id,
+          changes: {
+            status: loan.status,
+          },
+          timestamp: loan.startDate,
+        });
+      }
+
+      // Create audit entries for accessions
+      for (const accession of accessions) {
+        await ctx.db.insert("auditLog", {
+          organizationId: org._id,
+          userId,
+          action: accession.status === "approved" ? "approved" : "created",
+          entityType: "accession",
+          entityId: accession._id,
+          changes: {
+            status: accession.status,
+            method: accession.method,
+          },
+          timestamp: accession.dateReceived,
+        });
+      }
+
+      // Create audit entries for deaccessions
+      for (const deaccession of deaccessions) {
+        await ctx.db.insert("auditLog", {
+          organizationId: org._id,
+          userId,
+          action: deaccession.status === "approved" ? "approved" : "created",
+          entityType: "deaccession",
+          entityId: deaccession._id,
+          changes: {
+            status: deaccession.status,
+            method: deaccession.method,
+          },
+          timestamp: deaccession.dateDeaccessioned,
+        });
+      }
+    }
+
+    return null;
+  },
+});
+
+/**
+ * Create notifications for users
+ */
+export const createNotifications = internalMutation({
+  args: {
+    userIds: v.any(),
+    orgSlugToId: v.any(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userIdsMap = args.userIds as Record<string, Id<"users">>;
+    const orgSlugToIdMap = args.orgSlugToId as Record<string, Id<"organizations">>;
+
+    // Get some loans, accessions, and deaccessions to create notifications for
+    const organizations = await ctx.db.query("organizations").collect();
+
+    for (const org of organizations) {
+      const userId = userIdsMap[org.slug];
+      if (!userId) continue;
+
+      // Get pending loans
+      const pendingLoans = await ctx.db
+        .query("loans")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", org._id).eq("status", "pending"),
+        )
+        .take(2);
+
+      // Get pending accessions
+      const pendingAccessions = await ctx.db
+        .query("accessions")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", org._id).eq("status", "pending"),
+        )
+        .take(2);
+
+      // Get pending deaccessions
+      const pendingDeaccessions = await ctx.db
+        .query("deaccessions")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", org._id).eq("status", "pending"),
+        )
+        .take(2);
+
+      // Create notifications for pending loans
+      for (const loan of pendingLoans) {
+        await ctx.db.insert("notifications", {
+          organizationId: org._id,
+          userId,
+          type: "loan_pending_approval",
+          title: "Loan Pending Approval",
+          message: `Loan ${loan.loanNumber} is pending your approval`,
+          read: false,
+          relatedEntityType: "loan",
+          relatedEntityId: loan._id,
+          createdAt: loan.startDate,
+        });
+      }
+
+      // Create notifications for pending accessions
+      for (const accession of pendingAccessions) {
+        await ctx.db.insert("notifications", {
+          organizationId: org._id,
+          userId,
+          type: "accession_pending_approval",
+          title: "Accession Pending Approval",
+          message: `Accession ${accession.accessionNumber} requires your review`,
+          read: false,
+          relatedEntityType: "accession",
+          relatedEntityId: accession._id,
+          createdAt: accession.dateReceived,
+        });
+      }
+
+      // Create notifications for pending deaccessions
+      for (const deaccession of pendingDeaccessions) {
+        await ctx.db.insert("notifications", {
+          organizationId: org._id,
+          userId,
+          type: "deaccession_pending_approval",
+          title: "Deaccession Pending Approval",
+          message: `Deaccession ${deaccession.deaccessionNumber} requires your review`,
+          read: false,
+          relatedEntityType: "deaccession",
+          relatedEntityId: deaccession._id,
+          createdAt: deaccession.dateDeaccessioned,
+        });
+      }
+
+      // Create some read notifications (older)
+      const activeLoans = await ctx.db
+        .query("loans")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", org._id).eq("status", "active"),
+        )
+        .take(1);
+
+      for (const loan of activeLoans) {
+        await ctx.db.insert("notifications", {
+          organizationId: org._id,
+          userId,
+          type: "loan_approved",
+          title: "Loan Approved",
+          message: `Loan ${loan.loanNumber} has been approved and is now active`,
+          read: true,
+          relatedEntityType: "loan",
+          relatedEntityId: loan._id,
+          createdAt: loan.startDate - 2 * 24 * 60 * 60 * 1000, // 2 days before start
+        });
+      }
+    }
+
+    return null;
+  },
+});
+
+/**
+ * Create condition reports for loan items
+ */
+export const createConditionReports = internalMutation({
+  args: {
+    userIds: v.any(),
+    orgSlugToId: v.any(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userIdsMap = args.userIds as Record<string, Id<"users">>;
+    const orgSlugToIdMap = args.orgSlugToId as Record<string, Id<"organizations">>;
+
+    // Get active loans with items - need to query by organization first
+    const organizations = await ctx.db.query("organizations").collect();
+    
+    const loans: Array<{ _id: Id<"loans">; organizationId: Id<"organizations">; startDate: number }> = [];
+    
+    for (const org of organizations) {
+      const orgLoans = await ctx.db
+        .query("loans")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", org._id).eq("status", "active"),
+        )
+        .collect();
+      loans.push(...orgLoans);
+    }
+
+    for (const loan of loans) {
+      const org = await ctx.db.get(loan.organizationId);
+      if (!org) continue;
+
+      const userId = userIdsMap[org.slug];
+      if (!userId) continue;
+
+      // Get loan items
+      const loanItems = await ctx.db
+        .query("loanItems")
+        .withIndex("by_loan", (q) => q.eq("loanId", loan._id))
+        .take(2); // Create reports for first 2 items
+
+      for (const loanItem of loanItems) {
+        // Check if report already exists
+        const existing = await ctx.db
+          .query("conditionReports")
+          .withIndex("by_loanItem", (q) => q.eq("loanItemId", loanItem._id))
+          .first();
+
+        if (existing) continue;
+
+        // Create condition out report
+        await ctx.db.insert("conditionReports", {
+          loanItemId: loanItem._id,
+          reportType: "out",
+          conditionDescription: "Object in excellent condition. No visible damage or wear. All components intact.",
+          damages: [
+            {
+              type: "None",
+              location: "N/A",
+              severity: "None",
+              notes: "No damages observed",
+            },
+          ],
+          assessedBy: userId,
+          assessedAt: loan.startDate,
+        });
+
+        // Create condition in report (if loan is older)
+        if (Date.now() - loan.startDate > 30 * 24 * 60 * 60 * 1000) {
+          await ctx.db.insert("conditionReports", {
+            loanItemId: loanItem._id,
+            reportType: "in",
+            conditionDescription: "Object returned in same condition as when loaned. No changes observed.",
+            assessedBy: userId,
+            assessedAt: loan.startDate + 20 * 24 * 60 * 60 * 1000, // 20 days after start
+          });
+        }
       }
     }
 

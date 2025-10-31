@@ -34,4 +34,27 @@ export default {
       billing: "Billing",
     },
   },
+  activity: {
+    title: "Activity",
+    headerTitle: "Activity",
+    headerDescription: "View all changes in your organization",
+    filters: {
+      title: "Filters",
+      dateRange: "All Time",
+      type: "Type",
+    },
+    entityTypes: {
+      organization: "Organization",
+      collection: "Collection",
+      loan: "Loan",
+      accession: "Accession",
+      deaccession: "Deaccession",
+      location: "Location",
+      user: "User",
+    },
+    noActivity: "No activity found",
+    loadMore: "Load More",
+    selectOrganization: "Select an Organization",
+    selectOrganizationDescription: "Please select an organization from the dropdown above to view activity.",
+  },
 } as const;

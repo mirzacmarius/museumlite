@@ -32,8 +32,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { LanguageSwitcher } from "./language-switcher";
 import { ThemeSwitcher } from "./theme-switcher";
 import { OrganizationSwitcher } from "@/components/organization-switcher";
+import { NotificationBell } from "@/components/notification-bell";
 import { useOrganization } from "@/components/organization-provider";
-import { MapPin, Archive, FileCheck, FileX, Handshake } from "lucide-react";
+import { MapPin, Archive, FileCheck, FileX, Handshake, Activity } from "lucide-react";
 import { useState } from "react";
 
 export function Navigation({
@@ -46,9 +47,11 @@ export function Navigation({
   const { signOut } = useAuthActions();
   const pathname = usePathname();
   const router = useRouter();
-  const isDashboardPath = pathname === "/";
-  const isSettingsPath = pathname === "/settings";
-  const isBillingPath = pathname === "/settings/billing";
+  const pathSegments = pathname?.split("/").filter(Boolean) ?? [];
+  const isDashboardPath = pathname === "/" || (pathname?.endsWith("/") && pathSegments.length <= 1);
+  const isSettingsPath = pathname?.startsWith("/settings") && !pathname?.startsWith("/settings/billing") && pathSegments.length > 0 && pathSegments[pathSegments.length - 1] === "settings";
+  const isBillingPath = pathname?.startsWith("/settings/billing");
+  const isActivityPath = pathname?.startsWith("/activity");
   const { organizations, currentOrganizationId, setCurrentOrganizationId, isLoading: orgsLoading } = useOrganization();
   const createOrganization = useMutation(api.organizations.create);
   const [newOrgName, setNewOrgName] = useState("");
@@ -288,6 +291,7 @@ export function Navigation({
               Documentation
             </span>
           </a>
+          {currentOrganizationId && <NotificationBell />}
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 rounded-full">
@@ -470,6 +474,22 @@ export function Navigation({
             >
               <Handshake className="h-4 w-4" />
               Loans
+            </Link>
+          </div>
+          <div
+            className={cn(
+              "flex h-12 items-center border-b-2",
+              isActivityPath ? "border-primary" : "border-transparent",
+            )}
+          >
+            <Link
+              href="/activity"
+              className={cn(
+                `${buttonVariants({ variant: "ghost", size: "sm" })} text-primary/80 gap-2`,
+              )}
+            >
+              <Activity className="h-4 w-4" />
+              Activity
             </Link>
           </div>
           <div

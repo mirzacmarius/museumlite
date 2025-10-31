@@ -9,6 +9,7 @@
  */
 
 import type * as accessions from "../accessions.js";
+import type * as audit from "../audit.js";
 import type * as auth from "../auth.js";
 import type * as collections from "../collections.js";
 import type * as dashboard from "../dashboard.js";
@@ -46,6 +47,7 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   accessions: typeof accessions;
+  audit: typeof audit;
   auth: typeof auth;
   collections: typeof collections;
   dashboard: typeof dashboard;

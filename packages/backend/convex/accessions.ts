@@ -8,6 +8,7 @@ import {
   requirePermission,
   canInitiateWorkflow,
   canApproveAtStep,
+  getUsersToNotifyForWorkflowStep,
 } from "./utils/permissions";
 
 /**
@@ -106,6 +107,18 @@ export const create = mutation({
       .filter((q) => q.eq(q.field("workflowType"), "accession"))
       .first();
 
+    // Store creator in workflow history for notification purposes
+    const workflowHistory = workflowConfig
+      ? [
+          {
+            step: 0,
+            approvedBy: userId,
+            approvedAt: Date.now(),
+            comment: "Created",
+          },
+        ]
+      : [];
+
     const accessionId = await ctx.db.insert("accessions", {
       organizationId: args.organizationId,
       accessionNumber,
@@ -116,8 +129,44 @@ export const create = mutation({
       notes: args.notes,
       status: workflowConfig ? "pending" : "approved", // Auto-approve if no workflow
       workflowStep: workflowConfig ? 1 : undefined,
-      workflowHistory: [],
+      workflowHistory,
     });
+
+    // Log audit action
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "created",
+      entityType: "accession",
+      entityId: accessionId,
+      changes: { accessionNumber, status: workflowConfig ? "pending" : "approved" },
+    });
+
+    // If workflow exists, notify users who can approve step 1
+    if (workflowConfig) {
+      const usersToNotify = await getUsersToNotifyForWorkflowStep(
+        ctx,
+        args.organizationId,
+        "accession",
+        1,
+      );
+
+      // Create notifications for approvers
+      for (const approverId of usersToNotify) {
+        if (approverId !== userId) {
+          // Don't notify the creator
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: args.organizationId,
+            userId: approverId,
+            type: "workflow_pending",
+            title: "New Accession Requires Approval",
+            message: `Accession ${accessionNumber} is pending your approval at step 1.`,
+            relatedEntityType: "accession",
+            relatedEntityId: accessionId,
+          });
+        }
+      }
+    }
 
     // If no workflow config, auto-create collection object
     if (!workflowConfig) {
@@ -468,6 +517,32 @@ export const approve = mutation({
           workflowHistory: history,
         });
 
+        // Log audit action
+        await ctx.runMutation(internal.audit.logAction, {
+          organizationId: accession.organizationId,
+          userId,
+          action: "approved",
+          entityType: "accession",
+          entityId: args.accessionId,
+          changes: { status: "approved", step: currentStep },
+        });
+
+        // Notify users who were involved in the workflow (from history)
+        // The creator is in history[0] (step 0) if it exists
+        const creatorEntry = history.find((h) => h.step === 0);
+        const creatorId = creatorEntry?.approvedBy;
+        if (creatorId && creatorId !== userId) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: accession.organizationId,
+            userId: creatorId,
+            type: "workflow_approved",
+            title: "Accession Approved",
+            message: `Accession ${accession.accessionNumber} has been fully approved and added to the collection.`,
+            relatedEntityType: "accession",
+            relatedEntityId: args.accessionId,
+          });
+        }
+
         // Create collection object
         await ctx.runMutation(internal.accessions.createCollectionFromAccession, {
           accessionId: args.accessionId,
@@ -478,6 +553,38 @@ export const approve = mutation({
           workflowStep: currentStep + 1,
           workflowHistory: history,
         });
+
+        // Log audit action
+        await ctx.runMutation(internal.audit.logAction, {
+          organizationId: accession.organizationId,
+          userId,
+          action: "step_approved",
+          entityType: "accession",
+          entityId: args.accessionId,
+          changes: { step: currentStep, nextStep: currentStep + 1 },
+        });
+
+        // Notify users who can approve the next step
+        const usersToNotify = await getUsersToNotifyForWorkflowStep(
+          ctx,
+          accession.organizationId,
+          "accession",
+          currentStep + 1,
+        );
+
+        for (const approverId of usersToNotify) {
+          if (approverId !== userId) {
+            await ctx.runMutation(internal.audit.createNotificationInternal, {
+              organizationId: accession.organizationId,
+              userId: approverId,
+              type: "workflow_pending",
+              title: "Accession Requires Your Approval",
+              message: `Accession ${accession.accessionNumber} is pending your approval at step ${currentStep + 1}.`,
+              relatedEntityType: "accession",
+              relatedEntityId: args.accessionId,
+            });
+          }
+        }
       }
     } else {
       // Single-step approval
@@ -486,6 +593,38 @@ export const approve = mutation({
         approvedBy: userId,
         approvedAt: Date.now(),
       });
+
+      // Log audit action
+      await ctx.runMutation(internal.audit.logAction, {
+        organizationId: accession.organizationId,
+        userId,
+        action: "approved",
+        entityType: "accession",
+        entityId: args.accessionId,
+        changes: { status: "approved" },
+      });
+
+      // Notify all users with read access (optional - can be removed if too noisy)
+      const userOrgs = await ctx.db
+        .query("userOrganizations")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", accession.organizationId),
+        )
+        .collect();
+
+      for (const userOrg of userOrgs) {
+        if (userOrg.userId !== userId) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: accession.organizationId,
+            userId: userOrg.userId,
+            type: "workflow_approved",
+            title: "Accession Approved",
+            message: `Accession ${accession.accessionNumber} has been approved and added to the collection.`,
+            relatedEntityType: "accession",
+            relatedEntityId: args.accessionId,
+          });
+        }
+      }
 
       // Create collection object
       await ctx.runMutation(internal.accessions.createCollectionFromAccession, {
@@ -536,6 +675,32 @@ export const reject = mutation({
         ? `${accession.notes || ""}\nRejected: ${args.comment}`.trim()
         : accession.notes,
     });
+
+    // Log audit action
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: accession.organizationId,
+      userId,
+      action: "rejected",
+      entityType: "accession",
+      entityId: args.accessionId,
+      changes: { status: "rejected", comment: args.comment },
+    });
+
+    // Notify users who were involved in the workflow (from history)
+    const history = accession.workflowHistory ?? [];
+    const creatorEntry = history.find((h) => h.step === 0);
+    const creatorId = creatorEntry?.approvedBy;
+    if (creatorId && creatorId !== userId) {
+      await ctx.runMutation(internal.audit.createNotificationInternal, {
+        organizationId: accession.organizationId,
+        userId: creatorId,
+        type: "workflow_rejected",
+        title: "Accession Rejected",
+        message: `Accession ${accession.accessionNumber} has been rejected.${args.comment ? ` Reason: ${args.comment}` : ""}`,
+        relatedEntityType: "accession",
+        relatedEntityId: args.accessionId,
+      });
+    }
 
     return null;
   },

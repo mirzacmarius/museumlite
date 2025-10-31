@@ -8,6 +8,7 @@ import {
   requirePermission,
   canInitiateWorkflow,
   canApproveAtStep,
+  getUsersToNotifyForWorkflowStep,
 } from "./utils/permissions";
 
 /**
@@ -110,6 +111,18 @@ export const create = mutation({
       .filter((q) => q.eq(q.field("workflowType"), "deaccession"))
       .first();
 
+    // Store creator in workflow history for notification purposes
+    const workflowHistory = workflowConfig
+      ? [
+          {
+            step: 0,
+            approvedBy: userId,
+            approvedAt: Date.now(),
+            comment: "Created",
+          },
+        ]
+      : [];
+
     const deaccessionId = await ctx.db.insert("deaccessions", {
       organizationId: args.organizationId,
       collectionId: args.collectionId,
@@ -121,8 +134,44 @@ export const create = mutation({
       notes: args.notes,
       status: workflowConfig ? "pending" : "approved", // Auto-approve if no workflow
       workflowStep: workflowConfig ? 1 : undefined,
-      workflowHistory: [],
+      workflowHistory,
     });
+
+    // Log audit action
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "created",
+      entityType: "deaccession",
+      entityId: deaccessionId,
+      changes: { deaccessionNumber, status: workflowConfig ? "pending" : "approved" },
+    });
+
+    // If workflow exists, notify users who can approve step 1
+    if (workflowConfig) {
+      const usersToNotify = await getUsersToNotifyForWorkflowStep(
+        ctx,
+        args.organizationId,
+        "deaccession",
+        1,
+      );
+
+      // Create notifications for approvers
+      for (const approverId of usersToNotify) {
+        if (approverId !== userId) {
+          // Don't notify the creator
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: args.organizationId,
+            userId: approverId,
+            type: "workflow_pending",
+            title: "New Deaccession Requires Approval",
+            message: `Deaccession ${deaccessionNumber} is pending your approval at step 1.`,
+            relatedEntityType: "deaccession",
+            relatedEntityId: deaccessionId,
+          });
+        }
+      }
+    }
 
     // If no workflow config, auto-mark collection as deaccessioned
     if (!workflowConfig) {
@@ -478,6 +527,31 @@ export const approve = mutation({
           workflowHistory: history,
         });
 
+        // Log audit action
+        await ctx.runMutation(internal.audit.logAction, {
+          organizationId: deaccession.organizationId,
+          userId,
+          action: "approved",
+          entityType: "deaccession",
+          entityId: args.deaccessionId,
+          changes: { status: "approved", step: currentStep },
+        });
+
+        // Notify users who were involved in the workflow (from history)
+        const creatorEntry = history.find((h) => h.step === 0);
+        const creatorId = creatorEntry?.approvedBy;
+        if (creatorId && creatorId !== userId) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: deaccession.organizationId,
+            userId: creatorId,
+            type: "workflow_approved",
+            title: "Deaccession Approved",
+            message: `Deaccession ${deaccession.deaccessionNumber} has been fully approved.`,
+            relatedEntityType: "deaccession",
+            relatedEntityId: args.deaccessionId,
+          });
+        }
+
         // Mark collection as deaccessioned
         await ctx.db.patch(deaccession.collectionId, {
           status: "deaccessioned",
@@ -490,6 +564,38 @@ export const approve = mutation({
           workflowStep: currentStep + 1,
           workflowHistory: history,
         });
+
+        // Log audit action
+        await ctx.runMutation(internal.audit.logAction, {
+          organizationId: deaccession.organizationId,
+          userId,
+          action: "step_approved",
+          entityType: "deaccession",
+          entityId: args.deaccessionId,
+          changes: { step: currentStep, nextStep: currentStep + 1 },
+        });
+
+        // Notify users who can approve the next step
+        const usersToNotify = await getUsersToNotifyForWorkflowStep(
+          ctx,
+          deaccession.organizationId,
+          "deaccession",
+          currentStep + 1,
+        );
+
+        for (const approverId of usersToNotify) {
+          if (approverId !== userId) {
+            await ctx.runMutation(internal.audit.createNotificationInternal, {
+              organizationId: deaccession.organizationId,
+              userId: approverId,
+              type: "workflow_pending",
+              title: "Deaccession Requires Your Approval",
+              message: `Deaccession ${deaccession.deaccessionNumber} is pending your approval at step ${currentStep + 1}.`,
+              relatedEntityType: "deaccession",
+              relatedEntityId: args.deaccessionId,
+            });
+          }
+        }
       }
     } else {
       // Single-step approval
@@ -498,6 +604,38 @@ export const approve = mutation({
         approvedBy: userId,
         approvedAt: Date.now(),
       });
+
+      // Log audit action
+      await ctx.runMutation(internal.audit.logAction, {
+        organizationId: deaccession.organizationId,
+        userId,
+        action: "approved",
+        entityType: "deaccession",
+        entityId: args.deaccessionId,
+        changes: { status: "approved" },
+      });
+
+      // Notify all users with read access (optional - can be removed if too noisy)
+      const userOrgs = await ctx.db
+        .query("userOrganizations")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", deaccession.organizationId),
+        )
+        .collect();
+
+      for (const userOrg of userOrgs) {
+        if (userOrg.userId !== userId) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: deaccession.organizationId,
+            userId: userOrg.userId,
+            type: "workflow_approved",
+            title: "Deaccession Approved",
+            message: `Deaccession ${deaccession.deaccessionNumber} has been approved.`,
+            relatedEntityType: "deaccession",
+            relatedEntityId: args.deaccessionId,
+          });
+        }
+      }
 
       // Mark collection as deaccessioned
       await ctx.db.patch(deaccession.collectionId, {
@@ -550,6 +688,32 @@ export const reject = mutation({
         ? `${deaccession.notes || ""}\nRejected: ${args.comment}`.trim()
         : deaccession.notes,
     });
+
+    // Log audit action
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: deaccession.organizationId,
+      userId,
+      action: "rejected",
+      entityType: "deaccession",
+      entityId: args.deaccessionId,
+      changes: { status: "rejected", comment: args.comment },
+    });
+
+    // Notify users who were involved in the workflow (from history)
+    const history = deaccession.workflowHistory ?? [];
+    const creatorEntry = history.find((h) => h.step === 0);
+    const creatorId = creatorEntry?.approvedBy;
+    if (creatorId && creatorId !== userId) {
+      await ctx.runMutation(internal.audit.createNotificationInternal, {
+        organizationId: deaccession.organizationId,
+        userId: creatorId,
+        type: "workflow_rejected",
+        title: "Deaccession Rejected",
+        message: `Deaccession ${deaccession.deaccessionNumber} has been rejected.${args.comment ? ` Reason: ${args.comment}` : ""}`,
+        relatedEntityType: "deaccession",
+        relatedEntityId: args.deaccessionId,
+      });
+    }
 
     return null;
   },

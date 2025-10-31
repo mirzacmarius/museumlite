@@ -137,45 +137,45 @@ export default function DashboardPage() {
                 href="/collections"
                 className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-blue-50 to-blue-100/50 p-6 shadow-sm transition-all hover:shadow-md dark:from-blue-950/20 dark:to-blue-900/10"
               >
-                <div className="relative z-10 flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Collections
-                    </p>
-                    <p className="mt-2 text-4xl font-bold text-blue-700 dark:text-blue-400">
-                      {analytics.collections.total}
-                    </p>
-                    <div className="mt-3 space-y-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Active</span>
-                        <span className="font-semibold">
-                          {analytics.collections.active}
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-blue-200 dark:bg-blue-900/30">
-                        <div
-                          className="h-full rounded-full bg-blue-600 transition-all"
-                          style={{
-                            width: `${
-                              analytics.collections.total > 0
-                                ? (analytics.collections.active /
-                                    analytics.collections.total) *
-                                  100
-                                : 0
-                            }%`,
-                          }}
-                        />
-                      </div>
-                      <div className="flex gap-4 text-xs text-muted-foreground">
-                        <span>{analytics.collections.loaned} loaned</span>
-                        <span>
-                          {analytics.collections.deaccessioned} deaccessioned
-                        </span>
-                      </div>
+                <div className="relative z-10 flex flex-col gap-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Collections
+                      </p>
+                      <p className="mt-2 text-4xl font-bold text-blue-700 dark:text-blue-400">
+                        {analytics.collections.total}
+                      </p>
                     </div>
+                    <FileCheck className="h-6 w-6 flex-shrink-0 text-blue-700 dark:text-blue-400" />
                   </div>
-                  <div className="ml-4 rounded-xl bg-blue-500/20 p-4 backdrop-blur-sm">
-                    <FileCheck className="h-8 w-8 text-blue-700 dark:text-blue-400" />
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Active</span>
+                      <span className="font-semibold">
+                        {analytics.collections.active}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-blue-200 dark:bg-blue-900/30">
+                      <div
+                        className="h-full rounded-full bg-blue-600 transition-all"
+                        style={{
+                          width: `${
+                            analytics.collections.total > 0
+                              ? (analytics.collections.active /
+                                  analytics.collections.total) *
+                                100
+                              : 0
+                          }%`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex gap-4 text-xs text-muted-foreground">
+                      <span>{analytics.collections.loaned} loaned</span>
+                      <span>
+                        {analytics.collections.deaccessioned} deaccessioned
+                      </span>
+                    </div>
                   </div>
                 </div>
               </Link>
@@ -185,43 +185,43 @@ export default function DashboardPage() {
                 href="/loans"
                 className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-green-50 to-emerald-100/50 p-6 shadow-sm transition-all hover:shadow-md dark:from-green-950/20 dark:to-emerald-900/10"
               >
-                <div className="relative z-10 flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Loans
-                    </p>
-                    <p className="mt-2 text-4xl font-bold text-green-700 dark:text-green-400">
-                      {analytics.loans.total}
-                    </p>
-                    <div className="mt-3 space-y-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Active</span>
-                        <span className="font-semibold">
-                          {analytics.loans.active}
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-green-200 dark:bg-green-900/30">
-                        <div
-                          className="h-full rounded-full bg-green-600 transition-all"
-                          style={{
-                            width: `${
-                              analytics.loans.total > 0
-                                ? (analytics.loans.active /
-                                    analytics.loans.total) *
-                                  100
-                                : 0
-                            }%`,
-                          }}
-                        />
-                      </div>
-                      <div className="flex gap-4 text-xs text-muted-foreground">
-                        <span>{analytics.loans.pending} pending</span>
-                        <span>{analytics.loans.returned} returned</span>
-                      </div>
+                <div className="relative z-10 flex flex-col gap-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Loans
+                      </p>
+                      <p className="mt-2 text-4xl font-bold text-green-700 dark:text-green-400">
+                        {analytics.loans.total}
+                      </p>
                     </div>
+                    <Handshake className="h-6 w-6 flex-shrink-0 text-green-700 dark:text-green-400" />
                   </div>
-                  <div className="ml-4 rounded-xl bg-green-500/20 p-4 backdrop-blur-sm">
-                    <Handshake className="h-8 w-8 text-green-700 dark:text-green-400" />
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Active</span>
+                      <span className="font-semibold">
+                        {analytics.loans.active}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-green-200 dark:bg-green-900/30">
+                      <div
+                        className="h-full rounded-full bg-green-600 transition-all"
+                        style={{
+                          width: `${
+                            analytics.loans.total > 0
+                              ? (analytics.loans.active /
+                                  analytics.loans.total) *
+                                100
+                              : 0
+                          }%`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex gap-4 text-xs text-muted-foreground">
+                      <span>{analytics.loans.pending} pending</span>
+                      <span>{analytics.loans.returned} returned</span>
+                    </div>
                   </div>
                 </div>
               </Link>
@@ -231,48 +231,48 @@ export default function DashboardPage() {
                 href="/accessions"
                 className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-amber-50 to-yellow-100/50 p-6 shadow-sm transition-all hover:shadow-md dark:from-amber-950/20 dark:to-yellow-900/10"
               >
-                <div className="relative z-10 flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Accessions
-                    </p>
-                    <p className="mt-2 text-4xl font-bold text-amber-700 dark:text-amber-400">
-                      {analytics.accessions.pending}
-                    </p>
-                    <div className="mt-3 space-y-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Pending</span>
-                        <span className="font-semibold">
-                          {analytics.accessions.pending}
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-amber-200 dark:bg-amber-900/30">
-                        <div
-                          className="h-full rounded-full bg-amber-600 transition-all"
-                          style={{
-                            width: `${
-                              analytics.accessions.pending +
-                                analytics.accessions.approved +
-                                analytics.accessions.rejected >
-                              0
-                                ? (analytics.accessions.pending /
-                                    (analytics.accessions.pending +
-                                      analytics.accessions.approved +
-                                      analytics.accessions.rejected)) *
-                                  100
-                                : 0
-                            }%`,
-                          }}
-                        />
-                      </div>
-                      <div className="flex gap-4 text-xs text-muted-foreground">
-                        <span>{analytics.accessions.approved} approved</span>
-                        <span>{analytics.accessions.rejected} rejected</span>
-                      </div>
+                <div className="relative z-10 flex flex-col gap-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Accessions
+                      </p>
+                      <p className="mt-2 text-4xl font-bold text-amber-700 dark:text-amber-400">
+                        {analytics.accessions.pending}
+                      </p>
                     </div>
+                    <TrendingUp className="h-6 w-6 flex-shrink-0 text-amber-700 dark:text-amber-400" />
                   </div>
-                  <div className="ml-4 rounded-xl bg-amber-500/20 p-4 backdrop-blur-sm">
-                    <TrendingUp className="h-8 w-8 text-amber-700 dark:text-amber-400" />
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Pending</span>
+                      <span className="font-semibold">
+                        {analytics.accessions.pending}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-amber-200 dark:bg-amber-900/30">
+                      <div
+                        className="h-full rounded-full bg-amber-600 transition-all"
+                        style={{
+                          width: `${
+                            analytics.accessions.pending +
+                              analytics.accessions.approved +
+                              analytics.accessions.rejected >
+                            0
+                              ? (analytics.accessions.pending /
+                                  (analytics.accessions.pending +
+                                    analytics.accessions.approved +
+                                    analytics.accessions.rejected)) *
+                                100
+                              : 0
+                          }%`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex gap-4 text-xs text-muted-foreground">
+                      <span>{analytics.accessions.approved} approved</span>
+                      <span>{analytics.accessions.rejected} rejected</span>
+                    </div>
                   </div>
                 </div>
               </Link>
@@ -282,20 +282,20 @@ export default function DashboardPage() {
                 href="/locations"
                 className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-purple-50 to-violet-100/50 p-6 shadow-sm transition-all hover:shadow-md dark:from-purple-950/20 dark:to-violet-900/10"
               >
-                <div className="relative z-10 flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Locations
-                    </p>
-                    <p className="mt-2 text-4xl font-bold text-purple-700 dark:text-purple-400">
-                      {analytics.locations.total}
-                    </p>
-                    <div className="mt-3 text-xs text-muted-foreground">
-                      Active locations in use
+                <div className="relative z-10 flex flex-col gap-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Locations
+                      </p>
+                      <p className="mt-2 text-4xl font-bold text-purple-700 dark:text-purple-400">
+                        {analytics.locations.total}
+                      </p>
                     </div>
+                    <MapPin className="h-6 w-6 flex-shrink-0 text-purple-700 dark:text-purple-400" />
                   </div>
-                  <div className="ml-4 rounded-xl bg-purple-500/20 p-4 backdrop-blur-sm">
-                    <MapPin className="h-8 w-8 text-purple-700 dark:text-purple-400" />
+                  <div className="text-xs text-muted-foreground">
+                    Active locations in use
                   </div>
                 </div>
               </Link>
