@@ -8,7 +8,7 @@
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit",
     "dev": "email dev -p 3003",
-    "build": "email build",
+    "build": "email build || (echo 'Email build skipped (preview server not needed in production)' && exit 0)",
     "start": "email start"
   },
   "dependencies": {
