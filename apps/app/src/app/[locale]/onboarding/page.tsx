@@ -1,7 +1,6 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
-import { zodValidator } from "@tanstack/zod-form-adapter";
 import { api } from "@v1/backend/convex/_generated/api";
 import * as validators from "@v1/backend/convex/utils/validators";
 import { Button } from "@v1/ui/button";
@@ -20,7 +19,6 @@ export default function OnboardingUsername() {
   const { pending } = useFormStatus();
 
   const form = useForm({
-    validatorAdapter: zodValidator(),
     defaultValues: {
       username: "",
     },

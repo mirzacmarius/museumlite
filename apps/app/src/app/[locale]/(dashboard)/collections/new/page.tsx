@@ -14,6 +14,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Id } from "@v1/backend/convex/_generated/dataModel";
 
 interface CollectionFormData {
   accessionNumber?: string;
@@ -29,7 +30,7 @@ interface CollectionFormData {
   condition?: string;
   provenance?: string;
   exhibitionHistory?: string;
-  currentLocationId?: string;
+  currentLocationId?: Id<"locations">;
 }
 
 export default function CollectionFormPage() {
@@ -51,7 +52,7 @@ export default function CollectionFormPage() {
     condition: "",
     provenance: "",
     exhibitionHistory: "",
-    currentLocationId: "",
+    currentLocationId: undefined,
   });
 
 

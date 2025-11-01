@@ -6,6 +6,7 @@ import { Button } from "@v1/ui/button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import {
   ArrowLeft,
   Edit,
@@ -20,6 +21,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { MoveObjectDialog } from "@/app/[locale]/(dashboard)/locations/_components/move-object-dialog";
 import { MediaGallery } from "./_components/media-gallery";
+import { Id } from "@v1/backend/convex/_generated/dataModel";
 
 export default function CollectionDetailPage() {
   const params = useParams();
@@ -197,14 +199,12 @@ export default function CollectionDetailPage() {
 function CollectionDetails({
   collection,
 }: {
-  collection: NonNullable<
-    Awaited<ReturnType<typeof api.collections.get>>
-  >;
+  collection: NonNullable<FunctionReturnType<typeof api.collections.get>>;
 }) {
   const locationPath = useQuery(
     api.locations.getLocationPath,
     collection.currentLocationId
-      ? { locationId: collection.currentLocationId }
+      ? { locationId: collection.currentLocationId as Id<"locations"> }
       : "skip",
   );
 

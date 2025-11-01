@@ -14,6 +14,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
 interface CollectionFormData {
   title: string;

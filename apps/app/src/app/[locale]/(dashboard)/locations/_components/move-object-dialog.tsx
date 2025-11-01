@@ -99,16 +99,16 @@ export function MoveObjectDialog({
       const displayName = parent ? `${parent} → ${loc.name}` : loc.name;
       result.push({ id: loc._id, name: displayName, type: loc.type });
       if (loc.children && loc.children.length > 0) {
-        // Fetch children for this location
-        const childList = loc.children.map((c) => ({
-          _id: c._id,
-          name: c.name,
-          type: c.type,
-          children: undefined,
-        }));
-        result.push(
-          ...flattenLocations(childList as typeof rootLocations, displayName),
-        );
+        // Children are simplified, so we can process them directly
+        // without recursion since they don't have nested children
+        for (const child of loc.children) {
+          const childDisplayName = `${displayName} → ${child.name}`;
+          result.push({
+            id: child._id,
+            name: childDisplayName,
+            type: child.type,
+          });
+        }
       }
     }
     return result;

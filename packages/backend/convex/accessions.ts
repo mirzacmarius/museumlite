@@ -210,6 +210,9 @@ export const list = query({
           v.literal("gift"),
           v.literal("loan"),
           v.literal("transfer"),
+          v.literal("donation"),
+          v.literal("other"),
+          v.literal("bequest"),
         ),
         status: v.union(
           v.literal("pending"),

@@ -2,6 +2,7 @@
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Textarea } from "@v1/ui/textarea";
@@ -168,7 +169,7 @@ export default function NewDeaccessionPage() {
                     </Label>
                     <Select
                       value={formData.method}
-                      onValueChange={(value: "sale" | "donation" | "destruction" | "transfer" | "other") =>
+                      onValueChange={(value: "sale" | "donation" | "destruction" | "transfer") =>
                         setFormData({ ...formData, method: value })
                       }
                     >

@@ -22,6 +22,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
+type DeaccessionMethod = "sale" | "donation" | "destruction" | "transfer";
+
 export default function EditDeaccessionPage() {
   const params = useParams();
   const router = useRouter();
@@ -38,7 +40,7 @@ export default function EditDeaccessionPage() {
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     reason: "",
-    method: "sale" as "sale" | "donation" | "destruction" | "transfer",
+    method: "sale" as DeaccessionMethod,
     disposition: "",
     notes: "",
   });
@@ -210,8 +212,8 @@ export default function EditDeaccessionPage() {
                   </Label>
                   <Select
                     value={formData.method}
-                    onValueChange={(value: "sale" | "donation" | "destruction" | "transfer" | "other") =>
-                      setFormData({ ...formData, method: value })
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, method: value as DeaccessionMethod })
                     }
                   >
                     <SelectTrigger id="method">

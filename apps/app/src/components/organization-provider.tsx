@@ -49,7 +49,10 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   // Set first organization as default if none selected
   useEffect(() => {
     if (!currentOrganizationId && organizations && organizations.length > 0) {
-      setCurrentOrganizationId(organizations[0]._id);
+      const firstOrg = organizations[0];
+      if (firstOrg) {
+        setCurrentOrganizationId(firstOrg._id);
+      }
     }
   }, [currentOrganizationId, organizations]);
 

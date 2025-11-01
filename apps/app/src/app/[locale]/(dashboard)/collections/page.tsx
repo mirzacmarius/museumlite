@@ -15,9 +15,11 @@ import {
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { Plus, Building2, MapPin, Search, Filter, X } from "lucide-react";
 import Link from "next/link";
 import { useState, useMemo, useEffect, useRef } from "react";
+import { Id } from "@v1/backend/convex/_generated/dataModel";
 
 export default function CollectionsPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
@@ -130,7 +132,7 @@ interface CollectionFilters {
 function CollectionFiltersAndList({
   organizationId,
 }: {
-  organizationId: string;
+  organizationId: Id<"organizations">;
 }) {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<CollectionFilters>({
@@ -157,7 +159,7 @@ function CollectionFiltersAndList({
     api.collections.list,
     organizationId
       ? {
-          organizationId: organizationId as Id<"organizations">,
+          organizationId,
           paginationOpts: { numItems: 50, cursor },
           search: filters.search || undefined,
           status:
@@ -344,7 +346,7 @@ function CollectionList({
   onLoadMore,
   onReset,
 }: {
-  organizationId: string;
+  organizationId: Id<"organizations">;
   collections:
     | {
         page: Array<{
@@ -352,7 +354,7 @@ function CollectionList({
           accessionNumber: string;
           title: string;
           objectType?: string;
-          currentLocationId?: string;
+          currentLocationId?: Id<"locations">;
           status: string;
           _creationTime: number;
         }>;
@@ -394,7 +396,7 @@ function CollectionList({
         {collections.page.map((item) => (
           <CollectionListItem
             key={item._id}
-            item={item}
+            item={item as CollectionListItem}
             organizationId={organizationId}
           />
         ))}
@@ -415,30 +417,25 @@ function CollectionList({
   );
 }
 
+type CollectionListItem = FunctionReturnType<typeof api.collections.list>["page"][number];
+
 function CollectionListItem({
   item,
   organizationId,
 }: {
-  item: {
-    _id: string;
-    accessionNumber: string;
-    title: string;
-    objectType?: string;
-    currentLocationId?: string;
-    status: string;
-  };
-  organizationId: string;
+  item: CollectionListItem;
+  organizationId: Id<"organizations">;
 }) {
   const locationPath = useQuery(
     api.locations.getLocationPath,
     item.currentLocationId && organizationId
-      ? { locationId: item.currentLocationId as Id<"locations"> }
+      ? { locationId: item.currentLocationId }
       : "skip",
   );
 
   const primaryImageUrl = useQuery(
     api.media.getPrimaryImageUrl,
-    { collectionId: item._id as Id<"collections"> },
+    { collectionId: item._id },
   );
 
   return (
