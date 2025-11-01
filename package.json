@@ -22,7 +22,7 @@
     "lint:repo": "bunx sherif@latest",
     "lint:repo:fix": "bunx sherif@latest --fix",
     "typecheck": "turbo typecheck",
-    "postinstall": "patch-package"
+    "postinstall": "node scripts/apply-patches.js || true"
   },
   "devDependencies": {
     "@auth/core": "0.37.0",
