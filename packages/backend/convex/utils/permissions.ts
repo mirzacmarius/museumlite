@@ -21,7 +21,7 @@ export async function getCurrentUserOrganization(
     .withIndex("by_user_and_organization", (q) =>
       q.eq("userId", userId).eq("organizationId", organizationId),
     )
-    .unique();
+    .first();
 
   return userOrganization;
 }

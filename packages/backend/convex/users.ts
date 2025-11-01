@@ -96,7 +96,7 @@ export const deleteUserAccount = internalMutation({
           .withIndex("userIdAndProvider", (q) =>
             q.eq("userId", args.userId).eq("provider", provider),
           )
-          .unique();
+          .first();
         if (!authAccount) {
           return;
         }
