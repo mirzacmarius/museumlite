@@ -3,9 +3,12 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     },
-    "strict": true
+    "strict": true,
+    "skipLibCheck": true
   },
   "include": [
     "next-env.d.ts",
@@ -16,5 +19,9 @@
     "tailwind.config.ts",
     "src/env.mjs"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "**/node_modules/**",
+    "node_modules/@xixixao/**"
+  ]
 }

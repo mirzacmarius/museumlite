@@ -1,0 +1,11 @@
+diff --git a/node_modules/@xixixao/uploadstuff/lib/useEvent.ts b/node_modules/@xixixao/uploadstuff/lib/useEvent.ts
+index 1234567..abcdefg 100644
+--- a/node_modules/@xixixao/uploadstuff/lib/useEvent.ts
++++ b/node_modules/@xixixao/uploadstuff/lib/useEvent.ts
+@@ -35,7 +35,7 @@ export function useEvent<TCallback extends (...args: any[]) => any>(
+   // Create a stable callback that always calls the latest callback:
+   // using useRef instead of useCallback avoids creating and empty array on every render
+-  const stableRef = useRef<TCallback>();
++  const stableRef = useRef<TCallback | undefined>(undefined);
+   if (!stableRef.current) {
+     stableRef.current = function (this: unknown) {

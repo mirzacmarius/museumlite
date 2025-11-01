@@ -21,7 +21,8 @@
     "lint": "turbo lint && bun lint:repo",
     "lint:repo": "bunx sherif@latest",
     "lint:repo:fix": "bunx sherif@latest --fix",
-    "typecheck": "turbo typecheck"
+    "typecheck": "turbo typecheck",
+    "postinstall": "patch-package"
   },
   "devDependencies": {
     "@auth/core": "0.37.0",
@@ -30,6 +31,8 @@
     "chalk": "^4.1.2",
     "dotenv": "^16.4.5",
     "ora": "^5.4.1",
+    "patch-package": "^8.0.1",
+    "postinstall-postinstall": "^2.1.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.1",
     "turbo": "2.1.1",
