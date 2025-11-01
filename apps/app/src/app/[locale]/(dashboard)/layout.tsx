@@ -4,6 +4,8 @@ import { fetchQuery, preloadQuery } from "convex/nextjs";
 import { redirect } from "next/navigation";
 import { OrganizationProvider } from "@/components/organization-provider";
 import { Navigation } from "./_components/navigation";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export default async function Layout({
   children,
@@ -34,6 +36,8 @@ export default async function Layout({
           preloadedProducts={preloadedProducts}
         />
         {children}
+        <Analytics />
+        <SpeedInsights />
       </OrganizationProvider>
     </div>
   );
