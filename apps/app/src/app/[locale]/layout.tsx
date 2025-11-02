@@ -9,8 +9,8 @@ import { ThemeProvider } from "next-themes";
 import { ConvexClientProvider } from "../convex-client-provider";
 
 export const metadata: Metadata = {
-  title: "Create v1",
-  description: "Production ready Next.js app",
+  title: "Museumlite",
+  description: "Museumlite is a platform for managing museum collections and objects.",
 };
 
 export const viewport = {

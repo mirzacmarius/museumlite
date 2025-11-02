@@ -210,6 +210,23 @@ function CollectionDetails({
 
   return (
     <div className="space-y-6">
+      {collection.alternateAccessionNumbers && collection.alternateAccessionNumbers.length > 0 && (
+        <div>
+          <label className="text-sm font-medium text-muted-foreground">
+            Alternate Accession Numbers
+          </label>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {collection.alternateAccessionNumbers.map((number) => (
+              <span
+                key={number}
+                className="inline-flex items-center rounded border border-border bg-muted px-2.5 py-1 text-sm"
+              >
+                {number}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-6">
         <div>
           <label className="text-sm font-medium text-muted-foreground">
