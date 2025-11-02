@@ -69,16 +69,16 @@ const ImageModal = ({
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
-        className="relative w-full max-w-4xl p-4"
+        className="relative w-full max-w-3xl p-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative h-auto max-h-[90vh] w-full">
+        <div className="relative h-auto max-h-[70vh] w-full">
           <Image
             src={item.url}
             alt={item.title}
-            width={1200}
-            height={800}
-            className="h-auto max-h-[90vh] w-full rounded-lg object-contain"
+            width={900}
+            height={600}
+            className="h-auto max-h-[70vh] w-full rounded-lg object-contain"
             priority
           />
         </div>
