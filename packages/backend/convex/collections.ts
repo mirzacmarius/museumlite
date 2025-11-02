@@ -563,6 +563,7 @@ export const update = mutation({
     provenance: v.optional(v.string()),
     exhibitionHistory: v.optional(v.string()),
     currentLocationId: v.optional(v.id("locations")),
+    alternateAccessionNumbers: v.optional(v.array(v.string())),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -598,6 +599,7 @@ export const update = mutation({
       provenance?: string;
       exhibitionHistory?: string;
       currentLocationId?: Id<"locations">;
+      alternateAccessionNumbers?: Array<string>;
       lastModifiedBy?: Id<"users">;
       lastModifiedAt?: number;
     } = {};
@@ -618,6 +620,8 @@ export const update = mutation({
       updates.exhibitionHistory = args.exhibitionHistory;
     if (args.currentLocationId !== undefined)
       updates.currentLocationId = args.currentLocationId;
+    if (args.alternateAccessionNumbers !== undefined)
+      updates.alternateAccessionNumbers = args.alternateAccessionNumbers;
 
     updates.lastModifiedBy = userId;
     updates.lastModifiedAt = Date.now();

@@ -6,6 +6,13 @@ import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Textarea } from "@v1/ui/textarea";
 import { Label } from "@v1/ui/label";
+import {
+  TagsInput,
+  TagsInputInput,
+  TagsInputItem,
+  TagsInputLabel,
+  TagsInputList,
+} from "@v1/ui/tags-input";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { LocationSelector } from "@/components/location-selector";
@@ -30,6 +37,7 @@ interface CollectionFormData {
   provenance?: string;
   exhibitionHistory?: string;
   currentLocationId?: string;
+  alternateAccessionNumbers?: string[];
 }
 
 export default function CollectionEditPage() {
@@ -60,6 +68,7 @@ export default function CollectionEditPage() {
     provenance: "",
     exhibitionHistory: "",
     currentLocationId: "",
+    alternateAccessionNumbers: [],
   });
 
 
@@ -80,6 +89,7 @@ export default function CollectionEditPage() {
         provenance: collection.provenance || "",
         exhibitionHistory: collection.exhibitionHistory || "",
         currentLocationId: collection.currentLocationId || "",
+        alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
       });
     }
   }, [collection]);
@@ -126,6 +136,7 @@ export default function CollectionEditPage() {
         currentLocationId: formData.currentLocationId
           ? (formData.currentLocationId as Id<"locations">)
           : undefined,
+        alternateAccessionNumbers: formData.alternateAccessionNumbers,
       });
       router.push(`/collections/${collectionId}`);
     } catch (err) {
@@ -141,7 +152,7 @@ export default function CollectionEditPage() {
 
   const updateField = (
     field: keyof CollectionFormData,
-    value: string,
+    value: string | string[],
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -206,6 +217,30 @@ export default function CollectionEditPage() {
                     />
                     <p className="mt-1 text-xs text-muted-foreground">
                       Accession number cannot be changed
+                    </p>
+                  </div>
+
+                  <div className="col-span-3">
+                    <TagsInput
+                      value={formData.alternateAccessionNumbers || []}
+                      onValueChange={(values) =>
+                        updateField("alternateAccessionNumbers", values)
+                      }
+                      editable
+                      addOnPaste
+                    >
+                      <TagsInputLabel>Alternate Accession Numbers</TagsInputLabel>
+                      <TagsInputList>
+                        {(formData.alternateAccessionNumbers || []).map((number) => (
+                          <TagsInputItem key={number} value={number}>
+                            {number}
+                          </TagsInputItem>
+                        ))}
+                        <TagsInputInput placeholder="Add alternate ID..." />
+                      </TagsInputList>
+                    </TagsInput>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Historical accession numbers previously assigned to this object
                     </p>
                   </div>
 
