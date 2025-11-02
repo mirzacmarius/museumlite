@@ -275,7 +275,7 @@ export function Navigation({
 
         <div className="flex h-10 items-center gap-3">
           <a
-            href="https://github.com/get-convex/v1/tree/main/docs"
+            href="/"
             className={cn(
               `${buttonVariants({ variant: "outline", size: "sm" })} group hidden h-8 gap-2 rounded-full bg-transparent px-2 pr-2.5 md:flex`,
             )}
