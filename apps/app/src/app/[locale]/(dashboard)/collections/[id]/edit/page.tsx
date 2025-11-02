@@ -180,7 +180,7 @@ export default function CollectionEditPage() {
                 </div>
               )}
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div>
                     <Label htmlFor="title">
                       Title <span className="text-red-500">*</span>
@@ -298,6 +298,18 @@ export default function CollectionEditPage() {
                   </div>
 
                   <div>
+                    <Label htmlFor="condition">
+                      Condition
+                    </Label>
+                    <Input
+                      id="condition"
+                      value={formData.condition || ""}
+                      onChange={(e) => updateField("condition", e.target.value)}
+                      placeholder="e.g., Excellent, Good, Fair"
+                    />
+                  </div>
+
+                  <div>
                     <Label htmlFor="currentLocationId">
                       Location
                     </Label>
@@ -322,18 +334,6 @@ export default function CollectionEditPage() {
                     onChange={(e) => updateField("description", e.target.value)}
                     rows={4}
                     placeholder="Enter detailed description"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="condition">
-                    Condition
-                  </Label>
-                  <Input
-                    id="condition"
-                    value={formData.condition || ""}
-                    onChange={(e) => updateField("condition", e.target.value)}
-                    placeholder="e.g., Excellent, Good, Fair"
                   />
                 </div>
 
