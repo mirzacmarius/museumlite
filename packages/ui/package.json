@@ -42,6 +42,7 @@
     "./scroll-area": "./src/components/scroll-area.tsx",
     "./upload-input": "./src/components/upload-input.tsx",
     "./tags-input": "./src/components/tags-input.tsx",
+    "./bento-gallery": "./src/components/bento-gallery.tsx",
     "./tailwind.config": "./tailwind.config.ts",
     "./postcss": "./postcss.config.js"
   },

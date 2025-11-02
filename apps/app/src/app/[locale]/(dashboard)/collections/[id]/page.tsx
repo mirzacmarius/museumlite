@@ -15,13 +15,17 @@ import {
   Handshake,
   MapPin,
   Move,
+  CheckCircle,
+  XCircle,
+  Archive,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import React, { useState } from "react";
 import { MoveObjectDialog } from "@/app/[locale]/(dashboard)/locations/_components/move-object-dialog";
 import { MediaGallery } from "./_components/media-gallery";
 import { Id } from "@v1/backend/convex/_generated/dataModel";
+import { InteractiveImageBentoGallery, type ImageItem } from "@v1/ui/bento-gallery";
 
 export default function CollectionDetailPage() {
   const params = useParams();
@@ -72,7 +76,7 @@ export default function CollectionDetailPage() {
       <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
         <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
           <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
-            <div className="flex w-full items-center justify-between rounded-lg p-6">
+            <div className="flex w-full items-center justify-between rounded-lg p-4">
               <div className="flex items-center gap-4">
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/collections">
@@ -84,9 +88,27 @@ export default function CollectionDetailPage() {
                   <h2 className="text-xl font-medium text-primary">
                     {collection.title}
                   </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {collection.accessionNumber}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm text-muted-foreground">
+                      {collection.accessionNumber}
+                    </p>
+                    {collection.alternateAccessionNumbers &&
+                      collection.alternateAccessionNumbers.length > 0 && (
+                        <>
+                          <span className="text-sm text-muted-foreground">•</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {collection.alternateAccessionNumbers.map((number) => (
+                              <span
+                                key={number}
+                                className="inline-flex items-center rounded-md border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                              >
+                                {number}
+                              </span>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                  </div>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -119,7 +141,7 @@ export default function CollectionDetailPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("details")}
-                className={`px-4 py-3 text-sm font-medium transition-colors ${
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
                   activeTab === "details"
                     ? "border-b-2 border-primary text-primary"
                     : "text-muted-foreground hover:text-primary"
@@ -130,7 +152,7 @@ export default function CollectionDetailPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("media")}
-                className={`px-4 py-3 text-sm font-medium transition-colors ${
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
                   activeTab === "media"
                     ? "border-b-2 border-primary text-primary"
                     : "text-muted-foreground hover:text-primary"
@@ -142,7 +164,7 @@ export default function CollectionDetailPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("history")}
-                className={`px-4 py-3 text-sm font-medium transition-colors ${
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
                   activeTab === "history"
                     ? "border-b-2 border-primary text-primary"
                     : "text-muted-foreground hover:text-primary"
@@ -154,7 +176,7 @@ export default function CollectionDetailPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("loans")}
-                className={`px-4 py-3 text-sm font-medium transition-colors ${
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
                   activeTab === "loans"
                     ? "border-b-2 border-primary text-primary"
                     : "text-muted-foreground hover:text-primary"
@@ -166,7 +188,7 @@ export default function CollectionDetailPage() {
             </div>
 
             {/* Tab Content */}
-            <div className="p-6">
+            <div className="p-4">
               {activeTab === "details" && (
                 <CollectionDetails collection={collection} />
               )}
@@ -208,62 +230,144 @@ function CollectionDetails({
       : "skip",
   );
 
+  const media = useQuery(
+    api.media.list,
+    collection._id ? { collectionId: collection._id as Id<"collections"> } : "skip",
+  );
+
+  // Transform media data into ImageItem format for bento gallery
+  const imageItems: ImageItem[] = React.useMemo(() => {
+    if (!media || !Array.isArray(media)) return [];
+    
+    return media
+      .filter((file) => file.fileType === "image" && file.url)
+      .map((file, index) => ({
+        id: file._id,
+        title: file.fileName,
+        desc: file.caption || file.photographer || "Collection image",
+        url: file.url!,
+        // Vary the span to create an interesting bento layout
+        span: index % 5 === 0 
+          ? "md:col-span-2 md:row-span-2" 
+          : index % 3 === 0 
+          ? "md:row-span-2" 
+          : "md:row-span-1",
+      }));
+  }, [media]);
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "active":
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case "loaned":
+        return <Archive className="h-4 w-4 text-blue-500" />;
+      case "deaccessioned":
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-green-500/10 text-green-600 dark:text-green-400";
+      case "loaned":
+        return "bg-blue-500/10 text-blue-600 dark:text-blue-400";
+      case "deaccessioned":
+        return "bg-red-500/10 text-red-600 dark:text-red-400";
+      default:
+        return "bg-muted text-muted-foreground";
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      {collection.alternateAccessionNumbers && collection.alternateAccessionNumbers.length > 0 && (
-        <div>
-          <label className="text-sm font-medium text-muted-foreground">
-            Alternate Accession Numbers
-          </label>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {collection.alternateAccessionNumbers.map((number) => (
+    <div className="flex gap-4">
+      {/* Left column - Collection details */}
+      <div className="flex-1 space-y-4">
+      {/* Basic Information Section */}
+      <div className="rounded-lg border border-border bg-card p-4">
+        <h3 className="mb-3 text-base font-semibold">Basic Information</h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <label className="text-sm font-medium text-muted-foreground">
+              Object Type
+            </label>
+            <p className="mt-1 text-sm">{collection.objectType || "—"}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground">
+              Object Name
+            </label>
+            <p className="mt-1 text-sm">{collection.objectName || "—"}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground">
+              Culture
+            </label>
+            <p className="mt-1 text-sm">{collection.culture || "—"}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground">
+              Period
+            </label>
+            <p className="mt-1 text-sm">{collection.period || "—"}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground">
+              Date Created
+            </label>
+            <p className="mt-1 text-sm">{collection.dateCreated || "—"}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground">
+              Status
+            </label>
+            <div className="mt-1 flex items-center gap-2">
+              {getStatusIcon(collection.status)}
               <span
-                key={number}
-                className="inline-flex items-center rounded border border-border bg-muted px-2.5 py-1 text-sm"
+                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-sm font-medium ${getStatusColor(
+                  collection.status,
+                )}`}
               >
-                {number}
+                {collection.status.charAt(0).toUpperCase() +
+                  collection.status.slice(1)}
               </span>
-            ))}
+            </div>
           </div>
         </div>
-      )}
-      <div className="grid grid-cols-2 gap-6">
-        <div>
-          <label className="text-sm font-medium text-muted-foreground">
-            Object Type
-          </label>
-          <p className="mt-1 text-sm">{collection.objectType || "—"}</p>
+      </div>
+
+      {/* Physical Characteristics Section */}
+      <div className="rounded-lg border border-border bg-card p-4">
+        <h3 className="mb-3 text-base font-semibold">Physical Characteristics</h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <label className="text-sm font-medium text-muted-foreground">
+              Materials
+            </label>
+            <p className="mt-1 text-sm">{collection.materials || "—"}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground">
+              Dimensions
+            </label>
+            <p className="mt-1 text-sm">{collection.dimensions || "—"}</p>
+          </div>
+          {collection.condition && (
+            <div className="md:col-span-2 lg:col-span-1">
+              <label className="text-sm font-medium text-muted-foreground">
+                Condition
+              </label>
+              <p className="mt-1 text-sm">{collection.condition}</p>
+            </div>
+          )}
         </div>
-        <div>
-          <label className="text-sm font-medium text-muted-foreground">
-            Object Name
-          </label>
-          <p className="mt-1 text-sm">{collection.objectName || "—"}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-muted-foreground">
-            Culture
-          </label>
-          <p className="mt-1 text-sm">{collection.culture || "—"}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-muted-foreground">
-            Period
-          </label>
-          <p className="mt-1 text-sm">{collection.period || "—"}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-muted-foreground">
-            Date Created
-          </label>
-          <p className="mt-1 text-sm">{collection.dateCreated || "—"}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-muted-foreground">
-            Status
-          </label>
-          <p className="mt-1 text-sm capitalize">{collection.status}</p>
-        </div>
+      </div>
+
+      {/* Location Information Section */}
+      <div className="rounded-lg border border-border bg-card p-4">
+        <h3 className="mb-3 text-base font-semibold">Location Information</h3>
         <div>
           <label className="text-sm font-medium text-muted-foreground">
             Current Location
@@ -280,53 +384,64 @@ function CollectionDetails({
             <p className="mt-1 text-sm text-muted-foreground">No location assigned</p>
           )}
         </div>
-        <div>
-          <label className="text-sm font-medium text-muted-foreground">
-            Materials
-          </label>
-          <p className="mt-1 text-sm">{collection.materials || "—"}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-muted-foreground">
-            Dimensions
-          </label>
-          <p className="mt-1 text-sm">{collection.dimensions || "—"}</p>
-        </div>
       </div>
 
-      {collection.description && (
-        <div>
-          <label className="text-sm font-medium text-muted-foreground">
-            Description
-          </label>
-          <p className="mt-1 text-sm">{collection.description}</p>
+      {/* Historical Information Section */}
+      {(collection.description || collection.provenance || collection.exhibitionHistory) && (
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h3 className="mb-3 text-base font-semibold">Historical Information</h3>
+          <div className="space-y-4">
+            {collection.description && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Description
+                </label>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
+                  {collection.description}
+                </p>
+              </div>
+            )}
+
+            {collection.provenance && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Provenance
+                </label>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
+                  {collection.provenance}
+                </p>
+              </div>
+            )}
+
+            {collection.exhibitionHistory && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Exhibition History
+                </label>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
+                  {collection.exhibitionHistory}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
+      </div>
 
-      {collection.condition && (
-        <div>
-          <label className="text-sm font-medium text-muted-foreground">
-            Condition
-          </label>
-          <p className="mt-1 text-sm">{collection.condition}</p>
-        </div>
-      )}
-
-      {collection.provenance && (
-        <div>
-          <label className="text-sm font-medium text-muted-foreground">
-            Provenance
-          </label>
-          <p className="mt-1 text-sm">{collection.provenance}</p>
-        </div>
-      )}
-
-      {collection.exhibitionHistory && (
-        <div>
-          <label className="text-sm font-medium text-muted-foreground">
-            Exhibition History
-          </label>
-          <p className="mt-1 text-sm">{collection.exhibitionHistory}</p>
+      {/* Right column - Media Gallery */}
+      {imageItems.length > 0 && (
+        <div className="w-96 flex-shrink-0">
+          <div className="sticky top-4">
+            <div className="rounded-lg border border-border bg-card p-4">
+              <h3 className="mb-3 text-base font-semibold">Media Gallery</h3>
+              <InteractiveImageBentoGallery
+                imageItems={imageItems}
+                title=""
+                description=""
+                compact={true}
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>
