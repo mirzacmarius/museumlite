@@ -1,9 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsUpDown, Sparkles, Pencil, Trash2 } from "lucide-react"
+import { Check, ChevronsUpDown, Sparkles, Pencil, Trash2, Star, ThumbsUp, CheckCircle, AlertTriangle, Save, Plus, X } from "lucide-react"
 import { cn } from "@v1/ui/utils"
 import { Button } from "@v1/ui/button"
+import { Input } from "@v1/ui/input"
+import { Textarea } from "@v1/ui/textarea"
+import { Label } from "@v1/ui/label"
 import {
   Command,
   CommandEmpty,
@@ -20,13 +23,14 @@ import {
 } from "@v1/ui/popover"
 import { api } from "@v1/backend/convex/_generated/api"
 import type { Id } from "@v1/backend/convex/_generated/dataModel"
-import { useQuery } from "convex/react"
+import { useQuery, useMutation } from "convex/react"
 
 export interface ConditionOption {
   value: string
   label: string
   description: string
   id?: string  // For custom conditions (enables edit/delete)
+  icon?: React.ReactNode  // Icon for the condition
 }
 
 const STANDARD_CONDITIONS: ConditionOption[] = [
@@ -34,21 +38,25 @@ const STANDARD_CONDITIONS: ConditionOption[] = [
     value: "Excellent",
     label: "Excellent",
     description: "New or mint condition. Either purchased new or has been well curated since it was made.",
+    icon: <Star className="h-3.5 w-3.5 text-yellow-500" />,
   },
   {
     value: "Very Good",
     label: "Very Good",
     description: "Shows some minor signs of use or age. Wear is normal, no visible damage.",
+    icon: <ThumbsUp className="h-3.5 w-3.5 text-green-500" />,
   },
   {
     value: "Good",
     label: "Good",
     description: "Item is aged or faded and may show minor damage but remains structurally sound.",
+    icon: <CheckCircle className="h-3.5 w-3.5 text-blue-500" />,
   },
   {
     value: "Poor",
     label: "Poor",
     description: "Item exhibits severe damage or heavy use and would require extensive stabilization, restoration or conservation.",
+    icon: <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />,
   },
 ]
 
@@ -74,12 +82,20 @@ export function ConditionCombobox({
 }: ConditionComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("")
+  const [showAddForm, setShowAddForm] = React.useState(false)
+  const [newConditionName, setNewConditionName] = React.useState("")
+  const [newConditionDesc, setNewConditionDesc] = React.useState("")
+  const [error, setError] = React.useState<string | null>(null)
 
   // Fetch custom conditions for the organization
   const customConditions = useQuery(
     api.conditionOptions.list,
     organizationId ? { organizationId: organizationId as Id<"organizations"> } : "skip"
   )
+
+  // Mutations
+  const createCondition = useMutation(api.conditionOptions.create)
+  const removeCondition = useMutation(api.conditionOptions.remove)
 
   // Convert custom conditions to options format
   const customConditionOptions = React.useMemo(() => {
@@ -118,6 +134,60 @@ export function ConditionCombobox({
   )
 
   const hasResults = filteredSystemConditions.length > 0 || filteredCustomConditions.length > 0
+
+  // Handle creating new condition inline
+  const handleCreateCondition = async () => {
+    if (!organizationId) {
+      setError("Organization not found")
+      return
+    }
+
+    if (!newConditionName.trim()) {
+      setError("Condition name is required")
+      return
+    }
+
+    if (!newConditionDesc.trim()) {
+      setError("Condition description is required")
+      return
+    }
+
+    try {
+      await createCondition({
+        organizationId: organizationId as Id<"organizations">,
+        name: newConditionName.trim(),
+        description: newConditionDesc.trim(),
+      })
+      
+      // Select the newly created condition
+      onValueChange?.(newConditionName.trim())
+      
+      // Reset form
+      setNewConditionName("")
+      setNewConditionDesc("")
+      setShowAddForm(false)
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create condition")
+    }
+  }
+
+  // Handle deleting condition
+  const handleDeleteCondition = async (conditionId: string) => {
+    if (onDeleteCondition) {
+      onDeleteCondition(conditionId)
+    } else {
+      try {
+        await removeCondition({ conditionId: conditionId as Id<"conditionOptions"> })
+        // Clear selection if deleted condition was selected
+        if (value === customConditionOptions.find(c => c.id === conditionId)?.value) {
+          onValueChange?.("")
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to delete condition")
+      }
+    }
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -188,6 +258,7 @@ export function ConditionCombobox({
                       <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
+                            {condition.icon}
                             <span className="font-medium text-sm">{condition.label}</span>
                             <Sparkles className="h-3 w-3 text-blue-500 shrink-0" aria-label="System condition" />
                           </div>
@@ -272,7 +343,7 @@ export function ConditionCombobox({
                               onClick={(e) => {
                                 e.stopPropagation()
                                 e.preventDefault()
-                                onDeleteCondition(condition.id!)
+                                handleDeleteCondition(condition.id!)
                               }}
                             >
                               <Trash2 className="h-3 w-3" />
@@ -286,6 +357,96 @@ export function ConditionCombobox({
               </CommandGroup>
             )}
           </CommandList>
+
+          {/* Add Condition Section */}
+          {organizationId && (
+            <div className="border-t border-border bg-muted/30">
+              <div className="p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Add Custom Condition
+                  </label>
+                  {!showAddForm && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2"
+                      onClick={() => setShowAddForm(true)}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      <span className="text-xs">New</span>
+                    </Button>
+                  )}
+                </div>
+
+                {showAddForm && (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="newConditionName" className="text-xs">Name *</Label>
+                      <Input
+                        id="newConditionName"
+                        value={newConditionName}
+                        onChange={(e) => setNewConditionName(e.target.value)}
+                        placeholder="e.g., Fair"
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="newConditionDesc" className="text-xs">Description *</Label>
+                      <Textarea
+                        id="newConditionDesc"
+                        value={newConditionDesc}
+                        onChange={(e) => setNewConditionDesc(e.target.value)}
+                        placeholder="Describe this condition..."
+                        rows={2}
+                        className="text-xs"
+                      />
+                    </div>
+
+                    {error && (
+                      <div className="text-xs text-destructive">
+                        {error}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleCreateCondition}
+                        className="h-7"
+                      >
+                        <Save className="h-3 w-3 mr-1" />
+                        <span className="text-xs">Save</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7"
+                        onClick={() => {
+                          setShowAddForm(false)
+                          setNewConditionName("")
+                          setNewConditionDesc("")
+                          setError(null)
+                        }}
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        <span className="text-xs">Cancel</span>
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {!showAddForm && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Create custom conditions for your organization
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </Command>
       </PopoverContent>
     </Popover>
