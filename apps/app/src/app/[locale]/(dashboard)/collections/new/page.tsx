@@ -6,15 +6,16 @@ import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Textarea } from "@v1/ui/textarea";
 import { Label } from "@v1/ui/label";
+
 import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
 import { LocationSelector } from "@/components/location-selector";
 import { useMutation } from "convex/react";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Upload, X, Star } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Id } from "@v1/backend/convex/_generated/dataModel";
+import React, { useState, useRef } from "react";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import Image from "next/image";
 
 interface CollectionFormData {
   accessionNumber?: string;
@@ -30,15 +31,26 @@ interface CollectionFormData {
   condition?: string;
   provenance?: string;
   exhibitionHistory?: string;
-  currentLocationId?: Id<"locations">;
+  currentLocationId?: string;
 }
 
 export default function CollectionFormPage() {
   const router = useRouter();
   const { currentOrganizationId } = useOrganization();
   const createCollection = useMutation(api.collections.create);
+  const generateUploadUrl = useMutation(api.media.generateUploadUrl);
+  const createMedia = useMutation(api.media.create);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<Array<{
+    id: string;
+    file: File;
+    previewUrl: string;
+    isPrimary: boolean;
+  }>>([]);
   const [formData, setFormData] = useState<CollectionFormData>({
     title: "",
     objectType: "",
@@ -52,9 +64,67 @@ export default function CollectionFormPage() {
     condition: "",
     provenance: "",
     exhibitionHistory: "",
-    currentLocationId: undefined,
+    currentLocationId: "",
   });
 
+  // Cleanup blob URLs on unmount
+  React.useEffect(() => {
+    return () => {
+      selectedFiles.forEach((file) => URL.revokeObjectURL(file.previewUrl));
+    };
+  }, [selectedFiles]);
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null);
+    try {
+      const filesList = event.target?.files;
+      if (!filesList || filesList.length === 0) {
+        return;
+      }
+      const files = Array.from(filesList);
+      if (!files || files.length === 0) {
+        return;
+      }
+
+      const isFirstBatch = selectedFiles.length === 0;
+
+      const newFiles = files.map((file, index) => ({
+        id: `${Date.now()}-${index}`,
+        file,
+        previewUrl: URL.createObjectURL(file),
+        isPrimary: isFirstBatch && index === 0,
+      }));
+
+      setSelectedFiles((prev) => [...prev, ...newFiles]);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to process file selection",
+      );
+    }
+  };
+
+  const handleSetPrimary = (fileId: string) => {
+    setSelectedFiles((prev) =>
+      prev.map((item) => ({
+        ...item,
+        isPrimary: item.id === fileId,
+      })),
+    );
+  };
+
+  const handleDelete = (fileId: string) => {
+    setSelectedFiles((prev) => {
+      const fileToDelete = prev.find((item) => item.id === fileId);
+      if (fileToDelete) {
+        URL.revokeObjectURL(fileToDelete.previewUrl);
+      }
+      return prev.filter((item) => item.id !== fileId);
+    });
+  };
 
   if (!currentOrganizationId) {
     return (
@@ -76,13 +146,79 @@ export default function CollectionFormPage() {
 
     setIsSubmitting(true);
     try {
-      await createCollection({
+      // Step 1: Create the collection
+      const collectionId = await createCollection({
         organizationId: currentOrganizationId,
-        ...formData,
+        accessionNumber: formData.accessionNumber,
+        title: formData.title,
+        objectType: formData.objectType,
+        objectName: formData.objectName,
+        culture: formData.culture,
+        period: formData.period,
+        dateCreated: formData.dateCreated,
+        materials: formData.materials,
+        dimensions: formData.dimensions,
+        description: formData.description,
+        condition: formData.condition,
+        provenance: formData.provenance,
+        exhibitionHistory: formData.exhibitionHistory,
         currentLocationId: formData.currentLocationId
           ? (formData.currentLocationId as Id<"locations">)
           : undefined,
       });
+
+      // Step 2: Upload all selected files
+      if (selectedFiles.length > 0) {
+        for (const fileData of selectedFiles) {
+          try {
+            // Generate upload URL
+            const uploadUrlResult = await generateUploadUrl({
+              organizationId: currentOrganizationId as Id<"organizations">,
+              collectionId: collectionId as Id<"collections">,
+              fileName: fileData.file.name,
+              fileSize: fileData.file.size,
+              mimeType: fileData.file.type,
+            });
+
+            if (!uploadUrlResult.uploadUrl) {
+              throw new Error(`Failed to generate upload URL for ${fileData.file.name}`);
+            }
+
+            // Upload file to storage
+            const uploadResponse = await fetch(uploadUrlResult.uploadUrl, {
+              method: "POST",
+              body: fileData.file,
+            });
+
+            if (!uploadResponse.ok) {
+              throw new Error(`Failed to upload ${fileData.file.name}`);
+            }
+
+            const uploadResult = await uploadResponse.json();
+            const storageId = uploadResult.storageId;
+
+            if (!storageId) {
+              throw new Error(`No storage ID returned for ${fileData.file.name}`);
+            }
+
+            // Create media record
+            await createMedia({
+              organizationId: currentOrganizationId as Id<"organizations">,
+              collectionId: collectionId as Id<"collections">,
+              storageId: storageId,
+              fileName: fileData.file.name,
+              fileSize: fileData.file.size,
+              mimeType: fileData.file.type,
+              isPrimary: fileData.isPrimary,
+            });
+          } catch (uploadErr) {
+            console.error(`Error uploading ${fileData.file.name}:`, uploadErr);
+            // Continue with other files even if one fails
+          }
+        }
+      }
+
+      // Navigate to collections list
       router.push("/collections");
     } catch (err) {
       console.error("Error saving collection:", err);
@@ -97,7 +233,7 @@ export default function CollectionFormPage() {
 
   const updateField = (
     field: keyof CollectionFormData,
-    value: string,
+    value: string | string[],
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -129,14 +265,21 @@ export default function CollectionFormPage() {
               <div className="w-full border-b border-border" />
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6">
+            <form onSubmit={handleSubmit} className="p-4">
               {error && (
-                <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
                   {error}
                 </div>
               )}
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              
+              <div className="flex gap-4">
+                {/* Left column - Form sections */}
+                <div className="flex-1 space-y-4">
+                  
+                  {/* Basic Information Section */}
+                  <div className="rounded-lg border border-border bg-card p-4">
+                    <h3 className="mb-3 text-base font-semibold">Basic Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="title">
                       Title <span className="text-red-500">*</span>
@@ -163,6 +306,8 @@ export default function CollectionFormPage() {
                       placeholder="Auto-generated if not provided"
                     />
                   </div>
+
+
 
                   <div>
                     <Label htmlFor="objectType">
@@ -212,122 +357,234 @@ export default function CollectionFormPage() {
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor="dateCreated">
-                      Date Created
-                    </Label>
-                    <Input
-                      id="dateCreated"
-                      value={formData.dateCreated || ""}
-                      onChange={(e) =>
-                        updateField("dateCreated", e.target.value)
-                      }
-                      placeholder="e.g., 1850"
-                    />
+                      <div>
+                        <Label htmlFor="dateCreated">
+                          Date Created
+                        </Label>
+                        <Input
+                          id="dateCreated"
+                          value={formData.dateCreated || ""}
+                          onChange={(e) =>
+                            updateField("dateCreated", e.target.value)
+                          }
+                          placeholder="e.g., 1850"
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="materials">
-                      Materials
-                    </Label>
-                    <Input
-                      id="materials"
-                      value={formData.materials || ""}
-                      onChange={(e) => updateField("materials", e.target.value)}
-                      placeholder="e.g., Oil on canvas"
-                    />
+                  {/* Physical Characteristics Section */}
+                  <div className="rounded-lg border border-border bg-card p-4">
+                    <h3 className="mb-3 text-base font-semibold">Physical Characteristics</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="materials">
+                          Materials
+                        </Label>
+                        <Input
+                          id="materials"
+                          value={formData.materials || ""}
+                          onChange={(e) => updateField("materials", e.target.value)}
+                          placeholder="e.g., Oil on canvas"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="dimensions">
+                          Dimensions
+                        </Label>
+                        <Input
+                          id="dimensions"
+                          value={formData.dimensions || ""}
+                          onChange={(e) =>
+                            updateField("dimensions", e.target.value)
+                          }
+                          placeholder="e.g., 50 x 60 cm"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="condition">
+                          Condition
+                        </Label>
+                        <Input
+                          id="condition"
+                          value={formData.condition || ""}
+                          onChange={(e) => updateField("condition", e.target.value)}
+                          placeholder="e.g., Excellent, Good, Fair"
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="dimensions">
-                      Dimensions
-                    </Label>
-                    <Input
-                      id="dimensions"
-                      value={formData.dimensions || ""}
-                      onChange={(e) =>
-                        updateField("dimensions", e.target.value)
-                      }
-                      placeholder="e.g., 50 x 60 cm"
-                    />
+                  {/* Location Information Section */}
+                  <div className="rounded-lg border border-border bg-card p-4">
+                    <h3 className="mb-3 text-base font-semibold">Location Information</h3>
+                    <div>
+                      <Label htmlFor="currentLocationId">
+                        Current Location
+                      </Label>
+                      <LocationSelector
+                        organizationId={currentOrganizationId}
+                        value={formData.currentLocationId}
+                        onValueChange={(value) =>
+                          updateField("currentLocationId", value)
+                        }
+                        placeholder="Select a location (optional)"
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="condition">
-                      Condition
-                    </Label>
-                    <Input
-                      id="condition"
-                      value={formData.condition || ""}
-                      onChange={(e) => updateField("condition", e.target.value)}
-                      placeholder="e.g., Excellent, Good, Fair"
-                    />
+                  {/* Historical Information Section */}
+                  <div className="rounded-lg border border-border bg-card p-4">
+                    <h3 className="mb-3 text-base font-semibold">Historical Information</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="description">
+                          Description
+                        </Label>
+                        <Textarea
+                          id="description"
+                          value={formData.description || ""}
+                          onChange={(e) => updateField("description", e.target.value)}
+                          rows={4}
+                          placeholder="Enter detailed description"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="provenance">
+                          Provenance
+                        </Label>
+                        <Textarea
+                          id="provenance"
+                          value={formData.provenance || ""}
+                          onChange={(e) => updateField("provenance", e.target.value)}
+                          rows={3}
+                          placeholder="Enter provenance information"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="exhibitionHistory">
+                          Exhibition History
+                        </Label>
+                        <Textarea
+                          id="exhibitionHistory"
+                          value={formData.exhibitionHistory || ""}
+                          onChange={(e) =>
+                            updateField("exhibitionHistory", e.target.value)
+                          }
+                          rows={3}
+                          placeholder="Enter exhibition history"
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="currentLocationId">
-                      Location
-                    </Label>
-                    <LocationSelector
-                      organizationId={currentOrganizationId}
-                      value={formData.currentLocationId}
-                      onValueChange={(value) =>
-                        updateField("currentLocationId", value)
-                      }
-                      placeholder="Select a location (optional)"
-                    />
+                  {/* Form Actions */}
+                  <div className="flex justify-end gap-4">
+                    <Button type="button" variant="outline" asChild>
+                      <Link href="/collections">Cancel</Link>
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                      <Save className="mr-2 h-4 w-4" />
+                      {isSubmitting 
+                        ? selectedFiles.length > 0 
+                          ? "Creating and uploading..." 
+                          : "Creating..."
+                        : "Create Collection"}
+                    </Button>
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="description">
-                    Description
-                  </Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description || ""}
-                    onChange={(e) => updateField("description", e.target.value)}
-                    rows={4}
-                    placeholder="Enter detailed description"
-                  />
-                </div>
+                {/* Right column - Media Uploader */}
+                <div className="w-96 flex-shrink-0">
+                  <div className="sticky top-4">
+                    <div className="rounded-lg border border-border bg-card p-4">
+                      <h3 className="mb-3 text-base font-semibold">Media Upload</h3>
+                      
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*,video/*,application/pdf"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                        multiple
+                      />
+                      
+                      <Button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full mb-4"
+                        variant="outline"
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload Images
+                      </Button>
 
-                <div>
-                  <Label htmlFor="provenance">
-                    Provenance
-                  </Label>
-                  <Textarea
-                    id="provenance"
-                    value={formData.provenance || ""}
-                    onChange={(e) => updateField("provenance", e.target.value)}
-                    rows={3}
-                    placeholder="Enter provenance information"
-                  />
-                </div>
+                      {selectedFiles.length > 0 ? (
+                        <div className="grid grid-cols-3 gap-2">
+                          {selectedFiles.map((file) => (
+                            <div
+                              key={file.id}
+                              className="group relative aspect-square overflow-hidden rounded-md border bg-card"
+                            >
+                              <Image
+                                src={file.previewUrl}
+                                alt={file.file.name}
+                                fill
+                                sizes="128px"
+                                className="object-cover"
+                              />
+                              
+                              {/* Hover overlay */}
+                              <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
+                                {!file.isPrimary && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() => handleSetPrimary(file.id)}
+                                    title="Set as primary"
+                                  >
+                                    <Star className="h-3 w-3" />
+                                  </Button>
+                                )}
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleDelete(file.id)}
+                                  title="Delete"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
 
-                <div>
-                  <Label htmlFor="exhibitionHistory">
-                    Exhibition History
-                  </Label>
-                  <Textarea
-                    id="exhibitionHistory"
-                    value={formData.exhibitionHistory || ""}
-                    onChange={(e) =>
-                      updateField("exhibitionHistory", e.target.value)
-                    }
-                    rows={3}
-                    placeholder="Enter exhibition history"
-                  />
-                </div>
+                              {/* Primary badge */}
+                              {file.isPrimary && (
+                                <div className="absolute top-1 right-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
+                                  Primary
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed">
+                          <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">No images selected</p>
+                        </div>
+                      )}
 
-                <div className="flex justify-end gap-4">
-                  <Button type="button" variant="outline" asChild>
-                    <Link href="/collections">Cancel</Link>
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {isSubmitting ? "Creating..." : "Create Collection"}
-                  </Button>
+                      {selectedFiles.length > 0 && (
+                        <p className="mt-3 text-center text-xs text-muted-foreground">
+                          {selectedFiles.length} {selectedFiles.length === 1 ? 'image' : 'images'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </form>
