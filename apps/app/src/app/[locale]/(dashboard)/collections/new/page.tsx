@@ -9,6 +9,7 @@ import { Label } from "@v1/ui/label";
 
 import { useOrganization } from "@/components/organization-provider";
 import { LocationSelector } from "@/components/location-selector";
+import { ConditionCombobox } from "@/components/condition-combobox";
 import { useMutation } from "convex/react";
 import { ArrowLeft, Save, Upload, X, Star } from "lucide-react";
 import Link from "next/link";
@@ -407,11 +408,9 @@ export default function CollectionFormPage() {
                         <Label htmlFor="condition">
                           Condition
                         </Label>
-                        <Input
-                          id="condition"
+                        <ConditionCombobox
                           value={formData.condition || ""}
-                          onChange={(e) => updateField("condition", e.target.value)}
-                          placeholder="e.g., Excellent, Good, Fair"
+                          onValueChange={(value) => updateField("condition", value)}
                         />
                       </div>
                     </div>

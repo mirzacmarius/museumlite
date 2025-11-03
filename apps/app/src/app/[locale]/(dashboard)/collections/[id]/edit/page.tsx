@@ -16,6 +16,7 @@ import {
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { LocationSelector } from "@/components/location-selector";
+import { ConditionCombobox } from "@/components/condition-combobox";
 import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Save, Upload, X, Star } from "lucide-react";
 import Link from "next/link";
@@ -489,11 +490,9 @@ export default function CollectionEditPage() {
                         <Label htmlFor="condition">
                           Condition
                         </Label>
-                        <Input
-                          id="condition"
+                        <ConditionCombobox
                           value={formData.condition || ""}
-                          onChange={(e) => updateField("condition", e.target.value)}
-                          placeholder="e.g., Excellent, Good, Fair"
+                          onValueChange={(value) => updateField("condition", value)}
                         />
                       </div>
                     </div>
