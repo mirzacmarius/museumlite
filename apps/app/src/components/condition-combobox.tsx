@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
+import { Check, ChevronsUpDown, Sparkles, Pencil, Trash2 } from "lucide-react"
 import { cn } from "@v1/ui/utils"
 import { Button } from "@v1/ui/button"
 import {
@@ -11,17 +11,22 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from "@v1/ui/command"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@v1/ui/popover"
+import { api } from "@v1/backend/convex/_generated/api"
+import type { Id } from "@v1/backend/convex/_generated/dataModel"
+import { useQuery } from "convex/react"
 
 export interface ConditionOption {
   value: string
   label: string
   description: string
+  id?: string  // For custom conditions (enables edit/delete)
 }
 
 const STANDARD_CONDITIONS: ConditionOption[] = [
@@ -48,23 +53,49 @@ const STANDARD_CONDITIONS: ConditionOption[] = [
 ]
 
 interface ConditionComboboxProps {
+  organizationId?: string
   value?: string
   onValueChange?: (value: string) => void
   placeholder?: string
   disabled?: boolean
+  // Optional handlers for custom condition management
+  onEditCondition?: (id: string) => void
+  onDeleteCondition?: (id: string) => void
 }
 
 export function ConditionCombobox({
+  organizationId,
   value,
   onValueChange,
   placeholder = "Select condition...",
   disabled = false,
+  onEditCondition,
+  onDeleteCondition,
 }: ConditionComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("")
 
+  // Fetch custom conditions for the organization
+  const customConditions = useQuery(
+    api.conditionOptions.list,
+    organizationId ? { organizationId: organizationId as Id<"organizations"> } : "skip"
+  )
+
+  // Convert custom conditions to options format
+  const customConditionOptions = React.useMemo(() => {
+    return (customConditions || []).map((condition) => ({
+      value: condition.name,
+      label: condition.name,
+      description: condition.description,
+      id: condition._id,
+    }))
+  }, [customConditions])
+
+  // Combine all options
+  const allOptions = [...STANDARD_CONDITIONS, ...customConditionOptions]
+
   // Find selected option
-  const selectedOption = STANDARD_CONDITIONS.find(
+  const selectedOption = allOptions.find(
     (option) => option.value.toLowerCase() === value?.toLowerCase()
   )
 
@@ -76,12 +107,17 @@ export function ConditionCombobox({
   }
 
   // Filter options based on search
-  const filteredConditions = STANDARD_CONDITIONS.filter((condition) =>
+  const filteredSystemConditions = STANDARD_CONDITIONS.filter((condition) =>
     condition.label.toLowerCase().includes(inputValue.toLowerCase()) ||
     condition.description.toLowerCase().includes(inputValue.toLowerCase())
   )
 
-  const hasResults = filteredConditions.length > 0
+  const filteredCustomConditions = customConditionOptions.filter((condition) =>
+    condition.label.toLowerCase().includes(inputValue.toLowerCase()) ||
+    condition.description.toLowerCase().includes(inputValue.toLowerCase())
+  )
+
+  const hasResults = filteredSystemConditions.length > 0 || filteredCustomConditions.length > 0
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -131,9 +167,9 @@ export function ConditionCombobox({
               )}
             </CommandEmpty>
 
-            {hasResults && (
+            {filteredSystemConditions.length > 0 && (
               <CommandGroup heading="Standard Conditions">
-                {filteredConditions.map((condition) => (
+                {filteredSystemConditions.map((condition) => (
                   <CommandItem
                     key={condition.value}
                     value={condition.value}
@@ -149,11 +185,100 @@ export function ConditionCombobox({
                             : "opacity-0"
                         )}
                       />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm">{condition.label}</div>
-                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                          {condition.description}
-                        </p>
+                      <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">{condition.label}</span>
+                            <Sparkles className="h-3 w-3 text-blue-500 shrink-0" aria-label="System condition" />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                            {condition.description}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+
+            {filteredSystemConditions.length > 0 && filteredCustomConditions.length > 0 && (
+              <CommandSeparator />
+            )}
+
+            {filteredCustomConditions.length > 0 && (
+              <CommandGroup heading="Organization Conditions">
+                {filteredCustomConditions.map((condition) => (
+                  <CommandItem
+                    key={condition.value}
+                    value={condition.value}
+                    onSelect={() => handleSelect(condition.value)}
+                    className="px-3 py-3"
+                  >
+                    <div className="flex w-full items-start gap-3">
+                      <Check
+                        className={cn(
+                          "h-4 w-4 shrink-0 mt-0.5",
+                          value?.toLowerCase() === condition.value.toLowerCase()
+                            ? "opacity-100"
+                            : "opacity-0"
+                        )}
+                      />
+                      <div 
+                        className="flex-1 min-w-0 flex items-start justify-between gap-2"
+                        onClick={(e) => {
+                          // Allow clicking on the condition area to select it
+                          if ((e.target as HTMLElement).closest('button')) {
+                            e.stopPropagation()
+                          }
+                        }}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm">{condition.label}</div>
+                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                            {condition.description}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {onEditCondition && condition.id && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onPointerDown={(e) => {
+                                e.stopPropagation()
+                                e.preventDefault()
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                e.preventDefault()
+                                onEditCondition(condition.id!)
+                              }}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {onDeleteCondition && condition.id && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                              onPointerDown={(e) => {
+                                e.stopPropagation()
+                                e.preventDefault()
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                e.preventDefault()
+                                onDeleteCondition(condition.id!)
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </CommandItem>

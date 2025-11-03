@@ -13,6 +13,7 @@ import type * as accessions from "../accessions.js";
 import type * as audit from "../audit.js";
 import type * as auth from "../auth.js";
 import type * as collections from "../collections.js";
+import type * as conditionOptions from "../conditionOptions.js";
 import type * as dashboard from "../dashboard.js";
 import type * as deaccessions from "../deaccessions.js";
 import type * as email_index from "../email/index.js";
@@ -54,6 +55,7 @@ declare const fullApi: ApiFromModules<{
   audit: typeof audit;
   auth: typeof auth;
   collections: typeof collections;
+  conditionOptions: typeof conditionOptions;
   dashboard: typeof dashboard;
   deaccessions: typeof deaccessions;
   "email/index": typeof email_index;

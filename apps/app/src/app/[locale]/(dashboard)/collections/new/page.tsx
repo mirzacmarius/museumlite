@@ -409,6 +409,7 @@ export default function CollectionFormPage() {
                           Condition
                         </Label>
                         <ConditionCombobox
+                          organizationId={currentOrganizationId}
                           value={formData.condition || ""}
                           onValueChange={(value) => updateField("condition", value)}
                         />

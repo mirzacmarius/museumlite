@@ -37,7 +37,7 @@ import { PermissionGate } from "@/components/permission-gate";
 import { TemplateCombobox } from "@/components/template-combobox";
 import { InfoTooltip } from "@/components/info-tooltip";
 import { useMutation, useQuery } from "convex/react";
-import { Save, Trash2 } from "lucide-react";
+import { Save, Trash2, Plus, Pencil } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { cn } from "@v1/ui/utils";
 
@@ -50,6 +50,13 @@ export default function OrganizationSettingsPage() {
   const [saveTemplateDesc, setSaveTemplateDesc] = useState("");
   const [deleteTemplateId, setDeleteTemplateId] = useState<Id<"accessionTemplates"> | null>(null);
   const [selectedCustomTemplateId, setSelectedCustomTemplateId] = useState<Id<"accessionTemplates"> | null>(null);
+  
+  // Condition management state
+  const [showConditionModal, setShowConditionModal] = useState(false);
+  const [editingCondition, setEditingCondition] = useState<any | null>(null);
+  const [conditionName, setConditionName] = useState("");
+  const [conditionDesc, setConditionDesc] = useState("");
+  const [deleteConditionId, setDeleteConditionId] = useState<Id<"conditionOptions"> | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     accessionNumberFormat: "",
@@ -70,6 +77,17 @@ export default function OrganizationSettingsPage() {
   const createTemplate = useMutation(api.accessionTemplates.create);
   const removeTemplate = useMutation(api.accessionTemplates.remove);
   const updateTemplate = useMutation(api.accessionTemplates.update);
+  
+  // Condition mutations
+  const createCondition = useMutation(api.conditionOptions.create);
+  const updateCondition = useMutation(api.conditionOptions.update);
+  const removeCondition = useMutation(api.conditionOptions.remove);
+  
+  // Query custom conditions
+  const customConditions = useQuery(
+    api.conditionOptions.list,
+    currentOrganizationId ? { organizationId: currentOrganizationId as Id<"organizations"> } : "skip"
+  );
 
   // Validation query with debouncing
   const validation = useQuery(
@@ -207,6 +225,67 @@ export default function OrganizationSettingsPage() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete template");
+    }
+  };
+
+  // Condition handlers
+  const openAddConditionModal = () => {
+    setEditingCondition(null);
+    setConditionName("");
+    setConditionDesc("");
+    setShowConditionModal(true);
+  };
+
+  const openEditConditionModal = (condition: any) => {
+    setEditingCondition(condition);
+    setConditionName(condition.name);
+    setConditionDesc(condition.description);
+    setShowConditionModal(true);
+  };
+
+  const handleSaveCondition = async () => {
+    if (!conditionName.trim()) {
+      setError("Condition name is required");
+      return;
+    }
+    if (!conditionDesc.trim()) {
+      setError("Condition description is required");
+      return;
+    }
+
+    try {
+      if (editingCondition) {
+        // Update existing condition
+        await updateCondition({
+          conditionId: editingCondition._id,
+          name: conditionName.trim(),
+          description: conditionDesc.trim(),
+        });
+      } else {
+        // Create new condition
+        await createCondition({
+          organizationId: currentOrganizationId as Id<"organizations">,
+          name: conditionName.trim(),
+          description: conditionDesc.trim(),
+        });
+      }
+      setShowConditionModal(false);
+      setConditionName("");
+      setConditionDesc("");
+      setEditingCondition(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save condition");
+    }
+  };
+
+  const handleDeleteCondition = async () => {
+    if (!deleteConditionId) return;
+
+    try {
+      await removeCondition({ conditionId: deleteConditionId });
+      setDeleteConditionId(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete condition");
     }
   };
 
@@ -471,6 +550,73 @@ export default function OrganizationSettingsPage() {
             </div>
 
             <div className="rounded-lg border border-border bg-card p-6">
+              <h2 className="mb-4 text-lg font-medium">Condition Management</h2>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Custom Condition Options</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Manage custom condition options for your organization. These will be available when cataloging objects.
+                  </p>
+                  <div className="space-y-2 mt-3">
+                    {customConditions && customConditions.length > 0 ? (
+                      customConditions.map((condition) => (
+                        <div key={condition._id} className="flex items-start justify-between rounded-lg border p-3 bg-secondary/30">
+                          <div className="flex-1">
+                            <p className="font-medium">{condition.name}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{condition.description}</p>
+                            {condition.usageCount ? (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Used {condition.usageCount} {condition.usageCount === 1 ? 'time' : 'times'}
+                              </p>
+                            ) : null}
+                          </div>
+                          <div className="flex gap-2 ml-4">
+                            <Button 
+                              type="button"
+                              size="sm" 
+                              variant="ghost" 
+                              onClick={() => openEditConditionModal(condition)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              type="button"
+                              size="sm" 
+                              variant="ghost" 
+                              onClick={() => setDeleteConditionId(condition._id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-lg border border-dashed p-8 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          No custom conditions defined yet. Add your first custom condition.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={openAddConditionModal}
+                    className="mt-2"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Custom Condition
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Standard conditions (Excellent, Very Good, Good, Poor) are always available and cannot be edited.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-border bg-card p-6">
               <h2 className="mb-4 text-lg font-medium">Loan Settings</h2>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -569,7 +715,7 @@ export default function OrganizationSettingsPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Delete Confirmation Modal */}
+        {/* Delete Template Confirmation Modal */}
         <AlertDialog open={!!deleteTemplateId} onOpenChange={() => setDeleteTemplateId(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -581,6 +727,79 @@ export default function OrganizationSettingsPage() {
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={handleDeleteTemplate}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Add/Edit Condition Modal */}
+        <Dialog open={showConditionModal} onOpenChange={setShowConditionModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {editingCondition ? "Edit Condition" : "Add Custom Condition"}
+              </DialogTitle>
+              <DialogDescription>
+                {editingCondition 
+                  ? "Update the condition name and description."
+                  : "Create a new custom condition for your organization."}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="conditionName">Condition Name *</Label>
+                <Input
+                  id="conditionName"
+                  value={conditionName}
+                  onChange={(e) => setConditionName(e.target.value)}
+                  placeholder="e.g., Fair"
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="conditionDesc">Description *</Label>
+                <Textarea
+                  id="conditionDesc"
+                  value={conditionDesc}
+                  onChange={(e) => setConditionDesc(e.target.value)}
+                  placeholder="Describe this condition level..."
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowConditionModal(false);
+                  setConditionName("");
+                  setConditionDesc("");
+                  setEditingCondition(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="button" onClick={handleSaveCondition}>
+                {editingCondition ? "Update Condition" : "Add Condition"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Condition Confirmation Modal */}
+        <AlertDialog open={!!deleteConditionId} onOpenChange={() => setDeleteConditionId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Condition</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this custom condition? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteCondition}>
                 Delete
               </AlertDialogAction>
             </AlertDialogFooter>
