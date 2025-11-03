@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as accessionTemplates from "../accessionTemplates.js";
 import type * as accessions from "../accessions.js";
 import type * as audit from "../audit.js";
 import type * as auth from "../auth.js";
@@ -28,6 +29,8 @@ import type * as roles from "../roles.js";
 import type * as seed from "../seed.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as users from "../users.js";
+import type * as utils_accessionCounter from "../utils/accessionCounter.js";
+import type * as utils_accessionNumberParser from "../utils/accessionNumberParser.js";
 import type * as utils_permissions from "../utils/permissions.js";
 import type * as utils_validators from "../utils/validators.js";
 import type * as web from "../web.js";
@@ -46,6 +49,7 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  accessionTemplates: typeof accessionTemplates;
   accessions: typeof accessions;
   audit: typeof audit;
   auth: typeof auth;
@@ -66,6 +70,8 @@ declare const fullApi: ApiFromModules<{
   seed: typeof seed;
   subscriptions: typeof subscriptions;
   users: typeof users;
+  "utils/accessionCounter": typeof utils_accessionCounter;
+  "utils/accessionNumberParser": typeof utils_accessionNumberParser;
   "utils/permissions": typeof utils_permissions;
   "utils/validators": typeof utils_validators;
   web: typeof web;

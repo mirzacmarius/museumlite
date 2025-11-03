@@ -4,9 +4,11 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { requirePermission } from "./utils/permissions";
+import { accessionParser } from "./utils/accessionNumberParser";
+import { getNextCounterValue } from "./utils/accessionCounter";
 
 /**
- * Generate accession number based on organization format
+ * Generate accession number based on organization format template
  */
 async function generateAccessionNumber(
   ctx: any,
@@ -17,34 +19,43 @@ async function generateAccessionNumber(
     throw new Error("Organization not found");
   }
 
-  const format = org.settings?.accessionNumberFormat;
+  const template = org.settings?.accessionNumberFormat;
   const autoGenerate = org.settings?.autoGenerateAccessionNumbers ?? false;
 
-  if (!autoGenerate || !format) {
-    throw new Error("Accession number generation not configured");
+  if (!autoGenerate) {
+    throw new Error("Auto-generate accession numbers is disabled. Please enable it in Organization Settings or provide a custom accession number.");
   }
 
-  // Simple format implementation - can be enhanced
-  // Format examples: "ORG-YYYY-###" or "YYYY-ORG-###"
-  const year = new Date().getFullYear();
-  const orgSlug = org.slug.toUpperCase().substring(0, 3);
+  if (!template) {
+    throw new Error("Accession number format is not configured. Please set up an accession format template in Organization Settings.");
+  }
 
-  // Count existing accessions this year
-  const existing = await ctx.db
-    .query("collections")
-    .withIndex("by_organization", (q: any) =>
-      q.eq("organizationId", organizationId),
-    )
-    .filter((q: any) =>
-      q.eq(
-        q.field("accessionNumber"),
-        `${orgSlug}-${year}-001`,
-      ),
-    )
-    .collect();
+  const now = new Date();
+  
+  // Determine counter scope from settings or template
+  const counterScope = org.settings?.accessionCounterScope || 
+    accessionParser.getCounterScopeFromTemplate(template);
+  
+  // Get scope key for counter tracking
+  const scopeKey = accessionParser.getScopeKey(counterScope, now);
 
-  const sequence = String(existing.length + 1).padStart(3, "0");
-  return `${orgSlug}-${year}-${sequence}`;
+  // Get next counter value (atomic operation)
+  const counterValue = await getNextCounterValue(
+    ctx,
+    organizationId,
+    counterScope,
+    scopeKey,
+  );
+
+  // Parse template and generate accession number
+  const accessionNumber = accessionParser.parse(template, {
+    organizationSlug: org.slug,
+    currentDate: now,
+    counterValue,
+    counterScope,
+  });
+
+  return accessionNumber;
 }
 
 /**

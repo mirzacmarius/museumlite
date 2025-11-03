@@ -1,0 +1,240 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { requirePermission } from "./utils/permissions";
+import { accessionParser } from "./utils/accessionNumberParser";
+
+/**
+ * List all custom templates for an organization
+ */
+export const list = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("accessionTemplates"),
+      _creationTime: v.number(),
+      organizationId: v.id("organizations"),
+      name: v.string(),
+      template: v.string(),
+      description: v.optional(v.string()),
+      isDefault: v.boolean(),
+      createdBy: v.id("users"),
+      createdAt: v.number(),
+      usageCount: v.optional(v.number()),
+      lastUsedAt: v.optional(v.number()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("accessionTemplates")
+      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .order("desc")
+      .collect();
+  },
+});
+
+/**
+ * Create a new custom template
+ */
+export const create = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    template: v.string(),
+    description: v.optional(v.string()),
+  },
+  returns: v.id("accessionTemplates"),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(ctx, args.organizationId, "organization.manage_settings");
+
+    // Validate template
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) {
+      throw new Error("Organization not found");
+    }
+
+    const validation = accessionParser.validate(args.template, org.slug);
+    if (!validation.isValid) {
+      throw new Error(`Invalid template: ${validation.error}`);
+    }
+
+    // Check if template already exists
+    const existing = await ctx.db
+      .query("accessionTemplates")
+      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .filter((q) => q.eq(q.field("template"), args.template))
+      .first();
+
+    if (existing) {
+      throw new Error("Template already exists");
+    }
+
+    return await ctx.db.insert("accessionTemplates", {
+      organizationId: args.organizationId,
+      name: args.name,
+      template: args.template,
+      description: args.description,
+      isDefault: false,
+      createdBy: userId,
+      createdAt: Date.now(),
+      usageCount: 0,
+    });
+  },
+});
+
+/**
+ * Update a custom template
+ */
+export const update = mutation({
+  args: {
+    templateId: v.id("accessionTemplates"),
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    template: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const template = await ctx.db.get(args.templateId);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+
+    await requirePermission(ctx, template.organizationId, "organization.manage_settings");
+
+    // Validate new template if provided
+    if (args.template) {
+      const org = await ctx.db.get(template.organizationId);
+      if (!org) {
+        throw new Error("Organization not found");
+      }
+
+      const validation = accessionParser.validate(args.template, org.slug);
+      if (!validation.isValid) {
+        throw new Error(`Invalid template: ${validation.error}`);
+      }
+    }
+
+    const updates: {
+      name?: string;
+      description?: string;
+      template?: string;
+    } = {};
+
+    if (args.name !== undefined) {
+      updates.name = args.name;
+    }
+
+    if (args.description !== undefined) {
+      updates.description = args.description;
+    }
+
+    if (args.template !== undefined) {
+      updates.template = args.template;
+    }
+
+    await ctx.db.patch(args.templateId, updates);
+    return null;
+  },
+});
+
+/**
+ * Delete a custom template
+ */
+export const remove = mutation({
+  args: {
+    templateId: v.id("accessionTemplates"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const template = await ctx.db.get(args.templateId);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+
+    await requirePermission(ctx, template.organizationId, "organization.manage_settings");
+
+    await ctx.db.delete(args.templateId);
+    return null;
+  },
+});
+
+/**
+ * Set a template as default for the organization
+ */
+export const setDefault = mutation({
+  args: {
+    templateId: v.id("accessionTemplates"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const template = await ctx.db.get(args.templateId);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+
+    await requirePermission(ctx, template.organizationId, "organization.manage_settings");
+
+    // Unset all other defaults for this organization
+    const allTemplates = await ctx.db
+      .query("accessionTemplates")
+      .withIndex("by_organization_and_default", (q) =>
+        q.eq("organizationId", template.organizationId).eq("isDefault", true),
+      )
+      .collect();
+
+    for (const t of allTemplates) {
+      await ctx.db.patch(t._id, { isDefault: false });
+    }
+
+    // Set this template as default
+    await ctx.db.patch(args.templateId, { isDefault: true });
+
+    return null;
+  },
+});
+
+/**
+ * Increment usage counter for a template
+ */
+export const incrementUsage = mutation({
+  args: {
+    templateId: v.id("accessionTemplates"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const template = await ctx.db.get(args.templateId);
+    if (!template) {
+      return null;
+    }
+
+    await ctx.db.patch(args.templateId, {
+      usageCount: (template.usageCount ?? 0) + 1,
+      lastUsedAt: Date.now(),
+    });
+
+    return null;
+  },
+});
