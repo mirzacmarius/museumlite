@@ -10,9 +10,11 @@ import {
   canApproveAtStep,
   getUsersToNotifyForWorkflowStep,
 } from "./utils/permissions";
+import { accessionParser } from "./utils/accessionNumberParser";
+import { getNextCounterValue } from "./utils/accessionCounter";
 
 /**
- * Generate accession number
+ * Generate accession number based on organization format template
  */
 async function generateAccessionNumber(
   ctx: any,
@@ -23,32 +25,39 @@ async function generateAccessionNumber(
     throw new Error("Organization not found");
   }
 
-  const format = org.settings?.accessionNumberFormat;
+  const template = org.settings?.accessionNumberFormat;
   const autoGenerate = org.settings?.autoGenerateAccessionNumbers ?? false;
 
-  if (!autoGenerate || !format) {
+  if (!autoGenerate || !template) {
     throw new Error("Accession number generation not configured");
   }
 
-  const year = new Date().getFullYear();
-  const orgSlug = org.slug.toUpperCase().substring(0, 3);
+  const now = new Date();
+  
+  // Determine counter scope from settings or template
+  const counterScope = org.settings?.accessionCounterScope || 
+    accessionParser.getCounterScopeFromTemplate(template);
+  
+  // Get scope key for counter tracking
+  const scopeKey = accessionParser.getScopeKey(counterScope, now);
 
-  // Count existing accessions this year
-  const existing = await ctx.db
-    .query("accessions")
-    .withIndex("by_organization", (q: any) =>
-      q.eq("organizationId", organizationId),
-    )
-    .filter((q: any) =>
-      q.eq(
-        q.field("accessionNumber"),
-        `${orgSlug}-${year}-001`,
-      ),
-    )
-    .collect();
+  // Get next counter value (atomic operation)
+  const counterValue = await getNextCounterValue(
+    ctx,
+    organizationId,
+    counterScope,
+    scopeKey,
+  );
 
-  const sequence = String(existing.length + 1).padStart(3, "0");
-  return `${orgSlug}-${year}-${sequence}`;
+  // Parse template and generate accession number
+  const accessionNumber = accessionParser.parse(template, {
+    organizationSlug: org.slug,
+    currentDate: now,
+    counterValue,
+    counterScope,
+  });
+
+  return accessionNumber;
 }
 
 /**

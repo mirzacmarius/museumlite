@@ -14,19 +14,46 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@v1/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@v1/ui/alert-dialog";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { TemplateCombobox } from "@/components/template-combobox";
+import { InfoTooltip } from "@/components/info-tooltip";
 import { useMutation, useQuery } from "convex/react";
-import { Save } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Save, Trash2 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { cn } from "@v1/ui/utils";
 
 export default function OrganizationSettingsPage() {
   const { currentOrganizationId } = useOrganization();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveTemplateName, setSaveTemplateName] = useState("");
+  const [saveTemplateDesc, setSaveTemplateDesc] = useState("");
+  const [deleteTemplateId, setDeleteTemplateId] = useState<Id<"accessionTemplates"> | null>(null);
+  const [selectedCustomTemplateId, setSelectedCustomTemplateId] = useState<Id<"accessionTemplates"> | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     accessionNumberFormat: "",
+    accessionCounterScope: "year" as "global" | "year" | "month" | "day",
     autoGenerateAccessionNumbers: true,
     locationTypes: [] as string[],
     enableDetailedConditionReports: false,
@@ -40,6 +67,29 @@ export default function OrganizationSettingsPage() {
   );
 
   const updateOrganization = useMutation(api.organizations.update);
+  const createTemplate = useMutation(api.accessionTemplates.create);
+  const removeTemplate = useMutation(api.accessionTemplates.remove);
+  const updateTemplate = useMutation(api.accessionTemplates.update);
+
+  // Validation query with debouncing
+  const validation = useQuery(
+    api.organizations.validateAccessionFormat,
+    formData.accessionNumberFormat && organization
+      ? {
+          template: formData.accessionNumberFormat,
+          organizationSlug: organization.slug,
+        }
+      : "skip",
+  );
+
+  // Preset templates query
+  const presets = useQuery(api.organizations.getAccessionTemplatePresets, {});
+
+  // Custom templates query
+  const customTemplates = useQuery(
+    api.accessionTemplates.list,
+    currentOrganizationId ? { organizationId: currentOrganizationId as Id<"organizations"> } : "skip",
+  );
 
   useEffect(() => {
     if (organization) {
@@ -47,6 +97,8 @@ export default function OrganizationSettingsPage() {
         name: organization.name,
         accessionNumberFormat:
           organization.settings?.accessionNumberFormat || "",
+        accessionCounterScope:
+          organization.settings?.accessionCounterScope || "year",
         autoGenerateAccessionNumbers:
           organization.settings?.autoGenerateAccessionNumbers ?? true,
         locationTypes: organization.settings?.locationTypes || [],
@@ -55,6 +107,108 @@ export default function OrganizationSettingsPage() {
       });
     }
   }, [organization]);
+
+  // Memoized template options for combobox
+  const systemPresets = useMemo(() => {
+    return (presets || []).map((preset) => ({
+      value: preset.template,
+      label: preset.name,
+      description: preset.description,
+    }));
+  }, [presets]);
+
+  const customTemplateOptions = useMemo(() => {
+    return (customTemplates || []).map((template) => ({
+      value: template.template,
+      label: template.name,
+      description: template.description,
+      id: template._id,
+    }));
+  }, [customTemplates]);
+
+  // Detect if current format matches a custom template
+  const selectedCustomTemplate = useMemo(() => {
+    return customTemplates?.find((t) => t.template === formData.accessionNumberFormat);
+  }, [customTemplates, formData.accessionNumberFormat]);
+
+  // Update selected template ID when format changes
+  useEffect(() => {
+    setSelectedCustomTemplateId(selectedCustomTemplate?._id || null);
+  }, [selectedCustomTemplate]);
+
+  // Check if template has been modified
+  const isTemplateModified = useMemo(() => {
+    if (!selectedCustomTemplateId) return false;
+    const template = customTemplates?.find((t) => t._id === selectedCustomTemplateId);
+    return template?.template !== formData.accessionNumberFormat;
+  }, [selectedCustomTemplateId, customTemplates, formData.accessionNumberFormat]);
+
+  // Open save/update template modal
+  const openSaveTemplateModal = (isUpdate = false) => {
+    if (!formData.accessionNumberFormat || !validation?.isValid) {
+      setError("Please enter a valid template first");
+      return;
+    }
+
+    if (isUpdate && selectedCustomTemplate) {
+      setSaveTemplateName(selectedCustomTemplate.name);
+      setSaveTemplateDesc(selectedCustomTemplate.description || "");
+    } else {
+      setSaveTemplateName("");
+      setSaveTemplateDesc("");
+    }
+    setShowSaveModal(true);
+  };
+
+  // Save or update template handler
+  const handleSaveTemplate = async () => {
+    if (!saveTemplateName.trim()) {
+      setError("Template name is required");
+      return;
+    }
+
+    try {
+      if (selectedCustomTemplateId) {
+        // Update existing template
+        await updateTemplate({
+          templateId: selectedCustomTemplateId,
+          name: saveTemplateName.trim(),
+          description: saveTemplateDesc.trim() || undefined,
+          template: formData.accessionNumberFormat,
+        });
+      } else {
+        // Create new template
+        await createTemplate({
+          organizationId: currentOrganizationId as Id<"organizations">,
+          name: saveTemplateName.trim(),
+          template: formData.accessionNumberFormat,
+          description: saveTemplateDesc.trim() || undefined,
+        });
+      }
+      setShowSaveModal(false);
+      setSaveTemplateName("");
+      setSaveTemplateDesc("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save template");
+    }
+  };
+
+  // Delete template handler
+  const handleDeleteTemplate = async () => {
+    if (!deleteTemplateId) return;
+
+    try {
+      await removeTemplate({ templateId: deleteTemplateId });
+      setDeleteTemplateId(null);
+      // Clear the format if the deleted template was selected
+      if (deleteTemplateId === selectedCustomTemplateId) {
+        setFormData({ ...formData, accessionNumberFormat: "" });
+        setSelectedCustomTemplateId(null);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete template");
+    }
+  };
 
   if (!currentOrganizationId) {
     return (
@@ -91,6 +245,12 @@ export default function OrganizationSettingsPage() {
       return;
     }
 
+    // Validate template if provided
+    if (formData.accessionNumberFormat && validation && !validation.isValid) {
+      setError(`Invalid accession format: ${validation.error}`);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await updateOrganization({
@@ -99,6 +259,7 @@ export default function OrganizationSettingsPage() {
         settings: {
           accessionNumberFormat:
             formData.accessionNumberFormat.trim() || undefined,
+          accessionCounterScope: formData.accessionCounterScope,
           autoGenerateAccessionNumbers: formData.autoGenerateAccessionNumbers,
           locationTypes:
             formData.locationTypes.length > 0
@@ -196,47 +357,73 @@ export default function OrganizationSettingsPage() {
               <h2 className="mb-4 text-lg font-medium">
                 Accession Number Settings
               </h2>
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* Template Selection - Full Width */}
                 <div className="space-y-2">
-                  <Label htmlFor="accessionFormat">
-                    Accession Number Format
-                  </Label>
-                  <Input
-                    id="accessionFormat"
+                  <Label className="text-sm font-medium">Format Template</Label>
+                  <TemplateCombobox
+                    systemPresets={systemPresets}
+                    customTemplates={customTemplateOptions}
                     value={formData.accessionNumberFormat}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        accessionNumberFormat: e.target.value,
-                      })
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, accessionNumberFormat: value })
                     }
-                    placeholder="e.g., YYYY-###"
+                    placeholder="Choose template..."
+                    validation={validation ? {
+                      isValid: validation.isValid,
+                      error: validation.error,
+                      preview: validation.preview
+                    } : undefined}
+                    onSaveTemplate={() => openSaveTemplateModal(!!selectedCustomTemplateId)}
+                    onDeleteTemplate={(id) => setDeleteTemplateId(id as Id<"accessionTemplates">)}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Define the format for auto-generated accession numbers. Use
-                    YYYY for year, ### for sequential number.
-                  </p>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="autoGenerate">
-                      Auto-generate Accession Numbers
-                    </Label>
+
+                {/* Counter Configuration */}
+                <div className="space-y-4">
+                  {/* Counter Reset */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Counter Reset Schedule</Label>
+                    <Select
+                      value={formData.accessionCounterScope}
+                      onValueChange={(value: "global" | "year" | "month" | "day") =>
+                        setFormData({ ...formData, accessionCounterScope: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="global">Never (Global Counter)</SelectItem>
+                        <SelectItem value="year">Yearly (Resets Jan 1)</SelectItem>
+                        <SelectItem value="month">Monthly (Resets 1st)</SelectItem>
+                        <SelectItem value="day">Daily (Resets Midnight)</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <p className="text-xs text-muted-foreground">
-                      Automatically generate accession numbers when creating new
-                      collection objects
+                      When should the counter reset to 1?
                     </p>
                   </div>
-                  <Switch
-                    id="autoGenerate"
-                    checked={formData.autoGenerateAccessionNumbers}
-                    onCheckedChange={(checked) =>
-                      setFormData({
-                        ...formData,
-                        autoGenerateAccessionNumbers: checked,
-                      })
-                    }
-                  />
+
+                  {/* Auto-generate */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Auto-generation</Label>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">
+                        Automatically generate accession numbers
+                      </p>
+                      <Switch
+                        id="autoGenerate"
+                        checked={formData.autoGenerateAccessionNumbers}
+                        onCheckedChange={(checked) =>
+                          setFormData({
+                            ...formData,
+                            autoGenerateAccessionNumbers: checked,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -318,6 +505,87 @@ export default function OrganizationSettingsPage() {
             </div>
           </PermissionGate>
         </form>
+
+        {/* Save/Update Template Modal */}
+        <Dialog open={showSaveModal} onOpenChange={setShowSaveModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {selectedCustomTemplateId ? "Update Template" : "Save Template"}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedCustomTemplateId 
+                  ? "Update your custom template with the current format, name, and description."
+                  : "Save your current accession number format as a reusable template."}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="templateName">Template Name *</Label>
+                <Input
+                  id="templateName"
+                  value={saveTemplateName}
+                  onChange={(e) => setSaveTemplateName(e.target.value)}
+                  placeholder="e.g., Monthly Format"
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="templateDesc">Description (optional)</Label>
+                <Textarea
+                  id="templateDesc"
+                  value={saveTemplateDesc}
+                  onChange={(e) => setSaveTemplateDesc(e.target.value)}
+                  placeholder="Describe when to use this template..."
+                  rows={3}
+                />
+              </div>
+              <div className="rounded-md bg-secondary p-3">
+                <Label className="text-xs text-muted-foreground">Template Format</Label>
+                <code className="text-sm block mt-1 font-mono">{formData.accessionNumberFormat}</code>
+                {validation?.preview && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Preview: <code className="font-mono">{validation.preview}</code>
+                  </p>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowSaveModal(false);
+                  setSaveTemplateName("");
+                  setSaveTemplateDesc("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="button" onClick={handleSaveTemplate}>
+                {selectedCustomTemplateId ? "Update Template" : "Save Template"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Modal */}
+        <AlertDialog open={!!deleteTemplateId} onOpenChange={() => setDeleteTemplateId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Template</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this template? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteTemplate}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }

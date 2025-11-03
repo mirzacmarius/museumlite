@@ -32,6 +32,14 @@ export default defineSchema({
     settings: v.optional(
       v.object({
         accessionNumberFormat: v.optional(v.string()),
+        accessionCounterScope: v.optional(
+          v.union(
+            v.literal("global"),
+            v.literal("year"),
+            v.literal("month"),
+            v.literal("day"),
+          ),
+        ),
         autoGenerateAccessionNumbers: v.optional(v.boolean()),
         locationTypes: v.optional(v.array(v.string())),
         enableDetailedConditionReports: v.optional(v.boolean()),
@@ -138,6 +146,36 @@ export default defineSchema({
       searchField: "title",
       filterFields: ["organizationId", "status"],
     }),
+
+  // Accession number counter tracking
+  accessionCounters: defineTable({
+    organizationId: v.id("organizations"),
+    scope: v.union(
+      v.literal("global"),
+      v.literal("year"),
+      v.literal("month"),
+      v.literal("day"),
+    ),
+    scopeKey: v.string(), // e.g., "2025", "2025-10", "2025-10-02", "global"
+    currentValue: v.number(),
+    lastGeneratedAt: v.number(),
+  })
+    .index("by_organization_and_scope", ["organizationId", "scope", "scopeKey"]),
+
+  // Custom accession number templates
+  accessionTemplates: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    template: v.string(),
+    description: v.optional(v.string()),
+    isDefault: v.boolean(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    usageCount: v.optional(v.number()),
+    lastUsedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_default", ["organizationId", "isDefault"]),
 
   // Media attachments for objects
   mediaFiles: defineTable({

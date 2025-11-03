@@ -4,6 +4,8 @@ import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { requirePermission } from "./utils/permissions";
+import { accessionParser, AccessionNumberParser } from "./utils/accessionNumberParser";
+import { getNextCounterPreview } from "./utils/accessionCounter";
 
 /**
  * Create new organization
@@ -106,6 +108,14 @@ export const get = query({
       settings: v.optional(
         v.object({
           accessionNumberFormat: v.optional(v.string()),
+          accessionCounterScope: v.optional(
+            v.union(
+              v.literal("global"),
+              v.literal("year"),
+              v.literal("month"),
+              v.literal("day"),
+            ),
+          ),
           autoGenerateAccessionNumbers: v.optional(v.boolean()),
           locationTypes: v.optional(v.array(v.string())),
           enableDetailedConditionReports: v.optional(v.boolean()),
@@ -149,6 +159,14 @@ export const getBySlug = query({
       settings: v.optional(
         v.object({
           accessionNumberFormat: v.optional(v.string()),
+          accessionCounterScope: v.optional(
+            v.union(
+              v.literal("global"),
+              v.literal("year"),
+              v.literal("month"),
+              v.literal("day"),
+            ),
+          ),
           autoGenerateAccessionNumbers: v.optional(v.boolean()),
           locationTypes: v.optional(v.array(v.string())),
           enableDetailedConditionReports: v.optional(v.boolean()),
@@ -184,6 +202,14 @@ export const update = mutation({
     settings: v.optional(
       v.object({
         accessionNumberFormat: v.optional(v.string()),
+        accessionCounterScope: v.optional(
+          v.union(
+            v.literal("global"),
+            v.literal("year"),
+            v.literal("month"),
+            v.literal("day"),
+          ),
+        ),
         autoGenerateAccessionNumbers: v.optional(v.boolean()),
         locationTypes: v.optional(v.array(v.string())),
         enableDetailedConditionReports: v.optional(v.boolean()),
@@ -211,6 +237,7 @@ export const update = mutation({
       name?: string;
       settings?: {
         accessionNumberFormat?: string;
+        accessionCounterScope?: "global" | "year" | "month" | "day";
         autoGenerateAccessionNumbers?: boolean;
         locationTypes?: string[];
         enableDetailedConditionReports?: boolean;
@@ -243,6 +270,14 @@ export const getSettings = query({
   returns: v.union(
     v.object({
       accessionNumberFormat: v.optional(v.string()),
+      accessionCounterScope: v.optional(
+        v.union(
+          v.literal("global"),
+          v.literal("year"),
+          v.literal("month"),
+          v.literal("day"),
+        ),
+      ),
       autoGenerateAccessionNumbers: v.optional(v.boolean()),
       locationTypes: v.optional(v.array(v.string())),
       enableDetailedConditionReports: v.optional(v.boolean()),
@@ -804,6 +839,98 @@ export const createDefaultRoles = internalMutation({
     }
 
     return null;
+  },
+});
+
+/**
+ * Validate accession number format template
+ */
+export const validateAccessionFormat = query({
+  args: {
+    template: v.string(),
+    organizationSlug: v.string(),
+  },
+  returns: v.object({
+    isValid: v.boolean(),
+    error: v.optional(v.string()),
+    preview: v.string(),
+    examples: v.array(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    return accessionParser.validate(args.template, args.organizationSlug);
+  },
+});
+
+/**
+ * Get preview of next accession number
+ */
+export const getAccessionNumberPreview = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.union(
+    v.object({
+      preview: v.string(),
+      nextNumber: v.string(),
+      template: v.string(),
+      scope: v.string(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) {
+      return null;
+    }
+
+    const template = org.settings?.accessionNumberFormat;
+    if (!template) {
+      return null;
+    }
+
+    const now = new Date();
+    const counterScope = org.settings?.accessionCounterScope || 
+      accessionParser.getCounterScopeFromTemplate(template);
+    const scopeKey = accessionParser.getScopeKey(counterScope, now);
+
+    // Get next counter value for preview
+    const nextCounter = await getNextCounterPreview(
+      ctx,
+      args.organizationId,
+      counterScope,
+      scopeKey,
+    );
+
+    const preview = accessionParser.parse(template, {
+      organizationSlug: org.slug,
+      currentDate: now,
+      counterValue: nextCounter,
+      counterScope,
+    });
+
+    return {
+      preview,
+      nextNumber: preview,
+      template,
+      scope: counterScope,
+    };
+  },
+});
+
+/**
+ * Get template presets
+ */
+export const getAccessionTemplatePresets = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      name: v.string(),
+      template: v.string(),
+      description: v.string(),
+    }),
+  ),
+  handler: async () => {
+    return AccessionNumberParser.getPresets();
   },
 });
 
