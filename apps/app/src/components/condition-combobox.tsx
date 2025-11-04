@@ -244,9 +244,9 @@ export function ConditionCombobox({
                     key={condition.value}
                     value={condition.value}
                     onSelect={() => handleSelect(condition.value)}
-                    className="px-3 py-3"
+                    className="px-2 py-1.5"
                   >
-                    <div className="flex w-full items-start gap-3">
+                    <div className="flex w-full items-start gap-2">
                       <Check
                         className={cn(
                           "h-4 w-4 shrink-0 mt-0.5",
@@ -257,12 +257,12 @@ export function ConditionCombobox({
                       />
                       <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             {condition.icon}
                             <span className="font-medium text-sm">{condition.label}</span>
                             <Sparkles className="h-3 w-3 text-blue-500 shrink-0" aria-label="System condition" />
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                          <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
                             {condition.description}
                           </p>
                         </div>
@@ -284,9 +284,9 @@ export function ConditionCombobox({
                     key={condition.value}
                     value={condition.value}
                     onSelect={() => handleSelect(condition.value)}
-                    className="px-3 py-3"
+                    className="px-2 py-1.5"
                   >
-                    <div className="flex w-full items-start gap-3">
+                    <div className="flex w-full items-start gap-2">
                       <Check
                         className={cn(
                           "h-4 w-4 shrink-0 mt-0.5",
@@ -306,7 +306,7 @@ export function ConditionCombobox({
                       >
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm">{condition.label}</div>
-                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                          <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
                             {condition.description}
                           </p>
                         </div>
@@ -361,10 +361,10 @@ export function ConditionCombobox({
           {/* Add Condition Section */}
           {organizationId && (
             <div className="border-t border-border bg-muted/30">
-              <div className="p-3 space-y-3">
+              <div className="p-2 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-medium text-muted-foreground">
-                    Add Custom Condition
+                    Custom Condition
                   </label>
                   {!showAddForm && (
                     <Button
@@ -381,50 +381,50 @@ export function ConditionCombobox({
                 </div>
 
                 {showAddForm && (
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="newConditionName" className="text-xs">Name *</Label>
+                  <div className="space-y-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="newConditionName" className="text-[10px]">Name *</Label>
                       <Input
                         id="newConditionName"
                         value={newConditionName}
                         onChange={(e) => setNewConditionName(e.target.value)}
                         placeholder="e.g., Fair"
-                        className="h-8 text-xs"
+                        className="h-7 text-xs"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="newConditionDesc" className="text-xs">Description *</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="newConditionDesc" className="text-[10px]">Description *</Label>
                       <Textarea
                         id="newConditionDesc"
                         value={newConditionDesc}
                         onChange={(e) => setNewConditionDesc(e.target.value)}
                         placeholder="Describe this condition..."
                         rows={2}
-                        className="text-xs"
+                        className="text-xs resize-none"
                       />
                     </div>
 
                     {error && (
-                      <div className="text-xs text-destructive">
+                      <div className="text-[10px] text-destructive">
                         {error}
                       </div>
                     )}
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-1.5">
                       <Button
                         type="button"
                         size="sm"
                         onClick={handleCreateCondition}
-                        className="h-7"
+                        className="h-6 text-[10px] px-2"
                       >
                         <Save className="h-3 w-3 mr-1" />
-                        <span className="text-xs">Save</span>
+                        Save
                       </Button>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-7"
+                        className="h-6 text-[10px] px-2"
                         onClick={() => {
                           setShowAddForm(false)
                           setNewConditionName("")
@@ -433,7 +433,7 @@ export function ConditionCombobox({
                         }}
                       >
                         <X className="h-3 w-3 mr-1" />
-                        <span className="text-xs">Cancel</span>
+                        Cancel
                       </Button>
                     </div>
                   </div>
@@ -441,7 +441,7 @@ export function ConditionCombobox({
 
                 {!showAddForm && (
                   <p className="text-[10px] text-muted-foreground">
-                    Create custom conditions for your organization
+                    Add organization-specific conditions
                   </p>
                 )}
               </div>
