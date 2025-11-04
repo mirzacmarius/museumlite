@@ -30,7 +30,9 @@ export const list = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("accessionTemplates")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
       .order("desc")
       .collect();
   },
@@ -53,7 +55,11 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     // Validate template
     const org = await ctx.db.get(args.organizationId);
@@ -69,7 +75,9 @@ export const create = mutation({
     // Check if template already exists
     const existing = await ctx.db
       .query("accessionTemplates")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
       .filter((q) => q.eq(q.field("template"), args.template))
       .first();
 
@@ -112,7 +120,11 @@ export const update = mutation({
       throw new Error("Template not found");
     }
 
-    await requirePermission(ctx, template.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      template.organizationId,
+      "organization.manage_settings",
+    );
 
     // Validate new template if provided
     if (args.template) {
@@ -169,7 +181,11 @@ export const remove = mutation({
       throw new Error("Template not found");
     }
 
-    await requirePermission(ctx, template.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      template.organizationId,
+      "organization.manage_settings",
+    );
 
     await ctx.db.delete(args.templateId);
     return null;
@@ -195,7 +211,11 @@ export const setDefault = mutation({
       throw new Error("Template not found");
     }
 
-    await requirePermission(ctx, template.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      template.organizationId,
+      "organization.manage_settings",
+    );
 
     // Unset all other defaults for this organization
     const allTemplates = await ctx.db

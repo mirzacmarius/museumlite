@@ -1,6 +1,6 @@
 /**
  * Accession Number Counter Management
- * 
+ *
  * Handles atomic counter incrementation with scope support
  */
 
@@ -37,7 +37,7 @@ export async function getNextCounterValue(
   if (existingCounter) {
     // Increment existing counter
     const nextValue = existingCounter.currentValue + 1;
-    
+
     await ctx.db.patch(existingCounter._id, {
       currentValue: nextValue,
       lastGeneratedAt: Date.now(),
@@ -89,7 +89,12 @@ export async function getNextCounterPreview(
   scope: CounterScope,
   scopeKey: string,
 ): Promise<number> {
-  const current = await getCurrentCounterValue(ctx, organizationId, scope, scopeKey);
+  const current = await getCurrentCounterValue(
+    ctx,
+    organizationId,
+    scope,
+    scopeKey,
+  );
   return current + 1;
 }
 

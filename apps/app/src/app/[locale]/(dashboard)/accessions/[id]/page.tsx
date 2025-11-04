@@ -1,19 +1,19 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useQuery, useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
   ArrowLeft,
-  Edit,
   CheckCircle,
-  XCircle,
   Clock,
+  Edit,
   ExternalLink,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -178,9 +178,7 @@ export default function AccessionDetailPage() {
                       <label className="text-sm font-medium text-muted-foreground">
                         Cost
                       </label>
-                      <p className="mt-1">
-                        ${accession.cost.toLocaleString()}
-                      </p>
+                      <p className="mt-1">${accession.cost.toLocaleString()}</p>
                     </div>
                   )}
                 </div>
@@ -255,4 +253,3 @@ export default function AccessionDetailPage() {
     </>
   );
 }
-

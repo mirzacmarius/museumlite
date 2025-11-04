@@ -5,7 +5,12 @@
     "ignore": ["**/.react-email/**"]
   },
   "linter": {
-    "ignore": ["node_modules", ".next", "packages/tsconfig", "**/.react-email/**"],
+    "ignore": [
+      "node_modules",
+      ".next",
+      "packages/tsconfig",
+      "**/.react-email/**"
+    ],
     "enabled": true,
     "rules": {
       "recommended": true,

@@ -1,11 +1,12 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
-import { Textarea } from "@v1/ui/textarea";
 import { Label } from "@v1/ui/label";
 import {
   Select,
@@ -14,13 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
+import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 type DeaccessionMethod = "sale" | "donation" | "destruction" | "transfer";
 
@@ -33,7 +33,9 @@ export default function EditDeaccessionPage() {
 
   const deaccession = useQuery(
     api.deaccessions.get,
-    deaccessionId ? { deaccessionId: deaccessionId as Id<"deaccessions"> } : "skip",
+    deaccessionId
+      ? { deaccessionId: deaccessionId as Id<"deaccessions"> }
+      : "skip",
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -192,9 +194,7 @@ export default function EditDeaccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="reason">
-                    Reason *
-                  </Label>
+                  <Label htmlFor="reason">Reason *</Label>
                   <Input
                     id="reason"
                     value={formData.reason}
@@ -207,13 +207,14 @@ export default function EditDeaccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="method">
-                    Method *
-                  </Label>
+                  <Label htmlFor="method">Method *</Label>
                   <Select
                     value={formData.method}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, method: value as DeaccessionMethod })
+                      setFormData({
+                        ...formData,
+                        method: value as DeaccessionMethod,
+                      })
                     }
                   >
                     <SelectTrigger id="method">
@@ -229,9 +230,7 @@ export default function EditDeaccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="disposition">
-                    Disposition
-                  </Label>
+                  <Label htmlFor="disposition">Disposition</Label>
                   <Input
                     id="disposition"
                     value={formData.disposition}
@@ -246,9 +245,7 @@ export default function EditDeaccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="notes">
-                    Notes
-                  </Label>
+                  <Label htmlFor="notes">Notes</Label>
                   <Textarea
                     id="notes"
                     value={formData.notes}
@@ -283,4 +280,3 @@ export default function EditDeaccessionPage() {
     </>
   );
 }
-

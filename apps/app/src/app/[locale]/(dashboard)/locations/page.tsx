@@ -1,12 +1,12 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
-import { api } from "@v1/backend/convex/_generated/api";
-import { Button } from "@v1/ui/button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { api } from "@v1/backend/convex/_generated/api";
+import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
-import { Plus, MapPin, Building2 } from "lucide-react";
+import { Building2, MapPin, Plus } from "lucide-react";
 import Link from "next/link";
 import { LocationTree } from "./_components/location-tree";
 
@@ -24,7 +24,10 @@ export default function LocationsPage() {
   if (!organizations || organizations.length === 0) {
     return (
       <>
-        <Header title="Locations" description="Manage your location hierarchy" />
+        <Header
+          title="Locations"
+          description="Manage your location hierarchy"
+        />
         <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
           <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8 dark:bg-black">
             <Building2 className="h-12 w-12 text-muted-foreground" />
@@ -49,7 +52,10 @@ export default function LocationsPage() {
   if (!currentOrganizationId) {
     return (
       <>
-        <Header title="Locations" description="Manage your location hierarchy" />
+        <Header
+          title="Locations"
+          description="Manage your location hierarchy"
+        />
         <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
           <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8 dark:bg-black">
             <MapPin className="h-12 w-12 text-muted-foreground" />
@@ -100,4 +106,3 @@ export default function LocationsPage() {
     </>
   );
 }
-

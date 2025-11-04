@@ -26,7 +26,9 @@ export const list = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("materialOptions")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
       .order("desc")
       .collect();
   },
@@ -47,12 +49,18 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     // Check if material already exists (case-insensitive)
     const existing = await ctx.db
       .query("materialOptions")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
       .filter((q) => q.eq(q.field("name"), args.name))
       .first();
 
@@ -93,18 +101,23 @@ export const checkUsage = query({
     // Check all collections in the organization for this material
     const collections = await ctx.db
       .query("collections")
-      .withIndex("by_organization", (q) => q.eq("organizationId", material.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", material.organizationId),
+      )
       .collect();
 
     // Filter collections that use this material (excluding the specified collection if provided)
     const collectionsUsingMaterial = collections.filter((collection) => {
       // Exclude the current collection being edited
-      if (args.excludeCollectionId && collection._id === args.excludeCollectionId) {
+      if (
+        args.excludeCollectionId &&
+        collection._id === args.excludeCollectionId
+      ) {
         return false;
       }
-      
+
       if (!collection.materials) return false;
-      
+
       // Safely parse materials - handle both JSON arrays and plain strings
       let materials: string[];
       try {
@@ -113,12 +126,12 @@ export const checkUsage = query({
         // If parsing fails, treat as a single material string
         materials = [collection.materials];
       }
-      
+
       // Ensure materials is an array
       if (!Array.isArray(materials)) {
         materials = [materials];
       }
-      
+
       return materials.includes(material.name);
     });
 
@@ -149,7 +162,11 @@ export const remove = mutation({
       throw new Error("Material not found");
     }
 
-    await requirePermission(ctx, material.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      material.organizationId,
+      "organization.manage_settings",
+    );
 
     await ctx.db.delete(args.materialId);
     return null;

@@ -27,7 +27,9 @@ export const list = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("conditionOptions")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
       .order("desc")
       .collect();
   },
@@ -49,12 +51,18 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     // Check if condition already exists (case-insensitive)
     const existing = await ctx.db
       .query("conditionOptions")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
       .filter((q) => q.eq(q.field("name"), args.name))
       .first();
 
@@ -94,13 +102,19 @@ export const update = mutation({
       throw new Error("Condition not found");
     }
 
-    await requirePermission(ctx, condition.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      condition.organizationId,
+      "organization.manage_settings",
+    );
 
     // If changing name, check for duplicates
     if (args.name && args.name !== condition.name) {
       const existing = await ctx.db
         .query("conditionOptions")
-        .withIndex("by_organization", (q) => q.eq("organizationId", condition.organizationId))
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", condition.organizationId),
+        )
         .filter((q) => q.eq(q.field("name"), args.name))
         .first();
 
@@ -148,7 +162,9 @@ export const checkUsage = query({
     // Check all collections in the organization for this condition
     const collections = await ctx.db
       .query("collections")
-      .withIndex("by_organization", (q) => q.eq("organizationId", condition.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", condition.organizationId),
+      )
       .collect();
 
     // Filter collections that use this condition
@@ -184,7 +200,11 @@ export const remove = mutation({
       throw new Error("Condition not found");
     }
 
-    await requirePermission(ctx, condition.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      condition.organizationId,
+      "organization.manage_settings",
+    );
 
     await ctx.db.delete(args.conditionId);
     return null;

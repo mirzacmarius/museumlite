@@ -10,7 +10,8 @@ import { ConvexClientProvider } from "../convex-client-provider";
 
 export const metadata: Metadata = {
   title: "Museumlite",
-  description: "Museumlite is a platform for managing museum collections and objects.",
+  description:
+    "Museumlite is a platform for managing museum collections and objects.",
 };
 
 export const viewport = {

@@ -1,31 +1,34 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
-import { api } from "@v1/backend/convex/_generated/api";
-import { Button } from "@v1/ui/button";
+import { MoveObjectDialog } from "@/app/[locale]/(dashboard)/locations/_components/move-object-dialog";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  type ImageItem,
+  InteractiveImageBentoGallery,
+} from "@v1/ui/bento-gallery";
+import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
+  Archive,
   ArrowLeft,
+  CheckCircle,
   Edit,
-  Image as ImageIcon,
-  History,
   Handshake,
+  History,
+  Image as ImageIcon,
   MapPin,
   Move,
-  CheckCircle,
   XCircle,
-  Archive,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import React, { useState } from "react";
-import { MoveObjectDialog } from "@/app/[locale]/(dashboard)/locations/_components/move-object-dialog";
 import { MediaGallery } from "./_components/media-gallery";
-import { Id } from "@v1/backend/convex/_generated/dataModel";
-import { InteractiveImageBentoGallery, type ImageItem } from "@v1/ui/bento-gallery";
 
 export default function CollectionDetailPage() {
   const params = useParams();
@@ -95,16 +98,20 @@ export default function CollectionDetailPage() {
                     {collection.alternateAccessionNumbers &&
                       collection.alternateAccessionNumbers.length > 0 && (
                         <>
-                          <span className="text-sm text-muted-foreground">•</span>
+                          <span className="text-sm text-muted-foreground">
+                            •
+                          </span>
                           <div className="flex flex-wrap gap-1.5">
-                            {collection.alternateAccessionNumbers.map((number) => (
-                              <span
-                                key={number}
-                                className="inline-flex items-center rounded-md border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
-                              >
-                                {number}
-                              </span>
-                            ))}
+                            {collection.alternateAccessionNumbers.map(
+                              (number) => (
+                                <span
+                                  key={number}
+                                  className="inline-flex items-center rounded-md border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                                >
+                                  {number}
+                                </span>
+                              ),
+                            )}
                           </div>
                         </>
                       )}
@@ -232,13 +239,15 @@ function CollectionDetails({
 
   const media = useQuery(
     api.media.list,
-    collection._id ? { collectionId: collection._id as Id<"collections"> } : "skip",
+    collection._id
+      ? { collectionId: collection._id as Id<"collections"> }
+      : "skip",
   );
 
   // Transform media data into ImageItem format for bento gallery
   const imageItems: ImageItem[] = React.useMemo(() => {
     if (!media || !Array.isArray(media)) return [];
-    
+
     return media
       .filter((file) => file.fileType === "image" && file.url)
       .map((file, index) => ({
@@ -247,11 +256,12 @@ function CollectionDetails({
         desc: file.caption || file.photographer || "Collection image",
         url: file.url!,
         // Vary the span to create an interesting bento layout
-        span: index % 5 === 0 
-          ? "md:col-span-2 md:row-span-2" 
-          : index % 3 === 0 
-          ? "md:row-span-2" 
-          : "md:row-span-1",
+        span:
+          index % 5 === 0
+            ? "md:col-span-2 md:row-span-2"
+            : index % 3 === 0
+              ? "md:row-span-2"
+              : "md:row-span-1",
       }));
   }, [media]);
 
@@ -285,180 +295,196 @@ function CollectionDetails({
     <div className="flex gap-4">
       {/* Left column - Collection details */}
       <div className="flex-1 space-y-4">
-      {/* Basic Information Section */}
-      <div className="rounded-lg border border-border bg-card p-4">
-        <h3 className="mb-3 text-base font-semibold">Basic Information</h3>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">
-              Object Type
-            </label>
-            <p className="mt-1 text-sm">{collection.objectType || "—"}</p>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">
-              Object Name
-            </label>
-            <p className="mt-1 text-sm">{collection.objectName || "—"}</p>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">
-              Culture
-            </label>
-            <p className="mt-1 text-sm">{collection.culture || "—"}</p>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">
-              Period
-            </label>
-            <p className="mt-1 text-sm">{collection.period || "—"}</p>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">
-              Date Created
-            </label>
-            <p className="mt-1 text-sm">{collection.dateCreated || "—"}</p>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">
-              Status
-            </label>
-            <div className="mt-1 flex items-center gap-2">
-              {getStatusIcon(collection.status)}
-              <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-sm font-medium ${getStatusColor(
-                  collection.status,
-                )}`}
-              >
-                {collection.status.charAt(0).toUpperCase() +
-                  collection.status.slice(1)}
-              </span>
+        {/* Basic Information Section */}
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h3 className="mb-3 text-base font-semibold">Basic Information</h3>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Object Type
+              </label>
+              <p className="mt-1 text-sm">{collection.objectType || "—"}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Object Name
+              </label>
+              <p className="mt-1 text-sm">{collection.objectName || "—"}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Culture
+              </label>
+              <p className="mt-1 text-sm">{collection.culture || "—"}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Period
+              </label>
+              <p className="mt-1 text-sm">{collection.period || "—"}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Date Created
+              </label>
+              <p className="mt-1 text-sm">{collection.dateCreated || "—"}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Status
+              </label>
+              <div className="mt-1 flex items-center gap-2">
+                {getStatusIcon(collection.status)}
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-sm font-medium ${getStatusColor(
+                    collection.status,
+                  )}`}
+                >
+                  {collection.status.charAt(0).toUpperCase() +
+                    collection.status.slice(1)}
+                </span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Physical Characteristics Section */}
-      <div className="rounded-lg border border-border bg-card p-4">
-        <h3 className="mb-3 text-base font-semibold">Physical Characteristics</h3>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <div className="md:col-span-2 lg:col-span-3">
-            <label className="text-sm font-medium text-muted-foreground">
-              Materials
-            </label>
-            <div className="mt-1">
-              {(() => {
-                if (!collection.materials) return <span className="text-sm text-muted-foreground">—</span>;
-                
-                try {
-                  // Try to parse as JSON array
-                  const materialsArray = JSON.parse(collection.materials);
-                  if (Array.isArray(materialsArray) && materialsArray.length > 0) {
+        {/* Physical Characteristics Section */}
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h3 className="mb-3 text-base font-semibold">
+            Physical Characteristics
+          </h3>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="md:col-span-2 lg:col-span-3">
+              <label className="text-sm font-medium text-muted-foreground">
+                Materials
+              </label>
+              <div className="mt-1">
+                {(() => {
+                  if (!collection.materials)
                     return (
-                      <div className="flex flex-wrap gap-1.5">
-                        {materialsArray.map((material: string, index: number) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center rounded-md border border-border bg-secondary px-2 py-0.5 text-xs font-medium"
-                          >
-                            {material}
-                          </span>
-                        ))}
-                      </div>
+                      <span className="text-sm text-muted-foreground">—</span>
+                    );
+
+                  try {
+                    // Try to parse as JSON array
+                    const materialsArray = JSON.parse(collection.materials);
+                    if (
+                      Array.isArray(materialsArray) &&
+                      materialsArray.length > 0
+                    ) {
+                      return (
+                        <div className="flex flex-wrap gap-1.5">
+                          {materialsArray.map(
+                            (material: string) => (
+                              <span
+                                key={material}
+                                className="inline-flex items-center rounded-md border border-border bg-secondary px-2 py-0.5 text-xs font-medium"
+                              >
+                                {material}
+                              </span>
+                            ),
+                          )}
+                        </div>
+                      );
+                    }
+                    return (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    );
+                  } catch {
+                    // If not valid JSON, treat as single string
+                    return (
+                      <span className="inline-flex items-center rounded-md border border-border bg-secondary px-2 py-0.5 text-xs font-medium">
+                        {collection.materials}
+                      </span>
                     );
                   }
-                  return <span className="text-sm text-muted-foreground">—</span>;
-                } catch {
-                  // If not valid JSON, treat as single string
-                  return (
-                    <span
-                      className="inline-flex items-center rounded-md border border-border bg-secondary px-2 py-0.5 text-xs font-medium"
-                    >
-                      {collection.materials}
-                    </span>
-                  );
-                }
-              })()}
+                })()}
+              </div>
             </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Dimensions
+              </label>
+              <p className="mt-1 text-sm">{collection.dimensions || "—"}</p>
+            </div>
+            {collection.condition && (
+              <div className="md:col-span-2 lg:col-span-1">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Condition
+                </label>
+                <p className="mt-1 text-sm">{collection.condition}</p>
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* Location Information Section */}
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h3 className="mb-3 text-base font-semibold">Location Information</h3>
           <div>
             <label className="text-sm font-medium text-muted-foreground">
-              Dimensions
+              Current Location
             </label>
-            <p className="mt-1 text-sm">{collection.dimensions || "—"}</p>
+            {locationPath && locationPath.length > 0 ? (
+              <Link
+                href={`/locations/${collection.currentLocationId}`}
+                className="mt-1 flex items-center gap-2 text-sm text-primary hover:underline"
+              >
+                <MapPin className="h-4 w-4" />
+                {locationPath.map((loc) => loc.name).join(" → ")}
+              </Link>
+            ) : (
+              <p className="mt-1 text-sm text-muted-foreground">
+                No location assigned
+              </p>
+            )}
           </div>
-          {collection.condition && (
-            <div className="md:col-span-2 lg:col-span-1">
-              <label className="text-sm font-medium text-muted-foreground">
-                Condition
-              </label>
-              <p className="mt-1 text-sm">{collection.condition}</p>
+        </div>
+
+        {/* Historical Information Section */}
+        {(collection.description ||
+          collection.provenance ||
+          collection.exhibitionHistory) && (
+          <div className="rounded-lg border border-border bg-card p-4">
+            <h3 className="mb-3 text-base font-semibold">
+              Historical Information
+            </h3>
+            <div className="space-y-4">
+              {collection.description && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Description
+                  </label>
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
+                    {collection.description}
+                  </p>
+                </div>
+              )}
+
+              {collection.provenance && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Provenance
+                  </label>
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
+                    {collection.provenance}
+                  </p>
+                </div>
+              )}
+
+              {collection.exhibitionHistory && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Exhibition History
+                  </label>
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
+                    {collection.exhibitionHistory}
+                  </p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Location Information Section */}
-      <div className="rounded-lg border border-border bg-card p-4">
-        <h3 className="mb-3 text-base font-semibold">Location Information</h3>
-        <div>
-          <label className="text-sm font-medium text-muted-foreground">
-            Current Location
-          </label>
-          {locationPath && locationPath.length > 0 ? (
-            <Link
-              href={`/locations/${collection.currentLocationId}`}
-              className="mt-1 flex items-center gap-2 text-sm text-primary hover:underline"
-            >
-              <MapPin className="h-4 w-4" />
-              {locationPath.map((loc) => loc.name).join(" → ")}
-            </Link>
-          ) : (
-            <p className="mt-1 text-sm text-muted-foreground">No location assigned</p>
-          )}
-        </div>
-      </div>
-
-      {/* Historical Information Section */}
-      {(collection.description || collection.provenance || collection.exhibitionHistory) && (
-        <div className="rounded-lg border border-border bg-card p-4">
-          <h3 className="mb-3 text-base font-semibold">Historical Information</h3>
-          <div className="space-y-4">
-            {collection.description && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">
-                  Description
-                </label>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
-                  {collection.description}
-                </p>
-              </div>
-            )}
-
-            {collection.provenance && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">
-                  Provenance
-                </label>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
-                  {collection.provenance}
-                </p>
-              </div>
-            )}
-
-            {collection.exhibitionHistory && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">
-                  Exhibition History
-                </label>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
-                  {collection.exhibitionHistory}
-                </p>
-              </div>
-            )}
           </div>
-        </div>
-      )}
+        )}
       </div>
 
       {/* Right column - Media Gallery */}
@@ -559,10 +585,14 @@ function CollectionLoans({ collectionId }: { collectionId: string }) {
             <div>
               <p className="font-medium">{loan.loanNumber}</p>
               <p className="text-sm text-muted-foreground">
-                {loan.type === "incoming" ? "Incoming" : "Outgoing"} - {loan.lenderBorrowerName}
+                {loan.type === "incoming" ? "Incoming" : "Outgoing"} -{" "}
+                {loan.lenderBorrowerName}
               </p>
               <p className="text-sm text-muted-foreground">
-                {new Date(loan.startDate).toLocaleDateString()} - {loan.endDate ? new Date(loan.endDate).toLocaleDateString() : "Ongoing"}
+                {new Date(loan.startDate).toLocaleDateString()} -{" "}
+                {loan.endDate
+                  ? new Date(loan.endDate).toLocaleDateString()
+                  : "Ongoing"}
               </p>
             </div>
             <div className="text-right">
@@ -574,4 +604,3 @@ function CollectionLoans({ collectionId }: { collectionId: string }) {
     </div>
   );
 }
-

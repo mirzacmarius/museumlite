@@ -33,10 +33,7 @@ async function generateDeaccessionNumber(
       q.eq("organizationId", organizationId),
     )
     .filter((q: any) =>
-      q.eq(
-        q.field("deaccessionNumber"),
-        `DA-${orgSlug}-${year}-001`,
-      ),
+      q.eq(q.field("deaccessionNumber"), `DA-${orgSlug}-${year}-001`),
     )
     .collect();
 
@@ -88,7 +85,9 @@ export const create = mutation({
     );
 
     if (!canInitiate) {
-      throw new Error("Permission denied: cannot initiate deaccession workflow");
+      throw new Error(
+        "Permission denied: cannot initiate deaccession workflow",
+      );
     }
 
     // Generate or use provided deaccession number
@@ -144,7 +143,10 @@ export const create = mutation({
       action: "created",
       entityType: "deaccession",
       entityId: deaccessionId,
-      changes: { deaccessionNumber, status: workflowConfig ? "pending" : "approved" },
+      changes: {
+        deaccessionNumber,
+        status: workflowConfig ? "pending" : "approved",
+      },
     });
 
     // If workflow exists, notify users who can approve step 1
@@ -252,15 +254,17 @@ export const list = query({
           const collection = await ctx.db.get(deaccession.collectionId);
           const collectionTitle = collection?.title || "";
           const accessionNumber = collection?.accessionNumber || "";
-          
+
           return { ...deaccession, collectionTitle, accessionNumber };
         }),
       );
-      
+
       allResults = deaccessionsWithCollectionInfo
         .filter((deaccession) => {
           return (
-            deaccession.deaccessionNumber?.toLowerCase().includes(searchLower) ||
+            deaccession.deaccessionNumber
+              ?.toLowerCase()
+              .includes(searchLower) ||
             deaccession.reason?.toLowerCase().includes(searchLower) ||
             deaccession.disposition?.toLowerCase().includes(searchLower) ||
             deaccession.notes?.toLowerCase().includes(searchLower) ||
@@ -270,7 +274,9 @@ export const list = query({
             false
           );
         })
-        .map(({ collectionTitle, accessionNumber, ...deaccession }) => deaccession); // Remove temporary fields
+        .map(
+          ({ collectionTitle, accessionNumber, ...deaccession }) => deaccession,
+        ); // Remove temporary fields
     }
 
     // Sort by date deaccessioned (newest first)
@@ -779,4 +785,3 @@ export const getWorkflowHistory = query({
     return enrichedHistory;
   },
 });
-

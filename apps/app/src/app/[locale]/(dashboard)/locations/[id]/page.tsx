@@ -1,9 +1,10 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Button } from "@v1/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,14 +16,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@v1/ui/alert-dialog";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useQuery, useMutation } from "convex/react";
-import { ArrowLeft, Edit, MapPin, Archive, Trash2 } from "lucide-react";
+import { Button } from "@v1/ui/button";
+import { useMutation, useQuery } from "convex/react";
+import { Archive, ArrowLeft, Edit, MapPin, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ObjectsAtLocation } from "./_components/objects-at-location";
 import { useState } from "react";
+import { ObjectsAtLocation } from "./_components/objects-at-location";
 
 export default function LocationDetailPage() {
   const params = useParams();
@@ -230,4 +230,3 @@ export default function LocationDetailPage() {
     </>
   );
 }
-

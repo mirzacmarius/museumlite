@@ -1,27 +1,27 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
 import { useQuery } from "convex/react";
 import {
-  ArrowLeft,
-  Edit,
-  CheckCircle,
-  XCircle,
-  Clock,
-  ExternalLink,
-  ArrowUpRight,
   ArrowDownRight,
+  ArrowLeft,
+  ArrowUpRight,
+  CheckCircle,
+  Clock,
+  Edit,
+  ExternalLink,
   Package,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { LoanItemsManager } from "./_components/loan-items-manager";
 import { LoanApprovalWorkflow } from "./_components/loan-approval-workflow";
+import { LoanItemsManager } from "./_components/loan-items-manager";
 
 export default function LoanDetailPage() {
   const params = useParams();
@@ -126,8 +126,7 @@ export default function LoanDetailPage() {
                       loan.status,
                     )}`}
                   >
-                    {loan.status.charAt(0).toUpperCase() +
-                      loan.status.slice(1)}
+                    {loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}
                   </span>
                 </div>
               </div>
@@ -208,9 +207,7 @@ export default function LoanDetailPage() {
                       <label className="text-sm font-medium text-muted-foreground">
                         Terms
                       </label>
-                      <p className="mt-1 whitespace-pre-wrap">
-                        {loan.terms}
-                      </p>
+                      <p className="mt-1 whitespace-pre-wrap">{loan.terms}</p>
                     </div>
                   )}
                   {loan.notes && (
@@ -218,9 +215,7 @@ export default function LoanDetailPage() {
                       <label className="text-sm font-medium text-muted-foreground">
                         Notes
                       </label>
-                      <p className="mt-1 whitespace-pre-wrap">
-                        {loan.notes}
-                      </p>
+                      <p className="mt-1 whitespace-pre-wrap">{loan.notes}</p>
                     </div>
                   )}
                   {loan.approvedBy && (
@@ -264,4 +259,3 @@ export default function LoanDetailPage() {
     </>
   );
 }
-

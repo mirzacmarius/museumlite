@@ -33,11 +33,12 @@ async function generateAccessionNumber(
   }
 
   const now = new Date();
-  
+
   // Determine counter scope from settings or template
-  const counterScope = org.settings?.accessionCounterScope || 
+  const counterScope =
+    org.settings?.accessionCounterScope ||
     accessionParser.getCounterScopeFromTemplate(template);
-  
+
   // Get scope key for counter tracking
   const scopeKey = accessionParser.getScopeKey(counterScope, now);
 
@@ -104,10 +105,7 @@ export const create = mutation({
     if (args.accessionNumber) {
       accessionNumber = args.accessionNumber;
     } else {
-      accessionNumber = await generateAccessionNumber(
-        ctx,
-        args.organizationId,
-      );
+      accessionNumber = await generateAccessionNumber(ctx, args.organizationId);
     }
 
     // Get workflow config
@@ -151,7 +149,10 @@ export const create = mutation({
       action: "created",
       entityType: "accession",
       entityId: accessionId,
-      changes: { accessionNumber, status: workflowConfig ? "pending" : "approved" },
+      changes: {
+        accessionNumber,
+        status: workflowConfig ? "pending" : "approved",
+      },
     });
 
     // If workflow exists, notify users who can approve step 1
@@ -261,11 +262,11 @@ export const list = query({
             const collection = await ctx.db.get(accession.collectionId);
             collectionTitle = collection?.title || "";
           }
-          
+
           return { ...accession, collectionTitle };
         }),
       );
-      
+
       allResults = accessionsWithCollectionInfo
         .filter((accession) => {
           return (
@@ -364,11 +365,7 @@ export const get = query({
       return null;
     }
 
-    await requirePermission(
-      ctx,
-      accession.organizationId,
-      "collections.read",
-    );
+    await requirePermission(ctx, accession.organizationId, "collections.read");
 
     // Ensure workflowHistory is always an array (even if empty)
     return {
@@ -425,7 +422,14 @@ export const update = mutation({
 
     const updates: {
       source?: string;
-      method?: "purchase" | "gift" | "loan" | "transfer" | "donation" | "other" | "bequest";
+      method?:
+        | "purchase"
+        | "gift"
+        | "loan"
+        | "transfer"
+        | "donation"
+        | "other"
+        | "bequest";
       cost?: number;
       notes?: string;
     } = {};
@@ -582,9 +586,12 @@ export const approve = mutation({
         }
 
         // Create collection object
-        await ctx.runMutation(internal.accessions.createCollectionFromAccession, {
-          accessionId: args.accessionId,
-        });
+        await ctx.runMutation(
+          internal.accessions.createCollectionFromAccession,
+          {
+            accessionId: args.accessionId,
+          },
+        );
       } else {
         // Move to next step
         await ctx.db.patch(args.accessionId, {
@@ -766,11 +773,7 @@ export const getWorkflowHistory = query({
       throw new Error("Accession not found");
     }
 
-    await requirePermission(
-      ctx,
-      accession.organizationId,
-      "collections.read",
-    );
+    await requirePermission(ctx, accession.organizationId, "collections.read");
 
     const history = accession.workflowHistory ?? [];
 
@@ -833,4 +836,3 @@ export const createCollectionFromAccession = internalMutation({
     return collectionId;
   },
 });
-

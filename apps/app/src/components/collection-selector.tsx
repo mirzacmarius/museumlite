@@ -1,7 +1,9 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
-import { useQuery } from "convex/react";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Input } from "@v1/ui/input";
+import { Label } from "@v1/ui/label";
 import {
   Select,
   SelectContent,
@@ -9,11 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { Input } from "@v1/ui/input";
-import { Label } from "@v1/ui/label";
+import { useQuery } from "convex/react";
 import { Search, X } from "lucide-react";
-import { useState, useMemo } from "react";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { useMemo, useState } from "react";
 
 interface CollectionSelectorProps {
   organizationId: string;
@@ -58,15 +58,15 @@ export function CollectionSelector({
 
   const filteredCollections = useMemo(() => {
     if (!collections?.page) return [];
-    
+
     // Additional client-side filtering if needed
     let filtered = collections.page;
-    
+
     // Filter out deaccessioned if requested
     if (excludeDeaccessioned && filterStatus === "all") {
       filtered = filtered.filter((c) => c.status !== "deaccessioned");
     }
-    
+
     // Sort by accession number for easier browsing
     return filtered.sort((a, b) =>
       a.accessionNumber.localeCompare(b.accessionNumber),
@@ -168,4 +168,3 @@ export function CollectionSelector({
     </div>
   );
 }
-

@@ -1,17 +1,8 @@
 "use client";
 
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Button } from "@v1/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@v1/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,13 +14,22 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@v1/ui/alert-dialog";
+import { Button } from "@v1/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@v1/ui/dialog";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
-import { PermissionGate } from "@/components/permission-gate";
-import { useQuery, useMutation } from "convex/react";
-import { Plus, X, Trash2, ExternalLink, Search } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { ExternalLink, Plus, Search, Trash2, X } from "lucide-react";
 import Link from "next/link";
+import { useMemo, useState } from "react";
 
 interface LoanItemsManagerProps {
   loanId: string;
@@ -80,9 +80,7 @@ export function LoanItemsManager({
     if (!collections?.page) return [];
     return collections.page.filter((collection) => {
       // Don't show collections already in this loan
-      return !loanItems.some(
-        (item) => item.collectionId === collection._id,
-      );
+      return !loanItems.some((item) => item.collectionId === collection._id);
     });
   }, [collections, loanItems]);
 
@@ -97,8 +95,7 @@ export function LoanItemsManager({
     }
   };
 
-  const canAddItems =
-    loanStatus === "pending" || loanStatus === "active";
+  const canAddItems = loanStatus === "pending" || loanStatus === "active";
   const canRemoveItems = loanStatus === "pending";
 
   const handleAddItems = async () => {
@@ -133,9 +130,7 @@ export function LoanItemsManager({
       });
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to remove item from loan",
+        err instanceof Error ? err.message : "Failed to remove item from loan",
       );
     }
   };
@@ -148,12 +143,13 @@ export function LoanItemsManager({
         </div>
       )}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">
-          Loan Items ({loanItems.length})
-        </h3>
+        <h3 className="text-lg font-medium">Loan Items ({loanItems.length})</h3>
         {canAddItems && (
           <PermissionGate permission="loans.update">
-            <Dialog open={isAddDialogOpen} onOpenChange={handleDialogOpenChange}>
+            <Dialog
+              open={isAddDialogOpen}
+              onOpenChange={handleDialogOpenChange}
+            >
               <DialogTrigger asChild>
                 <Button size="sm">
                   <Plus className="mr-2 h-4 w-4" />
@@ -169,9 +165,7 @@ export function LoanItemsManager({
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>
-                      Search and Select Collections *
-                    </Label>
+                    <Label>Search and Select Collections *</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
@@ -230,9 +224,7 @@ export function LoanItemsManager({
                                     {collection.title}
                                   </span>
                                 </div>
-                                {isSelected && (
-                                  <X className="h-4 w-4" />
-                                )}
+                                {isSelected && <X className="h-4 w-4" />}
                               </div>
                             </button>
                           );
@@ -300,9 +292,7 @@ export function LoanItemsManager({
                   >
                     Cancel
                   </Button>
-                  <Button onClick={handleAddItems}>
-                    Add Items
-                  </Button>
+                  <Button onClick={handleAddItems}>Add Items</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -342,9 +332,7 @@ export function LoanItemsManager({
                     Condition In: {item.conditionIn}
                   </p>
                 )}
-                {item.notes && (
-                  <p className="mt-1 text-sm">{item.notes}</p>
-                )}
+                {item.notes && <p className="mt-1 text-sm">{item.notes}</p>}
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" asChild>
@@ -362,14 +350,19 @@ export function LoanItemsManager({
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Remove Item from Loan</AlertDialogTitle>
+                          <AlertDialogTitle>
+                            Remove Item from Loan
+                          </AlertDialogTitle>
                           <AlertDialogDescription>
-                            Are you sure you want to remove this item from the loan? This action cannot be undone.
+                            Are you sure you want to remove this item from the
+                            loan? This action cannot be undone.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleRemoveItem(item._id)}>
+                          <AlertDialogAction
+                            onClick={() => handleRemoveItem(item._id)}
+                          >
                             Remove Item
                           </AlertDialogAction>
                         </AlertDialogFooter>
@@ -385,4 +378,3 @@ export function LoanItemsManager({
     </div>
   );
 }
-

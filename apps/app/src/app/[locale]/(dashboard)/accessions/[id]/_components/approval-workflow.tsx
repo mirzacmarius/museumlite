@@ -1,9 +1,9 @@
 "use client";
 
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
-import { Button } from "@v1/ui/button";
-import { Textarea } from "@v1/ui/textarea";
-import { Label } from "@v1/ui/label";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,12 +15,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@v1/ui/alert-dialog";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useQuery, useMutation } from "convex/react";
+import { Button } from "@v1/ui/button";
+import { Label } from "@v1/ui/label";
+import { Textarea } from "@v1/ui/textarea";
+import { useMutation, useQuery } from "convex/react";
 import { CheckCircle, XCircle } from "lucide-react";
 import { useState } from "react";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
 interface ApprovalWorkflowProps {
   accessionId: string;
@@ -90,9 +90,7 @@ export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
       )}
       <div className="space-y-4">
         <div>
-          <Label htmlFor="comment">
-            Comment (optional)
-          </Label>
+          <Label htmlFor="comment">Comment (optional)</Label>
           <Textarea
             id="comment"
             value={comment}
@@ -115,10 +113,7 @@ export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button
-                  disabled={isSubmitting}
-                  variant="destructive"
-                >
+                <Button disabled={isSubmitting} variant="destructive">
                   <XCircle className="mr-2 h-4 w-4" />
                   Reject
                 </Button>
@@ -145,4 +140,3 @@ export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
     </div>
   );
 }
-

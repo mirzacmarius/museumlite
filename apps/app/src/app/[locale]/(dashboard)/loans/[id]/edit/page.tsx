@@ -1,20 +1,20 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { Input } from "@v1/ui/input";
-import { Textarea } from "@v1/ui/textarea";
-import { Label } from "@v1/ui/label";
 import { DatePicker } from "@v1/ui/date-picker";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
+import { Input } from "@v1/ui/input";
+import { Label } from "@v1/ui/label";
+import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function EditLoanPage() {
   const params = useParams();
@@ -93,9 +93,7 @@ export default function EditLoanPage() {
                     Cannot edit loan that is not pending
                   </p>
                   <Button variant="outline" className="mt-4" asChild>
-                    <Link href={`/loans/${loanId}`}>
-                      Back to Loan
-                    </Link>
+                    <Link href={`/loans/${loanId}`}>Back to Loan</Link>
                   </Button>
                 </div>
               </div>
@@ -119,12 +117,9 @@ export default function EditLoanPage() {
       await updateLoan({
         loanId: loanId as Id<"loans">,
         lenderBorrowerName: formData.lenderBorrowerName,
-        lenderBorrowerContact:
-          formData.lenderBorrowerContact || undefined,
+        lenderBorrowerContact: formData.lenderBorrowerContact || undefined,
         startDate: formData.startDate.getTime(),
-        endDate: formData.endDate
-          ? formData.endDate.getTime()
-          : undefined,
+        endDate: formData.endDate ? formData.endDate.getTime() : undefined,
         terms: formData.terms || undefined,
         insuranceValue: formData.insuranceValue
           ? Number.parseFloat(formData.insuranceValue)
@@ -167,7 +162,11 @@ export default function EditLoanPage() {
               <div className="mx-auto max-w-2xl space-y-6">
                 <div className="space-y-2">
                   <Label>Loan Number</Label>
-                  <Input value={loan.loanNumber} disabled className="bg-muted" />
+                  <Input
+                    value={loan.loanNumber}
+                    disabled
+                    className="bg-muted"
+                  />
                   <p className="text-xs text-muted-foreground">
                     Loan number cannot be changed
                   </p>
@@ -222,9 +221,7 @@ export default function EditLoanPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="startDate">
-                      Start Date *
-                    </Label>
+                    <Label htmlFor="startDate">Start Date *</Label>
                     <DatePicker
                       id="startDate"
                       date={formData.startDate}
@@ -239,9 +236,7 @@ export default function EditLoanPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="endDate">
-                      End Date
-                    </Label>
+                    <Label htmlFor="endDate">End Date</Label>
                     <DatePicker
                       id="endDate"
                       date={formData.endDate}
@@ -254,9 +249,7 @@ export default function EditLoanPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="insuranceValue">
-                    Insurance Value
-                  </Label>
+                  <Label htmlFor="insuranceValue">Insurance Value</Label>
                   <Input
                     id="insuranceValue"
                     type="number"
@@ -273,9 +266,7 @@ export default function EditLoanPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="terms">
-                    Terms
-                  </Label>
+                  <Label htmlFor="terms">Terms</Label>
                   <Textarea
                     id="terms"
                     value={formData.terms}
@@ -288,9 +279,7 @@ export default function EditLoanPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="notes">
-                    Notes
-                  </Label>
+                  <Label htmlFor="notes">Notes</Label>
                   <Textarea
                     id="notes"
                     value={formData.notes}
@@ -325,4 +314,3 @@ export default function EditLoanPage() {
     </>
   );
 }
-

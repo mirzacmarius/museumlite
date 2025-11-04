@@ -1,10 +1,12 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
-import { Textarea } from "@v1/ui/textarea";
 import { Label } from "@v1/ui/label";
 import {
   Select,
@@ -13,14 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useQuery, useMutation } from "convex/react";
+import { Textarea } from "@v1/ui/textarea";
+import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { useEffect, useState } from "react";
 
 export default function EditLocationPage() {
   const params = useParams();
@@ -29,9 +29,9 @@ export default function EditLocationPage() {
   const { currentOrganizationId } = useOrganization();
   const [name, setName] = useState("");
   const [type, setType] = useState("");
-  const [parentLocationId, setParentLocationId] = useState<
-    string | undefined
-  >(undefined);
+  const [parentLocationId, setParentLocationId] = useState<string | undefined>(
+    undefined,
+  );
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -155,9 +155,7 @@ export default function EditLocationPage() {
               )}
               <div className="mx-auto max-w-2xl space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="name">
-                    Location Name *
-                  </Label>
+                  <Label htmlFor="name">Location Name *</Label>
                   <Input
                     id="name"
                     value={name}
@@ -168,9 +166,7 @@ export default function EditLocationPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="type">
-                    Location Type *
-                  </Label>
+                  <Label htmlFor="type">Location Type *</Label>
                   <Select value={type} onValueChange={setType} required>
                     <SelectTrigger id="type">
                       <SelectValue placeholder="Select a location type" />
@@ -186,20 +182,22 @@ export default function EditLocationPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="parent">
-                    Parent Location
-                  </Label>
+                  <Label htmlFor="parent">Parent Location</Label>
                   <Select
                     value={parentLocationId || "__none__"}
                     onValueChange={(value) =>
-                      setParentLocationId(value === "__none__" ? undefined : value)
+                      setParentLocationId(
+                        value === "__none__" ? undefined : value,
+                      )
                     }
                   >
                     <SelectTrigger id="parent">
                       <SelectValue placeholder="Select a parent location (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__">None (Root Location)</SelectItem>
+                      <SelectItem value="__none__">
+                        None (Root Location)
+                      </SelectItem>
                       {availableParentLocations.map((loc) => (
                         <SelectItem key={loc._id} value={loc._id}>
                           {loc.name} ({loc.type})
@@ -213,9 +211,7 @@ export default function EditLocationPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="address">
-                    Address
-                  </Label>
+                  <Label htmlFor="address">Address</Label>
                   <Input
                     id="address"
                     value={address}
@@ -225,9 +221,7 @@ export default function EditLocationPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="notes">
-                    Notes
-                  </Label>
+                  <Label htmlFor="notes">Notes</Label>
                   <Textarea
                     id="notes"
                     value={notes}
@@ -259,4 +253,3 @@ export default function EditLocationPage() {
     </>
   );
 }
-

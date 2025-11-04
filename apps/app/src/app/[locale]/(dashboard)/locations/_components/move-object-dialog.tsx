@@ -1,6 +1,8 @@
 "use client";
 
+import { useOrganization } from "@/components/organization-provider";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -10,6 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
+import { Input } from "@v1/ui/input";
+import { Label } from "@v1/ui/label";
 import {
   Select,
   SelectContent,
@@ -17,13 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { Input } from "@v1/ui/input";
 import { Textarea } from "@v1/ui/textarea";
-import { Label } from "@v1/ui/label";
-import { useOrganization } from "@/components/organization-provider";
-import { useQuery, useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
 interface MoveObjectDialogProps {
   collectionId: string;
@@ -81,9 +81,7 @@ export function MoveObjectDialog({
       setNotes("");
       onSuccess?.();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to move object",
-      );
+      setError(err instanceof Error ? err.message : "Failed to move object");
       setIsSubmitting(false);
     }
   };
@@ -136,10 +134,12 @@ export function MoveObjectDialog({
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="location">
-                Destination Location *
-              </Label>
-              <Select value={toLocationId} onValueChange={setToLocationId} required>
+              <Label htmlFor="location">Destination Location *</Label>
+              <Select
+                value={toLocationId}
+                onValueChange={setToLocationId}
+                required
+              >
                 <SelectTrigger id="location">
                   <SelectValue placeholder="Select a location" />
                 </SelectTrigger>
@@ -153,9 +153,7 @@ export function MoveObjectDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="reason">
-                Reason
-              </Label>
+              <Label htmlFor="reason">Reason</Label>
               <Input
                 id="reason"
                 value={reason}
@@ -164,9 +162,7 @@ export function MoveObjectDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="notes">
-                Notes
-              </Label>
+              <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"
                 value={notes}
@@ -193,4 +189,3 @@ export function MoveObjectDialog({
     </Dialog>
   );
 }
-

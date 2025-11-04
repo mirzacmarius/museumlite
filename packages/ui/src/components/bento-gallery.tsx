@@ -1,31 +1,32 @@
-"use client"
+"use client";
 
-import React, { useRef, useState, useEffect } from "react"
-import Image from "next/image"
 import {
+  AnimatePresence,
   motion,
   useScroll,
   useTransform,
-  AnimatePresence,
-} from "framer-motion"
-import { cn } from "../utils"
-import { X } from "lucide-react"
+} from "framer-motion";
+import { X } from "lucide-react";
+import Image from "next/image";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "../utils";
 
 // Defines the structure for each image item in the gallery
 export type ImageItem = {
-  id: number | string
-  title: string
-  desc: string
-  url: string
-  span: string // Tailwind CSS grid span classes (e.g., "md:col-span-2")
-}
+  id: number | string;
+  title: string;
+  desc: string;
+  url: string;
+  span: string; // Tailwind CSS grid span classes (e.g., "md:col-span-2")
+};
 
 // Defines the props for the main gallery component
 interface InteractiveImageBentoGalleryProps {
-  imageItems: ImageItem[]
-  title: string
-  description: string
-  compact?: boolean // Add compact mode for sidebar display
+  imageItems: ImageItem[];
+  title: string;
+  description: string;
+  compact?: boolean; // Add compact mode for sidebar display
 }
 
 // Animation variants for the container to stagger children
@@ -36,7 +37,7 @@ const containerVariants = {
       staggerChildren: 0.1,
     },
   },
-}
+};
 
 // Animation variants for each gallery item
 const itemVariants = {
@@ -47,15 +48,15 @@ const itemVariants = {
     scale: 1,
     transition: { type: "spring" as const, stiffness: 100, damping: 15 },
   },
-}
+};
 
 // Modal component for displaying the selected image
 const ImageModal = ({
   item,
   onClose,
 }: {
-  item: ImageItem
-  onClose: () => void
+  item: ImageItem;
+  onClose: () => void;
 }) => {
   return (
     <motion.div
@@ -84,6 +85,7 @@ const ImageModal = ({
         </div>
       </motion.div>
       <button
+        type="button"
         onClick={onClose}
         className="absolute right-4 top-4 text-white/80 transition-colors hover:text-white"
         aria-label="Close image view"
@@ -91,45 +93,53 @@ const ImageModal = ({
         <X size={24} />
       </button>
     </motion.div>
-  )
-}
+  );
+};
 
 // Main gallery component
 export const InteractiveImageBentoGallery: React.FC<
   InteractiveImageBentoGalleryProps
 > = ({ imageItems, title, description, compact = false }) => {
-  const [selectedItem, setSelectedItem] = useState<ImageItem | null>(null)
-  const [dragConstraint, setDragConstraint] = useState(0)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const gridRef = useRef<HTMLDivElement>(null)
-  const targetRef = useRef<HTMLDivElement>(null)
+  const [selectedItem, setSelectedItem] = useState<ImageItem | null>(null);
+  const [dragConstraint, setDragConstraint] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const targetRef = useRef<HTMLDivElement>(null);
 
   // Calculate the draggable area constraint
   useEffect(() => {
-    if (compact) return // Skip in compact mode
-    
+    if (compact) return; // Skip in compact mode
+
     const calculateConstraints = () => {
       if (gridRef.current && containerRef.current) {
-        const containerWidth = containerRef.current.offsetWidth
-        const gridWidth = gridRef.current.scrollWidth
+        const containerWidth = containerRef.current.offsetWidth;
+        const gridWidth = gridRef.current.scrollWidth;
         // The '- 32' provides some padding at the end
-        const newConstraint = Math.min(0, containerWidth - gridWidth - 32)
-        setDragConstraint(newConstraint)
+        const newConstraint = Math.min(0, containerWidth - gridWidth - 32);
+        setDragConstraint(newConstraint);
       }
-    }
+    };
 
-    calculateConstraints()
-    window.addEventListener("resize", calculateConstraints)
-    return () => window.removeEventListener("resize", calculateConstraints)
-  }, [imageItems, compact])
+    calculateConstraints();
+    window.addEventListener("resize", calculateConstraints);
+    return () => window.removeEventListener("resize", calculateConstraints);
+  }, [imageItems, compact]);
 
   // Framer Motion scroll animations (only in full mode)
   const scrollResult = useScroll({
     target: compact ? undefined : targetRef,
     offset: ["start end", "end start"],
-  })
-  const opacity = compact ? 1 : useTransform(scrollResult.scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0])
-  const y = compact ? 0 : useTransform(scrollResult.scrollYProgress, [0, 0.2], [30, 0])
+  });
+  const opacity = compact
+    ? 1
+    : useTransform(
+        scrollResult.scrollYProgress,
+        [0, 0.2, 0.8, 1],
+        [0, 1, 1, 0],
+      );
+  const y = compact
+    ? 0
+    : useTransform(scrollResult.scrollYProgress, [0, 0.2], [30, 0]);
 
   // Compact mode rendering
   if (compact) {
@@ -156,12 +166,14 @@ export const InteractiveImageBentoGallery: React.FC<
               />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               <div className="absolute bottom-0 left-0 right-0 p-1.5 translate-y-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-                <p className="text-[10px] font-medium text-white truncate leading-tight">{item.title}</p>
+                <p className="text-[10px] font-medium text-white truncate leading-tight">
+                  {item.title}
+                </p>
               </div>
             </motion.div>
           ))}
         </div>
-        
+
         {imageItems.length > 9 && (
           <p className="mt-2 text-center text-xs text-muted-foreground">
             +{imageItems.length - 9} more images
@@ -170,11 +182,14 @@ export const InteractiveImageBentoGallery: React.FC<
 
         <AnimatePresence>
           {selectedItem && (
-            <ImageModal item={selectedItem} onClose={() => setSelectedItem(null)} />
+            <ImageModal
+              item={selectedItem}
+              onClose={() => setSelectedItem(null)}
+            />
           )}
         </AnimatePresence>
       </div>
-    )
+    );
   }
 
   // Full gallery mode rendering
@@ -254,9 +269,12 @@ export const InteractiveImageBentoGallery: React.FC<
 
       <AnimatePresence>
         {selectedItem && (
-          <ImageModal item={selectedItem} onClose={() => setSelectedItem(null)} />
+          <ImageModal
+            item={selectedItem}
+            onClose={() => setSelectedItem(null)}
+          />
         )}
       </AnimatePresence>
     </section>
-  )
-}
+  );
+};

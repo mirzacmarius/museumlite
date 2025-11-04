@@ -1,11 +1,11 @@
+import { OrganizationProvider } from "@/components/organization-provider";
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@v1/backend/convex/_generated/api";
-import { fetchQuery, preloadQuery } from "convex/nextjs";
-import { redirect } from "next/navigation";
-import { OrganizationProvider } from "@/components/organization-provider";
-import { Navigation } from "./_components/navigation";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { fetchQuery, preloadQuery } from "convex/nextjs";
+import { redirect } from "next/navigation";
+import { Navigation } from "./_components/navigation";
 
 export default async function Layout({
   children,
@@ -42,4 +42,3 @@ export default async function Layout({
     </div>
   );
 }
-

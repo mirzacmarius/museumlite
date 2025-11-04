@@ -10,9 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
-import { Check, ChevronDown, Building2, Plus } from "lucide-react";
-import { useOrganization } from "./organization-provider";
+import { Building2, Check, ChevronDown, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useOrganization } from "./organization-provider";
 
 export function OrganizationSwitcher() {
   const {
@@ -92,4 +92,3 @@ export function OrganizationSwitcher() {
     </DropdownMenu>
   );
 }
-

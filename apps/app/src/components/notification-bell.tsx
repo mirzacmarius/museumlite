@@ -3,13 +3,9 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@v1/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { cn } from "@v1/ui/utils";
-import { useQuery, useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { Bell, Check, CheckCheck } from "lucide-react";
 import Link from "next/link";
 import { useOrganization } from "./organization-provider";
@@ -40,7 +36,10 @@ export function NotificationBell() {
   const notificationsData = useQuery(
     api.audit.listNotifications,
     currentOrganizationId
-      ? { organizationId: currentOrganizationId as Id<"organizations">, limit: 20 }
+      ? {
+          organizationId: currentOrganizationId as Id<"organizations">,
+          limit: 20,
+        }
       : "skip",
   );
 
@@ -60,7 +59,9 @@ export function NotificationBell() {
 
   const handleMarkAllRead = async () => {
     if (!currentOrganizationId) return;
-    await markAllRead({ organizationId: currentOrganizationId as Id<"organizations"> });
+    await markAllRead({
+      organizationId: currentOrganizationId as Id<"organizations">,
+    });
   };
 
   const getNotificationLink = (
@@ -144,7 +145,9 @@ export function NotificationBell() {
                         )}
                       </div>
                       <div className="flex flex-1 flex-col gap-1">
-                        <p className="text-sm font-medium">{notification.title}</p>
+                        <p className="text-sm font-medium">
+                          {notification.title}
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           {notification.message}
                         </p>
@@ -190,4 +193,3 @@ export function NotificationBell() {
     </Popover>
   );
 }
-

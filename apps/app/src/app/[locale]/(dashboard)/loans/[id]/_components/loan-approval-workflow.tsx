@@ -1,7 +1,8 @@
 "use client";
 
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
-import { Button } from "@v1/ui/button";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,11 +14,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@v1/ui/alert-dialog";
-import { PermissionGate } from "@/components/permission-gate";
+import { Button } from "@v1/ui/button";
 import { useMutation } from "convex/react";
 import { CheckCircle, XCircle } from "lucide-react";
 import { useState } from "react";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
 interface LoanApprovalWorkflowProps {
   loanId: string;
@@ -44,9 +44,7 @@ export function LoanApprovalWorkflow({
           loanId: loanId as Id<"loans">,
         });
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to approve loan",
-        );
+        setError(err instanceof Error ? err.message : "Failed to approve loan");
       } finally {
         setIsSubmitting(false);
       }
@@ -60,9 +58,7 @@ export function LoanApprovalWorkflow({
           loanId: loanId as Id<"loans">,
         });
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to cancel loan",
-        );
+        setError(err instanceof Error ? err.message : "Failed to cancel loan");
       } finally {
         setIsSubmitting(false);
       }
@@ -90,10 +86,7 @@ export function LoanApprovalWorkflow({
           <PermissionGate permission="loans.update">
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button
-                  disabled={isSubmitting}
-                  variant="destructive"
-                >
+                <Button disabled={isSubmitting} variant="destructive">
                   <XCircle className="mr-2 h-4 w-4" />
                   Cancel Loan
                 </Button>
@@ -129,9 +122,7 @@ export function LoanApprovalWorkflow({
           loanId: loanId as Id<"loans">,
         });
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to return loan",
-        );
+        setError(err instanceof Error ? err.message : "Failed to return loan");
       } finally {
         setIsSubmitting(false);
       }
@@ -160,8 +151,8 @@ export function LoanApprovalWorkflow({
               <AlertDialogHeader>
                 <AlertDialogTitle>Mark Loan as Returned</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to mark this loan as returned? This
-                  will update the status of all associated collection items.
+                  Are you sure you want to mark this loan as returned? This will
+                  update the status of all associated collection items.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

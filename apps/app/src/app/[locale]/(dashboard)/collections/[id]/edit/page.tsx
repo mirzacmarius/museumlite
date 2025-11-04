@@ -1,10 +1,15 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { ConditionCombobox } from "@/components/condition-combobox";
+import { LocationSelector } from "@/components/location-selector";
+import { MaterialsCombobox } from "@/components/materials-combobox";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
-import { Textarea } from "@v1/ui/textarea";
 import { Label } from "@v1/ui/label";
 import {
   TagsInput,
@@ -13,19 +18,15 @@ import {
   TagsInputLabel,
   TagsInputList,
 } from "@v1/ui/tags-input";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { LocationSelector } from "@/components/location-selector";
-import { ConditionCombobox } from "@/components/condition-combobox";
-import { MaterialsCombobox } from "@/components/materials-combobox";
+import { Textarea } from "@v1/ui/textarea";
+import { useUploadFiles } from "@xixixao/uploadstuff/react";
 import { useMutation, useQuery } from "convex/react";
-import { ArrowLeft, Save, Upload, X, Star } from "lucide-react";
+import { ArrowLeft, Save, Star, Upload, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import React, { useState, useEffect, useRef } from "react";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { useUploadFiles } from "@xixixao/uploadstuff/react";
-import Image from "next/image";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface CollectionFormData {
   title: string;
@@ -126,7 +127,8 @@ export default function CollectionEditPage() {
             return;
           }
 
-          const isFirstMedia = !media || (Array.isArray(media) && media.length === 0);
+          const isFirstMedia =
+            !media || (Array.isArray(media) && media.length === 0);
 
           await Promise.all(
             uploaded.map(async (file, index) => {
@@ -134,10 +136,13 @@ export default function CollectionEditPage() {
                 throw new Error("Upload completed but file data is missing");
               }
 
-              const storageId = (file.response as { storageId: Id<"_storage"> })?.storageId;
+              const storageId = (file.response as { storageId: Id<"_storage"> })
+                ?.storageId;
 
               if (!storageId) {
-                throw new Error(`Upload completed but no storage ID returned for ${file.name}`);
+                throw new Error(
+                  `Upload completed but no storage ID returned for ${file.name}`,
+                );
               }
 
               await createMedia({
@@ -153,7 +158,9 @@ export default function CollectionEditPage() {
           );
         } catch (err) {
           setError(
-            err instanceof Error ? err.message : "Failed to create media records",
+            err instanceof Error
+              ? err.message
+              : "Failed to create media records",
           );
         }
       },
@@ -188,7 +195,7 @@ export default function CollectionEditPage() {
         culture: collection.culture || "",
         period: collection.period || "",
         dateCreated: collection.dateCreated || "",
-        materials: materialsArray as any, // Store as array in form state
+        materials: materialsArray, // Store as array in form state
         dimensions: collection.dimensions || "",
         description: collection.description || "",
         condition: collection.condition || "",
@@ -240,7 +247,7 @@ export default function CollectionEditPage() {
 
       filesRef.current = [...files];
       startUpload(files);
-      
+
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -267,9 +274,7 @@ export default function CollectionEditPage() {
     try {
       await deleteMedia({ mediaId: mediaId as Id<"mediaFiles"> });
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to delete media",
-      );
+      setError(err instanceof Error ? err.message : "Failed to delete media");
     }
   };
 
@@ -284,7 +289,7 @@ export default function CollectionEditPage() {
     setIsSubmitting(true);
     try {
       // Convert materials array to JSON string for backend
-      const materialsString = Array.isArray(formData.materials) 
+      const materialsString = Array.isArray(formData.materials)
         ? JSON.stringify(formData.materials)
         : formData.materials;
 
@@ -349,42 +354,43 @@ export default function CollectionEditPage() {
                   {error}
                 </div>
               )}
-              
+
               <div className="flex gap-4">
                 {/* Left column - Form sections */}
                 <div className="flex-1 space-y-4">
-                  
                   {/* Basic Information Section */}
                   <div className="rounded-lg border border-border bg-card p-4">
-                    <h3 className="mb-3 text-base font-semibold">Basic Information</h3>
+                    <h3 className="mb-3 text-base font-semibold">
+                      Basic Information
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="title">
-                      Title <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="title"
-                      value={formData.title}
-                      onChange={(e) => updateField("title", e.target.value)}
-                      placeholder="Enter object title"
-                      required
-                    />
-                  </div>
+                      <div>
+                        <Label htmlFor="title">
+                          Title <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="title"
+                          value={formData.title}
+                          onChange={(e) => updateField("title", e.target.value)}
+                          placeholder="Enter object title"
+                          required
+                        />
+                      </div>
 
-                  <div>
-                    <Label htmlFor="accessionNumber">
-                      Accession Number
-                    </Label>
-                    <Input
-                      id="accessionNumber"
-                      value={collection.accessionNumber}
-                      disabled
-                      className="bg-muted"
-                    />
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Accession number cannot be changed
-                    </p>
-                  </div>
+                      <div>
+                        <Label htmlFor="accessionNumber">
+                          Accession Number
+                        </Label>
+                        <Input
+                          id="accessionNumber"
+                          value={collection.accessionNumber}
+                          disabled
+                          className="bg-muted"
+                        />
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Accession number cannot be changed
+                        </p>
+                      </div>
 
                       <div className="md:col-span-2 lg:col-span-3">
                         <TagsInput
@@ -395,73 +401,76 @@ export default function CollectionEditPage() {
                           editable
                           addOnPaste
                         >
-                          <TagsInputLabel>Alternate Accession Numbers</TagsInputLabel>
+                          <TagsInputLabel>
+                            Alternate Accession Numbers
+                          </TagsInputLabel>
                           <TagsInputList>
-                            {(formData.alternateAccessionNumbers || []).map((number) => (
-                              <TagsInputItem key={number} value={number}>
-                                {number}
-                              </TagsInputItem>
-                            ))}
+                            {(formData.alternateAccessionNumbers || []).map(
+                              (number) => (
+                                <TagsInputItem key={number} value={number}>
+                                  {number}
+                                </TagsInputItem>
+                              ),
+                            )}
                             <TagsInputInput placeholder="Add alternate ID..." />
                           </TagsInputList>
                         </TagsInput>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          Historical accession numbers previously assigned to this object
+                          Historical accession numbers previously assigned to
+                          this object
                         </p>
                       </div>
 
-                  <div>
-                    <Label htmlFor="objectType">
-                      Object Type
-                    </Label>
-                    <Input
-                      id="objectType"
-                      value={formData.objectType || ""}
-                      onChange={(e) => updateField("objectType", e.target.value)}
-                      placeholder="e.g., Painting, Sculpture"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="objectName">
-                      Object Name
-                    </Label>
-                    <Input
-                      id="objectName"
-                      value={formData.objectName || ""}
-                      onChange={(e) => updateField("objectName", e.target.value)}
-                      placeholder="e.g., Portrait"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="culture">
-                      Culture
-                    </Label>
-                    <Input
-                      id="culture"
-                      value={formData.culture || ""}
-                      onChange={(e) => updateField("culture", e.target.value)}
-                      placeholder="e.g., French"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="period">
-                      Period
-                    </Label>
-                    <Input
-                      id="period"
-                      value={formData.period || ""}
-                      onChange={(e) => updateField("period", e.target.value)}
-                      placeholder="e.g., 19th Century"
-                    />
-                  </div>
+                      <div>
+                        <Label htmlFor="objectType">Object Type</Label>
+                        <Input
+                          id="objectType"
+                          value={formData.objectType || ""}
+                          onChange={(e) =>
+                            updateField("objectType", e.target.value)
+                          }
+                          placeholder="e.g., Painting, Sculpture"
+                        />
+                      </div>
 
                       <div>
-                        <Label htmlFor="dateCreated">
-                          Date Created
-                        </Label>
+                        <Label htmlFor="objectName">Object Name</Label>
+                        <Input
+                          id="objectName"
+                          value={formData.objectName || ""}
+                          onChange={(e) =>
+                            updateField("objectName", e.target.value)
+                          }
+                          placeholder="e.g., Portrait"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="culture">Culture</Label>
+                        <Input
+                          id="culture"
+                          value={formData.culture || ""}
+                          onChange={(e) =>
+                            updateField("culture", e.target.value)
+                          }
+                          placeholder="e.g., French"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="period">Period</Label>
+                        <Input
+                          id="period"
+                          value={formData.period || ""}
+                          onChange={(e) =>
+                            updateField("period", e.target.value)
+                          }
+                          placeholder="e.g., 19th Century"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="dateCreated">Date Created</Label>
                         <Input
                           id="dateCreated"
                           value={formData.dateCreated || ""}
@@ -476,24 +485,28 @@ export default function CollectionEditPage() {
 
                   {/* Physical Characteristics Section */}
                   <div className="rounded-lg border border-border bg-card p-4">
-                    <h3 className="mb-3 text-base font-semibold">Physical Characteristics</h3>
+                    <h3 className="mb-3 text-base font-semibold">
+                      Physical Characteristics
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div>
-                        <Label htmlFor="materials">
-                          Materials
-                        </Label>
+                        <Label htmlFor="materials">Materials</Label>
                         <MaterialsCombobox
                           organizationId={currentOrganizationId}
                           collectionId={collectionId}
-                          value={Array.isArray(formData.materials) ? formData.materials : []}
-                          onValueChange={(value) => updateField("materials", value)}
+                          value={
+                            Array.isArray(formData.materials)
+                              ? formData.materials
+                              : []
+                          }
+                          onValueChange={(value) =>
+                            updateField("materials", value)
+                          }
                         />
                       </div>
 
                       <div>
-                        <Label htmlFor="dimensions">
-                          Dimensions
-                        </Label>
+                        <Label htmlFor="dimensions">Dimensions</Label>
                         <Input
                           id="dimensions"
                           value={formData.dimensions || ""}
@@ -505,13 +518,13 @@ export default function CollectionEditPage() {
                       </div>
 
                       <div>
-                        <Label htmlFor="condition">
-                          Condition
-                        </Label>
+                        <Label htmlFor="condition">Condition</Label>
                         <ConditionCombobox
                           organizationId={currentOrganizationId}
                           value={formData.condition || ""}
-                          onValueChange={(value) => updateField("condition", value)}
+                          onValueChange={(value) =>
+                            updateField("condition", value)
+                          }
                         />
                       </div>
                     </div>
@@ -519,7 +532,9 @@ export default function CollectionEditPage() {
 
                   {/* Location Information Section */}
                   <div className="rounded-lg border border-border bg-card p-4">
-                    <h3 className="mb-3 text-base font-semibold">Location Information</h3>
+                    <h3 className="mb-3 text-base font-semibold">
+                      Location Information
+                    </h3>
                     <div>
                       <Label htmlFor="currentLocationId">
                         Current Location
@@ -537,29 +552,31 @@ export default function CollectionEditPage() {
 
                   {/* Historical Information Section */}
                   <div className="rounded-lg border border-border bg-card p-4">
-                    <h3 className="mb-3 text-base font-semibold">Historical Information</h3>
+                    <h3 className="mb-3 text-base font-semibold">
+                      Historical Information
+                    </h3>
                     <div className="space-y-4">
                       <div>
-                        <Label htmlFor="description">
-                          Description
-                        </Label>
+                        <Label htmlFor="description">Description</Label>
                         <Textarea
                           id="description"
                           value={formData.description || ""}
-                          onChange={(e) => updateField("description", e.target.value)}
+                          onChange={(e) =>
+                            updateField("description", e.target.value)
+                          }
                           rows={4}
                           placeholder="Enter detailed description"
                         />
                       </div>
 
                       <div>
-                        <Label htmlFor="provenance">
-                          Provenance
-                        </Label>
+                        <Label htmlFor="provenance">Provenance</Label>
                         <Textarea
                           id="provenance"
                           value={formData.provenance || ""}
-                          onChange={(e) => updateField("provenance", e.target.value)}
+                          onChange={(e) =>
+                            updateField("provenance", e.target.value)
+                          }
                           rows={3}
                           placeholder="Enter provenance information"
                         />
@@ -598,8 +615,10 @@ export default function CollectionEditPage() {
                 <div className="w-96 flex-shrink-0">
                   <div className="sticky top-4">
                     <div className="rounded-lg border border-border bg-card p-4">
-                      <h3 className="mb-3 text-base font-semibold">Media Upload</h3>
-                      
+                      <h3 className="mb-3 text-base font-semibold">
+                        Media Upload
+                      </h3>
+
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -608,7 +627,7 @@ export default function CollectionEditPage() {
                         className="hidden"
                         multiple
                       />
-                      
+
                       <Button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
@@ -635,7 +654,7 @@ export default function CollectionEditPage() {
                                     sizes="128px"
                                     className="object-cover"
                                   />
-                                  
+
                                   {/* Hover overlay */}
                                   <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
                                     {!file.isPrimary && (
@@ -643,7 +662,9 @@ export default function CollectionEditPage() {
                                         type="button"
                                         size="sm"
                                         variant="secondary"
-                                        onClick={() => handleSetPrimary(file._id)}
+                                        onClick={() =>
+                                          handleSetPrimary(file._id)
+                                        }
                                         title="Set as primary"
                                       >
                                         <Star className="h-3 w-3" />
@@ -674,13 +695,16 @@ export default function CollectionEditPage() {
                       ) : (
                         <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed">
                           <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
-                          <p className="text-xs text-muted-foreground">No images uploaded</p>
+                          <p className="text-xs text-muted-foreground">
+                            No images uploaded
+                          </p>
                         </div>
                       )}
 
                       {media && Array.isArray(media) && media.length > 0 && (
                         <p className="mt-3 text-center text-xs text-muted-foreground">
-                          {media.length} {media.length === 1 ? 'image' : 'images'}
+                          {media.length}{" "}
+                          {media.length === 1 ? "image" : "images"}
                         </p>
                       )}
                     </div>
@@ -694,4 +718,3 @@ export default function CollectionEditPage() {
     </>
   );
 }
-

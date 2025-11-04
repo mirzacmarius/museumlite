@@ -1,7 +1,5 @@
 "use client";
 
-import * as React from "react";
-import { HelpCircle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -9,6 +7,8 @@ import {
   TooltipTrigger,
 } from "@v1/ui/tooltip";
 import { cn } from "@v1/ui/utils";
+import { HelpCircle } from "lucide-react";
+import type * as React from "react";
 
 interface InfoTooltipProps {
   content: React.ReactNode;
@@ -16,7 +16,11 @@ interface InfoTooltipProps {
   className?: string;
 }
 
-export function InfoTooltip({ content, side = "right", className }: InfoTooltipProps) {
+export function InfoTooltip({
+  content,
+  side = "right",
+  className,
+}: InfoTooltipProps) {
   return (
     <TooltipProvider delayDuration={200}>
       <Tooltip>
@@ -25,7 +29,7 @@ export function InfoTooltip({ content, side = "right", className }: InfoTooltipP
             type="button"
             className={cn(
               "inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors",
-              className
+              className,
             )}
           >
             <HelpCircle className="h-4 w-4" />

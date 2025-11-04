@@ -1,7 +1,9 @@
 "use client";
 
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
-import { Button } from "@v1/ui/button";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +15,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@v1/ui/alert-dialog";
+import { Button } from "@v1/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -25,13 +28,18 @@ import {
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useMutation, useQuery } from "convex/react";
-import { Upload, Image as ImageIcon, X, Star, StarOff, Edit, Trash2 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
 import { useUploadFiles } from "@xixixao/uploadstuff/react";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
+import {
+  Edit,
+  Image as ImageIcon,
+  Star,
+  StarOff,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface MediaGalleryProps {
   collectionId: string;
@@ -50,7 +58,9 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
   const setPrimary = useMutation(api.media.setPrimary);
 
   const [editingMedia, setEditingMedia] = useState<string | null>(null);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState<string | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -66,7 +76,7 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
       // Get the current file from the ref
       // useUploadFiles calls this function once per file, so we process files sequentially
       const file = filesRef.current.shift();
-      
+
       if (!file) {
         throw new Error("No file available for upload");
       }
@@ -100,7 +110,8 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
           }
 
           // Determine if this is the first media (for setting primary)
-          const isFirstMedia = !media || (Array.isArray(media) && media.length === 0);
+          const isFirstMedia =
+            !media || (Array.isArray(media) && media.length === 0);
 
           // Process all uploaded files
           await Promise.all(
@@ -112,10 +123,13 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
               // Extract storageId from uploadstuff response
               // According to Convex docs and uploadstuff, the response is wrapped in file.response
               // Convex returns { storageId: Id<"_storage"> } in the JSON response
-              const storageId = (file.response as { storageId: Id<"_storage"> })?.storageId;
+              const storageId = (file.response as { storageId: Id<"_storage"> })
+                ?.storageId;
 
               if (!storageId) {
-                throw new Error(`Upload completed but no storage ID returned for ${file.name}`);
+                throw new Error(
+                  `Upload completed but no storage ID returned for ${file.name}`,
+                );
               }
 
               // Set the first uploaded file as primary if this is the first media
@@ -132,7 +146,9 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
           );
         } catch (err) {
           setError(
-            err instanceof Error ? err.message : "Failed to create media records",
+            err instanceof Error
+              ? err.message
+              : "Failed to create media records",
           );
         }
       },
@@ -164,7 +180,7 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
 
       // Upload all selected files
       startUpload(files);
-      
+
       // Reset the input so the same files can be selected again if needed
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -193,9 +209,7 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
       await deleteMedia({ mediaId: mediaId as Id<"mediaFiles"> });
       setDeleteConfirmOpen(null);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to delete media",
-      );
+      setError(err instanceof Error ? err.message : "Failed to delete media");
     }
   };
 

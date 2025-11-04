@@ -58,6 +58,7 @@ export default {
     noActivity: "No se encontró actividad",
     loadMore: "Cargar más",
     selectOrganization: "Selecciona una Organización",
-    selectOrganizationDescription: "Por favor selecciona una organización del menú desplegable arriba para ver la actividad.",
+    selectOrganizationDescription:
+      "Por favor selecciona una organización del menú desplegable arriba para ver la actividad.",
   },
 } as const;

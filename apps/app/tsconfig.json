@@ -3,9 +3,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"]
     },
     "strict": true,
     "skipLibCheck": true
@@ -19,9 +17,5 @@
     "tailwind.config.ts",
     "src/env.mjs"
   ],
-  "exclude": [
-    "node_modules",
-    "**/node_modules/**",
-    "node_modules/@xixixao/**"
-  ]
+  "exclude": ["node_modules", "**/node_modules/**", "node_modules/@xixixao/**"]
 }

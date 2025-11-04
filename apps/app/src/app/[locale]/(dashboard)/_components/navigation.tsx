@@ -1,11 +1,13 @@
 "use client";
 
+import { NotificationBell } from "@/components/notification-bell";
+import { useOrganization } from "@/components/organization-provider";
+import { OrganizationSwitcher } from "@/components/organization-switcher";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { CheckoutLink } from "@convex-dev/polar/react";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button, buttonVariants } from "@v1/ui/button";
-import { Input } from "@v1/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,29 +16,34 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
+import { Input } from "@v1/ui/input";
 import { Logo } from "@v1/ui/logo";
 import { cn } from "@v1/ui/utils";
-import { type Preloaded, usePreloadedQuery, useMutation } from "convex/react";
+import { type Preloaded, useMutation, usePreloadedQuery } from "convex/react";
 import {
+  Building2,
   Check,
   ChevronDown,
   ChevronUp,
   LogOut,
+  Plus,
   Settings,
   Slash,
-  Plus,
-  Building2,
+} from "lucide-react";
+import {
+  Activity,
+  Archive,
+  FileCheck,
+  FileX,
+  Handshake,
+  MapPin,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import { LanguageSwitcher } from "./language-switcher";
 import { ThemeSwitcher } from "./theme-switcher";
-import { OrganizationSwitcher } from "@/components/organization-switcher";
-import { NotificationBell } from "@/components/notification-bell";
-import { useOrganization } from "@/components/organization-provider";
-import { MapPin, Archive, FileCheck, FileX, Handshake, Activity } from "lucide-react";
-import { useState } from "react";
 
 export function Navigation({
   preloadedUser,
@@ -49,11 +56,21 @@ export function Navigation({
   const pathname = usePathname();
   const router = useRouter();
   const pathSegments = pathname?.split("/").filter(Boolean) ?? [];
-  const isDashboardPath = pathname === "/" || (pathname?.endsWith("/") && pathSegments.length <= 1);
-  const isSettingsPath = pathname?.startsWith("/settings") && !pathname?.startsWith("/settings/billing") && pathSegments.length > 0 && pathSegments[pathSegments.length - 1] === "settings";
+  const isDashboardPath =
+    pathname === "/" || (pathname?.endsWith("/") && pathSegments.length <= 1);
+  const isSettingsPath =
+    pathname?.startsWith("/settings") &&
+    !pathname?.startsWith("/settings/billing") &&
+    pathSegments.length > 0 &&
+    pathSegments[pathSegments.length - 1] === "settings";
   const isBillingPath = pathname?.startsWith("/settings/billing");
   const isActivityPath = pathname?.startsWith("/activity");
-  const { organizations, currentOrganizationId, setCurrentOrganizationId, isLoading: orgsLoading } = useOrganization();
+  const {
+    organizations,
+    currentOrganizationId,
+    setCurrentOrganizationId,
+    isLoading: orgsLoading,
+  } = useOrganization();
   const createOrganization = useMutation(api.organizations.create);
   const [newOrgName, setNewOrgName] = useState("");
   const [isCreatingOrg, setIsCreatingOrg] = useState(false);
@@ -73,10 +90,13 @@ export function Navigation({
   const handleCreateOrganization = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newOrgName.trim()) return;
-    
+
     setIsCreatingOrg(true);
     try {
-      const slug = newOrgName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+      const slug = newOrgName
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "");
       const organizationId = await createOrganization({
         name: newOrgName.trim(),
         slug,
@@ -105,13 +125,17 @@ export function Navigation({
             <Image src="/logo.png" alt="logo" width={50} height={50} />
           </Link>
           <Slash className="h-6 w-6 -rotate-12 stroke-[1.5px] text-primary/10" />
-          <DropdownMenu modal={false} open={isPersonalAccountOpen} onOpenChange={(open) => {
-            // Prevent closing when form is shown
-            if (showCreateForm && !open) {
-              return;
-            }
-            setIsPersonalAccountOpen(open);
-          }}>
+          <DropdownMenu
+            modal={false}
+            open={isPersonalAccountOpen}
+            onOpenChange={(open) => {
+              // Prevent closing when form is shown
+              if (showCreateForm && !open) {
+                return;
+              }
+              setIsPersonalAccountOpen(open);
+            }}
+          >
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
@@ -187,7 +211,7 @@ export function Navigation({
               <DropdownMenuLabel className="text-xs font-normal text-primary/60">
                 Organizations
               </DropdownMenuLabel>
-              
+
               {orgsLoading ? (
                 <DropdownMenuItem className="h-9 w-full cursor-default justify-center rounded-md px-2">
                   <span className="text-sm text-primary/60">Loading...</span>
@@ -199,7 +223,7 @@ export function Navigation({
                     onClick={() => setCurrentOrganizationId(org._id)}
                     className={cn(
                       "group h-10 w-full cursor-pointer justify-between rounded-md px-2",
-                      currentOrganizationId === org._id && "bg-secondary"
+                      currentOrganizationId === org._id && "bg-secondary",
                     )}
                   >
                     <div className="flex items-center gap-2">
@@ -218,7 +242,11 @@ export function Navigation({
               {/* Create Organization Form */}
               {showCreateForm ? (
                 <div className="p-2">
-                  <form onSubmit={handleCreateOrganization} className="w-full space-y-2" onMouseDown={(e) => e.stopPropagation()}>
+                  <form
+                    onSubmit={handleCreateOrganization}
+                    className="w-full space-y-2"
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
                     <Input
                       placeholder="Organization name"
                       value={newOrgName}

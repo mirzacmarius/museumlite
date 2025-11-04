@@ -1,29 +1,29 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { useOrganization } from "@/components/organization-provider";
 import { useQuery } from "convex/react";
 import {
+  Activity,
+  ArrowDownRight,
+  ArrowUpRight,
   Building2,
+  CheckCircle,
+  Clock,
   FileCheck,
   FileX,
   Handshake,
   MapPin,
-  Clock,
-  CheckCircle,
-  XCircle,
-  TrendingUp,
-  ArrowDownRight,
-  ArrowUpRight,
   Plus,
-  Activity,
+  TrendingUp,
+  XCircle,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
-import { PermissionGate } from "@/components/permission-gate";
 
 export default function DashboardPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
@@ -453,9 +453,7 @@ export default function DashboardPage() {
                               <TrendingUp className="h-4 w-4 text-amber-600" />
                             );
                           case "deaccession":
-                            return (
-                              <FileX className="h-4 w-4 text-red-600" />
-                            );
+                            return <FileX className="h-4 w-4 text-red-600" />;
                         }
                       };
 

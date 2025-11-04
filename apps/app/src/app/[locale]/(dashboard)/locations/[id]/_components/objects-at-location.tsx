@@ -1,9 +1,9 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import Link from "next/link";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
 interface ObjectsAtLocationProps {
   locationId: string;
@@ -57,4 +57,3 @@ export function ObjectsAtLocation({ locationId }: ObjectsAtLocationProps) {
     </div>
   );
 }
-

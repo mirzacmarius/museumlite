@@ -1,4 +1,8 @@
-import { internalAction, internalMutation, internalQuery } from "./_generated/server";
+import {
+  internalAction,
+  internalMutation,
+  internalQuery,
+} from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
@@ -19,7 +23,9 @@ export const seedDatabase = internalAction({
     });
 
     if (!existingUser) {
-      console.log("⚠️  User with email mirzacmarius@gmail.com not found. Please log in first.");
+      console.log(
+        "⚠️  User with email mirzacmarius@gmail.com not found. Please log in first.",
+      );
       return null;
     }
 
@@ -66,7 +72,9 @@ export const seedDatabase = internalAction({
     // Check which organizations already exist
     const existingOrgSlugs = new Set<string>();
     for (const orgId of existingOrgs) {
-      const org = await ctx.runQuery(internal.seed.getOrganizationById, { orgId });
+      const org = await ctx.runQuery(internal.seed.getOrganizationById, {
+        orgId,
+      });
       if (org) {
         orgSlugToId[org.slug] = orgId;
         existingOrgSlugs.add(org.slug);
@@ -80,7 +88,10 @@ export const seedDatabase = internalAction({
         continue;
       }
 
-      const orgId = await ctx.runMutation(internal.seed.createOrganization, orgData);
+      const orgId = await ctx.runMutation(
+        internal.seed.createOrganization,
+        orgData,
+      );
       orgSlugToId[orgData.slug] = orgId;
       console.log(`✅ Created organization: ${orgData.name}`);
     }
@@ -117,7 +128,8 @@ export const seedDatabase = internalAction({
         dateCreated: "1889",
         materials: "Oil on canvas",
         dimensions: "73.7 cm × 92.1 cm",
-        description: "One of the most recognized paintings in the world, depicting a swirling night sky over a village.",
+        description:
+          "One of the most recognized paintings in the world, depicting a swirling night sky over a village.",
         condition: "Excellent",
         provenance: "Acquired from private collection in 1941",
       },
@@ -132,7 +144,8 @@ export const seedDatabase = internalAction({
         dateCreated: "c. 1323 BCE",
         materials: "Gilded wood, semiprecious stones",
         dimensions: "223.5 cm × 87.5 cm × 153.5 cm",
-        description: "Elaborately decorated sarcophagus from the tomb of Tutankhamun.",
+        description:
+          "Elaborately decorated sarcophagus from the tomb of Tutankhamun.",
         condition: "Good, minor wear",
         provenance: "Excavated from Valley of the Kings, 1922",
       },
@@ -147,7 +160,8 @@ export const seedDatabase = internalAction({
         dateCreated: "c. 1420",
         materials: "Porcelain with cobalt blue underglaze",
         dimensions: "Height: 45.2 cm",
-        description: "Exquisite blue and white porcelain vase from the Ming Dynasty.",
+        description:
+          "Exquisite blue and white porcelain vase from the Ming Dynasty.",
         condition: "Excellent",
         provenance: "Acquired from private collection",
       },
@@ -162,7 +176,8 @@ export const seedDatabase = internalAction({
         dateCreated: "c. 450 BCE",
         materials: "Marble",
         dimensions: "Height: 155 cm",
-        description: "Classical Greek sculpture depicting an athlete preparing to throw a discus.",
+        description:
+          "Classical Greek sculpture depicting an athlete preparing to throw a discus.",
         condition: "Good, restored",
         provenance: "Excavated from ancient site",
       },
@@ -179,7 +194,8 @@ export const seedDatabase = internalAction({
         dateCreated: "196 BCE",
         materials: "Granodiorite",
         dimensions: "112.3 cm × 75.7 cm × 28.4 cm",
-        description: "Ancient Egyptian decree inscribed in three scripts: hieroglyphs, Demotic, and Ancient Greek.",
+        description:
+          "Ancient Egyptian decree inscribed in three scripts: hieroglyphs, Demotic, and Ancient Greek.",
         condition: "Excellent",
         provenance: "Discovered in 1799 at Rosetta, Egypt",
       },
@@ -194,7 +210,8 @@ export const seedDatabase = internalAction({
         dateCreated: "c. 447-432 BCE",
         materials: "Pentelic marble",
         dimensions: "Various",
-        description: "Collection of Classical Greek marble sculptures from the Parthenon temple.",
+        description:
+          "Collection of Classical Greek marble sculptures from the Parthenon temple.",
         condition: "Good, weathered",
         provenance: "Originally from Parthenon, Athens",
       },
@@ -209,7 +226,8 @@ export const seedDatabase = internalAction({
         dateCreated: "c. 625 CE",
         materials: "Iron, bronze, silver",
         dimensions: "Height: 31.8 cm",
-        description: "Decorated helmet from the Sutton Hoo ship burial, one of the most important archaeological finds in Britain.",
+        description:
+          "Decorated helmet from the Sutton Hoo ship burial, one of the most important archaeological finds in Britain.",
         condition: "Restored",
         provenance: "Excavated from Sutton Hoo, 1939",
       },
@@ -224,7 +242,8 @@ export const seedDatabase = internalAction({
         dateCreated: "c. 1400-1521 CE",
         materials: "Cedar wood, turquoise mosaic, shell",
         dimensions: "Height: 20.5 cm",
-        description: "Remarkable turquoise mosaic sculpture of a double-headed serpent.",
+        description:
+          "Remarkable turquoise mosaic sculpture of a double-headed serpent.",
         condition: "Excellent",
         provenance: "Acquired from Mexico",
       },
@@ -241,7 +260,8 @@ export const seedDatabase = internalAction({
         dateCreated: "c. 1455",
         materials: "Vellum, ink",
         dimensions: "42.5 cm × 30 cm",
-        description: "One of the first major books printed using movable type, printed by Johannes Gutenberg.",
+        description:
+          "One of the first major books printed using movable type, printed by Johannes Gutenberg.",
         condition: "Excellent",
         provenance: "Acquired 1930",
       },
@@ -256,7 +276,8 @@ export const seedDatabase = internalAction({
         dateCreated: "1776",
         materials: "Parchment, ink",
         dimensions: "75.5 cm × 61.5 cm",
-        description: "Original signed copy of the United States Declaration of Independence.",
+        description:
+          "Original signed copy of the United States Declaration of Independence.",
         condition: "Good, fragile",
         provenance: "Transferred from State Department, 1921",
       },
@@ -271,7 +292,8 @@ export const seedDatabase = internalAction({
         dateCreated: "1863",
         materials: "Paper, ink",
         dimensions: "27.9 cm × 21.6 cm",
-        description: "One of five known manuscript copies of Abraham Lincoln's Gettysburg Address.",
+        description:
+          "One of five known manuscript copies of Abraham Lincoln's Gettysburg Address.",
         condition: "Good",
         provenance: "Donated by Lincoln family",
       },
@@ -286,7 +308,8 @@ export const seedDatabase = internalAction({
         dateCreated: "1215",
         materials: "Vellum, ink",
         dimensions: "50 cm × 40 cm",
-        description: "One of the original copies of the Magna Carta, a foundational document of English law.",
+        description:
+          "One of the original copies of the Magna Carta, a foundational document of English law.",
         condition: "Good, aged",
         provenance: "Acquired from private collection",
       },
@@ -303,7 +326,8 @@ export const seedDatabase = internalAction({
         dateCreated: "1889",
         materials: "Oil on canvas",
         dimensions: "71 cm × 93 cm",
-        description: "Beautiful painting of irises, one of Van Gogh's most celebrated works.",
+        description:
+          "Beautiful painting of irises, one of Van Gogh's most celebrated works.",
         condition: "Excellent",
         provenance: "Acquired 1990",
       },
@@ -318,7 +342,8 @@ export const seedDatabase = internalAction({
         dateCreated: "c. 200 CE",
         materials: "Marble and stone tesserae",
         dimensions: "285 cm × 285 cm",
-        description: "Large floor mosaic depicting Medusa's head, typical of Roman villa decoration.",
+        description:
+          "Large floor mosaic depicting Medusa's head, typical of Roman villa decoration.",
         condition: "Excellent",
         provenance: "Excavated from Roman villa",
       },
@@ -333,7 +358,8 @@ export const seedDatabase = internalAction({
         dateCreated: "c. 1420",
         materials: "Vellum, gold leaf, pigments",
         dimensions: "15 cm × 11 cm",
-        description: "Exquisitely illuminated prayer book with intricate miniatures and decorative borders.",
+        description:
+          "Exquisitely illuminated prayer book with intricate miniatures and decorative borders.",
         condition: "Excellent",
         provenance: "Acquired from private collection",
       },
@@ -348,7 +374,8 @@ export const seedDatabase = internalAction({
         dateCreated: "c. 1480",
         materials: "Tempera on wood panel",
         dimensions: "48 cm × 33 cm",
-        description: "Delicate portrait attributed to the Italian Renaissance school.",
+        description:
+          "Delicate portrait attributed to the Italian Renaissance school.",
         condition: "Good, minor restoration",
         provenance: "Acquired from private collection",
       },
@@ -365,7 +392,8 @@ export const seedDatabase = internalAction({
         dateCreated: "c. 1870",
         materials: "Wood, mother-of-pearl, brass",
         dimensions: "25 cm × 18 cm × 12 cm",
-        description: "Ornate Victorian jewelry box with intricate mother-of-pearl inlay.",
+        description:
+          "Ornate Victorian jewelry box with intricate mother-of-pearl inlay.",
         condition: "Very good",
         provenance: "Family heirloom",
       },
@@ -380,7 +408,8 @@ export const seedDatabase = internalAction({
         dateCreated: "c. 1830",
         materials: "Woodblock print on paper",
         dimensions: "25.7 cm × 37.9 cm",
-        description: "Famous woodblock print from Hokusai's Thirty-Six Views of Mount Fuji series.",
+        description:
+          "Famous woodblock print from Hokusai's Thirty-Six Views of Mount Fuji series.",
         condition: "Good",
         provenance: "Acquired from dealer",
       },
@@ -410,7 +439,8 @@ export const seedDatabase = internalAction({
         dateCreated: "c. 1790",
         materials: "Sterling silver",
         dimensions: "Teapot: 25 cm height",
-        description: "Complete Georgian silver tea service with matching pieces.",
+        description:
+          "Complete Georgian silver tea service with matching pieces.",
         condition: "Excellent",
         provenance: "Family collection",
       },
@@ -437,7 +467,9 @@ export const seedDatabase = internalAction({
       const userId = userIds[collectionData.orgSlug];
 
       if (!orgId || !userId) {
-        console.error(`Skipping collection ${collectionData.accessionNumber} - org or user not found`);
+        console.error(
+          `Skipping collection ${collectionData.accessionNumber} - org or user not found`,
+        );
         continue;
       }
 
@@ -448,7 +480,9 @@ export const seedDatabase = internalAction({
       });
 
       if (existing) {
-        console.log(`⏭️  Skipping collection ${collectionData.accessionNumber} - already exists`);
+        console.log(
+          `⏭️  Skipping collection ${collectionData.accessionNumber} - already exists`,
+        );
         continue;
       }
 
@@ -470,8 +504,16 @@ export const seedDatabase = internalAction({
         orgSlug: "met-museum",
         locations: [
           { name: "Main Building", type: "building", parent: null },
-          { name: "European Paintings Wing", type: "floor", parent: "Main Building" },
-          { name: "Gallery 815", type: "room", parent: "European Paintings Wing" },
+          {
+            name: "European Paintings Wing",
+            type: "floor",
+            parent: "Main Building",
+          },
+          {
+            name: "Gallery 815",
+            type: "room",
+            parent: "European Paintings Wing",
+          },
           { name: "Storage Vault A", type: "storage", parent: "Main Building" },
         ],
       },
@@ -488,9 +530,17 @@ export const seedDatabase = internalAction({
         orgSlug: "library-of-congress",
         locations: [
           { name: "Jefferson Building", type: "building", parent: null },
-          { name: "Rare Book Room", type: "room", parent: "Jefferson Building" },
+          {
+            name: "Rare Book Room",
+            type: "room",
+            parent: "Jefferson Building",
+          },
           { name: "Vault 1", type: "storage", parent: "Jefferson Building" },
-          { name: "Exhibition Hall", type: "room", parent: "Jefferson Building" },
+          {
+            name: "Exhibition Hall",
+            type: "room",
+            parent: "Jefferson Building",
+          },
         ],
       },
       {
@@ -508,7 +558,11 @@ export const seedDatabase = internalAction({
           { name: "Main Residence", type: "building", parent: null },
           { name: "Living Room", type: "room", parent: "Main Residence" },
           { name: "Study", type: "room", parent: "Main Residence" },
-          { name: "Climate-Controlled Storage", type: "storage", parent: "Main Residence" },
+          {
+            name: "Climate-Controlled Storage",
+            type: "storage",
+            parent: "Main Residence",
+          },
         ],
       },
     ];
@@ -518,7 +572,9 @@ export const seedDatabase = internalAction({
     for (const locGroup of locationData) {
       const orgId = orgSlugToId[locGroup.orgSlug];
       if (!orgId) {
-        console.error(`Skipping locations for ${locGroup.orgSlug} - org not found`);
+        console.error(
+          `Skipping locations for ${locGroup.orgSlug} - org not found`,
+        );
         continue;
       }
 
@@ -526,9 +582,8 @@ export const seedDatabase = internalAction({
 
       for (const loc of locGroup.locations) {
         const orgLocationIds = locationIds[locGroup.orgSlug];
-        const parentId = loc.parent && orgLocationIds
-          ? orgLocationIds[loc.parent]
-          : undefined;
+        const parentId =
+          loc.parent && orgLocationIds ? orgLocationIds[loc.parent] : undefined;
 
         const locId = await ctx.runMutation(internal.seed.createLocation, {
           organizationId: orgId,
@@ -549,35 +604,119 @@ export const seedDatabase = internalAction({
     await ctx.runMutation(internal.seed.assignCollectionsToLocations, {
       collections: [
         // Metropolitan Museum of Art
-        { orgSlug: "met-museum", accessionNumber: "MET-2024-001", locationName: "Gallery 815" },
-        { orgSlug: "met-museum", accessionNumber: "MET-2024-002", locationName: "Storage Vault A" },
-        { orgSlug: "met-museum", accessionNumber: "MET-2024-003", locationName: "Gallery 815" },
-        { orgSlug: "met-museum", accessionNumber: "MET-2024-004", locationName: "European Paintings Wing" },
-        
+        {
+          orgSlug: "met-museum",
+          accessionNumber: "MET-2024-001",
+          locationName: "Gallery 815",
+        },
+        {
+          orgSlug: "met-museum",
+          accessionNumber: "MET-2024-002",
+          locationName: "Storage Vault A",
+        },
+        {
+          orgSlug: "met-museum",
+          accessionNumber: "MET-2024-003",
+          locationName: "Gallery 815",
+        },
+        {
+          orgSlug: "met-museum",
+          accessionNumber: "MET-2024-004",
+          locationName: "European Paintings Wing",
+        },
+
         // British Museum
-        { orgSlug: "british-museum", accessionNumber: "BM-2024-001", locationName: "Room 4" },
-        { orgSlug: "british-museum", accessionNumber: "BM-2024-002", locationName: "Great Court" },
-        { orgSlug: "british-museum", accessionNumber: "BM-2024-003", locationName: "Conservation Lab" },
-        { orgSlug: "british-museum", accessionNumber: "BM-2024-004", locationName: "Egyptian Gallery" },
-        
+        {
+          orgSlug: "british-museum",
+          accessionNumber: "BM-2024-001",
+          locationName: "Room 4",
+        },
+        {
+          orgSlug: "british-museum",
+          accessionNumber: "BM-2024-002",
+          locationName: "Great Court",
+        },
+        {
+          orgSlug: "british-museum",
+          accessionNumber: "BM-2024-003",
+          locationName: "Conservation Lab",
+        },
+        {
+          orgSlug: "british-museum",
+          accessionNumber: "BM-2024-004",
+          locationName: "Egyptian Gallery",
+        },
+
         // Library of Congress
-        { orgSlug: "library-of-congress", accessionNumber: "LOC-2024-001", locationName: "Rare Book Room" },
-        { orgSlug: "library-of-congress", accessionNumber: "LOC-2024-002", locationName: "Vault 1" },
-        { orgSlug: "library-of-congress", accessionNumber: "LOC-2024-003", locationName: "Rare Book Room" },
-        { orgSlug: "library-of-congress", accessionNumber: "LOC-2024-004", locationName: "Exhibition Hall" },
-        
+        {
+          orgSlug: "library-of-congress",
+          accessionNumber: "LOC-2024-001",
+          locationName: "Rare Book Room",
+        },
+        {
+          orgSlug: "library-of-congress",
+          accessionNumber: "LOC-2024-002",
+          locationName: "Vault 1",
+        },
+        {
+          orgSlug: "library-of-congress",
+          accessionNumber: "LOC-2024-003",
+          locationName: "Rare Book Room",
+        },
+        {
+          orgSlug: "library-of-congress",
+          accessionNumber: "LOC-2024-004",
+          locationName: "Exhibition Hall",
+        },
+
         // The Getty Museum
-        { orgSlug: "getty-museum", accessionNumber: "GETTY-2024-001", locationName: "Gallery 204" },
-        { orgSlug: "getty-museum", accessionNumber: "GETTY-2024-002", locationName: "Storage Facility" },
-        { orgSlug: "getty-museum", accessionNumber: "GETTY-2024-003", locationName: "Paintings Gallery" },
-        { orgSlug: "getty-museum", accessionNumber: "GETTY-2024-004", locationName: "Gallery 204" },
-        
+        {
+          orgSlug: "getty-museum",
+          accessionNumber: "GETTY-2024-001",
+          locationName: "Gallery 204",
+        },
+        {
+          orgSlug: "getty-museum",
+          accessionNumber: "GETTY-2024-002",
+          locationName: "Storage Facility",
+        },
+        {
+          orgSlug: "getty-museum",
+          accessionNumber: "GETTY-2024-003",
+          locationName: "Paintings Gallery",
+        },
+        {
+          orgSlug: "getty-museum",
+          accessionNumber: "GETTY-2024-004",
+          locationName: "Gallery 204",
+        },
+
         // Private Collection - Smith Estate
-        { orgSlug: "smith-collection", accessionNumber: "SMITH-2024-001", locationName: "Living Room" },
-        { orgSlug: "smith-collection", accessionNumber: "SMITH-2024-002", locationName: "Study" },
-        { orgSlug: "smith-collection", accessionNumber: "SMITH-2024-003", locationName: "Living Room" },
-        { orgSlug: "smith-collection", accessionNumber: "SMITH-2024-004", locationName: "Climate-Controlled Storage" },
-        { orgSlug: "smith-collection", accessionNumber: "SMITH-2024-005", locationName: "Living Room" },
+        {
+          orgSlug: "smith-collection",
+          accessionNumber: "SMITH-2024-001",
+          locationName: "Living Room",
+        },
+        {
+          orgSlug: "smith-collection",
+          accessionNumber: "SMITH-2024-002",
+          locationName: "Study",
+        },
+        {
+          orgSlug: "smith-collection",
+          accessionNumber: "SMITH-2024-003",
+          locationName: "Living Room",
+        },
+        {
+          orgSlug: "smith-collection",
+          accessionNumber: "SMITH-2024-004",
+          locationName: "Climate-Controlled Storage",
+        },
+        {
+          orgSlug: "smith-collection",
+          accessionNumber: "SMITH-2024-005",
+          locationName: "Living Room",
+        },
       ],
       locationIds,
     });
@@ -781,7 +920,9 @@ export const checkCollectionExists = internalQuery({
     const collection = await ctx.db
       .query("collections")
       .withIndex("by_organization_and_accessionNumber", (q) =>
-        q.eq("organizationId", args.organizationId).eq("accessionNumber", args.accessionNumber),
+        q
+          .eq("organizationId", args.organizationId)
+          .eq("accessionNumber", args.accessionNumber),
       )
       .first();
     return !!collection;
@@ -1018,13 +1159,17 @@ export const assignCollectionsToLocations = internalMutation({
       const collection = await ctx.db
         .query("collections")
         .withIndex("by_organization_and_accessionNumber", (q) =>
-          q.eq("organizationId", org._id).eq("accessionNumber", item.accessionNumber),
+          q
+            .eq("organizationId", org._id)
+            .eq("accessionNumber", item.accessionNumber),
         )
         .first();
 
       if (!collection) continue;
 
-      const locationId = (args.locationIds as any)[item.orgSlug]?.[item.locationName];
+      const locationId = (args.locationIds as any)[item.orgSlug]?.[
+        item.locationName
+      ];
       if (!locationId) continue;
 
       await ctx.db.patch(collection._id, {
@@ -1071,19 +1216,25 @@ export const createAccessions = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     for (const accData of args.accessions) {
-      const orgId = (args.orgSlugToId as any)[accData.orgSlug] as Id<"organizations"> | undefined;
+      const orgId = (args.orgSlugToId as any)[accData.orgSlug] as
+        | Id<"organizations">
+        | undefined;
       if (!orgId) continue;
 
       const collection = await ctx.db
         .query("collections")
         .withIndex("by_organization_and_accessionNumber", (q) =>
-          q.eq("organizationId", orgId).eq("accessionNumber", accData.collectionAccessionNumber),
+          q
+            .eq("organizationId", orgId)
+            .eq("accessionNumber", accData.collectionAccessionNumber),
         )
         .first();
 
       if (!collection) continue;
 
-      const userId = (args.userIds as any)[accData.orgSlug] as Id<"users"> | undefined;
+      const userId = (args.userIds as any)[accData.orgSlug] as
+        | Id<"users">
+        | undefined;
       if (!userId) continue;
 
       const org = await ctx.db.get(orgId);
@@ -1138,13 +1289,17 @@ export const createLoans = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     for (const loanData of args.loans) {
-      const orgId = (args.orgSlugToId as any)[loanData.orgSlug] as Id<"organizations"> | undefined;
+      const orgId = (args.orgSlugToId as any)[loanData.orgSlug] as
+        | Id<"organizations">
+        | undefined;
       if (!orgId) continue;
 
       const org = await ctx.db.get(orgId);
       if (!org) continue;
 
-      const userId = (args.userIds as any)[loanData.orgSlug] as Id<"users"> | undefined;
+      const userId = (args.userIds as any)[loanData.orgSlug] as
+        | Id<"users">
+        | undefined;
       if (!userId) continue;
 
       const year = new Date(loanData.startDate).getFullYear();
@@ -1224,19 +1379,25 @@ export const createDeaccessions = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     for (const deaccData of args.deaccessions) {
-      const orgId = (args.orgSlugToId as any)[deaccData.orgSlug] as Id<"organizations"> | undefined;
+      const orgId = (args.orgSlugToId as any)[deaccData.orgSlug] as
+        | Id<"organizations">
+        | undefined;
       if (!orgId) continue;
 
       const collection = await ctx.db
         .query("collections")
         .withIndex("by_organization_and_accessionNumber", (q) =>
-          q.eq("organizationId", orgId).eq("accessionNumber", deaccData.collectionAccessionNumber),
+          q
+            .eq("organizationId", orgId)
+            .eq("accessionNumber", deaccData.collectionAccessionNumber),
         )
         .first();
 
       if (!collection) continue;
 
-      const userId = (args.userIds as any)[deaccData.orgSlug] as Id<"users"> | undefined;
+      const userId = (args.userIds as any)[deaccData.orgSlug] as
+        | Id<"users">
+        | undefined;
       if (!userId) continue;
 
       const org = await ctx.db.get(orgId);
@@ -1244,13 +1405,13 @@ export const createDeaccessions = internalMutation({
 
       const year = new Date(deaccData.dateDeaccessioned).getFullYear();
       const orgSlug = org.slug.toUpperCase().substring(0, 3);
-      
+
       // Count existing deaccessions for this org to generate unique number
       const existing = await ctx.db
         .query("deaccessions")
         .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
         .collect();
-      
+
       const sequence = String(existing.length + 1).padStart(3, "0");
       const deaccessionNumber = `DA-${orgSlug}-${year}-${sequence}`;
 
@@ -1265,14 +1426,17 @@ export const createDeaccessions = internalMutation({
         status: deaccData.status,
         approvedBy: deaccData.status === "approved" ? userId : undefined,
         approvedAt: deaccData.status === "approved" ? Date.now() : undefined,
-        workflowHistory: deaccData.status === "approved" ? [
-          {
-            step: 1,
-            approvedBy: userId,
-            approvedAt: Date.now(),
-            comment: "Auto-approved in seed data",
-          },
-        ] : [],
+        workflowHistory:
+          deaccData.status === "approved"
+            ? [
+                {
+                  step: 1,
+                  approvedBy: userId,
+                  approvedAt: Date.now(),
+                  comment: "Auto-approved in seed data",
+                },
+              ]
+            : [],
       });
 
       // If approved, mark collection as deaccessioned
@@ -1300,11 +1464,14 @@ export const createAuditLogs = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const userIdsMap = args.userIds as Record<string, Id<"users">>;
-    const orgSlugToIdMap = args.orgSlugToId as Record<string, Id<"organizations">>;
+    const orgSlugToIdMap = args.orgSlugToId as Record<
+      string,
+      Id<"organizations">
+    >;
 
     // Get some collections and loans to create audit entries for
     const organizations = await ctx.db.query("organizations").collect();
-    
+
     for (const org of organizations) {
       const userId = userIdsMap[org.slug];
       if (!userId) continue;
@@ -1431,7 +1598,10 @@ export const createNotifications = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const userIdsMap = args.userIds as Record<string, Id<"users">>;
-    const orgSlugToIdMap = args.orgSlugToId as Record<string, Id<"organizations">>;
+    const orgSlugToIdMap = args.orgSlugToId as Record<
+      string,
+      Id<"organizations">
+    >;
 
     // Get some loans, accessions, and deaccessions to create notifications for
     const organizations = await ctx.db.query("organizations").collect();
@@ -1547,13 +1717,20 @@ export const createConditionReports = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const userIdsMap = args.userIds as Record<string, Id<"users">>;
-    const orgSlugToIdMap = args.orgSlugToId as Record<string, Id<"organizations">>;
+    const orgSlugToIdMap = args.orgSlugToId as Record<
+      string,
+      Id<"organizations">
+    >;
 
     // Get active loans with items - need to query by organization first
     const organizations = await ctx.db.query("organizations").collect();
-    
-    const loans: Array<{ _id: Id<"loans">; organizationId: Id<"organizations">; startDate: number }> = [];
-    
+
+    const loans: Array<{
+      _id: Id<"loans">;
+      organizationId: Id<"organizations">;
+      startDate: number;
+    }> = [];
+
     for (const org of organizations) {
       const orgLoans = await ctx.db
         .query("loans")
@@ -1590,7 +1767,8 @@ export const createConditionReports = internalMutation({
         await ctx.db.insert("conditionReports", {
           loanItemId: loanItem._id,
           reportType: "out",
-          conditionDescription: "Object in excellent condition. No visible damage or wear. All components intact.",
+          conditionDescription:
+            "Object in excellent condition. No visible damage or wear. All components intact.",
           damages: [
             {
               type: "None",
@@ -1608,7 +1786,8 @@ export const createConditionReports = internalMutation({
           await ctx.db.insert("conditionReports", {
             loanItemId: loanItem._id,
             reportType: "in",
-            conditionDescription: "Object returned in same condition as when loaned. No changes observed.",
+            conditionDescription:
+              "Object returned in same condition as when loaned. No changes observed.",
             assessedBy: userId,
             assessedAt: loan.startDate + 20 * 24 * 60 * 60 * 1000, // 20 days after start
           });
@@ -1619,4 +1798,3 @@ export const createConditionReports = internalMutation({
     return null;
   },
 });
-

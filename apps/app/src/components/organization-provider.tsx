@@ -3,7 +3,14 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
-import { createContext, useContext, useMemo, useState, useEffect, type ReactNode } from "react";
+import {
+  type ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 interface OrganizationContextType {
   currentOrganizationId: Id<"organizations"> | null;
@@ -42,9 +49,8 @@ const OrganizationContext = createContext<OrganizationContextType | undefined>(
 
 export function OrganizationProvider({ children }: { children: ReactNode }) {
   const organizations = useQuery(api.organizations.listUserOrganizations);
-  const [currentOrganizationId, setCurrentOrganizationId] = useState<
-    Id<"organizations"> | null
-  >(null);
+  const [currentOrganizationId, setCurrentOrganizationId] =
+    useState<Id<"organizations"> | null>(null);
 
   // Set first organization as default if none selected
   useEffect(() => {
@@ -90,4 +96,3 @@ export function useOrganization() {
   }
   return context;
 }
-

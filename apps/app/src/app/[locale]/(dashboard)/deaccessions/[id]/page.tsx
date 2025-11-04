@@ -1,19 +1,19 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
 import { useQuery } from "convex/react";
 import {
   ArrowLeft,
-  Edit,
   CheckCircle,
-  XCircle,
   Clock,
+  Edit,
   ExternalLink,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -26,7 +26,9 @@ export default function DeaccessionDetailPage() {
 
   const deaccession = useQuery(
     api.deaccessions.get,
-    deaccessionId ? { deaccessionId: deaccessionId as Id<"deaccessions"> } : "skip",
+    deaccessionId
+      ? { deaccessionId: deaccessionId as Id<"deaccessions"> }
+      : "skip",
   );
 
   if (!currentOrganizationId) {
@@ -251,4 +253,3 @@ export default function DeaccessionDetailPage() {
     </>
   );
 }
-

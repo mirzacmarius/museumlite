@@ -1,24 +1,24 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
+import { Input } from "@v1/ui/input";
 import { useQuery } from "convex/react";
 import {
-  Plus,
   Building2,
-  FileCheck,
-  Clock,
   CheckCircle,
-  XCircle,
+  Clock,
+  FileCheck,
+  Plus,
   Search,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { Input } from "@v1/ui/input";
 
 type AccessionStatus = "pending" | "approved" | "rejected" | "all";
 
@@ -38,10 +38,7 @@ export default function AccessionsPage() {
   if (!organizations || organizations.length === 0) {
     return (
       <>
-        <Header
-          title="Accessions"
-          description="Manage accession workflows"
-        />
+        <Header title="Accessions" description="Manage accession workflows" />
         <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
           <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8 dark:bg-black">
             <Building2 className="h-12 w-12 text-muted-foreground" />
@@ -66,10 +63,7 @@ export default function AccessionsPage() {
   if (!currentOrganizationId) {
     return (
       <>
-        <Header
-          title="Accessions"
-          description="Manage accession workflows"
-        />
+        <Header title="Accessions" description="Manage accession workflows" />
         <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
           <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8 dark:bg-black">
             <FileCheck className="h-12 w-12 text-muted-foreground" />
@@ -316,4 +310,3 @@ function AccessionList({
     </div>
   );
 }
-

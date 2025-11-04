@@ -1,12 +1,12 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
-import { ChevronRight, ChevronDown, MapPin, Folder } from "lucide-react";
+import { ChevronDown, ChevronRight, Folder, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
 interface LocationTreeProps {
   organizationId: string;
@@ -29,7 +29,10 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
   const locations = useQuery(
     api.locations.list,
     organizationId
-      ? { organizationId: organizationId as Id<"organizations">, parentLocationId: "root" }
+      ? {
+          organizationId: organizationId as Id<"organizations">,
+          parentLocationId: "root",
+        }
       : "skip",
   );
 
@@ -145,4 +148,3 @@ function LocationTreeNode({
     </div>
   );
 }
-

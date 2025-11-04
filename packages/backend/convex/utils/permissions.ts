@@ -33,7 +33,10 @@ export async function getUserRole(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
 ) {
-  const userOrganization = await getCurrentUserOrganization(ctx, organizationId);
+  const userOrganization = await getCurrentUserOrganization(
+    ctx,
+    organizationId,
+  );
   if (!userOrganization) {
     return null;
   }
@@ -151,9 +154,7 @@ export async function canInitiateWorkflow(
   // Get workflow config
   const workflowConfig = await ctx.db
     .query("workflowConfigs")
-    .withIndex("by_organization", (q) =>
-      q.eq("organizationId", organizationId),
-    )
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
     .filter((q) => q.eq(q.field("workflowType"), workflowType))
     .first();
 
@@ -191,9 +192,7 @@ export async function canApproveAtStep(
   // Get workflow config
   const workflowConfig = await ctx.db
     .query("workflowConfigs")
-    .withIndex("by_organization", (q) =>
-      q.eq("organizationId", organizationId),
-    )
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
     .filter((q) => q.eq(q.field("workflowType"), workflowType))
     .first();
 
@@ -209,9 +208,7 @@ export async function canApproveAtStep(
   }
 
   // Find the step
-  const step = workflowConfig.steps.find(
-    (s) => s.stepNumber === stepNumber,
-  );
+  const step = workflowConfig.steps.find((s) => s.stepNumber === stepNumber);
 
   if (!step) {
     return false;
@@ -234,9 +231,7 @@ export async function getUsersToNotifyForWorkflowStep(
   // Get workflow config
   const workflowConfig = await ctx.db
     .query("workflowConfigs")
-    .withIndex("by_organization", (q) =>
-      q.eq("organizationId", organizationId),
-    )
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
     .filter((q) => q.eq(q.field("workflowType"), workflowType))
     .first();
 
@@ -282,9 +277,7 @@ export async function getUsersToNotifyForWorkflowStep(
   }
 
   // Find the step
-  const step = workflowConfig.steps.find(
-    (s) => s.stepNumber === stepNumber,
-  );
+  const step = workflowConfig.steps.find((s) => s.stepNumber === stepNumber);
 
   if (!step) {
     return [];
@@ -293,9 +286,7 @@ export async function getUsersToNotifyForWorkflowStep(
   // Get all users with the required role
   const userOrgs = await ctx.db
     .query("userOrganizations")
-    .withIndex("by_organization", (q) =>
-      q.eq("organizationId", organizationId),
-    )
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
     .collect();
 
   const userIds: Id<"users">[] = [];
@@ -307,4 +298,3 @@ export async function getUsersToNotifyForWorkflowStep(
 
   return userIds;
 }
-

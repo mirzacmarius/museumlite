@@ -1,11 +1,12 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
-import { Textarea } from "@v1/ui/textarea";
 import { Label } from "@v1/ui/label";
 import {
   Select,
@@ -14,13 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
+import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function EditAccessionPage() {
   const params = useParams();
@@ -38,7 +38,14 @@ export default function EditAccessionPage() {
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     source: "",
-    method: "purchase" as "purchase" | "gift" | "loan" | "transfer" | "donation" | "other" | "bequest",
+    method: "purchase" as
+      | "purchase"
+      | "gift"
+      | "loan"
+      | "transfer"
+      | "donation"
+      | "other"
+      | "bequest",
     cost: "",
     notes: "",
   });
@@ -172,7 +179,9 @@ export default function EditAccessionPage() {
                 <div className="space-y-2">
                   <Label>Date Received</Label>
                   <Input
-                    value={new Date(accession.dateReceived).toLocaleDateString()}
+                    value={new Date(
+                      accession.dateReceived,
+                    ).toLocaleDateString()}
                     disabled
                     className="bg-muted"
                   />
@@ -182,9 +191,7 @@ export default function EditAccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="source">
-                    Source *
-                  </Label>
+                  <Label htmlFor="source">Source *</Label>
                   <Input
                     id="source"
                     value={formData.source}
@@ -197,14 +204,19 @@ export default function EditAccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="method">
-                    Method *
-                  </Label>
+                  <Label htmlFor="method">Method *</Label>
                   <Select
                     value={formData.method}
-                    onValueChange={(value: "purchase" | "gift" | "loan" | "transfer" | "donation" | "other" | "bequest") =>
-                      setFormData({ ...formData, method: value })
-                    }
+                    onValueChange={(
+                      value:
+                        | "purchase"
+                        | "gift"
+                        | "loan"
+                        | "transfer"
+                        | "donation"
+                        | "other"
+                        | "bequest",
+                    ) => setFormData({ ...formData, method: value })}
                   >
                     <SelectTrigger id="method">
                       <SelectValue />
@@ -222,9 +234,7 @@ export default function EditAccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="cost">
-                    Cost
-                  </Label>
+                  <Label htmlFor="cost">Cost</Label>
                   <Input
                     id="cost"
                     type="number"
@@ -238,9 +248,7 @@ export default function EditAccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="notes">
-                    Notes
-                  </Label>
+                  <Label htmlFor="notes">Notes</Label>
                   <Textarea
                     id="notes"
                     value={formData.notes}
@@ -275,4 +283,3 @@ export default function EditAccessionPage() {
     </>
   );
 }
-

@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
-import { useQuery } from "convex/react";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
   Select,
   SelectContent,
@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { useQuery } from "convex/react";
 
 interface LocationSelectorProps {
   organizationId: string;
@@ -93,4 +93,3 @@ export function LocationSelector({
     </Select>
   );
 }
-

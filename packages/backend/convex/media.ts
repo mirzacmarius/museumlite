@@ -154,13 +154,9 @@ export const create = mutation({
           args.fileSize < MAX_SMALL_FILE_SIZE &&
           fileCategory === "image"
         ) {
-          await ctx.scheduler.runAfter(
-            0,
-            internal.media.generateThumbnail,
-            {
-              mediaId: existing._id,
-            },
-          );
+          await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
+            mediaId: existing._id,
+          });
         }
 
         return existing._id;
@@ -236,15 +232,13 @@ export const list = query({
       throw new Error("Collection not found");
     }
 
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "media.read",
-    );
+    await requirePermission(ctx, collection.organizationId, "media.read");
 
     const mediaFiles = await ctx.db
       .query("mediaFiles")
-      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", args.collectionId),
+      )
       .collect();
 
     const mediaWithUrls = await Promise.all(
@@ -322,7 +316,11 @@ export const update = mutation({
       updates.isPrimary = args.isPrimary;
 
       // If setting as primary and it's an image <50MB, generate thumbnail
-      if (args.isPrimary && media.fileType === "image" && media.fileSize < MAX_SMALL_FILE_SIZE) {
+      if (
+        args.isPrimary &&
+        media.fileType === "image" &&
+        media.fileSize < MAX_SMALL_FILE_SIZE
+      ) {
         await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
           mediaId: args.mediaId,
         });
@@ -395,7 +393,9 @@ export const setPrimary = mutation({
     // Unset other primary images for this collection
     const otherMedia = await ctx.db
       .query("mediaFiles")
-      .withIndex("by_collection", (q) => q.eq("collectionId", media.collectionId))
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", media.collectionId),
+      )
       .filter((q) => q.eq(q.field("isPrimary"), true))
       .collect();
 
@@ -463,7 +463,9 @@ export const getPrimaryImageUrl = query({
     // Find primary image for this collection
     const primaryMedia = await ctx.db
       .query("mediaFiles")
-      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", args.collectionId),
+      )
       .filter((q) => q.eq(q.field("isPrimary"), true))
       .first();
 
@@ -544,7 +546,6 @@ export const checkFileType = query({
   },
 });
 
-
 /**
  * Internal: Generate thumbnail for primary images
  * Schedules the thumbnail processing action and updates the media record
@@ -596,4 +597,3 @@ export const generateThumbnail = internalMutation({
     return null;
   },
 });
-

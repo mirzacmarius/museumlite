@@ -1,32 +1,30 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
+import { Input } from "@v1/ui/input";
 import { useQuery } from "convex/react";
 import {
-  Plus,
   Building2,
-  FileX,
-  Clock,
   CheckCircle,
-  XCircle,
+  Clock,
+  FileX,
+  Plus,
   Search,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { Input } from "@v1/ui/input";
 
 type DeaccessionStatus = "pending" | "approved" | "rejected" | "all";
 
 export default function DeaccessionsPage() {
-  const { currentOrganizationId, organizations, isLoading } =
-    useOrganization();
-  const [statusFilter, setStatusFilter] =
-    useState<DeaccessionStatus>("all");
+  const { currentOrganizationId, organizations, isLoading } = useOrganization();
+  const [statusFilter, setStatusFilter] = useState<DeaccessionStatus>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   if (isLoading) {
@@ -91,10 +89,7 @@ export default function DeaccessionsPage() {
 
   return (
     <>
-      <Header
-        title="Deaccessions"
-        description="Manage deaccession workflows"
-      />
+      <Header title="Deaccessions" description="Manage deaccession workflows" />
       <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
         <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
           <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
@@ -327,4 +322,3 @@ function DeaccessionList({
     </div>
   );
 }
-

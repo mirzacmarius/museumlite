@@ -1,33 +1,32 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
+import { Input } from "@v1/ui/input";
 import { useQuery } from "convex/react";
 import {
-  Plus,
-  Building2,
-  Handshake,
-  Clock,
-  CheckCircle,
-  XCircle,
-  ArrowUpRight,
   ArrowDownRight,
+  ArrowUpRight,
+  Building2,
+  CheckCircle,
+  Clock,
+  Handshake,
+  Plus,
   Search,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { Input } from "@v1/ui/input";
 
 type LoanStatus = "pending" | "active" | "returned" | "cancelled" | "all";
 type LoanType = "incoming" | "outgoing" | "all";
 
 export default function LoansPage() {
-  const { currentOrganizationId, organizations, isLoading } =
-    useOrganization();
+  const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const [statusFilter, setStatusFilter] = useState<LoanStatus>("all");
   const [typeFilter, setTypeFilter] = useState<LoanType>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -361,8 +360,7 @@ function LoanList({
                     )}`}
                   >
                     {getStatusIcon(loan.status)}
-                    {loan.status.charAt(0).toUpperCase() +
-                      loan.status.slice(1)}
+                    {loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}
                   </span>
                   <span className="rounded-full bg-muted px-2 py-1 text-xs font-medium">
                     {loan.type === "incoming" ? "Incoming" : "Outgoing"}
@@ -387,4 +385,3 @@ function LoanList({
     </div>
   );
 }
-

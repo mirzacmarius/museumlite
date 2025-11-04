@@ -79,4 +79,3 @@ export function useUserPermissions(organizationId: string | null): string[] {
 
   return permissions ?? [];
 }
-

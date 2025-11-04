@@ -1,6 +1,7 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { useOrganization } from "@/components/organization-provider";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -12,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { useOrganization } from "@/components/organization-provider";
 import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -36,7 +36,12 @@ export default function NewOrganizationPage() {
 
     try {
       // Auto-generate slug from name if not provided
-      const slug = formData.slug || formData.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+      const slug =
+        formData.slug ||
+        formData.name
+          .toLowerCase()
+          .replace(/\s+/g, "-")
+          .replace(/[^a-z0-9-]/g, "");
 
       const organizationId = await createOrganization({
         name: formData.name,
@@ -46,11 +51,13 @@ export default function NewOrganizationPage() {
 
       // Set as current organization
       setCurrentOrganizationId(organizationId as Id<"organizations">);
-      
+
       // Redirect to dashboard
       router.push("/collections");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create organization");
+      setError(
+        err instanceof Error ? err.message : "Failed to create organization",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -81,28 +88,38 @@ export default function NewOrganizationPage() {
             <form onSubmit={handleSubmit} className="p-6">
               <div className="space-y-6">
                 <div>
-                  <label htmlFor="name" className="mb-2 block text-sm font-medium">
+                  <label
+                    htmlFor="name"
+                    className="mb-2 block text-sm font-medium"
+                  >
                     Organization Name *
                   </label>
                   <Input
                     id="name"
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     placeholder="e.g., Metropolitan Museum of Art"
                     required
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="slug" className="mb-2 block text-sm font-medium">
+                  <label
+                    htmlFor="slug"
+                    className="mb-2 block text-sm font-medium"
+                  >
                     Slug (URL-friendly identifier)
                   </label>
                   <Input
                     id="slug"
                     type="text"
                     value={formData.slug}
-                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, slug: e.target.value })
+                    }
                     placeholder="Auto-generated from name"
                   />
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -111,13 +128,19 @@ export default function NewOrganizationPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="type" className="mb-2 block text-sm font-medium">
+                  <label
+                    htmlFor="type"
+                    className="mb-2 block text-sm font-medium"
+                  >
                     Organization Type *
                   </label>
                   <Select
                     value={formData.type}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, type: value as typeof formData.type })
+                      setFormData({
+                        ...formData,
+                        type: value as typeof formData.type,
+                      })
                     }
                   >
                     <SelectTrigger id="type">
@@ -139,7 +162,10 @@ export default function NewOrganizationPage() {
                 )}
 
                 <div className="flex gap-4">
-                  <Button type="submit" disabled={isSubmitting || !formData.name}>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting || !formData.name}
+                  >
                     {isSubmitting ? "Creating..." : "Create Organization"}
                   </Button>
                   <Button
@@ -158,4 +184,3 @@ export default function NewOrganizationPage() {
     </>
   );
 }
-

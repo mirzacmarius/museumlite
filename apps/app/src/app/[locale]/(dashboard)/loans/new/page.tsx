@@ -1,13 +1,14 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { Input } from "@v1/ui/input";
-import { Textarea } from "@v1/ui/textarea";
-import { Label } from "@v1/ui/label";
 import { DatePicker } from "@v1/ui/date-picker";
+import { Input } from "@v1/ui/input";
+import { Label } from "@v1/ui/label";
 import {
   Select,
   SelectContent,
@@ -15,13 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
+import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Save, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 
 export default function NewLoanPage() {
   const router = useRouter();
@@ -88,12 +88,9 @@ export default function NewLoanPage() {
         loanNumber: formData.loanNumber || undefined,
         type: formData.type,
         lenderBorrowerName: formData.lenderBorrowerName,
-        lenderBorrowerContact:
-          formData.lenderBorrowerContact || undefined,
+        lenderBorrowerContact: formData.lenderBorrowerContact || undefined,
         startDate: formData.startDate.getTime(),
-        endDate: formData.endDate
-          ? formData.endDate.getTime()
-          : undefined,
+        endDate: formData.endDate ? formData.endDate.getTime() : undefined,
         terms: formData.terms || undefined,
         insuranceValue: formData.insuranceValue
           ? Number.parseFloat(formData.insuranceValue)
@@ -140,9 +137,7 @@ export default function NewLoanPage() {
               )}
               <div className="mx-auto max-w-2xl space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="loanNumber">
-                    Loan Number
-                  </Label>
+                  <Label htmlFor="loanNumber">Loan Number</Label>
                   <Input
                     id="loanNumber"
                     value={formData.loanNumber}
@@ -161,9 +156,7 @@ export default function NewLoanPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="type">
-                      Type *
-                    </Label>
+                    <Label htmlFor="type">Type *</Label>
                     <Select
                       value={formData.type}
                       onValueChange={(value: "incoming" | "outgoing") =>
@@ -181,9 +174,7 @@ export default function NewLoanPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="startDate">
-                      Start Date *
-                    </Label>
+                    <Label htmlFor="startDate">Start Date *</Label>
                     <DatePicker
                       id="startDate"
                       date={formData.startDate}
@@ -234,9 +225,7 @@ export default function NewLoanPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="endDate">
-                    End Date
-                  </Label>
+                  <Label htmlFor="endDate">End Date</Label>
                   <DatePicker
                     id="endDate"
                     date={formData.endDate}
@@ -248,9 +237,7 @@ export default function NewLoanPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="insuranceValue">
-                    Insurance Value
-                  </Label>
+                  <Label htmlFor="insuranceValue">Insurance Value</Label>
                   <Input
                     id="insuranceValue"
                     type="number"
@@ -267,9 +254,7 @@ export default function NewLoanPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="terms">
-                    Terms
-                  </Label>
+                  <Label htmlFor="terms">Terms</Label>
                   <Textarea
                     id="terms"
                     value={formData.terms}
@@ -282,9 +267,7 @@ export default function NewLoanPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="notes">
-                    Notes
-                  </Label>
+                  <Label htmlFor="notes">Notes</Label>
                   <Textarea
                     id="notes"
                     value={formData.notes}
@@ -311,7 +294,9 @@ export default function NewLoanPage() {
                       <Input
                         placeholder="Search by accession number or title..."
                         value={collectionSearchQuery}
-                        onChange={(e) => setCollectionSearchQuery(e.target.value)}
+                        onChange={(e) =>
+                          setCollectionSearchQuery(e.target.value)
+                        }
                         className="pl-9"
                       />
                     </div>
@@ -364,9 +349,7 @@ export default function NewLoanPage() {
                                     {collection.title}
                                   </span>
                                 </div>
-                                {isSelected && (
-                                  <X className="h-4 w-4" />
-                                )}
+                                {isSelected && <X className="h-4 w-4" />}
                               </div>
                             </button>
                           );
@@ -422,7 +405,10 @@ export default function NewLoanPage() {
                         id="conditionOut"
                         value={formData.conditionOut}
                         onChange={(e) =>
-                          setFormData({ ...formData, conditionOut: e.target.value })
+                          setFormData({
+                            ...formData,
+                            conditionOut: e.target.value,
+                          })
                         }
                         placeholder="Condition when leaving"
                       />
@@ -456,4 +442,3 @@ export default function NewLoanPage() {
     </>
   );
 }
-

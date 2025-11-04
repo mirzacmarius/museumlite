@@ -4,7 +4,10 @@ import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { requirePermission } from "./utils/permissions";
-import { accessionParser, AccessionNumberParser } from "./utils/accessionNumberParser";
+import {
+  accessionParser,
+  AccessionNumberParser,
+} from "./utils/accessionNumberParser";
 import { getNextCounterPreview } from "./utils/accessionCounter";
 
 /**
@@ -122,11 +125,7 @@ export const get = query({
         }),
       ),
       subscriptionTier: v.optional(
-        v.union(
-          v.literal("free"),
-          v.literal("pro"),
-          v.literal("enterprise"),
-        ),
+        v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
       ),
       _creationTime: v.number(),
     }),
@@ -173,11 +172,7 @@ export const getBySlug = query({
         }),
       ),
       subscriptionTier: v.optional(
-        v.union(
-          v.literal("free"),
-          v.literal("pro"),
-          v.literal("enterprise"),
-        ),
+        v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
       ),
       _creationTime: v.number(),
     }),
@@ -216,11 +211,7 @@ export const update = mutation({
       }),
     ),
     subscriptionTier: v.optional(
-      v.union(
-        v.literal("free"),
-        v.literal("pro"),
-        v.literal("enterprise"),
-      ),
+      v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
     ),
   },
   returns: v.null(),
@@ -231,7 +222,11 @@ export const update = mutation({
     }
 
     // Check permission
-    await requirePermission(ctx, args.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     const updates: {
       name?: string;
@@ -314,7 +309,11 @@ export const updateWorkflowConfig = mutation({
     }
 
     // Check permission
-    await requirePermission(ctx, args.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     // Check if workflow config exists
     const existing = await ctx.db
@@ -360,7 +359,11 @@ export const updateAccessionNumberFormat = mutation({
     }
 
     // Check permission
-    await requirePermission(ctx, args.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     const org = await ctx.db.get(args.organizationId);
     if (!org) {
@@ -630,9 +633,7 @@ export const listOrganizationUsers = query({
       }),
     );
 
-    return usersWithRoles.filter(
-      (u): u is NonNullable<typeof u> => u !== null,
-    );
+    return usersWithRoles.filter((u): u is NonNullable<typeof u> => u !== null);
   },
 });
 
@@ -663,7 +664,8 @@ export const createDefaultRoles = internalMutation({
     const registrarRole = await ctx.db.insert("roles", {
       organizationId: args.organizationId,
       name: "registrar",
-      description: "Accession/deaccession workflows, location management, loans",
+      description:
+        "Accession/deaccession workflows, location management, loans",
       isSystemRole: true,
     });
 
@@ -720,9 +722,7 @@ export const createDefaultRoles = internalMutation({
       const [category, name] = permName.split(".");
       const existing = await ctx.db
         .query("permissions")
-        .withIndex("by_category", (q) =>
-          q.eq("category", category as any),
-        )
+        .withIndex("by_category", (q) => q.eq("category", category as any))
         .filter((q) => q.eq(q.field("name"), permName))
         .first();
 
@@ -889,7 +889,8 @@ export const getAccessionNumberPreview = query({
     }
 
     const now = new Date();
-    const counterScope = org.settings?.accessionCounterScope || 
+    const counterScope =
+      org.settings?.accessionCounterScope ||
       accessionParser.getCounterScopeFromTemplate(template);
     const scopeKey = accessionParser.getScopeKey(counterScope, now);
 
@@ -933,4 +934,3 @@ export const getAccessionTemplatePresets = query({
     return AccessionNumberParser.getPresets();
   },
 });
-

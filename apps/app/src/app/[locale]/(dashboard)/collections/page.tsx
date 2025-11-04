@@ -1,7 +1,10 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
@@ -12,14 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { Plus, Building2, MapPin, Search, Filter, X } from "lucide-react";
+import { Building2, Filter, MapPin, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
-import { useState, useMemo, useEffect, useRef } from "react";
-import { Id } from "@v1/backend/convex/_generated/dataModel";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function CollectionsPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
@@ -45,7 +45,8 @@ export default function CollectionsPage() {
             <div className="text-center">
               <h3 className="text-lg font-semibold">No Organization Found</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                You need to create an organization to start managing collections.
+                You need to create an organization to start managing
+                collections.
               </p>
             </div>
             <Button asChild>
@@ -73,7 +74,8 @@ export default function CollectionsPage() {
             <div className="text-center">
               <h3 className="text-lg font-semibold">Select an Organization</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Please select an organization from the dropdown above to view collections.
+                Please select an organization from the dropdown above to view
+                collections.
               </p>
             </div>
           </div>
@@ -365,7 +367,6 @@ function CollectionList({
   onLoadMore: () => void;
   onReset: () => void;
 }) {
-
   if (collections === undefined) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -410,14 +411,17 @@ function CollectionList({
       )}
       {collections.page.length > 0 && (
         <div className="mt-4 text-center text-sm text-muted-foreground">
-          Showing {collections.page.length} {collections.isDone ? "items" : "items (more available)"}
+          Showing {collections.page.length}{" "}
+          {collections.isDone ? "items" : "items (more available)"}
         </div>
       )}
     </div>
   );
 }
 
-type CollectionListItem = FunctionReturnType<typeof api.collections.list>["page"][number];
+type CollectionListItem = FunctionReturnType<
+  typeof api.collections.list
+>["page"][number];
 
 function CollectionListItem({
   item,
@@ -433,10 +437,9 @@ function CollectionListItem({
       : "skip",
   );
 
-  const primaryImageUrl = useQuery(
-    api.media.getPrimaryImageUrl,
-    { collectionId: item._id },
-  );
+  const primaryImageUrl = useQuery(api.media.getPrimaryImageUrl, {
+    collectionId: item._id,
+  });
 
   return (
     <Link
@@ -485,4 +488,3 @@ function CollectionListItem({
     </Link>
   );
 }
-

@@ -109,9 +109,7 @@ export const list = query({
 
     // Filter by parent
     if (args.parentLocationId === "root") {
-      query = query.filter((q) =>
-        q.eq(q.field("parentLocationId"), undefined),
-      );
+      query = query.filter((q) => q.eq(q.field("parentLocationId"), undefined));
     } else if (args.parentLocationId) {
       query = query.filter((q) =>
         q.eq(q.field("parentLocationId"), args.parentLocationId),
@@ -196,11 +194,7 @@ export const get = query({
       return null;
     }
 
-    await requirePermission(
-      ctx,
-      location.organizationId,
-      "locations.read",
-    );
+    await requirePermission(ctx, location.organizationId, "locations.read");
 
     // Get children
     const children = await ctx.db
@@ -301,7 +295,8 @@ export const update = mutation({
         if (currentParentId === args.locationId) {
           throw new Error("Cannot create circular location hierarchy");
         }
-        const currentParent: { parentLocationId?: Id<"locations"> } | null = await ctx.db.get(currentParentId);
+        const currentParent: { parentLocationId?: Id<"locations"> } | null =
+          await ctx.db.get(currentParentId);
         currentParentId = currentParent?.parentLocationId;
       }
     }
@@ -417,11 +412,7 @@ export const moveObject = mutation({
     }
 
     // Check permission
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "locations.update",
-    );
+    await requirePermission(ctx, collection.organizationId, "locations.update");
 
     // Verify location belongs to same organization
     if (toLocation.organizationId !== collection.organizationId) {
@@ -480,7 +471,12 @@ export const getLocationPath = query({
     let currentLocationId: Id<"locations"> | undefined = args.locationId;
 
     while (currentLocationId) {
-      const location: { _id: Id<"locations">; name: string; type: string; parentLocationId?: Id<"locations"> } | null = await ctx.db.get(currentLocationId);
+      const location: {
+        _id: Id<"locations">;
+        name: string;
+        type: string;
+        parentLocationId?: Id<"locations">;
+      } | null = await ctx.db.get(currentLocationId);
       if (!location) break;
 
       path.unshift({
@@ -573,9 +569,7 @@ export const listAllWithPaths = query({
       .collect();
 
     // Build a map of location ID to location for quick lookup
-    const locationMap = new Map(
-      allLocations.map((loc) => [loc._id, loc]),
-    );
+    const locationMap = new Map(allLocations.map((loc) => [loc._id, loc]));
 
     // Helper function to build path for a location
     function buildPath(locationId: Id<"locations">): Array<{
@@ -635,15 +629,7 @@ export const getLocationTypes = query({
       return org.settings.locationTypes;
     }
 
-    return [
-      "building",
-      "floor",
-      "room",
-      "cabinet",
-      "shelf",
-      "box",
-      "storage",
-    ];
+    return ["building", "floor", "room", "cabinet", "shelf", "box", "storage"];
   },
 });
 
@@ -680,7 +666,9 @@ export const getCollectionLocationHistory = query({
 
     const history = await ctx.db
       .query("locationHistory")
-      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", args.collectionId),
+      )
       .order("desc")
       .collect();
 

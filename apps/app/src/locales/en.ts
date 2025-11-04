@@ -55,6 +55,7 @@ export default {
     noActivity: "No activity found",
     loadMore: "Load More",
     selectOrganization: "Select an Organization",
-    selectOrganizationDescription: "Please select an organization from the dropdown above to view activity.",
+    selectOrganizationDescription:
+      "Please select an organization from the dropdown above to view activity.",
   },
 } as const;

@@ -32,4 +32,3 @@ export interface FilterSchema {
   fields: FilterField[];
   searchPlaceholder?: string;
 }
-

@@ -23,19 +23,24 @@ async function generateAccessionNumber(
   const autoGenerate = org.settings?.autoGenerateAccessionNumbers ?? false;
 
   if (!autoGenerate) {
-    throw new Error("Auto-generate accession numbers is disabled. Please enable it in Organization Settings or provide a custom accession number.");
+    throw new Error(
+      "Auto-generate accession numbers is disabled. Please enable it in Organization Settings or provide a custom accession number.",
+    );
   }
 
   if (!template) {
-    throw new Error("Accession number format is not configured. Please set up an accession format template in Organization Settings.");
+    throw new Error(
+      "Accession number format is not configured. Please set up an accession format template in Organization Settings.",
+    );
   }
 
   const now = new Date();
-  
+
   // Determine counter scope from settings or template
-  const counterScope = org.settings?.accessionCounterScope || 
+  const counterScope =
+    org.settings?.accessionCounterScope ||
     accessionParser.getCounterScopeFromTemplate(template);
-  
+
   // Get scope key for counter tracking
   const scopeKey = accessionParser.getScopeKey(counterScope, now);
 
@@ -94,10 +99,7 @@ export const create = mutation({
     if (args.accessionNumber) {
       accessionNumber = args.accessionNumber;
     } else {
-      accessionNumber = await generateAccessionNumber(
-        ctx,
-        args.organizationId,
-      );
+      accessionNumber = await generateAccessionNumber(ctx, args.organizationId);
     }
 
     // Check uniqueness
@@ -268,11 +270,11 @@ export const list = query({
           let filter = q
             .search("title", args.search!)
             .eq("organizationId", args.organizationId);
-          
+
           if (args.status) {
             filter = filter.eq("status", args.status);
           }
-          
+
           return filter;
         });
 
@@ -287,7 +289,9 @@ export const list = query({
 
       let filteredQuery = regularQuery;
       if (args.status) {
-        filteredQuery = filteredQuery.filter((q) => q.eq(q.field("status"), args.status));
+        filteredQuery = filteredQuery.filter((q) =>
+          q.eq(q.field("status"), args.status),
+        );
       }
 
       const allCollections = await filteredQuery.collect();
@@ -297,7 +301,7 @@ export const list = query({
       // Find additional matches in fields not covered by searchIndex
       const additionalResults = allCollections.filter((c) => {
         if (searchResultIds.has(c._id)) return false;
-        
+
         return (
           c.accessionNumber?.toLowerCase().includes(searchLower) ||
           c.description?.toLowerCase().includes(searchLower) ||
@@ -341,7 +345,10 @@ export const list = query({
       // Date range filters
       if (args.catalogedFrom || args.catalogedTo) {
         query = query.filter((q) => {
-          let condition = q.gte(q.field("catalogedAt"), args.catalogedFrom ?? 0);
+          let condition = q.gte(
+            q.field("catalogedAt"),
+            args.catalogedFrom ?? 0,
+          );
           if (args.catalogedTo) {
             condition = q.and(
               condition,
@@ -386,9 +393,7 @@ export const list = query({
 
     // Apply objectType filter if not already applied (for search case)
     if (args.objectType && args.search) {
-      allResults = allResults.filter(
-        (c) => c.objectType === args.objectType,
-      );
+      allResults = allResults.filter((c) => c.objectType === args.objectType);
     }
 
     // Apply date range filters if not already applied (for search case)
@@ -481,11 +486,11 @@ export const search = query({
         let filter = q
           .search("title", args.searchQuery)
           .eq("organizationId", args.organizationId);
-        
+
         if (args.status) {
           filter = filter.eq("status", args.status);
         }
-        
+
         return filter;
       });
 
@@ -494,7 +499,7 @@ export const search = query({
     // Also search other fields that aren't in the searchIndex
     // This extends the search to accession numbers and other fields
     const additionalResults: typeof results = [];
-    
+
     if (args.searchQuery.length > 0) {
       const allCollections = await ctx.db
         .query("collections")
@@ -512,12 +517,12 @@ export const search = query({
 
       const searchLower = args.searchQuery.toLowerCase();
       const resultIds = new Set(results.map((r) => r._id));
-      
+
       const additional = allCollections
         .filter((c) => {
           // Skip if already in results
           if (resultIds.has(c._id)) return false;
-          
+
           // Search in accession number and other fields
           return (
             c.accessionNumber?.toLowerCase().includes(searchLower) ||
@@ -528,7 +533,7 @@ export const search = query({
           );
         })
         .slice(0, Math.max(0, limit - results.length));
-      
+
       additionalResults.push(...additional);
     }
 
@@ -623,8 +628,7 @@ export const update = mutation({
     if (args.dateCreated !== undefined) updates.dateCreated = args.dateCreated;
     if (args.materials !== undefined) updates.materials = args.materials;
     if (args.dimensions !== undefined) updates.dimensions = args.dimensions;
-    if (args.description !== undefined)
-      updates.description = args.description;
+    if (args.description !== undefined) updates.description = args.description;
     if (args.condition !== undefined) updates.condition = args.condition;
     if (args.provenance !== undefined) updates.provenance = args.provenance;
     if (args.exhibitionHistory !== undefined)
@@ -731,10 +735,10 @@ export const getByAccessionNumber = query({
       )
       .collect();
 
-    collection = allCollections.find(
-      (c) =>
+    collection =
+      allCollections.find((c) =>
         c.alternateAccessionNumbers?.includes(args.accessionNumber),
-    ) ?? null;
+      ) ?? null;
 
     if (collection) {
       return {
@@ -776,8 +780,7 @@ export const addAlternateAccessionNumber = mutation({
       "collections.update",
     );
 
-    const alternateNumbers =
-      collection.alternateAccessionNumbers ?? [];
+    const alternateNumbers = collection.alternateAccessionNumbers ?? [];
     if (alternateNumbers.includes(args.accessionNumber)) {
       throw new Error("Alternate accession number already exists");
     }
@@ -819,8 +822,7 @@ export const removeAlternateAccessionNumber = mutation({
       "collections.update",
     );
 
-    const alternateNumbers =
-      collection.alternateAccessionNumbers ?? [];
+    const alternateNumbers = collection.alternateAccessionNumbers ?? [];
     const updated = alternateNumbers.filter(
       (num) => num !== args.accessionNumber,
     );
@@ -856,13 +858,8 @@ export const getAccessionHistory = query({
     }
 
     const { requirePermission } = await import("./utils/permissions");
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.read",
-    );
+    await requirePermission(ctx, collection.organizationId, "collections.read");
 
     return collection.accessionNumberHistory ?? [];
   },
 });
-

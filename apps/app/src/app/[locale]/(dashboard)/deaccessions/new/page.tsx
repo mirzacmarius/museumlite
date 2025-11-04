@@ -1,13 +1,15 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { CollectionSelector } from "@/components/collection-selector";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { Input } from "@v1/ui/input";
-import { Textarea } from "@v1/ui/textarea";
-import { Label } from "@v1/ui/label";
 import { DatePicker } from "@v1/ui/date-picker";
+import { Input } from "@v1/ui/input";
+import { Label } from "@v1/ui/label";
 import {
   Select,
   SelectContent,
@@ -15,9 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { CollectionSelector } from "@/components/collection-selector";
+import { Textarea } from "@v1/ui/textarea";
 import { useMutation } from "convex/react";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
@@ -39,7 +39,6 @@ export default function NewDeaccessionPage() {
     disposition: "",
     notes: "",
   });
-
 
   if (!currentOrganizationId) {
     return (
@@ -68,8 +67,7 @@ export default function NewDeaccessionPage() {
       await createDeaccession({
         organizationId: currentOrganizationId as Id<"organizations">,
         collectionId: formData.collectionId as Id<"collections">,
-        deaccessionNumber:
-          formData.deaccessionNumber || undefined,
+        deaccessionNumber: formData.deaccessionNumber || undefined,
         dateDeaccessioned: formData.dateDeaccessioned.getTime(),
         reason: formData.reason,
         method: formData.method,
@@ -126,9 +124,7 @@ export default function NewDeaccessionPage() {
                 />
 
                 <div className="space-y-2">
-                  <Label htmlFor="deaccessionNumber">
-                    Deaccession Number
-                  </Label>
+                  <Label htmlFor="deaccessionNumber">Deaccession Number</Label>
                   <Input
                     id="deaccessionNumber"
                     value={formData.deaccessionNumber}
@@ -164,14 +160,12 @@ export default function NewDeaccessionPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="method">
-                      Method *
-                    </Label>
+                    <Label htmlFor="method">Method *</Label>
                     <Select
                       value={formData.method}
-                      onValueChange={(value: "sale" | "donation" | "destruction" | "transfer") =>
-                        setFormData({ ...formData, method: value })
-                      }
+                      onValueChange={(
+                        value: "sale" | "donation" | "destruction" | "transfer",
+                      ) => setFormData({ ...formData, method: value })}
                     >
                       <SelectTrigger id="method">
                         <SelectValue />
@@ -187,9 +181,7 @@ export default function NewDeaccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="reason">
-                    Reason *
-                  </Label>
+                  <Label htmlFor="reason">Reason *</Label>
                   <Input
                     id="reason"
                     value={formData.reason}
@@ -202,9 +194,7 @@ export default function NewDeaccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="disposition">
-                    Disposition
-                  </Label>
+                  <Label htmlFor="disposition">Disposition</Label>
                   <Input
                     id="disposition"
                     value={formData.disposition}
@@ -219,9 +209,7 @@ export default function NewDeaccessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="notes">
-                    Notes
-                  </Label>
+                  <Label htmlFor="notes">Notes</Label>
                   <Textarea
                     id="notes"
                     value={formData.notes}
@@ -256,4 +244,3 @@ export default function NewDeaccessionPage() {
     </>
   );
 }
-

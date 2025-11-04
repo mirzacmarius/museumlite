@@ -56,6 +56,7 @@ export default {
     noActivity: "Aucune activité trouvée",
     loadMore: "Charger plus",
     selectOrganization: "Sélectionner une Organisation",
-    selectOrganizationDescription: "Veuillez sélectionner une organisation dans le menu déroulant ci-dessus pour voir l'activité.",
+    selectOrganizationDescription:
+      "Veuillez sélectionner une organisation dans le menu déroulant ci-dessus pour voir l'activité.",
   },
 } as const;

@@ -41,7 +41,11 @@ export const listOrganizationActivity = query({
     }
 
     // Check permission - users need to be able to view organization activity
-    await requirePermission(ctx, args.organizationId, "organization.view_analytics");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.view_analytics",
+    );
 
     const limit = args.limit ?? 50;
 
@@ -54,13 +58,19 @@ export const listOrganizationActivity = query({
 
     // Apply filters
     if (args.startDate) {
-      auditQuery = auditQuery.filter((q) => q.gte(q.field("timestamp"), args.startDate!));
+      auditQuery = auditQuery.filter((q) =>
+        q.gte(q.field("timestamp"), args.startDate!),
+      );
     }
     if (args.endDate) {
-      auditQuery = auditQuery.filter((q) => q.lte(q.field("timestamp"), args.endDate!));
+      auditQuery = auditQuery.filter((q) =>
+        q.lte(q.field("timestamp"), args.endDate!),
+      );
     }
     if (args.entityType) {
-      auditQuery = auditQuery.filter((q) => q.eq(q.field("entityType"), args.entityType!));
+      auditQuery = auditQuery.filter((q) =>
+        q.eq(q.field("entityType"), args.entityType!),
+      );
     }
 
     // Order by timestamp descending (most recent first)
@@ -70,8 +80,9 @@ export const listOrganizationActivity = query({
     const activities = await Promise.all(
       logs.map(async (log) => {
         const user = await ctx.db.get(log.userId);
-        const userImage =
-          user?.imageId ? (await ctx.storage.getUrl(user.imageId)) ?? undefined : undefined;
+        const userImage = user?.imageId
+          ? (await ctx.storage.getUrl(user.imageId)) ?? undefined
+          : undefined;
 
         return {
           _id: log._id,
@@ -324,9 +335,7 @@ export const listNotifications = query({
     }
 
     // Get notifications ordered by creation time (newest first)
-    const notifications = await notificationQuery
-      .order("desc")
-      .take(limit);
+    const notifications = await notificationQuery.order("desc").take(limit);
 
     // Get unread count
     const unreadNotifications = await ctx.db
@@ -343,4 +352,3 @@ export const listNotifications = query({
     };
   },
 });
-

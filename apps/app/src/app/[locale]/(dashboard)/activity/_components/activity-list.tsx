@@ -1,11 +1,11 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityItem } from "./activity-item";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
 interface ActivityListProps {
   organizationId: Id<"organizations">;
@@ -90,13 +90,13 @@ export function ActivityList({
       lastProcessedCursor.current = cursor;
       setAllActivities((prev) => {
         const existingIds = new Set(prev.map((a) => a._id));
-        const newActivities = activities.filter(
-          (a) => !existingIds.has(a._id),
-        );
+        const newActivities = activities.filter((a) => !existingIds.has(a._id));
         // Only update if there are actually new activities
         if (newActivities.length === 0) return prev;
         // Update ref with new IDs
-        newActivities.forEach((a) => lastProcessedActivityIds.current.add(a._id));
+        newActivities.forEach((a) =>
+          lastProcessedActivityIds.current.add(a._id),
+        );
         return [...prev, ...newActivities];
       });
     } else {
@@ -105,13 +105,15 @@ export function ActivityList({
       const prevIds = lastProcessedActivityIds.current;
       if (
         prevIds.size === currentActivityIds.size &&
-        [...prevIds].every((id) => currentActivityIds.has(id as Id<"auditLog">)) &&
+        [...prevIds].every((id) =>
+          currentActivityIds.has(id as Id<"auditLog">),
+        ) &&
         [...currentActivityIds].every((id) => prevIds.has(id as Id<"auditLog">))
       ) {
         // Same activities, don't update to prevent infinite loop
         return;
       }
-      
+
       lastProcessedCursor.current = undefined;
       lastProcessedActivityIds.current = new Set(currentActivityIds);
       setAllActivities(activities);
@@ -159,7 +161,9 @@ export function ActivityList({
         <>
           {sortedMonths.map((month) => (
             <div key={month} className="mb-8">
-              <h2 className="mb-4 text-base font-semibold text-white">{month}</h2>
+              <h2 className="mb-4 text-base font-semibold text-white">
+                {month}
+              </h2>
               <div className="flex flex-col">
                 {groupedActivities[month]?.map((activity) => (
                   <ActivityItem
@@ -193,4 +197,3 @@ export function ActivityList({
     </div>
   );
 }
-

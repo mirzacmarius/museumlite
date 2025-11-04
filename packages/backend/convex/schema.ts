@@ -46,11 +46,7 @@ export default defineSchema({
       }),
     ),
     subscriptionTier: v.optional(
-      v.union(
-        v.literal("free"),
-        v.literal("pro"),
-        v.literal("enterprise"),
-      ),
+      v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
     ),
   }).index("by_slug", ["slug"]),
 
@@ -159,8 +155,11 @@ export default defineSchema({
     scopeKey: v.string(), // e.g., "2025", "2025-10", "2025-10-02", "global"
     currentValue: v.number(),
     lastGeneratedAt: v.number(),
-  })
-    .index("by_organization_and_scope", ["organizationId", "scope", "scopeKey"]),
+  }).index("by_organization_and_scope", [
+    "organizationId",
+    "scope",
+    "scopeKey",
+  ]),
 
   // Custom accession number templates
   accessionTemplates: defineTable({
@@ -186,8 +185,7 @@ export default defineSchema({
     createdAt: v.number(),
     usageCount: v.optional(v.number()),
     lastUsedAt: v.optional(v.number()),
-  })
-    .index("by_organization", ["organizationId"]),
+  }).index("by_organization", ["organizationId"]),
 
   // Custom material options per organization
   materialOptions: defineTable({
@@ -197,8 +195,7 @@ export default defineSchema({
     createdAt: v.number(),
     usageCount: v.optional(v.number()),
     lastUsedAt: v.optional(v.number()),
-  })
-    .index("by_organization", ["organizationId"]),
+  }).index("by_organization", ["organizationId"]),
 
   // Media attachments for objects
   mediaFiles: defineTable({
@@ -467,10 +464,7 @@ export default defineSchema({
   // Organization workflow configurations
   workflowConfigs: defineTable({
     organizationId: v.id("organizations"),
-    workflowType: v.union(
-      v.literal("accession"),
-      v.literal("deaccession"),
-    ),
+    workflowType: v.union(v.literal("accession"), v.literal("deaccession")),
     steps: v.array(
       v.object({
         stepNumber: v.number(),

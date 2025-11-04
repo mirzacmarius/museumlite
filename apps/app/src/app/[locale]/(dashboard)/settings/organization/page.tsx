@@ -1,27 +1,11 @@
 "use client";
 
+import { InfoTooltip } from "@/components/info-tooltip";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { TemplateCombobox } from "@/components/template-combobox";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Button } from "@v1/ui/button";
-import { Input } from "@v1/ui/input";
-import { Textarea } from "@v1/ui/textarea";
-import { Label } from "@v1/ui/label";
-import { Switch } from "@v1/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@v1/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@v1/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,14 +16,30 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@v1/ui/alert-dialog";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { TemplateCombobox } from "@/components/template-combobox";
-import { InfoTooltip } from "@/components/info-tooltip";
+import { Button } from "@v1/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@v1/ui/dialog";
+import { Input } from "@v1/ui/input";
+import { Label } from "@v1/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
+import { Switch } from "@v1/ui/switch";
+import { Textarea } from "@v1/ui/textarea";
+import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
 import { Save, Trash2 } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
-import { cn } from "@v1/ui/utils";
+import { useEffect, useMemo, useState } from "react";
 
 export default function OrganizationSettingsPage() {
   const { currentOrganizationId } = useOrganization();
@@ -48,8 +48,10 @@ export default function OrganizationSettingsPage() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveTemplateName, setSaveTemplateName] = useState("");
   const [saveTemplateDesc, setSaveTemplateDesc] = useState("");
-  const [deleteTemplateId, setDeleteTemplateId] = useState<Id<"accessionTemplates"> | null>(null);
-  const [selectedCustomTemplateId, setSelectedCustomTemplateId] = useState<Id<"accessionTemplates"> | null>(null);
+  const [deleteTemplateId, setDeleteTemplateId] =
+    useState<Id<"accessionTemplates"> | null>(null);
+  const [selectedCustomTemplateId, setSelectedCustomTemplateId] =
+    useState<Id<"accessionTemplates"> | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     accessionNumberFormat: "",
@@ -70,17 +72,21 @@ export default function OrganizationSettingsPage() {
   const createTemplate = useMutation(api.accessionTemplates.create);
   const removeTemplate = useMutation(api.accessionTemplates.remove);
   const updateTemplate = useMutation(api.accessionTemplates.update);
-  
+
   // Query custom conditions (for display only)
   const customConditions = useQuery(
     api.conditionOptions.list,
-    currentOrganizationId ? { organizationId: currentOrganizationId as Id<"organizations"> } : "skip"
+    currentOrganizationId
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
   );
 
   // Query custom materials (for display only)
   const customMaterials = useQuery(
     api.materialOptions.list,
-    currentOrganizationId ? { organizationId: currentOrganizationId as Id<"organizations"> } : "skip"
+    currentOrganizationId
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
   );
 
   // Validation query with debouncing
@@ -100,7 +106,9 @@ export default function OrganizationSettingsPage() {
   // Custom templates query
   const customTemplates = useQuery(
     api.accessionTemplates.list,
-    currentOrganizationId ? { organizationId: currentOrganizationId as Id<"organizations"> } : "skip",
+    currentOrganizationId
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
   );
 
   useEffect(() => {
@@ -140,7 +148,9 @@ export default function OrganizationSettingsPage() {
 
   // Detect if current format matches a custom template
   const selectedCustomTemplate = useMemo(() => {
-    return customTemplates?.find((t) => t.template === formData.accessionNumberFormat);
+    return customTemplates?.find(
+      (t) => t.template === formData.accessionNumberFormat,
+    );
   }, [customTemplates, formData.accessionNumberFormat]);
 
   // Update selected template ID when format changes
@@ -151,9 +161,15 @@ export default function OrganizationSettingsPage() {
   // Check if template has been modified
   const isTemplateModified = useMemo(() => {
     if (!selectedCustomTemplateId) return false;
-    const template = customTemplates?.find((t) => t._id === selectedCustomTemplateId);
+    const template = customTemplates?.find(
+      (t) => t._id === selectedCustomTemplateId,
+    );
     return template?.template !== formData.accessionNumberFormat;
-  }, [selectedCustomTemplateId, customTemplates, formData.accessionNumberFormat]);
+  }, [
+    selectedCustomTemplateId,
+    customTemplates,
+    formData.accessionNumberFormat,
+  ]);
 
   // Open save/update template modal
   const openSaveTemplateModal = (isUpdate = false) => {
@@ -218,7 +234,9 @@ export default function OrganizationSettingsPage() {
         setSelectedCustomTemplateId(null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete template");
+      setError(
+        err instanceof Error ? err.message : "Failed to delete template",
+      );
     }
   };
 
@@ -312,364 +330,404 @@ export default function OrganizationSettingsPage() {
 
   return (
     <div className="flex w-full flex-col gap-6">
-        <div className="flex w-full flex-col gap-2">
-          <h2 className="text-xl font-medium text-primary">Organization Settings</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage your organization's settings and preferences
-          </p>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
+      <div className="flex w-full flex-col gap-2">
+        <h2 className="text-xl font-medium text-primary">
+          Organization Settings
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Manage your organization's settings and preferences
+        </p>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {error && (
+          <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        <div className="rounded-lg border border-border bg-card p-6">
+          <h2 className="mb-4 text-lg font-medium">Basic Information</h2>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Organization Name *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                required
+              />
             </div>
-          )}
+            <div className="space-y-2">
+              <Label>Organization Type</Label>
+              <Input value={organization.type} disabled className="bg-muted" />
+              <p className="text-xs text-muted-foreground">
+                Organization type cannot be changed
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Slug</Label>
+              <Input value={organization.slug} disabled className="bg-muted" />
+              <p className="text-xs text-muted-foreground">
+                Slug cannot be changed
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <PermissionGate permission="organization.manage_settings">
+          <div className="rounded-lg border border-border bg-card p-6">
+            <h2 className="mb-4 text-lg font-medium">
+              Accession Number Settings
+            </h2>
+            <div className="space-y-6">
+              {/* Template Selection - Full Width */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Format Template</Label>
+                <TemplateCombobox
+                  systemPresets={systemPresets}
+                  customTemplates={customTemplateOptions}
+                  value={formData.accessionNumberFormat}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, accessionNumberFormat: value })
+                  }
+                  placeholder="Choose template..."
+                  validation={
+                    validation
+                      ? {
+                          isValid: validation.isValid,
+                          error: validation.error,
+                          preview: validation.preview,
+                        }
+                      : undefined
+                  }
+                  onSaveTemplate={() =>
+                    openSaveTemplateModal(!!selectedCustomTemplateId)
+                  }
+                  onDeleteTemplate={(id) =>
+                    setDeleteTemplateId(id as Id<"accessionTemplates">)
+                  }
+                />
+              </div>
+
+              {/* Counter Configuration */}
+              <div className="space-y-4">
+                {/* Counter Reset */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    Counter Reset Schedule
+                  </Label>
+                  <Select
+                    value={formData.accessionCounterScope}
+                    onValueChange={(
+                      value: "global" | "year" | "month" | "day",
+                    ) =>
+                      setFormData({ ...formData, accessionCounterScope: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="global">
+                        Never (Global Counter)
+                      </SelectItem>
+                      <SelectItem value="year">
+                        Yearly (Resets Jan 1)
+                      </SelectItem>
+                      <SelectItem value="month">
+                        Monthly (Resets 1st)
+                      </SelectItem>
+                      <SelectItem value="day">
+                        Daily (Resets Midnight)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    When should the counter reset to 1?
+                  </p>
+                </div>
+
+                {/* Auto-generate */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Auto-generation</Label>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      Automatically generate accession numbers
+                    </p>
+                    <Switch
+                      id="autoGenerate"
+                      checked={formData.autoGenerateAccessionNumbers}
+                      onCheckedChange={(checked) =>
+                        setFormData({
+                          ...formData,
+                          autoGenerateAccessionNumbers: checked,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div className="rounded-lg border border-border bg-card p-6">
-            <h2 className="mb-4 text-lg font-medium">Basic Information</h2>
+            <h2 className="mb-4 text-lg font-medium">Location Types</h2>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Organization Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Organization Type</Label>
-                <Input
-                  value={organization.type}
-                  disabled
-                  className="bg-muted"
-                />
+                <Label>Custom Location Types</Label>
+                <div className="flex flex-wrap gap-2">
+                  {formData.locationTypes.map((type, index) => {
+                    // Use a combination of type and index for unique key since types might have duplicates
+                    const uniqueKey = `${type}-${index}`;
+                    return (
+                      <div
+                        key={uniqueKey}
+                        className="flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-1"
+                      >
+                        <span className="text-sm">{type}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLocationType(index)}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddLocationType}
+                >
+                  Add Location Type
+                </Button>
                 <p className="text-xs text-muted-foreground">
-                  Organization type cannot be changed
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>Slug</Label>
-                <Input
-                  value={organization.slug}
-                  disabled
-                  className="bg-muted"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Slug cannot be changed
+                  Define custom location types for your organization (e.g.,
+                  Gallery, Vault, Display Case)
                 </p>
               </div>
             </div>
           </div>
 
-          <PermissionGate permission="organization.manage_settings">
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h2 className="mb-4 text-lg font-medium">
-                Accession Number Settings
-              </h2>
-              <div className="space-y-6">
-                {/* Template Selection - Full Width */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Format Template</Label>
-                  <TemplateCombobox
-                    systemPresets={systemPresets}
-                    customTemplates={customTemplateOptions}
-                    value={formData.accessionNumberFormat}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, accessionNumberFormat: value })
-                    }
-                    placeholder="Choose template..."
-                    validation={validation ? {
-                      isValid: validation.isValid,
-                      error: validation.error,
-                      preview: validation.preview
-                    } : undefined}
-                    onSaveTemplate={() => openSaveTemplateModal(!!selectedCustomTemplateId)}
-                    onDeleteTemplate={(id) => setDeleteTemplateId(id as Id<"accessionTemplates">)}
-                  />
-                </div>
-
-                {/* Counter Configuration */}
-                <div className="space-y-4">
-                  {/* Counter Reset */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Counter Reset Schedule</Label>
-                    <Select
-                      value={formData.accessionCounterScope}
-                      onValueChange={(value: "global" | "year" | "month" | "day") =>
-                        setFormData({ ...formData, accessionCounterScope: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="global">Never (Global Counter)</SelectItem>
-                        <SelectItem value="year">Yearly (Resets Jan 1)</SelectItem>
-                        <SelectItem value="month">Monthly (Resets 1st)</SelectItem>
-                        <SelectItem value="day">Daily (Resets Midnight)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      When should the counter reset to 1?
+          <div className="rounded-lg border border-border bg-card p-6">
+            <h2 className="mb-4 text-lg font-medium">Condition Options</h2>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Organization Conditions</Label>
+                <p className="text-xs text-muted-foreground">
+                  Custom conditions can be added directly from the condition
+                  dropdown when creating or editing collections.
+                </p>
+                {customConditions && customConditions.length > 0 && (
+                  <div className="mt-3 rounded-lg border p-3 bg-secondary/10">
+                    <p className="text-xs font-medium mb-2">
+                      Your Custom Conditions:
                     </p>
-                  </div>
-
-                  {/* Auto-generate */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Auto-generation</Label>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-muted-foreground">
-                        Automatically generate accession numbers
-                      </p>
-                      <Switch
-                        id="autoGenerate"
-                        checked={formData.autoGenerateAccessionNumbers}
-                        onCheckedChange={(checked) =>
-                          setFormData({
-                            ...formData,
-                            autoGenerateAccessionNumbers: checked,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h2 className="mb-4 text-lg font-medium">Location Types</h2>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Custom Location Types</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.locationTypes.map((type, index) => {
-                      // Use a combination of type and index for unique key since types might have duplicates
-                      const uniqueKey = `${type}-${index}`;
-                      return (
+                    <div className="flex flex-wrap gap-2">
+                      {customConditions.map((condition) => (
                         <div
-                          key={uniqueKey}
-                          className="flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-1"
+                          key={condition._id}
+                          className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-1"
                         >
-                          <span className="text-sm">{type}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveLocationType(index)}
-                            className="text-muted-foreground hover:text-destructive"
-                          >
-                            ×
-                          </button>
+                          <span className="text-xs font-medium">
+                            {condition.name}
+                          </span>
+                          {condition.usageCount ? (
+                            <span className="text-[10px] text-muted-foreground">
+                              ({condition.usageCount})
+                            </span>
+                          ) : null}
                         </div>
-                      );
-                    })}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAddLocationType}
-                  >
-                    Add Location Type
-                  </Button>
-                  <p className="text-xs text-muted-foreground">
-                    Define custom location types for your organization (e.g.,
-                    Gallery, Vault, Display Case)
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h2 className="mb-4 text-lg font-medium">Condition Options</h2>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Organization Conditions</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Custom conditions can be added directly from the condition dropdown when creating or editing collections.
-                  </p>
-                  {customConditions && customConditions.length > 0 && (
-                    <div className="mt-3 rounded-lg border p-3 bg-secondary/10">
-                      <p className="text-xs font-medium mb-2">Your Custom Conditions:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {customConditions.map((condition) => (
-                          <div key={condition._id} className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-1">
-                            <span className="text-xs font-medium">{condition.name}</span>
-                            {condition.usageCount ? (
-                              <span className="text-[10px] text-muted-foreground">
-                                ({condition.usageCount})
-                              </span>
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
+                      ))}
                     </div>
-                  )}
-                  <div className="mt-3 rounded-lg border border-dashed p-4 bg-muted/20">
-                    <p className="text-xs text-muted-foreground">
-                      💡 <strong>Tip:</strong> Open the condition dropdown in any collection form and click "New" to add custom conditions on the fly.
-                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Standard conditions (Excellent, Very Good, Good, Poor) are always available.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h2 className="mb-4 text-lg font-medium">Material Options</h2>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Organization Materials</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Materials can be added directly from the materials field when creating or editing collections.
-                  </p>
-                  {customMaterials && customMaterials.length > 0 && (
-                    <div className="mt-3 rounded-lg border p-3 bg-secondary/10">
-                      <p className="text-xs font-medium mb-2">Your Materials:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {customMaterials.map((material) => (
-                          <div key={material._id} className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-1">
-                            <span className="text-xs font-medium">{material.name}</span>
-                            {material.usageCount ? (
-                              <span className="text-[10px] text-muted-foreground">
-                                ({material.usageCount})
-                              </span>
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div className="mt-3 rounded-lg border border-dashed p-4 bg-muted/20">
-                    <p className="text-xs text-muted-foreground">
-                      💡 <strong>Tip:</strong> Open the materials dropdown in any collection form and click "New" to add materials on the fly.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h2 className="mb-4 text-lg font-medium">Loan Settings</h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="detailedConditionReports">
-                      Enable Detailed Condition Reports
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Require detailed condition reports with photos for loan
-                      items
-                    </p>
-                  </div>
-                  <Switch
-                    id="detailedConditionReports"
-                    checked={formData.enableDetailedConditionReports}
-                    onCheckedChange={(checked) =>
-                      setFormData({
-                        ...formData,
-                        enableDetailedConditionReports: checked,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-4">
-              <Button type="submit" disabled={isSubmitting}>
-                <Save className="mr-2 h-4 w-4" />
-                {isSubmitting ? "Saving..." : "Save Changes"}
-              </Button>
-            </div>
-          </PermissionGate>
-        </form>
-
-        {/* Save/Update Template Modal */}
-        <Dialog open={showSaveModal} onOpenChange={setShowSaveModal}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {selectedCustomTemplateId ? "Update Template" : "Save Template"}
-              </DialogTitle>
-              <DialogDescription>
-                {selectedCustomTemplateId 
-                  ? "Update your custom template with the current format, name, and description."
-                  : "Save your current accession number format as a reusable template."}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="templateName">Template Name *</Label>
-                <Input
-                  id="templateName"
-                  value={saveTemplateName}
-                  onChange={(e) => setSaveTemplateName(e.target.value)}
-                  placeholder="e.g., Monthly Format"
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="templateDesc">Description (optional)</Label>
-                <Textarea
-                  id="templateDesc"
-                  value={saveTemplateDesc}
-                  onChange={(e) => setSaveTemplateDesc(e.target.value)}
-                  placeholder="Describe when to use this template..."
-                  rows={3}
-                />
-              </div>
-              <div className="rounded-md bg-secondary p-3">
-                <Label className="text-xs text-muted-foreground">Template Format</Label>
-                <code className="text-sm block mt-1 font-mono">{formData.accessionNumberFormat}</code>
-                {validation?.preview && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Preview: <code className="font-mono">{validation.preview}</code>
-                  </p>
                 )}
+                <div className="mt-3 rounded-lg border border-dashed p-4 bg-muted/20">
+                  <p className="text-xs text-muted-foreground">
+                    💡 <strong>Tip:</strong> Open the condition dropdown in any
+                    collection form and click "New" to add custom conditions on
+                    the fly.
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Standard conditions (Excellent, Very Good, Good, Poor) are
+                  always available.
+                </p>
               </div>
             </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setShowSaveModal(false);
-                  setSaveTemplateName("");
-                  setSaveTemplateDesc("");
-                }}
-              >
-                Cancel
-              </Button>
-              <Button type="button" onClick={handleSaveTemplate}>
-                {selectedCustomTemplateId ? "Update Template" : "Save Template"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          </div>
 
-        {/* Delete Template Confirmation Modal */}
-        <AlertDialog open={!!deleteTemplateId} onOpenChange={() => setDeleteTemplateId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Template</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete this template? This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteTemplate}>
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          <div className="rounded-lg border border-border bg-card p-6">
+            <h2 className="mb-4 text-lg font-medium">Material Options</h2>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Organization Materials</Label>
+                <p className="text-xs text-muted-foreground">
+                  Materials can be added directly from the materials field when
+                  creating or editing collections.
+                </p>
+                {customMaterials && customMaterials.length > 0 && (
+                  <div className="mt-3 rounded-lg border p-3 bg-secondary/10">
+                    <p className="text-xs font-medium mb-2">Your Materials:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {customMaterials.map((material) => (
+                        <div
+                          key={material._id}
+                          className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-1"
+                        >
+                          <span className="text-xs font-medium">
+                            {material.name}
+                          </span>
+                          {material.usageCount ? (
+                            <span className="text-[10px] text-muted-foreground">
+                              ({material.usageCount})
+                            </span>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="mt-3 rounded-lg border border-dashed p-4 bg-muted/20">
+                  <p className="text-xs text-muted-foreground">
+                    💡 <strong>Tip:</strong> Open the materials dropdown in any
+                    collection form and click "New" to add materials on the fly.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-border bg-card p-6">
+            <h2 className="mb-4 text-lg font-medium">Loan Settings</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="detailedConditionReports">
+                    Enable Detailed Condition Reports
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Require detailed condition reports with photos for loan
+                    items
+                  </p>
+                </div>
+                <Switch
+                  id="detailedConditionReports"
+                  checked={formData.enableDetailedConditionReports}
+                  onCheckedChange={(checked) =>
+                    setFormData({
+                      ...formData,
+                      enableDetailedConditionReports: checked,
+                    })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-4">
+            <Button type="submit" disabled={isSubmitting}>
+              <Save className="mr-2 h-4 w-4" />
+              {isSubmitting ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </PermissionGate>
+      </form>
+
+      {/* Save/Update Template Modal */}
+      <Dialog open={showSaveModal} onOpenChange={setShowSaveModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedCustomTemplateId ? "Update Template" : "Save Template"}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedCustomTemplateId
+                ? "Update your custom template with the current format, name, and description."
+                : "Save your current accession number format as a reusable template."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="templateName">Template Name *</Label>
+              <Input
+                id="templateName"
+                value={saveTemplateName}
+                onChange={(e) => setSaveTemplateName(e.target.value)}
+                placeholder="e.g., Monthly Format"
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="templateDesc">Description (optional)</Label>
+              <Textarea
+                id="templateDesc"
+                value={saveTemplateDesc}
+                onChange={(e) => setSaveTemplateDesc(e.target.value)}
+                placeholder="Describe when to use this template..."
+                rows={3}
+              />
+            </div>
+            <div className="rounded-md bg-secondary p-3">
+              <Label className="text-xs text-muted-foreground">
+                Template Format
+              </Label>
+              <code className="text-sm block mt-1 font-mono">
+                {formData.accessionNumberFormat}
+              </code>
+              {validation?.preview && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Preview:{" "}
+                  <code className="font-mono">{validation.preview}</code>
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowSaveModal(false);
+                setSaveTemplateName("");
+                setSaveTemplateDesc("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleSaveTemplate}>
+              {selectedCustomTemplateId ? "Update Template" : "Save Template"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Template Confirmation Modal */}
+      <AlertDialog
+        open={!!deleteTemplateId}
+        onOpenChange={() => setDeleteTemplateId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Template</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this template? This action cannot
+              be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTemplate}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
-

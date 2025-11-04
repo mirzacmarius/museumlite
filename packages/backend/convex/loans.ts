@@ -30,10 +30,7 @@ async function generateLoanNumber(
       q.eq("organizationId", organizationId).eq("type", type),
     )
     .filter((q: any) =>
-      q.eq(
-        q.field("loanNumber"),
-        `${prefix}-${orgSlug}-${year}-001`,
-      ),
+      q.eq(q.field("loanNumber"), `${prefix}-${orgSlug}-${year}-001`),
     )
     .collect();
 
@@ -129,7 +126,8 @@ export const create = mutation({
           const existingLoan = await ctx.db.get(existingLoanItem.loanId);
           if (
             existingLoan &&
-            (existingLoan.status === "pending" || existingLoan.status === "active")
+            (existingLoan.status === "pending" ||
+              existingLoan.status === "active")
           ) {
             throw new Error(
               `Collection ${collectionId} is already in an active loan`,
@@ -407,17 +405,17 @@ export const list = query({
             .query("loanItems")
             .withIndex("by_loan", (q) => q.eq("loanId", loan._id))
             .take(1);
-          
+
           let collectionTitle = "";
           if (items.length > 0 && items[0]) {
             const collection = await ctx.db.get(items[0].collectionId);
             collectionTitle = collection?.title || "";
           }
-          
+
           return { ...loan, collectionTitle };
         }),
       );
-      
+
       allResults = loansWithCollectionInfo
         .filter((loan) => {
           return (
@@ -1052,9 +1050,7 @@ export const getConditionReport = query({
     // Get photo URLs
     const photoUrls = report.photos
       ? await Promise.all(
-          report.photos.map(async (photoId) =>
-            ctx.storage.getUrl(photoId),
-          ),
+          report.photos.map(async (photoId) => ctx.storage.getUrl(photoId)),
         )
       : undefined;
 
@@ -1247,7 +1243,9 @@ export const getLoansForCollection = query({
     // Get all loan items for this collection
     const loanItems = await ctx.db
       .query("loanItems")
-      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", args.collectionId),
+      )
       .collect();
 
     // Get unique loan IDs
@@ -1270,7 +1268,8 @@ export const getLoansForCollection = query({
       }),
     );
 
-    return loans.filter((loan): loan is NonNullable<typeof loan> => loan !== null);
+    return loans.filter(
+      (loan): loan is NonNullable<typeof loan> => loan !== null,
+    );
   },
 });
-

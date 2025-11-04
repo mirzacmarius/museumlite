@@ -2,7 +2,11 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
-import { hasPermission, getUserPermissions as getUserPerms, requirePermission } from "./utils/permissions";
+import {
+  hasPermission,
+  getUserPermissions as getUserPerms,
+  requirePermission,
+} from "./utils/permissions";
 
 /**
  * Create a custom role
@@ -368,9 +372,7 @@ export const listPermissions = query({
     const permissions = args.category
       ? await ctx.db
           .query("permissions")
-          .withIndex("by_category", (q) =>
-            q.eq("category", args.category!),
-          )
+          .withIndex("by_category", (q) => q.eq("category", args.category!))
           .collect()
       : await ctx.db.query("permissions").collect();
     return permissions;
@@ -403,4 +405,3 @@ export const getUserPermissions = query({
     return await getUserPerms(ctx, args.organizationId);
   },
 });
-
