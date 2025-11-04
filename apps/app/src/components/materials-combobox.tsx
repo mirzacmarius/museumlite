@@ -1,16 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsUpDown, Trash2, Save, Plus, X } from "lucide-react"
+import { Check, ChevronsUpDown, Trash2, X } from "lucide-react"
 import { cn } from "@v1/ui/utils"
 import { Button } from "@v1/ui/button"
-import { Input } from "@v1/ui/input"
-import { Label } from "@v1/ui/label"
 import {
   Command,
   CommandEmpty,
   CommandGroup,
-  CommandInput,
   CommandItem,
   CommandList,
 } from "@v1/ui/command"
@@ -19,35 +16,59 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@v1/ui/popover"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@v1/ui/alert-dialog"
 import { api } from "@v1/backend/convex/_generated/api"
 import type { Id } from "@v1/backend/convex/_generated/dataModel"
 import { useQuery, useMutation } from "convex/react"
 
 interface MaterialsComboboxProps {
   organizationId?: string
-  value?: string
-  onValueChange?: (value: string) => void
+  collectionId?: string
+  value?: string[]
+  onValueChange?: (value: string[]) => void
   placeholder?: string
   disabled?: boolean
 }
 
 export function MaterialsCombobox({
   organizationId,
-  value,
+  collectionId,
+  value = [],
   onValueChange,
-  placeholder = "Select or add material...",
+  placeholder = "Select or add materials...",
   disabled = false,
 }: MaterialsComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("")
-  const [showAddForm, setShowAddForm] = React.useState(false)
-  const [newMaterialName, setNewMaterialName] = React.useState("")
-  const [error, setError] = React.useState<string | null>(null)
+  const [materialToDelete, setMaterialToDelete] = React.useState<{ id: string; name: string } | null>(null)
+  
+  // Ensure value is always an array
+  const selectedValues = React.useMemo(() => {
+    return Array.isArray(value) ? value : []
+  }, [value])
 
   // Fetch materials for the organization
   const materials = useQuery(
     api.materialOptions.list,
     organizationId ? { organizationId: organizationId as Id<"organizations"> } : "skip"
+  )
+
+  // Check material usage when attempting to delete (exclude current collection)
+  const materialUsage = useQuery(
+    api.materialOptions.checkUsage,
+    materialToDelete ? { 
+      materialId: materialToDelete.id as Id<"materialOptions">,
+      excludeCollectionId: collectionId ? collectionId as Id<"collections"> : undefined,
+    } : "skip"
   )
 
   // Mutations
@@ -64,10 +85,20 @@ export function MaterialsCombobox({
   }, [materials])
 
   const handleSelect = (selectedValue: string) => {
-    const newValue = selectedValue === value ? "" : selectedValue
-    onValueChange?.(newValue)
-    setOpen(false)
+    const isSelected = selectedValues.some(v => v.toLowerCase() === selectedValue.toLowerCase())
+    
+    if (isSelected) {
+      // Remove from selection
+      onValueChange?.(selectedValues.filter(v => v.toLowerCase() !== selectedValue.toLowerCase()))
+    } else {
+      // Add to selection
+      onValueChange?.([...selectedValues, selectedValue])
+    }
     setInputValue("")
+  }
+
+  const handleRemove = (materialToRemove: string) => {
+    onValueChange?.(selectedValues.filter(v => v !== materialToRemove))
   }
 
   // Filter options based on search
@@ -75,95 +106,147 @@ export function MaterialsCombobox({
     material.label.toLowerCase().includes(inputValue.toLowerCase())
   )
 
-  // Handle creating new material inline
-  const handleCreateMaterial = async () => {
-    if (!organizationId) {
-      setError("Organization not found")
+  // Format material name with first letter uppercase
+  const formatMaterialName = (name: string): string => {
+    const trimmed = name.trim()
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1)
+  }
+
+  // Handle creating and selecting material
+  const handleCreateAndSelectMaterial = async (materialName: string) => {
+    if (!organizationId || !materialName.trim()) {
       return
     }
 
-    if (!newMaterialName.trim()) {
-      setError("Material name is required")
-      return
-    }
+    const formattedName = formatMaterialName(materialName)
 
     try {
       await createMaterial({
         organizationId: organizationId as Id<"organizations">,
-        name: newMaterialName.trim(),
+        name: formattedName,
       })
       
-      // Select the newly created material
-      onValueChange?.(newMaterialName.trim())
+      // Add the newly created material to selection
+      if (!selectedValues.includes(formattedName)) {
+        onValueChange?.([...selectedValues, formattedName])
+      }
       
-      // Reset form
-      setNewMaterialName("")
-      setShowAddForm(false)
-      setError(null)
-      setOpen(false)
+      // Clear input
+      setInputValue("")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create material")
+      // If material already exists, just add it to selection
+      if (err instanceof Error && err.message.includes("already exists")) {
+        if (!selectedValues.includes(formattedName)) {
+          onValueChange?.([...selectedValues, formattedName])
+        }
+        setInputValue("")
+      }
     }
   }
 
-  // Handle deleting material
-  const handleDeleteMaterial = async (materialId: string) => {
+  // Handle deleting material from organization
+  const handleDeleteMaterial = (materialId: string, materialName: string) => {
+    setMaterialToDelete({ id: materialId, name: materialName })
+  }
+
+  const confirmDeleteMaterial = async () => {
+    if (!materialToDelete) return
+
     try {
-      await removeMaterial({ materialId: materialId as Id<"materialOptions"> })
-      // Clear selection if deleted material was selected
-      if (value === materialOptions.find(m => m.id === materialId)?.value) {
-        onValueChange?.("")
+      await removeMaterial({ materialId: materialToDelete.id as Id<"materialOptions"> })
+      // Remove from selection if it was selected
+      if (selectedValues.includes(materialToDelete.name)) {
+        onValueChange?.(selectedValues.filter(v => v !== materialToDelete.name))
       }
+      setMaterialToDelete(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete material")
+      // Silently fail
+      setMaterialToDelete(null)
     }
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between h-9"
-          disabled={disabled}
-        >
-          <span className="truncate text-left flex-1 text-sm">
-            {value || placeholder}
-          </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
+    <div>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <div
+            className="flex flex-wrap items-center gap-1 w-full min-h-[2.25rem] rounded-md border border-input bg-background px-2 py-1.5 text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-text"
+            onClick={() => !disabled && setOpen(true)}
+          >
+            {/* Selected materials as badges */}
+            {selectedValues.map((material) => (
+              <div
+                key={material}
+                className="inline-flex items-center gap-1 rounded-md border bg-secondary px-1.5 py-0.5 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation()
+                }}
+              >
+                <span>{material}</span>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleRemove(material)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.stopPropagation()
+                      e.preventDefault()
+                      handleRemove(material)
+                    }
+                  }}
+                  className="hover:text-destructive cursor-pointer"
+                  aria-label={`Remove ${material}`}
+                >
+                  <X className="h-3 w-3" />
+                </span>
+              </div>
+            ))}
+            
+            {/* Inline input for searching/adding */}
+            <input
+              type="text"
+              className="flex-1 min-w-[120px] outline-none bg-transparent text-sm placeholder:text-muted-foreground"
+              placeholder={selectedValues.length === 0 ? placeholder : "Search or add..."}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && inputValue.trim() && filteredMaterials.length === 0) {
+                  e.preventDefault()
+                  handleCreateAndSelectMaterial(inputValue)
+                }
+              }}
+              onClick={(e) => {
+                e.stopPropagation()
+                setOpen(true)
+              }}
+              disabled={disabled}
+            />
+            
+            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+          </div>
+        </PopoverTrigger>
       <PopoverContent className="w-[400px] p-0" align="start">
         <Command shouldFilter={false}>
-          <CommandInput
-            placeholder="Search materials or type new..."
-            value={inputValue}
-            onValueChange={setInputValue}
-          />
           <CommandList className="max-h-[300px]">
             <CommandEmpty>
               {inputValue ? (
-                <div className="p-4 text-sm">
-                  <p className="text-muted-foreground mb-3">
+                <div className="p-4 text-sm text-center">
+                  <p className="text-muted-foreground mb-2">
                     No matching materials found.
                   </p>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="w-full justify-start"
-                    onClick={() => {
-                      onValueChange?.(inputValue)
-                      setOpen(false)
-                      setInputValue("")
-                    }}
-                  >
-                    Use: <span className="ml-2 font-medium">{inputValue}</span>
-                  </Button>
+                  {organizationId && (
+                    <p className="text-xs text-muted-foreground">
+                      Press <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Enter</kbd> to add <span className="font-medium text-foreground">"{formatMaterialName(inputValue)}"</span>
+                    </p>
+                  )}
                 </div>
               ) : (
-                <span className="p-4 text-sm">Type to search or add material</span>
+                <div className="p-4 text-sm text-muted-foreground text-center">
+                  Type to search materials
+                </div>
               )}
             </CommandEmpty>
 
@@ -180,7 +263,7 @@ export function MaterialsCombobox({
                       <Check
                         className={cn(
                           "h-4 w-4 shrink-0",
-                          value?.toLowerCase() === material.value.toLowerCase()
+                          selectedValues.some(v => v.toLowerCase() === material.value.toLowerCase())
                             ? "opacity-100"
                             : "opacity-0"
                         )}
@@ -199,7 +282,7 @@ export function MaterialsCombobox({
                           onClick={(e) => {
                             e.stopPropagation()
                             e.preventDefault()
-                            handleDeleteMaterial(material.id!)
+                            handleDeleteMaterial(material.id!, material.label)
                           }}
                         >
                           <Trash2 className="h-3 w-3" />
@@ -211,92 +294,61 @@ export function MaterialsCombobox({
               </CommandGroup>
             )}
           </CommandList>
-
-          {/* Add Material Section */}
-          {organizationId && (
-            <div className="border-t border-border bg-muted/30">
-              <div className="p-2 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Add Material
-                  </label>
-                  {!showAddForm && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2"
-                      onClick={() => setShowAddForm(true)}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      <span className="text-xs">New</span>
-                    </Button>
-                  )}
-                </div>
-
-                {showAddForm && (
-                  <div className="space-y-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="newMaterialName" className="text-[10px]">Material Name *</Label>
-                      <Input
-                        id="newMaterialName"
-                        value={newMaterialName}
-                        onChange={(e) => setNewMaterialName(e.target.value)}
-                        placeholder="e.g., Oil on canvas"
-                        className="h-7 text-xs"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault()
-                            handleCreateMaterial()
-                          }
-                        }}
-                      />
-                    </div>
-
-                    {error && (
-                      <div className="text-[10px] text-destructive">
-                        {error}
-                      </div>
-                    )}
-
-                    <div className="flex gap-1.5">
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={handleCreateMaterial}
-                        className="h-6 text-[10px] px-2"
-                      >
-                        <Save className="h-3 w-3 mr-1" />
-                        Save
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 text-[10px] px-2"
-                        onClick={() => {
-                          setShowAddForm(false)
-                          setNewMaterialName("")
-                          setError(null)
-                        }}
-                      >
-                        <X className="h-3 w-3 mr-1" />
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {!showAddForm && (
-                  <p className="text-[10px] text-muted-foreground">
-                    Add organization materials
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
         </Command>
       </PopoverContent>
     </Popover>
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={!!materialToDelete} onOpenChange={(open) => !open && setMaterialToDelete(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {materialUsage?.isUsed ? "Cannot Delete Material" : "Delete Material"}
+          </AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            {materialUsage?.isUsed ? (
+              <div className="space-y-2">
+                <div>
+                  The material <span className="font-semibold text-foreground">"{materialToDelete?.name}"</span> cannot be deleted because it is currently being used by {materialUsage.usageCount} {materialUsage.usageCount === 1 ? "collection" : "collections"}.
+                </div>
+                {materialUsage.collectionNames.length > 0 && (
+                  <div className="mt-2">
+                    <div className="text-xs font-medium mb-1">Used in:</div>
+                    <ul className="text-xs list-disc pl-4 space-y-0.5">
+                      {materialUsage.collectionNames.slice(0, 5).map((name) => (
+                        <li key={name}>{name}</li>
+                      ))}
+                      {materialUsage.collectionNames.length > 5 && (
+                        <li className="italic">...and {materialUsage.collectionNames.length - 5} more</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                Are you sure you want to delete <span className="font-semibold text-foreground">"{materialToDelete?.name}"</span>? This action cannot be undone.
+              </div>
+            )}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          {materialUsage?.isUsed ? (
+            <AlertDialogCancel>Close</AlertDialogCancel>
+          ) : (
+            <>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDeleteMaterial}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </>
+          )}
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </div>
   )
 }

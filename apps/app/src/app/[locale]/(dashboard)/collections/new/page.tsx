@@ -27,7 +27,7 @@ interface CollectionFormData {
   culture?: string;
   period?: string;
   dateCreated?: string;
-  materials?: string;
+  materials?: string | string[]; // Can be string or array depending on state
   dimensions?: string;
   description?: string;
   condition?: string;
@@ -60,7 +60,7 @@ export default function CollectionFormPage() {
     culture: "",
     period: "",
     dateCreated: "",
-    materials: "",
+    materials: [], // Initialize as empty array
     dimensions: "",
     description: "",
     condition: "",
@@ -148,6 +148,11 @@ export default function CollectionFormPage() {
 
     setIsSubmitting(true);
     try {
+      // Convert materials array to JSON string for backend
+      const materialsString = Array.isArray(formData.materials) 
+        ? JSON.stringify(formData.materials)
+        : formData.materials;
+
       // Step 1: Create the collection
       const collectionId = await createCollection({
         organizationId: currentOrganizationId,
@@ -158,7 +163,7 @@ export default function CollectionFormPage() {
         culture: formData.culture,
         period: formData.period,
         dateCreated: formData.dateCreated,
-        materials: formData.materials,
+        materials: materialsString,
         dimensions: formData.dimensions,
         description: formData.description,
         condition: formData.condition,
@@ -385,7 +390,7 @@ export default function CollectionFormPage() {
                         </Label>
                         <MaterialsCombobox
                           organizationId={currentOrganizationId}
-                          value={formData.materials || ""}
+                          value={Array.isArray(formData.materials) ? formData.materials : []}
                           onValueChange={(value) => updateField("materials", value)}
                         />
                       </div>

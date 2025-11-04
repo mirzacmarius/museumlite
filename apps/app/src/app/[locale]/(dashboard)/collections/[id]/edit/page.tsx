@@ -34,7 +34,7 @@ interface CollectionFormData {
   culture?: string;
   period?: string;
   dateCreated?: string;
-  materials?: string;
+  materials?: string | string[]; // Can be string or array depending on state
   dimensions?: string;
   description?: string;
   condition?: string;
@@ -77,7 +77,7 @@ export default function CollectionEditPage() {
     culture: "",
     period: "",
     dateCreated: "",
-    materials: "",
+    materials: [], // Initialize as empty array
     dimensions: "",
     description: "",
     condition: "",
@@ -170,6 +170,17 @@ export default function CollectionEditPage() {
   // Load existing data
   useEffect(() => {
     if (collection) {
+      // Parse materials from JSON string to array
+      let materialsArray: string[] = [];
+      if (collection.materials) {
+        try {
+          materialsArray = JSON.parse(collection.materials);
+        } catch {
+          // If not valid JSON, treat as empty array
+          materialsArray = [];
+        }
+      }
+
       setFormData({
         title: collection.title,
         objectType: collection.objectType || "",
@@ -177,7 +188,7 @@ export default function CollectionEditPage() {
         culture: collection.culture || "",
         period: collection.period || "",
         dateCreated: collection.dateCreated || "",
-        materials: collection.materials || "",
+        materials: materialsArray as any, // Store as array in form state
         dimensions: collection.dimensions || "",
         description: collection.description || "",
         condition: collection.condition || "",
@@ -272,9 +283,15 @@ export default function CollectionEditPage() {
 
     setIsSubmitting(true);
     try {
+      // Convert materials array to JSON string for backend
+      const materialsString = Array.isArray(formData.materials) 
+        ? JSON.stringify(formData.materials)
+        : formData.materials;
+
       await updateCollection({
         collectionId: collectionId as Id<"collections">,
         ...formData,
+        materials: materialsString,
         currentLocationId: formData.currentLocationId
           ? (formData.currentLocationId as Id<"locations">)
           : undefined,
@@ -467,7 +484,8 @@ export default function CollectionEditPage() {
                         </Label>
                         <MaterialsCombobox
                           organizationId={currentOrganizationId}
-                          value={formData.materials || ""}
+                          collectionId={collectionId}
+                          value={Array.isArray(formData.materials) ? formData.materials : []}
                           onValueChange={(value) => updateField("materials", value)}
                         />
                       </div>

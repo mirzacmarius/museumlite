@@ -342,11 +342,44 @@ function CollectionDetails({
       <div className="rounded-lg border border-border bg-card p-4">
         <h3 className="mb-3 text-base font-semibold">Physical Characteristics</h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <div>
+          <div className="md:col-span-2 lg:col-span-3">
             <label className="text-sm font-medium text-muted-foreground">
               Materials
             </label>
-            <p className="mt-1 text-sm">{collection.materials || "—"}</p>
+            <div className="mt-1">
+              {(() => {
+                if (!collection.materials) return <span className="text-sm text-muted-foreground">—</span>;
+                
+                try {
+                  // Try to parse as JSON array
+                  const materialsArray = JSON.parse(collection.materials);
+                  if (Array.isArray(materialsArray) && materialsArray.length > 0) {
+                    return (
+                      <div className="flex flex-wrap gap-1.5">
+                        {materialsArray.map((material: string, index: number) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center rounded-md border border-border bg-secondary px-2 py-0.5 text-xs font-medium"
+                          >
+                            {material}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  }
+                  return <span className="text-sm text-muted-foreground">—</span>;
+                } catch {
+                  // If not valid JSON, treat as single string
+                  return (
+                    <span
+                      className="inline-flex items-center rounded-md border border-border bg-secondary px-2 py-0.5 text-xs font-medium"
+                    >
+                      {collection.materials}
+                    </span>
+                  );
+                }
+              })()}
+            </div>
           </div>
           <div>
             <label className="text-sm font-medium text-muted-foreground">

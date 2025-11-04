@@ -71,6 +71,66 @@ export const create = mutation({
 });
 
 /**
+ * Check if a material is being used in any collections
+ * Optionally exclude a specific collection (e.g., when editing that collection)
+ */
+export const checkUsage = query({
+  args: {
+    materialId: v.id("materialOptions"),
+    excludeCollectionId: v.optional(v.id("collections")),
+  },
+  returns: v.object({
+    isUsed: v.boolean(),
+    usageCount: v.number(),
+    collectionNames: v.array(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const material = await ctx.db.get(args.materialId);
+    if (!material) {
+      return { isUsed: false, usageCount: 0, collectionNames: [] };
+    }
+
+    // Check all collections in the organization for this material
+    const collections = await ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) => q.eq("organizationId", material.organizationId))
+      .collect();
+
+    // Filter collections that use this material (excluding the specified collection if provided)
+    const collectionsUsingMaterial = collections.filter((collection) => {
+      // Exclude the current collection being edited
+      if (args.excludeCollectionId && collection._id === args.excludeCollectionId) {
+        return false;
+      }
+      
+      if (!collection.materials) return false;
+      
+      // Safely parse materials - handle both JSON arrays and plain strings
+      let materials: string[];
+      try {
+        materials = JSON.parse(collection.materials) as string[];
+      } catch {
+        // If parsing fails, treat as a single material string
+        materials = [collection.materials];
+      }
+      
+      // Ensure materials is an array
+      if (!Array.isArray(materials)) {
+        materials = [materials];
+      }
+      
+      return materials.includes(material.name);
+    });
+
+    return {
+      isUsed: collectionsUsingMaterial.length > 0,
+      usageCount: collectionsUsingMaterial.length,
+      collectionNames: collectionsUsingMaterial.map((c) => c.accessionNumber),
+    };
+  },
+});
+
+/**
  * Delete a custom material option
  */
 export const remove = mutation({
