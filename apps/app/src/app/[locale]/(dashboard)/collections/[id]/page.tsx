@@ -304,7 +304,27 @@ function CollectionDetails({
               <label className="text-sm font-medium text-muted-foreground">
                 Object Type
               </label>
-              <p className="mt-1 text-sm">{collection.objectType || "—"}</p>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {(() => {
+                  try {
+                    const types = collection.objectType
+                      ? JSON.parse(collection.objectType)
+                      : [];
+                    return Array.isArray(types) && types.length > 0
+                      ? types.map((type: string) => (
+                          <span
+                            key={type}
+                            className="inline-flex items-center rounded-md border bg-secondary px-2 py-0.5 text-xs font-medium"
+                          >
+                            {type}
+                          </span>
+                        ))
+                      : <span className="text-sm text-muted-foreground">—</span>;
+                  } catch {
+                    return <span className="text-sm text-muted-foreground">—</span>;
+                  }
+                })()}
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">

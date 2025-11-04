@@ -478,7 +478,25 @@ function CollectionListItem({
             </div>
           </div>
           <div className="text-right">
-            <p className="text-sm font-medium">{item.objectType || "—"}</p>
+            <div className="flex flex-wrap justify-end gap-1 mb-1">
+              {(() => {
+                try {
+                  const types = item.objectType ? JSON.parse(item.objectType) : [];
+                  return Array.isArray(types) && types.length > 0
+                    ? types.map((type: string) => (
+                        <span
+                          key={type}
+                          className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-medium"
+                        >
+                          {type}
+                        </span>
+                      ))
+                    : <span className="text-sm text-muted-foreground">—</span>;
+                } catch {
+                  return <span className="text-sm text-muted-foreground">—</span>;
+                }
+              })()}
+            </div>
             <p className="text-xs text-muted-foreground capitalize">
               {item.status}
             </p>

@@ -4,6 +4,7 @@ import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { ConditionCombobox } from "@/components/condition-combobox";
 import { LocationSelector } from "@/components/location-selector";
 import { MaterialsCombobox } from "@/components/materials-combobox";
+import { TypeCombobox } from "@/components/type-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -30,7 +31,7 @@ import { useEffect, useRef, useState } from "react";
 
 interface CollectionFormData {
   title: string;
-  objectType?: string;
+  objectType?: string | string[]; // Can be string or array depending on state
   objectName?: string;
   culture?: string;
   period?: string;
@@ -73,7 +74,7 @@ export default function CollectionEditPage() {
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<CollectionFormData>({
     title: "",
-    objectType: "",
+    objectType: [], // Initialize as empty array
     objectName: "",
     culture: "",
     period: "",
@@ -188,9 +189,20 @@ export default function CollectionEditPage() {
         }
       }
 
+      // Parse objectType from JSON string to array
+      let objectTypeArray: string[] = [];
+      if (collection.objectType) {
+        try {
+          objectTypeArray = JSON.parse(collection.objectType);
+        } catch {
+          // If not valid JSON, treat as empty array
+          objectTypeArray = [];
+        }
+      }
+
       setFormData({
         title: collection.title,
-        objectType: collection.objectType || "",
+        objectType: objectTypeArray, // Store as array in form state
         objectName: collection.objectName || "",
         culture: collection.culture || "",
         period: collection.period || "",
@@ -293,10 +305,16 @@ export default function CollectionEditPage() {
         ? JSON.stringify(formData.materials)
         : formData.materials;
 
+      // Convert objectType array to JSON string for backend
+      const objectTypeString = Array.isArray(formData.objectType)
+        ? JSON.stringify(formData.objectType)
+        : formData.objectType;
+
       await updateCollection({
         collectionId: collectionId as Id<"collections">,
         ...formData,
         materials: materialsString,
+        objectType: objectTypeString,
         currentLocationId: formData.currentLocationId
           ? (formData.currentLocationId as Id<"locations">)
           : undefined,
@@ -423,13 +441,18 @@ export default function CollectionEditPage() {
 
                       <div>
                         <Label htmlFor="objectType">Object Type</Label>
-                        <Input
-                          id="objectType"
-                          value={formData.objectType || ""}
-                          onChange={(e) =>
-                            updateField("objectType", e.target.value)
+                        <TypeCombobox
+                          organizationId={currentOrganizationId}
+                          collectionId={collectionId}
+                          value={
+                            Array.isArray(formData.objectType)
+                              ? formData.objectType
+                              : []
                           }
-                          placeholder="e.g., Painting, Sculpture"
+                          onValueChange={(value) =>
+                            updateField("objectType", value)
+                          }
+                          placeholder="Select or add types..."
                         />
                       </div>
 

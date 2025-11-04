@@ -30,6 +30,7 @@ import type * as organizations from "../organizations.js";
 import type * as roles from "../roles.js";
 import type * as seed from "../seed.js";
 import type * as subscriptions from "../subscriptions.js";
+import type * as typeOptions from "../typeOptions.js";
 import type * as users from "../users.js";
 import type * as utils_accessionCounter from "../utils/accessionCounter.js";
 import type * as utils_accessionNumberParser from "../utils/accessionNumberParser.js";
@@ -73,6 +74,7 @@ declare const fullApi: ApiFromModules<{
   roles: typeof roles;
   seed: typeof seed;
   subscriptions: typeof subscriptions;
+  typeOptions: typeof typeOptions;
   users: typeof users;
   "utils/accessionCounter": typeof utils_accessionCounter;
   "utils/accessionNumberParser": typeof utils_accessionNumberParser;

@@ -10,6 +10,7 @@ import { Textarea } from "@v1/ui/textarea";
 import { ConditionCombobox } from "@/components/condition-combobox";
 import { LocationSelector } from "@/components/location-selector";
 import { MaterialsCombobox } from "@/components/materials-combobox";
+import { TypeCombobox } from "@/components/type-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
@@ -22,7 +23,7 @@ import React, { useState, useRef } from "react";
 interface CollectionFormData {
   accessionNumber?: string;
   title: string;
-  objectType?: string;
+  objectType?: string | string[]; // Can be string or array depending on state
   objectName?: string;
   culture?: string;
   period?: string;
@@ -57,7 +58,7 @@ export default function CollectionFormPage() {
   >([]);
   const [formData, setFormData] = useState<CollectionFormData>({
     title: "",
-    objectType: "",
+    objectType: [], // Initialize as empty array
     objectName: "",
     culture: "",
     period: "",
@@ -155,12 +156,17 @@ export default function CollectionFormPage() {
         ? JSON.stringify(formData.materials)
         : formData.materials;
 
+      // Convert objectType array to JSON string for backend
+      const objectTypeString = Array.isArray(formData.objectType)
+        ? JSON.stringify(formData.objectType)
+        : formData.objectType;
+
       // Step 1: Create the collection
       const collectionId = await createCollection({
         organizationId: currentOrganizationId,
         accessionNumber: formData.accessionNumber,
         title: formData.title,
-        objectType: formData.objectType,
+        objectType: objectTypeString,
         objectName: formData.objectName,
         culture: formData.culture,
         period: formData.period,
@@ -323,13 +329,17 @@ export default function CollectionFormPage() {
 
                       <div>
                         <Label htmlFor="objectType">Object Type</Label>
-                        <Input
-                          id="objectType"
-                          value={formData.objectType || ""}
-                          onChange={(e) =>
-                            updateField("objectType", e.target.value)
+                        <TypeCombobox
+                          organizationId={currentOrganizationId}
+                          value={
+                            Array.isArray(formData.objectType)
+                              ? formData.objectType
+                              : []
                           }
-                          placeholder="e.g., Painting, Sculpture"
+                          onValueChange={(value) =>
+                            updateField("objectType", value)
+                          }
+                          placeholder="Select or add types..."
                         />
                       </div>
 
