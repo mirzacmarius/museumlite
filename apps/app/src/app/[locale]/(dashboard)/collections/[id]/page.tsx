@@ -2,6 +2,7 @@
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { MoveObjectDialog } from "@/app/[locale]/(dashboard)/locations/_components/move-object-dialog";
+import { getConditionIcon } from "@/components/condition-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -412,7 +413,10 @@ function CollectionDetails({
                 <label className="text-sm font-medium text-muted-foreground">
                   Condition
                 </label>
-                <p className="mt-1 text-sm">{collection.condition}</p>
+                <div className="mt-1 flex items-center gap-1.5">
+                  {getConditionIcon(collection.condition)}
+                  <span className="text-sm">{collection.condition}</span>
+                </div>
               </div>
             )}
           </div>

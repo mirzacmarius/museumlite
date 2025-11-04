@@ -75,6 +75,23 @@ const STANDARD_CONDITIONS: ConditionOption[] = [
   },
 ];
 
+/**
+ * Get the icon for a given condition value
+ * Returns the standard condition icon, or Edit3 icon for custom conditions
+ */
+export function getConditionIcon(conditionValue: string): React.ReactNode {
+  const standardCondition = STANDARD_CONDITIONS.find(
+    (c) => c.value.toLowerCase() === conditionValue.toLowerCase()
+  );
+  
+  if (standardCondition) {
+    return standardCondition.icon;
+  }
+  
+  // Return custom condition icon for non-standard conditions
+  return <Edit3 className="h-3.5 w-3.5 text-purple-500" />;
+}
+
 interface ConditionComboboxProps {
   organizationId?: string;
   value?: string;
