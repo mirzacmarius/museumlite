@@ -3,6 +3,7 @@
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { MoveObjectDialog } from "@/app/[locale]/(dashboard)/locations/_components/move-object-dialog";
 import { getConditionIcon } from "@/components/condition-combobox";
+import { DeaccessionDialog } from "@/components/deaccession-dialog";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -15,6 +16,7 @@ import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
+  AlertOctagon,
   Archive,
   ArrowLeft,
   CheckCircle,
@@ -39,11 +41,19 @@ export default function CollectionDetailPage() {
     "details" | "media" | "history" | "loans"
   >("details");
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [deaccessionDialogOpen, setDeaccessionDialogOpen] = useState(false);
 
   const collection = useQuery(
     api.collections.get,
     collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
   );
+
+  // Query loans to check if item is on active loan
+  const loans = useQuery(
+    api.loans.getLoansForCollection,
+    collection ? { collectionId: collection._id } : "skip",
+  );
+  const hasActiveLoan = loans?.some((loan) => loan.status === "active") ?? false;
 
   if (!currentOrganizationId) {
     return (
@@ -137,6 +147,27 @@ export default function CollectionDetailPage() {
                     </Link>
                   </Button>
                 </PermissionGate>
+                <PermissionGate permission="collections.approve_deaccession">
+                  {collection.status === "active" && !hasActiveLoan && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => setDeaccessionDialogOpen(true)}
+                    >
+                      <Archive className="mr-2 h-4 w-4" />
+                      Deaccession
+                    </Button>
+                  )}
+                  {collection.status === "active" && hasActiveLoan && (
+                    <Button
+                      variant="outline"
+                      disabled
+                      title="Cannot deaccession - item is on active loan"
+                    >
+                      <AlertOctagon className="mr-2 h-4 w-4" />
+                      On Loan
+                    </Button>
+                  )}
+                </PermissionGate>
               </div>
             </div>
 
@@ -221,6 +252,13 @@ export default function CollectionDetailPage() {
         onSuccess={() => {
           // Refresh will happen automatically via Convex subscription
         }}
+      />
+      <DeaccessionDialog
+        open={deaccessionDialogOpen}
+        onOpenChange={setDeaccessionDialogOpen}
+        collectionId={collectionId as Id<"collections">}
+        collectionTitle={collection.title}
+        organizationId={collection.organizationId}
       />
     </>
   );

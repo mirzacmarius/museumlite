@@ -6,18 +6,14 @@ import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { useQuery } from "convex/react";
-import {
-  ArrowLeft,
-  CheckCircle,
-  Clock,
-  Edit,
-  ExternalLink,
-  XCircle,
-} from "lucide-react";
+import { Label } from "@v1/ui/label";
+import { Textarea } from "@v1/ui/textarea";
+import { useMutation, useQuery } from "convex/react";
+import { ArrowLeft, CheckCircle, Clock, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ApprovalWorkflow } from "./_components/approval-workflow";
+import { useState } from "react";
+import { format } from "date-fns";
 
 export default function DeaccessionDetailPage() {
   const params = useParams();
@@ -31,17 +27,33 @@ export default function DeaccessionDetailPage() {
       : "skip",
   );
 
+  const collection = useQuery(
+    api.collections.get,
+    deaccession ? { collectionId: deaccession.collectionId } : "skip",
+  );
+
+  const workflowHistory = useQuery(
+    api.deaccessions.getWorkflowHistory,
+    deaccessionId
+      ? { deaccessionId: deaccessionId as Id<"deaccessions"> }
+      : "skip",
+  );
+
+  const [comment, setComment] = useState("");
+  const [isApproving, setIsApproving] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
+  const approve = useMutation(api.deaccessions.approve);
+  const reject = useMutation(api.deaccessions.reject);
+
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">
-          Please select an organization to view deaccessions.
-        </p>
+        <p className="text-muted-foreground">Please select an organization</p>
       </div>
     );
   }
 
-  if (deaccession === undefined) {
+  if (deaccession === undefined || collection === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <p className="text-muted-foreground">Loading...</p>
@@ -57,196 +69,243 @@ export default function DeaccessionDetailPage() {
     );
   }
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "pending":
-        return <Clock className="h-5 w-5 text-yellow-500" />;
-      case "approved":
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case "rejected":
-        return <XCircle className="h-5 w-5 text-red-500" />;
-      default:
-        return null;
+  const handleApprove = async () => {
+    setIsApproving(true);
+    try {
+      await approve({
+        deaccessionId: deaccessionId as Id<"deaccessions">,
+        comment: comment || undefined,
+      });
+      setComment("");
+      // Show success - toast would go here
+    } catch (error) {
+      console.error("Failed to approve:", error);
+      // Show error - toast would go here
+    } finally {
+      setIsApproving(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const handleReject = async () => {
+    setIsRejecting(true);
+    try {
+      await reject({
+        deaccessionId: deaccessionId as Id<"deaccessions">,
+        comment: comment || undefined,
+      });
+      setComment("");
+      // Show success - toast would go here
+    } catch (error) {
+      console.error("Failed to reject:", error);
+      // Show error - toast would go here
+    } finally {
+      setIsRejecting(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400";
+        return (
+          <span className="inline-flex items-center rounded-full bg-blue-500/10 px-3 py-1 text-sm font-medium text-blue-600">
+            <Clock className="mr-1.5 h-4 w-4" />
+            Pending
+          </span>
+        );
       case "approved":
-        return "bg-green-500/10 text-green-600 dark:text-green-400";
+        return (
+          <span className="inline-flex items-center rounded-full bg-green-500/10 px-3 py-1 text-sm font-medium text-green-600">
+            <CheckCircle className="mr-1.5 h-4 w-4" />
+            Approved
+          </span>
+        );
       case "rejected":
-        return "bg-red-500/10 text-red-600 dark:text-red-400";
-      default:
-        return "bg-muted text-muted-foreground";
+        return (
+          <span className="inline-flex items-center rounded-full bg-red-500/10 px-3 py-1 text-sm font-medium text-red-600">
+            <XCircle className="mr-1.5 h-4 w-4" />
+            Rejected
+          </span>
+        );
     }
   };
 
   return (
     <>
       <Header
-        title={`Deaccession ${deaccession.deaccessionNumber}`}
-        description={`${deaccession.method.charAt(0).toUpperCase() + deaccession.method.slice(1)} • ${new Date(deaccession.dateDeaccessioned).toLocaleDateString()}`}
+        title={deaccession.deaccessionNumber}
+        description="Deaccession details and approval"
       />
       <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
         <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-          <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
-            {/* Header */}
-            <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/deaccessions">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Deaccessions
-                  </Link>
-                </Button>
-                <div className="flex items-center gap-3">
-                  {getStatusIcon(deaccession.status)}
-                  <span
-                    className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusColor(
-                      deaccession.status,
-                    )}`}
-                  >
-                    {deaccession.status.charAt(0).toUpperCase() +
-                      deaccession.status.slice(1)}
-                  </span>
-                  {deaccession.workflowStep && (
-                    <span className="text-sm text-muted-foreground">
-                      Step {deaccession.workflowStep}
-                    </span>
-                  )}
+          <div className="flex w-full flex-col gap-6">
+            {/* Back button */}
+            <Button variant="ghost" size="sm" asChild className="w-fit">
+              <Link href="/deaccessions">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Deaccessions
+              </Link>
+            </Button>
+
+            {/* Deaccession Info Card */}
+            <div className="rounded-lg border border-border bg-card p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h2 className="text-2xl font-semibold">
+                    {deaccession.deaccessionNumber}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {format(
+                      new Date(deaccession.dateDeaccessioned),
+                      "MMMM d, yyyy",
+                    )}
+                  </p>
                 </div>
+                {getStatusBadge(deaccession.status)}
               </div>
-              <div className="flex gap-2">
-                {deaccession.status === "pending" && (
-                  <PermissionGate permission="collections.update">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/deaccessions/${deaccessionId}/edit`}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                      </Link>
-                    </Button>
-                  </PermissionGate>
+
+              <div className="grid gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Reason</Label>
+                  <p className="mt-1 whitespace-pre-wrap">
+                    {deaccession.reason}
+                  </p>
+                </div>
+
+                <div>
+                  <Label className="text-muted-foreground">Method</Label>
+                  <p className="mt-1 capitalize">{deaccession.method}</p>
+                </div>
+
+                {deaccession.disposition && (
+                  <div>
+                    <Label className="text-muted-foreground">Disposition</Label>
+                    <p className="mt-1 whitespace-pre-wrap">
+                      {deaccession.disposition}
+                    </p>
+                  </div>
                 )}
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/collections/${deaccession.collectionId}`}>
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    View Collection
-                  </Link>
-                </Button>
+
+                {deaccession.notes && (
+                  <div>
+                    <Label className="text-muted-foreground">Notes</Label>
+                    <p className="mt-1 whitespace-pre-wrap">
+                      {deaccession.notes}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Content */}
-            <div className="p-6">
-              <div className="grid gap-6 md:grid-cols-2">
-                {/* Deaccession Details */}
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Deaccession Number
-                    </label>
-                    <p className="mt-1 text-lg font-medium">
-                      {deaccession.deaccessionNumber}
+            {/* Collection Info Card */}
+            {collection && (
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h3 className="text-lg font-semibold mb-4">Collection Object</h3>
+                <Link
+                  href={`/collections/${collection._id}`}
+                  className="flex items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-accent"
+                >
+                  <div className="flex-1">
+                    <h4 className="font-medium">{collection.title}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {collection.accessionNumber}
+                    </p>
+                    <p className="text-sm text-muted-foreground capitalize mt-1">
+                      Status: {collection.status}
                     </p>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Date Deaccessioned
-                    </label>
-                    <p className="mt-1">
-                      {new Date(
-                        deaccession.dateDeaccessioned,
-                      ).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Reason
-                    </label>
-                    <p className="mt-1">{deaccession.reason}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Method
-                    </label>
-                    <p className="mt-1 capitalize">{deaccession.method}</p>
-                  </div>
-                  {deaccession.disposition && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Disposition
-                      </label>
-                      <p className="mt-1">{deaccession.disposition}</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  {deaccession.notes && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Notes
-                      </label>
-                      <p className="mt-1 whitespace-pre-wrap">
-                        {deaccession.notes}
-                      </p>
-                    </div>
-                  )}
-                  {deaccession.approvedBy && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Approved By
-                      </label>
-                      <p className="mt-1">
-                        {deaccession.approvedAt
-                          ? new Date(deaccession.approvedAt).toLocaleString()
-                          : "—"}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                  <ArrowLeft className="h-4 w-4 rotate-180 flex-shrink-0" />
+                </Link>
               </div>
+            )}
 
-              {/* Approval Workflow */}
-              {deaccession.status === "pending" && (
-                <div className="mt-8 border-t border-border pt-6">
-                  <ApprovalWorkflow deaccessionId={deaccessionId} />
-                </div>
-              )}
-
-              {/* Workflow History */}
-              {deaccession.workflowHistory &&
-                deaccession.workflowHistory.length > 0 && (
-                  <div className="mt-8 border-t border-border pt-6">
-                    <h3 className="mb-4 text-lg font-medium">
-                      Workflow History
-                    </h3>
-                    <div className="space-y-3">
-                      {deaccession.workflowHistory.map((entry) => (
-                        <div
-                          key={`${entry.step}-${entry.approvedBy}-${entry.approvedAt}`}
-                          className="rounded-lg border border-border bg-card p-4"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">Step {entry.step}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {new Date(entry.approvedAt).toLocaleString()}
-                              </p>
-                              {entry.comment && (
-                                <p className="mt-1 text-sm">{entry.comment}</p>
-                              )}
-                            </div>
-                            <CheckCircle className="h-5 w-5 text-green-500" />
-                          </div>
+            {/* Workflow Timeline */}
+            {workflowHistory && workflowHistory.length > 0 && (
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h3 className="text-lg font-semibold mb-4">Workflow History</h3>
+                <div className="space-y-4">
+                  {workflowHistory.map((entry, index) => (
+                    <div key={index} className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-medium flex-shrink-0">
+                          {entry.step}
                         </div>
-                      ))}
+                        {index < workflowHistory.length - 1 && (
+                          <div className="flex-1 w-px bg-border mt-2 min-h-[40px]" />
+                        )}
+                      </div>
+                      <div className="flex-1 pb-4">
+                        <p className="font-medium">
+                          {entry.step === 0
+                            ? "Created"
+                            : `Step ${entry.step} - Approved`}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {entry.approverName || "Unknown"} •{" "}
+                          {format(
+                            new Date(entry.approvedAt),
+                            "MMM d, yyyy 'at' h:mm a",
+                          )}
+                        </p>
+                        {entry.comment && (
+                          <p className="mt-2 text-sm italic bg-muted/50 p-2 rounded">
+                            {entry.comment}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Approval Actions */}
+            {deaccession.status === "pending" && (
+              <PermissionGate permission="collections.approve_deaccession">
+                <div className="rounded-lg border border-border bg-card p-6">
+                  <h3 className="text-lg font-semibold mb-4">
+                    Approval Action
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="comment">Comment (optional)</Label>
+                      <Textarea
+                        id="comment"
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        placeholder="Add a comment about your decision..."
+                        rows={3}
+                        disabled={isApproving || isRejecting}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleApprove}
+                        disabled={isApproving || isRejecting}
+                      >
+                        {isApproving && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        {!isApproving && (
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                        )}
+                        Approve
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={handleReject}
+                        disabled={isApproving || isRejecting}
+                      >
+                        {isRejecting && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        {!isRejecting && <XCircle className="mr-2 h-4 w-4" />}
+                        Reject
+                      </Button>
                     </div>
                   </div>
-                )}
-            </div>
+                </div>
+              </PermissionGate>
+            )}
           </div>
         </div>
       </div>

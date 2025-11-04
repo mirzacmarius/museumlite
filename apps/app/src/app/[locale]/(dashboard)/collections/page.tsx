@@ -17,7 +17,7 @@ import {
 } from "@v1/ui/select";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { Building2, Filter, MapPin, Plus, Search, X } from "lucide-react";
+import { Archive, Building2, Filter, MapPin, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -497,9 +497,16 @@ function CollectionListItem({
                 }
               })()}
             </div>
-            <p className="text-xs text-muted-foreground capitalize">
-              {item.status}
-            </p>
+            {item.status === "deaccessioned" ? (
+              <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-600">
+                <Archive className="mr-1 h-3 w-3" />
+                Deaccessioned
+              </span>
+            ) : (
+              <p className="text-xs text-muted-foreground capitalize">
+                {item.status}
+              </p>
+            )}
           </div>
         </div>
       </div>
