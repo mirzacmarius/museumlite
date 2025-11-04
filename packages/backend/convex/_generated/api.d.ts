@@ -23,6 +23,7 @@ import type * as http from "../http.js";
 import type * as init from "../init.js";
 import type * as loans from "../loans.js";
 import type * as locations from "../locations.js";
+import type * as materialOptions from "../materialOptions.js";
 import type * as media from "../media.js";
 import type * as mediaThumbnails from "../mediaThumbnails.js";
 import type * as organizations from "../organizations.js";
@@ -65,6 +66,7 @@ declare const fullApi: ApiFromModules<{
   init: typeof init;
   loans: typeof loans;
   locations: typeof locations;
+  materialOptions: typeof materialOptions;
   media: typeof media;
   mediaThumbnails: typeof mediaThumbnails;
   organizations: typeof organizations;

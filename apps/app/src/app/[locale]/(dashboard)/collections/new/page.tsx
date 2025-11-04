@@ -10,6 +10,7 @@ import { Label } from "@v1/ui/label";
 import { useOrganization } from "@/components/organization-provider";
 import { LocationSelector } from "@/components/location-selector";
 import { ConditionCombobox } from "@/components/condition-combobox";
+import { MaterialsCombobox } from "@/components/materials-combobox";
 import { useMutation } from "convex/react";
 import { ArrowLeft, Save, Upload, X, Star } from "lucide-react";
 import Link from "next/link";
@@ -382,11 +383,10 @@ export default function CollectionFormPage() {
                         <Label htmlFor="materials">
                           Materials
                         </Label>
-                        <Input
-                          id="materials"
+                        <MaterialsCombobox
+                          organizationId={currentOrganizationId}
                           value={formData.materials || ""}
-                          onChange={(e) => updateField("materials", e.target.value)}
-                          placeholder="e.g., Oil on canvas"
+                          onValueChange={(value) => updateField("materials", value)}
                         />
                       </div>
 

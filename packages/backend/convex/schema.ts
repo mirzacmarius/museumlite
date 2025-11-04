@@ -189,6 +189,17 @@ export default defineSchema({
   })
     .index("by_organization", ["organizationId"]),
 
+  // Custom material options per organization
+  materialOptions: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    usageCount: v.optional(v.number()),
+    lastUsedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"]),
+
   // Media attachments for objects
   mediaFiles: defineTable({
     collectionId: v.id("collections"),

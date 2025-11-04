@@ -77,6 +77,12 @@ export default function OrganizationSettingsPage() {
     currentOrganizationId ? { organizationId: currentOrganizationId as Id<"organizations"> } : "skip"
   );
 
+  // Query custom materials (for display only)
+  const customMaterials = useQuery(
+    api.materialOptions.list,
+    currentOrganizationId ? { organizationId: currentOrganizationId as Id<"organizations"> } : "skip"
+  );
+
   // Validation query with debouncing
   const validation = useQuery(
     api.organizations.validateAccessionFormat,
@@ -509,6 +515,40 @@ export default function OrganizationSettingsPage() {
                   <p className="text-xs text-muted-foreground mt-2">
                     Standard conditions (Excellent, Very Good, Good, Poor) are always available.
                   </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-border bg-card p-6">
+              <h2 className="mb-4 text-lg font-medium">Material Options</h2>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Organization Materials</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Materials can be added directly from the materials field when creating or editing collections.
+                  </p>
+                  {customMaterials && customMaterials.length > 0 && (
+                    <div className="mt-3 rounded-lg border p-3 bg-secondary/10">
+                      <p className="text-xs font-medium mb-2">Your Materials:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {customMaterials.map((material) => (
+                          <div key={material._id} className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-1">
+                            <span className="text-xs font-medium">{material.name}</span>
+                            {material.usageCount ? (
+                              <span className="text-[10px] text-muted-foreground">
+                                ({material.usageCount})
+                              </span>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="mt-3 rounded-lg border border-dashed p-4 bg-muted/20">
+                    <p className="text-xs text-muted-foreground">
+                      💡 <strong>Tip:</strong> Open the materials dropdown in any collection form and click "New" to add materials on the fly.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
