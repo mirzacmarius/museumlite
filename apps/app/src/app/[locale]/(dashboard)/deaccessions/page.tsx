@@ -270,9 +270,10 @@ function DeaccessionListItem({
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <h3 className="font-medium">{item.deaccessionNumber}</h3>
             {getStatusBadge(item.status)}
-            {item.workflowStep && (
-              <span className="text-xs text-muted-foreground">
-                Step {item.workflowStep}
+            {item.status === "pending" && item.workflowStep && (
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                <Clock className="h-3 w-3" />
+                Awaiting step {item.workflowStep}
               </span>
             )}
           </div>

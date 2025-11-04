@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -24,7 +24,13 @@ import {
 import { Calendar } from "@v1/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Calendar as CalendarIcon,
+  CheckCircle,
+  Info,
+  Loader2,
+} from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@v1/ui/utils";
@@ -57,6 +63,16 @@ export function DeaccessionDialog({
 
   const router = useRouter();
   const createDeaccession = useMutation(api.deaccessions.create);
+
+  // Query workflow configuration to show approval info
+  const workflowConfigs = useQuery(
+    api.organizations.getWorkflowConfigs,
+    organizationId ? { organizationId } : "skip",
+  );
+
+  const deaccessionWorkflow = workflowConfigs?.find(
+    (w) => w.workflowType === "deaccession",
+  );
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
@@ -103,10 +119,48 @@ export function DeaccessionDialog({
         <DialogHeader>
           <DialogTitle>Deaccession Object</DialogTitle>
           <DialogDescription>
-            Remove "{collectionTitle}" from the collection. This action requires
-            approval.
+            Remove "{collectionTitle}" from the collection.
           </DialogDescription>
         </DialogHeader>
+
+        {/* Workflow Status Info */}
+        {deaccessionWorkflow && (
+          <div className="rounded-lg bg-blue-50 border border-blue-200 p-4 dark:bg-blue-950 dark:border-blue-800">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium text-blue-900 dark:text-blue-100">
+                  Approval Required
+                </p>
+                <p className="text-blue-700 dark:text-blue-300 mt-1">
+                  This deaccession requires{" "}
+                  {deaccessionWorkflow.steps.length === 1
+                    ? "administrator approval"
+                    : `${deaccessionWorkflow.steps.length} approval steps`}{" "}
+                  before the item is removed from the collection.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!deaccessionWorkflow && workflowConfigs !== undefined && (
+          <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 dark:bg-amber-950 dark:border-amber-800">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium text-amber-900 dark:text-amber-100">
+                  No Approval Workflow
+                </p>
+                <p className="text-amber-700 dark:text-amber-300 mt-1">
+                  This deaccession will be automatically approved. Contact an
+                  administrator to set up approval workflows in organization
+                  settings.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-4 py-4">
           {/* Date Picker */}

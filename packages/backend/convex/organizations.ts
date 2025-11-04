@@ -84,6 +84,34 @@ export const create = mutation({
         roleId: adminRole._id,
         joinedAt: Date.now(),
       });
+
+      // Create default workflow configurations
+      // Both deaccession and accession require admin approval by default
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "deaccession",
+        steps: [
+          {
+            stepNumber: 1,
+            roleId: adminRole._id,
+            name: "Administrator Approval",
+          },
+        ],
+        canInitiateRoles: [adminRole._id],
+      });
+
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "accession",
+        steps: [
+          {
+            stepNumber: 1,
+            roleId: adminRole._id,
+            name: "Administrator Approval",
+          },
+        ],
+        canInitiateRoles: [adminRole._id],
+      });
     }
 
     return organizationId;
@@ -282,6 +310,38 @@ export const getSettings = query({
   handler: async (ctx, args) => {
     const org = await ctx.db.get(args.organizationId);
     return org?.settings ?? null;
+  },
+});
+
+/**
+ * Get workflow configurations for an organization
+ */
+export const getWorkflowConfigs = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("workflowConfigs"),
+      workflowType: v.union(v.literal("accession"), v.literal("deaccession")),
+      steps: v.array(
+        v.object({
+          stepNumber: v.number(),
+          roleId: v.id("roles"),
+          name: v.string(),
+        }),
+      ),
+      canInitiateRoles: v.array(v.id("roles")),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    // No permission check - anyone in the organization can view workflow configs
+    return await ctx.db
+      .query("workflowConfigs")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
   },
 });
 

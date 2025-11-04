@@ -226,6 +226,23 @@ export default function CollectionDetailPage() {
               </button>
             </div>
 
+            {/* Deaccession Status Banner */}
+            {collection.status === "deaccessioned" && (
+              <div className="mx-4 mt-4 rounded-lg bg-red-50 border border-red-200 p-4 dark:bg-red-950 dark:border-red-800">
+                <div className="flex items-center gap-3">
+                  <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-red-900 dark:text-red-100">
+                      Deaccessioned Item
+                    </p>
+                    <p className="text-sm text-red-700 dark:text-red-300">
+                      This item has been officially removed from the collection
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Tab Content */}
             <div className="p-4">
               {activeTab === "details" && (
