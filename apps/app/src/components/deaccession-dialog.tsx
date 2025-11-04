@@ -14,7 +14,13 @@ import {
 import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
 import { Calendar } from "@v1/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { format } from "date-fns";
@@ -148,47 +154,31 @@ export function DeaccessionDialog({
 
           {/* Method */}
           <div className="space-y-2">
-            <Label>Method *</Label>
-            <RadioGroup
+            <Label htmlFor="method">Method *</Label>
+            <Select
               value={method}
               onValueChange={(v) =>
                 setMethod(v as typeof method)
               }
             >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="sale" id="sale" />
-                <Label htmlFor="sale" className="font-normal cursor-pointer">
+              <SelectTrigger id="method">
+                <SelectValue placeholder="Select disposal method" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sale">
                   Sale - Sold to another institution or collector
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="donation" id="donation" />
-                <Label
-                  htmlFor="donation"
-                  className="font-normal cursor-pointer"
-                >
+                </SelectItem>
+                <SelectItem value="donation">
                   Donation - Given to another institution or organization
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="transfer" id="transfer" />
-                <Label
-                  htmlFor="transfer"
-                  className="font-normal cursor-pointer"
-                >
+                </SelectItem>
+                <SelectItem value="transfer">
                   Transfer - Transferred within organization or to related entity
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="destruction" id="destruction" />
-                <Label
-                  htmlFor="destruction"
-                  className="font-normal cursor-pointer"
-                >
+                </SelectItem>
+                <SelectItem value="destruction">
                   Destruction - Object destroyed or discarded
-                </Label>
-              </div>
-            </RadioGroup>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Disposition */}
