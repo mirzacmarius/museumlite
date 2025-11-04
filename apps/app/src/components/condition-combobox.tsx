@@ -1,12 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsUpDown, Sparkles, Pencil, Trash2, Star, ThumbsUp, CheckCircle, AlertTriangle, Save, Plus, X } from "lucide-react"
+import { Check, ChevronsUpDown, Trash2, Gem, Sparkles, ShieldCheck, AlertOctagon, Edit3 } from "lucide-react"
 import { cn } from "@v1/ui/utils"
 import { Button } from "@v1/ui/button"
-import { Input } from "@v1/ui/input"
-import { Textarea } from "@v1/ui/textarea"
-import { Label } from "@v1/ui/label"
 import {
   Command,
   CommandEmpty,
@@ -14,13 +11,22 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
 } from "@v1/ui/command"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@v1/ui/popover"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@v1/ui/alert-dialog"
 import { api } from "@v1/backend/convex/_generated/api"
 import type { Id } from "@v1/backend/convex/_generated/dataModel"
 import { useQuery, useMutation } from "convex/react"
@@ -38,25 +44,25 @@ const STANDARD_CONDITIONS: ConditionOption[] = [
     value: "Excellent",
     label: "Excellent",
     description: "New or mint condition. Either purchased new or has been well curated since it was made.",
-    icon: <Star className="h-3.5 w-3.5 text-yellow-500" />,
+    icon: <Gem className="h-3.5 w-3.5 text-emerald-500" />,
   },
   {
     value: "Very Good",
     label: "Very Good",
     description: "Shows some minor signs of use or age. Wear is normal, no visible damage.",
-    icon: <ThumbsUp className="h-3.5 w-3.5 text-green-500" />,
+    icon: <Sparkles className="h-3.5 w-3.5 text-cyan-500" />,
   },
   {
     value: "Good",
     label: "Good",
     description: "Item is aged or faded and may show minor damage but remains structurally sound.",
-    icon: <CheckCircle className="h-3.5 w-3.5 text-blue-500" />,
+    icon: <ShieldCheck className="h-3.5 w-3.5 text-blue-500" />,
   },
   {
     value: "Poor",
     label: "Poor",
     description: "Item exhibits severe damage or heavy use and would require extensive stabilization, restoration or conservation.",
-    icon: <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />,
+    icon: <AlertOctagon className="h-3.5 w-3.5 text-red-500" />,
   },
 ]
 
@@ -66,9 +72,6 @@ interface ConditionComboboxProps {
   onValueChange?: (value: string) => void
   placeholder?: string
   disabled?: boolean
-  // Optional handlers for custom condition management
-  onEditCondition?: (id: string) => void
-  onDeleteCondition?: (id: string) => void
 }
 
 export function ConditionCombobox({
@@ -77,20 +80,21 @@ export function ConditionCombobox({
   onValueChange,
   placeholder = "Select condition...",
   disabled = false,
-  onEditCondition,
-  onDeleteCondition,
 }: ConditionComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("")
-  const [showAddForm, setShowAddForm] = React.useState(false)
-  const [newConditionName, setNewConditionName] = React.useState("")
-  const [newConditionDesc, setNewConditionDesc] = React.useState("")
-  const [error, setError] = React.useState<string | null>(null)
+  const [conditionToDelete, setConditionToDelete] = React.useState<{ id: string; name: string } | null>(null)
 
   // Fetch custom conditions for the organization
   const customConditions = useQuery(
     api.conditionOptions.list,
     organizationId ? { organizationId: organizationId as Id<"organizations"> } : "skip"
+  )
+
+  // Check condition usage when attempting to delete
+  const conditionUsage = useQuery(
+    api.conditionOptions.checkUsage,
+    conditionToDelete ? { conditionId: conditionToDelete.id as Id<"conditionOptions"> } : "skip"
   )
 
   // Mutations
@@ -135,61 +139,66 @@ export function ConditionCombobox({
 
   const hasResults = filteredSystemConditions.length > 0 || filteredCustomConditions.length > 0
 
-  // Handle creating new condition inline
-  const handleCreateCondition = async () => {
-    if (!organizationId) {
-      setError("Organization not found")
+  // Format condition name with first letter uppercase
+  const formatConditionName = (name: string): string => {
+    const trimmed = name.trim()
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1)
+  }
+
+  // Handle creating and selecting condition inline
+  const handleCreateAndSelectCondition = async (conditionName: string) => {
+    if (!organizationId || !conditionName.trim()) {
       return
     }
 
-    if (!newConditionName.trim()) {
-      setError("Condition name is required")
-      return
-    }
-
-    if (!newConditionDesc.trim()) {
-      setError("Condition description is required")
-      return
-    }
+    const formattedName = formatConditionName(conditionName)
 
     try {
       await createCondition({
         organizationId: organizationId as Id<"organizations">,
-        name: newConditionName.trim(),
-        description: newConditionDesc.trim(),
+        name: formattedName,
+        description: `Custom condition: ${formattedName}`,
       })
       
       // Select the newly created condition
-      onValueChange?.(newConditionName.trim())
+      onValueChange?.(formattedName)
       
-      // Reset form
-      setNewConditionName("")
-      setNewConditionDesc("")
-      setShowAddForm(false)
-      setError(null)
+      // Clear input and close
+      setInputValue("")
+      setOpen(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create condition")
-    }
-  }
-
-  // Handle deleting condition
-  const handleDeleteCondition = async (conditionId: string) => {
-    if (onDeleteCondition) {
-      onDeleteCondition(conditionId)
-    } else {
-      try {
-        await removeCondition({ conditionId: conditionId as Id<"conditionOptions"> })
-        // Clear selection if deleted condition was selected
-        if (value === customConditionOptions.find(c => c.id === conditionId)?.value) {
-          onValueChange?.("")
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to delete condition")
+      // If condition already exists, just select it
+      if (err instanceof Error && err.message.includes("already exists")) {
+        onValueChange?.(formattedName)
+        setInputValue("")
+        setOpen(false)
       }
     }
   }
 
+  // Handle deleting condition from organization
+  const handleDeleteCondition = (conditionId: string, conditionName: string) => {
+    setConditionToDelete({ id: conditionId, name: conditionName })
+  }
+
+  const confirmDeleteCondition = async () => {
+    if (!conditionToDelete) return
+
+    try {
+      await removeCondition({ conditionId: conditionToDelete.id as Id<"conditionOptions"> })
+      // Clear selection if it was selected
+      if (value === conditionToDelete.name) {
+        onValueChange?.("")
+      }
+      setConditionToDelete(null)
+    } catch (err) {
+      // Silently fail
+      setConditionToDelete(null)
+    }
+  }
+
   return (
+    <>
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
@@ -208,37 +217,38 @@ export function ConditionCombobox({
       <PopoverContent className="w-[500px] p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search conditions or type custom value..."
+            placeholder="Search conditions or type new..."
             value={inputValue}
             onValueChange={setInputValue}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && inputValue.trim() && !hasResults) {
+                e.preventDefault()
+                handleCreateAndSelectCondition(inputValue)
+              }
+            }}
           />
           <CommandList className="max-h-[300px]">
             <CommandEmpty>
               {inputValue ? (
-                <div className="p-4 text-sm">
-                  <p className="text-muted-foreground mb-3">
-                    No matching standard conditions found.
-                  </p>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="w-full justify-start"
-                    onClick={() => {
-                      onValueChange?.(inputValue)
-                      setOpen(false)
-                      setInputValue("")
-                    }}
-                  >
-                    Use custom condition: <span className="ml-2 font-medium">{inputValue}</span>
-                  </Button>
+                <div className="p-4 text-sm text-center">
+                  <div className="text-muted-foreground mb-2">
+                    No matching conditions found.
+                  </div>
+                  {organizationId && (
+                    <div className="text-xs text-muted-foreground">
+                      Press <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Enter</kbd> to add <span className="font-medium text-foreground">"{formatConditionName(inputValue)}"</span>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <span className="p-4 text-sm">Type to search or enter custom condition</span>
+                <div className="p-4 text-sm text-muted-foreground text-center">
+                  Type to search conditions
+                </div>
               )}
             </CommandEmpty>
 
-            {filteredSystemConditions.length > 0 && (
-              <CommandGroup heading="Standard Conditions">
+            {(filteredSystemConditions.length > 0 || filteredCustomConditions.length > 0) && (
+              <CommandGroup>
                 {filteredSystemConditions.map((condition) => (
                   <CommandItem
                     key={condition.value}
@@ -255,30 +265,18 @@ export function ConditionCombobox({
                             : "opacity-0"
                         )}
                       />
-                      <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            {condition.icon}
-                            <span className="font-medium text-sm">{condition.label}</span>
-                            <Sparkles className="h-3 w-3 text-blue-500 shrink-0" aria-label="System condition" />
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                            {condition.description}
-                          </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          {condition.icon}
+                          <span className="font-medium text-sm">{condition.label}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5 leading-snug">
+                          {condition.description}
                         </div>
                       </div>
                     </div>
                   </CommandItem>
                 ))}
-              </CommandGroup>
-            )}
-
-            {filteredSystemConditions.length > 0 && filteredCustomConditions.length > 0 && (
-              <CommandSeparator />
-            )}
-
-            {filteredCustomConditions.length > 0 && (
-              <CommandGroup heading="Organization Conditions">
                 {filteredCustomConditions.map((condition) => (
                   <CommandItem
                     key={condition.value}
@@ -295,160 +293,95 @@ export function ConditionCombobox({
                             : "opacity-0"
                         )}
                       />
-                      <div 
-                        className="flex-1 min-w-0 flex items-start justify-between gap-2"
-                        onClick={(e) => {
-                          // Allow clicking on the condition area to select it
-                          if ((e.target as HTMLElement).closest('button')) {
-                            e.stopPropagation()
-                          }
-                        }}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm">{condition.label}</div>
-                          <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                            {condition.description}
-                          </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <Edit3 className="h-3.5 w-3.5 text-purple-500" />
+                          <span className="font-medium text-sm">{condition.label}</span>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          {onEditCondition && condition.id && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              onPointerDown={(e) => {
-                                e.stopPropagation()
-                                e.preventDefault()
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                e.preventDefault()
-                                onEditCondition(condition.id!)
-                              }}
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                          )}
-                          {onDeleteCondition && condition.id && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                              onPointerDown={(e) => {
-                                e.stopPropagation()
-                                e.preventDefault()
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                e.preventDefault()
-                                handleDeleteCondition(condition.id!)
-                              }}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          )}
+                        <div className="text-xs text-muted-foreground mt-0.5 leading-snug">
+                          {condition.description}
                         </div>
                       </div>
+                      {condition.id && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-destructive hover:text-destructive shrink-0"
+                          onPointerDown={(e) => {
+                            e.stopPropagation()
+                            e.preventDefault()
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            e.preventDefault()
+                            handleDeleteCondition(condition.id!, condition.label)
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                   </CommandItem>
                 ))}
               </CommandGroup>
             )}
           </CommandList>
-
-          {/* Add Condition Section */}
-          {organizationId && (
-            <div className="border-t border-border bg-muted/30">
-              <div className="p-2 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Custom Condition
-                  </label>
-                  {!showAddForm && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2"
-                      onClick={() => setShowAddForm(true)}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      <span className="text-xs">New</span>
-                    </Button>
-                  )}
-                </div>
-
-                {showAddForm && (
-                  <div className="space-y-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="newConditionName" className="text-[10px]">Name *</Label>
-                      <Input
-                        id="newConditionName"
-                        value={newConditionName}
-                        onChange={(e) => setNewConditionName(e.target.value)}
-                        placeholder="e.g., Fair"
-                        className="h-7 text-xs"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="newConditionDesc" className="text-[10px]">Description *</Label>
-                      <Textarea
-                        id="newConditionDesc"
-                        value={newConditionDesc}
-                        onChange={(e) => setNewConditionDesc(e.target.value)}
-                        placeholder="Describe this condition..."
-                        rows={2}
-                        className="text-xs resize-none"
-                      />
-                    </div>
-
-                    {error && (
-                      <div className="text-[10px] text-destructive">
-                        {error}
-                      </div>
-                    )}
-
-                    <div className="flex gap-1.5">
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={handleCreateCondition}
-                        className="h-6 text-[10px] px-2"
-                      >
-                        <Save className="h-3 w-3 mr-1" />
-                        Save
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 text-[10px] px-2"
-                        onClick={() => {
-                          setShowAddForm(false)
-                          setNewConditionName("")
-                          setNewConditionDesc("")
-                          setError(null)
-                        }}
-                      >
-                        <X className="h-3 w-3 mr-1" />
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {!showAddForm && (
-                  <p className="text-[10px] text-muted-foreground">
-                    Add organization-specific conditions
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
         </Command>
       </PopoverContent>
     </Popover>
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={!!conditionToDelete} onOpenChange={(open) => !open && setConditionToDelete(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {conditionUsage?.isUsed ? "Cannot Delete Condition" : "Delete Condition"}
+          </AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            {conditionUsage?.isUsed ? (
+              <div className="space-y-2">
+                <div>
+                  The condition <span className="font-semibold text-foreground">"{conditionToDelete?.name}"</span> cannot be deleted because it is currently being used by {conditionUsage.usageCount} {conditionUsage.usageCount === 1 ? "collection" : "collections"}.
+                </div>
+                {conditionUsage.collectionNames.length > 0 && (
+                  <div className="mt-2">
+                    <div className="text-xs font-medium mb-1">Used in:</div>
+                    <ul className="text-xs list-disc pl-4 space-y-0.5">
+                      {conditionUsage.collectionNames.slice(0, 5).map((name) => (
+                        <li key={name}>{name}</li>
+                      ))}
+                      {conditionUsage.collectionNames.length > 5 && (
+                        <li className="italic">...and {conditionUsage.collectionNames.length - 5} more</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                Are you sure you want to delete <span className="font-semibold text-foreground">"{conditionToDelete?.name}"</span>? This action cannot be undone.
+              </div>
+            )}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          {conditionUsage?.isUsed ? (
+            <AlertDialogCancel>Close</AlertDialogCancel>
+          ) : (
+            <>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDeleteCondition}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </>
+          )}
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }

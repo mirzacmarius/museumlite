@@ -128,6 +128,44 @@ export const update = mutation({
 });
 
 /**
+ * Check if a condition is being used in any collections
+ */
+export const checkUsage = query({
+  args: {
+    conditionId: v.id("conditionOptions"),
+  },
+  returns: v.object({
+    isUsed: v.boolean(),
+    usageCount: v.number(),
+    collectionNames: v.array(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const condition = await ctx.db.get(args.conditionId);
+    if (!condition) {
+      return { isUsed: false, usageCount: 0, collectionNames: [] };
+    }
+
+    // Check all collections in the organization for this condition
+    const collections = await ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) => q.eq("organizationId", condition.organizationId))
+      .collect();
+
+    // Filter collections that use this condition
+    const collectionsUsingCondition = collections.filter((collection) => {
+      if (!collection.condition) return false;
+      return collection.condition === condition.name;
+    });
+
+    return {
+      isUsed: collectionsUsingCondition.length > 0,
+      usageCount: collectionsUsingCondition.length,
+      collectionNames: collectionsUsingCondition.map((c) => c.accessionNumber),
+    };
+  },
+});
+
+/**
  * Delete a custom condition option
  */
 export const remove = mutation({
