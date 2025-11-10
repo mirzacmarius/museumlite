@@ -3,6 +3,12 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer base {
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
@@ -65,6 +71,16 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  h1 {
+    font-family: var(--font-geist-sans), Inter, -apple-system, "system-ui", "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+    font-feature-settings: "calt" 0, "rlig";
+    font-size: 48.8px;
+    font-synthesis-small-caps: auto;
+    font-synthesis-style: auto;
+    font-synthesis-weight: none;
+    font-variation-settings: normal;
+    font-weight: 600;
   }
 }
 
