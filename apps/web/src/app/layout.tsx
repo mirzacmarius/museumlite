@@ -15,10 +15,40 @@ const DepartureMono = localFont({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://v1-convex.vercel.app"),
-  title: "Create v1",
+  metadataBase: new URL("https://museumlite.com"),
+  title: "MuseumLite - Museum Collection Management Software",
   description:
-    "A free, open-source starter kit for your next project, built with insights from Midday.",
+    "Complete collection management for museums, galleries, and collectors. Track accessions, manage locations, handle loans, and publish your collection online. Start free.",
+  keywords: [
+    "museum software",
+    "collection management",
+    "museum database",
+    "art collection software",
+    "gallery management",
+    "accession software",
+    "artifact tracking",
+    "museum cataloging",
+  ],
+  authors: [{ name: "MuseumLite" }],
+  openGraph: {
+    title: "MuseumLite - Museum Collection Management Software",
+    description:
+      "Complete collection management for museums, galleries, and collectors. Track accessions, manage locations, and publish your collection online.",
+    url: "https://museumlite.com",
+    siteName: "MuseumLite",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MuseumLite - Museum Collection Management Software",
+    description:
+      "Complete collection management for museums, galleries, and collectors.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
