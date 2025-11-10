@@ -35,7 +35,7 @@ export function CTASection() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <Link
-              href={process.env.NEXT_PUBLIC_APP_URL || "/"}
+              href="https://app.museumlite.com/register"
               className="group px-8 py-4 bg-primary text-secondary rounded-full font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
             >
               Start your 14-day free trial
@@ -43,7 +43,7 @@ export function CTASection() {
             </Link>
 
             <Link
-              href="/pricing"
+              href="#pricing"
               className="px-8 py-4 bg-secondary text-primary rounded-full font-medium border border-border hover:bg-accent transition-colors"
             >
               View pricing

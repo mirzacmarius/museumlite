@@ -56,13 +56,13 @@ export function Header() {
 
       <div className="flex items-center gap-3">
         <a
-          href={process.env.NEXT_PUBLIC_APP_URL}
+          href={process.env.NEXT_PUBLIC_APP_URL + "/login"}
           className="hidden sm:block text-sm px-4 py-2 text-primary hover:text-foreground transition-colors font-medium"
         >
           Sign in
         </a>
         <a
-          href={process.env.NEXT_PUBLIC_APP_URL}
+          href={process.env.NEXT_PUBLIC_APP_URL + "/register"}
           className="text-sm px-4 py-2 bg-primary text-secondary rounded-full font-medium hover:opacity-90 transition-opacity"
         >
           Start Free
