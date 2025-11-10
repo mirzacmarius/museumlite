@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { IconHover3D } from "@v1/ui/icon-3d-hover";
 import { Building2, Heart, Palette } from "lucide-react";
 
 const useCases = [
@@ -90,41 +91,29 @@ export function UseCases() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-8"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
-          {useCases.map((useCase, index) => (
-            <motion.div
-              key={index}
-              variants={itemVariants}
-              className="group"
-            >
-              <div className="h-full p-8 rounded-2xl border border-border bg-background hover:border-muted-foreground/20 transition-all duration-300">
-                {/* Icon */}
-                <div className="mb-6 p-4 rounded-2xl bg-accent w-fit group-hover:scale-110 transition-transform duration-300">
-                  <useCase.icon className="w-8 h-8" strokeWidth={1.5} />
+          {useCases.map((useCase, index) => {
+            const IconComponent = useCase.icon;
+            return (
+              <motion.div
+                key={index}
+                variants={itemVariants}
+                className="flex flex-col h-full"
+              >
+                {/* 3D Hover Icon Component - Now fills card */}
+                <div className="flex-1 min-h-[280px]">
+                  <IconHover3D
+                    heading={useCase.title}
+                    text={useCase.description}
+                    icon={<IconComponent size={40} strokeWidth={1.5} />}
+                  />
                 </div>
 
-                {/* Title & Description */}
-                <h3 className="text-2xl font-semibold mb-3">{useCase.title}</h3>
-                <p className="text-muted-foreground mb-6 leading-relaxed">
-                  {useCase.description}
-                </p>
-
                 {/* Features List */}
-                <ul className="space-y-2">
-                  {useCase.features.map((feature, fIndex) => (
-                    <li
-                      key={fIndex}
-                      className="flex items-center text-sm text-muted-foreground"
-                    >
-                      <div className="w-1 h-1 rounded-full bg-primary mr-3" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </motion.div>
       </div>
     </section>

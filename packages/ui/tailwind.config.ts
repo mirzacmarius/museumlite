@@ -19,7 +19,21 @@ const config = {
     },
     extend: {
       fontFamily: {
-        departure: ["var(--font-departure-mono)"],
+        departure: [
+          "var(--font-geist-sans)",
+          "Inter",
+          "-apple-system",
+          "system-ui",
+          "Segoe UI",
+          "Roboto",
+          "Oxygen",
+          "Ubuntu",
+          "Cantarell",
+          "Fira Sans",
+          "Droid Sans",
+          "Helvetica Neue",
+          "sans-serif"
+        ],
       },
       colors: {
         border: "hsl(var(--border))",

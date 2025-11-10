@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatedText } from "@/components/animated-text";
+// import { AnimatedText } from "@/components/animated-text";
 import { motion } from "framer-motion";
 import { 
   ArrowRight, 
@@ -64,7 +64,8 @@ export function HeroSection() {
           transition={{ duration: 0.6 }}
         >
           <h1 className="font-departure text-[40px] md:text-[84px] leading-tight h-[120px] md:h-auto">
-            <AnimatedText text="Museum Management, Simplified" />
+            {/* <AniinstamatedText text="Museum Management, Simplified" /> */}
+            Museum Management, Simplified
           </h1>
         </motion.div>
 
