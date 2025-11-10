@@ -7,6 +7,7 @@ import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata } from "next";
 import { ConvexClientProvider } from "./convex-client-provider";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://museumlite.com"),
@@ -62,6 +63,8 @@ export default function RootLayout({
           <Header />
           {children}
           <Footer />
+          <SpeedInsights />
+
         </ConvexClientProvider>
 
         <AnalyticsProvider />
