@@ -62,6 +62,43 @@ export const create = mutation({
 });
 
 /**
+ * List all locations in a flat list (for parent selection)
+ */
+export const listAll = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("locations"),
+      name: v.string(),
+      type: v.string(),
+      parentLocationId: v.optional(v.id("locations")),
+      isActive: v.boolean(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "locations.read");
+
+    const locations = await ctx.db
+      .query("locations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    return locations.map((loc) => ({
+      _id: loc._id,
+      name: loc.name,
+      type: loc.type,
+      parentLocationId: loc.parentLocationId,
+      isActive: loc.isActive,
+    }));
+  },
+});
+
+/**
  * List locations (hierarchical tree)
  */
 export const list = query({

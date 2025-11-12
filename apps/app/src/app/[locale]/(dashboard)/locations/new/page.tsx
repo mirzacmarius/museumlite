@@ -42,17 +42,43 @@ export default function NewLocationPage() {
       : "skip",
   );
 
-  const rootLocations = useQuery(
-    api.locations.list,
+  // Get all locations as a flat list for parent selection
+  const allLocations = useQuery(
+    api.locations.listAll,
     currentOrganizationId
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
-          parentLocationId: "root",
         }
       : "skip",
   );
 
   const createLocation = useMutation(api.locations.create);
+
+  // Helper to build location path from root to location
+  const buildPath = (
+    locationId: string,
+    locations: typeof allLocations,
+  ): string => {
+    if (!locations) return "";
+    
+    const location = locations.find((loc) => loc._id === locationId);
+    if (!location) return "";
+    
+    if (!location.parentLocationId) {
+      return location.name;
+    }
+    
+    const parentPath = buildPath(location.parentLocationId, locations);
+    return parentPath ? `${parentPath} → ${location.name}` : location.name;
+  };
+
+  // Build location options with full paths
+  const locationOptions = allLocations?.map((loc) => ({
+    _id: loc._id,
+    name: loc.name,
+    type: loc.type,
+    path: buildPath(loc._id, allLocations),
+  })) || [];
 
   if (!currentOrganizationId) {
     return (
@@ -159,15 +185,15 @@ export default function NewLocationPage() {
                       <SelectItem value="__none__">
                         None (Root Location)
                       </SelectItem>
-                      {rootLocations?.map((loc) => (
+                      {locationOptions.map((loc) => (
                         <SelectItem key={loc._id} value={loc._id}>
-                          {loc.name} ({loc.type})
+                          {loc.path}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Leave empty to create a root-level location
+                    Select a parent location or leave empty for root-level
                   </p>
                 </div>
 

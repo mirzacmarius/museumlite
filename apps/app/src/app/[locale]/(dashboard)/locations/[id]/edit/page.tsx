@@ -49,17 +49,70 @@ export default function EditLocationPage() {
       : "skip",
   );
 
-  const rootLocations = useQuery(
-    api.locations.list,
+  // Get all locations as a flat list for parent selection
+  const allLocations = useQuery(
+    api.locations.listAll,
     currentOrganizationId
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
-          parentLocationId: "root",
         }
       : "skip",
   );
 
   const updateLocation = useMutation(api.locations.update);
+
+  // Helper to build location path from root to location
+  const buildPath = (
+    locationId: string,
+    locations: typeof allLocations,
+  ): string => {
+    if (!locations) return "";
+    
+    const location = locations.find((loc) => loc._id === locationId);
+    if (!location) return "";
+    
+    if (!location.parentLocationId) {
+      return location.name;
+    }
+    
+    const parentPath = buildPath(location.parentLocationId, locations);
+    return parentPath ? `${parentPath} → ${location.name}` : location.name;
+  };
+
+  // Helper to get all descendant IDs of a location
+  const getDescendantIds = (
+    locationId: string,
+    locations: typeof allLocations,
+  ): Set<string> => {
+    const descendants = new Set<string>();
+    
+    const findDescendants = (id: string) => {
+      const children = locations?.filter((loc) => loc.parentLocationId === id);
+      if (!children) return;
+      
+      for (const child of children) {
+        descendants.add(child._id);
+        findDescendants(child._id);
+      }
+    };
+    
+    findDescendants(locationId);
+    return descendants;
+  };
+
+  // Build location options with full paths
+  const allLocationOptions = allLocations?.map((loc) => ({
+    _id: loc._id,
+    name: loc.name,
+    type: loc.type,
+    path: buildPath(loc._id, allLocations),
+  })) || [];
+
+  // Filter out current location and its descendants to prevent circular references
+  const descendantIds = getDescendantIds(locationId, allLocations);
+  const availableLocationOptions = allLocationOptions.filter(
+    (loc) => loc._id !== locationId && !descendantIds.has(loc._id)
+  );
 
   useEffect(() => {
     if (location) {
@@ -125,12 +178,6 @@ export default function EditLocationPage() {
       setIsSubmitting(false);
     }
   };
-
-  // Filter out current location and its children from parent options
-  const availableParentLocations =
-    rootLocations?.filter(
-      (loc) => loc._id !== locationId && loc.parentLocationId !== locationId,
-    ) || [];
 
   return (
     <>
@@ -198,15 +245,15 @@ export default function EditLocationPage() {
                       <SelectItem value="__none__">
                         None (Root Location)
                       </SelectItem>
-                      {availableParentLocations.map((loc) => (
+                      {availableLocationOptions.map((loc) => (
                         <SelectItem key={loc._id} value={loc._id}>
-                          {loc.name} ({loc.type})
+                          {loc.path}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Leave empty to make this a root-level location
+                    Select a parent location or leave empty for root-level
                   </p>
                 </div>
 
