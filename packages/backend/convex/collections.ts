@@ -278,7 +278,12 @@ export const list = query({
           return filter;
         });
 
-      const searchResults = await searchQuery.collect();
+      let searchResults = await searchQuery.collect();
+      
+      // Filter out deaccessioned items if no status filter is provided
+      if (!args.status) {
+        searchResults = searchResults.filter((c) => c.status !== "deaccessioned");
+      }
 
       // Also search other fields that aren't in the searchIndex
       const regularQuery = ctx.db
@@ -302,6 +307,9 @@ export const list = query({
       const additionalResults = allCollections.filter((c) => {
         if (searchResultIds.has(c._id)) return false;
 
+        // Filter out deaccessioned items if no status filter is provided
+        if (!args.status && c.status === "deaccessioned") return false;
+
         return (
           c.accessionNumber?.toLowerCase().includes(searchLower) ||
           c.description?.toLowerCase().includes(searchLower) ||
@@ -317,6 +325,11 @@ export const list = query({
 
       // Combine and deduplicate
       allResults = [...searchResults, ...additionalResults];
+      
+      // Apply deaccession filter if no status specified (safety net for search results)
+      if (!args.status) {
+        allResults = allResults.filter((c) => c.status !== "deaccessioned");
+      }
     } else {
       // No search term - use regular index
       let query = ctx.db
@@ -328,6 +341,9 @@ export const list = query({
       // Apply database-level filters
       if (args.status) {
         query = query.filter((q) => q.eq(q.field("status"), args.status));
+      } else {
+        // When no status filter is provided, exclude deaccessioned items
+        query = query.filter((q) => q.neq(q.field("status"), "deaccessioned"));
       }
 
       if (args.locationId) {
@@ -360,6 +376,11 @@ export const list = query({
       }
 
       allResults = await query.collect();
+      
+      // Apply deaccession filter if no status specified (safety net for non-search results)
+      if (!args.status) {
+        allResults = allResults.filter((c) => c.status !== "deaccessioned");
+      }
     }
 
     // Apply JavaScript-level filters (partial matching for text fields)
@@ -494,7 +515,12 @@ export const search = query({
         return filter;
       });
 
-    const results = await searchQuery.take(limit);
+    let results = await searchQuery.take(limit);
+    
+    // Filter out deaccessioned items if no status filter is provided
+    if (!args.status) {
+      results = results.filter((c) => c.status !== "deaccessioned");
+    }
 
     // Also search other fields that aren't in the searchIndex
     // This extends the search to accession numbers and other fields
@@ -522,6 +548,9 @@ export const search = query({
         .filter((c) => {
           // Skip if already in results
           if (resultIds.has(c._id)) return false;
+
+          // Filter out deaccessioned items if no status filter is provided
+          if (!args.status && c.status === "deaccessioned") return false;
 
           // Search in accession number and other fields
           return (

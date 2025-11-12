@@ -124,7 +124,7 @@ export default function CollectionsPage() {
 
 interface CollectionFilters {
   search: string;
-  status: "active" | "loaned" | "deaccessioned" | "all";
+  status: "active" | "deaccessioned" | "all";
   objectType: string;
   culture: string;
   period: string;
@@ -166,7 +166,7 @@ function CollectionFiltersAndList({
           search: filters.search || undefined,
           status:
             filters.status !== "all"
-              ? (filters.status as "active" | "loaned" | "deaccessioned")
+              ? (filters.status as "deaccessioned")
               : undefined,
           objectType: filters.objectType || undefined,
           culture: filters.culture || undefined,
@@ -254,9 +254,7 @@ function CollectionFiltersAndList({
                     <SelectValue placeholder="All statuses" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="loaned">Loaned</SelectItem>
+                    <SelectItem value="all">Active</SelectItem>
                     <SelectItem value="deaccessioned">Deaccessioned</SelectItem>
                   </SelectContent>
                 </Select>
