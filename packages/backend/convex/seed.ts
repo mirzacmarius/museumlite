@@ -1122,11 +1122,31 @@ export const createLocation = internalMutation({
       return existing._id;
     }
 
+    // Calculate sortOrder for the new location
+    const siblings = await ctx.db
+      .query("locations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => {
+        if (args.parentLocationId) {
+          return q.eq(q.field("parentLocationId"), args.parentLocationId);
+        }
+        return q.eq(q.field("parentLocationId"), undefined);
+      })
+      .collect();
+
+    const maxSortOrder = siblings.reduce(
+      (max, loc) => Math.max(max, loc.sortOrder),
+      -1,
+    );
+
     return await ctx.db.insert("locations", {
       organizationId: args.organizationId,
       name: args.name,
       type: args.type,
       parentLocationId: args.parentLocationId,
+      sortOrder: maxSortOrder + 1,
       isActive: true,
     });
   },
