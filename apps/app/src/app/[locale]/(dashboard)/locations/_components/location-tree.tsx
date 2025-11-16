@@ -513,6 +513,23 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
 
   return (
     <>
+      {/* Add Root Location Button */}
+      <div className="px-6 pt-4">
+        <PermissionGate permission="locations.create">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSelectedLocation(null); // No parent for root locations
+              setAddChildDialogOpen(true);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add Root Location
+          </Button>
+        </PermissionGate>
+      </div>
+
       {/* Remount entire tree when version changes, but preserve expanded state */}
       <LocationTreeInner
         key={`tree-${treeVersion}`}
@@ -550,10 +567,10 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
       />
 
       <AddChildLocationDialog
-        parentLocationId={selectedLocation?.id || ""}
-        parentLocationName={selectedLocation?.name || ""}
+        parentLocationId={selectedLocation?.id}
+        parentLocationName={selectedLocation?.name}
         organizationId={organizationId}
-        open={addChildDialogOpen && !!selectedLocation}
+        open={addChildDialogOpen}
         onOpenChange={setAddChildDialogOpen}
       />
 

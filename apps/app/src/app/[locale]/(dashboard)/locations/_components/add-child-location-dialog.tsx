@@ -25,8 +25,8 @@ import { useMutation } from "convex/react";
 import { useState } from "react";
 
 interface AddChildLocationDialogProps {
-  parentLocationId: string;
-  parentLocationName: string;
+  parentLocationId?: string;
+  parentLocationName?: string;
   organizationId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -81,7 +81,7 @@ export function AddChildLocationDialog({
         organizationId: organizationId as Id<"organizations">,
         name: name.trim(),
         type,
-        parentLocationId: parentLocationId as Id<"locations">,
+        parentLocationId: parentLocationId ? (parentLocationId as Id<"locations">) : undefined,
         address: address.trim() || undefined,
         notes: notes.trim() || undefined,
       });
@@ -105,10 +105,18 @@ export function AddChildLocationDialog({
       <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Add Child Location</DialogTitle>
+            <DialogTitle>
+              {parentLocationId ? "Add Child Location" : "Add Root Location"}
+            </DialogTitle>
             <DialogDescription>
-              Create a new location under{" "}
-              <span className="font-medium">{parentLocationName}</span>
+              {parentLocationId ? (
+                <>
+                  Create a new location under{" "}
+                  <span className="font-medium">{parentLocationName}</span>
+                </>
+              ) : (
+                "Create a new root-level location"
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
