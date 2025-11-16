@@ -75,7 +75,12 @@ export default function CollectionEditPage() {
   );
 
   // Separate images and documents
-  const images = media?.filter((m) => (m as any).mediaCategory === "image" || !(m as any).mediaCategory) || [];
+  // Only show actual images (fileType === "image") in the image gallery
+  // Documents should only appear in the documents list
+  const images = media?.filter((m) => {
+    const category = (m as any).mediaCategory;
+    return (category === "image" || !category) && m.fileType === "image";
+  }) || [];
   const documents = media?.filter((m) => (m as any).mediaCategory === "document") || [];
 
   const fileInputRef = useRef<HTMLInputElement>(null);
