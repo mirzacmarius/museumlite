@@ -245,10 +245,10 @@ function LocationTreeInner({
     ],
   });
 
-  // Expand root children on initial mount if not already in expanded items
+  // Expand root children when data loads (only if starting with no expanded items)
   useEffect(() => {
+    // Auto-expand root children on initial load when there are no expanded items yet
     if (rootChildren.length > 0 && initialExpandedItems.length === 0) {
-      // Only auto-expand on first mount
       rootChildren.forEach((childId) => {
         const item = tree.getItemInstance(childId);
         if (item && !item.isExpanded()) {
@@ -256,7 +256,7 @@ function LocationTreeInner({
         }
       });
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [rootChildren, initialExpandedItems.length, tree]); // Run when data loads
 
   // Track expanded state changes and notify parent
   useEffect(() => {
