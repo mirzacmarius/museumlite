@@ -224,8 +224,15 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
   // Ensure media is an array
   const mediaArray = Array.isArray(media) ? media : [];
 
+  // Separate images/videos from documents
+  const images = mediaArray.filter((m) => {
+    const category = (m as any).mediaCategory;
+    return (category === "image" || !category) && (m.fileType === "image" || m.fileType === "video");
+  });
+  const documents = mediaArray.filter((m) => (m as any).mediaCategory === "document");
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {error && (
         <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
           {error}
@@ -256,19 +263,19 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
         </div>
       </PermissionGate>
 
-      {mediaArray.length === 0 ? (
-        <div className="flex h-64 flex-col items-center justify-center rounded-lg border border-dashed">
-          <ImageIcon className="mb-4 h-12 w-12 text-muted-foreground" />
-          <p className="mb-2 text-sm font-medium text-muted-foreground">
-            No media files
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Upload images, videos, or documents for this collection object
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {mediaArray.map((file) => (
+      {/* Images & Videos Section */}
+      <div className="space-y-3">
+        <h4 className="text-sm font-medium text-muted-foreground">Images & Videos</h4>
+        {images.length === 0 ? (
+          <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed">
+            <ImageIcon className="mb-2 h-8 w-8 text-muted-foreground" />
+            <p className="text-xs text-muted-foreground">
+              No images or videos uploaded
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {images.map((file) => (
             <div
               key={file._id}
               className="group relative aspect-square overflow-hidden rounded-lg border"
@@ -390,8 +397,117 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
               )}
             </div>
           ))}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
+
+      {/* Documents Section */}
+      <div className="space-y-3">
+        <h4 className="text-sm font-medium text-muted-foreground">Documents</h4>
+        {documents.length === 0 ? (
+          <div className="flex h-20 flex-col items-center justify-center rounded-lg border border-dashed">
+            <p className="text-xs text-muted-foreground">
+              No documents uploaded
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {documents.map((doc) => (
+              <div
+                key={doc._id}
+                className="group flex items-center justify-between rounded-md border bg-card p-3 transition-colors hover:bg-muted"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="truncate font-medium text-sm">{doc.fileName}</p>
+                  {doc.caption && (
+                    <p className="truncate text-xs text-muted-foreground">
+                      {doc.caption}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 ml-4">
+                  {doc.url && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      asChild
+                    >
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs"
+                      >
+                        View
+                      </a>
+                    </Button>
+                  )}
+                  <PermissionGate permission="media.upload">
+                    <MediaEditDialog
+                      media={doc}
+                      onUpdate={async (updates) => {
+                        setError(null);
+                        try {
+                          await updateMedia({
+                            mediaId: doc._id as Id<"mediaFiles">,
+                            ...updates,
+                          });
+                          setEditingMedia(null);
+                        } catch (err) {
+                          setError(
+                            err instanceof Error
+                              ? err.message
+                              : "Failed to update media",
+                          );
+                        }
+                      }}
+                      open={editingMedia === doc._id}
+                      onOpenChange={(open) =>
+                        setEditingMedia(open ? doc._id : null)
+                      }
+                    />
+                    <AlertDialog
+                      open={deleteConfirmOpen === doc._id}
+                      onOpenChange={(open) =>
+                        setDeleteConfirmOpen(open ? doc._id : null)
+                      }
+                    >
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Document</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this document?
+                            This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDelete(doc._id)}
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </PermissionGate>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
