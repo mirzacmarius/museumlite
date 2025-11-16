@@ -338,7 +338,7 @@ function LocationTreeInner({
               >
                 <TreeItem 
                   item={item} 
-                  className="flex-0 not-last:pb-0 cursor-grab active:cursor-grabbing"
+                  className="flex-1 not-last:pb-0 cursor-grab active:cursor-grabbing"
                   onClick={() => router.push(`/locations/${itemData._id}`)}
                 >
                   <TreeItemLabel className="relative flex items-center gap-2 before:absolute before:inset-x-0 before:-inset-y-0.5 before:-z-10 before:bg-background data-[drag-target=true]:ring-2 data-[drag-target=true]:ring-primary">
@@ -356,7 +356,7 @@ function LocationTreeInner({
 
                 {/* Action buttons - visible on hover - OUTSIDE TreeItem to avoid nested buttons */}
                 <span
-                  className={`flex items-center gap-0.5 transition-opacity ${
+                  className={`flex items-center gap-0.5 ml-auto transition-opacity ${
                     isHovered ? "opacity-100" : "opacity-0"
                   }`}
                 >
