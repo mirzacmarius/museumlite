@@ -18,7 +18,7 @@ import {
 } from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
 import { useMutation, useQuery } from "convex/react";
-import { Archive, ArrowLeft, Edit, MapPin, Trash2 } from "lucide-react";
+import { Archive, ArrowLeft, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -93,45 +93,35 @@ export default function LocationDetailPage() {
                   Back to Locations
                 </Link>
               </Button>
-              <div className="flex gap-2">
-                <PermissionGate permission="locations.update">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/locations/${locationId}/edit`}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </Link>
-                  </Button>
-                </PermissionGate>
-                <PermissionGate permission="locations.delete">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Location</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this location? This
-                          action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete}>
-                          Delete Location
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </PermissionGate>
-              </div>
+              <PermissionGate permission="locations.delete">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Location</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this location? This
+                        action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete}>
+                        Delete Location
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </PermissionGate>
             </div>
 
             {/* Error Display */}

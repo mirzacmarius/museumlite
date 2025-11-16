@@ -322,6 +322,7 @@ export default defineSchema({
     name: v.string(),
     type: v.string(), // Flexible per org (building/floor/room/cabinet/shelf/box)
     parentLocationId: v.optional(v.id("locations")),
+    sortOrder: v.number(), // Order within parent (for drag-and-drop reordering)
     address: v.optional(v.string()),
     coordinates: v.optional(
       v.object({

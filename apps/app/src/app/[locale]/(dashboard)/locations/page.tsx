@@ -6,7 +6,7 @@ import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
-import { Building2, MapPin, Plus } from "lucide-react";
+import { Building2, MapPin } from "lucide-react";
 import Link from "next/link";
 import { LocationTree } from "./_components/location-tree";
 
@@ -37,12 +37,11 @@ export default function LocationsPage() {
                 You need to create an organization to start managing locations.
               </p>
             </div>
-            <Button asChild>
-              <Link href="/organizations/new">
-                <Plus className="mr-2 h-4 w-4" />
+            <Link href="/organizations/new">
+              <Button>
                 Create Organization
-              </Link>
-            </Button>
+              </Button>
+            </Link>
           </div>
         </div>
       </>
@@ -84,17 +83,9 @@ export default function LocationsPage() {
                   Location Hierarchy
                 </h2>
                 <p className="text-sm font-normal text-primary/60">
-                  View and manage your organizational locations
+                  View and manage your organizational locations. Use the dropdown menu on each location to add, edit, move, or delete.
                 </p>
               </div>
-              <PermissionGate permission="locations.create">
-                <Button asChild>
-                  <Link href="/locations/new">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Location
-                  </Link>
-                </Button>
-              </PermissionGate>
             </div>
             <div className="flex w-full px-6">
               <div className="w-full border-b border-border" />

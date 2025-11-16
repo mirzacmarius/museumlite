@@ -2,6 +2,76 @@ import { internalMutation } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 
 /**
+ * Migration: Backfill sortOrder field for existing locations
+ * 
+ * This migration adds the sortOrder field to all existing locations.
+ * Locations are ordered by their creation time within each parent.
+ * 
+ * Run this migration via Convex dashboard or CLI:
+ * npx convex run migrations:backfillLocationSortOrder
+ */
+export const backfillLocationSortOrder = internalMutation({
+  handler: async (ctx) => {
+    console.log("Starting migration: Backfill sortOrder for locations");
+    
+    const allLocations = await ctx.db.query("locations").collect();
+    console.log(`Found ${allLocations.length} locations`);
+
+    // Group locations by organizationId and parentLocationId
+    const locationsByParent = new Map<string, typeof allLocations>();
+    
+    for (const location of allLocations) {
+      const key = `${location.organizationId}:${location.parentLocationId || 'root'}`;
+      if (!locationsByParent.has(key)) {
+        locationsByParent.set(key, []);
+      }
+      locationsByParent.get(key)!.push(location);
+    }
+
+    let updatedCount = 0;
+    let errorCount = 0;
+
+    // Process each group
+    for (const [key, locations] of locationsByParent) {
+      try {
+        // Sort by creation time
+        const sortedLocations = locations.sort((a, b) => a._creationTime - b._creationTime);
+        
+        // Assign sortOrder
+        for (let i = 0; i < sortedLocations.length; i++) {
+          const location = sortedLocations[i];
+          if (location) {
+            await ctx.db.patch(location._id, {
+              sortOrder: i,
+            });
+            updatedCount++;
+          }
+        }
+        
+        console.log(`✓ Updated ${locations.length} locations in group ${key}`);
+      } catch (error) {
+        console.error(`Error processing group ${key}:`, error);
+        errorCount++;
+      }
+    }
+
+    const result = {
+      success: true,
+      message: `Migration complete: ${updatedCount} locations updated, ${errorCount} errors`,
+      stats: {
+        totalLocations: allLocations.length,
+        updated: updatedCount,
+        errors: errorCount,
+        groups: locationsByParent.size,
+      },
+    };
+
+    console.log(result.message);
+    return result;
+  },
+});
+
+/**
  * Migration: Add default workflow configurations to existing organizations
  * 
  * This migration adds default deaccession and accession workflow configurations

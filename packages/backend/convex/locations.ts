@@ -44,12 +44,32 @@ export const create = mutation({
       }
     }
 
+    // Calculate sortOrder - get max sortOrder for siblings and add 1
+    const siblings = await ctx.db
+      .query("locations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => {
+        if (args.parentLocationId) {
+          return q.eq(q.field("parentLocationId"), args.parentLocationId);
+        }
+        return q.eq(q.field("parentLocationId"), undefined);
+      })
+      .collect();
+
+    const maxSortOrder = siblings.reduce(
+      (max, loc) => Math.max(max, loc.sortOrder || 0),
+      0,
+    );
+
     // Create location
     const locationId = await ctx.db.insert("locations", {
       organizationId: args.organizationId,
       name: args.name,
       type: args.type,
       parentLocationId: args.parentLocationId,
+      sortOrder: maxSortOrder + 1,
       address: args.address,
       coordinates: args.coordinates,
       notes: args.notes,
@@ -74,7 +94,10 @@ export const listAll = query({
       name: v.string(),
       type: v.string(),
       parentLocationId: v.optional(v.id("locations")),
+      sortOrder: v.number(),
       isActive: v.boolean(),
+      address: v.optional(v.string()),
+      notes: v.optional(v.string()),
     }),
   ),
   handler: async (ctx, args) => {
@@ -88,12 +111,18 @@ export const listAll = query({
       .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
 
-    return locations.map((loc) => ({
+    // Sort by sortOrder for proper display order
+    const sortedLocations = locations.sort((a, b) => a.sortOrder - b.sortOrder);
+
+    return sortedLocations.map((loc) => ({
       _id: loc._id,
       name: loc.name,
       type: loc.type,
       parentLocationId: loc.parentLocationId,
+      sortOrder: loc.sortOrder,
       isActive: loc.isActive,
+      address: loc.address,
+      notes: loc.notes,
     }));
   },
 });
@@ -526,6 +555,133 @@ export const getLocationPath = query({
     }
 
     return path;
+  },
+});
+
+/**
+ * Reorder locations (update sortOrder for drag-and-drop)
+ */
+export const reorder = mutation({
+  args: {
+    locationId: v.id("locations"),
+    newParentLocationId: v.optional(v.id("locations")),
+    newSortOrder: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const location = await ctx.db.get(args.locationId);
+    if (!location) {
+      throw new Error("Location not found");
+    }
+
+    // Check permission
+    await requirePermission(ctx, location.organizationId, "locations.update");
+
+    // Verify new parent location belongs to same organization
+    if (args.newParentLocationId) {
+      const newParent = await ctx.db.get(args.newParentLocationId);
+      if (!newParent || newParent.organizationId !== location.organizationId) {
+        throw new Error("Invalid parent location");
+      }
+      if (!newParent.isActive) {
+        throw new Error("Parent location is not active");
+      }
+
+      // Prevent circular references
+      if (args.newParentLocationId === args.locationId) {
+        throw new Error("Cannot set location as its own parent");
+      }
+
+      // Check if creating a cycle
+      let currentParentId: Id<"locations"> | undefined = args.newParentLocationId;
+      while (currentParentId) {
+        if (currentParentId === args.locationId) {
+          throw new Error("Cannot create circular location hierarchy");
+        }
+        const currentParent: { parentLocationId?: Id<"locations"> } | null =
+          await ctx.db.get(currentParentId);
+        currentParentId = currentParent?.parentLocationId;
+      }
+    }
+
+    const oldParentId = location.parentLocationId;
+    const newParentId = args.newParentLocationId;
+
+    // Get all siblings in the new parent
+    const newSiblings = await ctx.db
+      .query("locations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", location.organizationId),
+      )
+      .filter((q) => {
+        if (newParentId) {
+          return q.eq(q.field("parentLocationId"), newParentId);
+        }
+        return q.eq(q.field("parentLocationId"), undefined);
+      })
+      .collect();
+
+    // Sort siblings by current sortOrder
+    const sortedSiblings = newSiblings
+      .filter((loc) => loc._id !== args.locationId)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+
+    // Insert the moved location at the new position
+    sortedSiblings.splice(args.newSortOrder, 0, location);
+
+    // Update sortOrder for all affected siblings
+    for (let i = 0; i < sortedSiblings.length; i++) {
+      const sibling = sortedSiblings[i];
+      if (!sibling) continue;
+      
+      if (sibling._id === args.locationId) {
+        // Update the moved location with new parent and sortOrder
+        await ctx.db.patch(args.locationId, {
+          parentLocationId: newParentId,
+          sortOrder: i,
+        });
+      } else if (sibling.sortOrder !== i) {
+        // Only update if sortOrder changed
+        await ctx.db.patch(sibling._id, {
+          sortOrder: i,
+        });
+      }
+    }
+
+    // If parent changed, re-normalize sortOrder in old parent
+    if (oldParentId !== newParentId) {
+      const oldSiblings = await ctx.db
+        .query("locations")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", location.organizationId),
+        )
+        .filter((q) => {
+          if (oldParentId) {
+            return q.eq(q.field("parentLocationId"), oldParentId);
+          }
+          return q.eq(q.field("parentLocationId"), undefined);
+        })
+        .collect();
+
+      const sortedOldSiblings = oldSiblings.sort(
+        (a, b) => a.sortOrder - b.sortOrder,
+      );
+
+      // Re-index old siblings
+      for (let i = 0; i < sortedOldSiblings.length; i++) {
+        const sibling = sortedOldSiblings[i];
+        if (sibling && sibling.sortOrder !== i) {
+          await ctx.db.patch(sibling._id, {
+            sortOrder: i,
+          });
+        }
+      }
+    }
   },
 });
 

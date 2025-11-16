@@ -1,52 +1,319 @@
 "use client";
 
+import { PermissionGate } from "@/components/permission-gate";
+import {
+  dragAndDropFeature,
+  hotkeysCoreFeature,
+  selectionFeature,
+  syncDataLoaderFeature,
+} from "@headless-tree/core";
+import { useTree } from "@headless-tree/react";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
-import { useQuery } from "convex/react";
-import { ChevronDown, ChevronRight, Folder, MapPin } from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@v1/ui/dropdown-menu";
+import { Tree, TreeDragLine, TreeItem, TreeItemLabel } from "@v1/ui/tree";
+import { useMutation, useQuery } from "convex/react";
+import {
+  Building2,
+  Edit,
+  FileIcon,
+  FolderIcon,
+  FolderOpenIcon,
+  MapPin,
+  MoreHorizontal,
+  Move,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { AddChildLocationDialog } from "./add-child-location-dialog";
+import { MoveLocationDialog } from "./move-location-dialog";
+import { EditLocationDialog } from "./edit-location-dialog";
 
 interface LocationTreeProps {
   organizationId: string;
 }
 
-interface LocationNode {
-  _id: Id<"locations">;
+interface LocationItem {
+  _id: string;
   name: string;
   type: string;
-  parentLocationId?: Id<"locations">;
-  children?: Array<{
-    _id: Id<"locations">;
-    name: string;
-    type: string;
-    isActive: boolean;
-  }>;
+  parentLocationId?: string;
+  sortOrder: number;
+  isActive: boolean;
+  children?: string[];
+  address?: string;
+  notes?: string;
 }
 
-export function LocationTree({ organizationId }: LocationTreeProps) {
-  const locations = useQuery(
-    api.locations.list,
+const indent = 24;
+
+// Inner component that will be fully remounted when key changes
+function LocationTreeInner({ 
+  organizationId,
+  initialExpandedItems,
+  onExpandedItemsChange,
+  onEdit,
+  onAddChild,
+  onMove,
+  onDelete,
+}: LocationTreeProps & {
+  initialExpandedItems: string[];
+  onExpandedItemsChange: (items: string[]) => void;
+  onEdit: (location: { id: string; name: string; parentId?: string }) => void;
+  onAddChild: (location: { id: string; name: string; parentId?: string; type?: string; address?: string }) => void;
+  onMove: (location: { id: string; name: string; parentId?: string }) => void;
+  onDelete: (location: { id: string; name: string; parentId?: string }) => void;
+}) {
+  const router = useRouter();
+  
+  // Fetch all locations for the tree
+  const allLocations = useQuery(
+    api.locations.listAll,
     organizationId
-      ? {
-          organizationId: organizationId as Id<"organizations">,
-          parentLocationId: "root",
-        }
+      ? { organizationId: organizationId as Id<"organizations"> }
       : "skip",
   );
 
-  if (locations === undefined) {
+  const reorderLocation = useMutation(api.locations.reorder);
+
+  // Build items map for tree - memoized to rebuild when allLocations changes
+  const { items, rootChildren, dataVersion } = useMemo(() => {
+    const itemsMap: Record<string, LocationItem> = {};
+    const roots: string[] = [];
+
+    if (allLocations) {
+      // Sort locations by sortOrder first
+      const sortedLocations = [...allLocations].sort(
+        (a, b) => a.sortOrder - b.sortOrder,
+      );
+
+      for (const loc of sortedLocations) {
+        itemsMap[loc._id] = {
+          _id: loc._id,
+          name: loc.name,
+          type: loc.type,
+          parentLocationId: loc.parentLocationId,
+          sortOrder: loc.sortOrder,
+          isActive: loc.isActive,
+          children: [],
+          address: loc.address,
+          notes: loc.notes,
+        };
+
+        if (!loc.parentLocationId) {
+          roots.push(loc._id);
+        }
+      }
+
+      // Build children arrays (maintaining sort order)
+      for (const loc of sortedLocations) {
+        if (loc.parentLocationId) {
+          const parent = itemsMap[loc.parentLocationId];
+          if (parent?.children) {
+            parent.children.push(loc._id);
+          }
+        }
+      }
+    }
+
+    // Add virtual root
+    itemsMap.root = {
+      _id: "root",
+      name: "All Locations",
+      type: "root",
+      sortOrder: 0,
+      isActive: true,
+      children: roots,
+    };
+
+    // Create a version hash based on the actual structure AND order
+    const structureHash = allLocations
+      ?.map(loc => `${loc._id}:${loc.parentLocationId || 'root'}:${loc.sortOrder}`)
+      .sort()
+      .join('|') || '';
+
+    return { items: itemsMap, rootChildren: roots, dataVersion: structureHash };
+  }, [allLocations]);
+
+  // Create tree instance at top level (hooks can't be called in useMemo)
+  const tree = useTree<LocationItem>({
+    initialState: {
+      // Use provided expanded items to preserve state across remounts
+      expandedItems: initialExpandedItems,
+    },
+    indent,
+    rootItemId: "root",
+    getItemName: (item) => item.getItemData().name,
+    isItemFolder: (item) => (item.getItemData()?.children?.length ?? 0) > 0,
+    dataLoader: {
+      getItem: (itemId) => {
+        const item = items[itemId];
+        if (!item) {
+          // Fallback for undefined items
+          return {
+            _id: itemId,
+            name: "Unknown",
+            type: "unknown",
+            sortOrder: 0,
+            isActive: false,
+            children: [],
+          };
+        }
+        return item;
+      },
+      getChildren: (itemId) => items[itemId]?.children ?? [],
+    },
+    canDrag: (draggedItems) => {
+      // Allow dragging all items except root
+      return draggedItems.every(
+        (item) => item.getItemData()._id !== "root",
+      );
+    },
+    canDrop: (draggedItems, target) => {
+      const draggedItem = draggedItems[0];
+      if (!draggedItem) return false;
+      
+      const draggedData = draggedItem.getItemData();
+      const targetData = target.item.getItemData();
+      
+      // Don't allow dropping on itself
+      if (draggedData._id === targetData._id) return false;
+      
+      // Don't allow dropping on the root visually
+      if (draggedData._id === "root") return false;
+      
+      // Don't allow dropping a location onto one of its descendants (circular reference)
+      let currentId: string | undefined = targetData._id;
+      while (currentId && currentId !== "root") {
+        if (currentId === draggedData._id) return false;
+        const current: LocationItem | undefined = items[currentId];
+        currentId = current?.parentLocationId;
+      }
+      
+      return true;
+    },
+    canReorder: true,
+    onDrop: async (draggedItems, target) => {
+      const item = draggedItems[0];
+      if (!item) return;
+      
+      const itemData = item.getItemData();
+      const targetData = target.item.getItemData();
+      
+      try {
+        let newParentId: string | undefined;
+        let newSortOrder: number;
+        
+        // Check if this is an ordered drop (between items)
+        if ("childIndex" in target) {
+          // Dropped between items - use the parent of the target item
+          newParentId = targetData.parentLocationId;
+          // Use the childIndex as the new sortOrder
+          newSortOrder = target.childIndex;
+        } else {
+          // Dropped on an item - make it a child of that item
+          newParentId = targetData._id === "root" ? undefined : targetData._id;
+          // Put it at the end of the children
+          const targetChildren = items[targetData._id]?.children || [];
+          newSortOrder = targetChildren.length;
+        }
+        
+        // Call the reorder mutation
+        await reorderLocation({
+          locationId: itemData._id as Id<"locations">,
+          newParentLocationId: newParentId as Id<"locations"> | undefined,
+          newSortOrder,
+        });
+        
+        // Convex will automatically update allLocations, which changes dataVersion
+        // and triggers tree remount via key in parent component
+      } catch (error) {
+        console.error("Failed to reorder location:", error);
+      }
+    },
+    features: [
+      syncDataLoaderFeature,
+      selectionFeature,
+      hotkeysCoreFeature,
+      dragAndDropFeature,
+    ],
+  });
+
+  // Expand root children when data loads (only if starting with no expanded items)
+  useEffect(() => {
+    // Auto-expand root children on initial load when there are no expanded items yet
+    if (rootChildren.length > 0 && initialExpandedItems.length === 0) {
+      rootChildren.forEach((childId) => {
+        const item = tree.getItemInstance(childId);
+        if (item && !item.isExpanded()) {
+          item.expand();
+        }
+      });
+    }
+  }, [rootChildren, initialExpandedItems.length, tree]); // Run when data loads
+
+  // Track expanded state changes and notify parent
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const currentExpanded = tree.getState().expandedItems;
+      onExpandedItemsChange(currentExpanded);
+    }, 500); // Check every 500ms
+
+    return () => clearInterval(timer);
+  }, [tree, onExpandedItemsChange]);
+
+  const getTypeIcon = (type: string, isFolder: boolean, isExpanded: boolean) => {
+    if (type === "root") return null;
+
+    if (isFolder) {
+      return isExpanded ? (
+        <FolderOpenIcon className="pointer-events-none size-4 text-muted-foreground" />
+      ) : (
+        <FolderIcon className="pointer-events-none size-4 text-muted-foreground" />
+      );
+    }
+
+    switch (type.toLowerCase()) {
+      case "building":
+        return <Building2 className="pointer-events-none size-4 text-muted-foreground" />;
+      case "room":
+      case "gallery":
+        return <MapPin className="pointer-events-none size-4 text-muted-foreground" />;
+      default:
+        return <FileIcon className="pointer-events-none size-4 text-muted-foreground" />;
+    }
+  };
+
+  if (allLocations === undefined) {
     return (
-      <div className="flex h-64 items-center justify-center">
+      <div className="flex h-64 items-center justify-center p-6">
         <p className="text-muted-foreground">Loading locations...</p>
       </div>
     );
   }
 
-  if (locations.length === 0) {
+  if (allLocations.length === 0) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-4">
+      <div className="flex h-64 flex-col items-center justify-center gap-4 p-6">
         <MapPin className="h-12 w-12 text-muted-foreground" />
         <div className="text-center">
           <p className="text-muted-foreground">No locations found</p>
@@ -59,92 +326,294 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
   }
 
   return (
-    <div className="p-6">
-      <div className="space-y-1">
-        {locations.map((location) => (
-          <LocationTreeNode
-            key={location._id}
-            location={location}
-            organizationId={organizationId}
-          />
-        ))}
-      </div>
+    <div className="p-6" suppressHydrationWarning>
+      <Tree
+        className="relative before:absolute before:inset-0 before:ms-4.5 before:bg-[repeating-linear-gradient(to_right,transparent_0,transparent_calc(var(--tree-indent)-1px),var(--border)_calc(var(--tree-indent)-1px),var(--border)_calc(var(--tree-indent)))]"
+        indent={indent}
+        tree={tree}
+      >
+          <TreeDragLine />
+          {tree.getItems().map((item) => {
+            const itemData = item.getItemData();
+            if (itemData._id === "root") return null;
+
+            return (
+              <div
+                key={item.getId()}
+                className="flex items-center gap-2 not-last:pb-0.5"
+              >
+                <TreeItem 
+                  item={item} 
+                  className="flex-1 not-last:pb-0 cursor-grab active:cursor-grabbing"
+                  onClick={(e) => {
+                    // Check if click originated from action button
+                    const target = e.target as HTMLElement;
+                    if (target.closest('[data-action-button]')) {
+                      console.log('Click from action button, preventing navigation');
+                      return;
+                    }
+                    router.push(`/locations/${itemData._id}`);
+                  }}
+                >
+                  <TreeItemLabel className="relative flex items-center gap-2 before:absolute before:inset-x-0 before:-inset-y-0.5 before:-z-10 before:bg-background data-[drag-target=true]:ring-2 data-[drag-target=true]:ring-primary">
+                    {getTypeIcon(
+                      itemData.type,
+                      item.isFolder(),
+                      item.isExpanded(),
+                    )}
+                    <span>{item.getItemName()}</span>
+                    <span className="ml-auto text-xs capitalize text-muted-foreground">
+                      {itemData.type}
+                    </span>
+                  </TreeItemLabel>
+                </TreeItem>
+
+                {/* Actions dropdown menu */}
+                <div className="ml-auto z-10" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Actions</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                      <PermissionGate permission="locations.update">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit({
+                              id: itemData._id,
+                              name: itemData.name,
+                              parentId: itemData.parentLocationId,
+                            });
+                          }}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                      </PermissionGate>
+
+                      <PermissionGate permission="locations.create">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAddChild({
+                              id: itemData._id,
+                              name: itemData.name,
+                              parentId: itemData.parentLocationId,
+                              type: itemData.type,
+                              address: itemData.address,
+                            });
+                          }}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add child
+                        </DropdownMenuItem>
+                      </PermissionGate>
+
+                      <PermissionGate permission="locations.update">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onMove({
+                              id: itemData._id,
+                              name: itemData.name,
+                              parentId: itemData.parentLocationId,
+                            });
+                          }}
+                        >
+                          <Move className="mr-2 h-4 w-4" />
+                          Move
+                        </DropdownMenuItem>
+                      </PermissionGate>
+
+                      <PermissionGate permission="locations.delete">
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete({
+                              id: itemData._id,
+                              name: itemData.name,
+                              parentId: itemData.parentLocationId,
+                            });
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </PermissionGate>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            );
+          })}
+        </Tree>
     </div>
   );
 }
 
-function LocationTreeNode({
-  location,
-  organizationId,
-}: {
-  location: LocationNode;
-  organizationId: string;
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const hasChildren = location.children && location.children.length > 0;
+// Outer component that manages dialogs and state
+export function LocationTree({ organizationId }: LocationTreeProps) {
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [addChildDialogOpen, setAddChildDialogOpen] = useState(false);
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<{
+    id: string;
+    name: string;
+    parentId?: string;
+    type?: string;
+    address?: string;
+  } | null>(null);
+  const [treeVersion, setTreeVersion] = useState(0);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  
+  const deleteLocation = useMutation(api.locations.deleteLocation);
 
-  // Fetch children when expanded
-  const childLocations = useQuery(
-    api.locations.list,
-    isExpanded && organizationId
-      ? {
-          organizationId: organizationId as Id<"organizations">,
-          parentLocationId: location._id,
-        }
+  // Fetch all locations to detect changes
+  const allLocations = useQuery(
+    api.locations.listAll,
+    organizationId
+      ? { organizationId: organizationId as Id<"organizations"> }
       : "skip",
   );
 
-  const getTypeIcon = (type: string) => {
-    switch (type.toLowerCase()) {
-      case "building":
-        return <MapPin className="h-4 w-4" />;
-      default:
-        return <Folder className="h-4 w-4" />;
+  // Track previous dataVersion to detect changes and force remount
+  const prevDataVersionRef = useRef<string>('');
+  
+  // Create a version hash based on the actual structure AND order
+  const dataVersion = useMemo(() => {
+    const hash = allLocations
+      ?.map(loc => `${loc._id}:${loc.parentLocationId || 'root'}:${loc.sortOrder}`)
+      .sort()
+      .join('|') || '';
+    
+    // Detect changes
+    if (prevDataVersionRef.current && prevDataVersionRef.current !== hash) {
+      console.log('🔄 Location data changed, remounting tree');
+      setTreeVersion((v) => v + 1);
+    }
+    prevDataVersionRef.current = hash;
+    
+    return hash;
+  }, [allLocations]);
+
+  const handleDelete = async () => {
+    if (!selectedLocation) return;
+    try {
+      await deleteLocation({
+        locationId: selectedLocation.id as Id<"locations">,
+      });
+      setDeleteDialogOpen(false);
+      setSelectedLocation(null);
+    } catch (error) {
+      console.error("Failed to delete location:", error);
     }
   };
 
   return (
-    <div className="select-none">
-      <div className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent">
-        {hasChildren ? (
-          <button
-            type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex h-6 w-6 items-center justify-center rounded hover:bg-accent"
+    <>
+      {/* Add Root Location Button */}
+      <div className="px-6 pt-4">
+        <PermissionGate permission="locations.create">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSelectedLocation(null); // No parent for root locations
+              setAddChildDialogOpen(true);
+            }}
           >
-            {isExpanded ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </button>
-        ) : (
-          <div className="w-6" />
-        )}
-        <div className="flex flex-1 items-center gap-2">
-          {getTypeIcon(location.type)}
-          <Link
-            href={`/locations/${location._id}`}
-            className="flex-1 font-medium hover:underline"
-          >
-            {location.name}
-          </Link>
-          <span className="text-xs text-muted-foreground capitalize">
-            {location.type}
-          </span>
-        </div>
+            <Plus className="mr-2 h-4 w-4" />
+            Add New Location
+          </Button>
+        </PermissionGate>
       </div>
-      {hasChildren && isExpanded && (
-        <div className="ml-8 border-l border-border pl-2">
-          {childLocations?.map((child) => (
-            <LocationTreeNode
-              key={child._id}
-              location={child}
-              organizationId={organizationId}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+
+      {/* Remount entire tree when version changes, but preserve expanded state */}
+      <LocationTreeInner
+        key={`tree-${treeVersion}`}
+        organizationId={organizationId}
+        initialExpandedItems={expandedItems}
+        onExpandedItemsChange={setExpandedItems}
+        onEdit={(location) => {
+          console.log('onEdit called in parent:', location);
+          setSelectedLocation(location);
+          setEditDialogOpen(true);
+          console.log('Edit dialog state set to true');
+        }}
+        onAddChild={(location) => {
+          console.log('onAddChild called:', location);
+          setSelectedLocation(location);
+          setAddChildDialogOpen(true);
+        }}
+        onMove={(location) => {
+          console.log('onMove called:', location);
+          setSelectedLocation(location);
+          setMoveDialogOpen(true);
+        }}
+        onDelete={(location) => {
+          console.log('onDelete called:', location);
+          setSelectedLocation(location);
+          setDeleteDialogOpen(true);
+        }}
+      />
+
+      {/* Dialogs - render outside of condition to ensure they always exist */}
+      <EditLocationDialog
+        locationId={selectedLocation?.id || ""}
+        open={editDialogOpen && !!selectedLocation}
+        onOpenChange={setEditDialogOpen}
+      />
+
+      <AddChildLocationDialog
+        parentLocationId={selectedLocation?.id}
+        parentLocationName={selectedLocation?.name}
+        parentLocationType={selectedLocation?.type}
+        parentLocationAddress={selectedLocation?.address}
+        organizationId={organizationId}
+        open={addChildDialogOpen}
+        onOpenChange={setAddChildDialogOpen}
+      />
+
+      <MoveLocationDialog
+        locationId={selectedLocation?.id || ""}
+        locationName={selectedLocation?.name || ""}
+        currentParentId={selectedLocation?.parentId}
+        open={moveDialogOpen && !!selectedLocation}
+        onOpenChange={setMoveDialogOpen}
+      />
+
+      <AlertDialog open={deleteDialogOpen && !!selectedLocation} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Location</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-medium">{selectedLocation?.name}</span>?
+              This action cannot be undone. Make sure this location has no
+              children or objects.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

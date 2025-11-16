@@ -49,6 +49,7 @@
     "./grid-pattern": "./src/components/grid-pattern.tsx",
     "./accordion": "./src/components/accordion.tsx",
     "./icon-3d-hover": "./src/components/icon-3d-hover.tsx",
+    "./tree": "./src/components/tree.tsx",
     "./tailwind.config": "./tailwind.config.ts",
     "./postcss": "./postcss.config.js"
   },

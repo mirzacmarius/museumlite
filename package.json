@@ -41,5 +41,9 @@
     "typescript": "^5.5.4"
   },
   "packageManager": "bun@1.1.26",
-  "version": "0.0.1"
+  "version": "0.0.1",
+  "dependencies": {
+    "@headless-tree/core": "^1.5.1",
+    "@headless-tree/react": "^1.5.1"
+  }
 }
