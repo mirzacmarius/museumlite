@@ -107,6 +107,7 @@ export default defineSchema({
       ),
     ),
     title: v.string(),
+    creator: v.optional(v.string()), // Artist/maker name
     objectType: v.optional(v.string()),
     objectName: v.optional(v.string()),
     culture: v.optional(v.string()),
@@ -118,6 +119,10 @@ export default defineSchema({
     condition: v.optional(v.string()),
     provenance: v.optional(v.string()),
     exhibitionHistory: v.optional(v.string()),
+    donated_by: v.optional(v.array(v.string())), // List of donors (persons/organizations)
+    donated_date: v.optional(v.string()), // Date of donation (ISO format or partial)
+    donation_info: v.optional(v.string()), // Free-text info about the donation
+    previous_owners: v.optional(v.array(v.string())), // List of previous owners
     currentLocationId: v.optional(v.id("locations")),
     status: v.union(
       v.literal("active"),
@@ -217,6 +222,10 @@ export default defineSchema({
     fileType: v.string(),
     fileSize: v.number(),
     mimeType: v.string(),
+    mediaCategory: v.optional(v.union(
+      v.literal("image"), // Photos of the object
+      v.literal("document"), // Related documents (PDFs, scans, etc.)
+    )), // Defaults to "image" for backwards compatibility
     isPrimary: v.boolean(),
     caption: v.optional(v.string()),
     photographer: v.optional(v.string()),
@@ -233,7 +242,8 @@ export default defineSchema({
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
-    .index("by_uploadStatus", ["uploadStatus"]),
+    .index("by_uploadStatus", ["uploadStatus"])
+    .index("by_collection_and_category", ["collectionId", "mediaCategory"]),
 
   // Accession workflow records
   accessions: defineTable({
