@@ -13,6 +13,7 @@ import { MaterialsCombobox } from "@/components/materials-combobox";
 import { TypeCombobox } from "@/components/type-combobox";
 import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { useOrganization } from "@/components/organization-provider";
+import { DatePicker } from "@v1/ui/date-picker";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { ArrowLeft, Save, Star, Upload, X } from "lucide-react";
@@ -653,13 +654,13 @@ export default function CollectionFormPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="donated_date">Donated Date</Label>
-                          <Input
-                            id="donated_date"
-                            type="date"
-                            value={formData.donated_date || ""}
-                            onChange={(e) =>
-                              updateField("donated_date", e.target.value)
-                            }
+                          <DatePicker
+                            date={formData.donated_date ? new Date(formData.donated_date) : undefined}
+                            onSelect={(date) => {
+                              const dateString: string = date ? (date.toISOString().split('T')[0] ?? "") : "";
+                              updateField("donated_date", dateString);
+                            }}
+                            placeholder="Select donation date"
                           />
                         </div>
 

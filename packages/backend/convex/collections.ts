@@ -175,6 +175,7 @@ export const get = query({
         ),
       ),
       title: v.string(),
+      creator: v.optional(v.string()),
       objectType: v.optional(v.string()),
       objectName: v.optional(v.string()),
       culture: v.optional(v.string()),
@@ -186,6 +187,10 @@ export const get = query({
       condition: v.optional(v.string()),
       provenance: v.optional(v.string()),
       exhibitionHistory: v.optional(v.string()),
+      donated_by: v.optional(v.array(v.string())),
+      donated_date: v.optional(v.string()),
+      donation_info: v.optional(v.string()),
+      previous_owners: v.optional(v.array(v.string())),
       currentLocationId: v.optional(v.id("locations")),
       status: v.union(
         v.literal("active"),
