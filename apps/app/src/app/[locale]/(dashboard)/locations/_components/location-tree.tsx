@@ -21,8 +21,14 @@ import {
   AlertDialogTitle,
 } from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@v1/ui/dropdown-menu";
 import { Tree, TreeDragLine, TreeItem, TreeItemLabel } from "@v1/ui/tree";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@v1/ui/tooltip";
 import { useMutation, useQuery } from "convex/react";
 import {
   Building2,
@@ -31,6 +37,7 @@ import {
   FolderIcon,
   FolderOpenIcon,
   MapPin,
+  MoreHorizontal,
   Move,
   Plus,
   Trash2,
@@ -357,106 +364,91 @@ function LocationTreeInner({
                   </TreeItemLabel>
                 </TreeItem>
 
-                {/* Action buttons - always visible - OUTSIDE TreeItem to avoid nested buttons */}
-                <div className="flex items-center gap-0.5 ml-auto">
-
+                {/* Actions dropdown menu */}
+                <div className="ml-auto">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        data-action-button
+                        type="button"
+                        className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Actions</span>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
                       <PermissionGate permission="locations.update">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              data-action-button
-                              type="button"
-                              className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                console.log('Edit clicked:', itemData._id);
-                                onEdit({
-                                  id: itemData._id,
-                                  name: itemData.name,
-                                  parentId: itemData.parentLocationId,
-                                });
-                              }}
-                            >
-                              <Edit className="h-3.5 w-3.5" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent>Edit location</TooltipContent>
-                        </Tooltip>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit({
+                              id: itemData._id,
+                              name: itemData.name,
+                              parentId: itemData.parentLocationId,
+                            });
+                          }}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
                       </PermissionGate>
 
                       <PermissionGate permission="locations.create">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              data-action-button
-                              type="button"
-                              className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onAddChild({
-                                  id: itemData._id,
-                                  name: itemData.name,
-                                  parentId: itemData.parentLocationId,
-                                });
-                              }}
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent>Add child location</TooltipContent>
-                        </Tooltip>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAddChild({
+                              id: itemData._id,
+                              name: itemData.name,
+                              parentId: itemData.parentLocationId,
+                            });
+                          }}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add child
+                        </DropdownMenuItem>
                       </PermissionGate>
 
                       <PermissionGate permission="locations.update">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              data-action-button
-                              type="button"
-                              className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onMove({
-                                  id: itemData._id,
-                                  name: itemData.name,
-                                  parentId: itemData.parentLocationId,
-                                });
-                              }}
-                            >
-                              <Move className="h-3.5 w-3.5" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent>Move to another parent</TooltipContent>
-                        </Tooltip>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onMove({
+                              id: itemData._id,
+                              name: itemData.name,
+                              parentId: itemData.parentLocationId,
+                            });
+                          }}
+                        >
+                          <Move className="mr-2 h-4 w-4" />
+                          Move
+                        </DropdownMenuItem>
                       </PermissionGate>
 
                       <PermissionGate permission="locations.delete">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              data-action-button
-                              type="button"
-                              className="h-7 w-7 inline-flex items-center justify-center rounded-md text-destructive hover:bg-destructive/10 hover:text-destructive"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onDelete({
-                                  id: itemData._id,
-                                  name: itemData.name,
-                                  parentId: itemData.parentLocationId,
-                                });
-                              }}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent>Delete location</TooltipContent>
-                        </Tooltip>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete({
+                              id: itemData._id,
+                              name: itemData.name,
+                              parentId: itemData.parentLocationId,
+                            });
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
                       </PermissionGate>
-                    </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             );
           })}
