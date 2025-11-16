@@ -21,6 +21,7 @@ import {
   ArrowLeft,
   CheckCircle,
   Edit,
+  FileText,
   Handshake,
   History,
   Image as ImageIcon,
@@ -38,7 +39,7 @@ export default function CollectionDetailPage() {
   const collectionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
   const [activeTab, setActiveTab] = useState<
-    "details" | "media" | "history" | "loans"
+    "details" | "media" | "documents" | "history" | "loans"
   >("details");
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [deaccessionDialogOpen, setDeaccessionDialogOpen] = useState(false);
@@ -202,6 +203,18 @@ export default function CollectionDetailPage() {
               </button>
               <button
                 type="button"
+                onClick={() => setActiveTab("documents")}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === "documents"
+                    ? "border-b-2 border-primary text-primary"
+                    : "text-muted-foreground hover:text-primary"
+                }`}
+              >
+                <FileText className="mr-2 inline h-4 w-4" />
+                Documents
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveTab("history")}
                 className={`px-4 py-2 text-sm font-medium transition-colors ${
                   activeTab === "history"
@@ -250,6 +263,9 @@ export default function CollectionDetailPage() {
               )}
               {activeTab === "media" && (
                 <CollectionMedia collectionId={collectionId} />
+              )}
+              {activeTab === "documents" && (
+                <CollectionDocuments collectionId={collectionId} />
               )}
               {activeTab === "history" && (
                 <CollectionHistory collectionId={collectionId} />
@@ -587,7 +603,11 @@ function CollectionDetails({
 }
 
 function CollectionMedia({ collectionId }: { collectionId: string }) {
-  return <MediaGallery collectionId={collectionId} />;
+  return <MediaGallery collectionId={collectionId} mediaType="images" />;
+}
+
+function CollectionDocuments({ collectionId }: { collectionId: string }) {
+  return <MediaGallery collectionId={collectionId} mediaType="documents" />;
 }
 
 function CollectionHistory({ collectionId }: { collectionId: string }) {

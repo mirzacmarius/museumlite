@@ -43,9 +43,10 @@ import { useEffect, useRef, useState } from "react";
 
 interface MediaGalleryProps {
   collectionId: string;
+  mediaType?: "images" | "documents";
 }
 
-export function MediaGallery({ collectionId }: MediaGalleryProps) {
+export function MediaGallery({ collectionId, mediaType = "images" }: MediaGalleryProps) {
   const { currentOrganizationId } = useOrganization();
   const media = useQuery(
     api.media.list,
@@ -231,6 +232,10 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
   });
   const documents = mediaArray.filter((m) => (m as any).mediaCategory === "document");
 
+  // Determine what to show based on mediaType prop
+  const showImages = mediaType === "images";
+  const showDocuments = mediaType === "documents";
+
   return (
     <div className="space-y-6">
       {error && (
@@ -241,12 +246,14 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
 
       <PermissionGate permission="media.upload">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">Media Files</h3>
+          <h3 className="text-lg font-medium">
+            {showImages ? "Images & Videos" : "Documents"}
+          </h3>
           <div>
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,video/*,application/pdf"
+              accept={showImages ? "image/*,video/*" : ".pdf,image/jpeg,image/jpg,image/png,image/tiff"}
               onChange={handleFileSelect}
               className="hidden"
               multiple
@@ -257,15 +264,15 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="mr-2 h-4 w-4" />
-              Upload Media
+              {showImages ? "Upload Images" : "Upload Documents"}
             </Button>
           </div>
         </div>
       </PermissionGate>
 
       {/* Images & Videos Section */}
+      {showImages && (
       <div className="space-y-3">
-        <h4 className="text-sm font-medium text-muted-foreground">Images & Videos</h4>
         {images.length === 0 ? (
           <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed">
             <ImageIcon className="mb-2 h-8 w-8 text-muted-foreground" />
@@ -400,10 +407,11 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
           </div>
         )}
       </div>
+      )}
 
       {/* Documents Section */}
+      {showDocuments && (
       <div className="space-y-3">
-        <h4 className="text-sm font-medium text-muted-foreground">Documents</h4>
         {documents.length === 0 ? (
           <div className="flex h-20 flex-col items-center justify-center rounded-lg border border-dashed">
             <p className="text-xs text-muted-foreground">
@@ -508,6 +516,7 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
