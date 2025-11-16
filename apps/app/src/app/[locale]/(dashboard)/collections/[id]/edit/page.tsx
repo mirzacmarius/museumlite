@@ -194,6 +194,90 @@ export default function CollectionEditPage() {
     },
   );
 
+  // Document upload handling
+  const { startUpload: startDocumentUpload } = useUploadFiles(
+    async () => {
+      if (!currentOrganizationId) {
+        throw new Error("Organization missing");
+      }
+
+      const file = documentsRef.current.shift();
+      if (!file) {
+        throw new Error("No file available for upload");
+      }
+
+      const result = await generateUploadUrl({
+        organizationId: currentOrganizationId as Id<"organizations">,
+        collectionId: collectionId as Id<"collections">,
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+      });
+
+      if (!result.uploadUrl) {
+        throw new Error(`Failed to generate upload URL for ${file.name}`);
+      }
+
+      return result.uploadUrl;
+    },
+    {
+      onUploadComplete: async (uploaded) => {
+        try {
+          if (!uploaded || !Array.isArray(uploaded) || uploaded.length === 0) {
+            setError("Upload completed but no files were returned");
+            return;
+          }
+
+          if (!currentOrganizationId) {
+            setError("Organization not found");
+            return;
+          }
+
+          await Promise.all(
+            uploaded.map(async (file) => {
+              if (!file) {
+                throw new Error("Upload completed but file data is missing");
+              }
+
+              const storageId = (file.response as { storageId: Id<"_storage"> })
+                ?.storageId;
+
+              if (!storageId) {
+                throw new Error(
+                  `Upload completed but no storage ID returned for ${file.name}`,
+                );
+              }
+
+              await createMedia({
+                organizationId: currentOrganizationId as Id<"organizations">,
+                collectionId: collectionId as Id<"collections">,
+                storageId: storageId,
+                fileName: file.name || "unknown",
+                fileSize: file.size || 0,
+                mimeType: file.type || "application/octet-stream",
+                isPrimary: false, // Documents are never primary
+                mediaCategory: "document",
+              });
+            }),
+          );
+        } catch (err) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to create media records",
+          );
+        }
+      },
+      onUploadError: (error) => {
+        setError(
+          error && typeof error === "object" && "message" in error
+            ? String(error.message)
+            : "Document upload failed",
+        );
+      },
+    },
+  );
+
   // Load existing data
   useEffect(() => {
     if (collection) {
@@ -293,90 +377,6 @@ export default function CollectionEditPage() {
       );
     }
   };
-
-  // Document upload handling
-  const { startUpload: startDocumentUpload } = useUploadFiles(
-    async () => {
-      if (!currentOrganizationId) {
-        throw new Error("Organization missing");
-      }
-
-      const file = documentsRef.current.shift();
-      if (!file) {
-        throw new Error("No file available for upload");
-      }
-
-      const result = await generateUploadUrl({
-        organizationId: currentOrganizationId as Id<"organizations">,
-        collectionId: collectionId as Id<"collections">,
-        fileName: file.name,
-        fileSize: file.size,
-        mimeType: file.type,
-      });
-
-      if (!result.uploadUrl) {
-        throw new Error(`Failed to generate upload URL for ${file.name}`);
-      }
-
-      return result.uploadUrl;
-    },
-    {
-      onUploadComplete: async (uploaded) => {
-        try {
-          if (!uploaded || !Array.isArray(uploaded) || uploaded.length === 0) {
-            setError("Upload completed but no files were returned");
-            return;
-          }
-
-          if (!currentOrganizationId) {
-            setError("Organization not found");
-            return;
-          }
-
-          await Promise.all(
-            uploaded.map(async (file) => {
-              if (!file) {
-                throw new Error("Upload completed but file data is missing");
-              }
-
-              const storageId = (file.response as { storageId: Id<"_storage"> })
-                ?.storageId;
-
-              if (!storageId) {
-                throw new Error(
-                  `Upload completed but no storage ID returned for ${file.name}`,
-                );
-              }
-
-              await createMedia({
-                organizationId: currentOrganizationId as Id<"organizations">,
-                collectionId: collectionId as Id<"collections">,
-                storageId: storageId,
-                fileName: file.name || "unknown",
-                fileSize: file.size || 0,
-                mimeType: file.type || "application/octet-stream",
-                isPrimary: false, // Documents are never primary
-                mediaCategory: "document",
-              });
-            }),
-          );
-        } catch (err) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Failed to create media records",
-          );
-        }
-      },
-      onUploadError: (error) => {
-        setError(
-          error && typeof error === "object" && "message" in error
-            ? String(error.message)
-            : "Document upload failed",
-        );
-      },
-    },
-  );
 
   const handleDocumentSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
