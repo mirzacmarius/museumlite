@@ -329,7 +329,7 @@ function LocationTreeInner({
             return (
               <div
                 key={item.getId()}
-                className="group flex items-center gap-1.5 not-last:pb-0.5"
+                className="group/row flex items-center gap-1 not-last:pb-0.5"
               >
                 <TreeItem 
                   item={item} 
@@ -350,7 +350,7 @@ function LocationTreeInner({
                 </TreeItem>
 
                 {/* Action buttons - visible on hover - OUTSIDE TreeItem to avoid nested buttons */}
-                <span className="flex items-center gap-0.5 ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                <div className="flex items-center gap-0.5 ml-auto invisible group-hover/row:visible">
 
                       <PermissionGate permission="locations.update">
                         <Tooltip>
@@ -443,7 +443,7 @@ function LocationTreeInner({
                           <TooltipContent>Delete location</TooltipContent>
                         </Tooltip>
                       </PermissionGate>
-                    </span>
+                    </div>
               </div>
             );
           })}
