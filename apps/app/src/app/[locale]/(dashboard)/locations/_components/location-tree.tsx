@@ -141,35 +141,36 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
     return { items: itemsMap, rootChildren: roots, dataVersion: structureHash };
   }, [allLocations]);
 
-  // Create tree instance - will recreate when items OR dataVersion changes
-  const tree = useTree<LocationItem>({
-    initialState: {
-      // Start with empty to avoid hydration mismatch
-      // Will be expanded via useEffect on client
-      expandedItems: [],
-    },
-    indent,
-    rootItemId: "root",
-    getItemName: (item) => item.getItemData().name,
-    isItemFolder: (item) => (item.getItemData()?.children?.length ?? 0) > 0,
-    dataLoader: {
-      getItem: (itemId) => {
-        const item = items[itemId];
-        if (!item) {
-          // Fallback for undefined items
-          return {
-            _id: itemId,
-            name: "Unknown",
-            type: "unknown",
-            sortOrder: 0,
-            isActive: false,
-            children: [],
-          };
-        }
-        return item;
+  // Create tree instance - will recreate when dataVersion or treeVersion changes
+  const tree = useMemo(() => {
+    return useTree<LocationItem>({
+      initialState: {
+        // Start with empty to avoid hydration mismatch
+        // Will be expanded via useEffect on client
+        expandedItems: [],
       },
-      getChildren: (itemId) => items[itemId]?.children ?? [],
-    },
+      indent,
+      rootItemId: "root",
+      getItemName: (item) => item.getItemData().name,
+      isItemFolder: (item) => (item.getItemData()?.children?.length ?? 0) > 0,
+      dataLoader: {
+        getItem: (itemId) => {
+          const item = items[itemId];
+          if (!item) {
+            // Fallback for undefined items
+            return {
+              _id: itemId,
+              name: "Unknown",
+              type: "unknown",
+              sortOrder: 0,
+              isActive: false,
+              children: [],
+            };
+          }
+          return item;
+        },
+        getChildren: (itemId) => items[itemId]?.children ?? [],
+      },
     canDrag: (draggedItems) => {
       // Allow dragging all items except root
       return draggedItems.every(
@@ -233,18 +234,20 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
         });
         
         // Convex will automatically update allLocations, which changes dataVersion
-        // and forces tree to re-render via the key prop
+        // Force tree rebuild immediately
+        setTreeVersion((v) => v + 1);
       } catch (error) {
         console.error("Failed to reorder location:", error);
       }
     },
-    features: [
-      syncDataLoaderFeature,
-      selectionFeature,
-      hotkeysCoreFeature,
-      dragAndDropFeature,
-    ],
-  });
+      features: [
+        syncDataLoaderFeature,
+        selectionFeature,
+        hotkeysCoreFeature,
+        dragAndDropFeature,
+      ],
+    });
+  }, [items, dataVersion, treeVersion]); // Recreate tree when data or version changes
 
   // Detect data changes and log for debugging
   useEffect(() => {
