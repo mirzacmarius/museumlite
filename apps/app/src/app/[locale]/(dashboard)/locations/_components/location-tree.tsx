@@ -75,7 +75,6 @@ function LocationTreeInner({
   onDelete: (location: { id: string; name: string; parentId?: string }) => void;
 }) {
   const router = useRouter();
-  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
   
   // Fetch all locations for the tree
   const allLocations = useQuery(
@@ -327,14 +326,10 @@ function LocationTreeInner({
             const itemData = item.getItemData();
             if (itemData._id === "root") return null;
 
-            const isHovered = hoveredItemId === itemData._id;
-
             return (
               <div
                 key={item.getId()}
                 className="group flex items-center gap-1.5 not-last:pb-0.5"
-                onMouseEnter={() => setHoveredItemId(itemData._id)}
-                onMouseLeave={() => setHoveredItemId(null)}
               >
                 <TreeItem 
                   item={item} 
@@ -355,11 +350,8 @@ function LocationTreeInner({
                 </TreeItem>
 
                 {/* Action buttons - visible on hover - OUTSIDE TreeItem to avoid nested buttons */}
-                <span
-                  className={`flex items-center gap-0.5 ml-auto transition-opacity duration-150 ${
-                    isHovered ? "opacity-100" : "opacity-0 pointer-events-none"
-                  }`}
-                >
+                <span className="flex items-center gap-0.5 ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+
                       <PermissionGate permission="locations.update">
                         <Tooltip>
                           <TooltipTrigger asChild>
