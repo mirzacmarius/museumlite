@@ -134,6 +134,7 @@ export function MediaGallery({ collectionId, mediaType = "images" }: MediaGaller
               }
 
               // Set the first uploaded file as primary if this is the first media
+              // For documents tab, set mediaCategory to "document"
               await createMedia({
                 organizationId: currentOrganizationId as Id<"organizations">,
                 collectionId: collectionId as Id<"collections">,
@@ -141,7 +142,8 @@ export function MediaGallery({ collectionId, mediaType = "images" }: MediaGaller
                 fileName: file.name || "unknown",
                 fileSize: file.size || 0,
                 mimeType: file.type || "application/octet-stream",
-                isPrimary: isFirstMedia && index === 0, // Set first file as primary if it's the first media
+                isPrimary: isFirstMedia && index === 0 && mediaType === "images", // Only set primary for images
+                mediaCategory: mediaType === "documents" ? "document" : "image",
               });
             }),
           );
