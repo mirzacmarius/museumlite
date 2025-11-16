@@ -329,7 +329,7 @@ function LocationTreeInner({
             return (
               <div
                 key={item.getId()}
-                className="group/row flex items-center gap-1 not-last:pb-0.5"
+                className="flex items-center gap-2 not-last:pb-0.5"
               >
                 <TreeItem 
                   item={item} 
@@ -349,8 +349,8 @@ function LocationTreeInner({
                   </TreeItemLabel>
                 </TreeItem>
 
-                {/* Action buttons - visible on hover - OUTSIDE TreeItem to avoid nested buttons */}
-                <div className="flex items-center gap-0.5 ml-auto invisible group-hover/row:visible">
+                {/* Action buttons - always visible - OUTSIDE TreeItem to avoid nested buttons */}
+                <div className="flex items-center gap-0.5 ml-auto">
 
                       <PermissionGate permission="locations.update">
                         <Tooltip>
