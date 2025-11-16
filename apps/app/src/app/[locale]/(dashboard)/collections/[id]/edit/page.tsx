@@ -5,11 +5,13 @@ import { ConditionCombobox } from "@/components/condition-combobox";
 import { LocationSelector } from "@/components/location-selector";
 import { MaterialsCombobox } from "@/components/materials-combobox";
 import { TypeCombobox } from "@/components/type-combobox";
+import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
@@ -31,6 +33,7 @@ import { useEffect, useRef, useState } from "react";
 
 interface CollectionFormData {
   title: string;
+  creator?: string;
   objectType?: string | string[]; // Can be string or array depending on state
   objectName?: string;
   culture?: string;
@@ -42,6 +45,10 @@ interface CollectionFormData {
   condition?: string;
   provenance?: string;
   exhibitionHistory?: string;
+  donated_by?: string[];
+  donated_date?: string;
+  donation_info?: string;
+  previous_owners?: string[];
   currentLocationId?: string;
   alternateAccessionNumbers?: string[];
 }
@@ -74,6 +81,7 @@ export default function CollectionEditPage() {
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<CollectionFormData>({
     title: "",
+    creator: "",
     objectType: [], // Initialize as empty array
     objectName: "",
     culture: "",
@@ -85,6 +93,10 @@ export default function CollectionEditPage() {
     condition: "",
     provenance: "",
     exhibitionHistory: "",
+    donated_by: [],
+    donated_date: "",
+    donation_info: "",
+    previous_owners: [],
     currentLocationId: "",
     alternateAccessionNumbers: [],
   });
@@ -202,6 +214,7 @@ export default function CollectionEditPage() {
 
       setFormData({
         title: collection.title,
+        creator: collection.creator || "",
         objectType: objectTypeArray, // Store as array in form state
         objectName: collection.objectName || "",
         culture: collection.culture || "",
@@ -213,6 +226,10 @@ export default function CollectionEditPage() {
         condition: collection.condition || "",
         provenance: collection.provenance || "",
         exhibitionHistory: collection.exhibitionHistory || "",
+        donated_by: collection.donated_by || [],
+        donated_date: collection.donated_date || "",
+        donation_info: collection.donation_info || "",
+        previous_owners: collection.previous_owners || [],
         currentLocationId: collection.currentLocationId || "",
         alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
       });
@@ -503,6 +520,18 @@ export default function CollectionEditPage() {
                           placeholder="e.g., 1850"
                         />
                       </div>
+
+                      <div>
+                        <Label htmlFor="creator">Creator</Label>
+                        <Input
+                          id="creator"
+                          value={formData.creator || ""}
+                          onChange={(e) =>
+                            updateField("creator", e.target.value)
+                          }
+                          placeholder="e.g., Vincent van Gogh"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -617,6 +646,57 @@ export default function CollectionEditPage() {
                           }
                           rows={3}
                           placeholder="Enter exhibition history"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <RepeatableTextField
+                            label="Donated by"
+                            value={formData.donated_by || []}
+                            onChange={(values) =>
+                              updateField("donated_by", values)
+                            }
+                            placeholder="e.g., John Smith Foundation"
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="donated_date">Donated Date</Label>
+                          <DatePicker
+                            date={formData.donated_date ? new Date(formData.donated_date) : undefined}
+                            onSelect={(date) => {
+                              const dateString: string = date ? (date.toISOString().split('T')[0] ?? "") : "";
+                              updateField("donated_date", dateString);
+                            }}
+                            placeholder="Select donation date"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="donation_info">
+                          Info about the Donation
+                        </Label>
+                        <Textarea
+                          id="donation_info"
+                          value={formData.donation_info || ""}
+                          onChange={(e) =>
+                            updateField("donation_info", e.target.value)
+                          }
+                          rows={3}
+                          placeholder="Information about the donation circumstances, conditions, or context"
+                        />
+                      </div>
+
+                      <div>
+                        <RepeatableTextField
+                          label="Previous Owner(s)"
+                          value={formData.previous_owners || []}
+                          onChange={(values) =>
+                            updateField("previous_owners", values)
+                          }
+                          placeholder="e.g., Estate of Jane Doe"
                         />
                       </div>
                     </div>
