@@ -356,8 +356,8 @@ function LocationTreeInner({
 
                 {/* Action buttons - visible on hover - OUTSIDE TreeItem to avoid nested buttons */}
                 <span
-                  className={`flex items-center gap-0.5 ml-auto transition-opacity ${
-                    isHovered ? "opacity-100" : "opacity-0"
+                  className={`flex items-center gap-0.5 ml-auto transition-opacity duration-150 ${
+                    isHovered ? "opacity-100" : "opacity-0 pointer-events-none"
                   }`}
                 >
                       <PermissionGate permission="locations.update">
