@@ -59,10 +59,14 @@ const indent = 24;
 // Inner component that will be fully remounted when key changes
 function LocationTreeInner({ 
   organizationId,
+  initialExpandedItems,
+  onExpandedItemsChange,
   onAddChild,
   onMove,
   onDelete,
 }: LocationTreeProps & {
+  initialExpandedItems: string[];
+  onExpandedItemsChange: (items: string[]) => void;
   onAddChild: (location: { id: string; name: string; parentId?: string }) => void;
   onMove: (location: { id: string; name: string; parentId?: string }) => void;
   onDelete: (location: { id: string; name: string; parentId?: string }) => void;
@@ -140,9 +144,8 @@ function LocationTreeInner({
   // Create tree instance at top level (hooks can't be called in useMemo)
   const tree = useTree<LocationItem>({
     initialState: {
-      // Start with empty to avoid hydration mismatch
-      // Will be expanded via useEffect on client
-      expandedItems: [],
+      // Use provided expanded items to preserve state across remounts
+      expandedItems: initialExpandedItems,
     },
     indent,
     rootItemId: "root",
@@ -242,9 +245,10 @@ function LocationTreeInner({
     ],
   });
 
-  // Expand root children after initial render on client
+  // Expand root children on initial mount if not already in expanded items
   useEffect(() => {
-    if (rootChildren.length > 0) {
+    if (rootChildren.length > 0 && initialExpandedItems.length === 0) {
+      // Only auto-expand on first mount
       rootChildren.forEach((childId) => {
         const item = tree.getItemInstance(childId);
         if (item && !item.isExpanded()) {
@@ -252,7 +256,17 @@ function LocationTreeInner({
         }
       });
     }
-  }, [rootChildren.length, tree]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Track expanded state changes and notify parent
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const currentExpanded = tree.getState().expandedItems;
+      onExpandedItemsChange(currentExpanded);
+    }, 500); // Check every 500ms
+
+    return () => clearInterval(timer);
+  }, [tree, onExpandedItemsChange]);
 
   const getTypeIcon = (type: string, isFolder: boolean, isExpanded: boolean) => {
     if (type === "root") return null;
@@ -450,6 +464,7 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
     parentId?: string;
   } | null>(null);
   const [treeVersion, setTreeVersion] = useState(0);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
   
   const deleteLocation = useMutation(api.locations.deleteLocation);
 
@@ -496,10 +511,12 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
 
   return (
     <>
-      {/* Remount entire tree when version changes */}
+      {/* Remount entire tree when version changes, but preserve expanded state */}
       <LocationTreeInner
         key={`tree-${treeVersion}`}
         organizationId={organizationId}
+        initialExpandedItems={expandedItems}
+        onExpandedItemsChange={setExpandedItems}
         onAddChild={(location) => {
           setSelectedLocation(location);
           setAddChildDialogOpen(true);
