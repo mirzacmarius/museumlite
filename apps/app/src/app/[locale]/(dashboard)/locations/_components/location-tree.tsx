@@ -347,8 +347,8 @@ function LocationTreeInner({
                       item.isFolder(),
                       item.isExpanded(),
                     )}
-                    <span className="flex-1">{item.getItemName()}</span>
-                    <span className="text-xs capitalize text-muted-foreground">
+                    <span>{item.getItemName()}</span>
+                    <span className="ml-auto text-xs capitalize text-muted-foreground">
                       {itemData.type}
                     </span>
                   </TreeItemLabel>
