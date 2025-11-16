@@ -56,19 +56,20 @@ interface LocationItem {
 
 const indent = 24;
 
-export function LocationTree({ organizationId }: LocationTreeProps) {
+// Inner component that will be fully remounted when key changes
+function LocationTreeInner({ 
+  organizationId,
+  onAddChild,
+  onMove,
+  onDelete,
+}: LocationTreeProps & {
+  onAddChild: (location: { id: string; name: string; parentId?: string }) => void;
+  onMove: (location: { id: string; name: string; parentId?: string }) => void;
+  onDelete: (location: { id: string; name: string; parentId?: string }) => void;
+}) {
   const router = useRouter();
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
-  const [addChildDialogOpen, setAddChildDialogOpen] = useState(false);
-  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<{
-    id: string;
-    name: string;
-    parentId?: string;
-  } | null>(null);
-  const [treeVersion, setTreeVersion] = useState(0);
-
+  
   // Fetch all locations for the tree
   const allLocations = useQuery(
     api.locations.listAll,
@@ -77,12 +78,7 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
       : "skip",
   );
 
-  const deleteLocation = useMutation(api.locations.deleteLocation);
-  const updateLocation = useMutation(api.locations.update);
   const reorderLocation = useMutation(api.locations.reorder);
-
-  // Track previous dataVersion to detect changes
-  const prevDataVersionRef = useRef<string>('');
 
   // Build items map for tree - memoized to rebuild when allLocations changes
   const { items, rootChildren, dataVersion } = useMemo(() => {
@@ -141,36 +137,35 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
     return { items: itemsMap, rootChildren: roots, dataVersion: structureHash };
   }, [allLocations]);
 
-  // Create tree instance - will recreate when dataVersion or treeVersion changes
-  const tree = useMemo(() => {
-    return useTree<LocationItem>({
-      initialState: {
-        // Start with empty to avoid hydration mismatch
-        // Will be expanded via useEffect on client
-        expandedItems: [],
+  // Create tree instance at top level (hooks can't be called in useMemo)
+  const tree = useTree<LocationItem>({
+    initialState: {
+      // Start with empty to avoid hydration mismatch
+      // Will be expanded via useEffect on client
+      expandedItems: [],
+    },
+    indent,
+    rootItemId: "root",
+    getItemName: (item) => item.getItemData().name,
+    isItemFolder: (item) => (item.getItemData()?.children?.length ?? 0) > 0,
+    dataLoader: {
+      getItem: (itemId) => {
+        const item = items[itemId];
+        if (!item) {
+          // Fallback for undefined items
+          return {
+            _id: itemId,
+            name: "Unknown",
+            type: "unknown",
+            sortOrder: 0,
+            isActive: false,
+            children: [],
+          };
+        }
+        return item;
       },
-      indent,
-      rootItemId: "root",
-      getItemName: (item) => item.getItemData().name,
-      isItemFolder: (item) => (item.getItemData()?.children?.length ?? 0) > 0,
-      dataLoader: {
-        getItem: (itemId) => {
-          const item = items[itemId];
-          if (!item) {
-            // Fallback for undefined items
-            return {
-              _id: itemId,
-              name: "Unknown",
-              type: "unknown",
-              sortOrder: 0,
-              isActive: false,
-              children: [],
-            };
-          }
-          return item;
-        },
-        getChildren: (itemId) => items[itemId]?.children ?? [],
-      },
+      getChildren: (itemId) => items[itemId]?.children ?? [],
+    },
     canDrag: (draggedItems) => {
       // Allow dragging all items except root
       return draggedItems.every(
@@ -234,30 +229,20 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
         });
         
         // Convex will automatically update allLocations, which changes dataVersion
-        // Force tree rebuild immediately
-        setTreeVersion((v) => v + 1);
+        // and triggers tree remount via key in parent component
       } catch (error) {
         console.error("Failed to reorder location:", error);
       }
     },
-      features: [
-        syncDataLoaderFeature,
-        selectionFeature,
-        hotkeysCoreFeature,
-        dragAndDropFeature,
-      ],
-    });
-  }, [items, dataVersion, treeVersion]); // Recreate tree when data or version changes
+    features: [
+      syncDataLoaderFeature,
+      selectionFeature,
+      hotkeysCoreFeature,
+      dragAndDropFeature,
+    ],
+  });
 
-  // Detect data changes and log for debugging
-  useEffect(() => {
-    if (prevDataVersionRef.current && prevDataVersionRef.current !== dataVersion) {
-      console.log('🔄 Location data changed, tree will re-render');
-    }
-    prevDataVersionRef.current = dataVersion;
-  }, [dataVersion]);
-
-  // Expand root children after initial render on client AND when tree version changes
+  // Expand root children after initial render on client
   useEffect(() => {
     if (rootChildren.length > 0) {
       rootChildren.forEach((childId) => {
@@ -267,22 +252,7 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
         }
       });
     }
-  }, [rootChildren.length, treeVersion, tree]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleDelete = async () => {
-    if (!selectedLocation) return;
-    try {
-      await deleteLocation({
-        locationId: selectedLocation.id as Id<"locations">,
-      });
-      setDeleteDialogOpen(false);
-      setSelectedLocation(null);
-      // Force tree to rebuild
-      setTreeVersion((v) => v + 1);
-    } catch (error) {
-      console.error("Failed to delete location:", error);
-    }
-  };
+  }, [rootChildren.length, tree]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getTypeIcon = (type: string, isFolder: boolean, isExpanded: boolean) => {
     if (type === "root") return null;
@@ -329,14 +299,12 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
   }
 
   return (
-    <>
-      <div className="p-6" suppressHydrationWarning>
-        <Tree
-          key={`tree-${dataVersion}-v${treeVersion}`}
-          className="relative before:absolute before:inset-0 before:ms-4.5 before:bg-[repeating-linear-gradient(to_right,transparent_0,transparent_calc(var(--tree-indent)-1px),var(--border)_calc(var(--tree-indent)-1px),var(--border)_calc(var(--tree-indent)))]"
-          indent={indent}
-          tree={tree}
-        >
+    <div className="p-6" suppressHydrationWarning>
+      <Tree
+        className="relative before:absolute before:inset-0 before:ms-4.5 before:bg-[repeating-linear-gradient(to_right,transparent_0,transparent_calc(var(--tree-indent)-1px),var(--border)_calc(var(--tree-indent)-1px),var(--border)_calc(var(--tree-indent)))]"
+        indent={indent}
+        tree={tree}
+      >
           <TreeDragLine />
           {tree.getItems().map((item) => {
             const itemData = item.getItemData();
@@ -403,12 +371,11 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
                               className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSelectedLocation({
+                                onAddChild({
                                   id: itemData._id,
                                   name: itemData.name,
                                   parentId: itemData.parentLocationId,
                                 });
-                                setAddChildDialogOpen(true);
                               }}
                             >
                               <Plus className="h-3.5 w-3.5" />
@@ -427,12 +394,11 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
                               className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSelectedLocation({
+                                onMove({
                                   id: itemData._id,
                                   name: itemData.name,
                                   parentId: itemData.parentLocationId,
                                 });
-                                setMoveDialogOpen(true);
                               }}
                             >
                               <Move className="h-3.5 w-3.5" />
@@ -451,12 +417,11 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
                               className="h-7 w-7 inline-flex items-center justify-center rounded-md text-destructive hover:bg-destructive/10 hover:text-destructive"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSelectedLocation({
+                                onDelete({
                                   id: itemData._id,
                                   name: itemData.name,
                                   parentId: itemData.parentLocationId,
                                 });
-                                setDeleteDialogOpen(true);
                               }}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -470,7 +435,84 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
             );
           })}
         </Tree>
-      </div>
+    </div>
+  );
+}
+
+// Outer component that manages dialogs and state
+export function LocationTree({ organizationId }: LocationTreeProps) {
+  const [addChildDialogOpen, setAddChildDialogOpen] = useState(false);
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<{
+    id: string;
+    name: string;
+    parentId?: string;
+  } | null>(null);
+  const [treeVersion, setTreeVersion] = useState(0);
+  
+  const deleteLocation = useMutation(api.locations.deleteLocation);
+
+  // Fetch all locations to detect changes
+  const allLocations = useQuery(
+    api.locations.listAll,
+    organizationId
+      ? { organizationId: organizationId as Id<"organizations"> }
+      : "skip",
+  );
+
+  // Track previous dataVersion to detect changes and force remount
+  const prevDataVersionRef = useRef<string>('');
+  
+  // Create a version hash based on the actual structure AND order
+  const dataVersion = useMemo(() => {
+    const hash = allLocations
+      ?.map(loc => `${loc._id}:${loc.parentLocationId || 'root'}:${loc.sortOrder}`)
+      .sort()
+      .join('|') || '';
+    
+    // Detect changes
+    if (prevDataVersionRef.current && prevDataVersionRef.current !== hash) {
+      console.log('🔄 Location data changed, remounting tree');
+      setTreeVersion((v) => v + 1);
+    }
+    prevDataVersionRef.current = hash;
+    
+    return hash;
+  }, [allLocations]);
+
+  const handleDelete = async () => {
+    if (!selectedLocation) return;
+    try {
+      await deleteLocation({
+        locationId: selectedLocation.id as Id<"locations">,
+      });
+      setDeleteDialogOpen(false);
+      setSelectedLocation(null);
+    } catch (error) {
+      console.error("Failed to delete location:", error);
+    }
+  };
+
+  return (
+    <>
+      {/* Remount entire tree when version changes */}
+      <LocationTreeInner
+        key={`tree-${treeVersion}`}
+        organizationId={organizationId}
+        onAddChild={(location) => {
+          setSelectedLocation(location);
+          setAddChildDialogOpen(true);
+        }}
+        onMove={(location) => {
+          setSelectedLocation(location);
+          setMoveDialogOpen(true);
+        }}
+        onDelete={(location) => {
+          setSelectedLocation(location);
+          setDeleteDialogOpen(true);
+        }}
+      />
 
       {/* Dialogs */}
       {selectedLocation && (
@@ -481,10 +523,6 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
             organizationId={organizationId}
             open={addChildDialogOpen}
             onOpenChange={setAddChildDialogOpen}
-            onSuccess={() => {
-              // Force tree to rebuild
-              setTreeVersion((v) => v + 1);
-            }}
           />
 
           <MoveLocationDialog
@@ -493,10 +531,6 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
             currentParentId={selectedLocation.parentId}
             open={moveDialogOpen}
             onOpenChange={setMoveDialogOpen}
-            onSuccess={() => {
-              // Force tree to rebuild
-              setTreeVersion((v) => v + 1);
-            }}
           />
 
           <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
