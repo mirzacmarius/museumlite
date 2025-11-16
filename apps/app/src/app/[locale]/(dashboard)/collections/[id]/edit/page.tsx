@@ -81,7 +81,6 @@ export default function CollectionEditPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<File[]>([]);
-  const documentsRef = useRef<File[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -194,89 +193,70 @@ export default function CollectionEditPage() {
     },
   );
 
-  // Document upload handling
-  const { startUpload: startDocumentUpload } = useUploadFiles(
-    async () => {
-      if (!currentOrganizationId) {
-        throw new Error("Organization missing");
-      }
+  // Document upload handling - upload immediately when selected
+  const handleDocumentUpload = async (files: File[]) => {
+    if (!currentOrganizationId || !collectionId) {
+      setError("Missing organization or collection");
+      return;
+    }
 
-      const file = documentsRef.current.shift();
-      if (!file) {
-        throw new Error("No file available for upload");
-      }
+    setError(null);
 
-      const result = await generateUploadUrl({
-        organizationId: currentOrganizationId as Id<"organizations">,
-        collectionId: collectionId as Id<"collections">,
-        fileName: file.name,
-        fileSize: file.size,
-        mimeType: file.type,
-      });
+    for (const file of files) {
+      try {
+        // Generate upload URL
+        const uploadUrlResult = await generateUploadUrl({
+          organizationId: currentOrganizationId as Id<"organizations">,
+          collectionId: collectionId as Id<"collections">,
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type,
+        });
 
-      if (!result.uploadUrl) {
-        throw new Error(`Failed to generate upload URL for ${file.name}`);
-      }
-
-      return result.uploadUrl;
-    },
-    {
-      onUploadComplete: async (uploaded) => {
-        try {
-          if (!uploaded || !Array.isArray(uploaded) || uploaded.length === 0) {
-            setError("Upload completed but no files were returned");
-            return;
-          }
-
-          if (!currentOrganizationId) {
-            setError("Organization not found");
-            return;
-          }
-
-          await Promise.all(
-            uploaded.map(async (file) => {
-              if (!file) {
-                throw new Error("Upload completed but file data is missing");
-              }
-
-              const storageId = (file.response as { storageId: Id<"_storage"> })
-                ?.storageId;
-
-              if (!storageId) {
-                throw new Error(
-                  `Upload completed but no storage ID returned for ${file.name}`,
-                );
-              }
-
-              await createMedia({
-                organizationId: currentOrganizationId as Id<"organizations">,
-                collectionId: collectionId as Id<"collections">,
-                storageId: storageId,
-                fileName: file.name || "unknown",
-                fileSize: file.size || 0,
-                mimeType: file.type || "application/octet-stream",
-                isPrimary: false, // Documents are never primary
-                mediaCategory: "document",
-              });
-            }),
-          );
-        } catch (err) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Failed to create media records",
-          );
+        if (!uploadUrlResult.uploadUrl) {
+          throw new Error(`Failed to generate upload URL for ${file.name}`);
         }
-      },
-      onUploadError: (error) => {
+
+        // Upload file to storage
+        const uploadResponse = await fetch(uploadUrlResult.uploadUrl, {
+          method: "POST",
+          body: file,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error(`Failed to upload ${file.name}`);
+        }
+
+        const uploadResult = await uploadResponse.json();
+        const storageId = uploadResult.storageId;
+
+        if (!storageId) {
+          throw new Error(`No storage ID returned for ${file.name}`);
+        }
+
+        // Create media record for document
+        await createMedia({
+          organizationId: currentOrganizationId as Id<"organizations">,
+          collectionId: collectionId as Id<"collections">,
+          storageId: storageId,
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type,
+          mediaCategory: "document",
+          isPrimary: false, // Documents are never primary
+        });
+      } catch (err) {
+        console.error(`Error uploading ${file.name}:`, err);
         setError(
-          error && typeof error === "object" && "message" in error
-            ? String(error.message)
-            : "Document upload failed",
+          err instanceof Error
+            ? `Failed to upload ${file.name}: ${err.message}`
+            : `Failed to upload ${file.name}`,
         );
-      },
-    },
-  );
+        // Stop on first error
+        break;
+      }
+    }
+  };
 
   // Load existing data
   useEffect(() => {
@@ -378,7 +358,7 @@ export default function CollectionEditPage() {
     }
   };
 
-  const handleDocumentSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDocumentSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
     try {
       const filesList = event.target?.files;
@@ -390,9 +370,10 @@ export default function CollectionEditPage() {
         return;
       }
 
-      documentsRef.current = [...files];
-      startDocumentUpload(files);
+      // Upload documents immediately
+      await handleDocumentUpload(files);
 
+      // Clear the input
       if (documentInputRef.current) {
         documentInputRef.current.value = "";
       }
