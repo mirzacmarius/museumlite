@@ -22,11 +22,13 @@ import {
 } from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation } from "convex/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface AddChildLocationDialogProps {
   parentLocationId?: string;
   parentLocationName?: string;
+  parentLocationType?: string;
+  parentLocationAddress?: string;
   organizationId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -47,6 +49,8 @@ const LOCATION_TYPES = [
 export function AddChildLocationDialog({
   parentLocationId,
   parentLocationName,
+  parentLocationType,
+  parentLocationAddress,
   organizationId,
   open,
   onOpenChange,
@@ -60,6 +64,20 @@ export function AddChildLocationDialog({
   const [error, setError] = useState<string | null>(null);
 
   const createLocation = useMutation(api.locations.create);
+
+  // Autofill fields when dialog opens with parent location data
+  useEffect(() => {
+    if (open && parentLocationId) {
+      // Inherit type from parent (user can change if needed)
+      setType(parentLocationType || "");
+      // Inherit address from parent
+      setAddress(parentLocationAddress || "");
+    } else if (open && !parentLocationId) {
+      // Reset for root locations
+      setType("");
+      setAddress("");
+    }
+  }, [open, parentLocationId, parentLocationType, parentLocationAddress]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -96,6 +96,8 @@ export const listAll = query({
       parentLocationId: v.optional(v.id("locations")),
       sortOrder: v.number(),
       isActive: v.boolean(),
+      address: v.optional(v.string()),
+      notes: v.optional(v.string()),
     }),
   ),
   handler: async (ctx, args) => {
@@ -119,6 +121,8 @@ export const listAll = query({
       parentLocationId: loc.parentLocationId,
       sortOrder: loc.sortOrder,
       isActive: loc.isActive,
+      address: loc.address,
+      notes: loc.notes,
     }));
   },
 });

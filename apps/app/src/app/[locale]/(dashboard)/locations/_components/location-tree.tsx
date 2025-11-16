@@ -60,6 +60,8 @@ interface LocationItem {
   sortOrder: number;
   isActive: boolean;
   children?: string[];
+  address?: string;
+  notes?: string;
 }
 
 const indent = 24;
@@ -77,7 +79,7 @@ function LocationTreeInner({
   initialExpandedItems: string[];
   onExpandedItemsChange: (items: string[]) => void;
   onEdit: (location: { id: string; name: string; parentId?: string }) => void;
-  onAddChild: (location: { id: string; name: string; parentId?: string }) => void;
+  onAddChild: (location: { id: string; name: string; parentId?: string; type?: string; address?: string }) => void;
   onMove: (location: { id: string; name: string; parentId?: string }) => void;
   onDelete: (location: { id: string; name: string; parentId?: string }) => void;
 }) {
@@ -113,6 +115,8 @@ function LocationTreeInner({
           sortOrder: loc.sortOrder,
           isActive: loc.isActive,
           children: [],
+          address: loc.address,
+          notes: loc.notes,
         };
 
         if (!loc.parentLocationId) {
@@ -402,6 +406,8 @@ function LocationTreeInner({
                               id: itemData._id,
                               name: itemData.name,
                               parentId: itemData.parentLocationId,
+                              type: itemData.type,
+                              address: itemData.address,
                             });
                           }}
                         >
@@ -464,6 +470,8 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
     id: string;
     name: string;
     parentId?: string;
+    type?: string;
+    address?: string;
   } | null>(null);
   const [treeVersion, setTreeVersion] = useState(0);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -525,7 +533,7 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
             }}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Add Root Location
+            Add New Location
           </Button>
         </PermissionGate>
       </div>
@@ -569,6 +577,8 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
       <AddChildLocationDialog
         parentLocationId={selectedLocation?.id}
         parentLocationName={selectedLocation?.name}
+        parentLocationType={selectedLocation?.type}
+        parentLocationAddress={selectedLocation?.address}
         organizationId={organizationId}
         open={addChildDialogOpen}
         onOpenChange={setAddChildDialogOpen}
