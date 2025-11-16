@@ -334,7 +334,15 @@ function LocationTreeInner({
                 <TreeItem 
                   item={item} 
                   className="flex-1 not-last:pb-0 cursor-grab active:cursor-grabbing"
-                  onClick={() => router.push(`/locations/${itemData._id}`)}
+                  onClick={(e) => {
+                    // Check if click originated from action button
+                    const target = e.target as HTMLElement;
+                    if (target.closest('[data-action-button]')) {
+                      console.log('Click from action button, preventing navigation');
+                      return;
+                    }
+                    router.push(`/locations/${itemData._id}`);
+                  }}
                 >
                   <TreeItemLabel className="relative flex items-center gap-2 before:absolute before:inset-x-0 before:-inset-y-0.5 before:-z-10 before:bg-background data-[drag-target=true]:ring-2 data-[drag-target=true]:ring-primary">
                     {getTypeIcon(
@@ -523,18 +531,23 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
         initialExpandedItems={expandedItems}
         onExpandedItemsChange={setExpandedItems}
         onEdit={(location) => {
+          console.log('onEdit called in parent:', location);
           setSelectedLocation(location);
           setEditDialogOpen(true);
+          console.log('Edit dialog state set to true');
         }}
         onAddChild={(location) => {
+          console.log('onAddChild called:', location);
           setSelectedLocation(location);
           setAddChildDialogOpen(true);
         }}
         onMove={(location) => {
+          console.log('onMove called:', location);
           setSelectedLocation(location);
           setMoveDialogOpen(true);
         }}
         onDelete={(location) => {
+          console.log('onDelete called:', location);
           setSelectedLocation(location);
           setDeleteDialogOpen(true);
         }}
