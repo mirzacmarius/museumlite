@@ -39,6 +39,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { AddChildLocationDialog } from "./add-child-location-dialog";
 import { MoveLocationDialog } from "./move-location-dialog";
+import { EditLocationDialog } from "./edit-location-dialog";
 
 interface LocationTreeProps {
   organizationId: string;
@@ -61,12 +62,14 @@ function LocationTreeInner({
   organizationId,
   initialExpandedItems,
   onExpandedItemsChange,
+  onEdit,
   onAddChild,
   onMove,
   onDelete,
 }: LocationTreeProps & {
   initialExpandedItems: string[];
   onExpandedItemsChange: (items: string[]) => void;
+  onEdit: (location: { id: string; name: string; parentId?: string }) => void;
   onAddChild: (location: { id: string; name: string; parentId?: string }) => void;
   onMove: (location: { id: string; name: string; parentId?: string }) => void;
   onDelete: (location: { id: string; name: string; parentId?: string }) => void;
@@ -366,7 +369,11 @@ function LocationTreeInner({
                               className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                router.push(`/locations/${itemData._id}/edit`);
+                                onEdit({
+                                  id: itemData._id,
+                                  name: itemData.name,
+                                  parentId: itemData.parentLocationId,
+                                });
                               }}
                             >
                               <Edit className="h-3.5 w-3.5" />
@@ -455,6 +462,7 @@ function LocationTreeInner({
 
 // Outer component that manages dialogs and state
 export function LocationTree({ organizationId }: LocationTreeProps) {
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [addChildDialogOpen, setAddChildDialogOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -517,6 +525,10 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
         organizationId={organizationId}
         initialExpandedItems={expandedItems}
         onExpandedItemsChange={setExpandedItems}
+        onEdit={(location) => {
+          setSelectedLocation(location);
+          setEditDialogOpen(true);
+        }}
         onAddChild={(location) => {
           setSelectedLocation(location);
           setAddChildDialogOpen(true);
@@ -534,6 +546,12 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
       {/* Dialogs */}
       {selectedLocation && (
         <>
+          <EditLocationDialog
+            locationId={selectedLocation.id}
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+          />
+
           <AddChildLocationDialog
             parentLocationId={selectedLocation.id}
             parentLocationName={selectedLocation.name}
