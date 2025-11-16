@@ -217,6 +217,7 @@ export const list = query({
       fileType: v.string(),
       fileSize: v.number(),
       mimeType: v.string(),
+      mediaCategory: v.optional(v.union(v.literal("image"), v.literal("document"))),
       isPrimary: v.boolean(),
       caption: v.optional(v.string()),
       photographer: v.optional(v.string()),

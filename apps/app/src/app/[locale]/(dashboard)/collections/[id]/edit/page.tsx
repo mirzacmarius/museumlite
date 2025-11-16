@@ -74,8 +74,14 @@ export default function CollectionEditPage() {
     collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
   );
 
+  // Separate images and documents
+  const images = media?.filter((m) => (m as any).mediaCategory === "image" || !(m as any).mediaCategory) || [];
+  const documents = media?.filter((m) => (m as any).mediaCategory === "document") || [];
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<File[]>([]);
+  const documentsRef = useRef<File[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -166,6 +172,7 @@ export default function CollectionEditPage() {
                 fileSize: file.size || 0,
                 mimeType: file.type || "application/octet-stream",
                 isPrimary: isFirstMedia && index === 0,
+                mediaCategory: "image",
               });
             }),
           );
@@ -283,6 +290,115 @@ export default function CollectionEditPage() {
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to process file selection",
+      );
+    }
+  };
+
+  // Document upload handling
+  const { startUpload: startDocumentUpload } = useUploadFiles(
+    async () => {
+      if (!currentOrganizationId) {
+        throw new Error("Organization missing");
+      }
+
+      const file = documentsRef.current.shift();
+      if (!file) {
+        throw new Error("No file available for upload");
+      }
+
+      const result = await generateUploadUrl({
+        organizationId: currentOrganizationId as Id<"organizations">,
+        collectionId: collectionId as Id<"collections">,
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+      });
+
+      if (!result.uploadUrl) {
+        throw new Error(`Failed to generate upload URL for ${file.name}`);
+      }
+
+      return result.uploadUrl;
+    },
+    {
+      onUploadComplete: async (uploaded) => {
+        try {
+          if (!uploaded || !Array.isArray(uploaded) || uploaded.length === 0) {
+            setError("Upload completed but no files were returned");
+            return;
+          }
+
+          if (!currentOrganizationId) {
+            setError("Organization not found");
+            return;
+          }
+
+          await Promise.all(
+            uploaded.map(async (file) => {
+              if (!file) {
+                throw new Error("Upload completed but file data is missing");
+              }
+
+              const storageId = (file.response as { storageId: Id<"_storage"> })
+                ?.storageId;
+
+              if (!storageId) {
+                throw new Error(
+                  `Upload completed but no storage ID returned for ${file.name}`,
+                );
+              }
+
+              await createMedia({
+                organizationId: currentOrganizationId as Id<"organizations">,
+                collectionId: collectionId as Id<"collections">,
+                storageId: storageId,
+                fileName: file.name || "unknown",
+                fileSize: file.size || 0,
+                mimeType: file.type || "application/octet-stream",
+                isPrimary: false, // Documents are never primary
+                mediaCategory: "document",
+              });
+            }),
+          );
+        } catch (err) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to create media records",
+          );
+        }
+      },
+      onUploadError: (error) => {
+        setError(
+          error && typeof error === "object" && "message" in error
+            ? String(error.message)
+            : "Document upload failed",
+        );
+      },
+    },
+  );
+
+  const handleDocumentSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null);
+    try {
+      const filesList = event.target?.files;
+      if (!filesList || filesList.length === 0) {
+        return;
+      }
+      const files = Array.from(filesList);
+      if (!files || files.length === 0) {
+        return;
+      }
+
+      documentsRef.current = [...files];
+      startDocumentUpload(files);
+
+      if (documentInputRef.current) {
+        documentInputRef.current.value = "";
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to process document selection",
       );
     }
   };
@@ -716,16 +832,17 @@ export default function CollectionEditPage() {
 
                 {/* Right column - Media Uploader */}
                 <div className="w-96 flex-shrink-0">
-                  <div className="sticky top-4">
+                  <div className="sticky top-4 space-y-4">
+                    {/* Image Upload Section */}
                     <div className="rounded-lg border border-border bg-card p-4">
                       <h3 className="mb-3 text-base font-semibold">
-                        Media Upload
+                        Image Upload
                       </h3>
 
                       <input
                         ref={fileInputRef}
                         type="file"
-                        accept="image/*,video/*,application/pdf"
+                        accept="image/*"
                         onChange={handleFileSelect}
                         className="hidden"
                         multiple
@@ -741,9 +858,9 @@ export default function CollectionEditPage() {
                         Upload Images
                       </Button>
 
-                      {media && Array.isArray(media) && media.length > 0 ? (
+                      {images && images.length > 0 ? (
                         <div className="grid grid-cols-3 gap-2">
-                          {media.map((file) => (
+                          {images.map((file) => (
                             <div
                               key={file._id}
                               className="group relative aspect-square overflow-hidden rounded-md border bg-card"
@@ -804,11 +921,72 @@ export default function CollectionEditPage() {
                         </div>
                       )}
 
-                      {media && Array.isArray(media) && media.length > 0 && (
+                      {images.length > 0 && (
                         <p className="mt-3 text-center text-xs text-muted-foreground">
-                          {media.length}{" "}
-                          {media.length === 1 ? "image" : "images"}
+                          {images.length}{" "}
+                          {images.length === 1 ? "image" : "images"}
                         </p>
+                      )}
+                    </div>
+
+                    {/* Document Upload Section */}
+                    <div className="rounded-lg border border-border bg-card p-4">
+                      <h3 className="mb-3 text-base font-semibold">
+                        Document Upload
+                      </h3>
+                      <p className="mb-3 text-xs text-muted-foreground">
+                        Upload related documents (PDFs, scanned images, etc.)
+                      </p>
+
+                      <input
+                        ref={documentInputRef}
+                        type="file"
+                        accept=".pdf,image/jpeg,image/jpg,image/png,image/tiff"
+                        onChange={handleDocumentSelect}
+                        className="hidden"
+                        multiple
+                      />
+
+                      <Button
+                        type="button"
+                        onClick={() => documentInputRef.current?.click()}
+                        className="w-full mb-4"
+                        variant="outline"
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload Documents
+                      </Button>
+
+                      {documents.length > 0 ? (
+                        <div className="space-y-2">
+                          {documents.map((doc) => (
+                            <div
+                              key={doc._id}
+                              className="flex items-center justify-between rounded-md border bg-card p-2 text-sm"
+                            >
+                              <span className="truncate">{doc.fileName}</span>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDelete(doc._id)}
+                                title="Delete"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                          <p className="mt-2 text-center text-xs text-muted-foreground">
+                            {documents.length}{" "}
+                            {documents.length === 1 ? "document" : "documents"}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="flex h-20 flex-col items-center justify-center rounded-lg border border-dashed">
+                          <p className="text-xs text-muted-foreground">
+                            No documents uploaded
+                          </p>
+                        </div>
                       )}
                     </div>
                   </div>
