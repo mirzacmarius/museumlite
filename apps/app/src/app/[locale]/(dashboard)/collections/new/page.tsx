@@ -262,7 +262,22 @@ export default function CollectionFormPage() {
       <Header
         title="New Collection"
         description="Create a new collection object"
-      />
+      >
+        <div className="w-64">
+          <Label htmlFor="accessionNumber" className="text-sm">
+            Accession Number
+          </Label>
+          <Input
+            id="accessionNumber"
+            value={formData.accessionNumber || ""}
+            onChange={(e) =>
+              updateField("accessionNumber", e.target.value)
+            }
+            placeholder="Auto-generated if empty"
+            className="mt-1"
+          />
+        </div>
+      </Header>
       <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
         <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
           <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
@@ -310,20 +325,6 @@ export default function CollectionFormPage() {
                           onChange={(e) => updateField("title", e.target.value)}
                           placeholder="Enter object title"
                           required
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="accessionNumber">
-                          Accession Number
-                        </Label>
-                        <Input
-                          id="accessionNumber"
-                          value={formData.accessionNumber || ""}
-                          onChange={(e) =>
-                            updateField("accessionNumber", e.target.value)
-                          }
-                          placeholder="Auto-generated if not provided"
                         />
                       </div>
 
