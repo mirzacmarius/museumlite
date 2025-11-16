@@ -360,7 +360,9 @@ function LocationTreeInner({
                               type="button"
                               className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
                               onClick={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
+                                console.log('Edit clicked:', itemData._id);
                                 onEdit({
                                   id: itemData._id,
                                   name: itemData.name,
@@ -383,6 +385,7 @@ function LocationTreeInner({
                               type="button"
                               className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
                               onClick={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
                                 onAddChild({
                                   id: itemData._id,
@@ -406,6 +409,7 @@ function LocationTreeInner({
                               type="button"
                               className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
                               onClick={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
                                 onMove({
                                   id: itemData._id,
@@ -429,6 +433,7 @@ function LocationTreeInner({
                               type="button"
                               className="h-7 w-7 inline-flex items-center justify-center rounded-md text-destructive hover:bg-destructive/10 hover:text-destructive"
                               onClick={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
                                 onDelete({
                                   id: itemData._id,
@@ -535,55 +540,51 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
         }}
       />
 
-      {/* Dialogs */}
-      {selectedLocation && (
-        <>
-          <EditLocationDialog
-            locationId={selectedLocation.id}
-            open={editDialogOpen}
-            onOpenChange={setEditDialogOpen}
-          />
+      {/* Dialogs - render outside of condition to ensure they always exist */}
+      <EditLocationDialog
+        locationId={selectedLocation?.id || ""}
+        open={editDialogOpen && !!selectedLocation}
+        onOpenChange={setEditDialogOpen}
+      />
 
-          <AddChildLocationDialog
-            parentLocationId={selectedLocation.id}
-            parentLocationName={selectedLocation.name}
-            organizationId={organizationId}
-            open={addChildDialogOpen}
-            onOpenChange={setAddChildDialogOpen}
-          />
+      <AddChildLocationDialog
+        parentLocationId={selectedLocation?.id || ""}
+        parentLocationName={selectedLocation?.name || ""}
+        organizationId={organizationId}
+        open={addChildDialogOpen && !!selectedLocation}
+        onOpenChange={setAddChildDialogOpen}
+      />
 
-          <MoveLocationDialog
-            locationId={selectedLocation.id}
-            locationName={selectedLocation.name}
-            currentParentId={selectedLocation.parentId}
-            open={moveDialogOpen}
-            onOpenChange={setMoveDialogOpen}
-          />
+      <MoveLocationDialog
+        locationId={selectedLocation?.id || ""}
+        locationName={selectedLocation?.name || ""}
+        currentParentId={selectedLocation?.parentId}
+        open={moveDialogOpen && !!selectedLocation}
+        onOpenChange={setMoveDialogOpen}
+      />
 
-          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Location</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete{" "}
-                  <span className="font-medium">{selectedLocation.name}</span>?
-                  This action cannot be undone. Make sure this location has no
-                  children or objects.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDelete}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      )}
+      <AlertDialog open={deleteDialogOpen && !!selectedLocation} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Location</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-medium">{selectedLocation?.name}</span>?
+              This action cannot be undone. Make sure this location has no
+              children or objects.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
