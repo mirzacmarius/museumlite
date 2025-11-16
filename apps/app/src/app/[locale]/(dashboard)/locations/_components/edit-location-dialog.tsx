@@ -25,6 +25,17 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Loader2 } from "lucide-react";
 
+const LOCATION_TYPES = [
+  "Building",
+  "Room",
+  "Gallery",
+  "Storage",
+  "Cabinet",
+  "Shelf",
+  "Vault",
+  "Other",
+];
+
 interface EditLocationDialogProps {
   locationId: string;
   open: boolean;
@@ -46,12 +57,6 @@ export function EditLocationDialog({
   const location = useQuery(
     api.locations.get,
     open && locationId ? { locationId: locationId as Id<"locations"> } : "skip",
-  );
-
-  // Fetch available location types
-  const locationTypes = useQuery(
-    api.locations.getLocationTypes,
-    location ? { organizationId: location.organizationId } : "skip",
   );
 
   const updateLocation = useMutation(api.locations.update);
@@ -122,9 +127,9 @@ export function EditLocationDialog({
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {locationTypes?.map((locationType) => (
+                    {LOCATION_TYPES.map((locationType) => (
                       <SelectItem key={locationType} value={locationType}>
-                        {locationType.charAt(0).toUpperCase() + locationType.slice(1)}
+                        {locationType}
                       </SelectItem>
                     ))}
                   </SelectContent>
