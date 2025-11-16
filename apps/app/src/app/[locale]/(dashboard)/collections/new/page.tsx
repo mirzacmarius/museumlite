@@ -23,6 +23,7 @@ import React, { useState, useRef } from "react";
 interface CollectionFormData {
   accessionNumber?: string;
   title: string;
+  creator?: string;
   objectType?: string | string[]; // Can be string or array depending on state
   objectName?: string;
   culture?: string;
@@ -34,6 +35,10 @@ interface CollectionFormData {
   condition?: string;
   provenance?: string;
   exhibitionHistory?: string;
+  donated_by?: string[];
+  donated_date?: string;
+  donation_info?: string;
+  previous_owners?: string[];
   currentLocationId?: string;
 }
 
@@ -58,6 +63,7 @@ export default function CollectionFormPage() {
   >([]);
   const [formData, setFormData] = useState<CollectionFormData>({
     title: "",
+    creator: "",
     objectType: [], // Initialize as empty array
     objectName: "",
     culture: "",
@@ -69,6 +75,10 @@ export default function CollectionFormPage() {
     condition: "",
     provenance: "",
     exhibitionHistory: "",
+    donated_by: [],
+    donated_date: "",
+    donation_info: "",
+    previous_owners: [],
     currentLocationId: "",
   });
 
@@ -166,6 +176,7 @@ export default function CollectionFormPage() {
         organizationId: currentOrganizationId,
         accessionNumber: formData.accessionNumber,
         title: formData.title,
+        creator: formData.creator,
         objectType: objectTypeString,
         objectName: formData.objectName,
         culture: formData.culture,
@@ -177,6 +188,10 @@ export default function CollectionFormPage() {
         condition: formData.condition,
         provenance: formData.provenance,
         exhibitionHistory: formData.exhibitionHistory,
+        donated_by: formData.donated_by,
+        donated_date: formData.donated_date,
+        donation_info: formData.donation_info,
+        previous_owners: formData.previous_owners,
         currentLocationId: formData.currentLocationId
           ? (formData.currentLocationId as Id<"locations">)
           : undefined,
