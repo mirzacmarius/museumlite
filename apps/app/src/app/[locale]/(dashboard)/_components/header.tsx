@@ -1,8 +1,13 @@
-import type { FC } from "react";
+import type { FC, ReactNode } from "react";
 
-export const Header: FC<{ title: string; description: string }> = ({
+export const Header: FC<{ 
+  title: string; 
+  description: string;
+  children?: ReactNode;
+}> = ({
   title,
   description,
+  children,
 }) => {
   return (
     <header className="z-10 flex w-full flex-col border-b border-border bg-card px-6">
@@ -11,6 +16,11 @@ export const Header: FC<{ title: string; description: string }> = ({
           <h1 className="text-3xl font-medium text-primary/80">{title}</h1>
           <p className="text-base font-normal text-primary/60">{description}</p>
         </div>
+        {children && (
+          <div className="flex items-center gap-4">
+            {children}
+          </div>
+        )}
       </div>
     </header>
   );
