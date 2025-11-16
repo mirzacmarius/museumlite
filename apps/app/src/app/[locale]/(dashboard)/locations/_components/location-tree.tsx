@@ -365,22 +365,19 @@ function LocationTreeInner({
                 </TreeItem>
 
                 {/* Actions dropdown menu */}
-                <div className="ml-auto">
+                <div className="ml-auto" onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button
-                        data-action-button
-                        type="button"
-                        className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                        }}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0"
                       >
                         <MoreHorizontal className="h-4 w-4" />
                         <span className="sr-only">Actions</span>
-                      </button>
+                      </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                       <PermissionGate permission="locations.update">
                         <DropdownMenuItem
                           onClick={(e) => {
