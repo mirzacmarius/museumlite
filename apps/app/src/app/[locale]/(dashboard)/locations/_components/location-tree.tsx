@@ -365,7 +365,7 @@ function LocationTreeInner({
                 </TreeItem>
 
                 {/* Actions dropdown menu */}
-                <div className="ml-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="ml-auto z-10" onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
