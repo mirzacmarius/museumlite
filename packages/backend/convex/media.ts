@@ -114,6 +114,7 @@ export const create = mutation({
     fileName: v.string(),
     fileSize: v.number(),
     mimeType: v.string(),
+    mediaCategory: v.optional(v.union(v.literal("image"), v.literal("document"))),
     isPrimary: v.optional(v.boolean()),
     caption: v.optional(v.string()),
     photographer: v.optional(v.string()),
@@ -131,6 +132,8 @@ export const create = mutation({
     await requirePermission(ctx, args.organizationId, "media.upload");
 
     const fileCategory = getFileCategory(args.mimeType);
+    // Use explicit mediaCategory if provided, otherwise default to "image" for images, "document" for others
+    const mediaCategory = args.mediaCategory || (fileCategory === "image" ? "image" : "document");
 
     // If this is a chunked upload, update existing record
     if (args.chunkId) {
@@ -146,6 +149,7 @@ export const create = mutation({
         await ctx.db.patch(existing._id, {
           storageId: args.storageId,
           uploadStatus: "completed",
+          mediaCategory,
         });
 
         // If it's a primary image and <50MB, schedule thumbnail generation
@@ -172,6 +176,7 @@ export const create = mutation({
       fileType: fileCategory,
       fileSize: args.fileSize,
       mimeType: args.mimeType,
+      mediaCategory,
       isPrimary: args.isPrimary ?? false,
       caption: args.caption,
       photographer: args.photographer,
@@ -212,6 +217,7 @@ export const list = query({
       fileType: v.string(),
       fileSize: v.number(),
       mimeType: v.string(),
+      mediaCategory: v.optional(v.union(v.literal("image"), v.literal("document"))),
       isPrimary: v.boolean(),
       caption: v.optional(v.string()),
       photographer: v.optional(v.string()),
@@ -256,6 +262,7 @@ export const list = query({
           fileType: media.fileType,
           fileSize: media.fileSize,
           mimeType: media.mimeType,
+          mediaCategory: media.mediaCategory,
           isPrimary: media.isPrimary,
           caption: media.caption,
           photographer: media.photographer,

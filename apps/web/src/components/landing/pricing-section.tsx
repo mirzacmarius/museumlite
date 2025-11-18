@@ -79,7 +79,7 @@ export function PricingSection() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {plans.map((plan, index) => (
             <motion.div
-              key={index}
+              key={plan.name}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -120,8 +120,8 @@ export function PricingSection() {
 
                 {/* Features List */}
                 <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, fIndex) => (
-                    <li key={fIndex} className="flex items-start gap-3">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-3">
                       <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                       <span className="text-sm text-muted-foreground">
                         {feature}

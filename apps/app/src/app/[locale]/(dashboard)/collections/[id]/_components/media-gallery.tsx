@@ -43,9 +43,10 @@ import { useEffect, useRef, useState } from "react";
 
 interface MediaGalleryProps {
   collectionId: string;
+  mediaType?: "images" | "documents";
 }
 
-export function MediaGallery({ collectionId }: MediaGalleryProps) {
+export function MediaGallery({ collectionId, mediaType = "images" }: MediaGalleryProps) {
   const { currentOrganizationId } = useOrganization();
   const media = useQuery(
     api.media.list,
@@ -133,6 +134,7 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
               }
 
               // Set the first uploaded file as primary if this is the first media
+              // For documents tab, set mediaCategory to "document"
               await createMedia({
                 organizationId: currentOrganizationId as Id<"organizations">,
                 collectionId: collectionId as Id<"collections">,
@@ -140,7 +142,8 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
                 fileName: file.name || "unknown",
                 fileSize: file.size || 0,
                 mimeType: file.type || "application/octet-stream",
-                isPrimary: isFirstMedia && index === 0, // Set first file as primary if it's the first media
+                isPrimary: isFirstMedia && index === 0 && mediaType === "images", // Only set primary for images
+                mediaCategory: mediaType === "documents" ? "document" : "image",
               });
             }),
           );
@@ -224,8 +227,24 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
   // Ensure media is an array
   const mediaArray = Array.isArray(media) ? media : [];
 
+  // Separate images/videos from documents
+  const images = mediaArray.filter((m) => {
+    const category = (m as { mediaCategory?: "image" | "document" }).mediaCategory;
+    // Images: explicitly marked as "image" OR (no category AND fileType is image/video)
+    return (category === "image" || (!category && (m.fileType === "image" || m.fileType === "video")));
+  });
+  const documents = mediaArray.filter((m) => {
+    const category = (m as { mediaCategory?: "image" | "document" }).mediaCategory;
+    // Documents: explicitly marked as "document" OR (no category AND fileType is document/pdf)
+    return category === "document" || (!category && m.fileType === "document");
+  });
+
+  // Determine what to show based on mediaType prop
+  const showImages = mediaType === "images";
+  const showDocuments = mediaType === "documents";
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {error && (
         <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
           {error}
@@ -234,12 +253,14 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
 
       <PermissionGate permission="media.upload">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">Media Files</h3>
+          <h3 className="text-lg font-medium">
+            {showImages ? "Images & Videos" : "Documents"}
+          </h3>
           <div>
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,video/*,application/pdf"
+              accept={showImages ? "image/*,video/*" : ".pdf,image/jpeg,image/jpg,image/png,image/tiff"}
               onChange={handleFileSelect}
               className="hidden"
               multiple
@@ -250,25 +271,25 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="mr-2 h-4 w-4" />
-              Upload Media
+              {showImages ? "Upload Images" : "Upload Documents"}
             </Button>
           </div>
         </div>
       </PermissionGate>
 
-      {mediaArray.length === 0 ? (
-        <div className="flex h-64 flex-col items-center justify-center rounded-lg border border-dashed">
-          <ImageIcon className="mb-4 h-12 w-12 text-muted-foreground" />
-          <p className="mb-2 text-sm font-medium text-muted-foreground">
-            No media files
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Upload images, videos, or documents for this collection object
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {mediaArray.map((file) => (
+      {/* Images & Videos Section */}
+      {showImages && (
+      <div className="space-y-3">
+        {images.length === 0 ? (
+          <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed">
+            <ImageIcon className="mb-2 h-8 w-8 text-muted-foreground" />
+            <p className="text-xs text-muted-foreground">
+              No images or videos uploaded
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {images.map((file) => (
             <div
               key={file._id}
               className="group relative aspect-square overflow-hidden rounded-lg border"
@@ -390,7 +411,118 @@ export function MediaGallery({ collectionId }: MediaGalleryProps) {
               )}
             </div>
           ))}
-        </div>
+          </div>
+        )}
+      </div>
+      )}
+
+      {/* Documents Section */}
+      {showDocuments && (
+      <div className="space-y-3">
+        {documents.length === 0 ? (
+          <div className="flex h-20 flex-col items-center justify-center rounded-lg border border-dashed">
+            <p className="text-xs text-muted-foreground">
+              No documents uploaded
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {documents.map((doc) => (
+              <div
+                key={doc._id}
+                className="group flex items-center justify-between rounded-md border bg-card p-3 transition-colors hover:bg-muted"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="truncate font-medium text-sm">{doc.fileName}</p>
+                  {doc.caption && (
+                    <p className="truncate text-xs text-muted-foreground">
+                      {doc.caption}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 ml-4">
+                  {doc.url && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      asChild
+                    >
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs"
+                      >
+                        View
+                      </a>
+                    </Button>
+                  )}
+                  <PermissionGate permission="media.upload">
+                    <MediaEditDialog
+                      media={doc}
+                      onUpdate={async (updates) => {
+                        setError(null);
+                        try {
+                          await updateMedia({
+                            mediaId: doc._id as Id<"mediaFiles">,
+                            ...updates,
+                          });
+                          setEditingMedia(null);
+                        } catch (err) {
+                          setError(
+                            err instanceof Error
+                              ? err.message
+                              : "Failed to update media",
+                          );
+                        }
+                      }}
+                      open={editingMedia === doc._id}
+                      onOpenChange={(open) =>
+                        setEditingMedia(open ? doc._id : null)
+                      }
+                    />
+                    <AlertDialog
+                      open={deleteConfirmOpen === doc._id}
+                      onOpenChange={(open) =>
+                        setDeleteConfirmOpen(open ? doc._id : null)
+                      }
+                    >
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Document</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this document?
+                            This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDelete(doc._id)}
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </PermissionGate>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       )}
     </div>
   );

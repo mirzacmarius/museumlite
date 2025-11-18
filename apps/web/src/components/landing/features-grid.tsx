@@ -100,9 +100,9 @@ export function FeaturesGrid() {
           viewport={{ once: true, margin: "-100px" }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
-          {features.map((feature, index) => (
+          {features.map((feature) => (
             <motion.div
-              key={index}
+              key={feature.title}
               variants={itemVariants}
               whileHover={{ scale: 1.02, y: -5 }}
               transition={{ duration: 0.2 }}

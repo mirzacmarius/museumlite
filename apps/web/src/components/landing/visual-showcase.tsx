@@ -51,7 +51,7 @@ export function VisualShowcase() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {screenshots.map((screenshot, index) => (
             <motion.div
-              key={index}
+              key={screenshot.title}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}

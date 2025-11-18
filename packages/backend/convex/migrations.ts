@@ -175,3 +175,126 @@ export const addDefaultWorkflowsToOrgs = internalMutation({
     return result;
   },
 });
+
+/**
+ * Migration: Backfill mediaCategory field for existing media files
+ * 
+ * This migration adds the mediaCategory field to all existing media files
+ * that don't have it set. The category is determined based on the fileType:
+ * - "image" or "video" -> mediaCategory: "image"
+ * - "document" -> mediaCategory: "document"
+ * - Other types default to "image" for backwards compatibility
+ * 
+ * Run this migration via Convex dashboard or CLI:
+ * npx convex run migrations:backfillMediaCategory
+ */
+export const backfillMediaCategory = internalMutation({
+  handler: async (ctx) => {
+    console.log("Starting migration: Backfill mediaCategory for media files");
+    
+    // Get all media files
+    const allMedia = await ctx.db.query("mediaFiles").collect();
+    console.log(`Found ${allMedia.length} total media files`);
+
+    const mediaWithoutCategory = allMedia.filter(
+      (m) => m.mediaCategory === undefined || m.mediaCategory === null
+    );
+    console.log(`Found ${mediaWithoutCategory.length} media files without mediaCategory`);
+
+    let updatedCount = 0;
+    let skippedCount = 0;
+    let errorCount = 0;
+
+    // Document mime types that should be categorized as "document"
+    const documentMimeTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+
+    for (const media of mediaWithoutCategory) {
+      try {
+        let mediaCategory: "image" | "document";
+
+        // Determine category based on fileType
+        if (media.fileType === "document") {
+          mediaCategory = "document";
+        } else if (media.fileType === "image" || media.fileType === "video") {
+          mediaCategory = "image";
+        } else {
+          // For other types (3d, other), check mimeType to determine category
+          if (documentMimeTypes.includes(media.mimeType)) {
+            mediaCategory = "document";
+          } else {
+            // Default to "image" for backwards compatibility
+            mediaCategory = "image";
+          }
+        }
+
+        await ctx.db.patch(media._id, {
+          mediaCategory,
+        });
+
+        updatedCount++;
+        
+        if (updatedCount % 100 === 0) {
+          console.log(`Progress: ${updatedCount} files updated...`);
+        }
+      } catch (error) {
+        console.error(`Error updating media ${media._id}:`, error);
+        errorCount++;
+      }
+    }
+
+    // Also validate and fix files that might have incorrect category
+    const mediaWithCategory = allMedia.filter(
+      (m) => m.mediaCategory !== undefined && m.mediaCategory !== null
+    );
+
+    for (const media of mediaWithCategory) {
+      try {
+        // Check if the category matches the fileType/mimeType
+        const shouldBeDocument = 
+          media.fileType === "document" || 
+          documentMimeTypes.includes(media.mimeType);
+        
+        const shouldBeImage = 
+          media.fileType === "image" || 
+          media.fileType === "video";
+
+        // Only update if there's a mismatch
+        if (shouldBeDocument && media.mediaCategory !== "document") {
+          await ctx.db.patch(media._id, {
+            mediaCategory: "document",
+          });
+          updatedCount++;
+        } else if (shouldBeImage && media.mediaCategory !== "image") {
+          await ctx.db.patch(media._id, {
+            mediaCategory: "image",
+          });
+          updatedCount++;
+        } else {
+          skippedCount++;
+        }
+      } catch (error) {
+        console.error(`Error validating media ${media._id}:`, error);
+        errorCount++;
+      }
+    }
+
+    const result = {
+      success: true,
+      message: `Migration complete: ${updatedCount} files updated, ${skippedCount} skipped, ${errorCount} errors`,
+      stats: {
+        totalMedia: allMedia.length,
+        withoutCategory: mediaWithoutCategory.length,
+        updated: updatedCount,
+        skipped: skippedCount,
+        errors: errorCount,
+      },
+    };
+
+    console.log(result.message);
+    return result;
+  },
+});

@@ -10,6 +10,7 @@ import {
   Sparkles,
   CheckCircle2
 } from "lucide-react";
+import { Button } from "@v1/ui/button";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -61,7 +62,7 @@ export function HeroSection() {
       <div className="absolute inset-0 pointer-events-none -z-5">
         {floatingIcons.map(({ Icon, delay, x, y }, index) => (
           <motion.div
-            key={index}
+            key={`${x}-${y}-${delay}`}
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ 
               opacity: [0.05, 0.15, 0.05], 
@@ -73,7 +74,7 @@ export function HeroSection() {
             transition={{
               duration: 6,
               delay,
-              repeat: Infinity,
+              repeat: Number.POSITIVE_INFINITY,
               repeatType: "reverse",
               ease: "easeInOut"
             }}
@@ -149,11 +150,11 @@ export function HeroSection() {
             <div className="absolute inset-0 -z-10 rounded-full bg-gradient-to-r from-transparent via-primary-foreground/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
           </Link>
           
-          <button
+          <Button
             className="px-8 py-4 bg-transparent text-foreground rounded-full font-semibold text-base border-2 border-border hover:border-primary/50 hover:bg-accent transition-all duration-300"
           >
             Watch Demo
-          </button>
+          </Button>
         </motion.div>
 
         {/* Feature Pills */}
@@ -163,9 +164,9 @@ export function HeroSection() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="flex flex-wrap items-center justify-center gap-4 mt-8"
         >
-          {features.map((feature, index) => (
+          {features.map((feature) => (
             <div
-              key={index}
+              key={feature}
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/50 border border-border/50 backdrop-blur-sm"
             >
               <CheckCircle2 className="w-3.5 h-3.5 text-primary" />

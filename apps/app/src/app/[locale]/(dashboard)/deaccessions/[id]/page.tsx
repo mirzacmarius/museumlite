@@ -224,7 +224,7 @@ export default function DeaccessionDetailPage() {
                 <h3 className="text-lg font-semibold mb-4">Workflow History</h3>
                 <div className="space-y-4">
                   {workflowHistory.map((entry, index) => (
-                    <div key={index} className="flex gap-4">
+                    <div key={`${entry.step}-${entry.approvedAt}`} className="flex gap-4">
                       <div className="flex flex-col items-center">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-medium flex-shrink-0">
                           {entry.step}

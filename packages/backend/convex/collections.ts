@@ -71,6 +71,7 @@ export const create = mutation({
     organizationId: v.id("organizations"),
     accessionNumber: v.optional(v.string()),
     title: v.string(),
+    creator: v.optional(v.string()),
     objectType: v.optional(v.string()),
     objectName: v.optional(v.string()),
     culture: v.optional(v.string()),
@@ -82,6 +83,10 @@ export const create = mutation({
     condition: v.optional(v.string()),
     provenance: v.optional(v.string()),
     exhibitionHistory: v.optional(v.string()),
+    donated_by: v.optional(v.array(v.string())),
+    donated_date: v.optional(v.string()),
+    donation_info: v.optional(v.string()),
+    previous_owners: v.optional(v.array(v.string())),
     currentLocationId: v.optional(v.id("locations")),
   },
   returns: v.id("collections"),
@@ -121,6 +126,7 @@ export const create = mutation({
       organizationId: args.organizationId,
       accessionNumber,
       title: args.title,
+      creator: args.creator,
       objectType: args.objectType,
       objectName: args.objectName,
       culture: args.culture,
@@ -132,6 +138,10 @@ export const create = mutation({
       condition: args.condition,
       provenance: args.provenance,
       exhibitionHistory: args.exhibitionHistory,
+      donated_by: args.donated_by,
+      donated_date: args.donated_date,
+      donation_info: args.donation_info,
+      previous_owners: args.previous_owners,
       currentLocationId: args.currentLocationId,
       status: "active",
       catalogedBy: userId,
@@ -165,6 +175,7 @@ export const get = query({
         ),
       ),
       title: v.string(),
+      creator: v.optional(v.string()),
       objectType: v.optional(v.string()),
       objectName: v.optional(v.string()),
       culture: v.optional(v.string()),
@@ -176,6 +187,10 @@ export const get = query({
       condition: v.optional(v.string()),
       provenance: v.optional(v.string()),
       exhibitionHistory: v.optional(v.string()),
+      donated_by: v.optional(v.array(v.string())),
+      donated_date: v.optional(v.string()),
+      donation_info: v.optional(v.string()),
+      previous_owners: v.optional(v.array(v.string())),
       currentLocationId: v.optional(v.id("locations")),
       status: v.union(
         v.literal("active"),
@@ -596,6 +611,7 @@ export const update = mutation({
   args: {
     collectionId: v.id("collections"),
     title: v.optional(v.string()),
+    creator: v.optional(v.string()),
     objectType: v.optional(v.string()),
     objectName: v.optional(v.string()),
     culture: v.optional(v.string()),
@@ -607,6 +623,10 @@ export const update = mutation({
     condition: v.optional(v.string()),
     provenance: v.optional(v.string()),
     exhibitionHistory: v.optional(v.string()),
+    donated_by: v.optional(v.array(v.string())),
+    donated_date: v.optional(v.string()),
+    donation_info: v.optional(v.string()),
+    previous_owners: v.optional(v.array(v.string())),
     currentLocationId: v.optional(v.id("locations")),
     alternateAccessionNumbers: v.optional(v.array(v.string())),
   },
@@ -632,6 +652,7 @@ export const update = mutation({
     // Build update object
     const updates: {
       title?: string;
+      creator?: string;
       objectType?: string;
       objectName?: string;
       culture?: string;
@@ -643,6 +664,10 @@ export const update = mutation({
       condition?: string;
       provenance?: string;
       exhibitionHistory?: string;
+      donated_by?: Array<string>;
+      donated_date?: string;
+      donation_info?: string;
+      previous_owners?: Array<string>;
       currentLocationId?: Id<"locations">;
       alternateAccessionNumbers?: Array<string>;
       lastModifiedBy?: Id<"users">;
@@ -650,6 +675,7 @@ export const update = mutation({
     } = {};
 
     if (args.title !== undefined) updates.title = args.title;
+    if (args.creator !== undefined) updates.creator = args.creator;
     if (args.objectType !== undefined) updates.objectType = args.objectType;
     if (args.objectName !== undefined) updates.objectName = args.objectName;
     if (args.culture !== undefined) updates.culture = args.culture;
@@ -662,6 +688,10 @@ export const update = mutation({
     if (args.provenance !== undefined) updates.provenance = args.provenance;
     if (args.exhibitionHistory !== undefined)
       updates.exhibitionHistory = args.exhibitionHistory;
+    if (args.donated_by !== undefined) updates.donated_by = args.donated_by;
+    if (args.donated_date !== undefined) updates.donated_date = args.donated_date;
+    if (args.donation_info !== undefined) updates.donation_info = args.donation_info;
+    if (args.previous_owners !== undefined) updates.previous_owners = args.previous_owners;
     if (args.currentLocationId !== undefined)
       updates.currentLocationId = args.currentLocationId;
     if (args.alternateAccessionNumbers !== undefined)

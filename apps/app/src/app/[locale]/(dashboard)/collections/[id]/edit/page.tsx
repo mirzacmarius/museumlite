@@ -5,11 +5,13 @@ import { ConditionCombobox } from "@/components/condition-combobox";
 import { LocationSelector } from "@/components/location-selector";
 import { MaterialsCombobox } from "@/components/materials-combobox";
 import { TypeCombobox } from "@/components/type-combobox";
+import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
@@ -31,6 +33,7 @@ import { useEffect, useRef, useState } from "react";
 
 interface CollectionFormData {
   title: string;
+  creator?: string;
   objectType?: string | string[]; // Can be string or array depending on state
   objectName?: string;
   culture?: string;
@@ -42,6 +45,10 @@ interface CollectionFormData {
   condition?: string;
   provenance?: string;
   exhibitionHistory?: string;
+  donated_by?: string[];
+  donated_date?: string;
+  donation_info?: string;
+  previous_owners?: string[];
   currentLocationId?: string;
   alternateAccessionNumbers?: string[];
 }
@@ -67,13 +74,24 @@ export default function CollectionEditPage() {
     collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
   );
 
+  // Separate images and documents
+  // Only show actual images (fileType === "image") in the image gallery
+  // Documents should only appear in the documents list
+  const images = media?.filter((m) => {
+    const category = (m as { mediaCategory?: "image" | "document" }).mediaCategory;
+    return (category === "image" || !category) && m.fileType === "image";
+  }) || [];
+  const documents = media?.filter((m) => (m as { mediaCategory?: "image" | "document" }).mediaCategory === "document") || [];
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<File[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<CollectionFormData>({
     title: "",
+    creator: "",
     objectType: [], // Initialize as empty array
     objectName: "",
     culture: "",
@@ -85,6 +103,10 @@ export default function CollectionEditPage() {
     condition: "",
     provenance: "",
     exhibitionHistory: "",
+    donated_by: [],
+    donated_date: "",
+    donation_info: "",
+    previous_owners: [],
     currentLocationId: "",
     alternateAccessionNumbers: [],
   });
@@ -154,6 +176,7 @@ export default function CollectionEditPage() {
                 fileSize: file.size || 0,
                 mimeType: file.type || "application/octet-stream",
                 isPrimary: isFirstMedia && index === 0,
+                mediaCategory: "image",
               });
             }),
           );
@@ -174,6 +197,71 @@ export default function CollectionEditPage() {
       },
     },
   );
+
+  // Document upload handling - upload immediately when selected
+  const handleDocumentUpload = async (files: File[]) => {
+    if (!currentOrganizationId || !collectionId) {
+      setError("Missing organization or collection");
+      return;
+    }
+
+    setError(null);
+
+    for (const file of files) {
+      try {
+        // Generate upload URL
+        const uploadUrlResult = await generateUploadUrl({
+          organizationId: currentOrganizationId as Id<"organizations">,
+          collectionId: collectionId as Id<"collections">,
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type,
+        });
+
+        if (!uploadUrlResult.uploadUrl) {
+          throw new Error(`Failed to generate upload URL for ${file.name}`);
+        }
+
+        // Upload file to storage
+        const uploadResponse = await fetch(uploadUrlResult.uploadUrl, {
+          method: "POST",
+          body: file,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error(`Failed to upload ${file.name}`);
+        }
+
+        const uploadResult = await uploadResponse.json();
+        const storageId = uploadResult.storageId;
+
+        if (!storageId) {
+          throw new Error(`No storage ID returned for ${file.name}`);
+        }
+
+        // Create media record for document
+        await createMedia({
+          organizationId: currentOrganizationId as Id<"organizations">,
+          collectionId: collectionId as Id<"collections">,
+          storageId: storageId,
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type,
+          mediaCategory: "document",
+          isPrimary: false, // Documents are never primary
+        });
+      } catch (err) {
+        console.error(`Error uploading ${file.name}:`, err);
+        setError(
+          err instanceof Error
+            ? `Failed to upload ${file.name}: ${err.message}`
+            : `Failed to upload ${file.name}`,
+        );
+        // Stop on first error
+        break;
+      }
+    }
+  };
 
   // Load existing data
   useEffect(() => {
@@ -202,6 +290,7 @@ export default function CollectionEditPage() {
 
       setFormData({
         title: collection.title,
+        creator: collection.creator || "",
         objectType: objectTypeArray, // Store as array in form state
         objectName: collection.objectName || "",
         culture: collection.culture || "",
@@ -213,6 +302,10 @@ export default function CollectionEditPage() {
         condition: collection.condition || "",
         provenance: collection.provenance || "",
         exhibitionHistory: collection.exhibitionHistory || "",
+        donated_by: collection.donated_by || [],
+        donated_date: collection.donated_date || "",
+        donation_info: collection.donation_info || "",
+        previous_owners: collection.previous_owners || [],
         currentLocationId: collection.currentLocationId || "",
         alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
       });
@@ -266,6 +359,32 @@ export default function CollectionEditPage() {
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to process file selection",
+      );
+    }
+  };
+
+  const handleDocumentSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null);
+    try {
+      const filesList = event.target?.files;
+      if (!filesList || filesList.length === 0) {
+        return;
+      }
+      const files = Array.from(filesList);
+      if (!files || files.length === 0) {
+        return;
+      }
+
+      // Upload documents immediately
+      await handleDocumentUpload(files);
+
+      // Clear the input
+      if (documentInputRef.current) {
+        documentInputRef.current.value = "";
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to process document selection",
       );
     }
   };
@@ -503,6 +622,18 @@ export default function CollectionEditPage() {
                           placeholder="e.g., 1850"
                         />
                       </div>
+
+                      <div>
+                        <Label htmlFor="creator">Creator</Label>
+                        <Input
+                          id="creator"
+                          value={formData.creator || ""}
+                          onChange={(e) =>
+                            updateField("creator", e.target.value)
+                          }
+                          placeholder="e.g., Vincent van Gogh"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -619,6 +750,57 @@ export default function CollectionEditPage() {
                           placeholder="Enter exhibition history"
                         />
                       </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <RepeatableTextField
+                            label="Donated by"
+                            value={formData.donated_by || []}
+                            onChange={(values) =>
+                              updateField("donated_by", values)
+                            }
+                            placeholder="e.g., John Smith Foundation"
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="donated_date">Donated Date</Label>
+                          <DatePicker
+                            date={formData.donated_date ? new Date(formData.donated_date) : undefined}
+                            onSelect={(date) => {
+                              const dateString: string = date ? (date.toISOString().split('T')[0] ?? "") : "";
+                              updateField("donated_date", dateString);
+                            }}
+                            placeholder="Select donation date"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="donation_info">
+                          Info about the Donation
+                        </Label>
+                        <Textarea
+                          id="donation_info"
+                          value={formData.donation_info || ""}
+                          onChange={(e) =>
+                            updateField("donation_info", e.target.value)
+                          }
+                          rows={3}
+                          placeholder="Information about the donation circumstances, conditions, or context"
+                        />
+                      </div>
+
+                      <div>
+                        <RepeatableTextField
+                          label="Previous Owner(s)"
+                          value={formData.previous_owners || []}
+                          onChange={(values) =>
+                            updateField("previous_owners", values)
+                          }
+                          placeholder="e.g., Estate of Jane Doe"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -636,16 +818,17 @@ export default function CollectionEditPage() {
 
                 {/* Right column - Media Uploader */}
                 <div className="w-96 flex-shrink-0">
-                  <div className="sticky top-4">
+                  <div className="sticky top-4 space-y-4">
+                    {/* Image Upload Section */}
                     <div className="rounded-lg border border-border bg-card p-4">
                       <h3 className="mb-3 text-base font-semibold">
-                        Media Upload
+                        Image Upload
                       </h3>
 
                       <input
                         ref={fileInputRef}
                         type="file"
-                        accept="image/*,video/*,application/pdf"
+                        accept="image/*"
                         onChange={handleFileSelect}
                         className="hidden"
                         multiple
@@ -661,9 +844,9 @@ export default function CollectionEditPage() {
                         Upload Images
                       </Button>
 
-                      {media && Array.isArray(media) && media.length > 0 ? (
+                      {images && images.length > 0 ? (
                         <div className="grid grid-cols-3 gap-2">
-                          {media.map((file) => (
+                          {images.map((file) => (
                             <div
                               key={file._id}
                               className="group relative aspect-square overflow-hidden rounded-md border bg-card"
@@ -724,11 +907,72 @@ export default function CollectionEditPage() {
                         </div>
                       )}
 
-                      {media && Array.isArray(media) && media.length > 0 && (
+                      {images.length > 0 && (
                         <p className="mt-3 text-center text-xs text-muted-foreground">
-                          {media.length}{" "}
-                          {media.length === 1 ? "image" : "images"}
+                          {images.length}{" "}
+                          {images.length === 1 ? "image" : "images"}
                         </p>
+                      )}
+                    </div>
+
+                    {/* Document Upload Section */}
+                    <div className="rounded-lg border border-border bg-card p-4">
+                      <h3 className="mb-3 text-base font-semibold">
+                        Document Upload
+                      </h3>
+                      <p className="mb-3 text-xs text-muted-foreground">
+                        Upload related documents (PDFs, scanned images, etc.)
+                      </p>
+
+                      <input
+                        ref={documentInputRef}
+                        type="file"
+                        accept=".pdf,image/jpeg,image/jpg,image/png,image/tiff"
+                        onChange={handleDocumentSelect}
+                        className="hidden"
+                        multiple
+                      />
+
+                      <Button
+                        type="button"
+                        onClick={() => documentInputRef.current?.click()}
+                        className="w-full mb-4"
+                        variant="outline"
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload Documents
+                      </Button>
+
+                      {documents.length > 0 ? (
+                        <div className="space-y-2">
+                          {documents.map((doc) => (
+                            <div
+                              key={doc._id}
+                              className="flex items-center justify-between rounded-md border bg-card p-2 text-sm"
+                            >
+                              <span className="truncate">{doc.fileName}</span>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDelete(doc._id)}
+                                title="Delete"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                          <p className="mt-2 text-center text-xs text-muted-foreground">
+                            {documents.length}{" "}
+                            {documents.length === 1 ? "document" : "documents"}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="flex h-20 flex-col items-center justify-center rounded-lg border border-dashed">
+                          <p className="text-xs text-muted-foreground">
+                            No documents uploaded
+                          </p>
+                        </div>
                       )}
                     </div>
                   </div>

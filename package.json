@@ -23,6 +23,8 @@
   "devDependencies": {
     "@auth/core": "0.37.0",
     "@biomejs/biome": "1.8.3",
+    "@headless-tree/core": "^1.5.1",
+    "@headless-tree/react": "^1.5.1",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@t3-oss/env-nextjs": "^0.11.1",
     "@vercel/analytics": "^1.5.0",
@@ -41,9 +43,5 @@
     "typescript": "^5.5.4"
   },
   "packageManager": "bun@1.1.26",
-  "version": "0.0.1",
-  "dependencies": {
-    "@headless-tree/core": "^1.5.1",
-    "@headless-tree/react": "^1.5.1"
-  }
+  "version": "0.0.1"
 }
