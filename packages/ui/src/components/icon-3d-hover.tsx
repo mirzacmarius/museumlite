@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React, { useState, useRef } from 'react';
-import { motion, MotionConfigContext, LayoutGroup } from 'framer-motion';
+import { LayoutGroup, MotionConfigContext, motion } from "framer-motion";
+import React, { useRef, useState } from "react";
 
 // Types
 interface Props {
   heading?: string;
   text?: string;
-  variant?: 'Default' | 'Hover';
+  variant?: "Default" | "Hover";
   className?: string;
   style?: React.CSSProperties;
   width?: number;
@@ -20,23 +20,30 @@ const transition1 = {
   bounce: 0,
   delay: 0,
   duration: 0.4,
-  type: "spring" as const
+  type: "spring" as const,
 };
 
 const transition2 = {
   delay: 0,
   duration: 0.4,
   ease: [0.44, 0, 0.56, 1] as const,
-  type: "tween" as const
+  type: "tween" as const,
 };
 
-const transformTemplate1 = (_: any, t: string) => `translate(-50%, -50%) ${t}`;
+const transformTemplate1 = (_: unknown, t: string) =>
+  `translate(-50%, -50%) ${t}`;
 
 // Transition wrapper component
-const Transition: React.FC<{ value: any; children: React.ReactNode }> = ({ value, children }) => {
+const Transition: React.FC<{ value: unknown; children: React.ReactNode }> = ({
+  value,
+  children,
+}) => {
   const config = React.useContext(MotionConfigContext);
   const transition = value ?? config.transition;
-  const contextValue = React.useMemo(() => ({ ...config, transition }), [JSON.stringify(transition)]);
+  const contextValue = React.useMemo(
+    () => ({ ...config, transition }),
+    [JSON.stringify(transition)],
+  );
 
   return (
     <MotionConfigContext.Provider value={contextValue}>
@@ -45,83 +52,82 @@ const Transition: React.FC<{ value: any; children: React.ReactNode }> = ({ value
   );
 };
 
-
 const Variants = motion.create(React.Fragment);
 
 export const IconHover3D: React.FC<Props> = ({
   heading = "Library",
   text = "A comprehensive collection of digital books and resources for learning and research. ",
-  variant = 'Default',
+  variant = "Default",
   className = "",
   style = {},
   width,
   height,
   icon,
   ...restProps
-}) => {  const [currentVariant, setCurrentVariant] = useState<'Default' | 'Hover'>(variant);
+}) => {
+  const [currentVariant, setCurrentVariant] = useState<"Default" | "Hover">(
+    variant,
+  );
   const [gestureState, setGestureState] = useState({ isHovered: false });
   const refBinding = useRef<HTMLDivElement>(null);
   const defaultLayoutId = React.useId();
 
-  const isHoverVariant = currentVariant === 'Hover';
-  const variants = [currentVariant === 'Default' ? 'GPnJri30y' : 'zEwHlJ7zp'];
+  const isHoverVariant = currentVariant === "Hover";
+  const variants = [currentVariant === "Default" ? "GPnJri30y" : "zEwHlJ7zp"];
 
   const handleMouseEnter = async () => {
     setGestureState({ isHovered: true });
-    setCurrentVariant('Hover');
+    setCurrentVariant("Hover");
   };
 
   const handleMouseLeave = async () => {
     setGestureState({ isHovered: false });
-    setCurrentVariant('Default');
+    setCurrentVariant("Default");
   };
 
   const cubeSliceVariants = {
     zEwHlJ7zp: {
-      "--border-color": "rgb(139, 47, 250)"
-    }
+      "--border-color": "rgb(139, 47, 250)",
+    },
   };
   const titleVariants = {
     default: {
-      "--fill-width": "0%"
+      "--fill-width": "0%",
     },
     hovered: {
-      "--fill-width": "100%"
-    }
+      "--fill-width": "100%",
+    },
   };
 
   // Add this new transition for the title
   const titleTransition = {
     duration: 0.3,
     ease: [0.25, 0.46, 0.45, 0.94] as const, // Smoother easing curve
-    type: "tween" as const
+    type: "tween" as const,
   };
-
 
   const sliceCubeVariants = {
     zEwHlJ7zp: {
       rotateX: -28,
       rotateY: -43,
-      scale: 1.1
-    }
+      scale: 1.1,
+    },
   };
 
   const cornerScaleVariants = {
     zEwHlJ7zp: {
-      scale: 2.2
-    }
+      scale: 2.2,
+    },
   };
 
   const bgFillVariants = {
     zEwHlJ7zp: {
-      opacity: 1
-    }
+      opacity: 1,
+    },
   };
 
-
-
   return (
-    <div style={{ width: width || '100%', height: height || 'auto' }}>
+    <div style={{ width: width || "100%", height: height || "auto" }}>
       <LayoutGroup id={defaultLayoutId}>
         <Variants animate={variants} initial={false}>
           <Transition value={transition1}>
@@ -132,7 +138,10 @@ export const IconHover3D: React.FC<Props> = ({
               data-highlight={true}
               ref={refBinding}
               onMouseEnter={handleMouseEnter}
-              onMouseLeave={currentVariant === 'Hover' ? handleMouseLeave : undefined}              style={{
+              onMouseLeave={
+                currentVariant === "Hover" ? handleMouseLeave : undefined
+              }
+              style={{
                 backgroundColor: "hsl(var(--background))",
                 alignContent: "center",
                 alignItems: "center",
@@ -148,7 +157,7 @@ export const IconHover3D: React.FC<Props> = ({
                 width: "100%",
                 borderRadius: "12px",
                 border: "1px solid hsl(var(--border))",
-                ...style
+                ...style,
               }}
             >
               {/* Icon Container */}
@@ -171,7 +180,7 @@ export const IconHover3D: React.FC<Props> = ({
                   width: "80px",
                   zIndex: 1,
                   border: "1px solid hsl(var(--border))",
-                  borderRadius: "12px"
+                  borderRadius: "12px",
                 }}
               >
                 {/* Custom Icon Overlay */}
@@ -184,11 +193,11 @@ export const IconHover3D: React.FC<Props> = ({
                       alignItems: "center",
                       justifyContent: "center",
                       color: "hsl(var(--foreground))",
-                      fontSize: "32px"
+                      fontSize: "32px",
                     }}
                     animate={{
                       scale: isHoverVariant ? 1.1 : 1,
-                      rotate: isHoverVariant ? 5 : 0
+                      rotate: isHoverVariant ? 5 : 0,
                     }}
                     transition={{ duration: 0.4, type: "spring", bounce: 0.3 }}
                   >
@@ -207,7 +216,7 @@ export const IconHover3D: React.FC<Props> = ({
                     width: "348px",
                     zIndex: 2,
                     scale: 0.23,
-                    opacity: icon ? 0.3 : 0.8
+                    opacity: icon ? 0.3 : 0.8,
                   }}
                 >
                   {/* Slice Cube */}
@@ -236,11 +245,11 @@ export const IconHover3D: React.FC<Props> = ({
                       rotateX: 23,
                       rotateY: 33,
                       scale: 0.7,
-                      transformPerspective: 1200
+                      transformPerspective: 1200,
                     }}
                     transformTemplate={transformTemplate1}
                     variants={sliceCubeVariants}
-                    animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                    animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                   >
                     {/* Slice 1 */}
                     <Transition value={transition2}>
@@ -261,7 +270,7 @@ export const IconHover3D: React.FC<Props> = ({
                           padding: "0px",
                           position: "relative",
                           transformStyle: "preserve-3d",
-                          width: "min-content"
+                          width: "min-content",
                         }}
                       >
                         {/* Front */}
@@ -281,17 +290,19 @@ export const IconHover3D: React.FC<Props> = ({
                             overflow: "hidden",
                             padding: "0px",
                             position: "relative",
-                            width: "240px", border: "4px solid hsl(var(--foreground))",
+                            width: "240px",
+                            border: "4px solid hsl(var(--foreground))",
                             backgroundColor: "hsl(var(--background))",
-                            zIndex: 120
+                            zIndex: 120,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                         {/* Back */}
                         <motion.div
                           className="slice-1-back"
-                          data-framer-name="Back" style={{
+                          data-framer-name="Back"
+                          style={{
                             alignContent: "center",
                             alignItems: "center",
                             bottom: "0px",
@@ -313,12 +324,13 @@ export const IconHover3D: React.FC<Props> = ({
                             rotateY: 180,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                         {/* Right */}
                         <motion.div
                           className="slice-1-right"
-                          data-framer-name="Right" style={{
+                          data-framer-name="Right"
+                          style={{
                             alignContent: "center",
                             alignItems: "center",
                             bottom: "0px",
@@ -337,15 +349,16 @@ export const IconHover3D: React.FC<Props> = ({
                             zIndex: 1,
                             border: "4px solid hsl(var(--foreground))",
                             backgroundColor: "hsl(var(--background))",
-                            rotateY: 90
+                            rotateY: 90,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                         {/* Left */}
                         <motion.div
                           className="slice-1-left"
-                          data-framer-name="Left" style={{
+                          data-framer-name="Left"
+                          style={{
                             alignContent: "center",
                             alignItems: "center",
                             bottom: "0px",
@@ -364,15 +377,16 @@ export const IconHover3D: React.FC<Props> = ({
                             zIndex: 1,
                             border: "4px solid hsl(var(--foreground))",
                             backgroundColor: "hsl(var(--background))",
-                            rotateY: -90
+                            rotateY: -90,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                         {/* Top */}
                         <motion.div
                           className="slice-1-top"
-                          data-framer-name="Top" style={{
+                          data-framer-name="Top"
+                          style={{
                             flex: "none",
                             height: "240px",
                             left: "0px",
@@ -383,15 +397,16 @@ export const IconHover3D: React.FC<Props> = ({
                             zIndex: 1,
                             border: "4px solid hsl(var(--foreground))",
                             backgroundColor: "hsl(var(--background))",
-                            rotateX: 90
+                            rotateX: 90,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                         {/* Bottom */}
                         <motion.div
                           className="slice-1-bottom"
-                          data-framer-name="Bottom" style={{
+                          data-framer-name="Bottom"
+                          style={{
                             flex: "none",
                             height: "240px",
                             left: "0px",
@@ -402,10 +417,10 @@ export const IconHover3D: React.FC<Props> = ({
                             zIndex: 1,
                             border: "4px solid hsl(var(--foreground))",
                             backgroundColor: "hsl(var(--background))",
-                            rotateX: 90
+                            rotateX: 90,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                       </motion.div>
                     </Transition>
@@ -429,7 +444,7 @@ export const IconHover3D: React.FC<Props> = ({
                           padding: "0px",
                           position: "relative",
                           transformStyle: "preserve-3d",
-                          width: "min-content"
+                          width: "min-content",
                         }}
                       >
                         {/* Front */}
@@ -449,17 +464,19 @@ export const IconHover3D: React.FC<Props> = ({
                             overflow: "hidden",
                             padding: "0px",
                             position: "relative",
-                            width: "240px", border: "4px solid hsl(var(--foreground))",
+                            width: "240px",
+                            border: "4px solid hsl(var(--foreground))",
                             backgroundColor: "hsl(var(--background))",
-                            zIndex: 120
+                            zIndex: 120,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                         {/* Back */}
                         <motion.div
                           className="slice-1-back"
-                          data-framer-name="Back" style={{
+                          data-framer-name="Back"
+                          style={{
                             alignContent: "center",
                             alignItems: "center",
                             bottom: "0px",
@@ -481,12 +498,13 @@ export const IconHover3D: React.FC<Props> = ({
                             rotateY: 180,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                         {/* Right */}
                         <motion.div
                           className="slice-1-right"
-                          data-framer-name="Right" style={{
+                          data-framer-name="Right"
+                          style={{
                             alignContent: "center",
                             alignItems: "center",
                             bottom: "0px",
@@ -505,15 +523,16 @@ export const IconHover3D: React.FC<Props> = ({
                             zIndex: 1,
                             border: "4px solid hsl(var(--foreground))",
                             backgroundColor: "hsl(var(--background))",
-                            rotateY: 90
+                            rotateY: 90,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                         {/* Left */}
                         <motion.div
                           className="slice-1-left"
-                          data-framer-name="Left" style={{
+                          data-framer-name="Left"
+                          style={{
                             alignContent: "center",
                             alignItems: "center",
                             bottom: "0px",
@@ -532,15 +551,16 @@ export const IconHover3D: React.FC<Props> = ({
                             zIndex: 1,
                             border: "4px solid hsl(var(--foreground))",
                             backgroundColor: "hsl(var(--background))",
-                            rotateY: -90
+                            rotateY: -90,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                         {/* Top */}
                         <motion.div
                           className="slice-1-top"
-                          data-framer-name="Top" style={{
+                          data-framer-name="Top"
+                          style={{
                             flex: "none",
                             height: "240px",
                             left: "0px",
@@ -551,15 +571,16 @@ export const IconHover3D: React.FC<Props> = ({
                             zIndex: 1,
                             border: "4px solid hsl(var(--foreground))",
                             backgroundColor: "hsl(var(--background))",
-                            rotateX: 90
+                            rotateX: 90,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                         {/* Bottom */}
                         <motion.div
                           className="slice-1-bottom"
-                          data-framer-name="Bottom" style={{
+                          data-framer-name="Bottom"
+                          style={{
                             flex: "none",
                             height: "240px",
                             left: "0px",
@@ -570,10 +591,10 @@ export const IconHover3D: React.FC<Props> = ({
                             zIndex: 1,
                             border: "4px solid hsl(var(--foreground))",
                             backgroundColor: "hsl(var(--background))",
-                            rotateX: 90
+                            rotateX: 90,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                       </motion.div>
                     </Transition>
@@ -597,7 +618,7 @@ export const IconHover3D: React.FC<Props> = ({
                           padding: "0px",
                           position: "relative",
                           transformStyle: "preserve-3d",
-                          width: "min-content"
+                          width: "min-content",
                         }}
                       >
                         {/* Front */}
@@ -617,17 +638,19 @@ export const IconHover3D: React.FC<Props> = ({
                             overflow: "hidden",
                             padding: "0px",
                             position: "relative",
-                            width: "240px", border: "4px solid hsl(var(--foreground))",
+                            width: "240px",
+                            border: "4px solid hsl(var(--foreground))",
                             backgroundColor: "hsl(var(--background))",
-                            zIndex: 120
+                            zIndex: 120,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                         {/* Back */}
                         <motion.div
                           className="slice-1-back"
-                          data-framer-name="Back" style={{
+                          data-framer-name="Back"
+                          style={{
                             alignContent: "center",
                             alignItems: "center",
                             bottom: "0px",
@@ -649,12 +672,13 @@ export const IconHover3D: React.FC<Props> = ({
                             rotateY: 180,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                         {/* Right */}
                         <motion.div
                           className="slice-1-right"
-                          data-framer-name="Right" style={{
+                          data-framer-name="Right"
+                          style={{
                             alignContent: "center",
                             alignItems: "center",
                             bottom: "0px",
@@ -673,15 +697,16 @@ export const IconHover3D: React.FC<Props> = ({
                             zIndex: 1,
                             border: "4px solid hsl(var(--foreground))",
                             backgroundColor: "hsl(var(--background))",
-                            rotateY: 90
+                            rotateY: 90,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                         {/* Left */}
                         <motion.div
                           className="slice-1-left"
-                          data-framer-name="Left" style={{
+                          data-framer-name="Left"
+                          style={{
                             alignContent: "center",
                             alignItems: "center",
                             bottom: "0px",
@@ -700,15 +725,16 @@ export const IconHover3D: React.FC<Props> = ({
                             zIndex: 1,
                             border: "4px solid hsl(var(--foreground))",
                             backgroundColor: "hsl(var(--background))",
-                            rotateY: -90
+                            rotateY: -90,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                         {/* Top */}
                         <motion.div
                           className="slice-1-top"
-                          data-framer-name="Top" style={{
+                          data-framer-name="Top"
+                          style={{
                             flex: "none",
                             height: "240px",
                             left: "0px",
@@ -719,15 +745,16 @@ export const IconHover3D: React.FC<Props> = ({
                             zIndex: 1,
                             border: "4px solid hsl(var(--foreground))",
                             backgroundColor: "hsl(var(--background))",
-                            rotateX: 90
+                            rotateX: 90,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                         {/* Bottom */}
                         <motion.div
                           className="slice-1-bottom"
-                          data-framer-name="Bottom" style={{
+                          data-framer-name="Bottom"
+                          style={{
                             flex: "none",
                             height: "240px",
                             left: "0px",
@@ -738,82 +765,82 @@ export const IconHover3D: React.FC<Props> = ({
                             zIndex: 1,
                             border: "4px solid hsl(var(--foreground))",
                             backgroundColor: "hsl(var(--background))",
-                            rotateX: 90
+                            rotateX: 90,
                           }}
                           variants={cubeSliceVariants}
-                          animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                          animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                         />
                       </motion.div>
                     </Transition>
                   </motion.div>
                   {/* Corner elements */}
                   <motion.div
-                  style={{
-                    flex: "none",
-                    height: "24px",
-                    left: isHoverVariant ? "-6px" : "14px",
-                    overflow: "hidden",
-                    position: "absolute",
-                    top: isHoverVariant ? "-6px" : "14px",
-                    width: "24px",
-                    zIndex: 2,
-                    borderLeft: "4px solid hsl(var(--foreground))",
-                    borderTop: "4px solid hsl(var(--foreground))",
-                    scale: 1
-                  }}
-                  variants={cornerScaleVariants}
-                  animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                    style={{
+                      flex: "none",
+                      height: "24px",
+                      left: isHoverVariant ? "-6px" : "14px",
+                      overflow: "hidden",
+                      position: "absolute",
+                      top: isHoverVariant ? "-6px" : "14px",
+                      width: "24px",
+                      zIndex: 2,
+                      borderLeft: "4px solid hsl(var(--foreground))",
+                      borderTop: "4px solid hsl(var(--foreground))",
+                      scale: 1,
+                    }}
+                    variants={cornerScaleVariants}
+                    animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                   />
                   <motion.div
-                  style={{
-                    flex: "none",
-                    height: "24px",
-                    left: isHoverVariant ? "-6px" : "14px",
-                    overflow: "hidden",
-                    position: "absolute",
-                    top: isHoverVariant ? "330px" : "310px",
-                    width: "24px",
-                    zIndex: 2,
-                    borderLeft: "4px solid hsl(var(--foreground))",
-                    borderBottom: "4px solid hsl(var(--foreground))",
-                    scale: 1
-                  }}
-                  variants={cornerScaleVariants}
-                  animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                    style={{
+                      flex: "none",
+                      height: "24px",
+                      left: isHoverVariant ? "-6px" : "14px",
+                      overflow: "hidden",
+                      position: "absolute",
+                      top: isHoverVariant ? "330px" : "310px",
+                      width: "24px",
+                      zIndex: 2,
+                      borderLeft: "4px solid hsl(var(--foreground))",
+                      borderBottom: "4px solid hsl(var(--foreground))",
+                      scale: 1,
+                    }}
+                    variants={cornerScaleVariants}
+                    animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                   />
                   <motion.div
-                  style={{
-                    bottom: isHoverVariant ? "-6px" : "14px",
-                    flex: "none",
-                    height: "24px",
-                    overflow: "hidden",
-                    position: "absolute",
-                    right: isHoverVariant ? "-6px" : "14px",
-                    width: "24px",
-                    zIndex: 2,
-                    borderRight: "4px solid hsl(var(--foreground))",
-                    borderBottom: "4px solid hsl(var(--foreground))",
-                    scale: 1
-                  }}
-                  variants={cornerScaleVariants}
-                  animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                    style={{
+                      bottom: isHoverVariant ? "-6px" : "14px",
+                      flex: "none",
+                      height: "24px",
+                      overflow: "hidden",
+                      position: "absolute",
+                      right: isHoverVariant ? "-6px" : "14px",
+                      width: "24px",
+                      zIndex: 2,
+                      borderRight: "4px solid hsl(var(--foreground))",
+                      borderBottom: "4px solid hsl(var(--foreground))",
+                      scale: 1,
+                    }}
+                    variants={cornerScaleVariants}
+                    animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                   />
                   <motion.div
-                  style={{
-                    flex: "none",
-                    height: "24px",
-                    overflow: "hidden",
-                    position: "absolute",
-                    right: isHoverVariant ? "-6px" : "14px",
-                    top: isHoverVariant ? "-6px" : "14px",
-                    width: "24px",
-                    zIndex: 2,
-                    borderRight: "4px solid hsl(var(--foreground))",
-                    borderTop: "4px solid hsl(var(--foreground))",
-                    scale: 1
-                  }}
-                  variants={cornerScaleVariants}
-                  animate={isHoverVariant ? 'zEwHlJ7zp' : 'default'}
+                    style={{
+                      flex: "none",
+                      height: "24px",
+                      overflow: "hidden",
+                      position: "absolute",
+                      right: isHoverVariant ? "-6px" : "14px",
+                      top: isHoverVariant ? "-6px" : "14px",
+                      width: "24px",
+                      zIndex: 2,
+                      borderRight: "4px solid hsl(var(--foreground))",
+                      borderTop: "4px solid hsl(var(--foreground))",
+                      scale: 1,
+                    }}
+                    variants={cornerScaleVariants}
+                    animate={isHoverVariant ? "zEwHlJ7zp" : "default"}
                   />
                 </motion.div>
               </motion.div>
@@ -835,7 +862,7 @@ export const IconHover3D: React.FC<Props> = ({
                   width: "100%",
                   overflow: "hidden",
                   padding: "0px",
-                  position: "relative"
+                  position: "relative",
                 }}
               >
                 {/* Text Container */}
@@ -871,9 +898,10 @@ export const IconHover3D: React.FC<Props> = ({
                       width: "1px", // Keep minimal
                       zIndex: 0,
                       backgroundColor: "transparent", // Made transparent
-                      opacity: 0 // Always hidden
+                      opacity: 0, // Always hidden
                     }}
-                  />                  {/* Heading Text with hover effect */}
+                  />{" "}
+                  {/* Heading Text with hover effect */}
                   <motion.div
                     style={{
                       flex: "none",
@@ -892,7 +920,7 @@ export const IconHover3D: React.FC<Props> = ({
                       justifyContent: "center",
                       overflow: "hidden",
                       paddingTop: "8px",
-                      paddingBottom: "8px"
+                      paddingBottom: "8px",
                     }}
                   >
                     {/* Background text */}
@@ -907,12 +935,12 @@ export const IconHover3D: React.FC<Props> = ({
                         left: "50%",
                         transform: "translateX(-50%)",
                         color: "hsl(var(--background))",
-                        clipPath: `inset(0 ${isHoverVariant ? '0%' : '100%'} 0 0)`,
+                        clipPath: `inset(0 ${isHoverVariant ? "0%" : "100%"} 0 0)`,
                         zIndex: 2,
-                        whiteSpace: "nowrap"
+                        whiteSpace: "nowrap",
                       }}
                       animate={{
-                        clipPath: `inset(0 ${isHoverVariant ? '0%' : '100%'} 0 0)`
+                        clipPath: `inset(0 ${isHoverVariant ? "0%" : "100%"} 0 0)`,
                       }}
                       transition={titleTransition}
                     >
@@ -930,10 +958,10 @@ export const IconHover3D: React.FC<Props> = ({
                         backgroundColor: "hsl(var(--foreground))",
                         transformOrigin: "left center",
                         scaleX: 0,
-                        zIndex: 1
+                        zIndex: 1,
                       }}
                       animate={{
-                        scaleX: isHoverVariant ? 1 : 0
+                        scaleX: isHoverVariant ? 1 : 0,
                       }}
                       transition={titleTransition}
                     />
@@ -957,7 +985,7 @@ export const IconHover3D: React.FC<Props> = ({
                     lineHeight: "1.6em",
                     color: "hsl(var(--muted-foreground))",
                     userSelect: "none",
-                    textAlign: "center"
+                    textAlign: "center",
                   }}
                 >
                   {text}

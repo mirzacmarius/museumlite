@@ -229,10 +229,10 @@ export function MediaGallery({ collectionId, mediaType = "images" }: MediaGaller
 
   // Separate images/videos from documents
   const images = mediaArray.filter((m) => {
-    const category = (m as any).mediaCategory;
+    const category = (m as { mediaCategory?: "image" | "document" }).mediaCategory;
     return (category === "image" || !category) && (m.fileType === "image" || m.fileType === "video");
   });
-  const documents = mediaArray.filter((m) => (m as any).mediaCategory === "document");
+  const documents = mediaArray.filter((m) => (m as { mediaCategory?: "image" | "document" }).mediaCategory === "document");
 
   // Determine what to show based on mediaType prop
   const showImages = mediaType === "images";

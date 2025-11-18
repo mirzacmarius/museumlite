@@ -78,10 +78,10 @@ export default function CollectionEditPage() {
   // Only show actual images (fileType === "image") in the image gallery
   // Documents should only appear in the documents list
   const images = media?.filter((m) => {
-    const category = (m as any).mediaCategory;
+    const category = (m as { mediaCategory?: "image" | "document" }).mediaCategory;
     return (category === "image" || !category) && m.fileType === "image";
   }) || [];
-  const documents = media?.filter((m) => (m as any).mediaCategory === "document") || [];
+  const documents = media?.filter((m) => (m as { mediaCategory?: "image" | "document" }).mediaCategory === "document") || [];
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);

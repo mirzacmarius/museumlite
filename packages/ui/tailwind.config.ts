@@ -32,7 +32,7 @@ const config = {
           "Fira Sans",
           "Droid Sans",
           "Helvetica Neue",
-          "sans-serif"
+          "sans-serif",
         ],
       },
       colors: {

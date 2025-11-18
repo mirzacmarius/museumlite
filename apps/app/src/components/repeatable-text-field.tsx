@@ -45,7 +45,7 @@ export function RepeatableTextField({
           </div>
         ) : (
           value.map((item, index) => (
-            <div key={index} className="flex gap-2">
+            <div key={`${index}-${item}`} className="flex gap-2">
               <Input
                 value={item}
                 onChange={(e) => handleChange(index, e.target.value)}
