@@ -262,6 +262,7 @@ export const list = query({
           fileType: media.fileType,
           fileSize: media.fileSize,
           mimeType: media.mimeType,
+          mediaCategory: media.mediaCategory,
           isPrimary: media.isPrimary,
           caption: media.caption,
           photographer: media.photographer,

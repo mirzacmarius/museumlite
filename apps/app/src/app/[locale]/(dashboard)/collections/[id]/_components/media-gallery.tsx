@@ -230,9 +230,14 @@ export function MediaGallery({ collectionId, mediaType = "images" }: MediaGaller
   // Separate images/videos from documents
   const images = mediaArray.filter((m) => {
     const category = (m as { mediaCategory?: "image" | "document" }).mediaCategory;
-    return (category === "image" || !category) && (m.fileType === "image" || m.fileType === "video");
+    // Images: explicitly marked as "image" OR (no category AND fileType is image/video)
+    return (category === "image" || (!category && (m.fileType === "image" || m.fileType === "video")));
   });
-  const documents = mediaArray.filter((m) => (m as { mediaCategory?: "image" | "document" }).mediaCategory === "document");
+  const documents = mediaArray.filter((m) => {
+    const category = (m as { mediaCategory?: "image" | "document" }).mediaCategory;
+    // Documents: explicitly marked as "document" OR (no category AND fileType is document/pdf)
+    return category === "document" || (!category && m.fileType === "document");
+  });
 
   // Determine what to show based on mediaType prop
   const showImages = mediaType === "images";
