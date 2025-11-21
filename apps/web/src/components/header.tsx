@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@v1/ui/dialog";
-import Image from "next/image";
+import { Logo } from "@v1/ui/logo";
 import Link from "next/link";
 import { SubscribeForm } from "./subscribe-form";
 
@@ -16,14 +16,7 @@ export function Header() {
   return (
     <header className="fixed top-0 w-full flex items-center justify-between p-4 z-50 bg-background/80 backdrop-blur-sm border-b border-border/40">
       <Link href="/" className="flex items-center gap-2">
-        <Image
-          src="/logo.png"
-          alt="MuseumLite logo"
-          width={40}
-          quality={100}
-          height={40}
-          className="md:w-[48px] md:h-[48px]"
-        />
+        <Logo className="w-10 h-10 md:w-12 md:h-12" />
         <span className="font-departure text-lg md:text-xl">MuseumLite</span>
       </Link>
 

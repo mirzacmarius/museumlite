@@ -14,30 +14,39 @@ export function HeroSection() {
       
       {/* Particles / Stars */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute bg-white rounded-full opacity-20"
-            initial={{
-              x: Math.random() * 100 + "%",
-              y: Math.random() * 100 + "%",
-              scale: Math.random() * 0.5 + 0.5,
-            }}
-            animate={{
-              y: [null, Math.random() * -100 + "%"],
-              opacity: [0.2, 0.5, 0.2],
-            }}
-            transition={{
-              duration: Math.random() * 10 + 10,
-              repeat: Number.POSITIVE_INFINITY,
-              ease: "linear",
-            }}
-            style={{
-              width: Math.random() * 4 + "px",
-              height: Math.random() * 4 + "px",
-            }}
-          />
-        ))}
+        {[...Array(20)].map((_, i) => {
+          const particleId = `particle-${i}`;
+          const randomX = Math.random() * 100;
+          const randomY = Math.random() * 100;
+          const randomAnimateY = Math.random() * -100;
+          const randomWidth = Math.random() * 4;
+          const randomHeight = Math.random() * 4;
+          
+          return (
+            <motion.div
+              key={particleId}
+              className="absolute bg-white rounded-full opacity-20"
+              initial={{
+                x: `${randomX}%`,
+                y: `${randomY}%`,
+                scale: Math.random() * 0.5 + 0.5,
+              }}
+              animate={{
+                y: [null, `${randomAnimateY}%`],
+                opacity: [0.2, 0.5, 0.2],
+              }}
+              transition={{
+                duration: Math.random() * 10 + 10,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: "linear",
+              }}
+              style={{
+                width: `${randomWidth}px`,
+                height: `${randomHeight}px`,
+              }}
+            />
+          );
+        })}
       </div>
 
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
