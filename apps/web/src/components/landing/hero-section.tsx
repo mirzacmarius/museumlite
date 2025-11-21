@@ -1,209 +1,156 @@
 "use client";
 
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
-import { 
-  ArrowRight, 
-  Building2, 
-  Image as ImageIcon, 
-  MapPin, 
-  Package,
-  Sparkles,
-  CheckCircle2
-} from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowRight, Sparkles, PlayCircle } from "lucide-react";
 import { Button } from "@v1/ui/button";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-
-const floatingIcons = [
-  { Icon: Building2, delay: 0, x: "-20%", y: "-30%" },
-  { Icon: ImageIcon, delay: 0.2, x: "20%", y: "-20%" },
-  { Icon: MapPin, delay: 0.4, x: "-15%", y: "20%" },
-  { Icon: Package, delay: 0.6, x: "25%", y: "30%" },
-];
-
-const features = [
-  "No credit card required",
-  "Free 14-day trial",
-  "Cancel anytime"
-];
 
 export function HeroSection() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
   return (
-    <section className="relative h-screen w-screen flex flex-col items-center justify-center overflow-hidden group">
-      {/* Animated Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-accent/10 -z-20" />
+    <section className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-black selection:bg-neon-purple/30">
       
-      {/* Spotlight Effect - Follows Mouse */}
-      <motion.div
-        className="pointer-events-none absolute inset-0 -z-10 transition duration-300"
-        style={{
-          background: `radial-gradient(600px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(139, 92, 246, 0.15), transparent 40%)`,
-        }}
-      />
-
-      {/* 3D Grid Background - Top */}
-      <div className="absolute -top-[118px] inset-0 bg-[linear-gradient(to_right,#222_1px,transparent_1px),linear-gradient(to_bottom,#222_1px,transparent_1px)] bg-[size:4.5rem_2rem] -z-10 [transform:perspective(1000px)_rotateX(-63deg)] h-[80%] pointer-events-none opacity-40" />
+      {/* Background Effects */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
       
-      {/* Gradient Overlay - Top */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent pointer-events-none -z-10" />
-
-      {/* Floating Icons with Enhanced Animation */}
-      <div className="absolute inset-0 pointer-events-none -z-5">
-        {floatingIcons.map(({ Icon, delay, x, y }, index) => (
+      {/* Particles / Stars */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(20)].map((_, i) => (
           <motion.div
-            key={`${x}-${y}-${delay}`}
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ 
-              opacity: [0.05, 0.15, 0.05], 
-              scale: [1, 1.2, 1],
-              x: [0, 15, 0],
-              y: [0, -15, 0],
-              rotate: [0, 5, 0]
+            key={i}
+            className="absolute bg-white rounded-full opacity-20"
+            initial={{
+              x: Math.random() * 100 + "%",
+              y: Math.random() * 100 + "%",
+              scale: Math.random() * 0.5 + 0.5,
+            }}
+            animate={{
+              y: [null, Math.random() * -100 + "%"],
+              opacity: [0.2, 0.5, 0.2],
             }}
             transition={{
-              duration: 6,
-              delay,
+              duration: Math.random() * 10 + 10,
               repeat: Number.POSITIVE_INFINITY,
-              repeatType: "reverse",
-              ease: "easeInOut"
+              ease: "linear",
             }}
-            className="absolute"
-            style={{ 
-              left: `calc(50% + ${x})`, 
-              top: `calc(50% + ${y})`,
+            style={{
+              width: Math.random() * 4 + "px",
+              height: Math.random() * 4 + "px",
             }}
-          >
-            <Icon className="w-16 h-16 md:w-28 md:h-28 text-primary/10" strokeWidth={0.5} />
-          </motion.div>
+          />
         ))}
       </div>
 
-      {/* Main Content */}
-      <div className="relative z-10 max-w-6xl mx-auto px-4 text-center">
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[20%] w-[500px] h-[500px] bg-neon-blue/20 rounded-full blur-[120px] animate-pulse-slow" />
+        <div className="absolute bottom-[-10%] right-[20%] w-[600px] h-[600px] bg-neon-purple/20 rounded-full blur-[120px] animate-pulse-slow delay-1000" />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 container mx-auto px-4 text-center">
+        
         {/* Badge */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="mb-6 inline-flex items-center gap-2"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8 hover:bg-white/10 transition-colors cursor-pointer group"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-sm">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium">Trusted by 500+ institutions</span>
-          </div>
+          <Sparkles className="w-4 h-4 text-neon-blue group-hover:animate-spin" />
+          <span className="text-sm font-medium text-gray-300">The Future of Collection Management</span>
         </motion.div>
 
-        {/* Heading with Gradient */}
-        <motion.div
+        {/* Main Heading */}
+        <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-5xl md:text-8xl font-bold tracking-tighter mb-6 drop-shadow-2xl"
         >
-          <h1 className="font-departure text-[40px] md:text-[84px] leading-[1.1] tracking-tight">
-            <span className="inline-block bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
-              Museum Management,
-            </span>
-            <br />
-            <span className="inline-block bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-transparent">
-              Simplified
-            </span>
-          </h1>
-        </motion.div>
+          <span className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">Museum</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-purple animate-gradient-x drop-shadow-[0_0_25px_rgba(0,243,255,0.4)]">
+            Lite
+          </span>
+        </motion.h1>
 
-        {/* Description */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="relative z-10 text-center text-lg md:text-xl max-w-3xl mx-auto mt-6 md:mt-8 text-muted-foreground leading-relaxed"
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed"
         >
-          Complete collection management for museums, galleries, and collectors. 
-          Track accessions, manage locations, and publish your collection online.
+          Experience the next generation of museum software. 
+          <span className="text-white font-medium drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]"> AI-powered</span>, 
+          <span className="text-white font-medium drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]"> lightning fast</span>, and 
+          <span className="text-white font-medium drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]"> beautifully designed</span> for the modern curator.
         </motion.p>
 
-        {/* CTA Buttons */}
+        {/* Buttons */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10"
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="flex flex-col sm:flex-row items-center justify-center gap-4"
         >
-          <Link
-            href="https://app.museumlite.com/register"
-            className="group relative inline-flex items-center justify-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-full font-semibold text-base hover:shadow-lg hover:shadow-primary/50 transition-all duration-300 hover:scale-105"
-          >
-            <span>Start Free Trial</span>
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            
-            {/* Shimmer Effect */}
-            <div className="absolute inset-0 -z-10 rounded-full bg-gradient-to-r from-transparent via-primary-foreground/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
+          <Link href="https://app.museumlite.com/register">
+            <Button className="relative overflow-hidden h-14 px-8 rounded-full bg-white text-black hover:bg-gray-200 text-lg font-semibold transition-all hover:scale-105 group">
+              <span className="relative z-10 flex items-center">
+                Start Free Trial
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full animate-shimmer group-hover:animate-none" />
+            </Button>
           </Link>
           
-          <Button
-            className="px-8 py-4 bg-transparent text-foreground rounded-full font-semibold text-base border-2 border-border hover:border-primary/50 hover:bg-accent transition-all duration-300"
-          >
+          <Button variant="outline" className="h-14 px-8 rounded-full border-white/20 bg-transparent text-white hover:bg-white/10 text-lg font-medium backdrop-blur-sm transition-all hover:scale-105">
+            <PlayCircle className="mr-2 w-5 h-5" />
             Watch Demo
           </Button>
         </motion.div>
 
-        {/* Feature Pills */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="flex flex-wrap items-center justify-center gap-4 mt-8"
-        >
-          {features.map((feature) => (
-            <div
-              key={feature}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/50 border border-border/50 backdrop-blur-sm"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-              <span className="text-xs font-medium text-muted-foreground">{feature}</span>
-            </div>
-          ))}
-        </motion.div>
+        {/* Floating UI Elements (Decorative) */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-6xl pointer-events-none z-[-1]">
+           {/* Left Card */}
+           <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1, delay: 0.5 }}
+            className="absolute top-[20%] left-[5%] hidden md:block p-4 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-xl rotate-[-6deg] w-64"
+           >
+             <div className="flex items-center gap-3 mb-3">
+               <div className="w-10 h-10 rounded-full bg-neon-blue/20 flex items-center justify-center">
+                 <Sparkles className="w-5 h-5 text-neon-blue" />
+               </div>
+               <div>
+                 <div className="h-2 w-20 bg-white/20 rounded mb-1" />
+                 <div className="h-2 w-12 bg-white/10 rounded" />
+               </div>
+             </div>
+             <div className="h-20 bg-white/5 rounded-lg border border-white/5" />
+           </motion.div>
 
-        {/* Social Proof */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          className="mt-12 flex items-center justify-center gap-8 text-muted-foreground/60"
-        >
-          <div className="flex flex-col items-center">
-            <div className="text-2xl font-bold text-foreground">500+</div>
-            <div className="text-xs">Institutions</div>
-          </div>
-          <div className="h-8 w-px bg-border" />
-          <div className="flex flex-col items-center">
-            <div className="text-2xl font-bold text-foreground">50k+</div>
-            <div className="text-xs">Items Catalogued</div>
-          </div>
-          <div className="h-8 w-px bg-border" />
-          <div className="flex flex-col items-center">
-            <div className="text-2xl font-bold text-foreground">99.9%</div>
-            <div className="text-xs">Uptime</div>
-          </div>
-        </motion.div>
+           {/* Right Card */}
+           <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1, delay: 0.7 }}
+            className="absolute bottom-[30%] right-[5%] hidden md:block p-4 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-xl rotate-[6deg] w-64"
+           >
+             <div className="flex items-center justify-between mb-3">
+               <div className="h-2 w-24 bg-white/20 rounded" />
+               <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
+             </div>
+             <div className="space-y-2">
+               <div className="h-2 w-full bg-white/5 rounded" />
+               <div className="h-2 w-[80%] bg-white/5 rounded" />
+               <div className="h-2 w-[60%] bg-white/5 rounded" />
+             </div>
+           </motion.div>
+        </div>
+
       </div>
-
-      {/* 3D Grid Background - Bottom */}
-      <div className="absolute -bottom-[280px] inset-0 bg-[linear-gradient(to_right,#222_1px,transparent_1px),linear-gradient(to_bottom,#222_1px,transparent_1px)] bg-[size:4.5rem_2rem] -z-10 [transform:perspective(560px)_rotateX(63deg)] pointer-events-none opacity-40" />
       
-      {/* Gradient Overlay - Bottom */}
-      <div className="absolute w-full bottom-[100px] h-1/2 bg-gradient-to-b from-background to-transparent pointer-events-none -z-10" />
+      {/* Bottom Fade */}
+      <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black to-transparent pointer-events-none" />
     </section>
   );
 }

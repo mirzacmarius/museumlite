@@ -8,112 +8,93 @@ import {
   Repeat,
   Image as ImageIcon,
   ShieldCheck,
+  Search,
+  Globe,
 } from "lucide-react";
-import { FeatureCard } from "./feature-card";
+import { cn } from "@v1/ui/utils";
+import { SpotlightCard } from "../spotlight-card";
 
 const features = [
   {
     icon: Archive,
     title: "Object Cataloging",
-    description:
-      "Comprehensive cataloging with unlimited media attachments, detailed metadata, and custom fields.",
+    description: "Comprehensive cataloging with unlimited media attachments and detailed metadata.",
+    className: "md:col-span-2",
   },
   {
-    icon: FileCheck,
-    title: "Accession Workflows",
-    description:
-      "Streamlined accession & deaccession processes with automated numbering and approval workflows.",
+    icon: Search,
+    title: "Smart Search",
+    description: "Find anything instantly with AI-powered semantic search.",
+    className: "md:col-span-1",
   },
   {
     icon: MapPinned,
     title: "Location Tracking",
-    description:
-      "Real-time object location and complete movement history with QR/RFID integration.",
+    description: "Real-time object location and complete movement history.",
+    className: "md:col-span-1",
   },
   {
-    icon: Repeat,
-    title: "Loan Management",
-    description:
-      "Manage loans with automated tracking, reminders, and condition reports.",
+    icon: Globe,
+    title: "Public Portal",
+    description: "Publish your collection online with a single click.",
+    className: "md:col-span-2",
   },
   {
     icon: ImageIcon,
     title: "Digital Assets",
-    description:
-      "High-resolution image management with metadata, watermarking, and batch processing.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Role-Based Access",
-    description:
-      "Granular permissions for your entire team with custom roles and audit logs.",
+    description: "High-res image management with auto-watermarking.",
+    className: "md:col-span-3",
   },
 ];
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.5,
-    },
-  },
-};
-
 export function FeaturesGrid() {
   return (
-    <section id="features" className="py-24 px-4 relative scroll-mt-20">
-      <div className="max-w-7xl mx-auto">
-        {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <h2 className="font-departure text-3xl md:text-5xl mb-4">
-            Everything you need
-          </h2>
-          <p className="text-muted-foreground md:text-lg max-w-2xl mx-auto">
-            Professional collection management tools designed for museums,
-            galleries, and collectors of all sizes.
-          </p>
-        </motion.div>
+    <section className="py-32 px-4 relative bg-black">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-20">
+          <motion.h2 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-500"
+          >
+            Powering the Future
+          </motion.h2>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="text-gray-400 text-lg max-w-2xl mx-auto"
+          >
+            Advanced tools designed for the next generation of museums and galleries.
+          </motion.p>
+        </div>
 
-        {/* Features Grid - Using Efferd Feature Cards */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-          {features.map((feature) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {features.map((feature, i) => (
             <motion.div
               key={feature.title}
-              variants={itemVariants}
-              whileHover={{ scale: 1.02, y: -5 }}
-              transition={{ duration: 0.2 }}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className={feature.className}
             >
-              <FeatureCard
-                feature={feature}
-                className="h-full rounded-2xl border border-border bg-background hover:border-muted-foreground/20 transition-all duration-300"
-              />
+              <SpotlightCard className="h-full p-8 hover:bg-white/10 transition-colors">
+                <div className="relative z-10">
+                  <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <feature.icon className="w-6 h-6 text-neon-blue" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-3">{feature.title}</h3>
+                  <p className="text-gray-400 leading-relaxed">
+                    {feature.description}
+                  </p>
+                </div>
+              </SpotlightCard>
             </motion.div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

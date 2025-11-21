@@ -1,54 +1,51 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@v1/ui/button";
+import { SpotlightCard } from "../spotlight-card";
 
 const plans = [
   {
-    name: "Free",
+    name: "Starter",
     price: "0",
-    description: "Perfect for small collections and getting started",
+    description: "For hobbyists and small collections",
     features: [
       "Up to 100 objects",
       "Basic cataloging",
       "Single user",
-      "2GB storage",
       "Community support",
     ],
     cta: "Start Free",
     popular: false,
   },
   {
-    name: "Professional",
+    name: "Pro",
     price: "29",
-    description: "For growing institutions and serious collectors",
+    description: "For professional curators and galleries",
     features: [
       "Unlimited objects",
-      "Advanced cataloging",
-      "Up to 10 users",
-      "100GB storage",
+      "Advanced metadata",
+      "Up to 5 users",
+      "Public portal",
       "Priority support",
-      "Loan management",
-      "Public web portal",
-      "Custom branding",
+      "API access",
     ],
     cta: "Start Trial",
     popular: true,
   },
   {
-    name: "Enterprise",
+    name: "Institution",
     price: "Custom",
-    description: "Tailored solutions for large institutions",
+    description: "For large museums and organizations",
     features: [
-      "Everything in Professional",
-      "Unlimited users",
-      "Unlimited storage",
-      "Dedicated support",
+      "Unlimited everything",
       "Custom integrations",
+      "SSO & Audit logs",
+      "Dedicated success manager",
       "SLA guarantee",
-      "Training & onboarding",
-      "Multi-site support",
+      "On-premise option",
     ],
     cta: "Contact Sales",
     popular: false,
@@ -57,109 +54,82 @@ const plans = [
 
 export function PricingSection() {
   return (
-    <section id="pricing" className="py-24 px-4 relative scroll-mt-20">
-      <div className="max-w-7xl mx-auto">
-        {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <h2 className="font-departure text-3xl md:text-5xl mb-4">
-            Simple, transparent pricing
-          </h2>
-          <p className="text-muted-foreground md:text-lg max-w-2xl mx-auto">
-            Start free, upgrade when you need to. No hidden fees.
+    <section id="pricing" className="py-32 px-4 relative bg-black overflow-hidden">
+      <div className="max-w-7xl mx-auto relative z-10">
+        <div className="text-center mb-20">
+          <motion.h2 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-4xl md:text-6xl font-bold mb-6 text-white"
+          >
+            Simple Pricing
+          </motion.h2>
+          <p className="text-gray-400 text-lg">
+            Choose the plan that fits your collection.
           </p>
-        </motion.div>
+        </div>
 
-        {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.name}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              className={`relative ${plan.popular ? "md:-mt-4" : ""}`}
+              transition={{ delay: index * 0.1 }}
+              className="relative"
             >
               {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary text-secondary text-xs font-medium rounded-full">
-                  Most Popular
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-neon-blue text-black text-xs font-bold rounded-full z-20 shadow-[0_0_20px_rgba(0,243,255,0.5)]">
+                  MOST POPULAR
                 </div>
               )}
 
-              <div
-                className={`h-full p-8 rounded-2xl border ${
-                  plan.popular
-                    ? "border-primary bg-accent"
-                    : "border-border bg-background"
-                } hover:border-muted-foreground/20 transition-all duration-300`}
+              <SpotlightCard 
+                className={`h-full p-8 flex flex-col transition-all duration-300
+                ${plan.popular 
+                  ? "bg-white/10 border-neon-blue/50 shadow-[0_0_30px_rgba(0,243,255,0.1)]" 
+                  : "bg-white/5 border-white/10 hover:bg-white/10"
+                }`}
+                spotlightColor={plan.popular ? "rgba(0, 243, 255, 0.3)" : undefined}
               >
-                {/* Plan Header */}
-                <div className="mb-6">
-                  <h3 className="text-2xl font-semibold mb-2">{plan.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {plan.description}
-                  </p>
-                  <div className="flex items-baseline gap-1">
-                    {plan.price !== "Custom" && (
-                      <span className="text-4xl font-bold">${plan.price}</span>
-                    )}
-                    {plan.price === "Custom" && (
-                      <span className="text-4xl font-bold">{plan.price}</span>
-                    )}
-                    {plan.price !== "Custom" && (
-                      <span className="text-muted-foreground">/month</span>
-                    )}
+                <div className="mb-8">
+                  <h3 className="text-xl font-semibold text-white mb-2">{plan.name}</h3>
+                  <div className="flex items-baseline gap-1 mb-4">
+                    {plan.price !== "Custom" && <span className="text-4xl font-bold text-white">$</span>}
+                    <span className="text-5xl font-bold text-white">{plan.price}</span>
+                    {plan.price !== "Custom" && <span className="text-gray-400">/mo</span>}
                   </div>
+                  <p className="text-gray-400 text-sm">{plan.description}</p>
                 </div>
 
-                {/* Features List */}
-                <ul className="space-y-3 mb-8">
+                <ul className="space-y-4 mb-8 flex-1">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-muted-foreground">
-                        {feature}
-                      </span>
+                    <li key={feature} className="flex items-start gap-3 text-gray-300">
+                      <div className={`mt-1 w-5 h-5 rounded-full flex items-center justify-center ${plan.popular ? "bg-neon-blue/20 text-neon-blue" : "bg-white/10 text-white"}`}>
+                        <Check className="w-3 h-3" />
+                      </div>
+                      <span className="text-sm">{feature}</span>
                     </li>
                   ))}
                 </ul>
 
-                {/* CTA Button */}
-                <Link
-                  href={
-                    plan.price === "Custom"
-                      ? "/contact"
-                      : process.env.NEXT_PUBLIC_APP_URL || "/"
-                  }
-                  className={`block w-full py-3 px-6 rounded-full text-center font-medium transition-colors ${
-                    plan.popular
-                      ? "bg-primary text-secondary hover:opacity-90"
-                      : "bg-secondary text-primary border border-border hover:bg-accent"
-                  }`}
-                >
-                  {plan.cta}
+                <Link href={plan.price === "Custom" ? "/contact" : "/register"} className="w-full">
+                  <Button 
+                    className={`w-full h-12 rounded-full font-semibold text-base transition-all
+                      ${plan.popular 
+                        ? "bg-neon-blue text-black hover:bg-neon-blue/90 hover:shadow-[0_0_20px_rgba(0,243,255,0.4)]" 
+                        : "bg-white text-black hover:bg-gray-200"
+                      }`}
+                  >
+                    {plan.cta}
+                  </Button>
                 </Link>
-              </div>
+              </SpotlightCard>
             </motion.div>
           ))}
         </div>
-
-        {/* Bottom Note */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="text-center text-sm text-muted-foreground mt-12"
-        >
-          All plans include 14-day free trial. No credit card required.
-        </motion.p>
       </div>
     </section>
   );

@@ -57,7 +57,7 @@ export default function RootLayout({
       <body
         className={cn(
           `${GeistSans.variable} ${GeistMono.variable}`,
-          "antialiased dark",
+          "antialiased dark min-h-screen bg-black text-white selection:bg-neon-purple/30",
         )}
       >
         <ConvexClientProvider>
