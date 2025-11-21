@@ -6,49 +6,63 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@v1/ui/accordion";
+import { motion } from "framer-motion";
 
 export function FaqsSectionEfferd() {
   return (
-    <div id="faq" className="mx-auto min-h-screen w-full max-w-5xl lg:border-x scroll-mt-20">
-      <div className="mx-4 grid h-[calc(100vh-3.5rem)] grid-cols-1 border-x md:mx-0 md:grid-cols-2 md:border-x-0">
-        <div className="space-y-4 px-4 pt-12 pb-4 md:border-r">
-          <h2 className="font-black text-3xl md:text-4xl">FAQs</h2>
-          <p className="text-muted-foreground">
-            Everything you need to know about MuseumLite. Find answers to common
-            questions about our collection management platform.
+    <section id="faq" className="py-32 px-4 relative bg-black">
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-16">
+          <motion.h2 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-4xl md:text-5xl font-bold mb-6 text-white"
+          >
+            Frequently Asked Questions
+          </motion.h2>
+          <p className="text-gray-400 text-lg">
+            Everything you need to know about MuseumLite.
           </p>
         </div>
-        <div className="place-content-center">
-          <Accordion collapsible defaultValue="item-1" type="single">
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.2 }}
+        >
+          <Accordion collapsible defaultValue="item-1" type="single" className="space-y-4">
             {questions.map((item) => (
               <AccordionItem
-                className="first:border-t last:border-b data-[state=open]:bg-card"
                 key={item.id}
                 value={item.id}
+                className="border border-white/10 rounded-2xl bg-white/5 px-6 data-[state=open]:bg-white/10 transition-colors"
               >
-                <AccordionTrigger className="px-4 py-4 text-[15px] leading-6 hover:no-underline">
+                <AccordionTrigger className="py-6 text-lg font-medium text-white hover:text-neon-blue hover:no-underline transition-colors">
                   {item.title}
                 </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4 text-muted-foreground">
+                <AccordionContent className="pb-6 text-gray-400 leading-relaxed">
                   {item.content}
                 </AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
+        </motion.div>
+
+        <div className="mt-16 text-center">
+          <p className="text-gray-500">
+            Still have questions?{" "}
+            <a
+              className="text-neon-blue hover:underline font-medium"
+              href="mailto:support@museumlite.com"
+            >
+              Contact Support
+            </a>
+          </p>
         </div>
       </div>
-      <div className="flex h-14 items-center justify-center border-t">
-        <p className="text-muted-foreground">
-          Can't find what you're looking for?{" "}
-          <a
-            className="text-primary hover:underline"
-            href="mailto:support@museumlite.com"
-          >
-            Contact Us
-          </a>
-        </p>
-      </div>
-    </div>
+    </section>
   );
 }
 
