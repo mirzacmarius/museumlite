@@ -314,7 +314,7 @@ export function LoanItemsManager({
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <Link
-                    href={`/collections/${item.collectionId}`}
+                    href={`/objects/${item.collectionId}`}
                     className="font-medium hover:underline"
                   >
                     {item.accessionNumber}
@@ -336,7 +336,7 @@ export function LoanItemsManager({
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" asChild>
-                  <Link href={`/collections/${item.collectionId}`}>
+                  <Link href={`/objects/${item.collectionId}`}>
                     <ExternalLink className="h-4 w-4" />
                   </Link>
                 </Button>

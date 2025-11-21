@@ -316,7 +316,7 @@ export default function CollectionEditPage() {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <p className="text-muted-foreground">
-          Please select an organization to edit collections.
+          Please select an organization to edit objects.
         </p>
       </div>
     );
@@ -439,13 +439,13 @@ export default function CollectionEditPage() {
           : undefined,
         alternateAccessionNumbers: formData.alternateAccessionNumbers,
       });
-      router.push(`/collections/${collectionId}`);
+      router.push(`/objects/${collectionId}`);
     } catch (err) {
       console.error("Error updating collection:", err);
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to update collection. Please try again.",
+          : "Failed to update object. Please try again.",
       );
       setIsSubmitting(false);
     }
@@ -461,7 +461,7 @@ export default function CollectionEditPage() {
   return (
     <>
       <Header
-        title="Edit Collection"
+        title="Edit Object"
         description={`Editing: ${collection.title}`}
       />
       <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
@@ -470,13 +470,13 @@ export default function CollectionEditPage() {
             <div className="flex w-full items-center justify-between rounded-lg p-6">
               <div className="flex items-center gap-4">
                 <Button variant="ghost" size="sm" asChild>
-                  <Link href={`/collections/${collectionId}`}>
+                  <Link href={`/objects/${collectionId}`}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back
                   </Link>
                 </Button>
                 <h2 className="text-xl font-medium text-primary">
-                  Edit Collection
+                  Edit Object
                 </h2>
               </div>
             </div>
@@ -807,11 +807,11 @@ export default function CollectionEditPage() {
                   {/* Form Actions */}
                   <div className="flex justify-end gap-4">
                     <Button type="button" variant="outline" asChild>
-                      <Link href={`/collections/${collectionId}`}>Cancel</Link>
+                      <Link href={`/objects/${collectionId}`}>Cancel</Link>
                     </Button>
                     <Button type="submit" disabled={isSubmitting}>
                       <Save className="mr-2 h-4 w-4" />
-                      {isSubmitting ? "Updating..." : "Update Collection"}
+                      {isSubmitting ? "Updating..." : "Update Object"}
                     </Button>
                   </div>
                 </div>

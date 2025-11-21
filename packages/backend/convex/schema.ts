@@ -92,9 +92,27 @@ export default defineSchema({
     .index("by_role", ["roleId"])
     .index("by_permission", ["permissionId"]),
 
+  // Collection Groups (Virtual collections of objects)
+  collectionGroups: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    itemsCount: v.optional(v.number()),
+    createdAt: v.number(),
+    createdBy: v.id("users"),
+    lastModifiedAt: v.optional(v.number()),
+    lastModifiedBy: v.optional(v.id("users")),
+  })
+    .index("by_organization", ["organizationId"])
+    .searchIndex("search_index", {
+      searchField: "name",
+      filterFields: ["organizationId"],
+    }),
+
   // Main cataloging table
   collections: defineTable({
     organizationId: v.id("organizations"),
+    collectionGroupId: v.optional(v.id("collectionGroups")),
     accessionNumber: v.string(), // Primary accession number
     alternateAccessionNumbers: v.optional(v.array(v.string())),
     accessionNumberHistory: v.optional(
@@ -140,6 +158,7 @@ export default defineSchema({
       "organizationId",
       "accessionNumber",
     ])
+    .index("by_collectionGroup", ["collectionGroupId"])
     .index("by_currentLocation", ["currentLocationId"])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])

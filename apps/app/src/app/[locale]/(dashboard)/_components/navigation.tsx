@@ -33,6 +33,7 @@ import {
 import {
   Activity,
   Archive,
+  Box,
   FileCheck,
   FileX,
   Handshake,
@@ -431,6 +432,24 @@ export function Navigation({
             >
               <Archive className="h-4 w-4" />
               Collections
+            </Link>
+          </div>
+          <div
+            className={cn(
+              "flex h-12 items-center border-b-2",
+              pathname?.startsWith("/objects")
+                ? "border-primary"
+                : "border-transparent",
+            )}
+          >
+            <Link
+              href="/objects"
+              className={cn(
+                `${buttonVariants({ variant: "ghost", size: "sm" })} text-primary/80 gap-2`,
+              )}
+            >
+              <Box className="h-4 w-4" />
+              Objects
             </Link>
           </div>
           <div

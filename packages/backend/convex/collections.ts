@@ -69,6 +69,7 @@ async function generateAccessionNumber(
 export const create = mutation({
   args: {
     organizationId: v.id("organizations"),
+    collectionGroupId: v.optional(v.id("collectionGroups")),
     accessionNumber: v.optional(v.string()),
     title: v.string(),
     creator: v.optional(v.string()),
@@ -124,6 +125,7 @@ export const create = mutation({
     // Create collection object
     const collectionId = await ctx.db.insert("collections", {
       organizationId: args.organizationId,
+      collectionGroupId: args.collectionGroupId,
       accessionNumber,
       title: args.title,
       creator: args.creator,
@@ -148,6 +150,15 @@ export const create = mutation({
       catalogedAt: Date.now(),
     });
 
+    if (args.collectionGroupId) {
+      const group = await ctx.db.get(args.collectionGroupId);
+      if (group) {
+        await ctx.db.patch(args.collectionGroupId, {
+          itemsCount: (group.itemsCount || 0) + 1,
+        });
+      }
+    }
+
     return collectionId;
   },
 });
@@ -163,6 +174,7 @@ export const get = query({
     v.object({
       _id: v.id("collections"),
       organizationId: v.id("organizations"),
+      collectionGroupId: v.optional(v.id("collectionGroups")),
       accessionNumber: v.string(),
       alternateAccessionNumbers: v.optional(v.array(v.string())),
       accessionNumberHistory: v.optional(
@@ -218,6 +230,7 @@ export const list = query({
   args: {
     organizationId: v.id("organizations"),
     paginationOpts: paginationOptsValidator,
+    collectionGroupId: v.optional(v.id("collectionGroups")),
     status: v.optional(
       v.union(
         v.literal("active"),
@@ -242,6 +255,7 @@ export const list = query({
         _id: v.id("collections"),
         accessionNumber: v.string(),
         title: v.string(),
+        collectionGroupId: v.optional(v.id("collectionGroups")),
         objectType: v.optional(v.string()),
         currentLocationId: v.optional(v.id("locations")),
         status: v.union(
@@ -263,6 +277,7 @@ export const list = query({
       _id: Id<"collections">;
       title: string;
       accessionNumber: string;
+      collectionGroupId?: Id<"collectionGroups">;
       objectType?: string;
       currentLocationId?: Id<"locations">;
       status: "active" | "loaned" | "deaccessioned";
@@ -373,6 +388,12 @@ export const list = query({
         );
       }
 
+      if (args.collectionGroupId) {
+        query = query.filter((q) =>
+          q.eq(q.field("collectionGroupId"), args.collectionGroupId),
+        );
+      }
+
       // Date range filters
       if (args.catalogedFrom || args.catalogedTo) {
         query = query.filter((q) => {
@@ -430,6 +451,10 @@ export const list = query({
     // Apply objectType filter if not already applied (for search case)
     if (args.objectType && args.search) {
       allResults = allResults.filter((c) => c.objectType === args.objectType);
+    }
+
+    if (args.collectionGroupId && args.search) {
+      allResults = allResults.filter((c) => c.collectionGroupId === args.collectionGroupId);
     }
 
     // Apply date range filters if not already applied (for search case)
@@ -610,6 +635,7 @@ export const search = query({
 export const update = mutation({
   args: {
     collectionId: v.id("collections"),
+    collectionGroupId: v.optional(v.id("collectionGroups")),
     title: v.optional(v.string()),
     creator: v.optional(v.string()),
     objectType: v.optional(v.string()),
@@ -652,6 +678,7 @@ export const update = mutation({
     // Build update object
     const updates: {
       title?: string;
+      collectionGroupId?: Id<"collectionGroups">;
       creator?: string;
       objectType?: string;
       objectName?: string;
@@ -675,6 +702,7 @@ export const update = mutation({
     } = {};
 
     if (args.title !== undefined) updates.title = args.title;
+    if (args.collectionGroupId !== undefined) updates.collectionGroupId = args.collectionGroupId;
     if (args.creator !== undefined) updates.creator = args.creator;
     if (args.objectType !== undefined) updates.objectType = args.objectType;
     if (args.objectName !== undefined) updates.objectName = args.objectName;
@@ -701,6 +729,29 @@ export const update = mutation({
     updates.lastModifiedAt = Date.now();
 
     await ctx.db.patch(args.collectionId, updates);
+
+    // Handle moving between groups (update counts)
+    if (args.collectionGroupId !== undefined && args.collectionGroupId !== collection.collectionGroupId) {
+      // Decrement old group
+      if (collection.collectionGroupId) {
+        const oldGroup = await ctx.db.get(collection.collectionGroupId);
+        if (oldGroup) {
+          await ctx.db.patch(collection.collectionGroupId, {
+            itemsCount: Math.max(0, (oldGroup.itemsCount || 0) - 1),
+          });
+        }
+      }
+      
+      // Increment new group
+      if (args.collectionGroupId) {
+        const newGroup = await ctx.db.get(args.collectionGroupId);
+        if (newGroup) {
+          await ctx.db.patch(args.collectionGroupId, {
+            itemsCount: (newGroup.itemsCount || 0) + 1,
+          });
+        }
+      }
+    }
 
     return null;
   },

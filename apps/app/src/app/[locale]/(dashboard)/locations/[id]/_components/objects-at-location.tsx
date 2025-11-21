@@ -38,7 +38,7 @@ export function ObjectsAtLocation({ locationId }: ObjectsAtLocationProps) {
       {objects.map((obj) => (
         <Link
           key={obj._id}
-          href={`/collections/${obj._id}`}
+          href={`/objects/${obj._id}`}
           className="block rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent"
         >
           <div className="flex items-center justify-between">
