@@ -306,7 +306,7 @@ export default function CollectionEditPage() {
         donated_date: collection.donated_date || "",
         donation_info: collection.donation_info || "",
         previous_owners: collection.previous_owners || [],
-        currentLocationId: collection.currentLocationId || "",
+        currentLocationId: collection.currentLocationId as string || "",
         alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
       });
     }
