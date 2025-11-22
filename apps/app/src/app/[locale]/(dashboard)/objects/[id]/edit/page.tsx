@@ -118,10 +118,10 @@ export default function CollectionEditPage() {
   });
 
   // Upload handling
-  const { startUpload } = useUploadFiles(
+    const { startUpload } = useUploadFiles(
     async () => {
-      if (!currentOrganizationId) {
-        throw new Error("Organization missing");
+      if (!collection) {
+        throw new Error("Collection not loaded");
       }
 
       const file = filesRef.current.shift();
@@ -130,7 +130,7 @@ export default function CollectionEditPage() {
       }
 
       const result = await generateUploadUrl({
-        organizationId: currentOrganizationId as Id<"organizations">,
+        organizationId: collection.organizationId,
         collectionId: collectionId as Id<"collections">,
         fileName: file.name,
         fileSize: file.size,
@@ -151,8 +151,8 @@ export default function CollectionEditPage() {
             return;
           }
 
-          if (!currentOrganizationId) {
-            setError("Organization not found");
+          if (!collection) {
+            setError("Collection not loaded");
             return;
           }
 
@@ -175,7 +175,7 @@ export default function CollectionEditPage() {
               }
 
               await createMedia({
-                organizationId: currentOrganizationId as Id<"organizations">,
+                organizationId: collection.organizationId,
                 collectionId: collectionId as Id<"collections">,
                 storageId: storageId,
                 fileName: file.name || "unknown",
@@ -206,8 +206,8 @@ export default function CollectionEditPage() {
 
   // Document upload handling - upload immediately when selected
   const handleDocumentUpload = async (files: File[]) => {
-    if (!currentOrganizationId || !collectionId) {
-      setError("Missing organization or collection");
+    if (!collection || !collectionId) {
+      setError("Missing collection data");
       return;
     }
 
@@ -217,7 +217,7 @@ export default function CollectionEditPage() {
       try {
         // Generate upload URL
         const uploadUrlResult = await generateUploadUrl({
-          organizationId: currentOrganizationId as Id<"organizations">,
+          organizationId: collection.organizationId,
           collectionId: collectionId as Id<"collections">,
           fileName: file.name,
           fileSize: file.size,
@@ -247,7 +247,7 @@ export default function CollectionEditPage() {
 
         // Create media record for document
         await createMedia({
-          organizationId: currentOrganizationId as Id<"organizations">,
+          organizationId: collection.organizationId,
           collectionId: collectionId as Id<"collections">,
           storageId: storageId,
           fileName: file.name,
@@ -312,7 +312,7 @@ export default function CollectionEditPage() {
         donated_date: collection.donated_date || "",
         donation_info: collection.donation_info || "",
         previous_owners: collection.previous_owners || [],
-        currentLocationId: (collection.currentLocationId as string) || "",
+        currentLocationId: (collection.currentLocationId as string) || "__none__",
         alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
       });
     }
@@ -444,9 +444,10 @@ export default function CollectionEditPage() {
         ...formData,
         materials: materialsString,
         objectType: objectTypeString,
-        currentLocationId: formData.currentLocationId
-          ? (formData.currentLocationId as Id<"locations">)
-          : undefined,
+        currentLocationId:
+          formData.currentLocationId && formData.currentLocationId !== "__none__"
+            ? (formData.currentLocationId as Id<"locations">)
+            : undefined,
         alternateAccessionNumbers: formData.alternateAccessionNumbers,
       });
       router.push(`/objects/${collectionId}`);
@@ -566,7 +567,7 @@ export default function CollectionEditPage() {
                     <div>
                       <Label htmlFor="objectType">Object Type</Label>
                       <TypeCombobox
-                        organizationId={currentOrganizationId}
+                        organizationId={collection.organizationId}
                         collectionId={collectionId}
                         value={
                           Array.isArray(formData.objectType)
@@ -651,7 +652,7 @@ export default function CollectionEditPage() {
                     <div>
                       <Label htmlFor="materials">Materials</Label>
                       <MaterialsCombobox
-                        organizationId={currentOrganizationId}
+                        organizationId={collection.organizationId}
                         collectionId={collectionId}
                         value={
                           Array.isArray(formData.materials)
@@ -679,7 +680,7 @@ export default function CollectionEditPage() {
                     <div>
                       <Label htmlFor="condition">Condition</Label>
                       <ConditionCombobox
-                        organizationId={currentOrganizationId}
+                        organizationId={collection.organizationId}
                         value={formData.condition || ""}
                         onValueChange={(value) =>
                           updateField("condition", value)
@@ -699,8 +700,12 @@ export default function CollectionEditPage() {
                       Current Location
                     </Label>
                     <LocationSelector
-                      organizationId={currentOrganizationId}
-                      value={formData.currentLocationId}
+                      organizationId={collection.organizationId}
+                      value={
+                        formData.currentLocationId !== ""
+                          ? formData.currentLocationId
+                          : (collection.currentLocationId as string) || "__none__"
+                      }
                       onValueChange={(value) =>
                         updateField("currentLocationId", value)
                       }
