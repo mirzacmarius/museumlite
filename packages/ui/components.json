@@ -12,13 +12,9 @@
   },
   "aliases": {
     "components": "@/components",
-    "hooks": "@/hooks",
-    "lib": "@/lib",
+    "utils": "@/utils",
     "ui": "@/components",
-    "utils": "@/utils"
-  },
-  "registries": {
-    "@efferd": "https://efferd.com/r/registry.json",
-    "@coss": "https://coss.com/ui/r/{name}.json"
+    "lib": "@/lib",
+    "hooks": "@/hooks"
   }
 }
