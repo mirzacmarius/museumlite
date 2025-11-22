@@ -1,6 +1,5 @@
 "use client";
 
-import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -54,60 +53,52 @@ export default function CollectionGroupDetailPage() {
   }
 
   return (
-    <>
-      <Header
-        title={group.name}
-        description={group.description || "Collection Group"}
-      />
-      <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
-        <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-          <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
-            <div className="flex w-full items-center justify-between rounded-lg p-6">
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/collections">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back
+    <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
+      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+        <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
+          <div className="flex w-full items-center justify-between rounded-lg p-6">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/collections">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+                </Link>
+              </Button>
+              <div className="flex flex-col gap-1">
+                <h2 className="text-xl font-medium text-primary">{group.name}</h2>
+                <p className="text-sm font-normal text-primary/60">
+                  {group.itemsCount || 0} items
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <PermissionGate permission="collections.update">
+                <Button variant="outline" disabled>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </Button>
+              </PermissionGate>
+              <PermissionGate permission="collections.create">
+                <Button asChild>
+                  <Link href={`/objects/new?collectionGroupId=${group._id}`}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Object
                   </Link>
                 </Button>
-                <div className="flex flex-col gap-1">
-                  <h2 className="text-xl font-medium text-primary">
-                    {group.name}
-                  </h2>
-                  <p className="text-sm font-normal text-primary/60">
-                    {group.itemsCount || 0} items
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <PermissionGate permission="collections.update">
-                  <Button variant="outline" disabled>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </Button>
-                </PermissionGate>
-                <PermissionGate permission="collections.create">
-                  <Button asChild>
-                    <Link href={`/objects/new?collectionGroupId=${group._id}`}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Object
-                    </Link>
-                  </Button>
-                </PermissionGate>
-              </div>
+              </PermissionGate>
             </div>
-            <div className="flex w-full px-6">
-              <div className="w-full border-b border-border" />
-            </div>
-
-            <CollectionObjectsList
-              organizationId={currentOrganizationId}
-              groupId={group._id}
-            />
           </div>
+          <div className="flex w-full px-6">
+            <div className="w-full border-b border-border" />
+          </div>
+
+          <CollectionObjectsList
+            organizationId={currentOrganizationId}
+            groupId={group._id}
+          />
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

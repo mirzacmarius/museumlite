@@ -1,6 +1,5 @@
 "use client";
 
-import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
@@ -388,22 +387,7 @@ export default function CollectionFormPage() {
   };
 
   return (
-    <>
-      <Header title="New Object" description="Create a new object">
-        <div className="w-64">
-          <Label htmlFor="accessionNumber" className="text-sm">
-            Accession Number
-          </Label>
-          <Input
-            id="accessionNumber"
-            value={formData.accessionNumber || ""}
-            onChange={(e) => updateField("accessionNumber", e.target.value)}
-            placeholder="Auto-generated if empty"
-            className="mt-1"
-          />
-        </div>
-      </Header>
-      <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
+    <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
         <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
           <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
             <div className="flex w-full items-center justify-between rounded-lg p-6">
@@ -438,6 +422,18 @@ export default function CollectionFormPage() {
                       Basic Information
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="accessionNumber">Accession Number</Label>
+                        <Input
+                          id="accessionNumber"
+                          value={formData.accessionNumber || ""}
+                          onChange={(e) =>
+                            updateField("accessionNumber", e.target.value)
+                          }
+                          placeholder="Auto-generated if empty"
+                        />
+                      </div>
+
                       <div>
                         <Label htmlFor="title">
                           Title <span className="text-red-500">*</span>
@@ -877,6 +873,5 @@ export default function CollectionFormPage() {
           </div>
         </div>
       </div>
-    </>
   );
 }

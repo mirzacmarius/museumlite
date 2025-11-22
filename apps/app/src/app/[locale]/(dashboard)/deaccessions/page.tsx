@@ -1,6 +1,5 @@
 "use client";
 
-import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { useOrganization } from "@/components/organization-provider";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -29,7 +28,7 @@ export default function DeaccessionsPage() {
   }
 
   return (
-    <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
+    <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
           <DeaccessionsList organizationId={currentOrganizationId} />

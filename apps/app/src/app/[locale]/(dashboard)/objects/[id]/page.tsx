@@ -1,6 +1,5 @@
 "use client";
 
-import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { MoveObjectDialog } from "@/app/[locale]/(dashboard)/locations/_components/move-object-dialog";
 import { getConditionIcon } from "@/components/condition-combobox";
 import { DeaccessionDialog } from "@/components/deaccession-dialog";
@@ -85,11 +84,7 @@ export default function CollectionDetailPage() {
 
   return (
     <>
-      <Header
-        title={collection.title}
-        description={`Accession Number: ${collection.accessionNumber}`}
-      />
-      <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
+      <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
         <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
           <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
             <div className="flex w-full items-center justify-between rounded-lg p-4">

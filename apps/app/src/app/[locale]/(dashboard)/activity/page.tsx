@@ -1,6 +1,5 @@
 "use client";
 
-import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { useOrganization } from "@/components/organization-provider";
 import { useState } from "react";
 import { ActivityFilters } from "./_components/activity-filters";
