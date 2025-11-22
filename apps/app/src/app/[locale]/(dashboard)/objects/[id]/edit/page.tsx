@@ -535,7 +535,7 @@ export default function CollectionEditPage() {
                       </p>
                     </div>
 
-                    <div className="md:col-span-2 lg:col-span-3">
+                    <div>
                       <TagsInput
                         value={formData.alternateAccessionNumbers || []}
                         onValueChange={(values) =>
@@ -565,6 +565,18 @@ export default function CollectionEditPage() {
                     </div>
 
                     <div>
+                      <Label htmlFor="objectName">Object Name</Label>
+                      <Input
+                        id="objectName"
+                        value={formData.objectName || ""}
+                        onChange={(e) =>
+                          updateField("objectName", e.target.value)
+                        }
+                        placeholder="e.g., Portrait"
+                      />
+                    </div>
+
+                    <div>
                       <Label htmlFor="objectType">Object Type</Label>
                       <TypeCombobox
                         organizationId={collection.organizationId}
@@ -578,18 +590,6 @@ export default function CollectionEditPage() {
                           updateField("objectType", value)
                         }
                         placeholder="Select or add types..."
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="objectName">Object Name</Label>
-                      <Input
-                        id="objectName"
-                        value={formData.objectName || ""}
-                        onChange={(e) =>
-                          updateField("objectName", e.target.value)
-                        }
-                        placeholder="e.g., Portrait"
                       />
                     </div>
 
