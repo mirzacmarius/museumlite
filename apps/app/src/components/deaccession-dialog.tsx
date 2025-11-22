@@ -1,8 +1,9 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Button } from "@v1/ui/button";
+import { Calendar } from "@v1/ui/calendar";
 import {
   Dialog,
   DialogContent,
@@ -11,9 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
-import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
-import { Textarea } from "@v1/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import {
   Select,
   SelectContent,
@@ -21,8 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { Calendar } from "@v1/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
+import { Textarea } from "@v1/ui/textarea";
+import { cn } from "@v1/ui/utils";
+import { useMutation, useQuery } from "convex/react";
 import { format } from "date-fns";
 import {
   AlertTriangle,
@@ -31,9 +32,8 @@ import {
   Info,
   Loader2,
 } from "lucide-react";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { cn } from "@v1/ui/utils";
+import { useState } from "react";
 
 interface DeaccessionDialogProps {
   open: boolean;
@@ -211,9 +211,7 @@ export function DeaccessionDialog({
             <Label htmlFor="method">Method *</Label>
             <Select
               value={method}
-              onValueChange={(v) =>
-                setMethod(v as typeof method)
-              }
+              onValueChange={(v) => setMethod(v as typeof method)}
             >
               <SelectTrigger id="method">
                 <SelectValue placeholder="Select disposal method" />
@@ -226,7 +224,8 @@ export function DeaccessionDialog({
                   Donation - Given to another institution or organization
                 </SelectItem>
                 <SelectItem value="transfer">
-                  Transfer - Transferred within organization or to related entity
+                  Transfer - Transferred within organization or to related
+                  entity
                 </SelectItem>
                 <SelectItem value="destruction">
                   Destruction - Object destroyed or discarded

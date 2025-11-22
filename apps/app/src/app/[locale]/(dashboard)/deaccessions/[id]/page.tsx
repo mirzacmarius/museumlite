@@ -1,6 +1,5 @@
 "use client";
 
-import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -9,11 +8,11 @@ import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
+import { format } from "date-fns";
 import { ArrowLeft, CheckCircle, Clock, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { format } from "date-fns";
 
 export default function DeaccessionDetailPage() {
   const params = useParams();
@@ -130,185 +129,176 @@ export default function DeaccessionDetailPage() {
   };
 
   return (
-    <>
-      <Header
-        title={deaccession.deaccessionNumber}
-        description="Deaccession details and approval"
-      />
-      <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
-        <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-          <div className="flex w-full flex-col gap-6">
-            {/* Back button */}
-            <Button variant="ghost" size="sm" asChild className="w-fit">
-              <Link href="/deaccessions">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Deaccessions
-              </Link>
-            </Button>
+    <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
+      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+        <div className="flex w-full flex-col gap-6">
+          {/* Back button */}
+          <Button variant="ghost" size="sm" asChild className="w-fit">
+            <Link href="/deaccessions">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Deaccessions
+            </Link>
+          </Button>
 
-            {/* Deaccession Info Card */}
-            <div className="rounded-lg border border-border bg-card p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h2 className="text-2xl font-semibold">
-                    {deaccession.deaccessionNumber}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {format(
-                      new Date(deaccession.dateDeaccessioned),
-                      "MMMM d, yyyy",
-                    )}
-                  </p>
-                </div>
-                {getStatusBadge(deaccession.status)}
+          {/* Deaccession Info Card */}
+          <div className="rounded-lg border border-border bg-card p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-2xl font-semibold">
+                  {deaccession.deaccessionNumber}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {format(
+                    new Date(deaccession.dateDeaccessioned),
+                    "MMMM d, yyyy",
+                  )}
+                </p>
               </div>
-
-              <div className="grid gap-4">
-                <div>
-                  <Label className="text-muted-foreground">Reason</Label>
-                  <p className="mt-1 whitespace-pre-wrap">
-                    {deaccession.reason}
-                  </p>
-                </div>
-
-                <div>
-                  <Label className="text-muted-foreground">Method</Label>
-                  <p className="mt-1 capitalize">{deaccession.method}</p>
-                </div>
-
-                {deaccession.disposition && (
-                  <div>
-                    <Label className="text-muted-foreground">Disposition</Label>
-                    <p className="mt-1 whitespace-pre-wrap">
-                      {deaccession.disposition}
-                    </p>
-                  </div>
-                )}
-
-                {deaccession.notes && (
-                  <div>
-                    <Label className="text-muted-foreground">Notes</Label>
-                    <p className="mt-1 whitespace-pre-wrap">
-                      {deaccession.notes}
-                    </p>
-                  </div>
-                )}
-              </div>
+              {getStatusBadge(deaccession.status)}
             </div>
 
-            {/* Collection Info Card */}
-            {collection && (
-              <div className="rounded-lg border border-border bg-card p-6">
-                <h3 className="text-lg font-semibold mb-4">Collection Object</h3>
-                <Link
-                  href={`/collections/${collection._id}`}
-                  className="flex items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-accent"
-                >
-                  <div className="flex-1">
-                    <h4 className="font-medium">{collection.title}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {collection.accessionNumber}
-                    </p>
-                    <p className="text-sm text-muted-foreground capitalize mt-1">
-                      Status: {collection.status}
-                    </p>
-                  </div>
-                  <ArrowLeft className="h-4 w-4 rotate-180 flex-shrink-0" />
-                </Link>
+            <div className="grid gap-4">
+              <div>
+                <Label className="text-muted-foreground">Reason</Label>
+                <p className="mt-1 whitespace-pre-wrap">{deaccession.reason}</p>
               </div>
-            )}
 
-            {/* Workflow Timeline */}
-            {workflowHistory && workflowHistory.length > 0 && (
-              <div className="rounded-lg border border-border bg-card p-6">
-                <h3 className="text-lg font-semibold mb-4">Workflow History</h3>
-                <div className="space-y-4">
-                  {workflowHistory.map((entry, index) => (
-                    <div key={`${entry.step}-${entry.approvedAt}`} className="flex gap-4">
-                      <div className="flex flex-col items-center">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-medium flex-shrink-0">
-                          {entry.step}
-                        </div>
-                        {index < workflowHistory.length - 1 && (
-                          <div className="flex-1 w-px bg-border mt-2 min-h-[40px]" />
-                        )}
-                      </div>
-                      <div className="flex-1 pb-4">
-                        <p className="font-medium">
-                          {entry.step === 0
-                            ? "Created"
-                            : `Step ${entry.step} - Approved`}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {entry.approverName || "Unknown"} •{" "}
-                          {format(
-                            new Date(entry.approvedAt),
-                            "MMM d, yyyy 'at' h:mm a",
-                          )}
-                        </p>
-                        {entry.comment && (
-                          <p className="mt-2 text-sm italic bg-muted/50 p-2 rounded">
-                            {entry.comment}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div>
+                <Label className="text-muted-foreground">Method</Label>
+                <p className="mt-1 capitalize">{deaccession.method}</p>
               </div>
-            )}
 
-            {/* Approval Actions */}
-            {deaccession.status === "pending" && (
-              <PermissionGate permission="collections.approve_deaccession">
-                <div className="rounded-lg border border-border bg-card p-6">
-                  <h3 className="text-lg font-semibold mb-4">
-                    Approval Action
-                  </h3>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="comment">Comment (optional)</Label>
-                      <Textarea
-                        id="comment"
-                        value={comment}
-                        onChange={(e) => setComment(e.target.value)}
-                        placeholder="Add a comment about your decision..."
-                        rows={3}
-                        disabled={isApproving || isRejecting}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={handleApprove}
-                        disabled={isApproving || isRejecting}
-                      >
-                        {isApproving && (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
-                        {!isApproving && (
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                        )}
-                        Approve
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        onClick={handleReject}
-                        disabled={isApproving || isRejecting}
-                      >
-                        {isRejecting && (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
-                        {!isRejecting && <XCircle className="mr-2 h-4 w-4" />}
-                        Reject
-                      </Button>
-                    </div>
-                  </div>
+              {deaccession.disposition && (
+                <div>
+                  <Label className="text-muted-foreground">Disposition</Label>
+                  <p className="mt-1 whitespace-pre-wrap">
+                    {deaccession.disposition}
+                  </p>
                 </div>
-              </PermissionGate>
-            )}
+              )}
+
+              {deaccession.notes && (
+                <div>
+                  <Label className="text-muted-foreground">Notes</Label>
+                  <p className="mt-1 whitespace-pre-wrap">
+                    {deaccession.notes}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Collection Info Card */}
+          {collection && (
+            <div className="rounded-lg border border-border bg-card p-6">
+              <h3 className="text-lg font-semibold mb-4">Collection Object</h3>
+              <Link
+                href={`/collections/${collection._id}`}
+                className="flex items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-accent"
+              >
+                <div className="flex-1">
+                  <h4 className="font-medium">{collection.title}</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {collection.accessionNumber}
+                  </p>
+                  <p className="text-sm text-muted-foreground capitalize mt-1">
+                    Status: {collection.status}
+                  </p>
+                </div>
+                <ArrowLeft className="h-4 w-4 rotate-180 flex-shrink-0" />
+              </Link>
+            </div>
+          )}
+
+          {/* Workflow Timeline */}
+          {workflowHistory && workflowHistory.length > 0 && (
+            <div className="rounded-lg border border-border bg-card p-6">
+              <h3 className="text-lg font-semibold mb-4">Workflow History</h3>
+              <div className="space-y-4">
+                {workflowHistory.map((entry, index) => (
+                  <div
+                    key={`${entry.step}-${entry.approvedAt}`}
+                    className="flex gap-4"
+                  >
+                    <div className="flex flex-col items-center">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-medium flex-shrink-0">
+                        {entry.step}
+                      </div>
+                      {index < workflowHistory.length - 1 && (
+                        <div className="flex-1 w-px bg-border mt-2 min-h-[40px]" />
+                      )}
+                    </div>
+                    <div className="flex-1 pb-4">
+                      <p className="font-medium">
+                        {entry.step === 0
+                          ? "Created"
+                          : `Step ${entry.step} - Approved`}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {entry.approverName || "Unknown"} •{" "}
+                        {format(
+                          new Date(entry.approvedAt),
+                          "MMM d, yyyy 'at' h:mm a",
+                        )}
+                      </p>
+                      {entry.comment && (
+                        <p className="mt-2 text-sm italic bg-muted/50 p-2 rounded">
+                          {entry.comment}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Approval Actions */}
+          {deaccession.status === "pending" && (
+            <PermissionGate permission="collections.approve_deaccession">
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h3 className="text-lg font-semibold mb-4">Approval Action</h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="comment">Comment (optional)</Label>
+                    <Textarea
+                      id="comment"
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      placeholder="Add a comment about your decision..."
+                      rows={3}
+                      disabled={isApproving || isRejecting}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleApprove}
+                      disabled={isApproving || isRejecting}
+                    >
+                      {isApproving && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      {!isApproving && <CheckCircle className="mr-2 h-4 w-4" />}
+                      Approve
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleReject}
+                      disabled={isApproving || isRejecting}
+                    >
+                      {isRejecting && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      {!isRejecting && <XCircle className="mr-2 h-4 w-4" />}
+                      Reject
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </PermissionGate>
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

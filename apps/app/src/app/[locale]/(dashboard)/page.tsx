@@ -1,6 +1,5 @@
 "use client";
 
-import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -46,7 +45,7 @@ export default function DashboardPage() {
   if (!organizations || organizations.length === 0) {
     return (
       <>
-        <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
+        <div className="flex h-full w-full items-center justify-center bg-secondary px-4 py-0 dark:bg-black">
           <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8 dark:bg-black">
             <Building2 className="h-12 w-12 text-muted-foreground" />
             <div className="text-center">
@@ -92,7 +91,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
+      <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
         <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
           <div className="flex w-full flex-col gap-6">
             {/* Quick Actions */}

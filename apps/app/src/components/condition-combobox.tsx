@@ -81,13 +81,13 @@ const STANDARD_CONDITIONS: ConditionOption[] = [
  */
 export function getConditionIcon(conditionValue: string): React.ReactNode {
   const standardCondition = STANDARD_CONDITIONS.find(
-    (c) => c.value.toLowerCase() === conditionValue.toLowerCase()
+    (c) => c.value.toLowerCase() === conditionValue.toLowerCase(),
   );
-  
+
   if (standardCondition) {
     return standardCondition.icon;
   }
-  
+
   // Return custom condition icon for non-standard conditions
   return <Edit3 className="h-3.5 w-3.5 text-purple-500" />;
 }

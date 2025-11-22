@@ -358,8 +358,7 @@ export function TypeCombobox({
                     </span>{" "}
                     cannot be deleted because it is currently being used by{" "}
                     {typeUsage.usageCount}{" "}
-                    {typeUsage.usageCount === 1 ? "collection" : "collections"}
-                    .
+                    {typeUsage.usageCount === 1 ? "collection" : "collections"}.
                   </div>
                   {typeUsage.collectionNames.length > 0 && (
                     <div className="mt-2">

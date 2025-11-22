@@ -1,11 +1,12 @@
+import { AppSidebar } from "@/components/app-sidebar";
 import { OrganizationProvider } from "@/components/organization-provider";
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@v1/backend/convex/_generated/api";
+import { SidebarProvider, SidebarTrigger } from "@v1/ui/sidebar";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { fetchQuery, preloadQuery } from "convex/nextjs";
 import { redirect } from "next/navigation";
-import { Navigation } from "./_components/navigation";
 
 export default async function Layout({
   children,
@@ -29,16 +30,21 @@ export default async function Layout({
     { token: await convexAuthNextjsToken() },
   );
   return (
-    <div className="flex min-h-[100vh] w-full flex-col bg-secondary dark:bg-black">
-      <OrganizationProvider>
-        <Navigation
+    <OrganizationProvider>
+      <SidebarProvider>
+        <AppSidebar
           preloadedUser={preloadedUser}
           preloadedProducts={preloadedProducts}
         />
-        {children}
+        <main className="min-h-[100vh] w-full bg-secondary dark:bg-black">
+          <div className="flex items-center p-4">
+            <SidebarTrigger className="-ml-1" />
+          </div>
+          {children}
+        </main>
         <Analytics />
         <SpeedInsights />
-      </OrganizationProvider>
-    </div>
+      </SidebarProvider>
+    </OrganizationProvider>
   );
 }

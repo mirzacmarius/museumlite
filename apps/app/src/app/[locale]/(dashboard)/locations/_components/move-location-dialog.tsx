@@ -153,7 +153,11 @@ export function MoveLocationDialog({
             )}
             <div className="space-y-2">
               <Label htmlFor="parent">New Parent Location *</Label>
-              <Select value={newParentId} onValueChange={setNewParentId} required>
+              <Select
+                value={newParentId}
+                onValueChange={setNewParentId}
+                required
+              >
                 <SelectTrigger id="parent">
                   <SelectValue placeholder="Select a parent location" />
                 </SelectTrigger>

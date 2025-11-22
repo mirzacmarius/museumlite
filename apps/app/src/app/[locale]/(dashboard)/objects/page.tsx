@@ -1,6 +1,5 @@
 "use client";
 
-import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -17,7 +16,15 @@ import {
 } from "@v1/ui/select";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { Archive, Building2, Filter, MapPin, Plus, Search, X } from "lucide-react";
+import {
+  Archive,
+  Building2,
+  Filter,
+  MapPin,
+  Plus,
+  Search,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -34,91 +41,73 @@ export default function CollectionsPage() {
 
   if (!organizations || organizations.length === 0) {
     return (
-      <>
-        <Header
-          title="Collections"
-          description="Manage your collection objects"
-        />
-        <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
-          <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8 dark:bg-black">
-            <Building2 className="h-12 w-12 text-muted-foreground" />
-            <div className="text-center">
-              <h3 className="text-lg font-semibold">No Organization Found</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                You need to create an organization to start managing
-                collections.
-              </p>
-            </div>
-            <Button asChild>
-              <Link href="/organizations/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Create Organization
-              </Link>
-            </Button>
+      <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8 dark:bg-black">
+          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <div className="text-center">
+            <h3 className="text-lg font-semibold">No Organization Found</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              You need to create an organization to start managing
+              collections.
+            </p>
           </div>
+          <Button asChild>
+            <Link href="/organizations/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Organization
+            </Link>
+          </Button>
         </div>
-      </>
+      </div>
     );
   }
 
   if (!currentOrganizationId) {
     return (
-      <>
-        <Header
-          title="Objects"
-          description="Manage your collection objects"
-        />
-        <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
-          <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8 dark:bg-black">
-            <Building2 className="h-12 w-12 text-muted-foreground" />
-            <div className="text-center">
-              <h3 className="text-lg font-semibold">Select an Organization</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Please select an organization from the dropdown above to view
-                objects.
-              </p>
-            </div>
+      <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8 dark:bg-black">
+          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <div className="text-center">
+            <h3 className="text-lg font-semibold">Select an Organization</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Please select an organization from the dropdown above to view
+              objects.
+            </p>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <Header
-        title="Objects"
-        description="Manage your collection objects"
-      />
-      <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
-        <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-          <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
-            <div className="flex w-full items-center justify-between rounded-lg p-6">
-              <div className="flex flex-col gap-2">
-                <h2 className="text-xl font-medium text-primary">
-                  Collection Objects
-                </h2>
-                <p className="text-sm font-normal text-primary/60">
-                  Browse and manage your objects
-                </p>
-              </div>
-              <PermissionGate permission="collections.create">
-                <Button asChild>
-                  <Link href="/objects/new">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Object
-                  </Link>
-                </Button>
-              </PermissionGate>
+    <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
+      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+        <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
+          <div className="flex w-full items-center justify-between rounded-lg p-6">
+            <div className="flex flex-col gap-2">
+              <h2 className="text-xl font-medium text-primary">
+                Collection Objects
+              </h2>
+              <p className="text-sm font-normal text-primary/60">
+                Browse and manage your objects
+              </p>
             </div>
-            <div className="flex w-full px-6">
-              <div className="w-full border-b border-border" />
-            </div>
-            <CollectionFiltersAndList organizationId={currentOrganizationId} />
+            <PermissionGate permission="collections.create">
+              <Button asChild>
+                <Link href="/objects/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Object
+                </Link>
+              </Button>
+            </PermissionGate>
           </div>
+          <div className="flex w-full px-6">
+            <div className="w-full border-b border-border" />
+          </div>
+          <CollectionFiltersAndList organizationId={currentOrganizationId} />
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -479,19 +468,25 @@ function CollectionListItem({
             <div className="flex flex-wrap justify-end gap-1 mb-1">
               {(() => {
                 try {
-                  const types = item.objectType ? JSON.parse(item.objectType) : [];
-                  return Array.isArray(types) && types.length > 0
-                    ? types.map((type: string) => (
-                        <span
-                          key={type}
-                          className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-medium"
-                        >
-                          {type}
-                        </span>
-                      ))
-                    : <span className="text-sm text-muted-foreground">—</span>;
+                  const types = item.objectType
+                    ? JSON.parse(item.objectType)
+                    : [];
+                  return Array.isArray(types) && types.length > 0 ? (
+                    types.map((type: string) => (
+                      <span
+                        key={type}
+                        className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-medium"
+                      >
+                        {type}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  );
                 } catch {
-                  return <span className="text-sm text-muted-foreground">—</span>;
+                  return (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  );
                 }
               })()}
             </div>

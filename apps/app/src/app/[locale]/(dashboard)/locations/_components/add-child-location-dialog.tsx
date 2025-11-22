@@ -22,7 +22,7 @@ import {
 } from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation } from "convex/react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface AddChildLocationDialogProps {
   parentLocationId?: string;
@@ -99,7 +99,9 @@ export function AddChildLocationDialog({
         organizationId: organizationId as Id<"organizations">,
         name: name.trim(),
         type,
-        parentLocationId: parentLocationId ? (parentLocationId as Id<"locations">) : undefined,
+        parentLocationId: parentLocationId
+          ? (parentLocationId as Id<"locations">)
+          : undefined,
         address: address.trim() || undefined,
         notes: notes.trim() || undefined,
       });
@@ -112,7 +114,9 @@ export function AddChildLocationDialog({
       onOpenChange(false);
       onSuccess?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create location");
+      setError(
+        err instanceof Error ? err.message : "Failed to create location",
+      );
     } finally {
       setIsSubmitting(false);
     }

@@ -1,47 +1,40 @@
 "use client";
 
-import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { useOrganization } from "@/components/organization-provider";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { useQuery } from "convex/react";
+import { format } from "date-fns";
 import { Archive, CheckCircle, Clock, Search, XCircle } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
-import { format } from "date-fns";
+import { useEffect, useRef, useState } from "react";
 
 export default function DeaccessionsPage() {
   const { currentOrganizationId } = useOrganization();
 
   if (!currentOrganizationId) {
     return (
-      <>
-        <Header title="Deaccessions" description="Manage deaccessioned objects" />
-        <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
-          <div className="flex flex-col items-center gap-4">
-            <Archive className="h-12 w-12 text-muted-foreground" />
-            <p className="text-muted-foreground">
-              Please select an organization to view deaccessions
-            </p>
-          </div>
+      <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
+        <div className="flex flex-col items-center gap-4">
+          <Archive className="h-12 w-12 text-muted-foreground" />
+          <p className="text-muted-foreground">
+            Please select an organization to view deaccessions
+          </p>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <Header title="Deaccessions" description="Manage deaccessioned objects" />
-      <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
-        <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-          <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
-            <DeaccessionsList organizationId={currentOrganizationId} />
-          </div>
+    <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
+      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+        <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
+          <DeaccessionsList organizationId={currentOrganizationId} />
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

@@ -1,6 +1,5 @@
 "use client";
 
-import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { MoveObjectDialog } from "@/app/[locale]/(dashboard)/locations/_components/move-object-dialog";
 import { getConditionIcon } from "@/components/condition-combobox";
 import { DeaccessionDialog } from "@/components/deaccession-dialog";
@@ -54,7 +53,8 @@ export default function CollectionDetailPage() {
     api.loans.getLoansForCollection,
     collection ? { collectionId: collection._id } : "skip",
   );
-  const hasActiveLoan = loans?.some((loan) => loan.status === "active") ?? false;
+  const hasActiveLoan =
+    loans?.some((loan) => loan.status === "active") ?? false;
 
   if (!currentOrganizationId) {
     return (
@@ -84,11 +84,7 @@ export default function CollectionDetailPage() {
 
   return (
     <>
-      <Header
-        title={collection.title}
-        description={`Accession Number: ${collection.accessionNumber}`}
-      />
-      <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
+      <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
         <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
           <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
             <div className="flex w-full items-center justify-between rounded-lg p-4">
@@ -381,18 +377,22 @@ function CollectionDetails({
                     const types = collection.objectType
                       ? JSON.parse(collection.objectType)
                       : [];
-                    return Array.isArray(types) && types.length > 0
-                      ? types.map((type: string) => (
-                          <span
-                            key={type}
-                            className="inline-flex items-center rounded-md border bg-secondary px-2 py-0.5 text-xs font-medium"
-                          >
-                            {type}
-                          </span>
-                        ))
-                      : <span className="text-sm text-muted-foreground">—</span>;
+                    return Array.isArray(types) && types.length > 0 ? (
+                      types.map((type: string) => (
+                        <span
+                          key={type}
+                          className="inline-flex items-center rounded-md border bg-secondary px-2 py-0.5 text-xs font-medium"
+                        >
+                          {type}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    );
                   } catch {
-                    return <span className="text-sm text-muted-foreground">—</span>;
+                    return (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    );
                   }
                 })()}
               </div>
@@ -466,16 +466,14 @@ function CollectionDetails({
                     ) {
                       return (
                         <div className="flex flex-wrap gap-1.5">
-                          {materialsArray.map(
-                            (material: string) => (
-                              <span
-                                key={material}
-                                className="inline-flex items-center rounded-md border border-border bg-secondary px-2 py-0.5 text-xs font-medium"
-                              >
-                                {material}
-                              </span>
-                            ),
-                          )}
+                          {materialsArray.map((material: string) => (
+                            <span
+                              key={material}
+                              className="inline-flex items-center rounded-md border border-border bg-secondary px-2 py-0.5 text-xs font-medium"
+                            >
+                              {material}
+                            </span>
+                          ))}
                         </div>
                       );
                     }

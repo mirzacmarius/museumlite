@@ -1,6 +1,5 @@
 "use client";
 
-import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -98,164 +97,158 @@ export default function LoanDetailPage() {
   };
 
   return (
-    <>
-      <Header
-        title={`Loan ${loan.loanNumber}`}
-        description={`${loan.type === "incoming" ? "Incoming" : "Outgoing"} • ${loan.lenderBorrowerName} • ${new Date(loan.startDate).toLocaleDateString()}`}
-      />
-      <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
-        <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-          <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
-            {/* Header */}
-            <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/loans">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Loans
-                  </Link>
-                </Button>
-                <div className="flex items-center gap-3">
-                  {getTypeIcon(loan.type)}
-                  <span className="rounded-full bg-muted px-3 py-1 text-sm font-medium">
-                    {loan.type === "incoming" ? "Incoming" : "Outgoing"}
-                  </span>
-                  {getStatusIcon(loan.status)}
-                  <span
-                    className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusColor(
-                      loan.status,
-                    )}`}
-                  >
-                    {loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}
-                  </span>
-                </div>
+    <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
+      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+        <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
+          {/* Header */}
+          <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/loans">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Loans
+                </Link>
+              </Button>
+              <div className="flex items-center gap-3">
+                {getTypeIcon(loan.type)}
+                <span className="rounded-full bg-muted px-3 py-1 text-sm font-medium">
+                  {loan.type === "incoming" ? "Incoming" : "Outgoing"}
+                </span>
+                {getStatusIcon(loan.status)}
+                <span
+                  className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusColor(
+                    loan.status,
+                  )}`}
+                >
+                  {loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}
+                </span>
               </div>
-              <div className="flex gap-2">
-                {loan.status === "pending" && (
-                  <PermissionGate permission="loans.update">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/loans/${loanId}/edit`}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                      </Link>
-                    </Button>
-                  </PermissionGate>
+            </div>
+            <div className="flex gap-2">
+              {loan.status === "pending" && (
+                <PermissionGate permission="loans.update">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/loans/${loanId}/edit`}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit
+                    </Link>
+                  </Button>
+                </PermissionGate>
+              )}
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Loan Details */}
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Loan Number
+                  </label>
+                  <p className="mt-1 text-lg font-medium">
+                    {loan.loanNumber}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    {loan.type === "incoming" ? "Lender" : "Borrower"}
+                  </label>
+                  <p className="mt-1">{loan.lenderBorrowerName}</p>
+                </div>
+                {loan.lenderBorrowerContact && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Contact
+                    </label>
+                    <p className="mt-1">{loan.lenderBorrowerContact}</p>
+                  </div>
+                )}
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Start Date
+                  </label>
+                  <p className="mt-1">
+                    {new Date(loan.startDate).toLocaleDateString()}
+                  </p>
+                </div>
+                {loan.endDate && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      End Date
+                    </label>
+                    <p className="mt-1">
+                      {new Date(loan.endDate).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
+                {loan.insuranceValue && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Insurance Value
+                    </label>
+                    <p className="mt-1">
+                      ${loan.insuranceValue.toLocaleString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                {loan.terms && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Terms
+                    </label>
+                    <p className="mt-1 whitespace-pre-wrap">{loan.terms}</p>
+                  </div>
+                )}
+                {loan.notes && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Notes
+                    </label>
+                    <p className="mt-1 whitespace-pre-wrap">{loan.notes}</p>
+                  </div>
+                )}
+                {loan.approvedBy && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Approved By
+                    </label>
+                    <p className="mt-1">
+                      {loan.approvedAt
+                        ? new Date(loan.approvedAt).toLocaleString()
+                        : "—"}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
 
-            {/* Content */}
-            <div className="p-6">
-              <div className="grid gap-6 md:grid-cols-2">
-                {/* Loan Details */}
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Loan Number
-                    </label>
-                    <p className="mt-1 text-lg font-medium">
-                      {loan.loanNumber}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      {loan.type === "incoming" ? "Lender" : "Borrower"}
-                    </label>
-                    <p className="mt-1">{loan.lenderBorrowerName}</p>
-                  </div>
-                  {loan.lenderBorrowerContact && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Contact
-                      </label>
-                      <p className="mt-1">{loan.lenderBorrowerContact}</p>
-                    </div>
-                  )}
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Start Date
-                    </label>
-                    <p className="mt-1">
-                      {new Date(loan.startDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                  {loan.endDate && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        End Date
-                      </label>
-                      <p className="mt-1">
-                        {new Date(loan.endDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                  )}
-                  {loan.insuranceValue && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Insurance Value
-                      </label>
-                      <p className="mt-1">
-                        ${loan.insuranceValue.toLocaleString()}
-                      </p>
-                    </div>
-                  )}
-                </div>
+            {/* Loan Items */}
+            <div className="mt-8 border-t border-border pt-6">
+              <LoanItemsManager
+                loanId={loanId}
+                loanItems={loan.items}
+                organizationId={loan.organizationId}
+                loanStatus={loan.status}
+              />
+            </div>
 
-                <div className="space-y-4">
-                  {loan.terms && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Terms
-                      </label>
-                      <p className="mt-1 whitespace-pre-wrap">{loan.terms}</p>
-                    </div>
-                  )}
-                  {loan.notes && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Notes
-                      </label>
-                      <p className="mt-1 whitespace-pre-wrap">{loan.notes}</p>
-                    </div>
-                  )}
-                  {loan.approvedBy && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Approved By
-                      </label>
-                      <p className="mt-1">
-                        {loan.approvedAt
-                          ? new Date(loan.approvedAt).toLocaleString()
-                          : "—"}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Loan Items */}
+            {/* Approval Workflow */}
+            {(loan.status === "pending" || loan.status === "active") && (
               <div className="mt-8 border-t border-border pt-6">
-                <LoanItemsManager
+                <LoanApprovalWorkflow
                   loanId={loanId}
-                  loanItems={loan.items}
-                  organizationId={loan.organizationId}
                   loanStatus={loan.status}
                 />
               </div>
-
-              {/* Approval Workflow */}
-              {(loan.status === "pending" || loan.status === "active") && (
-                <div className="mt-8 border-t border-border pt-6">
-                  <LoanApprovalWorkflow
-                    loanId={loanId}
-                    loanStatus={loan.status}
-                  />
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
