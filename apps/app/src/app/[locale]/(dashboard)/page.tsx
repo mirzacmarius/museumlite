@@ -46,7 +46,7 @@ export default function DashboardPage() {
   if (!organizations || organizations.length === 0) {
     return (
       <>
-        <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
+        <div className="flex h-full w-full items-center justify-center bg-secondary px-4 py-0 dark:bg-black">
           <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8 dark:bg-black">
             <Building2 className="h-12 w-12 text-muted-foreground" />
             <div className="text-center">

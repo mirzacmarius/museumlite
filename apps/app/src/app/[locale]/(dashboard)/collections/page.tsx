@@ -63,58 +63,50 @@ export default function CollectionsPage() {
   }
 
   return (
-    <>
-      <Header
-        title="Collections"
-        description="Organize your objects into collections"
-      />
-      <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
-        <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-          <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
-            <div className="flex w-full items-center justify-between rounded-lg p-6">
-              <div className="flex flex-col gap-2">
-                <h2 className="text-xl font-medium text-primary">
-                  Collections
-                </h2>
-                <p className="text-sm font-normal text-primary/60">
-                  Manage your object collections
-                </p>
-              </div>
-              <PermissionGate permission="collections.create">
-                <Button asChild>
-                  <Link href="/collections/new">
-                    <FolderPlus className="mr-2 h-4 w-4" />
-                    New Collection
-                  </Link>
-                </Button>
-              </PermissionGate>
+    <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
+      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+        <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
+          <div className="flex w-full items-center justify-between rounded-lg p-6">
+            <div className="flex flex-col gap-2">
+              <h2 className="text-xl font-medium text-primary">Collections</h2>
+              <p className="text-sm font-normal text-primary/60">
+                Manage your object collections
+              </p>
             </div>
-            <div className="flex w-full px-6">
-              <div className="w-full border-b border-border" />
+            <PermissionGate permission="collections.create">
+              <Button asChild>
+                <Link href="/collections/new">
+                  <FolderPlus className="mr-2 h-4 w-4" />
+                  New Collection
+                </Link>
+              </Button>
+            </PermissionGate>
+          </div>
+          <div className="flex w-full px-6">
+            <div className="w-full border-b border-border" />
+          </div>
+
+          <div className="p-6">
+            <div className="mb-6 flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search collections..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </div>
 
-            <div className="p-6">
-              <div className="mb-6 flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Search collections..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-
-              <CollectionGroupsList
-                organizationId={currentOrganizationId}
-                search={search}
-              />
-            </div>
+            <CollectionGroupsList
+              organizationId={currentOrganizationId}
+              search={search}
+            />
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
