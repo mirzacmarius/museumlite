@@ -27,7 +27,7 @@ import {
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { useMutation, useQuery } from "convex/react";
-import { ExternalLink, Plus, Search, Trash2, X } from "lucide-react";
+import { ExternalLink, Plus, Search, Trash2, X, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -44,6 +44,7 @@ interface LoanItemsManagerProps {
   }>;
   organizationId: string;
   loanStatus: string;
+  loanType?: string;
 }
 
 export function LoanItemsManager({
@@ -51,8 +52,18 @@ export function LoanItemsManager({
   loanItems,
   organizationId,
   loanStatus,
+  loanType,
 }: LoanItemsManagerProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
+  const [selectedItemToReturn, setSelectedItemToReturn] = useState<{
+    id: string;
+    accessionNumber: string;
+    title: string;
+    collectionId: string;
+  } | null>(null);
+  const [conditionIn, setConditionIn] = useState("");
+  const [returnNotes, setReturnNotes] = useState("");
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>(
     [],
   );
@@ -74,6 +85,7 @@ export function LoanItemsManager({
 
   const addItems = useMutation(api.loans.addItems);
   const removeItems = useMutation(api.loans.removeItems);
+  const returnItem = useMutation(api.loans.returnItem);
 
   // Filter out collections that are already in this loan
   const availableCollections = useMemo(() => {
@@ -97,6 +109,7 @@ export function LoanItemsManager({
 
   const canAddItems = loanStatus === "pending" || loanStatus === "active";
   const canRemoveItems = loanStatus === "pending";
+  const canReturnItems = loanStatus === "active"; // Allow returning items one by one if loan is active
 
   const handleAddItems = async () => {
     if (selectedCollectionIds.length === 0) {
@@ -131,6 +144,38 @@ export function LoanItemsManager({
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to remove item from loan",
+      );
+    }
+  };
+
+  const handleReturnItemClick = (item: any) => {
+    setSelectedItemToReturn({
+      id: item._id,
+      accessionNumber: item.accessionNumber,
+      title: item.title,
+      collectionId: item.collectionId,
+    });
+    setConditionIn("");
+    setReturnNotes("");
+    setIsReturnDialogOpen(true);
+  };
+
+  const handleReturnItemConfirm = async () => {
+    if (!selectedItemToReturn) return;
+
+    setError(null);
+    try {
+      await returnItem({
+        loanId: loanId as Id<"loans">,
+        collectionId: selectedItemToReturn.collectionId as Id<"collections">,
+        conditionIn: conditionIn || undefined,
+        notes: returnNotes || undefined,
+      });
+      setIsReturnDialogOpen(false);
+      setSelectedItemToReturn(null);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to return item",
       );
     }
   };
@@ -335,6 +380,18 @@ export function LoanItemsManager({
                 {item.notes && <p className="mt-1 text-sm">{item.notes}</p>}
               </div>
               <div className="flex items-center gap-2">
+                {canReturnItems && !item.conditionIn && (
+                  <PermissionGate permission="loans.update">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleReturnItemClick(item)}
+                    >
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      Return
+                    </Button>
+                  </PermissionGate>
+                )}
                 <Button variant="ghost" size="sm" asChild>
                   <Link href={`/objects/${item.collectionId}`}>
                     <ExternalLink className="h-4 w-4" />
@@ -375,6 +432,59 @@ export function LoanItemsManager({
           ))}
         </div>
       )}
+
+      {/* Return Item Dialog */}
+      <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Return Loan Item</DialogTitle>
+            <DialogDescription>
+              {loanType === "incoming" 
+                ? "This will mark the item as returned and move it to deaccessions." 
+                : "This will mark the item as returned and set its status back to active."}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedItemToReturn && (
+            <div className="space-y-4 py-2">
+              <div className="rounded-md bg-muted p-3 text-sm">
+                <span className="font-medium">{selectedItemToReturn.accessionNumber}</span>
+                <span className="mx-2">•</span>
+                <span>{selectedItemToReturn.title}</span>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="conditionIn">Condition In (Optional)</Label>
+                <Input
+                  id="conditionIn"
+                  value={conditionIn}
+                  onChange={(e) => setConditionIn(e.target.value)}
+                  placeholder="Condition upon return"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="returnNotes">Notes (Optional)</Label>
+                <Input
+                  id="returnNotes"
+                  value={returnNotes}
+                  onChange={(e) => setReturnNotes(e.target.value)}
+                  placeholder="Any additional notes"
+                />
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsReturnDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleReturnItemConfirm}>
+              Confirm Return
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

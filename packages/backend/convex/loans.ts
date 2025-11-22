@@ -869,6 +869,97 @@ export const cancel = mutation({
 });
 
 /**
+ * Return single item from loan
+ */
+export const returnItem = mutation({
+  args: {
+    loanId: v.id("loans"),
+    collectionId: v.id("collections"),
+    conditionIn: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const loan = await ctx.db.get(args.loanId);
+    if (!loan) {
+      throw new Error("Loan not found");
+    }
+
+    if (loan.status !== "active") {
+      throw new Error("Loan is not active");
+    }
+
+    // Check permission
+    await requirePermission(ctx, loan.organizationId, "loans.update");
+
+    // Find loan item
+    const loanItem = await ctx.db
+      .query("loanItems")
+      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .filter((q) => q.eq(q.field("loanId"), args.loanId))
+      .first();
+
+    if (!loanItem) {
+      throw new Error("Item not found in this loan");
+    }
+
+    // Update loan item with return info
+    await ctx.db.patch(loanItem._id, {
+      conditionIn: args.conditionIn,
+      notes: args.notes ? (loanItem.notes ? `${loanItem.notes}\n${args.notes}` : args.notes) : loanItem.notes,
+    });
+
+    // If it's an INCOMING loan, returning it means we send it back to owner.
+    // The user requested: "objects shuld be removed from collection when return (moved it to Deaccessions)"
+    if (loan.type === "incoming") {
+      // Create deaccession record
+      const collection = await ctx.db.get(args.collectionId);
+      if (collection) {
+        // Check if already deaccessioned
+        if (collection.status !== "deaccessioned") {
+           // Create Deaccession record
+           await ctx.db.insert("deaccessions", {
+             organizationId: loan.organizationId,
+             collectionId: args.collectionId,
+             deaccessionNumber: `RET-${collection.accessionNumber}`, // Auto-generated suffix
+             dateDeaccessioned: Date.now(),
+             reason: "Returned to lender",
+             method: "transfer",
+             disposition: `Returned to ${loan.lenderBorrowerName}`,
+             status: "approved",
+             approvedBy: userId,
+             approvedAt: Date.now(),
+             workflowStep: 0,
+           });
+
+           // Update collection status
+           await ctx.db.patch(args.collectionId, {
+             status: "deaccessioned",
+             lastModifiedBy: userId,
+             lastModifiedAt: Date.now(),
+           });
+        }
+      }
+    } else {
+      // Outgoing loan being returned TO US.
+      // Status should go back to "active".
+      await ctx.db.patch(args.collectionId, {
+        status: "active",
+        lastModifiedBy: userId,
+        lastModifiedAt: Date.now(),
+      });
+    }
+    
+    return null;
+  },
+});
+
+/**
  * Create detailed condition report for loan item
  */
 export const createConditionReport = mutation({

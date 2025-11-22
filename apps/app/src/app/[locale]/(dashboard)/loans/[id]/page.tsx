@@ -234,6 +234,7 @@ export default function LoanDetailPage() {
                 loanItems={loan.items}
                 organizationId={loan.organizationId}
                 loanStatus={loan.status}
+                loanType={loan.type}
               />
             </div>
 
