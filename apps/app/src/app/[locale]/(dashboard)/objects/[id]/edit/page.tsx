@@ -1,5 +1,6 @@
 "use client";
 
+import { DeaccessionDialog } from "@/components/deaccession-dialog";
 import { ConditionCombobox } from "@/components/condition-combobox";
 import { LocationSelector } from "@/components/location-selector";
 import { MaterialsCombobox } from "@/components/materials-combobox";
@@ -23,7 +24,15 @@ import {
 import { Textarea } from "@v1/ui/textarea";
 import { useUploadFiles } from "@xixixao/uploadstuff/react";
 import { useMutation, useQuery } from "convex/react";
-import { ArrowLeft, Save, Star, Upload, X } from "lucide-react";
+import {
+  AlertOctagon,
+  Archive,
+  ArrowLeft,
+  Save,
+  Star,
+  Upload,
+  X,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -95,6 +104,7 @@ export default function CollectionEditPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deaccessionDialogOpen, setDeaccessionDialogOpen] = useState(false);
   const [formData, setFormData] = useState<CollectionFormData>({
     title: "",
     creator: "",
@@ -317,6 +327,14 @@ export default function CollectionEditPage() {
       });
     }
   }, [collection]);
+
+  // Query loans to check if item is on active loan
+  const loans = useQuery(
+    api.loans.getLoansForCollection,
+    collection ? { collectionId: collection._id } : "skip",
+  );
+  const hasActiveLoan =
+    loans?.some((loan) => loan.status === "active") ?? false;
 
   if (!currentOrganizationId) {
     return (
@@ -821,14 +839,37 @@ export default function CollectionEditPage() {
                 </div>
 
                 {/* Form Actions */}
-                <div className="flex justify-end gap-4">
-                  <Button type="button" variant="outline" asChild>
-                    <Link href={`/objects/${collectionId}`}>Cancel</Link>
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {isSubmitting ? "Updating..." : "Update Object"}
-                  </Button>
+                <div className="flex items-center justify-between gap-4">
+                  <PermissionGate permission="collections.approve_deaccession">
+                    {collection.status === "active" && !hasActiveLoan && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => setDeaccessionDialogOpen(true)}
+                      >
+                        <Archive className="mr-2 h-4 w-4" />
+                        Deaccession Object
+                      </Button>
+                    )}
+                    {collection.status === "active" && hasActiveLoan && (
+                      <div className="flex items-center text-xs text-muted-foreground" title="Cannot deaccession - item is on active loan">
+                        <AlertOctagon className="mr-2 h-4 w-4" />
+                        Cannot deaccession (On Loan)
+                      </div>
+                    )}
+                  </PermissionGate>
+
+                  <div className="flex gap-4 ml-auto">
+                    <Button type="button" variant="outline" asChild>
+                      <Link href={`/objects/${collectionId}`}>Cancel</Link>
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                      <Save className="mr-2 h-4 w-4" />
+                      {isSubmitting ? "Updating..." : "Update Object"}
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -997,6 +1038,13 @@ export default function CollectionEditPage() {
           </form>
         </div>
       </div>
+      <DeaccessionDialog
+        open={deaccessionDialogOpen}
+        onOpenChange={setDeaccessionDialogOpen}
+        collectionId={collectionId as Id<"collections">}
+        collectionTitle={collection.title}
+        organizationId={collection.organizationId}
+      />
     </div>
   );
 }

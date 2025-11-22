@@ -127,15 +127,6 @@ export default function CollectionDetailPage() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <PermissionGate permission="locations.update">
-                  <Button
-                    variant="outline"
-                    onClick={() => setMoveDialogOpen(true)}
-                  >
-                    <Move className="mr-2 h-4 w-4" />
-                    Move
-                  </Button>
-                </PermissionGate>
                 <PermissionGate permission="collections.update">
                   <Button variant="outline" asChild>
                     <Link href={`/objects/${collectionId}/edit`}>
@@ -143,27 +134,6 @@ export default function CollectionDetailPage() {
                       Edit
                     </Link>
                   </Button>
-                </PermissionGate>
-                <PermissionGate permission="collections.approve_deaccession">
-                  {collection.status === "active" && !hasActiveLoan && (
-                    <Button
-                      variant="destructive"
-                      onClick={() => setDeaccessionDialogOpen(true)}
-                    >
-                      <Archive className="mr-2 h-4 w-4" />
-                      Deaccession
-                    </Button>
-                  )}
-                  {collection.status === "active" && hasActiveLoan && (
-                    <Button
-                      variant="outline"
-                      disabled
-                      title="Cannot deaccession - item is on active loan"
-                    >
-                      <AlertOctagon className="mr-2 h-4 w-4" />
-                      On Loan
-                    </Button>
-                  )}
                 </PermissionGate>
               </div>
             </div>
@@ -298,6 +268,14 @@ function CollectionDetails({
 }: {
   collection: NonNullable<FunctionReturnType<typeof api.collections.get>>;
 }) {
+  // Query loans to check if item is on active loan
+  const loans = useQuery(
+    api.loans.getLoansForCollection,
+    collection ? { collectionId: collection._id } : "skip",
+  );
+  const hasActiveLoan =
+    loans?.some((loan) => loan.status === "active") ?? false;
+
   const locationPath = useQuery(
     api.locations.getLocationPath,
     collection.currentLocationId
@@ -334,6 +312,9 @@ function CollectionDetails({
   }, [media]);
 
   const getStatusIcon = (status: string) => {
+    if (hasActiveLoan) {
+      return <Archive className="h-4 w-4 text-blue-500" />;
+    }
     switch (status) {
       case "active":
         return <CheckCircle className="h-4 w-4 text-green-500" />;
@@ -347,6 +328,9 @@ function CollectionDetails({
   };
 
   const getStatusColor = (status: string) => {
+    if (hasActiveLoan) {
+      return "bg-blue-500/10 text-blue-600 dark:text-blue-400";
+    }
     switch (status) {
       case "active":
         return "bg-green-500/10 text-green-600 dark:text-green-400";
@@ -432,8 +416,10 @@ function CollectionDetails({
                     collection.status,
                   )}`}
                 >
-                  {collection.status.charAt(0).toUpperCase() +
-                    collection.status.slice(1)}
+                  {hasActiveLoan
+                    ? "On Loan"
+                    : collection.status.charAt(0).toUpperCase() +
+                      collection.status.slice(1)}
                 </span>
               </div>
             </div>
