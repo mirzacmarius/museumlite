@@ -1,25 +1,42 @@
-"use client"
+"use client";
 
-import * as React from "react"
 import {
   Activity,
   Archive,
+  BookOpen,
   Box,
+  Building2,
+  Check,
+  ChevronsUpDown,
+  CreditCard,
   FileCheck,
   FileX,
   Handshake,
-  MapPin,
-  Settings,
-  CreditCard,
-  BookOpen,
-  Plus,
-  ChevronsUpDown,
+  LayoutDashboard,
   LogOut,
-  Building2,
-  Check,
-  LayoutDashboard
-} from "lucide-react"
+  MapPin,
+  Plus,
+  Settings,
+} from "lucide-react";
+import * as React from "react";
 
+import { LanguageSwitcher } from "@/app/[locale]/(dashboard)/_components/language-switcher";
+import { ThemeSwitcher } from "@/app/[locale]/(dashboard)/_components/theme-switcher";
+import { useOrganization } from "@/components/organization-provider";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { CheckoutLink } from "@convex-dev/polar/react";
+import { api } from "@v1/backend/convex/_generated/api";
+import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
+import { Button } from "@v1/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@v1/ui/dropdown-menu";
+import { Logo } from "@v1/ui/logo";
 import {
   Sidebar,
   SidebarContent,
@@ -33,45 +50,25 @@ import {
   SidebarMenuItem,
   SidebarRail,
   useSidebar,
-} from "@v1/ui/sidebar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@v1/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar"
-import { useOrganization } from "@/components/organization-provider"
-import { usePathname, useRouter } from "next/navigation"
-import Link from "next/link"
-import { Logo } from "@v1/ui/logo"
-import { useAuthActions } from "@convex-dev/auth/react"
-import { Preloaded, usePreloadedQuery } from "convex/react"
-import { api } from "@v1/backend/convex/_generated/api"
-import { ThemeSwitcher } from "@/app/[locale]/(dashboard)/_components/theme-switcher"
-import { LanguageSwitcher } from "@/app/[locale]/(dashboard)/_components/language-switcher"
-import { CheckoutLink } from "@convex-dev/polar/react"
-import { Button } from "@v1/ui/button"
+} from "@v1/ui/sidebar";
+import { type Preloaded, usePreloadedQuery } from "convex/react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 
 export function AppSidebar({
   preloadedUser,
   preloadedProducts,
 }: {
-  preloadedUser: Preloaded<typeof api.users.getUser>
-  preloadedProducts: Preloaded<typeof api.subscriptions.listAllProducts>
+  preloadedUser: Preloaded<typeof api.users.getUser>;
+  preloadedProducts: Preloaded<typeof api.subscriptions.listAllProducts>;
 }) {
-  const {
-    organizations,
-    currentOrganizationId,
-    setCurrentOrganizationId,
-  } = useOrganization()
-  const user = usePreloadedQuery(preloadedUser)
-  const products = usePreloadedQuery(preloadedProducts)
-  const { signOut } = useAuthActions()
-  const pathname = usePathname()
-  const router = useRouter()
+  const { organizations, currentOrganizationId, setCurrentOrganizationId } =
+    useOrganization();
+  const user = usePreloadedQuery(preloadedUser);
+  const products = usePreloadedQuery(preloadedProducts);
+  const { signOut } = useAuthActions();
+  const pathname = usePathname();
+  const router = useRouter();
 
   const monthlyProProduct = products?.find(
     (product) => product.recurringInterval === "month",
@@ -80,7 +77,9 @@ export function AppSidebar({
     (product) => product.recurringInterval === "year",
   );
 
-  const currentOrg = organizations.find(org => org._id === currentOrganizationId)
+  const currentOrg = organizations.find(
+    (org) => org._id === currentOrganizationId,
+  );
 
   const navMain = [
     {
@@ -123,7 +122,7 @@ export function AppSidebar({
       url: "/activity",
       icon: Activity,
     },
-  ]
+  ];
 
   const navSecondary = [
     {
@@ -141,7 +140,7 @@ export function AppSidebar({
       url: "/settings/billing",
       icon: CreditCard,
     },
-  ]
+  ];
 
   return (
     <Sidebar collapsible="icon">
@@ -187,15 +186,22 @@ export function AppSidebar({
                       <Building2 className="size-4 shrink-0" />
                     </div>
                     {org.name}
-                    {currentOrganizationId === org._id && <Check className="ml-auto size-4" />}
+                    {currentOrganizationId === org._id && (
+                      <Check className="ml-auto size-4" />
+                    )}
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="gap-2 p-2" onClick={() => router.push("/organizations/new")}>
+                <DropdownMenuItem
+                  className="gap-2 p-2"
+                  onClick={() => router.push("/organizations/new")}
+                >
                   <div className="flex size-6 items-center justify-center rounded-md border bg-background">
                     <Plus className="size-4" />
                   </div>
-                  <div className="font-medium text-muted-foreground">Add organization</div>
+                  <div className="font-medium text-muted-foreground">
+                    Add organization
+                  </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -209,20 +215,25 @@ export function AppSidebar({
             <SidebarMenu>
               {navMain.map((item) => {
                 // Active state logic: Exact match for root, startsWith for others
-                const isActive = item.url === "/" 
-                  ? pathname === "/" 
-                  : pathname?.startsWith(item.url);
-                  
+                const isActive =
+                  item.url === "/"
+                    ? pathname === "/"
+                    : pathname?.startsWith(item.url);
+
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      tooltip={item.title}
+                    >
                       <Link href={item.url}>
                         <item.icon />
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                )
+                );
               })}
             </SidebarMenu>
           </SidebarGroupContent>
@@ -232,7 +243,12 @@ export function AppSidebar({
             <SidebarMenu>
               {navSecondary.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild size="sm" isActive={pathname?.startsWith(item.url)} tooltip={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    size="sm"
+                    isActive={pathname?.startsWith(item.url)}
+                    tooltip={item.title}
+                  >
                     <Link href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
@@ -254,12 +270,19 @@ export function AppSidebar({
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage src={user?.avatarUrl} alt={user?.name} />
+                    <AvatarImage
+                      src={user?.avatarUrl ?? undefined}
+                      alt={user?.name ?? undefined}
+                    />
                     <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{user?.name}</span>
-                    <span className="truncate text-xs">{user?.email}</span>
+                    <span className="truncate font-semibold">
+                      {user?.name ?? undefined}
+                    </span>
+                    <span className="truncate text-xs">
+                      {user?.email ?? undefined}
+                    </span>
                   </div>
                   <ChevronsUpDown className="ml-auto size-4" />
                 </SidebarMenuButton>
@@ -273,12 +296,19 @@ export function AppSidebar({
                 <DropdownMenuLabel className="p-0 font-normal">
                   <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                     <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarImage src={user?.avatarUrl} alt={user?.name} />
+                      <AvatarImage
+                        src={user?.avatarUrl ?? undefined}
+                        alt={user?.name ?? undefined}
+                      />
                       <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-semibold">{user?.name}</span>
-                      <span className="truncate text-xs">{user?.email}</span>
+                      <span className="truncate font-semibold">
+                        {user?.name ?? undefined}
+                      </span>
+                      <span className="truncate text-xs">
+                        {user?.email ?? undefined}
+                      </span>
                     </div>
                   </div>
                 </DropdownMenuLabel>
@@ -289,7 +319,10 @@ export function AppSidebar({
                       <Button size="sm" className="w-full" asChild>
                         <CheckoutLink
                           polarApi={api.subscriptions}
-                          productIds={[monthlyProProduct.id, yearlyProProduct.id]}
+                          productIds={[
+                            monthlyProProduct.id,
+                            yearlyProProduct.id,
+                          ]}
                         >
                           Upgrade to PRO
                         </CheckoutLink>
@@ -299,12 +332,12 @@ export function AppSidebar({
                   </>
                 )}
                 <DropdownMenuItem className="flex justify-between">
-                   <span>Theme</span>
-                   <ThemeSwitcher />
+                  <span>Theme</span>
+                  <ThemeSwitcher />
                 </DropdownMenuItem>
                 <DropdownMenuItem className="flex justify-between">
-                   <span>Language</span>
-                   <LanguageSwitcher />
+                  <span>Language</span>
+                  <LanguageSwitcher />
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut()}>
@@ -318,5 +351,5 @@ export function AppSidebar({
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

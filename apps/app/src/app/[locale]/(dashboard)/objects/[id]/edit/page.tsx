@@ -4,10 +4,10 @@ import { Header } from "@/app/[locale]/(dashboard)/_components/header";
 import { ConditionCombobox } from "@/components/condition-combobox";
 import { LocationSelector } from "@/components/location-selector";
 import { MaterialsCombobox } from "@/components/materials-combobox";
-import { TypeCombobox } from "@/components/type-combobox";
-import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { RepeatableTextField } from "@/components/repeatable-text-field";
+import { TypeCombobox } from "@/components/type-combobox";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -77,11 +77,18 @@ export default function CollectionEditPage() {
   // Separate images and documents
   // Only show actual images (fileType === "image") in the image gallery
   // Documents should only appear in the documents list
-  const images = media?.filter((m) => {
-    const category = (m as { mediaCategory?: "image" | "document" }).mediaCategory;
-    return (category === "image" || !category) && m.fileType === "image";
-  }) || [];
-  const documents = media?.filter((m) => (m as { mediaCategory?: "image" | "document" }).mediaCategory === "document") || [];
+  const images =
+    media?.filter((m) => {
+      const category = (m as { mediaCategory?: "image" | "document" })
+        .mediaCategory;
+      return (category === "image" || !category) && m.fileType === "image";
+    }) || [];
+  const documents =
+    media?.filter(
+      (m) =>
+        (m as { mediaCategory?: "image" | "document" }).mediaCategory ===
+        "document",
+    ) || [];
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
@@ -306,7 +313,7 @@ export default function CollectionEditPage() {
         donated_date: collection.donated_date || "",
         donation_info: collection.donation_info || "",
         previous_owners: collection.previous_owners || [],
-        currentLocationId: collection.currentLocationId as string || "",
+        currentLocationId: (collection.currentLocationId as string) || "",
         alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
       });
     }
@@ -363,7 +370,9 @@ export default function CollectionEditPage() {
     }
   };
 
-  const handleDocumentSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDocumentSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setError(null);
     try {
       const filesList = event.target?.files;
@@ -384,7 +393,9 @@ export default function CollectionEditPage() {
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to process document selection",
+        err instanceof Error
+          ? err.message
+          : "Failed to process document selection",
       );
     }
   };
@@ -766,9 +777,15 @@ export default function CollectionEditPage() {
                         <div>
                           <Label htmlFor="donated_date">Donated Date</Label>
                           <DatePicker
-                            date={formData.donated_date ? new Date(formData.donated_date) : undefined}
+                            date={
+                              formData.donated_date
+                                ? new Date(formData.donated_date)
+                                : undefined
+                            }
                             onSelect={(date) => {
-                              const dateString: string = date ? (date.toISOString().split('T')[0] ?? "") : "";
+                              const dateString: string = date
+                                ? date.toISOString().split("T")[0] ?? ""
+                                : "";
                               updateField("donated_date", dateString);
                             }}
                             placeholder="Select donation date"

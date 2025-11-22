@@ -10,18 +10,18 @@ import { Textarea } from "@v1/ui/textarea";
 import { ConditionCombobox } from "@/components/condition-combobox";
 import { LocationSelector } from "@/components/location-selector";
 import { MaterialsCombobox } from "@/components/materials-combobox";
-import { TypeCombobox } from "@/components/type-combobox";
-import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { useOrganization } from "@/components/organization-provider";
-import { DatePicker } from "@v1/ui/date-picker";
+import { RepeatableTextField } from "@/components/repeatable-text-field";
+import { TypeCombobox } from "@/components/type-combobox";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { DatePicker } from "@v1/ui/date-picker";
 import { useMutation } from "convex/react";
 import { ArrowLeft, Save, Star, Upload, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type React from "react";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface CollectionFormData {
   accessionNumber?: string;
@@ -129,7 +129,9 @@ export default function CollectionFormPage() {
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to process document selection",
+        err instanceof Error
+          ? err.message
+          : "Failed to process document selection",
       );
     }
   };
@@ -387,10 +389,7 @@ export default function CollectionFormPage() {
 
   return (
     <>
-      <Header
-        title="New Object"
-        description="Create a new object"
-      >
+      <Header title="New Object" description="Create a new object">
         <div className="w-64">
           <Label htmlFor="accessionNumber" className="text-sm">
             Accession Number
@@ -398,9 +397,7 @@ export default function CollectionFormPage() {
           <Input
             id="accessionNumber"
             value={formData.accessionNumber || ""}
-            onChange={(e) =>
-              updateField("accessionNumber", e.target.value)
-            }
+            onChange={(e) => updateField("accessionNumber", e.target.value)}
             placeholder="Auto-generated if empty"
             className="mt-1"
           />
@@ -417,9 +414,7 @@ export default function CollectionFormPage() {
                     Back
                   </Link>
                 </Button>
-                <h2 className="text-xl font-medium text-primary">
-                  New Object
-                </h2>
+                <h2 className="text-xl font-medium text-primary">New Object</h2>
               </div>
             </div>
 
@@ -461,7 +456,9 @@ export default function CollectionFormPage() {
                         <Input
                           id="creator"
                           value={formData.creator || ""}
-                          onChange={(e) => updateField("creator", e.target.value)}
+                          onChange={(e) =>
+                            updateField("creator", e.target.value)
+                          }
                           placeholder="e.g., Vincent van Gogh"
                         />
                       </div>
@@ -657,7 +654,9 @@ export default function CollectionFormPage() {
                         <RepeatableTextField
                           label="Previous Owner(s)"
                           value={formData.previous_owners || []}
-                          onChange={(value) => updateField("previous_owners", value)}
+                          onChange={(value) =>
+                            updateField("previous_owners", value)
+                          }
                           placeholder="Enter previous owner name"
                           id="previous_owners"
                         />
@@ -667,9 +666,15 @@ export default function CollectionFormPage() {
                         <div>
                           <Label htmlFor="donated_date">Donated Date</Label>
                           <DatePicker
-                            date={formData.donated_date ? new Date(formData.donated_date) : undefined}
+                            date={
+                              formData.donated_date
+                                ? new Date(formData.donated_date)
+                                : undefined
+                            }
                             onSelect={(date) => {
-                              const dateString: string = date ? (date.toISOString().split('T')[0] ?? "") : "";
+                              const dateString: string = date
+                                ? date.toISOString().split("T")[0] ?? ""
+                                : "";
                               updateField("donated_date", dateString);
                             }}
                             placeholder="Select donation date"
@@ -852,7 +857,9 @@ export default function CollectionFormPage() {
                           ))}
                           <p className="mt-2 text-center text-xs text-muted-foreground">
                             {selectedDocuments.length}{" "}
-                            {selectedDocuments.length === 1 ? "document" : "documents"}
+                            {selectedDocuments.length === 1
+                              ? "document"
+                              : "documents"}
                           </p>
                         </div>
                       ) : (

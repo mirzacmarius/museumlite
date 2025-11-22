@@ -9,11 +9,11 @@ import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
+import { format } from "date-fns";
 import { ArrowLeft, CheckCircle, Clock, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { format } from "date-fns";
 
 export default function DeaccessionDetailPage() {
   const params = useParams();
@@ -199,7 +199,9 @@ export default function DeaccessionDetailPage() {
             {/* Collection Info Card */}
             {collection && (
               <div className="rounded-lg border border-border bg-card p-6">
-                <h3 className="text-lg font-semibold mb-4">Collection Object</h3>
+                <h3 className="text-lg font-semibold mb-4">
+                  Collection Object
+                </h3>
                 <Link
                   href={`/collections/${collection._id}`}
                   className="flex items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-accent"
@@ -224,7 +226,10 @@ export default function DeaccessionDetailPage() {
                 <h3 className="text-lg font-semibold mb-4">Workflow History</h3>
                 <div className="space-y-4">
                   {workflowHistory.map((entry, index) => (
-                    <div key={`${entry.step}-${entry.approvedAt}`} className="flex gap-4">
+                    <div
+                      key={`${entry.step}-${entry.approvedAt}`}
+                      className="flex gap-4"
+                    >
                       <div className="flex flex-col items-center">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-medium flex-shrink-0">
                           {entry.step}

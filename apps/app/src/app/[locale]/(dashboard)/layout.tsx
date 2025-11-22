@@ -32,7 +32,10 @@ export default async function Layout({
   return (
     <OrganizationProvider>
       <SidebarProvider>
-        <AppSidebar preloadedUser={preloadedUser} preloadedProducts={preloadedProducts} />
+        <AppSidebar
+          preloadedUser={preloadedUser}
+          preloadedProducts={preloadedProducts}
+        />
         <main className="min-h-[100vh] w-full bg-secondary dark:bg-black">
           <div className="flex items-center p-4">
             <SidebarTrigger />

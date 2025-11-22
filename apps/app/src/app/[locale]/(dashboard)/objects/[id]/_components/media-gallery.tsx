@@ -46,7 +46,10 @@ interface MediaGalleryProps {
   mediaType?: "images" | "documents";
 }
 
-export function MediaGallery({ collectionId, mediaType = "images" }: MediaGalleryProps) {
+export function MediaGallery({
+  collectionId,
+  mediaType = "images",
+}: MediaGalleryProps) {
   const { currentOrganizationId } = useOrganization();
   const media = useQuery(
     api.media.list,
@@ -142,7 +145,8 @@ export function MediaGallery({ collectionId, mediaType = "images" }: MediaGaller
                 fileName: file.name || "unknown",
                 fileSize: file.size || 0,
                 mimeType: file.type || "application/octet-stream",
-                isPrimary: isFirstMedia && index === 0 && mediaType === "images", // Only set primary for images
+                isPrimary:
+                  isFirstMedia && index === 0 && mediaType === "images", // Only set primary for images
                 mediaCategory: mediaType === "documents" ? "document" : "image",
               });
             }),
@@ -229,12 +233,17 @@ export function MediaGallery({ collectionId, mediaType = "images" }: MediaGaller
 
   // Separate images/videos from documents
   const images = mediaArray.filter((m) => {
-    const category = (m as { mediaCategory?: "image" | "document" }).mediaCategory;
+    const category = (m as { mediaCategory?: "image" | "document" })
+      .mediaCategory;
     // Images: explicitly marked as "image" OR (no category AND fileType is image/video)
-    return (category === "image" || (!category && (m.fileType === "image" || m.fileType === "video")));
+    return (
+      category === "image" ||
+      (!category && (m.fileType === "image" || m.fileType === "video"))
+    );
   });
   const documents = mediaArray.filter((m) => {
-    const category = (m as { mediaCategory?: "image" | "document" }).mediaCategory;
+    const category = (m as { mediaCategory?: "image" | "document" })
+      .mediaCategory;
     // Documents: explicitly marked as "document" OR (no category AND fileType is document/pdf)
     return category === "document" || (!category && m.fileType === "document");
   });
@@ -260,7 +269,11 @@ export function MediaGallery({ collectionId, mediaType = "images" }: MediaGaller
             <input
               ref={fileInputRef}
               type="file"
-              accept={showImages ? "image/*,video/*" : ".pdf,image/jpeg,image/jpg,image/png,image/tiff"}
+              accept={
+                showImages
+                  ? "image/*,video/*"
+                  : ".pdf,image/jpeg,image/jpg,image/png,image/tiff"
+              }
               onChange={handleFileSelect}
               className="hidden"
               multiple
@@ -279,65 +292,192 @@ export function MediaGallery({ collectionId, mediaType = "images" }: MediaGaller
 
       {/* Images & Videos Section */}
       {showImages && (
-      <div className="space-y-3">
-        {images.length === 0 ? (
-          <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed">
-            <ImageIcon className="mb-2 h-8 w-8 text-muted-foreground" />
-            <p className="text-xs text-muted-foreground">
-              No images or videos uploaded
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {images.map((file) => (
-            <div
-              key={file._id}
-              className="group relative aspect-square overflow-hidden rounded-lg border"
-            >
-              {file.url && (
-                <>
-                  {file.fileType === "image" ? (
-                    <img
-                      src={file.thumbnailUrl || file.url}
-                      alt={file.caption || file.fileName}
-                      className="h-full w-full object-cover transition-opacity group-hover:opacity-90"
-                    />
-                  ) : file.fileType === "video" ? (
-                    <video
-                      src={file.url}
-                      className="h-full w-full object-cover"
-                      controls={false}
-                      aria-label={file.caption || file.fileName}
-                    >
-                      <track kind="captions" />
-                    </video>
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-muted">
-                      <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                    </div>
-                  )}
-
-                  {/* Overlay with actions */}
-                  <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
-                    <PermissionGate permission="media.upload">
-                      {!file.isPrimary && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleSetPrimary(file._id)}
-                          title="Set as primary"
+        <div className="space-y-3">
+          {images.length === 0 ? (
+            <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed">
+              <ImageIcon className="mb-2 h-8 w-8 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">
+                No images or videos uploaded
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              {images.map((file) => (
+                <div
+                  key={file._id}
+                  className="group relative aspect-square overflow-hidden rounded-lg border"
+                >
+                  {file.url && (
+                    <>
+                      {file.fileType === "image" ? (
+                        <img
+                          src={file.thumbnailUrl || file.url}
+                          alt={file.caption || file.fileName}
+                          className="h-full w-full object-cover transition-opacity group-hover:opacity-90"
+                        />
+                      ) : file.fileType === "video" ? (
+                        <video
+                          src={file.url}
+                          className="h-full w-full object-cover"
+                          controls={false}
+                          aria-label={file.caption || file.fileName}
                         >
-                          <Star className="h-4 w-4" />
-                        </Button>
+                          <track kind="captions" />
+                        </video>
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-muted">
+                          <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                        </div>
                       )}
+
+                      {/* Overlay with actions */}
+                      <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
+                        <PermissionGate permission="media.upload">
+                          {!file.isPrimary && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleSetPrimary(file._id)}
+                              title="Set as primary"
+                            >
+                              <Star className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <MediaEditDialog
+                            media={file}
+                            onUpdate={async (updates) => {
+                              setError(null);
+                              try {
+                                await updateMedia({
+                                  mediaId: file._id as Id<"mediaFiles">,
+                                  ...updates,
+                                });
+                                setEditingMedia(null);
+                              } catch (err) {
+                                setError(
+                                  err instanceof Error
+                                    ? err.message
+                                    : "Failed to update media",
+                                );
+                              }
+                            }}
+                            open={editingMedia === file._id}
+                            onOpenChange={(open) =>
+                              setEditingMedia(open ? file._id : null)
+                            }
+                          />
+                          <AlertDialog
+                            open={deleteConfirmOpen === file._id}
+                            onOpenChange={(open) =>
+                              setDeleteConfirmOpen(open ? file._id : null)
+                            }
+                          >
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="destructive"
+                                title="Delete"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Delete Media
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete this media
+                                  file? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(file._id)}
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </PermissionGate>
+                      </div>
+
+                      {/* Primary badge */}
+                      {file.isPrimary && (
+                        <div className="absolute top-2 right-2 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">
+                          Primary
+                        </div>
+                      )}
+
+                      {/* File name overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2 text-xs text-white">
+                        <p className="truncate">{file.fileName}</p>
+                        {file.caption && (
+                          <p className="truncate text-muted-foreground">
+                            {file.caption}
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Documents Section */}
+      {showDocuments && (
+        <div className="space-y-3">
+          {documents.length === 0 ? (
+            <div className="flex h-20 flex-col items-center justify-center rounded-lg border border-dashed">
+              <p className="text-xs text-muted-foreground">
+                No documents uploaded
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {documents.map((doc) => (
+                <div
+                  key={doc._id}
+                  className="group flex items-center justify-between rounded-md border bg-card p-3 transition-colors hover:bg-muted"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate font-medium text-sm">
+                      {doc.fileName}
+                    </p>
+                    {doc.caption && (
+                      <p className="truncate text-xs text-muted-foreground">
+                        {doc.caption}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 ml-4">
+                    {doc.url && (
+                      <Button type="button" size="sm" variant="ghost" asChild>
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs"
+                        >
+                          View
+                        </a>
+                      </Button>
+                    )}
+                    <PermissionGate permission="media.upload">
                       <MediaEditDialog
-                        media={file}
+                        media={doc}
                         onUpdate={async (updates) => {
                           setError(null);
                           try {
                             await updateMedia({
-                              mediaId: file._id as Id<"mediaFiles">,
+                              mediaId: doc._id as Id<"mediaFiles">,
                               ...updates,
                             });
                             setEditingMedia(null);
@@ -349,22 +489,22 @@ export function MediaGallery({ collectionId, mediaType = "images" }: MediaGaller
                             );
                           }
                         }}
-                        open={editingMedia === file._id}
+                        open={editingMedia === doc._id}
                         onOpenChange={(open) =>
-                          setEditingMedia(open ? file._id : null)
+                          setEditingMedia(open ? doc._id : null)
                         }
                       />
                       <AlertDialog
-                        open={deleteConfirmOpen === file._id}
+                        open={deleteConfirmOpen === doc._id}
                         onOpenChange={(open) =>
-                          setDeleteConfirmOpen(open ? file._id : null)
+                          setDeleteConfirmOpen(open ? doc._id : null)
                         }
                       >
                         <AlertDialogTrigger asChild>
                           <Button
                             type="button"
                             size="sm"
-                            variant="destructive"
+                            variant="ghost"
                             title="Delete"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -372,16 +512,16 @@ export function MediaGallery({ collectionId, mediaType = "images" }: MediaGaller
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Media</AlertDialogTitle>
+                            <AlertDialogTitle>Delete Document</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete this media file?
+                              Are you sure you want to delete this document?
                               This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => handleDelete(file._id)}
+                              onClick={() => handleDelete(doc._id)}
                             >
                               Delete
                             </AlertDialogAction>
@@ -390,139 +530,11 @@ export function MediaGallery({ collectionId, mediaType = "images" }: MediaGaller
                       </AlertDialog>
                     </PermissionGate>
                   </div>
-
-                  {/* Primary badge */}
-                  {file.isPrimary && (
-                    <div className="absolute top-2 right-2 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">
-                      Primary
-                    </div>
-                  )}
-
-                  {/* File name overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2 text-xs text-white">
-                    <p className="truncate">{file.fileName}</p>
-                    {file.caption && (
-                      <p className="truncate text-muted-foreground">
-                        {file.caption}
-                      </p>
-                    )}
-                  </div>
-                </>
-              )}
+                </div>
+              ))}
             </div>
-          ))}
-          </div>
-        )}
-      </div>
-      )}
-
-      {/* Documents Section */}
-      {showDocuments && (
-      <div className="space-y-3">
-        {documents.length === 0 ? (
-          <div className="flex h-20 flex-col items-center justify-center rounded-lg border border-dashed">
-            <p className="text-xs text-muted-foreground">
-              No documents uploaded
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {documents.map((doc) => (
-              <div
-                key={doc._id}
-                className="group flex items-center justify-between rounded-md border bg-card p-3 transition-colors hover:bg-muted"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="truncate font-medium text-sm">{doc.fileName}</p>
-                  {doc.caption && (
-                    <p className="truncate text-xs text-muted-foreground">
-                      {doc.caption}
-                    </p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 ml-4">
-                  {doc.url && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      asChild
-                    >
-                      <a
-                        href={doc.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs"
-                      >
-                        View
-                      </a>
-                    </Button>
-                  )}
-                  <PermissionGate permission="media.upload">
-                    <MediaEditDialog
-                      media={doc}
-                      onUpdate={async (updates) => {
-                        setError(null);
-                        try {
-                          await updateMedia({
-                            mediaId: doc._id as Id<"mediaFiles">,
-                            ...updates,
-                          });
-                          setEditingMedia(null);
-                        } catch (err) {
-                          setError(
-                            err instanceof Error
-                              ? err.message
-                              : "Failed to update media",
-                          );
-                        }
-                      }}
-                      open={editingMedia === doc._id}
-                      onOpenChange={(open) =>
-                        setEditingMedia(open ? doc._id : null)
-                      }
-                    />
-                    <AlertDialog
-                      open={deleteConfirmOpen === doc._id}
-                      onOpenChange={(open) =>
-                        setDeleteConfirmOpen(open ? doc._id : null)
-                      }
-                    >
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Document</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this document?
-                            This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDelete(doc._id)}
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </PermissionGate>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+          )}
+        </div>
       )}
     </div>
   );

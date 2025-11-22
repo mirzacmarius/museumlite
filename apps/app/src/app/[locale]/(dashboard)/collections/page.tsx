@@ -92,7 +92,7 @@ export default function CollectionsPage() {
             <div className="flex w-full px-6">
               <div className="w-full border-b border-border" />
             </div>
-            
+
             <div className="p-6">
               <div className="mb-6 flex items-center gap-2">
                 <div className="relative flex-1">
@@ -106,7 +106,10 @@ export default function CollectionsPage() {
                 </div>
               </div>
 
-              <CollectionGroupsList organizationId={currentOrganizationId} search={search} />
+              <CollectionGroupsList
+                organizationId={currentOrganizationId}
+                search={search}
+              />
             </div>
           </div>
         </div>

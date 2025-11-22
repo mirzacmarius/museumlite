@@ -17,7 +17,15 @@ import {
 } from "@v1/ui/select";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { Archive, Building2, Filter, MapPin, Plus, Search, X } from "lucide-react";
+import {
+  Archive,
+  Building2,
+  Filter,
+  MapPin,
+  Plus,
+  Search,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -64,10 +72,7 @@ export default function CollectionsPage() {
   if (!currentOrganizationId) {
     return (
       <>
-        <Header
-          title="Objects"
-          description="Manage your collection objects"
-        />
+        <Header title="Objects" description="Manage your collection objects" />
         <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
           <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8 dark:bg-black">
             <Building2 className="h-12 w-12 text-muted-foreground" />
@@ -86,10 +91,7 @@ export default function CollectionsPage() {
 
   return (
     <>
-      <Header
-        title="Objects"
-        description="Manage your collection objects"
-      />
+      <Header title="Objects" description="Manage your collection objects" />
       <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
         <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
           <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
@@ -479,19 +481,25 @@ function CollectionListItem({
             <div className="flex flex-wrap justify-end gap-1 mb-1">
               {(() => {
                 try {
-                  const types = item.objectType ? JSON.parse(item.objectType) : [];
-                  return Array.isArray(types) && types.length > 0
-                    ? types.map((type: string) => (
-                        <span
-                          key={type}
-                          className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-medium"
-                        >
-                          {type}
-                        </span>
-                      ))
-                    : <span className="text-sm text-muted-foreground">—</span>;
+                  const types = item.objectType
+                    ? JSON.parse(item.objectType)
+                    : [];
+                  return Array.isArray(types) && types.length > 0 ? (
+                    types.map((type: string) => (
+                      <span
+                        key={type}
+                        className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-medium"
+                      >
+                        {type}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  );
                 } catch {
-                  return <span className="text-sm text-muted-foreground">—</span>;
+                  return (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  );
                 }
               })()}
             </div>

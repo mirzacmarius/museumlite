@@ -7,10 +7,10 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { useQuery } from "convex/react";
+import { format } from "date-fns";
 import { Archive, CheckCircle, Clock, Search, XCircle } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
-import { format } from "date-fns";
+import { useEffect, useRef, useState } from "react";
 
 export default function DeaccessionsPage() {
   const { currentOrganizationId } = useOrganization();
@@ -18,7 +18,10 @@ export default function DeaccessionsPage() {
   if (!currentOrganizationId) {
     return (
       <>
-        <Header title="Deaccessions" description="Manage deaccessioned objects" />
+        <Header
+          title="Deaccessions"
+          description="Manage deaccessioned objects"
+        />
         <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
           <div className="flex flex-col items-center gap-4">
             <Archive className="h-12 w-12 text-muted-foreground" />

@@ -8,7 +8,14 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { Archive, ArrowLeft, Building2, MapPin, Plus, Settings } from "lucide-react";
+import {
+  Archive,
+  ArrowLeft,
+  Building2,
+  MapPin,
+  Plus,
+  Settings,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -19,7 +26,7 @@ export default function CollectionGroupDetailPage() {
   const { currentOrganizationId } = useOrganization();
 
   const group = useQuery(api.collectionGroups.get, { groupId });
-  
+
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
@@ -92,10 +99,10 @@ export default function CollectionGroupDetailPage() {
             <div className="flex w-full px-6">
               <div className="w-full border-b border-border" />
             </div>
-            
-            <CollectionObjectsList 
-              organizationId={currentOrganizationId} 
-              groupId={group._id} 
+
+            <CollectionObjectsList
+              organizationId={currentOrganizationId}
+              groupId={group._id}
             />
           </div>
         </div>
@@ -156,8 +163,8 @@ function CollectionObjectsList({
       </div>
       {!collections.isDone && (
         <div className="mt-6 flex justify-center">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => setCursor(collections.continueCursor)}
           >
             Load More
@@ -230,19 +237,25 @@ function CollectionListItem({
             <div className="flex flex-wrap justify-end gap-1 mb-1">
               {(() => {
                 try {
-                  const types = item.objectType ? JSON.parse(item.objectType) : [];
-                  return Array.isArray(types) && types.length > 0
-                    ? types.map((type: string) => (
-                        <span
-                          key={type}
-                          className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-medium"
-                        >
-                          {type}
-                        </span>
-                      ))
-                    : <span className="text-sm text-muted-foreground">—</span>;
+                  const types = item.objectType
+                    ? JSON.parse(item.objectType)
+                    : [];
+                  return Array.isArray(types) && types.length > 0 ? (
+                    types.map((type: string) => (
+                      <span
+                        key={type}
+                        className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-medium"
+                      >
+                        {type}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  );
                 } catch {
-                  return <span className="text-sm text-muted-foreground">—</span>;
+                  return (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  );
                 }
               })()}
             </div>

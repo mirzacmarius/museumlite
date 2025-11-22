@@ -38,9 +38,7 @@ export default function LocationsPage() {
               </p>
             </div>
             <Link href="/organizations/new">
-              <Button>
-                Create Organization
-              </Button>
+              <Button>Create Organization</Button>
             </Link>
           </div>
         </div>
@@ -83,7 +81,8 @@ export default function LocationsPage() {
                   Location Hierarchy
                 </h2>
                 <p className="text-sm font-normal text-primary/60">
-                  View and manage your organizational locations. Use the dropdown menu on each location to add, edit, move, or delete.
+                  View and manage your organizational locations. Use the
+                  dropdown menu on each location to add, edit, move, or delete.
                 </p>
               </div>
             </div>

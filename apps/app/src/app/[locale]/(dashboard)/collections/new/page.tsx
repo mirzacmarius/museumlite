@@ -1,12 +1,12 @@
 "use client";
 
 import { Header } from "@/app/[locale]/(dashboard)/_components/header";
+import { useOrganization } from "@/components/organization-provider";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
-import { useOrganization } from "@/components/organization-provider";
 import { useMutation } from "convex/react";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
@@ -103,7 +103,9 @@ export default function NewCollectionPage() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder="e.g., Ancient Egyptian Artifacts"
                   required
                 />
@@ -114,7 +116,9 @@ export default function NewCollectionPage() {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   placeholder="Describe this collection..."
                   rows={4}
                 />

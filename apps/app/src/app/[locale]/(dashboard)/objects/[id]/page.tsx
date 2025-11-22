@@ -54,7 +54,8 @@ export default function CollectionDetailPage() {
     api.loans.getLoansForCollection,
     collection ? { collectionId: collection._id } : "skip",
   );
-  const hasActiveLoan = loans?.some((loan) => loan.status === "active") ?? false;
+  const hasActiveLoan =
+    loans?.some((loan) => loan.status === "active") ?? false;
 
   if (!currentOrganizationId) {
     return (
@@ -381,18 +382,22 @@ function CollectionDetails({
                     const types = collection.objectType
                       ? JSON.parse(collection.objectType)
                       : [];
-                    return Array.isArray(types) && types.length > 0
-                      ? types.map((type: string) => (
-                          <span
-                            key={type}
-                            className="inline-flex items-center rounded-md border bg-secondary px-2 py-0.5 text-xs font-medium"
-                          >
-                            {type}
-                          </span>
-                        ))
-                      : <span className="text-sm text-muted-foreground">—</span>;
+                    return Array.isArray(types) && types.length > 0 ? (
+                      types.map((type: string) => (
+                        <span
+                          key={type}
+                          className="inline-flex items-center rounded-md border bg-secondary px-2 py-0.5 text-xs font-medium"
+                        >
+                          {type}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    );
                   } catch {
-                    return <span className="text-sm text-muted-foreground">—</span>;
+                    return (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    );
                   }
                 })()}
               </div>
@@ -466,16 +471,14 @@ function CollectionDetails({
                     ) {
                       return (
                         <div className="flex flex-wrap gap-1.5">
-                          {materialsArray.map(
-                            (material: string) => (
-                              <span
-                                key={material}
-                                className="inline-flex items-center rounded-md border border-border bg-secondary px-2 py-0.5 text-xs font-medium"
-                              >
-                                {material}
-                              </span>
-                            ),
-                          )}
+                          {materialsArray.map((material: string) => (
+                            <span
+                              key={material}
+                              className="inline-flex items-center rounded-md border border-border bg-secondary px-2 py-0.5 text-xs font-medium"
+                            >
+                              {material}
+                            </span>
+                          ))}
                         </div>
                       );
                     }
