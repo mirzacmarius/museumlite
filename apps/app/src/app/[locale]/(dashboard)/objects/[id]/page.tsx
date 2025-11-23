@@ -520,13 +520,13 @@ function CollectionDetails({
           </div>
         </div>
 
-        {/* Historical Information Section */}
+        {/* Object Information Section */}
         {(collection.description ||
           collection.provenance ||
           collection.exhibitionHistory) && (
           <div className="rounded-lg border border-border bg-card p-4">
             <h3 className="mb-3 text-base font-semibold">
-              Historical Information
+              Object Information
             </h3>
             <div className="space-y-4">
               {collection.description && (
