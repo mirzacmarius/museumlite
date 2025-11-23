@@ -25,6 +25,7 @@ import {
   Search,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -435,13 +436,14 @@ function CollectionListItem({
     >
       <div className="flex items-center gap-4">
         {/* Primary Image Thumbnail */}
-        <div className="flex h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+        <div className="relative flex h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
           {primaryImageUrl ? (
-            <img
+            <Image
               src={primaryImageUrl}
               alt={item.title}
-              className="h-full w-full object-cover"
-              loading="lazy"
+              fill
+              sizes="64px"
+              className="object-cover"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
