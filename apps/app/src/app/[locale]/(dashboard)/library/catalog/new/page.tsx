@@ -1,0 +1,795 @@
+"use client";
+
+import {
+  IsbnLookup,
+  type IsbnLookupData,
+} from "@/components/library/isbn-lookup";
+import { useOrganization } from "@/components/organization-provider";
+import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Button } from "@v1/ui/button";
+import { Input } from "@v1/ui/input";
+import { Label } from "@v1/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
+import { Textarea } from "@v1/ui/textarea";
+import { useMutation, useQuery } from "convex/react";
+import { ArrowLeft, Loader2, Plus, Save, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+const ITEM_TYPES = [
+  { value: "book", label: "Book" },
+  { value: "ebook", label: "E-Book" },
+  { value: "audiobook", label: "Audiobook" },
+  { value: "periodical", label: "Periodical" },
+  { value: "newspaper", label: "Newspaper" },
+  { value: "dvd", label: "DVD" },
+  { value: "cd", label: "CD" },
+  { value: "map", label: "Map" },
+  { value: "manuscript", label: "Manuscript" },
+  { value: "thesis", label: "Thesis" },
+  { value: "other", label: "Other" },
+] as const;
+
+const TARGET_AUDIENCES = [
+  { value: "children", label: "Children" },
+  { value: "young_adult", label: "Young Adult" },
+  { value: "adult", label: "Adult" },
+  { value: "all_ages", label: "All Ages" },
+] as const;
+
+type ItemType = (typeof ITEM_TYPES)[number]["value"];
+type TargetAudience = (typeof TARGET_AUDIENCES)[number]["value"];
+
+export default function NewCatalogItemPage() {
+  const router = useRouter();
+  const { currentOrganizationId } = useOrganization();
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const isLibraryEnabled = useQuery(
+    api.integrations.isEnabled,
+    currentOrganizationId
+      ? {
+          organizationId: currentOrganizationId as Id<"organizations">,
+          integrationId: "library",
+        }
+      : "skip",
+  );
+
+  const createItem = useMutation(api.library.items.create);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    itemType: "book" as ItemType,
+    title: "",
+    subtitle: "",
+    authors: [""],
+    isbn: "",
+    isbn13: "",
+    issn: "",
+    barcode: "",
+    callNumber: "",
+    accessionNumber: "",
+    publisher: "",
+    publicationYear: "",
+    publicationPlace: "",
+    edition: "",
+    language: "English",
+    originalLanguage: "",
+    originalTitle: "",
+    pages: "",
+    duration: "",
+    format: "",
+    dimensions: "",
+    deweyDecimal: "",
+    lcClassification: "",
+    categories: "",
+    genres: "",
+    subjects: "",
+    keywords: "",
+    targetAudience: "" as TargetAudience | "",
+    series: "",
+    seriesNumber: "",
+    description: "",
+    tableOfContents: "",
+    summary: "",
+    coverImageUrl: "",
+    isCirculating: true,
+    loanPeriodDays: "",
+    maxRenewals: "",
+    notes: "",
+    internalNotes: "",
+  });
+
+  const handleIsbnData = (data: IsbnLookupData) => {
+    setFormData((prev) => ({
+      ...prev,
+      title: data.title || prev.title,
+      subtitle: data.subtitle || prev.subtitle,
+      authors: data.authors?.length ? data.authors : prev.authors,
+      isbn: data.isbn10 || prev.isbn,
+      isbn13: data.isbn13 || prev.isbn13,
+      publisher: data.publisher || prev.publisher,
+      publicationYear: data.publicationYear?.toString() || prev.publicationYear,
+      publicationPlace: data.publicationPlace || prev.publicationPlace,
+      edition: data.edition || prev.edition,
+      language: data.language || prev.language,
+      pages: data.pages?.toString() || prev.pages,
+      deweyDecimal: data.deweyDecimal || prev.deweyDecimal,
+      lcClassification: data.lcClassification || prev.lcClassification,
+      subjects: data.subjects?.join(", ") || prev.subjects,
+      series: data.series || prev.series,
+      description: data.description || prev.description,
+      coverImageUrl: data.coverImageUrl || prev.coverImageUrl,
+    }));
+  };
+
+  const addAuthor = () => {
+    setFormData((prev) => ({
+      ...prev,
+      authors: [...prev.authors, ""],
+    }));
+  };
+
+  const removeAuthor = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      authors: prev.authors.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateAuthor = (index: number, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      authors: prev.authors.map((a, i) => (i === index ? value : a)),
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentOrganizationId) return;
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const itemId = await createItem({
+        organizationId: currentOrganizationId as Id<"organizations">,
+        itemType: formData.itemType,
+        title: formData.title,
+        subtitle: formData.subtitle || undefined,
+        authors: formData.authors.filter((a) => a.trim()),
+        isbn: formData.isbn || undefined,
+        isbn13: formData.isbn13 || undefined,
+        issn: formData.issn || undefined,
+        barcode: formData.barcode || undefined,
+        callNumber: formData.callNumber || undefined,
+        accessionNumber: formData.accessionNumber || undefined,
+        publisher: formData.publisher || undefined,
+        publicationYear: formData.publicationYear
+          ? Number.parseInt(formData.publicationYear, 10)
+          : undefined,
+        publicationPlace: formData.publicationPlace || undefined,
+        edition: formData.edition || undefined,
+        language: formData.language,
+        originalLanguage: formData.originalLanguage || undefined,
+        originalTitle: formData.originalTitle || undefined,
+        pages: formData.pages ? Number.parseInt(formData.pages, 10) : undefined,
+        duration: formData.duration
+          ? Number.parseInt(formData.duration, 10)
+          : undefined,
+        format: formData.format || undefined,
+        dimensions: formData.dimensions || undefined,
+        deweyDecimal: formData.deweyDecimal || undefined,
+        lcClassification: formData.lcClassification || undefined,
+        categories: formData.categories
+          ? formData.categories.split(",").map((c) => c.trim())
+          : undefined,
+        genres: formData.genres
+          ? formData.genres.split(",").map((g) => g.trim())
+          : undefined,
+        subjects: formData.subjects
+          ? formData.subjects.split(",").map((s) => s.trim())
+          : undefined,
+        keywords: formData.keywords
+          ? formData.keywords.split(",").map((k) => k.trim())
+          : undefined,
+        targetAudience: formData.targetAudience || undefined,
+        series: formData.series || undefined,
+        seriesNumber: formData.seriesNumber
+          ? Number.parseInt(formData.seriesNumber, 10)
+          : undefined,
+        description: formData.description || undefined,
+        tableOfContents: formData.tableOfContents || undefined,
+        summary: formData.summary || undefined,
+        coverImageUrl: formData.coverImageUrl || undefined,
+        isCirculating: formData.isCirculating,
+        loanPeriodDays: formData.loanPeriodDays
+          ? Number.parseInt(formData.loanPeriodDays, 10)
+          : undefined,
+        maxRenewals: formData.maxRenewals
+          ? Number.parseInt(formData.maxRenewals, 10)
+          : undefined,
+        notes: formData.notes || undefined,
+        internalNotes: formData.internalNotes || undefined,
+      });
+
+      router.push(`/library/catalog/${itemId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create item");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!currentOrganizationId) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <p className="text-muted-foreground">Please select an organization.</p>
+      </div>
+    );
+  }
+
+  if (isLibraryEnabled === false) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">
+            Library integration is not enabled.
+          </p>
+          <Button asChild className="mt-4">
+            <Link href="/settings/integrations">Enable Integration</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLibraryEnabled === undefined) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
+      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 py-6">
+        {/* Header */}
+        <div className="flex items-center justify-between rounded-lg border border-border bg-card p-6 dark:bg-black">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/library/catalog">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Link>
+            </Button>
+            <div>
+              <h1 className="text-xl font-medium">Add Catalog Item</h1>
+              <p className="text-sm text-muted-foreground">
+                Add a new book, periodical, or media item to the catalog
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
+            <p className="text-sm text-destructive">{error}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* ISBN Lookup */}
+          <IsbnLookup
+            onDataFound={handleIsbnData}
+            onIsbnChange={(isbn) => {
+              const cleanIsbn = isbn.replace(/[-\s]/g, "");
+              if (cleanIsbn.length === 10) {
+                setFormData((prev) => ({ ...prev, isbn: cleanIsbn }));
+              } else if (cleanIsbn.length === 13) {
+                setFormData((prev) => ({ ...prev, isbn13: cleanIsbn }));
+              }
+            }}
+          />
+
+          {/* Basic Information */}
+          <div className="rounded-lg border border-border bg-card dark:bg-black">
+            <div className="border-b border-border p-6">
+              <h2 className="text-lg font-medium">Basic Information</h2>
+            </div>
+            <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="itemType">Item Type *</Label>
+                <Select
+                  value={formData.itemType}
+                  onValueChange={(value: ItemType) =>
+                    setFormData((prev) => ({ ...prev, itemType: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ITEM_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="language">Language *</Label>
+                <Input
+                  id="language"
+                  value={formData.language}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      language: e.target.value,
+                    }))
+                  }
+                  placeholder="English"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="title">Title *</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, title: e.target.value }))
+                  }
+                  placeholder="Enter the title"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="subtitle">Subtitle</Label>
+                <Input
+                  id="subtitle"
+                  value={formData.subtitle}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      subtitle: e.target.value,
+                    }))
+                  }
+                  placeholder="Enter subtitle (optional)"
+                />
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Authors</Label>
+                {formData.authors.map((author, index) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: Index needed for editable form array
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      value={author}
+                      onChange={(e) => updateAuthor(index, e.target.value)}
+                      placeholder={`Author ${index + 1}`}
+                    />
+                    {formData.authors.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => removeAuthor(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addAuthor}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Author
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Identifiers */}
+          <div className="rounded-lg border border-border bg-card dark:bg-black">
+            <div className="border-b border-border p-6">
+              <h2 className="text-lg font-medium">Identifiers</h2>
+            </div>
+            <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="isbn">ISBN-10</Label>
+                <Input
+                  id="isbn"
+                  value={formData.isbn}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, isbn: e.target.value }))
+                  }
+                  placeholder="0-123456-78-9"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="isbn13">ISBN-13</Label>
+                <Input
+                  id="isbn13"
+                  value={formData.isbn13}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, isbn13: e.target.value }))
+                  }
+                  placeholder="978-0-123456-78-9"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="issn">ISSN</Label>
+                <Input
+                  id="issn"
+                  value={formData.issn}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, issn: e.target.value }))
+                  }
+                  placeholder="For periodicals"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="barcode">Barcode</Label>
+                <Input
+                  id="barcode"
+                  value={formData.barcode}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      barcode: e.target.value,
+                    }))
+                  }
+                  placeholder="Item barcode"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="callNumber">Call Number</Label>
+                <Input
+                  id="callNumber"
+                  value={formData.callNumber}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      callNumber: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g., 823.912"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="accessionNumber">Accession Number</Label>
+                <Input
+                  id="accessionNumber"
+                  value={formData.accessionNumber}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      accessionNumber: e.target.value,
+                    }))
+                  }
+                  placeholder="Library accession number"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Publication Details */}
+          <div className="rounded-lg border border-border bg-card dark:bg-black">
+            <div className="border-b border-border p-6">
+              <h2 className="text-lg font-medium">Publication Details</h2>
+            </div>
+            <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="publisher">Publisher</Label>
+                <Input
+                  id="publisher"
+                  value={formData.publisher}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      publisher: e.target.value,
+                    }))
+                  }
+                  placeholder="Publisher name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="publicationYear">Publication Year</Label>
+                <Input
+                  id="publicationYear"
+                  type="number"
+                  value={formData.publicationYear}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      publicationYear: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g., 2024"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="publicationPlace">Publication Place</Label>
+                <Input
+                  id="publicationPlace"
+                  value={formData.publicationPlace}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      publicationPlace: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g., New York"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edition">Edition</Label>
+                <Input
+                  id="edition"
+                  value={formData.edition}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      edition: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g., 2nd Edition"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pages">Pages</Label>
+                <Input
+                  id="pages"
+                  type="number"
+                  value={formData.pages}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, pages: e.target.value }))
+                  }
+                  placeholder="Number of pages"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="format">Format</Label>
+                <Input
+                  id="format"
+                  value={formData.format}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, format: e.target.value }))
+                  }
+                  placeholder="e.g., Hardcover, Paperback"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Classification */}
+          <div className="rounded-lg border border-border bg-card dark:bg-black">
+            <div className="border-b border-border p-6">
+              <h2 className="text-lg font-medium">Classification</h2>
+            </div>
+            <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="deweyDecimal">Dewey Decimal</Label>
+                <Input
+                  id="deweyDecimal"
+                  value={formData.deweyDecimal}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      deweyDecimal: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g., 823.912"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lcClassification">Library of Congress</Label>
+                <Input
+                  id="lcClassification"
+                  value={formData.lcClassification}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      lcClassification: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g., PR6019.O9"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="categories">Categories</Label>
+                <Input
+                  id="categories"
+                  value={formData.categories}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      categories: e.target.value,
+                    }))
+                  }
+                  placeholder="Comma-separated categories"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="genres">Genres</Label>
+                <Input
+                  id="genres"
+                  value={formData.genres}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, genres: e.target.value }))
+                  }
+                  placeholder="Comma-separated genres"
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="subjects">Subjects</Label>
+                <Input
+                  id="subjects"
+                  value={formData.subjects}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      subjects: e.target.value,
+                    }))
+                  }
+                  placeholder="Comma-separated subjects"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="targetAudience">Target Audience</Label>
+                <Select
+                  value={formData.targetAudience}
+                  onValueChange={(value: TargetAudience) =>
+                    setFormData((prev) => ({ ...prev, targetAudience: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select audience" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TARGET_AUDIENCES.map((audience) => (
+                      <SelectItem key={audience.value} value={audience.value}>
+                        {audience.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="series">Series</Label>
+                <Input
+                  id="series"
+                  value={formData.series}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, series: e.target.value }))
+                  }
+                  placeholder="Series name"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="rounded-lg border border-border bg-card dark:bg-black">
+            <div className="border-b border-border p-6">
+              <h2 className="text-lg font-medium">Description</h2>
+            </div>
+            <div className="space-y-6 p-6">
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                  placeholder="Book description or summary"
+                  rows={4}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="coverImageUrl">Cover Image URL</Label>
+                <Input
+                  id="coverImageUrl"
+                  value={formData.coverImageUrl}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      coverImageUrl: e.target.value,
+                    }))
+                  }
+                  placeholder="https://..."
+                />
+                {formData.coverImageUrl && (
+                  <div className="mt-2">
+                    <img
+                      src={formData.coverImageUrl}
+                      alt="Cover preview"
+                      className="h-40 w-auto rounded border object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div className="rounded-lg border border-border bg-card dark:bg-black">
+            <div className="border-b border-border p-6">
+              <h2 className="text-lg font-medium">Notes</h2>
+            </div>
+            <div className="space-y-6 p-6">
+              <div className="space-y-2">
+                <Label htmlFor="notes">Public Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, notes: e.target.value }))
+                  }
+                  placeholder="Notes visible to patrons"
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="internalNotes">Internal Notes</Label>
+                <Textarea
+                  id="internalNotes"
+                  value={formData.internalNotes}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      internalNotes: e.target.value,
+                    }))
+                  }
+                  placeholder="Staff-only notes"
+                  rows={2}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Submit */}
+          <div className="flex justify-end gap-4">
+            <Button type="button" variant="outline" asChild>
+              <Link href="/library/catalog">Cancel</Link>
+            </Button>
+            <Button type="submit" disabled={isSaving || !formData.title.trim()}>
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Save as Draft
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

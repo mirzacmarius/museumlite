@@ -43,6 +43,8 @@ export default defineSchema({
         autoGenerateAccessionNumbers: v.optional(v.boolean()),
         locationTypes: v.optional(v.array(v.string())),
         enableDetailedConditionReports: v.optional(v.boolean()),
+        // Integrations
+        enabledIntegrations: v.optional(v.array(v.string())), // ["library", etc.]
       }),
     ),
     subscriptionTier: v.optional(
@@ -574,4 +576,644 @@ export default defineSchema({
   })
     .index("by_organization", ["organizationId"])
     .index("by_status", ["status"]),
+
+  // ============================================
+  // LIBRARY INTEGRATION TABLES
+  // ============================================
+
+  // Library Items - Universal catalog (books, periodicals, media)
+  libraryItems: defineTable({
+    organizationId: v.id("organizations"),
+    collectionId: v.optional(v.id("collections")), // Link to rare/archival items
+
+    // Item type
+    itemType: v.union(
+      v.literal("book"),
+      v.literal("ebook"),
+      v.literal("audiobook"),
+      v.literal("periodical"),
+      v.literal("newspaper"),
+      v.literal("dvd"),
+      v.literal("cd"),
+      v.literal("map"),
+      v.literal("manuscript"),
+      v.literal("thesis"),
+      v.literal("other"),
+    ),
+
+    // Identifiers
+    isbn: v.optional(v.string()),
+    isbn13: v.optional(v.string()),
+    issn: v.optional(v.string()),
+    barcode: v.optional(v.string()),
+    callNumber: v.optional(v.string()),
+    accessionNumber: v.optional(v.string()),
+
+    // Bibliographic data
+    title: v.string(),
+    subtitle: v.optional(v.string()),
+    authors: v.array(v.string()),
+    contributors: v.optional(
+      v.array(
+        v.object({
+          name: v.string(),
+          role: v.string(),
+        }),
+      ),
+    ),
+
+    // Publication
+    publisher: v.optional(v.string()),
+    publicationYear: v.optional(v.number()),
+    publicationPlace: v.optional(v.string()),
+    edition: v.optional(v.string()),
+    volume: v.optional(v.string()),
+    issue: v.optional(v.string()),
+
+    // Language
+    language: v.string(),
+    originalLanguage: v.optional(v.string()),
+    originalTitle: v.optional(v.string()),
+
+    // Physical description
+    pages: v.optional(v.number()),
+    duration: v.optional(v.number()),
+    format: v.optional(v.string()),
+    dimensions: v.optional(v.string()),
+
+    // Classification & subjects
+    deweyDecimal: v.optional(v.string()),
+    lcClassification: v.optional(v.string()),
+    categories: v.optional(v.array(v.string())),
+    genres: v.optional(v.array(v.string())),
+    subjects: v.optional(v.array(v.string())),
+    keywords: v.optional(v.array(v.string())),
+    targetAudience: v.optional(
+      v.union(
+        v.literal("children"),
+        v.literal("young_adult"),
+        v.literal("adult"),
+        v.literal("all_ages"),
+      ),
+    ),
+
+    // Series
+    series: v.optional(v.string()),
+    seriesNumber: v.optional(v.number()),
+
+    // Content
+    description: v.optional(v.string()),
+    tableOfContents: v.optional(v.string()),
+    summary: v.optional(v.string()),
+
+    // Media
+    coverImageId: v.optional(v.id("_storage")),
+    coverImageUrl: v.optional(v.string()),
+
+    // Inventory summary
+    totalCopies: v.number(),
+    availableCopies: v.number(),
+
+    // Status
+    catalogStatus: v.union(
+      v.literal("draft"),
+      v.literal("published"),
+      v.literal("archived"),
+    ),
+
+    // Circulation rules
+    isCirculating: v.boolean(),
+    loanPeriodDays: v.optional(v.number()),
+    maxRenewals: v.optional(v.number()),
+
+    // Metadata
+    notes: v.optional(v.string()),
+    internalNotes: v.optional(v.string()),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    lastModifiedBy: v.optional(v.id("users")),
+    lastModifiedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_type", ["organizationId", "itemType"])
+    .index("by_organization_and_status", ["organizationId", "catalogStatus"])
+    .index("by_isbn", ["isbn"])
+    .index("by_isbn13", ["isbn13"])
+    .index("by_barcode", ["barcode"])
+    .index("by_callNumber", ["callNumber"])
+    .index("by_collection", ["collectionId"])
+    .searchIndex("search_library_items", {
+      searchField: "title",
+      filterFields: ["organizationId", "itemType", "catalogStatus"],
+    }),
+
+  // Item Copies - Individual physical copies
+  itemCopies: defineTable({
+    organizationId: v.id("organizations"),
+    itemId: v.id("libraryItems"),
+
+    copyNumber: v.number(),
+    barcode: v.string(),
+
+    // Location
+    locationId: v.optional(v.id("locations")),
+    shelfLocation: v.optional(v.string()),
+
+    // Status
+    status: v.union(
+      v.literal("available"),
+      v.literal("checked_out"),
+      v.literal("on_hold"),
+      v.literal("in_transit"),
+      v.literal("processing"),
+      v.literal("repair"),
+      v.literal("lost"),
+      v.literal("missing"),
+      v.literal("damaged"),
+      v.literal("withdrawn"),
+    ),
+
+    // Condition
+    condition: v.union(
+      v.literal("new"),
+      v.literal("excellent"),
+      v.literal("good"),
+      v.literal("fair"),
+      v.literal("poor"),
+    ),
+    conditionNotes: v.optional(v.string()),
+
+    // Acquisition
+    acquisitionDate: v.optional(v.number()),
+    acquisitionMethod: v.optional(v.string()),
+    acquisitionPrice: v.optional(v.number()),
+    vendor: v.optional(v.string()),
+
+    // Value
+    replacementCost: v.optional(v.number()),
+
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_item", ["itemId"])
+    .index("by_barcode", ["barcode"])
+    .index("by_organization_and_barcode", ["organizationId", "barcode"])
+    .index("by_status", ["status"])
+    .index("by_location", ["locationId"]),
+
+  // Patrons - Library members
+  patrons: defineTable({
+    organizationId: v.id("organizations"),
+    userId: v.optional(v.id("users")),
+
+    // Library card
+    cardNumber: v.string(),
+    pin: v.optional(v.string()),
+
+    // Personal info
+    firstName: v.string(),
+    lastName: v.string(),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    dateOfBirth: v.optional(v.number()),
+
+    // Address
+    address: v.optional(
+      v.object({
+        street: v.string(),
+        city: v.string(),
+        state: v.optional(v.string()),
+        postalCode: v.string(),
+        country: v.optional(v.string()),
+      }),
+    ),
+
+    // Membership
+    membershipTypeId: v.optional(v.id("membershipTypes")),
+    membershipType: v.string(),
+    registrationDate: v.number(),
+    expirationDate: v.optional(v.number()),
+
+    // Status
+    status: v.union(
+      v.literal("active"),
+      v.literal("expired"),
+      v.literal("suspended"),
+      v.literal("blocked"),
+      v.literal("inactive"),
+    ),
+    blockReason: v.optional(v.string()),
+
+    // Limits & privileges
+    borrowingLimit: v.number(),
+    holdLimit: v.number(),
+
+    // Balances
+    fineBalance: v.number(),
+
+    // Preferences
+    preferredBranch: v.optional(v.id("locations")),
+    notificationPreferences: v.optional(
+      v.object({
+        email: v.boolean(),
+        sms: v.boolean(),
+        dueDateReminder: v.boolean(),
+        holdReady: v.boolean(),
+      }),
+    ),
+
+    // Statistics
+    totalCheckouts: v.optional(v.number()),
+
+    notes: v.optional(v.string()),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_cardNumber", ["cardNumber"])
+    .index("by_organization_and_cardNumber", ["organizationId", "cardNumber"])
+    .index("by_email", ["email"])
+    .index("by_status", ["status"])
+    .index("by_user", ["userId"])
+    .searchIndex("search_patrons", {
+      searchField: "lastName",
+      filterFields: ["organizationId", "status"],
+    }),
+
+  // Membership Types - Configurable membership tiers
+  membershipTypes: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    borrowingLimit: v.number(),
+    holdLimit: v.number(),
+    loanPeriodDays: v.number(),
+    renewalLimit: v.number(),
+    finePerDay: v.number(),
+    gracePeriodDays: v.number(),
+    fee: v.optional(v.number()),
+    isDefault: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_default", ["organizationId", "isDefault"]),
+
+  // Circulations - Checkout/checkin transactions
+  circulations: defineTable({
+    organizationId: v.id("organizations"),
+    patronId: v.id("patrons"),
+    copyId: v.id("itemCopies"),
+    itemId: v.id("libraryItems"),
+
+    // Dates
+    checkoutDate: v.number(),
+    dueDate: v.number(),
+    returnDate: v.optional(v.number()),
+
+    // Renewals
+    renewalCount: v.number(),
+    lastRenewalDate: v.optional(v.number()),
+
+    // Status
+    status: v.union(
+      v.literal("active"),
+      v.literal("returned"),
+      v.literal("overdue"),
+      v.literal("lost"),
+      v.literal("claimed_returned"),
+    ),
+
+    // Fines
+    fineAmount: v.optional(v.number()),
+    fineStatus: v.optional(
+      v.union(
+        v.literal("none"),
+        v.literal("accruing"),
+        v.literal("billed"),
+        v.literal("paid"),
+        v.literal("waived"),
+      ),
+    ),
+
+    // Staff
+    checkedOutBy: v.id("users"),
+    checkedInBy: v.optional(v.id("users")),
+
+    notes: v.optional(v.string()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_patron", ["patronId"])
+    .index("by_copy", ["copyId"])
+    .index("by_item", ["itemId"])
+    .index("by_status", ["status"])
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_dueDate", ["dueDate"])
+    .index("by_patron_and_status", ["patronId", "status"]),
+
+  // Holds - Reservations queue
+  libraryHolds: defineTable({
+    organizationId: v.id("organizations"),
+    patronId: v.id("patrons"),
+    itemId: v.id("libraryItems"),
+    copyId: v.optional(v.id("itemCopies")),
+
+    // Queue
+    holdDate: v.number(),
+    queuePosition: v.number(),
+
+    // Pickup
+    pickupLocationId: v.optional(v.id("locations")),
+    availableDate: v.optional(v.number()),
+    expirationDate: v.optional(v.number()),
+
+    // Status
+    status: v.union(
+      v.literal("pending"),
+      v.literal("available"),
+      v.literal("fulfilled"),
+      v.literal("cancelled"),
+      v.literal("expired"),
+    ),
+
+    // Notifications
+    notificationSent: v.optional(v.boolean()),
+    notificationDate: v.optional(v.number()),
+
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_patron", ["patronId"])
+    .index("by_item", ["itemId"])
+    .index("by_status", ["status"])
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_item_and_status", ["itemId", "status"]),
+
+  // Fines - Fee tracking
+  libraryFines: defineTable({
+    organizationId: v.id("organizations"),
+    patronId: v.id("patrons"),
+    circulationId: v.optional(v.id("circulations")),
+    copyId: v.optional(v.id("itemCopies")),
+
+    fineType: v.union(
+      v.literal("overdue"),
+      v.literal("lost_item"),
+      v.literal("damaged_item"),
+      v.literal("processing_fee"),
+      v.literal("replacement_cost"),
+      v.literal("membership_fee"),
+      v.literal("other"),
+    ),
+
+    description: v.string(),
+    amount: v.number(),
+    amountPaid: v.number(),
+    balance: v.number(),
+
+    status: v.union(
+      v.literal("outstanding"),
+      v.literal("paid"),
+      v.literal("waived"),
+      v.literal("forgiven"),
+      v.literal("refunded"),
+    ),
+
+    createdAt: v.number(),
+    dueDate: v.optional(v.number()),
+    paidAt: v.optional(v.number()),
+    waivedBy: v.optional(v.id("users")),
+    waivedReason: v.optional(v.string()),
+
+    notes: v.optional(v.string()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_patron", ["patronId"])
+    .index("by_circulation", ["circulationId"])
+    .index("by_status", ["status"])
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_patron_and_status", ["patronId", "status"]),
+
+  // Payments - Payment transactions
+  libraryPayments: defineTable({
+    organizationId: v.id("organizations"),
+    patronId: v.id("patrons"),
+
+    amount: v.number(),
+    paymentMethod: v.union(
+      v.literal("cash"),
+      v.literal("card"),
+      v.literal("check"),
+      v.literal("online"),
+      v.literal("other"),
+    ),
+
+    // Applied to fines
+    fineIds: v.array(v.id("libraryFines")),
+
+    receiptNumber: v.optional(v.string()),
+    receivedBy: v.id("users"),
+    receivedAt: v.number(),
+
+    notes: v.optional(v.string()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_patron", ["patronId"])
+    .index("by_receivedAt", ["receivedAt"]),
+
+  // Acquisition Requests - Purchase requests
+  libraryAcquisitionRequests: defineTable({
+    organizationId: v.id("organizations"),
+
+    // Item info
+    title: v.string(),
+    authors: v.optional(v.array(v.string())),
+    isbn: v.optional(v.string()),
+    publisher: v.optional(v.string()),
+    itemType: v.optional(v.string()),
+
+    // Request
+    requestedBy: v.id("users"),
+    requestedAt: v.number(),
+    reason: v.optional(v.string()),
+    priority: v.union(
+      v.literal("low"),
+      v.literal("normal"),
+      v.literal("high"),
+      v.literal("urgent"),
+    ),
+    quantity: v.number(),
+
+    // Pricing
+    estimatedPrice: v.optional(v.number()),
+    vendorId: v.optional(v.id("libraryVendors")),
+    fundSource: v.optional(v.string()),
+
+    // Workflow
+    status: v.union(
+      v.literal("submitted"),
+      v.literal("under_review"),
+      v.literal("approved"),
+      v.literal("ordered"),
+      v.literal("received"),
+      v.literal("cataloged"),
+      v.literal("rejected"),
+      v.literal("cancelled"),
+    ),
+
+    // Approval
+    reviewedBy: v.optional(v.id("users")),
+    reviewedAt: v.optional(v.number()),
+    reviewNotes: v.optional(v.string()),
+
+    // Order tracking
+    orderNumber: v.optional(v.string()),
+    orderDate: v.optional(v.number()),
+    expectedDelivery: v.optional(v.number()),
+    receivedDate: v.optional(v.number()),
+    actualPrice: v.optional(v.number()),
+
+    // Link to created item
+    libraryItemId: v.optional(v.id("libraryItems")),
+
+    notes: v.optional(v.string()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_status", ["status"])
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_requestedBy", ["requestedBy"]),
+
+  // Vendors - Supplier management
+  libraryVendors: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    contactName: v.optional(v.string()),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    website: v.optional(v.string()),
+    address: v.optional(v.string()),
+    accountNumber: v.optional(v.string()),
+    paymentTerms: v.optional(v.string()),
+    discountPercent: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_active", ["organizationId", "isActive"]),
+
+  // Serial Subscriptions - Magazine/journal subscriptions
+  serialSubscriptions: defineTable({
+    organizationId: v.id("organizations"),
+    itemId: v.id("libraryItems"),
+
+    vendorId: v.optional(v.id("libraryVendors")),
+    subscriptionNumber: v.optional(v.string()),
+
+    startDate: v.number(),
+    endDate: v.optional(v.number()),
+    frequency: v.union(
+      v.literal("daily"),
+      v.literal("weekly"),
+      v.literal("biweekly"),
+      v.literal("monthly"),
+      v.literal("bimonthly"),
+      v.literal("quarterly"),
+      v.literal("annually"),
+      v.literal("irregular"),
+    ),
+
+    expectedIssues: v.optional(v.number()),
+    cost: v.optional(v.number()),
+
+    status: v.union(
+      v.literal("active"),
+      v.literal("cancelled"),
+      v.literal("expired"),
+      v.literal("pending_renewal"),
+    ),
+
+    autoRenew: v.boolean(),
+    renewalReminderDays: v.optional(v.number()),
+
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_item", ["itemId"])
+    .index("by_status", ["status"])
+    .index("by_organization_and_status", ["organizationId", "status"]),
+
+  // Serial Issues - Individual issues received
+  serialIssues: defineTable({
+    organizationId: v.id("organizations"),
+    subscriptionId: v.id("serialSubscriptions"),
+    itemId: v.id("libraryItems"),
+
+    issueNumber: v.optional(v.string()),
+    volume: v.optional(v.string()),
+    issueDate: v.optional(v.number()),
+
+    receivedDate: v.optional(v.number()),
+    status: v.union(
+      v.literal("expected"),
+      v.literal("received"),
+      v.literal("claimed"),
+      v.literal("missing"),
+    ),
+
+    copyId: v.optional(v.id("itemCopies")),
+
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_subscription", ["subscriptionId"])
+    .index("by_item", ["itemId"])
+    .index("by_status", ["status"]),
+
+  // Library Settings - Organization-level configuration
+  librarySettings: defineTable({
+    organizationId: v.id("organizations"),
+
+    // Circulation policies
+    defaultLoanPeriodDays: v.number(),
+    defaultRenewalLimit: v.number(),
+    renewalPeriodDays: v.number(),
+    maxRenewalsAllowed: v.number(),
+
+    // Fines
+    finePerDayDefault: v.number(),
+    maxFinePerItem: v.optional(v.number()),
+    gracePeriodDays: v.number(),
+    fineThresholdForBlock: v.optional(v.number()),
+
+    // Holds
+    holdExpirationDays: v.number(),
+    maxHoldsPerPatron: v.number(),
+
+    // Card numbers
+    cardNumberPrefix: v.optional(v.string()),
+    cardNumberLength: v.optional(v.number()),
+    autoGenerateCardNumbers: v.boolean(),
+
+    // Classification
+    classificationSystem: v.union(
+      v.literal("dewey"),
+      v.literal("lc"),
+      v.literal("custom"),
+    ),
+
+    // Notifications
+    dueDateReminderDays: v.optional(v.number()),
+    overdueNoticeDays: v.optional(v.array(v.number())),
+
+    // Receipts
+    receiptHeader: v.optional(v.string()),
+    receiptFooter: v.optional(v.string()),
+
+    createdAt: v.number(),
+    lastModifiedAt: v.optional(v.number()),
+  }).index("by_organization", ["organizationId"]),
 });

@@ -3,20 +3,26 @@
 import {
   Activity,
   Archive,
+  BookCopy,
   BookOpen,
+  BookUser,
   Box,
   Building2,
   Check,
   ChevronsUpDown,
   CreditCard,
+  DollarSign,
   FileCheck,
   FileX,
   Handshake,
   LayoutDashboard,
+  Library,
   LogOut,
   MapPin,
   Plus,
+  RefreshCw,
   Settings,
+  ShoppingCart,
 } from "lucide-react";
 import * as React from "react";
 
@@ -51,7 +57,8 @@ import {
   SidebarRail,
   useSidebar,
 } from "@v1/ui/sidebar";
-import { type Preloaded, usePreloadedQuery } from "convex/react";
+import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -79,6 +86,17 @@ export function AppSidebar({
 
   const currentOrg = organizations.find(
     (org) => org._id === currentOrganizationId,
+  );
+
+  // Check if library integration is enabled
+  const isLibraryEnabled = useQuery(
+    api.integrations.isEnabled,
+    currentOrganizationId
+      ? {
+          organizationId: currentOrganizationId as Id<"organizations">,
+          integrationId: "library",
+        }
+      : "skip",
   );
 
   const navMain = [
@@ -134,6 +152,39 @@ export function AppSidebar({
       title: "Settings",
       url: "/settings",
       icon: Settings,
+    },
+  ];
+
+  const navLibrary = [
+    {
+      title: "Library",
+      url: "/library",
+      icon: Library,
+    },
+    {
+      title: "Catalog",
+      url: "/library/catalog",
+      icon: BookCopy,
+    },
+    {
+      title: "Patrons",
+      url: "/library/patrons",
+      icon: BookUser,
+    },
+    {
+      title: "Circulation",
+      url: "/library/circulation",
+      icon: RefreshCw,
+    },
+    {
+      title: "Fines",
+      url: "/library/fines",
+      icon: DollarSign,
+    },
+    {
+      title: "Acquisitions",
+      url: "/library/acquisitions",
+      icon: ShoppingCart,
     },
   ];
 
@@ -233,6 +284,35 @@ export function AppSidebar({
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Library Navigation - Only shown when library integration is enabled */}
+        {isLibraryEnabled && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Library</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navLibrary.map((item) => {
+                  const isActive = pathname?.startsWith(item.url);
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={item.title}
+                      >
+                        <Link href={item.url}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu>

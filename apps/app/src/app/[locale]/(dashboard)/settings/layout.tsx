@@ -14,6 +14,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const isUsersPath = pathname === "/settings/users";
   const isRolesPath = pathname === "/settings/roles";
   const isOrganizationPath = pathname === "/settings/organization";
+  const isIntegrationsPath = pathname?.startsWith("/settings/integrations");
   return (
     <div className="flex h-full w-full px-6 py-8">
       <div className="mx-auto flex h-full w-full max-w-screen-xl gap-12">
@@ -73,6 +74,20 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
               )}
             >
               Roles
+            </span>
+          </Link>
+          <Link
+            href="/settings/integrations"
+            className={cn(
+              `${buttonVariants({ variant: "ghost" })} ${isIntegrationsPath && "bg-primary/5"} justify-start rounded-md`,
+            )}
+          >
+            <span
+              className={cn(
+                `text-sm text-primary/80 ${isIntegrationsPath && "font-medium text-primary"}`,
+              )}
+            >
+              Integrations
             </span>
           </Link>
           <Link
