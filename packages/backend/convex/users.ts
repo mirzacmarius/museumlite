@@ -21,7 +21,7 @@ export const getUser = query({
     });
     return {
       ...user,
-      name: user.username || user.name,
+      name: user.name || user.username,
       subscription,
       avatarUrl: user.imageId
         ? await ctx.storage.getUrl(user.imageId)
@@ -45,6 +45,23 @@ export const updateUsername = mutation({
       throw new Error(validatedUsername.error.message);
     }
     await ctx.db.patch(userId, { username: validatedUsername.data });
+  },
+});
+
+export const updateName = mutation({
+  args: {
+    name: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return;
+    }
+    const trimmedName = args.name.trim();
+    if (trimmedName.length === 0 || trimmedName.length > 64) {
+      throw new Error("Name must be between 1 and 64 characters");
+    }
+    await ctx.db.patch(userId, { name: trimmedName });
   },
 });
 

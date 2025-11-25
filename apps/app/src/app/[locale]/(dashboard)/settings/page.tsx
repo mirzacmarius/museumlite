@@ -21,6 +21,7 @@ export default function DashboardSettings() {
   const { signOut } = useAuthActions();
   const updateUserImage = useMutation(api.users.updateUserImage);
   const updateUsername = useMutation(api.users.updateUsername);
+  const updateName = useMutation(api.users.updateName);
   const removeUserImage = useMutation(api.users.removeUserImage);
   const generateUploadUrl = useMutation(api.users.generateUploadUrl);
   const deleteCurrentUserAccount = useAction(
@@ -39,6 +40,15 @@ export default function DashboardSettings() {
     await deleteCurrentUserAccount();
     signOut();
   };
+
+  const nameForm = useForm({
+    defaultValues: {
+      name: user?.name || "",
+    },
+    onSubmit: async ({ value }) => {
+      await updateName({ name: value.name || "" });
+    },
+  });
 
   const usernameForm = useForm({
     defaultValues: {
@@ -112,6 +122,49 @@ export default function DashboardSettings() {
           )}
         </div>
       </div>
+
+      {/* Name */}
+      <form
+        className="flex w-full flex-col items-start rounded-lg border border-border bg-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          nameForm.handleSubmit();
+        }}
+      >
+        <div className="flex w-full flex-col gap-4 rounded-lg p-6">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-xl font-medium text-primary">Your Name</h2>
+            <p className="text-sm font-normal text-primary/60">
+              This is your display name. It will be shown to other users in the
+              organization.
+            </p>
+          </div>
+          <nameForm.Field
+            name="name"
+            // biome-ignore lint/correctness/noChildrenProp: <explanation>
+            children={(field) => (
+              <Input
+                placeholder="Your name"
+                autoComplete="name"
+                required
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                className="w-80 bg-transparent"
+              />
+            )}
+          />
+        </div>
+        <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 dark:bg-card">
+          <p className="text-sm font-normal text-primary/60">
+            Please use 64 characters at maximum.
+          </p>
+          <Button type="submit" size="sm">
+            Save
+          </Button>
+        </div>
+      </form>
 
       {/* Username */}
       <form
