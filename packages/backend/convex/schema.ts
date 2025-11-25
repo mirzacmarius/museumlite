@@ -109,6 +109,21 @@ export default defineSchema({
       filterFields: ["organizationId"],
     }),
 
+  // Many-to-many relationship between collections and collection groups
+  // An object can be part of multiple collection groups
+  collectionGroupItems: defineTable({
+    collectionGroupId: v.id("collectionGroups"),
+    collectionId: v.id("collections"),
+    addedAt: v.number(),
+    addedBy: v.id("users"),
+  })
+    .index("by_collectionGroup", ["collectionGroupId"])
+    .index("by_collection", ["collectionId"])
+    .index("by_collectionGroup_and_collection", [
+      "collectionGroupId",
+      "collectionId",
+    ]),
+
   // Main cataloging table
   collections: defineTable({
     organizationId: v.id("organizations"),
@@ -241,10 +256,12 @@ export default defineSchema({
     fileType: v.string(),
     fileSize: v.number(),
     mimeType: v.string(),
-    mediaCategory: v.optional(v.union(
-      v.literal("image"), // Photos of the object
-      v.literal("document"), // Related documents (PDFs, scans, etc.)
-    )), // Defaults to "image" for backwards compatibility
+    mediaCategory: v.optional(
+      v.union(
+        v.literal("image"), // Photos of the object
+        v.literal("document"), // Related documents (PDFs, scans, etc.)
+      ),
+    ), // Defaults to "image" for backwards compatibility
     isPrimary: v.boolean(),
     caption: v.optional(v.string()),
     photographer: v.optional(v.string()),

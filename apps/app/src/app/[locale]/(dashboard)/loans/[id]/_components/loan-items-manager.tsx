@@ -31,17 +31,19 @@ import { ExternalLink, Plus, Search, Trash2, X, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+interface LoanItem {
+  _id: Id<"loanItems">;
+  collectionId: Id<"collections">;
+  accessionNumber: string;
+  title: string;
+  conditionOut?: string;
+  conditionIn?: string;
+  notes?: string;
+}
+
 interface LoanItemsManagerProps {
   loanId: string;
-  loanItems: Array<{
-    _id: Id<"loanItems">;
-    collectionId: Id<"collections">;
-    accessionNumber: string;
-    title: string;
-    conditionOut?: string;
-    conditionIn?: string;
-    notes?: string;
-  }>;
+  loanItems: LoanItem[];
   organizationId: string;
   loanStatus: string;
   loanType?: string;
@@ -148,7 +150,7 @@ export function LoanItemsManager({
     }
   };
 
-  const handleReturnItemClick = (item: any) => {
+  const handleReturnItemClick = (item: LoanItem) => {
     setSelectedItemToReturn({
       id: item._id,
       accessionNumber: item.accessionNumber,

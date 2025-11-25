@@ -4,25 +4,52 @@ import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
-import { useQuery } from "convex/react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@v1/ui/dialog";
+import { Input } from "@v1/ui/input";
+import { Label } from "@v1/ui/label";
+import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
   Archive,
   ArrowLeft,
   Building2,
+  ExternalLink,
+  FolderInput,
   MapPin,
-  Plus,
+  PlusCircle,
+  Search,
   Settings,
+  Trash2,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export default function CollectionGroupDetailPage() {
   const params = useParams();
   const groupId = params.id as Id<"collectionGroups">;
   const { currentOrganizationId } = useOrganization();
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const group = useQuery(api.collectionGroups.get, { groupId });
 
@@ -65,7 +92,9 @@ export default function CollectionGroupDetailPage() {
                 </Link>
               </Button>
               <div className="flex flex-col gap-1">
-                <h2 className="text-xl font-medium text-primary">{group.name}</h2>
+                <h2 className="text-xl font-medium text-primary">
+                  {group.name}
+                </h2>
                 <p className="text-sm font-normal text-primary/60">
                   {group.itemsCount || 0} items
                 </p>
@@ -78,11 +107,20 @@ export default function CollectionGroupDetailPage() {
                   Settings
                 </Button>
               </PermissionGate>
+              <PermissionGate permission="collections.update">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAddDialogOpen(true)}
+                >
+                  <FolderInput className="mr-2 h-4 w-4" />
+                  Import Existing
+                </Button>
+              </PermissionGate>
               <PermissionGate permission="collections.create">
                 <Button asChild>
                   <Link href={`/objects/new?collectionGroupId=${group._id}`}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Object
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    New Object
                   </Link>
                 </Button>
               </PermissionGate>
@@ -95,6 +133,8 @@ export default function CollectionGroupDetailPage() {
           <CollectionObjectsList
             organizationId={currentOrganizationId}
             groupId={group._id}
+            isAddDialogOpen={isAddDialogOpen}
+            onAddDialogOpenChange={setIsAddDialogOpen}
           />
         </div>
       </div>
@@ -105,19 +145,95 @@ export default function CollectionGroupDetailPage() {
 function CollectionObjectsList({
   organizationId,
   groupId,
+  isAddDialogOpen,
+  onAddDialogOpenChange,
 }: {
   organizationId: Id<"organizations">;
   groupId: Id<"collectionGroups">;
+  isAddDialogOpen: boolean;
+  onAddDialogOpenChange: (open: boolean) => void;
 }) {
-  const [cursor, setCursor] = useState<string | null>(null);
+  const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>(
+    [],
+  );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  const collections = useQuery(api.collections.list, {
-    organizationId,
-    paginationOpts: { numItems: 50, cursor },
-    collectionGroupId: groupId,
-  });
+  // Get items in this collection group (using many-to-many relationship)
+  const groupItems = useQuery(api.collectionGroups.listItems, { groupId });
 
-  if (collections === undefined) {
+  // Get all collections for the "add existing" dialog
+  const collections = useQuery(
+    api.collections.list,
+    organizationId && isAddDialogOpen
+      ? {
+          organizationId,
+          paginationOpts: { numItems: 100, cursor: null },
+          status: "active",
+          search: searchQuery || undefined,
+        }
+      : "skip",
+  );
+
+  const addItems = useMutation(api.collectionGroups.addItems);
+  const removeItems = useMutation(api.collectionGroups.removeItems);
+
+  // Filter out collections already in this group
+  const availableCollections = useMemo(() => {
+    if (!collections?.page || !groupItems) return [];
+    const existingIds = new Set(groupItems.map((item) => item.collectionId));
+    return collections.page.filter((c) => !existingIds.has(c._id));
+  }, [collections, groupItems]);
+
+  const handleDialogOpenChange = (open: boolean) => {
+    onAddDialogOpenChange(open);
+    if (!open) {
+      setSearchQuery("");
+      setSelectedCollectionIds([]);
+      setError(null);
+    }
+  };
+
+  const handleAddItems = async () => {
+    if (selectedCollectionIds.length === 0) {
+      setError("Please select at least one object");
+      return;
+    }
+
+    setError(null);
+    try {
+      await addItems({
+        groupId,
+        collectionIds: selectedCollectionIds as Id<"collections">[],
+      });
+      setSelectedCollectionIds([]);
+      onAddDialogOpenChange(false);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to add items to collection",
+      );
+    }
+  };
+
+  const handleRemoveItem = async (collectionId: string) => {
+    setError(null);
+    try {
+      await removeItems({
+        groupId,
+        collectionIds: [collectionId as Id<"collections">],
+      });
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to remove item from collection",
+      );
+    }
+  };
+
+  if (groupItems === undefined) {
     return (
       <div className="flex h-64 items-center justify-center">
         <p className="text-muted-foreground">Loading items...</p>
@@ -125,57 +241,188 @@ function CollectionObjectsList({
     );
   }
 
-  if (collections.page.length === 0) {
-    return (
-      <div className="flex h-64 flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">No items in this collection</p>
-        <PermissionGate permission="collections.create">
-          <Button asChild>
-            <Link href={`/objects/new?collectionGroupId=${groupId}`}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Your First Object
-            </Link>
-          </Button>
-        </PermissionGate>
-      </div>
-    );
-  }
-
   return (
     <div className="p-6">
-      <div className="space-y-4">
-        {collections.page.map((item) => (
-          <CollectionListItem
-            key={item._id}
-            item={item as CollectionListItem}
-            organizationId={organizationId}
-          />
-        ))}
-      </div>
-      {!collections.isDone && (
-        <div className="mt-6 flex justify-center">
-          <Button
-            variant="outline"
-            onClick={() => setCursor(collections.continueCursor)}
-          >
-            Load More
-          </Button>
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      {/* Import Existing Objects Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={handleDialogOpenChange}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Import Existing Objects</DialogTitle>
+            <DialogDescription>
+              Search and select existing objects to add to this collection
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Search and Select Objects *</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search by accession number or title..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              {collections === undefined ? (
+                <p className="text-sm text-muted-foreground">
+                  Loading objects...
+                </p>
+              ) : availableCollections.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {searchQuery
+                    ? "No objects found matching your search"
+                    : "No available objects to add"}
+                </p>
+              ) : (
+                <div className="max-h-[200px] space-y-1 overflow-y-auto rounded-md border border-border p-2">
+                  {availableCollections.map((collection) => {
+                    const isSelected = selectedCollectionIds.includes(
+                      collection._id,
+                    );
+                    return (
+                      <button
+                        key={collection._id}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedCollectionIds(
+                              selectedCollectionIds.filter(
+                                (id) => id !== collection._id,
+                              ),
+                            );
+                          } else {
+                            setSelectedCollectionIds([
+                              ...selectedCollectionIds,
+                              collection._id,
+                            ]);
+                          }
+                        }}
+                        className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground"
+                            : "hover:bg-accent"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-medium">
+                              {collection.accessionNumber}
+                            </span>
+                            <span className="ml-2 text-muted-foreground">
+                              {collection.title}
+                            </span>
+                          </div>
+                          {isSelected && <X className="h-4 w-4" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {selectedCollectionIds.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    Selected ({selectedCollectionIds.length}):
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedCollectionIds.map((id) => {
+                      const collection = collections?.page.find(
+                        (c) => c._id === id,
+                      );
+                      return (
+                        <div
+                          key={id}
+                          className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-sm"
+                        >
+                          <span>
+                            {collection?.accessionNumber} - {collection?.title}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedCollectionIds(
+                                selectedCollectionIds.filter((i) => i !== id),
+                              )
+                            }
+                            className="ml-1 hover:text-destructive"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => onAddDialogOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleAddItems}>Import Objects</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {groupItems.length === 0 ? (
+        <div className="flex h-64 flex-col items-center justify-center gap-4">
+          <p className="text-muted-foreground">No items in this collection</p>
+          <div className="flex gap-2">
+            <PermissionGate permission="collections.update">
+              <Button onClick={() => onAddDialogOpenChange(true)}>
+                <FolderInput className="mr-2 h-4 w-4" />
+                Import Existing
+              </Button>
+            </PermissionGate>
+            <PermissionGate permission="collections.create">
+              <Button variant="outline" asChild>
+                <Link href={`/objects/new?collectionGroupId=${groupId}`}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  New Object
+                </Link>
+              </Button>
+            </PermissionGate>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {groupItems.map((item) => (
+            <CollectionListItem
+              key={item._id}
+              item={item}
+              organizationId={organizationId}
+              onRemove={() => handleRemoveItem(item.collectionId)}
+            />
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-type CollectionListItem = FunctionReturnType<
-  typeof api.collections.list
->["page"][number];
+type CollectionGroupItem = FunctionReturnType<
+  typeof api.collectionGroups.listItems
+>[number];
 
 function CollectionListItem({
   item,
   organizationId,
+  onRemove,
 }: {
-  item: CollectionListItem;
+  item: CollectionGroupItem;
   organizationId: Id<"organizations">;
+  onRemove?: () => void;
 }) {
   const locationPath = useQuery(
     api.locations.getLocationPath,
@@ -185,15 +432,15 @@ function CollectionListItem({
   );
 
   const primaryImageUrl = useQuery(api.media.getPrimaryImageUrl, {
-    collectionId: item._id,
+    collectionId: item.collectionId,
   });
 
   return (
-    <Link
-      href={`/objects/${item._id}`}
-      className="block rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent"
-    >
-      <div className="flex items-center gap-4">
+    <div className="flex items-center justify-between rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent">
+      <Link
+        href={`/objects/${item.collectionId}`}
+        className="flex flex-1 items-center gap-4"
+      >
         {/* Primary Image Thumbnail */}
         <div className="flex h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
           {primaryImageUrl ? (
@@ -219,7 +466,7 @@ function CollectionListItem({
               {locationPath && locationPath.length > 0 && (
                 <span className="flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
-                  {locationPath.map((loc) => loc.name).join(" → ")}
+                  {locationPath.map((loc) => loc.name).join(" -> ")}
                 </span>
               )}
             </div>
@@ -241,11 +488,11 @@ function CollectionListItem({
                       </span>
                     ))
                   ) : (
-                    <span className="text-sm text-muted-foreground">—</span>
+                    <span className="text-sm text-muted-foreground">-</span>
                   );
                 } catch {
                   return (
-                    <span className="text-sm text-muted-foreground">—</span>
+                    <span className="text-sm text-muted-foreground">-</span>
                   );
                 }
               })()}
@@ -262,7 +509,41 @@ function CollectionListItem({
             )}
           </div>
         </div>
+      </Link>
+      <div className="ml-4 flex items-center gap-2">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href={`/objects/${item.collectionId}`}>
+            <ExternalLink className="h-4 w-4" />
+          </Link>
+        </Button>
+        {onRemove && (
+          <PermissionGate permission="collections.update">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Remove from Collection</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to remove "{item.title}" from this
+                    collection? The object will not be deleted, only removed
+                    from this collection.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={onRemove}>
+                    Remove
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </PermissionGate>
+        )}
       </div>
-    </Link>
+    </div>
   );
 }
