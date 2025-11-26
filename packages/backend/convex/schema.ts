@@ -44,7 +44,7 @@ export default defineSchema({
         locationTypes: v.optional(v.array(v.string())),
         enableDetailedConditionReports: v.optional(v.boolean()),
         // Integrations
-        enabledIntegrations: v.optional(v.array(v.string())), // ["library", etc.]
+        enabledIntegrations: v.optional(v.array(v.string())), // ["library", etc.] 
       }),
     ),
     subscriptionTier: v.optional(
