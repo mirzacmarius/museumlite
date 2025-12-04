@@ -88,6 +88,14 @@ export const create = mutation({
     donated_date: v.optional(v.string()),
     donation_info: v.optional(v.string()),
     previous_owners: v.optional(v.array(v.string())),
+    links: v.optional(
+      v.array(
+        v.object({
+          url: v.string(),
+          label: v.optional(v.string()),
+        }),
+      ),
+    ),
     currentLocationId: v.optional(v.id("locations")),
   },
   returns: v.id("collections"),
@@ -144,6 +152,7 @@ export const create = mutation({
       donated_date: args.donated_date,
       donation_info: args.donation_info,
       previous_owners: args.previous_owners,
+      links: args.links,
       currentLocationId: args.currentLocationId,
       status: "active",
       catalogedBy: userId,
@@ -203,6 +212,14 @@ export const get = query({
       donated_date: v.optional(v.string()),
       donation_info: v.optional(v.string()),
       previous_owners: v.optional(v.array(v.string())),
+      links: v.optional(
+        v.array(
+          v.object({
+            url: v.string(),
+            label: v.optional(v.string()),
+          }),
+        ),
+      ),
       currentLocationId: v.optional(v.id("locations")),
       status: v.union(
         v.literal("active"),
@@ -653,6 +670,14 @@ export const update = mutation({
     donated_date: v.optional(v.string()),
     donation_info: v.optional(v.string()),
     previous_owners: v.optional(v.array(v.string())),
+    links: v.optional(
+      v.array(
+        v.object({
+          url: v.string(),
+          label: v.optional(v.string()),
+        }),
+      ),
+    ),
     currentLocationId: v.optional(v.id("locations")),
     alternateAccessionNumbers: v.optional(v.array(v.string())),
   },
@@ -695,6 +720,7 @@ export const update = mutation({
       donated_date?: string;
       donation_info?: string;
       previous_owners?: Array<string>;
+      links?: Array<{ url: string; label?: string }>;
       currentLocationId?: Id<"locations">;
       alternateAccessionNumbers?: Array<string>;
       lastModifiedBy?: Id<"users">;
@@ -720,6 +746,7 @@ export const update = mutation({
     if (args.donated_date !== undefined) updates.donated_date = args.donated_date;
     if (args.donation_info !== undefined) updates.donation_info = args.donation_info;
     if (args.previous_owners !== undefined) updates.previous_owners = args.previous_owners;
+    if (args.links !== undefined) updates.links = args.links;
     if (args.currentLocationId !== undefined)
       updates.currentLocationId = args.currentLocationId;
     if (args.alternateAccessionNumbers !== undefined)

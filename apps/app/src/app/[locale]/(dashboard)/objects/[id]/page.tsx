@@ -564,6 +564,29 @@ function CollectionDetails({
             </div>
           </div>
         )}
+
+        {/* Links Section */}
+        {collection.links && collection.links.length > 0 && (
+          <div className="rounded-lg border border-border bg-card p-4">
+            <h3 className="mb-3 text-base font-semibold">Links</h3>
+            <div className="space-y-2">
+              {collection.links.map((link, index) => (
+                <div key={index}>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    {link.label && link.label.trim() !== ""
+                      ? link.label
+                      : link.url}
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Right column - Media Gallery */}

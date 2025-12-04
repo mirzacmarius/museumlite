@@ -15,7 +15,7 @@ import { TypeCombobox } from "@/components/type-combobox";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { DatePicker } from "@v1/ui/date-picker";
 import { useMutation } from "convex/react";
-import { ArrowLeft, Save, Star, Upload, X } from "lucide-react";
+import { ArrowLeft, Plus, Save, Star, Upload, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -41,6 +41,7 @@ interface CollectionFormData {
   donated_date?: string;
   donation_info?: string;
   previous_owners?: string[];
+  links?: Array<{ url: string; label?: string }>;
   currentLocationId?: string;
   collectionGroupId?: string;
 }
@@ -92,6 +93,7 @@ export default function CollectionFormPage() {
     donated_date: "",
     donation_info: "",
     previous_owners: [],
+    links: [{ url: "", label: "" }],
     currentLocationId: "",
     collectionGroupId: collectionGroupId || "",
   });
@@ -242,6 +244,7 @@ export default function CollectionFormPage() {
         donated_date: formData.donated_date,
         donation_info: formData.donation_info,
         previous_owners: formData.previous_owners,
+        links: formData.links?.filter((link) => link.url.trim() !== ""),
         currentLocationId: formData.currentLocationId
           ? (formData.currentLocationId as Id<"locations">)
           : undefined,
@@ -381,7 +384,7 @@ export default function CollectionFormPage() {
 
   const updateField = (
     field: keyof CollectionFormData,
-    value: string | string[],
+    value: string | string[] | Array<{ url: string; label?: string }>,
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -692,6 +695,82 @@ export default function CollectionFormPage() {
                           />
                         </div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Links Section */}
+                  <div className="rounded-lg border border-border bg-card p-4">
+                    <h3 className="mb-3 text-base font-semibold">Links</h3>
+                    <div className="space-y-3">
+                      {(formData.links || []).map((link, index) => (
+                        <div key={index} className="flex gap-2">
+                          <div className="flex-1">
+                            <Label htmlFor={`link-label-${index}`}>Label</Label>
+                            <Input
+                              id={`link-label-${index}`}
+                              value={link.label || ""}
+                              onChange={(e) => {
+                                const newLinks = [...(formData.links || [])];
+                                newLinks[index] = {
+                                  ...newLinks[index],
+                                  label: e.target.value,
+                                };
+                                updateField("links", newLinks);
+                              }}
+                              placeholder="Link name (optional)"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <Label htmlFor={`link-url-${index}`}>
+                              URL <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              id={`link-url-${index}`}
+                              type="url"
+                              value={link.url}
+                              onChange={(e) => {
+                                const newLinks = [...(formData.links || [])];
+                                newLinks[index] = {
+                                  ...newLinks[index],
+                                  url: e.target.value,
+                                };
+                                updateField("links", newLinks);
+                              }}
+                              placeholder="https://example.com"
+                              required
+                            />
+                          </div>
+                          {(formData.links || []).length > 1 && (
+                            <div className="flex items-end">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  const newLinks = [...(formData.links || [])];
+                                  newLinks.splice(index, 1);
+                                  updateField("links", newLinks);
+                                }}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          updateField("links", [
+                            ...(formData.links || []),
+                            { url: "", label: "" },
+                          ]);
+                        }}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Link
+                      </Button>
                     </div>
                   </div>
 

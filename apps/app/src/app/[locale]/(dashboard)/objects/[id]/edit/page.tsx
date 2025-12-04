@@ -28,6 +28,7 @@ import {
   AlertOctagon,
   Archive,
   ArrowLeft,
+  Plus,
   Save,
   Star,
   Upload,
@@ -57,6 +58,7 @@ interface CollectionFormData {
   donated_date?: string;
   donation_info?: string;
   previous_owners?: string[];
+  links?: Array<{ url: string; label?: string }>;
   currentLocationId?: string;
   alternateAccessionNumbers?: string[];
 }
@@ -123,6 +125,7 @@ export default function CollectionEditPage() {
     donated_date: "",
     donation_info: "",
     previous_owners: [],
+    links: [{ url: "", label: "" }],
     currentLocationId: "",
     alternateAccessionNumbers: [],
   });
@@ -322,6 +325,9 @@ export default function CollectionEditPage() {
         donated_date: collection.donated_date || "",
         donation_info: collection.donation_info || "",
         previous_owners: collection.previous_owners || [],
+        links: collection.links && collection.links.length > 0 
+          ? collection.links 
+          : [{ url: "", label: "" }],
         currentLocationId: (collection.currentLocationId as string) || "__none__",
         alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
       });
@@ -462,6 +468,7 @@ export default function CollectionEditPage() {
         ...formData,
         materials: materialsString,
         objectType: objectTypeString,
+        links: formData.links?.filter((link) => link.url.trim() !== ""),
         currentLocationId:
           formData.currentLocationId && formData.currentLocationId !== "__none__"
             ? (formData.currentLocationId as Id<"locations">)
@@ -482,7 +489,7 @@ export default function CollectionEditPage() {
 
   const updateField = (
     field: keyof CollectionFormData,
-    value: string | string[],
+    value: string | string[] | Array<{ url: string; label?: string }>,
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -835,6 +842,82 @@ export default function CollectionEditPage() {
                         placeholder="e.g., Estate of Jane Doe"
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* Links Section */}
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <h3 className="mb-3 text-base font-semibold">Links</h3>
+                  <div className="space-y-3">
+                    {(formData.links || []).map((link, index) => (
+                      <div key={index} className="flex gap-2">
+                        <div className="flex-1">
+                          <Label htmlFor={`link-label-${index}`}>Label</Label>
+                          <Input
+                            id={`link-label-${index}`}
+                            value={link.label || ""}
+                            onChange={(e) => {
+                              const newLinks = [...(formData.links || [])];
+                              newLinks[index] = {
+                                ...newLinks[index],
+                                label: e.target.value,
+                              };
+                              updateField("links", newLinks);
+                            }}
+                            placeholder="Link name (optional)"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <Label htmlFor={`link-url-${index}`}>
+                            URL <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id={`link-url-${index}`}
+                            type="url"
+                            value={link.url}
+                            onChange={(e) => {
+                              const newLinks = [...(formData.links || [])];
+                              newLinks[index] = {
+                                ...newLinks[index],
+                                url: e.target.value,
+                              };
+                              updateField("links", newLinks);
+                            }}
+                            placeholder="https://example.com"
+                            required
+                          />
+                        </div>
+                        {(formData.links || []).length > 1 && (
+                          <div className="flex items-end">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                const newLinks = [...(formData.links || [])];
+                                newLinks.splice(index, 1);
+                                updateField("links", newLinks);
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        updateField("links", [
+                          ...(formData.links || []),
+                          { url: "", label: "" },
+                        ]);
+                      }}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Link
+                    </Button>
                   </div>
                 </div>
 

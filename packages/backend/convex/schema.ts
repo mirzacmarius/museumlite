@@ -158,6 +158,14 @@ export default defineSchema({
     donated_date: v.optional(v.string()), // Date of donation (ISO format or partial)
     donation_info: v.optional(v.string()), // Free-text info about the donation
     previous_owners: v.optional(v.array(v.string())), // List of previous owners
+    links: v.optional(
+      v.array(
+        v.object({
+          url: v.string(),
+          label: v.optional(v.string()),
+        }),
+      ),
+    ), // List of external links
     currentLocationId: v.optional(v.id("locations")),
     status: v.union(
       v.literal("active"),
