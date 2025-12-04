@@ -1,7 +1,19 @@
 "use client";
 
 import { Button } from "@v1/ui/button";
-import { Calendar, ChevronRight } from "lucide-react";
+import { Calendar } from "@v1/ui/calendar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@v1/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
+import { Calendar as CalendarIcon, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { DateRange } from "react-day-picker";
+import { format } from "date-fns";
 
 interface ActivityFiltersProps {
   selectedEntityType: string | undefined;
@@ -20,35 +32,177 @@ const entityTypes = [
   { value: "user", label: "User" },
 ];
 
+function getDateRangeLabel(dateRange: { start?: number; end?: number }): string {
+  if (!dateRange.start && !dateRange.end) {
+    return "All Time";
+  }
+  if (dateRange.start && dateRange.end) {
+    const start = format(new Date(dateRange.start), "MMM d");
+    const end = format(new Date(dateRange.end), "MMM d, yyyy");
+    return `${start} - ${end}`;
+  }
+  if (dateRange.start) {
+    return `From ${format(new Date(dateRange.start), "MMM d, yyyy")}`;
+  }
+  if (dateRange.end) {
+    return `Until ${format(new Date(dateRange.end), "MMM d, yyyy")}`;
+  }
+  return "All Time";
+}
+
 export function ActivityFilters({
   selectedEntityType,
   onEntityTypeChange,
   dateRange,
   onDateRangeChange,
 }: ActivityFiltersProps) {
+  const [customRangeOpen, setCustomRangeOpen] = useState(false);
+  const [dateRangePicker, setDateRangePicker] = useState<DateRange | undefined>(
+    dateRange.start || dateRange.end
+      ? {
+          from: dateRange.start ? new Date(dateRange.start) : undefined,
+          to: dateRange.end ? new Date(dateRange.end) : undefined,
+        }
+      : undefined,
+  );
+
+  useEffect(() => {
+    setDateRangePicker(
+      dateRange.start || dateRange.end
+        ? {
+            from: dateRange.start ? new Date(dateRange.start) : undefined,
+            to: dateRange.end ? new Date(dateRange.end) : undefined,
+          }
+        : undefined,
+    );
+  }, [dateRange]);
+
+  const handlePresetRange = (preset: string) => {
+    const now = Date.now();
+    let start: number | undefined;
+    let end: number | undefined = now;
+
+    switch (preset) {
+      case "today": {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        start = today.getTime();
+        end = now;
+        break;
+      }
+      case "last7days": {
+        start = now - 7 * 24 * 60 * 60 * 1000;
+        break;
+      }
+      case "last30days": {
+        start = now - 30 * 24 * 60 * 60 * 1000;
+        break;
+      }
+      case "last90days": {
+        start = now - 90 * 24 * 60 * 60 * 1000;
+        break;
+      }
+      case "alltime":
+      default: {
+        start = undefined;
+        end = undefined;
+        break;
+      }
+    }
+
+    onDateRangeChange({ start, end });
+    setDateRangePicker(
+      start || end
+        ? {
+            from: start ? new Date(start) : undefined,
+            to: end ? new Date(end) : undefined,
+          }
+        : undefined,
+    );
+  };
+
+  const handleCustomRangeSelect = (range: DateRange | undefined) => {
+    setDateRangePicker(range);
+    if (range?.from && range?.to) {
+      const startDate = new Date(range.from);
+      startDate.setHours(0, 0, 0, 0);
+      const start = startDate.getTime();
+
+      const endDate = new Date(range.to);
+      endDate.setHours(23, 59, 59, 999);
+      const end = endDate.getTime();
+
+      onDateRangeChange({ start, end });
+      setCustomRangeOpen(false);
+    } else if (range?.from && !range?.to) {
+      const startDate = new Date(range.from);
+      startDate.setHours(0, 0, 0, 0);
+      const start = startDate.getTime();
+      onDateRangeChange({ start, end: Date.now() });
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-4">
-      <h2 className="text-base font-semibold text-white">Filters</h2>
+    <div className="flex flex-wrap items-center gap-4">
+      <h2 className="text-base font-semibold">Filters</h2>
 
       {/* Date Range Dropdown */}
-      <div className="flex flex-col gap-2">
-        <Button
-          variant="outline"
-          className="w-full justify-between border-white/10 bg-black text-white hover:bg-white/5"
-        >
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-white/60" />
-            <span className="text-sm text-white/60">All Time</span>
-          </div>
-          <ChevronRight className="h-4 w-4 text-white/60" />
-        </Button>
-      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="justify-between">
+            <div className="flex items-center gap-2">
+              <CalendarIcon className="h-4 w-4" />
+              <span className="text-sm">{getDateRangeLabel(dateRange)}</span>
+            </div>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem onClick={() => handlePresetRange("today")}>
+            Today
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handlePresetRange("last7days")}>
+            Last 7 days
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handlePresetRange("last30days")}>
+            Last 30 days
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handlePresetRange("last90days")}>
+            Last 90 days
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handlePresetRange("alltime")}>
+            All Time
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <Popover open={customRangeOpen} onOpenChange={setCustomRangeOpen}>
+            <PopoverTrigger asChild>
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setCustomRangeOpen(true);
+                }}
+              >
+                Custom Range
+              </DropdownMenuItem>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="range"
+                selected={dateRangePicker}
+                onSelect={handleCustomRangeSelect}
+                numberOfMonths={2}
+                captionLayout="dropdown"
+              />
+            </PopoverContent>
+          </Popover>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {/* Type Filter */}
-      <div className="flex flex-col gap-2">
+      <div className="relative">
         <button
           type="button"
-          className="flex items-center justify-between text-sm text-white/60 hover:text-white"
+          className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent"
           onClick={() => {
             // Toggle the filter visibility
             if (selectedEntityType !== undefined) {
@@ -67,15 +221,15 @@ export function ActivityFilters({
           />
         </button>
         {selectedEntityType !== undefined && (
-          <div className="ml-4 flex flex-col gap-1">
+          <div className="absolute left-0 top-full z-10 mt-2 flex flex-col gap-1 rounded-md border bg-popover p-2 shadow-lg">
             {entityTypes.map((type) => (
               <button
                 type="button"
                 key={type.value}
-                className={`text-left text-sm hover:text-white ${
+                className={`rounded px-2 py-1 text-left text-sm hover:bg-accent ${
                   selectedEntityType === type.value
-                    ? "text-white font-medium"
-                    : "text-white/60"
+                    ? "bg-accent font-medium"
+                    : ""
                 }`}
                 onClick={() =>
                   onEntityTypeChange(

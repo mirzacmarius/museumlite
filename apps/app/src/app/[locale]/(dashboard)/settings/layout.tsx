@@ -15,6 +15,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const isRolesPath = pathname === "/settings/roles";
   const isOrganizationPath = pathname === "/settings/organization";
   const isIntegrationsPath = pathname?.startsWith("/settings/integrations");
+  const isActivityPath = pathname === "/settings/activity";
   return (
     <div className="flex h-full w-full px-6 py-8">
       <div className="mx-auto flex h-full w-full max-w-screen-xl gap-12">
@@ -102,6 +103,20 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
               )}
             >
               {t("billing")}
+            </span>
+          </Link>
+          <Link
+            href="/settings/activity"
+            className={cn(
+              `${buttonVariants({ variant: "ghost" })} ${isActivityPath && "bg-primary/5"} justify-start rounded-md`,
+            )}
+          >
+            <span
+              className={cn(
+                `text-sm text-primary/80 ${isActivityPath && "font-medium text-primary"}`,
+              )}
+            >
+              Activity
             </span>
           </Link>
         </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Activity,
   Archive,
   BookCopy,
   BookOpen,
@@ -134,11 +133,6 @@ export function AppSidebar({
       title: "Loans",
       url: "/loans",
       icon: Handshake,
-    },
-    {
-      title: "Activity",
-      url: "/activity",
-      icon: Activity,
     },
   ];
 

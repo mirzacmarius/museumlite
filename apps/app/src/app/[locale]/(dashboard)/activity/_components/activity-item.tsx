@@ -15,9 +15,9 @@ interface ActivityItemProps {
 function getActionIcon(entityType: string) {
   switch (entityType) {
     case "organization":
-      return <GitBranch className="h-4 w-4 text-white/60" />;
+      return <GitBranch className="h-4 w-4 text-muted-foreground" />;
     default:
-      return <User className="h-4 w-4 text-white/60" />;
+      return <User className="h-4 w-4 text-muted-foreground" />;
   }
 }
 
@@ -94,10 +94,10 @@ export function ActivityItem({
     <div className="flex items-start gap-3 py-3">
       <div className="mt-0.5 flex-shrink-0">{getActionIcon(entityType)}</div>
       <div className="flex flex-1 items-start justify-between gap-4">
-        <div className="flex-1 text-sm text-white">
+        <div className="flex-1 text-sm">
           {formatActionDescription(action, entityType, entityId, changes)}
         </div>
-        <div className="text-sm text-white/60">{relativeTime}</div>
+        <div className="text-sm text-muted-foreground">{relativeTime}</div>
       </div>
     </div>
   );

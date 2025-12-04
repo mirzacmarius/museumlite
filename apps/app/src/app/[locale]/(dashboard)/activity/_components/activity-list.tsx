@@ -144,24 +144,22 @@ export function ActivityList({
   if (activities === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-white/60">Loading...</p>
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col">
-      <h1 className="mb-6 text-2xl font-semibold text-white">Activity</h1>
-
       {sortedMonths.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24">
-          <p className="text-white/60">No activity found</p>
+          <p className="text-muted-foreground">No activity found</p>
         </div>
       ) : (
         <>
           {sortedMonths.map((month) => (
             <div key={month} className="mb-8">
-              <h2 className="mb-4 text-base font-semibold text-white">
+              <h2 className="mb-4 text-base font-semibold">
                 {month}
               </h2>
               <div className="flex flex-col">
@@ -183,11 +181,7 @@ export function ActivityList({
 
           {!isDone && continueCursor && (
             <div className="mt-8 flex justify-center">
-              <Button
-                variant="outline"
-                className="border-white/10 bg-black text-white hover:bg-white/5"
-                onClick={handleLoadMore}
-              >
+              <Button variant="outline" onClick={handleLoadMore}>
                 Load More
               </Button>
             </div>
