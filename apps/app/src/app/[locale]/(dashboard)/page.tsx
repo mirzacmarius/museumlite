@@ -97,10 +97,10 @@ export default function DashboardPage() {
             {/* Quick Actions */}
             <div className="flex flex-wrap gap-3">
               <PermissionGate permission="collections.create">
-                <Link href="/collections/new">
+                <Link href="/objects/new">
                   <Button className="gap-2">
                     <Plus className="h-4 w-4" />
-                    New Collection
+                    Add Object
                   </Button>
                 </Link>
               </PermissionGate>
