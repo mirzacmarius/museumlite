@@ -12,6 +12,9 @@ export const getAnalytics = query({
   returns: v.object({
     collections: v.object({
       total: v.number(),
+    }),
+    objects: v.object({
+      total: v.number(),
       active: v.number(),
       loaned: v.number(),
       deaccessioned: v.number(),
@@ -56,19 +59,31 @@ export const getAnalytics = query({
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "collections.read");
 
-    // Get collections counts by status
-    const allCollections = await ctx.db
-      .query("collections")
+    // Get collection groups count (these are the "Collections")
+    const allCollectionGroups = await ctx.db
+      .query("collectionGroups")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
       .collect();
 
     const collectionsStats = {
-      total: allCollections.length,
-      active: allCollections.filter((c) => c.status === "active").length,
-      loaned: allCollections.filter((c) => c.status === "loaned").length,
-      deaccessioned: allCollections.filter((c) => c.status === "deaccessioned")
+      total: allCollectionGroups.length,
+    };
+
+    // Get objects counts by status (these are the actual collection objects)
+    const allObjects = await ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const objectsStats = {
+      total: allObjects.length,
+      active: allObjects.filter((c) => c.status === "active").length,
+      loaned: allObjects.filter((c) => c.status === "loaned").length,
+      deaccessioned: allObjects.filter((c) => c.status === "deaccessioned")
         .length,
     };
 
@@ -127,7 +142,7 @@ export const getAnalytics = query({
       .collect();
 
     // Get recent activity (last 10 items)
-    const recentCollections = allCollections
+    const recentCollections = allObjects
       .sort((a, b) => b._creationTime - a._creationTime)
       .slice(0, 3)
       .map((c) => ({
@@ -187,6 +202,7 @@ export const getAnalytics = query({
 
     return {
       collections: collectionsStats,
+      objects: objectsStats,
       loans: loansStats,
       accessions: accessionsStats,
       deaccessions: deaccessionsStats,

@@ -10,6 +10,7 @@ import {
   Activity,
   ArrowDownRight,
   ArrowUpRight,
+  Box,
   Building2,
   CheckCircle,
   Clock,
@@ -131,7 +132,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
               {/* Collections Card */}
               <Link
                 href="/collections"
@@ -149,21 +150,44 @@ export default function DashboardPage() {
                     </div>
                     <FileCheck className="h-6 w-6 flex-shrink-0 text-blue-700 dark:text-blue-400" />
                   </div>
+                  <div className="text-xs text-muted-foreground">
+                    Collection groups
+                  </div>
+                </div>
+              </Link>
+
+              {/* Objects Card */}
+              <Link
+                href="/objects"
+                className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-indigo-50 to-indigo-100/50 p-6 shadow-sm transition-all hover:shadow-md dark:from-indigo-950/20 dark:to-indigo-900/10"
+              >
+                <div className="relative z-10 flex flex-col gap-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Objects
+                      </p>
+                      <p className="mt-2 text-4xl font-bold text-indigo-700 dark:text-indigo-400">
+                        {analytics.objects.total}
+                      </p>
+                    </div>
+                    <Box className="h-6 w-6 flex-shrink-0 text-indigo-700 dark:text-indigo-400" />
+                  </div>
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">Active</span>
                       <span className="font-semibold">
-                        {analytics.collections.active}
+                        {analytics.objects.active}
                       </span>
                     </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-blue-200 dark:bg-blue-900/30">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-indigo-200 dark:bg-indigo-900/30">
                       <div
-                        className="h-full rounded-full bg-blue-600 transition-all"
+                        className="h-full rounded-full bg-indigo-600 transition-all"
                         style={{
                           width: `${
-                            analytics.collections.total > 0
-                              ? (analytics.collections.active /
-                                  analytics.collections.total) *
+                            analytics.objects.total > 0
+                              ? (analytics.objects.active /
+                                  analytics.objects.total) *
                                 100
                               : 0
                           }%`,
@@ -171,9 +195,9 @@ export default function DashboardPage() {
                       />
                     </div>
                     <div className="flex gap-4 text-xs text-muted-foreground">
-                      <span>{analytics.collections.loaned} loaned</span>
+                      <span>{analytics.objects.loaned} loaned</span>
                       <span>
-                        {analytics.collections.deaccessioned} deaccessioned
+                        {analytics.objects.deaccessioned} deaccessioned
                       </span>
                     </div>
                   </div>
