@@ -143,7 +143,7 @@ export default function NewDeaccessionPage() {
                   <DatePicker
                     id="dateDeaccessioned"
                     date={formData.dateDeaccessioned}
-                    onSelect={(date) =>
+                    onSelect={(date: Date | undefined) =>
                       setFormData({
                         ...formData,
                         dateDeaccessioned: date || new Date(),

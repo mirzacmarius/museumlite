@@ -17,6 +17,7 @@ import type * as collections from "../collections.js";
 import type * as conditionOptions from "../conditionOptions.js";
 import type * as dashboard from "../dashboard.js";
 import type * as deaccessions from "../deaccessions.js";
+import type * as donors from "../donors.js";
 import type * as email_index from "../email/index.js";
 import type * as email_templates_subscriptionEmail from "../email/templates/subscriptionEmail.js";
 import type * as env from "../env.js";
@@ -75,6 +76,7 @@ declare const fullApi: ApiFromModules<{
   conditionOptions: typeof conditionOptions;
   dashboard: typeof dashboard;
   deaccessions: typeof deaccessions;
+  donors: typeof donors;
   "email/index": typeof email_index;
   "email/templates/subscriptionEmail": typeof email_templates_subscriptionEmail;
   env: typeof env;

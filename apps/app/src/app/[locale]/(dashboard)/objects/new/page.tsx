@@ -7,13 +7,14 @@ import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 
 import { ConditionCombobox } from "@/components/condition-combobox";
+import { DonorCombobox } from "@/components/donor-combobox";
 import { LocationSelector } from "@/components/location-selector";
 import { MaterialsCombobox } from "@/components/materials-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { TypeCombobox } from "@/components/type-combobox";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { DatePicker } from "@v1/ui/date-picker";
+import { NaturalLanguageDatePicker } from "@v1/ui/natural-language-date-picker";
 import { useMutation } from "convex/react";
 import { ArrowLeft, Plus, Save, Star, Upload, X } from "lucide-react";
 import Image from "next/image";
@@ -642,13 +643,25 @@ export default function CollectionFormPage() {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <RepeatableTextField
-                          label="Donated by"
-                          value={formData.donated_by || []}
-                          onChange={(value) => updateField("donated_by", value)}
-                          placeholder="Enter donor name"
-                          id="donated_by"
-                        />
+                        <div>
+                          <Label htmlFor="donated_by">Donated by</Label>
+                          <DonorCombobox
+                            organizationId={currentOrganizationId}
+                            value={formData.donated_by || []}
+                            onValueChange={(value) => {
+                              updateField("donated_by", value);
+                              // Auto-set date to today if donor is selected and no date exists
+                              if (value.length > 0 && !formData.donated_date) {
+                                const today = new Date();
+                                updateField(
+                                  "donated_date",
+                                  today.toISOString().split("T")[0] ?? "",
+                                );
+                              }
+                            }}
+                            placeholder="Select or add donors..."
+                          />
+                        </div>
 
                         <RepeatableTextField
                           label="Previous Owner(s)"
@@ -663,20 +676,23 @@ export default function CollectionFormPage() {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor="donated_date">Donated Date</Label>
-                          <DatePicker
-                            date={
-                              formData.donated_date
-                                ? new Date(formData.donated_date)
-                                : undefined
+                          <Label htmlFor="donated_date">
+                            Donated Date
+                            {(formData.donated_by || []).length > 0 && (
+                              <span className="text-red-500">*</span>
+                            )}
+                          </Label>
+                          <NaturalLanguageDatePicker
+                            id="donated_date"
+                            value={formData.donated_date}
+                            onChange={(value) =>
+                              updateField("donated_date", value)
                             }
-                            onSelect={(date) => {
-                              const dateString: string = date
-                                ? date.toISOString().split("T")[0] ?? ""
-                                : "";
-                              updateField("donated_date", dateString);
-                            }}
-                            placeholder="Select donation date"
+                            placeholder="today"
+                            defaultDate={new Date()}
+                            required={
+                              (formData.donated_by || []).length > 0
+                            }
                           />
                         </div>
 
@@ -703,7 +719,7 @@ export default function CollectionFormPage() {
                     <h3 className="mb-3 text-base font-semibold">Links</h3>
                     <div className="space-y-3">
                       {(formData.links || []).map((link, index) => (
-                        <div key={index} className="flex gap-2">
+                        <div key={`${link.url}-${link.label || ""}-${index}`} className="flex gap-2">
                           <div className="flex-1">
                             <Label htmlFor={`link-label-${index}`}>Label</Label>
                             <Input
@@ -712,7 +728,7 @@ export default function CollectionFormPage() {
                               onChange={(e) => {
                                 const newLinks = [...(formData.links || [])];
                                 newLinks[index] = {
-                                  ...newLinks[index],
+                                  url: newLinks[index]?.url || "",
                                   label: e.target.value,
                                 };
                                 updateField("links", newLinks);

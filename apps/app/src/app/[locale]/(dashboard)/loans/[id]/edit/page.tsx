@@ -219,7 +219,7 @@ export default function EditLoanPage() {
                   <DatePicker
                     id="startDate"
                     date={formData.startDate}
-                    onSelect={(date) =>
+                    onSelect={(date: Date | undefined) =>
                       setFormData({
                         ...formData,
                         startDate: date || new Date(),
@@ -234,7 +234,7 @@ export default function EditLoanPage() {
                   <DatePicker
                     id="endDate"
                     date={formData.endDate}
-                    onSelect={(date) =>
+                    onSelect={(date: Date | undefined) =>
                       setFormData({ ...formData, endDate: date })
                     }
                     placeholder="Select end date"

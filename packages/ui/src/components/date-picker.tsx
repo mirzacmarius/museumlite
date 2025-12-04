@@ -1,36 +1,39 @@
 "use client";
 
 import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { CalendarIcon, ChevronDownIcon } from "lucide-react";
 import * as React from "react";
+
+import { Button } from "@v1/ui/button";
+import { Calendar } from "@v1/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { cn } from "../utils";
-import { Button } from "./button";
-import { Calendar } from "./calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 
 interface DatePickerProps {
+  id?: string;
   date?: Date;
   onSelect?: (date: Date | undefined) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
-  id?: string;
 }
 
 export function DatePicker({
+  id,
   date,
   onSelect,
   placeholder = "Pick a date",
-  disabled,
+  disabled = false,
   className,
-  id,
 }: DatePickerProps) {
+  const [open, setOpen] = React.useState(false);
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           id={id}
-          variant={"outline"}
+          variant="outline"
           className={cn(
             "w-full justify-start text-left font-normal",
             !date && "text-muted-foreground",
@@ -40,13 +43,20 @@ export function DatePicker({
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {date ? format(date, "PPP") : <span>{placeholder}</span>}
+          <ChevronDownIcon className="ml-auto h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
           mode="single"
           selected={date}
-          onSelect={onSelect}
+          captionLayout="dropdown"
+          onSelect={(selectedDate) => {
+            onSelect?.(selectedDate);
+            if (selectedDate) {
+              setOpen(false);
+            }
+          }}
           initialFocus
         />
       </PopoverContent>

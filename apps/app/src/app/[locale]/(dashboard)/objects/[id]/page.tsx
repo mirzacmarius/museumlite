@@ -587,9 +587,9 @@ function CollectionDetails({
                     Donated By
                   </label>
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    {collection.donated_by.map((donor, index) => (
+                    {collection.donated_by.map((donor) => (
                       <span
-                        key={index}
+                        key={donor}
                         className="inline-flex items-center rounded-md border border-border bg-secondary px-2 py-0.5 text-xs font-medium"
                       >
                         {donor}
@@ -626,9 +626,9 @@ function CollectionDetails({
                       Previous Owner(s)
                     </label>
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      {collection.previous_owners.map((owner, index) => (
+                      {collection.previous_owners.map((owner) => (
                         <span
-                          key={index}
+                          key={owner}
                           className="inline-flex items-center rounded-md border border-border bg-secondary px-2 py-0.5 text-xs font-medium"
                         >
                           {owner}
@@ -646,8 +646,8 @@ function CollectionDetails({
           <div className="rounded-lg border border-border bg-card p-4">
             <h3 className="mb-3 text-base font-semibold">Links</h3>
             <div className="space-y-2">
-              {collection.links.map((link, index) => (
-                <div key={index}>
+              {collection.links.map((link) => (
+                <div key={`${link.url}-${link.label || ""}`}>
                   <a
                     href={link.url}
                     target="_blank"

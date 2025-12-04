@@ -129,7 +129,7 @@ export default function NewAccessionPage() {
                   <DatePicker
                     id="dateReceived"
                     date={formData.dateReceived}
-                    onSelect={(date) =>
+                    onSelect={(date: Date | undefined) =>
                       setFormData({
                         ...formData,
                         dateReceived: date || new Date(),

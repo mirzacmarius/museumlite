@@ -256,6 +256,19 @@ export default defineSchema({
     lastUsedAt: v.optional(v.number()),
   }).index("by_organization", ["organizationId"]),
 
+  // Donors per organization
+  donors: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    email: v.string(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    usageCount: v.optional(v.number()),
+    lastUsedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_name", ["organizationId", "name"]),
+
   // Media attachments for objects
   mediaFiles: defineTable({
     collectionId: v.id("collections"),
