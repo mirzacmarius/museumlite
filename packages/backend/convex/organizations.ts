@@ -150,6 +150,7 @@ export const get = query({
           autoGenerateAccessionNumbers: v.optional(v.boolean()),
           locationTypes: v.optional(v.array(v.string())),
           enableDetailedConditionReports: v.optional(v.boolean()),
+          enabledIntegrations: v.optional(v.array(v.string())),
         }),
       ),
       subscriptionTier: v.optional(
@@ -197,6 +198,7 @@ export const getBySlug = query({
           autoGenerateAccessionNumbers: v.optional(v.boolean()),
           locationTypes: v.optional(v.array(v.string())),
           enableDetailedConditionReports: v.optional(v.boolean()),
+          enabledIntegrations: v.optional(v.array(v.string())),
         }),
       ),
       subscriptionTier: v.optional(
@@ -264,6 +266,7 @@ export const update = mutation({
         autoGenerateAccessionNumbers?: boolean;
         locationTypes?: string[];
         enableDetailedConditionReports?: boolean;
+        enabledIntegrations?: string[];
       };
       subscriptionTier?: "free" | "pro" | "enterprise";
     } = {};
@@ -304,6 +307,7 @@ export const getSettings = query({
       autoGenerateAccessionNumbers: v.optional(v.boolean()),
       locationTypes: v.optional(v.array(v.string())),
       enableDetailedConditionReports: v.optional(v.boolean()),
+      enabledIntegrations: v.optional(v.array(v.string())),
     }),
     v.null(),
   ),

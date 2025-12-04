@@ -4,6 +4,13 @@ import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
+import {
+  TagsInput,
+  TagsInputInput,
+  TagsInputItem,
+  TagsInputLabel,
+  TagsInputList,
+} from "@v1/ui/tags-input";
 import { Textarea } from "@v1/ui/textarea";
 
 import { ConditionCombobox } from "@/components/condition-combobox";
@@ -47,6 +54,7 @@ interface CollectionFormData {
   parentObjectId?: string;
   currentLocationId?: string;
   collectionGroupId?: string;
+  alternateAccessionNumbers?: string[];
 }
 
 export default function CollectionFormPage() {
@@ -100,6 +108,7 @@ export default function CollectionFormPage() {
     parentObjectId: "",
     currentLocationId: "",
     collectionGroupId: collectionGroupId || "",
+    alternateAccessionNumbers: [],
   });
 
   // Cleanup blob URLs on unmount
@@ -249,6 +258,7 @@ export default function CollectionFormPage() {
         donation_info: formData.donation_info,
         previous_owners: formData.previous_owners,
         links: formData.links?.filter((link) => link.url.trim() !== ""),
+        alternateAccessionNumbers: formData.alternateAccessionNumbers,
         currentLocationId: formData.currentLocationId
           ? (formData.currentLocationId as Id<"locations">)
           : undefined,
@@ -430,18 +440,6 @@ export default function CollectionFormPage() {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div>
-                        <Label htmlFor="accessionNumber">Accession Number</Label>
-                        <Input
-                          id="accessionNumber"
-                          value={formData.accessionNumber || ""}
-                          onChange={(e) =>
-                            updateField("accessionNumber", e.target.value)
-                          }
-                          placeholder="Auto-generated if empty"
-                        />
-                      </div>
-
-                      <div>
                         <Label htmlFor="title">
                           Title <span className="text-red-500">*</span>
                         </Label>
@@ -455,14 +453,55 @@ export default function CollectionFormPage() {
                       </div>
 
                       <div>
-                        <Label htmlFor="creator">Creator</Label>
+                        <Label htmlFor="accessionNumber">Accession Number</Label>
                         <Input
-                          id="creator"
-                          value={formData.creator || ""}
+                          id="accessionNumber"
+                          value={formData.accessionNumber || ""}
                           onChange={(e) =>
-                            updateField("creator", e.target.value)
+                            updateField("accessionNumber", e.target.value)
                           }
-                          placeholder="e.g., Vincent van Gogh"
+                          placeholder="Auto-generated if empty"
+                        />
+                      </div>
+
+                      <div>
+                        <TagsInput
+                          value={formData.alternateAccessionNumbers || []}
+                          onValueChange={(values) =>
+                            updateField("alternateAccessionNumbers", values)
+                          }
+                          editable
+                          addOnPaste
+                        >
+                          <TagsInputLabel>
+                            Alternate Accession Numbers
+                          </TagsInputLabel>
+                          <TagsInputList>
+                            {(formData.alternateAccessionNumbers || []).map(
+                              (number) => (
+                                <TagsInputItem key={number} value={number}>
+                                  {number}
+                                </TagsInputItem>
+                              ),
+                            )}
+                            <TagsInputInput placeholder="Add alternate ID..." />
+                          </TagsInputList>
+                        </TagsInput>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Historical accession numbers previously assigned to
+                          this object
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="objectName">Object Name</Label>
+                        <Input
+                          id="objectName"
+                          value={formData.objectName || ""}
+                          onChange={(e) =>
+                            updateField("objectName", e.target.value)
+                          }
+                          placeholder="e.g., Portrait"
                         />
                       </div>
 
@@ -479,18 +518,6 @@ export default function CollectionFormPage() {
                             updateField("objectType", value)
                           }
                           placeholder="Select or add types..."
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="objectName">Object Name</Label>
-                        <Input
-                          id="objectName"
-                          value={formData.objectName || ""}
-                          onChange={(e) =>
-                            updateField("objectName", e.target.value)
-                          }
-                          placeholder="e.g., Portrait"
                         />
                       </div>
 
@@ -527,6 +554,18 @@ export default function CollectionFormPage() {
                             updateField("dateCreated", e.target.value)
                           }
                           placeholder="e.g., 1850"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="creator">Creator</Label>
+                        <Input
+                          id="creator"
+                          value={formData.creator || ""}
+                          onChange={(e) =>
+                            updateField("creator", e.target.value)
+                          }
+                          placeholder="e.g., Vincent van Gogh"
                         />
                       </div>
                     </div>
