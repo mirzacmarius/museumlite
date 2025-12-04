@@ -407,6 +407,12 @@ function CollectionDetails({
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">
+                Creator
+              </label>
+              <p className="mt-1 text-sm">{collection.creator || "—"}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
                 Status
               </label>
               <div className="mt-1 flex items-center gap-2">
@@ -564,6 +570,76 @@ function CollectionDetails({
             </div>
           </div>
         )}
+
+        {/* Donation Information Section */}
+        {(collection.donated_by && collection.donated_by.length > 0) ||
+        collection.donated_date ||
+        collection.donation_info ||
+        (collection.previous_owners && collection.previous_owners.length > 0) ? (
+          <div className="rounded-lg border border-border bg-card p-4">
+            <h3 className="mb-3 text-base font-semibold">
+              Donation & Ownership Information
+            </h3>
+            <div className="space-y-4">
+              {collection.donated_by && collection.donated_by.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Donated By
+                  </label>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {collection.donated_by.map((donor, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center rounded-md border border-border bg-secondary px-2 py-0.5 text-xs font-medium"
+                      >
+                        {donor}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {collection.donated_date && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Donated Date
+                  </label>
+                  <p className="mt-1 text-sm">{collection.donated_date}</p>
+                </div>
+              )}
+
+              {collection.donation_info && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Donation Information
+                  </label>
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
+                    {collection.donation_info}
+                  </p>
+                </div>
+              )}
+
+              {collection.previous_owners &&
+                collection.previous_owners.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Previous Owner(s)
+                    </label>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {collection.previous_owners.map((owner, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center rounded-md border border-border bg-secondary px-2 py-0.5 text-xs font-medium"
+                        >
+                          {owner}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+            </div>
+          </div>
+        ) : null}
 
         {/* Links Section */}
         {collection.links && collection.links.length > 0 && (
