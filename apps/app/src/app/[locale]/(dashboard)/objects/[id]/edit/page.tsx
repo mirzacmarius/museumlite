@@ -5,6 +5,7 @@ import { ConditionCombobox } from "@/components/condition-combobox";
 import { DonorCombobox } from "@/components/donor-combobox";
 import { LocationSelector } from "@/components/location-selector";
 import { MaterialsCombobox } from "@/components/materials-combobox";
+import { ObjectCombobox } from "@/components/object-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { RepeatableTextField } from "@/components/repeatable-text-field";
@@ -61,6 +62,7 @@ interface CollectionFormData {
   donation_info?: string;
   previous_owners?: string[];
   links?: Array<{ url: string; label?: string }>;
+  parentObjectId?: string;
   currentLocationId?: string;
   alternateAccessionNumbers?: string[];
 }
@@ -330,6 +332,7 @@ export default function CollectionEditPage() {
         links: collection.links && collection.links.length > 0 
           ? collection.links 
           : [{ url: "", label: "" }],
+        parentObjectId: (collection.parentObjectId as string) || "",
         currentLocationId: (collection.currentLocationId as string) || "__none__",
         alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
       });
@@ -471,6 +474,9 @@ export default function CollectionEditPage() {
         materials: materialsString,
         objectType: objectTypeString,
         links: formData.links?.filter((link) => link.url.trim() !== ""),
+        parentObjectId: formData.parentObjectId
+          ? (formData.parentObjectId as Id<"collections">)
+          : undefined,
         currentLocationId:
           formData.currentLocationId && formData.currentLocationId !== "__none__"
             ? (formData.currentLocationId as Id<"locations">)
@@ -491,7 +497,7 @@ export default function CollectionEditPage() {
 
   const updateField = (
     field: keyof CollectionFormData,
-    value: string | string[] | Array<{ url: string; label?: string }>,
+    value: string | string[] | Array<{ url: string; label?: string }> | undefined,
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -737,6 +743,30 @@ export default function CollectionEditPage() {
                         updateField("currentLocationId", value)
                       }
                       placeholder="Select a location (optional)"
+                    />
+                  </div>
+                </div>
+
+                {/* Object Relationships Section */}
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <h3 className="mb-3 text-base font-semibold">
+                    Object Relationships
+                  </h3>
+                  <div>
+                    <Label htmlFor="parentObjectId">
+                      Parent Object
+                    </Label>
+                    <p className="mb-2 text-xs text-muted-foreground">
+                      Link this object to a parent object (e.g., a treasure chest containing this object)
+                    </p>
+                    <ObjectCombobox
+                      organizationId={collection.organizationId}
+                      collectionId={collectionId}
+                      value={formData.parentObjectId}
+                      onValueChange={(value) =>
+                        updateField("parentObjectId", value)
+                      }
+                      placeholder="Select parent object (optional)"
                     />
                   </div>
                 </div>

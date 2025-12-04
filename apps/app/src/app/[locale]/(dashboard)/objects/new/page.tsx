@@ -10,6 +10,7 @@ import { ConditionCombobox } from "@/components/condition-combobox";
 import { DonorCombobox } from "@/components/donor-combobox";
 import { LocationSelector } from "@/components/location-selector";
 import { MaterialsCombobox } from "@/components/materials-combobox";
+import { ObjectCombobox } from "@/components/object-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { TypeCombobox } from "@/components/type-combobox";
@@ -43,6 +44,7 @@ interface CollectionFormData {
   donation_info?: string;
   previous_owners?: string[];
   links?: Array<{ url: string; label?: string }>;
+  parentObjectId?: string;
   currentLocationId?: string;
   collectionGroupId?: string;
 }
@@ -95,6 +97,7 @@ export default function CollectionFormPage() {
     donation_info: "",
     previous_owners: [],
     links: [{ url: "", label: "" }],
+    parentObjectId: "",
     currentLocationId: "",
     collectionGroupId: collectionGroupId || "",
   });
@@ -385,7 +388,7 @@ export default function CollectionFormPage() {
 
   const updateField = (
     field: keyof CollectionFormData,
-    value: string | string[] | Array<{ url: string; label?: string }>,
+    value: string | string[] | Array<{ url: string; label?: string }> | undefined,
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -591,6 +594,29 @@ export default function CollectionFormPage() {
                           updateField("currentLocationId", value)
                         }
                         placeholder="Select a location (optional)"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Object Relationships Section */}
+                  <div className="rounded-lg border border-border bg-card p-4">
+                    <h3 className="mb-3 text-base font-semibold">
+                      Object Relationships
+                    </h3>
+                    <div>
+                      <Label htmlFor="parentObjectId">
+                        Parent Object
+                      </Label>
+                      <p className="mb-2 text-xs text-muted-foreground">
+                        Link this object to a parent object (e.g., a treasure chest containing this object)
+                      </p>
+                      <ObjectCombobox
+                        organizationId={currentOrganizationId}
+                        value={formData.parentObjectId}
+                        onValueChange={(value) =>
+                          updateField("parentObjectId", value)
+                        }
+                        placeholder="Select parent object (optional)"
                       />
                     </div>
                   </div>

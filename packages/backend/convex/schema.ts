@@ -166,6 +166,7 @@ export default defineSchema({
         }),
       ),
     ), // List of external links
+    parentObjectId: v.optional(v.id("collections")), // Parent object (e.g., treasure chest containing this object)
     currentLocationId: v.optional(v.id("locations")),
     status: v.union(
       v.literal("active"),
@@ -184,6 +185,7 @@ export default defineSchema({
       "accessionNumber",
     ])
     .index("by_collectionGroup", ["collectionGroupId"])
+    .index("by_parentObject", ["parentObjectId"])
     .index("by_currentLocation", ["currentLocationId"])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])

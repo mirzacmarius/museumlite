@@ -96,6 +96,7 @@ export const create = mutation({
         }),
       ),
     ),
+    parentObjectId: v.optional(v.id("collections")),
     currentLocationId: v.optional(v.id("locations")),
   },
   returns: v.id("collections"),
@@ -153,6 +154,7 @@ export const create = mutation({
       donation_info: args.donation_info,
       previous_owners: args.previous_owners,
       links: args.links,
+      parentObjectId: args.parentObjectId,
       currentLocationId: args.currentLocationId,
       status: "active",
       catalogedBy: userId,
@@ -220,6 +222,7 @@ export const get = query({
           }),
         ),
       ),
+      parentObjectId: v.optional(v.id("collections")),
       currentLocationId: v.optional(v.id("locations")),
       status: v.union(
         v.literal("active"),
@@ -678,6 +681,7 @@ export const update = mutation({
         }),
       ),
     ),
+    parentObjectId: v.optional(v.id("collections")),
     currentLocationId: v.optional(v.id("locations")),
     alternateAccessionNumbers: v.optional(v.array(v.string())),
   },
@@ -721,6 +725,7 @@ export const update = mutation({
       donation_info?: string;
       previous_owners?: Array<string>;
       links?: Array<{ url: string; label?: string }>;
+      parentObjectId?: Id<"collections">;
       currentLocationId?: Id<"locations">;
       alternateAccessionNumbers?: Array<string>;
       lastModifiedBy?: Id<"users">;
@@ -747,6 +752,7 @@ export const update = mutation({
     if (args.donation_info !== undefined) updates.donation_info = args.donation_info;
     if (args.previous_owners !== undefined) updates.previous_owners = args.previous_owners;
     if (args.links !== undefined) updates.links = args.links;
+    if (args.parentObjectId !== undefined) updates.parentObjectId = args.parentObjectId;
     if (args.currentLocationId !== undefined)
       updates.currentLocationId = args.currentLocationId;
     if (args.alternateAccessionNumbers !== undefined)
@@ -998,5 +1004,75 @@ export const getAccessionHistory = query({
     await requirePermission(ctx, collection.organizationId, "collections.read");
 
     return collection.accessionNumberHistory ?? [];
+  },
+});
+
+/**
+ * Get parent object for a collection
+ */
+export const getParentObject = query({
+  args: {
+    collectionId: v.id("collections"),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id("collections"),
+      title: v.string(),
+      accessionNumber: v.string(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection || !collection.parentObjectId) {
+      return null;
+    }
+
+    const parent = await ctx.db.get(collection.parentObjectId);
+    if (!parent) {
+      return null;
+    }
+
+    return {
+      _id: parent._id,
+      title: parent.title,
+      accessionNumber: parent.accessionNumber,
+    };
+  },
+});
+
+/**
+ * Get child objects (objects that have this collection as parent)
+ */
+export const getChildObjects = query({
+  args: {
+    collectionId: v.id("collections"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("collections"),
+      title: v.string(),
+      accessionNumber: v.string(),
+      status: v.union(
+        v.literal("active"),
+        v.literal("loaned"),
+        v.literal("deaccessioned"),
+      ),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const children = await ctx.db
+      .query("collections")
+      .withIndex("by_parentObject", (q) =>
+        q.eq("parentObjectId", args.collectionId),
+      )
+      .collect();
+
+    return children.map((child) => ({
+      _id: child._id,
+      title: child.title,
+      accessionNumber: child.accessionNumber,
+      status: child.status,
+    }));
   },
 });

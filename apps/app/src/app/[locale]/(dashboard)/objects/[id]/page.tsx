@@ -290,6 +290,20 @@ function CollectionDetails({
       : "skip",
   );
 
+  const parentObject = useQuery(
+    api.collections.getParentObject,
+    collection._id
+      ? { collectionId: collection._id as Id<"collections"> }
+      : "skip",
+  );
+
+  const childObjects = useQuery(
+    api.collections.getChildObjects,
+    collection._id
+      ? { collectionId: collection._id as Id<"collections"> }
+      : "skip",
+  );
+
   // Transform media data into ImageItem format for bento gallery
   const imageItems: ImageItem[] = React.useMemo(() => {
     if (!media || !Array.isArray(media)) return [];
@@ -660,6 +674,72 @@ function CollectionDetails({
                   </a>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Object Relationships Section */}
+        {(parentObject || (childObjects && childObjects.length > 0)) && (
+          <div className="rounded-lg border border-border bg-card p-4">
+            <h3 className="mb-3 text-base font-semibold">
+              Object Relationships
+            </h3>
+            <div className="space-y-4">
+              {parentObject && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    This object is part of
+                  </label>
+                  <div className="mt-1">
+                    <Link
+                      href={`/objects/${parentObject._id}`}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      {parentObject.title} ({parentObject.accessionNumber})
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {childObjects && childObjects.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Contained Objects
+                  </label>
+                  <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-5">
+                    {childObjects.map((child) => (
+                      <Link
+                        key={child._id}
+                        href={`/objects/${child._id}`}
+                        className="group rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent"
+                      >
+                        <div className="flex flex-col gap-2">
+                          <h4 className="font-medium text-primary group-hover:underline">
+                            {child.title}
+                          </h4>
+                          <p className="text-xs text-muted-foreground">
+                            {child.accessionNumber}
+                          </p>
+                          <div className="mt-auto pt-2">
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                child.status === "active"
+                                  ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                                  : child.status === "loaned"
+                                    ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                    : "bg-red-500/10 text-red-600 dark:text-red-400"
+                              }`}
+                            >
+                              {child.status.charAt(0).toUpperCase() +
+                                child.status.slice(1)}
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
