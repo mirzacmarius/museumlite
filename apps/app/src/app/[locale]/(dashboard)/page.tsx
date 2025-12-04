@@ -216,31 +216,16 @@ export default function DashboardPage() {
                         Loans
                       </p>
                       <p className="mt-2 text-4xl font-bold text-green-700 dark:text-green-400">
-                        {analytics.loans.total}
+                        {analytics.loans.active}
                       </p>
                     </div>
                     <Handshake className="h-6 w-6 flex-shrink-0 text-green-700 dark:text-green-400" />
                   </div>
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Active</span>
-                      <span className="font-semibold">
-                        {analytics.loans.active}
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-green-200 dark:bg-green-900/30">
-                      <div
-                        className="h-full rounded-full bg-green-600 transition-all"
-                        style={{
-                          width: `${
-                            analytics.loans.total > 0
-                              ? (analytics.loans.active /
-                                  analytics.loans.total) *
-                                100
-                              : 0
-                          }%`,
-                        }}
-                      />
+                    <div className="flex gap-4 text-xs text-muted-foreground">
+                      <span>{analytics.loans.total} total</span>
+                      <span>{analytics.loans.incoming} incoming</span>
+                      <span>{analytics.loans.outgoing} outgoing</span>
                     </div>
                     <div className="flex gap-4 text-xs text-muted-foreground">
                       <span>{analytics.loans.pending} pending</span>
