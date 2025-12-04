@@ -722,7 +722,7 @@ export default function CollectionFormPage() {
                           </div>
                           <div className="flex-1">
                             <Label htmlFor={`link-url-${index}`}>
-                              URL <span className="text-red-500">*</span>
+                              URL {index === 0 ? "" : <span className="text-red-500">*</span>}
                             </Label>
                             <Input
                               id={`link-url-${index}`}
@@ -737,7 +737,7 @@ export default function CollectionFormPage() {
                                 updateField("links", newLinks);
                               }}
                               placeholder="https://example.com"
-                              required
+                              required={index > 0}
                             />
                           </div>
                           {(formData.links || []).length > 1 && (
