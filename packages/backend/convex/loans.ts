@@ -1,41 +1,49 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { type MutationCtx, mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
 /**
  * Generate loan number
+ * Format: L{YEAR}.{MONTH}.{SEQUENCE} e.g. L2025.01.0001
  */
 async function generateLoanNumber(
-  ctx: any,
+  ctx: MutationCtx,
   organizationId: Id<"organizations">,
-  type: "incoming" | "outgoing",
 ): Promise<string> {
-  const org = await ctx.db.get(organizationId);
-  if (!org) {
-    throw new Error("Organization not found");
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+
+  const counter = await ctx.db
+    .query("loanCounters")
+    .withIndex("by_organization_and_year", (q) =>
+      q.eq("organizationId", organizationId).eq("year", year),
+    )
+    .first();
+
+  let nextValue: number;
+
+  if (counter) {
+    nextValue = counter.currentValue + 1;
+    await ctx.db.patch(counter._id, {
+      currentValue: nextValue,
+      lastGeneratedAt: Date.now(),
+    });
+  } else {
+    nextValue = 1;
+    await ctx.db.insert("loanCounters", {
+      organizationId,
+      year,
+      currentValue: nextValue,
+      lastGeneratedAt: Date.now(),
+    });
   }
 
-  const year = new Date().getFullYear();
-  const orgSlug = org.slug.toUpperCase().substring(0, 3);
-  const prefix = type === "incoming" ? "IN" : "OUT";
-
-  // Count existing loans this year
-  const existing = await ctx.db
-    .query("loans")
-    .withIndex("by_organization_and_type", (q: any) =>
-      q.eq("organizationId", organizationId).eq("type", type),
-    )
-    .filter((q: any) =>
-      q.eq(q.field("loanNumber"), `${prefix}-${orgSlug}-${year}-001`),
-    )
-    .collect();
-
-  const sequence = String(existing.length + 1).padStart(3, "0");
-  return `${prefix}-${orgSlug}-${year}-${sequence}`;
+  return `L${year}.${month}.${String(nextValue).padStart(4, "0")}`;
 }
 
 /**
@@ -46,6 +54,7 @@ export const create = mutation({
     organizationId: v.id("organizations"),
     loanNumber: v.optional(v.string()),
     type: v.union(v.literal("incoming"), v.literal("outgoing")),
+    accountId: v.optional(v.id("accounts")),
     lenderBorrowerName: v.string(),
     lenderBorrowerContact: v.optional(v.string()),
     startDate: v.number(),
@@ -67,22 +76,30 @@ export const create = mutation({
     // Check permission
     await requirePermission(ctx, args.organizationId, "loans.create");
 
+    // Validate account if provided
+    if (args.accountId) {
+      const account = await ctx.db.get(args.accountId);
+      if (!account) {
+        throw new Error("Account not found");
+      }
+      if (account.organizationId !== args.organizationId) {
+        throw new Error("Account does not belong to this organization");
+      }
+    }
+
     // Generate or use provided loan number
     let loanNumber: string;
     if (args.loanNumber) {
       loanNumber = args.loanNumber;
     } else {
-      loanNumber = await generateLoanNumber(
-        ctx,
-        args.organizationId,
-        args.type,
-      );
+      loanNumber = await generateLoanNumber(ctx, args.organizationId);
     }
 
     const loanId = await ctx.db.insert("loans", {
       organizationId: args.organizationId,
       loanNumber,
       type: args.type,
+      accountId: args.accountId,
       lenderBorrowerName: args.lenderBorrowerName,
       lenderBorrowerContact: args.lenderBorrowerContact,
       startDate: args.startDate,
@@ -436,7 +453,7 @@ export const list = query({
 
     // Handle pagination manually
     const cursor = args.paginationOpts.cursor
-      ? parseInt(args.paginationOpts.cursor, 10)
+      ? Number.parseInt(args.paginationOpts.cursor, 10)
       : 0;
     const startIndex = cursor;
     const endIndex = Math.min(
@@ -487,6 +504,24 @@ export const get = query({
       organizationId: v.id("organizations"),
       loanNumber: v.string(),
       type: v.union(v.literal("incoming"), v.literal("outgoing")),
+      accountId: v.optional(v.id("accounts")),
+      account: v.optional(
+        v.object({
+          _id: v.id("accounts"),
+          accountNumber: v.string(),
+          businessName: v.string(),
+          phone: v.optional(v.string()),
+          email: v.optional(v.string()),
+          address: v.optional(v.string()),
+          address2: v.optional(v.string()),
+          zipCode: v.optional(v.string()),
+          city: v.optional(v.string()),
+          country: v.optional(v.string()),
+          contactPerson: v.optional(v.string()),
+          contactPhone: v.optional(v.string()),
+          contactEmail: v.optional(v.string()),
+        }),
+      ),
       lenderBorrowerName: v.string(),
       lenderBorrowerContact: v.optional(v.string()),
       startDate: v.number(),
@@ -526,6 +561,29 @@ export const get = query({
 
     await requirePermission(ctx, loan.organizationId, "loans.read");
 
+    // Get account details if linked
+    let account = undefined;
+    if (loan.accountId) {
+      const accountData = await ctx.db.get(loan.accountId);
+      if (accountData) {
+        account = {
+          _id: accountData._id,
+          accountNumber: accountData.accountNumber,
+          businessName: accountData.businessName,
+          phone: accountData.phone,
+          email: accountData.email,
+          address: accountData.address,
+          address2: accountData.address2,
+          zipCode: accountData.zipCode,
+          city: accountData.city,
+          country: accountData.country,
+          contactPerson: accountData.contactPerson,
+          contactPhone: accountData.contactPhone,
+          contactEmail: accountData.contactEmail,
+        };
+      }
+    }
+
     // Get loan items
     const loanItems = await ctx.db
       .query("loanItems")
@@ -554,6 +612,8 @@ export const get = query({
       organizationId: loan.organizationId,
       loanNumber: loan.loanNumber,
       type: loan.type,
+      accountId: loan.accountId,
+      account,
       lenderBorrowerName: loan.lenderBorrowerName,
       lenderBorrowerContact: loan.lenderBorrowerContact,
       startDate: loan.startDate,
@@ -900,7 +960,9 @@ export const returnItem = mutation({
     // Find loan item
     const loanItem = await ctx.db
       .query("loanItems")
-      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", args.collectionId),
+      )
       .filter((q) => q.eq(q.field("loanId"), args.loanId))
       .first();
 
@@ -911,7 +973,11 @@ export const returnItem = mutation({
     // Update loan item with return info
     await ctx.db.patch(loanItem._id, {
       conditionIn: args.conditionIn,
-      notes: args.notes ? (loanItem.notes ? `${loanItem.notes}\n${args.notes}` : args.notes) : loanItem.notes,
+      notes: args.notes
+        ? loanItem.notes
+          ? `${loanItem.notes}\n${args.notes}`
+          : args.notes
+        : loanItem.notes,
     });
 
     // If it's an INCOMING loan, returning it means we send it back to owner.
@@ -922,27 +988,27 @@ export const returnItem = mutation({
       if (collection) {
         // Check if already deaccessioned
         if (collection.status !== "deaccessioned") {
-           // Create Deaccession record
-           await ctx.db.insert("deaccessions", {
-             organizationId: loan.organizationId,
-             collectionId: args.collectionId,
-             deaccessionNumber: `RET-${collection.accessionNumber}`, // Auto-generated suffix
-             dateDeaccessioned: Date.now(),
-             reason: "Returned to lender",
-             method: "transfer",
-             disposition: `Returned to ${loan.lenderBorrowerName}`,
-             status: "approved",
-             approvedBy: userId,
-             approvedAt: Date.now(),
-             workflowStep: 0,
-           });
+          // Create Deaccession record
+          await ctx.db.insert("deaccessions", {
+            organizationId: loan.organizationId,
+            collectionId: args.collectionId,
+            deaccessionNumber: `RET-${collection.accessionNumber}`, // Auto-generated suffix
+            dateDeaccessioned: Date.now(),
+            reason: "Returned to lender",
+            method: "transfer",
+            disposition: `Returned to ${loan.lenderBorrowerName}`,
+            status: "approved",
+            approvedBy: userId,
+            approvedAt: Date.now(),
+            workflowStep: 0,
+          });
 
-           // Update collection status
-           await ctx.db.patch(args.collectionId, {
-             status: "deaccessioned",
-             lastModifiedBy: userId,
-             lastModifiedAt: Date.now(),
-           });
+          // Update collection status
+          await ctx.db.patch(args.collectionId, {
+            status: "deaccessioned",
+            lastModifiedBy: userId,
+            lastModifiedAt: Date.now(),
+          });
         }
       }
     } else {
@@ -954,7 +1020,7 @@ export const returnItem = mutation({
         lastModifiedAt: Date.now(),
       });
     }
-    
+
     return null;
   },
 });

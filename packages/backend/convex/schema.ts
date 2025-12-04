@@ -424,11 +424,58 @@ export default defineSchema({
     .index("by_fromLocation", ["fromLocationId"])
     .index("by_movedAt", ["movedAt"]),
 
+  // Client accounts (lenders/borrowers)
+  accounts: defineTable({
+    organizationId: v.id("organizations"),
+    accountNumber: v.string(),
+    businessName: v.string(),
+    phone: v.optional(v.string()),
+    email: v.optional(v.string()),
+    address: v.optional(v.string()),
+    address2: v.optional(v.string()),
+    zipCode: v.optional(v.string()),
+    city: v.optional(v.string()),
+    country: v.optional(v.string()),
+    contactPerson: v.optional(v.string()),
+    contactPhone: v.optional(v.string()),
+    contactEmail: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    lastModifiedBy: v.optional(v.id("users")),
+    lastModifiedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_accountNumber", [
+      "organizationId",
+      "accountNumber",
+    ])
+    .searchIndex("search_accounts", {
+      searchField: "businessName",
+      filterFields: ["organizationId"],
+    }),
+
+  // Account number counter tracking
+  accountCounters: defineTable({
+    organizationId: v.id("organizations"),
+    currentValue: v.number(),
+    lastGeneratedAt: v.number(),
+  }).index("by_organization", ["organizationId"]),
+
+  // Loan number counter tracking (per year)
+  loanCounters: defineTable({
+    organizationId: v.id("organizations"),
+    year: v.number(),
+    currentValue: v.number(),
+    lastGeneratedAt: v.number(),
+  }).index("by_organization_and_year", ["organizationId", "year"]),
+
   // Loan records
   loans: defineTable({
     organizationId: v.id("organizations"),
     loanNumber: v.string(),
     type: v.union(v.literal("incoming"), v.literal("outgoing")),
+    accountId: v.optional(v.id("accounts")),
     lenderBorrowerName: v.string(),
     lenderBorrowerContact: v.optional(v.string()),
     startDate: v.number(),
@@ -462,7 +509,8 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_type", ["type"])
-    .index("by_organization_and_type", ["organizationId", "type"]),
+    .index("by_organization_and_type", ["organizationId", "type"])
+    .index("by_account", ["accountId"]),
 
   // Items included in loans
   loanItems: defineTable({
