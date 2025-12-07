@@ -230,6 +230,8 @@ export const get = query({
       ),
       parentObjectId: v.optional(v.id("collections")),
       currentLocationId: v.optional(v.id("locations")),
+      acquisitionMethod: v.optional(v.string()),
+      legalRestrictions: v.optional(v.boolean()),
       status: v.union(
         v.literal("active"),
         v.literal("loaned"),
@@ -690,6 +692,8 @@ export const update = mutation({
     parentObjectId: v.optional(v.id("collections")),
     currentLocationId: v.optional(v.id("locations")),
     alternateAccessionNumbers: v.optional(v.array(v.string())),
+    acquisitionMethod: v.optional(v.string()),
+    legalRestrictions: v.optional(v.boolean()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -734,6 +738,8 @@ export const update = mutation({
       parentObjectId?: Id<"collections">;
       currentLocationId?: Id<"locations">;
       alternateAccessionNumbers?: Array<string>;
+      acquisitionMethod?: string;
+      legalRestrictions?: boolean;
       lastModifiedBy?: Id<"users">;
       lastModifiedAt?: number;
     } = {};
@@ -763,6 +769,10 @@ export const update = mutation({
       updates.currentLocationId = args.currentLocationId;
     if (args.alternateAccessionNumbers !== undefined)
       updates.alternateAccessionNumbers = args.alternateAccessionNumbers;
+    if (args.acquisitionMethod !== undefined)
+      updates.acquisitionMethod = args.acquisitionMethod;
+    if (args.legalRestrictions !== undefined)
+      updates.legalRestrictions = args.legalRestrictions;
 
     updates.lastModifiedBy = userId;
     updates.lastModifiedAt = Date.now();
