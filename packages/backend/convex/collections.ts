@@ -99,6 +99,8 @@ export const create = mutation({
     parentObjectId: v.optional(v.id("collections")),
     currentLocationId: v.optional(v.id("locations")),
     alternateAccessionNumbers: v.optional(v.array(v.string())),
+    acquisitionMethod: v.optional(v.string()),
+    legalRestrictions: v.optional(v.boolean()),
   },
   returns: v.id("collections"),
   handler: async (ctx, args) => {
@@ -158,6 +160,8 @@ export const create = mutation({
       parentObjectId: args.parentObjectId,
       currentLocationId: args.currentLocationId,
       alternateAccessionNumbers: args.alternateAccessionNumbers,
+      acquisitionMethod: args.acquisitionMethod,
+      legalRestrictions: args.legalRestrictions,
       status: "active",
       catalogedBy: userId,
       catalogedAt: Date.now(),

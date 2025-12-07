@@ -168,6 +168,8 @@ export default defineSchema({
     ), // List of external links
     parentObjectId: v.optional(v.id("collections")), // Parent object (e.g., treasure chest containing this object)
     currentLocationId: v.optional(v.id("locations")),
+    acquisitionMethod: v.optional(v.string()),
+    legalRestrictions: v.optional(v.boolean()),
     status: v.union(
       v.literal("active"),
       v.literal("loaned"),
