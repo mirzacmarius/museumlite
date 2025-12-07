@@ -1,5 +1,6 @@
 "use client";
 
+import { AccountCombobox } from "@/components/account-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -31,6 +32,7 @@ export default function NewLoanPage() {
   const [formData, setFormData] = useState({
     loanNumber: "",
     type: "incoming" as "incoming" | "outgoing",
+    accountId: undefined as string | undefined,
     lenderBorrowerName: "",
     lenderBorrowerContact: "",
     startDate: new Date(),
@@ -86,6 +88,9 @@ export default function NewLoanPage() {
         organizationId: currentOrganizationId as Id<"organizations">,
         loanNumber: formData.loanNumber || undefined,
         type: formData.type,
+        accountId: formData.accountId
+          ? (formData.accountId as Id<"accounts">)
+          : undefined,
         lenderBorrowerName: formData.lenderBorrowerName,
         lenderBorrowerContact: formData.lenderBorrowerContact || undefined,
         startDate: formData.startDate.getTime(),
@@ -186,39 +191,79 @@ export default function NewLoanPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="lenderBorrowerName">
-                  {formData.type === "incoming" ? "Lender" : "Borrower"} *
-                </Label>
-                <Input
-                  id="lenderBorrowerName"
-                  value={formData.lenderBorrowerName}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      lenderBorrowerName: e.target.value,
-                    })
-                  }
-                  placeholder="Name of lender or borrower"
-                  required
-                />
-              </div>
+              <div className="space-y-4 rounded-lg border border-border p-4">
+                <div>
+                  <Label>
+                    {formData.type === "incoming" ? "Lender" : "Borrower"}{" "}
+                    Account
+                  </Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Select an existing account or create a new one
+                  </p>
+                  <AccountCombobox
+                    organizationId={currentOrganizationId}
+                    value={formData.accountId}
+                    onValueChange={(accountId) =>
+                      setFormData({ ...formData, accountId })
+                    }
+                    onAccountSelect={(account) => {
+                      if (account) {
+                        setFormData({
+                          ...formData,
+                          accountId: account._id,
+                          lenderBorrowerName: account.businessName,
+                          lenderBorrowerContact: [
+                            account.contactPerson,
+                            account.email,
+                            account.phone,
+                          ]
+                            .filter(Boolean)
+                            .join(", "),
+                        });
+                      }
+                    }}
+                    placeholder={`Select or create ${formData.type === "incoming" ? "lender" : "borrower"}...`}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="lenderBorrowerContact">
-                  Contact Information
-                </Label>
-                <Input
-                  id="lenderBorrowerContact"
-                  value={formData.lenderBorrowerContact}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      lenderBorrowerContact: e.target.value,
-                    })
-                  }
-                  placeholder="Email, phone, address"
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="lenderBorrowerName">
+                    {formData.type === "incoming" ? "Lender" : "Borrower"} Name
+                    *
+                  </Label>
+                  <Input
+                    id="lenderBorrowerName"
+                    value={formData.lenderBorrowerName}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        lenderBorrowerName: e.target.value,
+                      })
+                    }
+                    placeholder="Name of lender or borrower"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Auto-filled when selecting an account, or enter manually
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="lenderBorrowerContact">
+                    Contact Information
+                  </Label>
+                  <Input
+                    id="lenderBorrowerContact"
+                    value={formData.lenderBorrowerContact}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        lenderBorrowerContact: e.target.value,
+                      })
+                    }
+                    placeholder="Email, phone, address"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -291,9 +336,7 @@ export default function NewLoanPage() {
                     <Input
                       placeholder="Search by accession number or title..."
                       value={collectionSearchQuery}
-                      onChange={(e) =>
-                        setCollectionSearchQuery(e.target.value)
-                      }
+                      onChange={(e) => setCollectionSearchQuery(e.target.value)}
                       className="pl-9"
                     />
                   </div>

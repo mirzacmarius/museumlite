@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { LoanAgreement } from "./_components/loan-agreement";
 import { LoanApprovalWorkflow } from "./_components/loan-approval-workflow";
 import { LoanItemsManager } from "./_components/loan-items-manager";
 
@@ -30,6 +31,13 @@ export default function LoanDetailPage() {
   const loan = useQuery(
     api.loans.get,
     loanId ? { loanId: loanId as Id<"loans"> } : "skip",
+  );
+
+  const organization = useQuery(
+    api.organizations.get,
+    currentOrganizationId
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
   );
 
   if (!currentOrganizationId) {
@@ -125,6 +133,26 @@ export default function LoanDetailPage() {
               </div>
             </div>
             <div className="flex gap-2">
+              <LoanAgreement
+                loan={{
+                  loanNumber: loan.loanNumber,
+                  type: loan.type,
+                  lenderBorrowerName: loan.lenderBorrowerName,
+                  lenderBorrowerContact: loan.lenderBorrowerContact,
+                  startDate: loan.startDate,
+                  endDate: loan.endDate,
+                  terms: loan.terms,
+                  insuranceValue: loan.insuranceValue,
+                  notes: loan.notes,
+                  account: loan.account,
+                }}
+                items={loan.items.map((item) => ({
+                  accessionNumber: item.accessionNumber,
+                  title: item.title,
+                  conditionOut: item.conditionOut,
+                }))}
+                organizationName={organization?.name || "Museum"}
+              />
               {loan.status === "pending" && (
                 <PermissionGate permission="loans.update">
                   <Button variant="outline" size="sm" asChild>
