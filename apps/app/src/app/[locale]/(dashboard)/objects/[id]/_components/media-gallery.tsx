@@ -37,8 +37,8 @@ import { useUploadFiles } from "@xixixao/uploadstuff/react";
 import { useMutation, useQuery } from "convex/react";
 import {
   Edit,
-  Expand,
   Image as ImageIcon,
+  Maximize2,
   Star,
   StarOff,
   Trash2,
@@ -50,11 +50,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 interface MediaGalleryProps {
   collectionId: string;
   mediaType?: "images" | "documents";
+  onOpenLightbox?: (index: number) => void;
 }
 
 export function MediaGallery({
   collectionId,
   mediaType = "images",
+  onOpenLightbox,
 }: MediaGalleryProps) {
   const { currentOrganizationId } = useOrganization();
   const media = useQuery(
@@ -330,7 +332,7 @@ export function MediaGallery({
             </div>
           ) : (
             <>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               {images.map((file, index) => {
                 // Find the index in lightboxImages for this file
                 const lightboxIdx = lightboxImages.findIndex(
@@ -339,7 +341,7 @@ export function MediaGallery({
                 return (
                   <div
                     key={file._id}
-                    className="group relative aspect-square overflow-hidden rounded-lg border"
+                    className="group relative aspect-square cursor-pointer overflow-hidden rounded-lg border border-border bg-secondary"
                   >
                     {file.url && (
                       <>
@@ -347,21 +349,27 @@ export function MediaGallery({
                           <button
                             type="button"
                             className="h-full w-full cursor-pointer"
-                            onClick={() =>
-                              lightboxIdx >= 0 && openLightbox(lightboxIdx)
-                            }
+                            onClick={() => {
+                              if (lightboxIdx >= 0) {
+                                if (onOpenLightbox) {
+                                  onOpenLightbox(lightboxIdx);
+                                } else {
+                                  openLightbox(lightboxIdx);
+                                }
+                              }
+                            }}
                             aria-label={`View ${file.caption || file.fileName}`}
                           >
                             <img
                               src={file.thumbnailUrl || file.url}
                               alt={file.caption || file.fileName}
-                              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                             />
                           </button>
                         ) : file.fileType === "video" ? (
                           <video
                             src={file.url}
-                            className="h-full w-full object-cover"
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                             controls={false}
                             aria-label={file.caption || file.fileName}
                           >
@@ -373,33 +381,37 @@ export function MediaGallery({
                           </div>
                         )}
 
-                        {/* Overlay with actions */}
-                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                        <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                          {/* Expand button */}
-                          {file.fileType === "image" && lightboxIdx >= 0 && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => openLightbox(lightboxIdx)}
-                              title="View full size"
-                              className="h-8 w-8 p-0"
-                            >
-                              <Expand className="h-4 w-4" />
-                            </Button>
+                        {/* File name overlay - visible by default, hidden on hover */}
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-6 text-xs text-white transition-opacity group-hover:opacity-0">
+                          <p className="truncate font-medium">{file.fileName}</p>
+                          {file.caption && (
+                            <p className="truncate text-[10px] text-white/70">
+                              {file.caption}
+                            </p>
                           )}
+                        </div>
+
+                        {/* Hover Overlay with expand icon */}
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                          <Maximize2 className="h-6 w-6 text-white" />
+                        </div>
+
+                        {/* Action buttons on hover */}
+                        <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                           <PermissionGate permission="media.upload">
                             {!file.isPrimary && (
                               <Button
                                 type="button"
                                 size="sm"
                                 variant="secondary"
-                                onClick={() => handleSetPrimary(file._id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSetPrimary(file._id);
+                                }}
                                 title="Set as primary"
-                                className="h-8 w-8 p-0"
+                                className="h-7 w-7 p-0"
                               >
-                                <Star className="h-4 w-4" />
+                                <Star className="h-3.5 w-3.5" />
                               </Button>
                             )}
                             <MediaEditDialog
@@ -436,10 +448,11 @@ export function MediaGallery({
                                   type="button"
                                   size="sm"
                                   variant="destructive"
+                                  onClick={(e) => e.stopPropagation()}
                                   title="Delete"
-                                  className="h-8 w-8 p-0"
+                                  className="h-7 w-7 p-0"
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
@@ -467,20 +480,10 @@ export function MediaGallery({
 
                         {/* Primary badge */}
                         {file.isPrimary && (
-                          <div className="absolute top-2 right-2 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">
+                          <div className="absolute left-2 top-2 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">
                             Primary
                           </div>
                         )}
-
-                        {/* File name overlay - always visible at bottom */}
-                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-6 text-xs text-white">
-                          <p className="truncate font-medium">{file.fileName}</p>
-                          {file.caption && (
-                            <p className="truncate text-white/70">
-                              {file.caption}
-                            </p>
-                          )}
-                        </div>
                       </>
                     )}
                   </div>
@@ -488,13 +491,15 @@ export function MediaGallery({
               })}
             </div>
 
-            {/* Image Lightbox */}
-            <ImageLightbox
-              images={lightboxImages}
-              initialIndex={lightboxIndex}
-              isOpen={isLightboxOpen}
-              onClose={closeLightbox}
-            />
+            {/* Image Lightbox - only render when not using external lightbox */}
+            {!onOpenLightbox && (
+              <ImageLightbox
+                images={lightboxImages}
+                initialIndex={lightboxIndex}
+                isOpen={isLightboxOpen}
+                onClose={closeLightbox}
+              />
+            )}
             </>
           )}
         </div>

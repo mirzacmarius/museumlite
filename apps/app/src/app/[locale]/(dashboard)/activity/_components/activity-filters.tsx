@@ -12,7 +12,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { Calendar as CalendarIcon, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
-import { DateRange } from "react-day-picker";
+import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 
 interface ActivityFiltersProps {
@@ -102,7 +102,6 @@ export function ActivityFilters({
         start = now - 90 * 24 * 60 * 60 * 1000;
         break;
       }
-      case "alltime":
       default: {
         start = undefined;
         end = undefined;

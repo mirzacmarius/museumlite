@@ -1229,8 +1229,10 @@ export const createAllCollectionsForOrg = internalMutation({
     
     for (let i = 0; i < objects.length; i++) {
       const obj = objects[i];
+      if (!obj) continue;
+
       const accessionNumber = `${args.prefix}-2024-${String(i + 1).padStart(3, "0")}`;
-      
+
       const collectionId = await ctx.db.insert("collections", {
         organizationId: args.organizationId,
         accessionNumber,

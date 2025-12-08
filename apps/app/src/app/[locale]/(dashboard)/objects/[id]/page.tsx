@@ -4,7 +4,28 @@ import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
 import { Button } from "@v1/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@v1/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@v1/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@v1/ui/tooltip";
 import { SidebarProvider } from "@v1/ui/sidebar";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
@@ -14,17 +35,19 @@ import {
   Box,
   Building2,
   Calendar,
+  Check,
   CheckCircle,
   Copy,
-  Download,
   ExternalLink,
   FileCheck,
-  FileText,
+  FileDown,
   Globe,
   Hammer,
   History,
   Image as ImageIcon,
+  Info,
   Link as LinkIcon,
+  Link2,
   MapPin,
   Maximize2,
   Pencil,
@@ -33,10 +56,10 @@ import {
   Ruler,
   ScrollText,
   Search,
+  Send,
   Share2,
   Stethoscope,
   Tag,
-  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -74,6 +97,7 @@ export default function ObjectDetailPage() {
   const collectionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
   const [activeTab, setActiveTab] = useState<TabId>("general");
+  const [copied, setCopied] = useState(false);
 
   const collection = useQuery(
     api.collections.get,
@@ -101,6 +125,20 @@ export default function ObjectDetailPage() {
       : "skip",
   );
 
+  const parentObject = useQuery(
+    api.collections.getParentObjectWithThumbnail,
+    collection?._id
+      ? { collectionId: collection._id as Id<"collections"> }
+      : "skip",
+  );
+
+  const siblingObjects = useQuery(
+    api.collections.getSiblingObjects,
+    collection?._id
+      ? { collectionId: collection._id as Id<"collections"> }
+      : "skip",
+  );
+
   // Get primary image
   const primaryImage = media?.find((m) => m.isPrimary && m.fileType === "image");
   const firstImage = media?.find((m) => m.fileType === "image");
@@ -108,6 +146,17 @@ export default function ObjectDetailPage() {
 
   // Hero lightbox state
   const [isHeroLightboxOpen, setIsHeroLightboxOpen] = useState(false);
+  const [lightboxInitialIndex, setLightboxInitialIndex] = useState(0);
+
+  // Print modal state
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
   const heroLightboxImages: LightboxImage[] = useMemo(() => {
     if (!media) return [];
     return media
@@ -150,9 +199,10 @@ export default function ObjectDetailPage() {
   const locationString = locationPath?.map((loc) => loc.name).join(", ") || null;
 
   return (
+    <>
     <SidebarProvider
       style={{ "--sidebar-width": "20rem" } as React.CSSProperties}
-      className="flex min-h-screen w-full"
+      className="flex min-h-screen w-full print:hidden"
     >
       {/* Main Content */}
       <main className="z-10 flex min-w-0 flex-1 flex-col bg-background">
@@ -178,19 +228,43 @@ export default function ObjectDetailPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              title="Share"
-            >
-              <Share2 className="h-4 w-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  title="Share"
+                >
+                  <Share2 className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={handleCopyLink}>
+                  {linkCopied ? (
+                    <Check className="mr-2 h-4 w-4 text-green-500" />
+                  ) : (
+                    <Link2 className="mr-2 h-4 w-4" />
+                  )}
+                  {linkCopied ? "Link Copied!" : "Copy Object Link"}
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Export to PDF
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <Send className="mr-2 h-4 w-4" />
+                  Request Loan
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-foreground"
               title="Print Record"
+              onClick={() => setIsPrintModalOpen(true)}
             >
               <Printer className="h-4 w-4" />
             </Button>
@@ -237,14 +311,15 @@ export default function ObjectDetailPage() {
               {/* Hero Image Lightbox */}
               <ImageLightbox
                 images={heroLightboxImages}
-                initialIndex={0}
+                initialIndex={lightboxInitialIndex}
                 isOpen={isHeroLightboxOpen}
                 onClose={() => setIsHeroLightboxOpen(false)}
               />
 
               {/* Hero Info */}
               <div className="flex-1 space-y-4">
-                <div className="flex items-center gap-3">
+                {/* Status, Accession & Alternates Row */}
+                <div className="flex flex-wrap items-center gap-2.5">
                   {/* Display Status Badge */}
                   <div
                     className={cn(
@@ -259,11 +334,99 @@ export default function ObjectDetailPage() {
                   >
                     {collection.displayStatus || collection.status}
                   </div>
-                  {/* Accession Number */}
-                  <div className="flex items-center gap-1.5 rounded border border-border bg-secondary px-2 py-0.5 font-mono text-xs text-muted-foreground">
-                    <span>{collection.accessionNumber}</span>
-                    <Copy className="h-3 w-3 cursor-pointer transition-colors hover:text-foreground" />
+
+                  {/* Public/Private Badge */}
+                  <div
+                    className={cn(
+                      "flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px]",
+                      collection.isPubliclyVisible !== false
+                        ? "border border-emerald-500/20 bg-emerald-950/30 text-emerald-400"
+                        : "border border-red-500/20 bg-red-950/30 text-red-400",
+                    )}
+                  >
+                    <div className="relative flex h-2 w-2">
+                      {collection.isPubliclyVisible !== false && (
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                      )}
+                      <span
+                        className={cn(
+                          "relative inline-flex h-2 w-2 rounded-full",
+                          collection.isPubliclyVisible !== false
+                            ? "bg-emerald-500"
+                            : "bg-red-500",
+                        )}
+                      />
+                    </div>
+                    <span className="font-medium">
+                      {collection.isPubliclyVisible !== false ? "Public" : "Private"}
+                    </span>
                   </div>
+
+                  {/* Main Accession Number */}
+                  <Popover open={copied} onOpenChange={setCopied}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex cursor-pointer items-center gap-1.5 rounded border border-border bg-secondary px-2 py-1 font-mono text-xs text-foreground transition-colors hover:bg-secondary/80"
+                        onClick={() => {
+                          navigator.clipboard.writeText(collection.accessionNumber);
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 1500);
+                        }}
+                      >
+                        <span>{collection.accessionNumber}</span>
+                        {copied ? (
+                          <Check className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <Copy className="h-3 w-3 text-muted-foreground transition-colors hover:text-foreground" />
+                        )}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto px-3 py-1.5 text-xs">
+                      Copied to clipboard
+                    </PopoverContent>
+                  </Popover>
+
+                  {/* Alternate Accession Numbers */}
+                  {collection.alternateAccessionNumbers &&
+                    collection.alternateAccessionNumbers.length > 0 && (
+                      <>
+                        <div className="mx-1 h-4 w-px bg-border" />
+                        <div className="flex items-center gap-2">
+                          {collection.alternateAccessionNumbers.map((altNum, idx) => (
+                            <div
+                              key={altNum}
+                              className="flex items-center gap-1.5 rounded-md border border-border bg-secondary/50 px-2 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+                            >
+                              <span className="select-none font-mono text-muted-foreground/60">
+                                {idx === 0 ? "ID:" : "ALT:"}
+                              </span>
+                              <span>{altNum}</span>
+                            </div>
+                          ))}
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                className="rounded-full p-0.5 text-muted-foreground/50 transition-colors hover:bg-secondary hover:text-muted-foreground"
+                              >
+                                <Info className="h-3.5 w-3.5" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-64 p-3 text-xs">
+                              <p className="font-medium text-foreground">
+                                Alternative Identifiers
+                              </p>
+                              <p className="mt-1.5 leading-relaxed text-muted-foreground">
+                                Previous catalog numbers, legacy IDs, or external system
+                                references used to identify this object before or alongside
+                                the current accession number.
+                              </p>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </>
+                    )}
                 </div>
 
                 <div>
@@ -277,6 +440,7 @@ export default function ObjectDetailPage() {
                   )}
                 </div>
 
+                {/* Metadata Row */}
                 <div className="flex items-center gap-6 pt-2">
                   {locationString && (
                     <div className="flex items-center gap-2 text-xs">
@@ -287,29 +451,154 @@ export default function ObjectDetailPage() {
                   {collection.dateCreated && (
                     <div className="flex items-center gap-2 text-xs">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">
-                        {collection.dateCreated}
-                      </span>
+                      <span className="text-muted-foreground">{collection.dateCreated}</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 text-xs">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">
-                      Public View:{" "}
-                      <span
-                        className={
-                          collection.isPubliclyVisible !== false
-                            ? "text-emerald-500"
-                            : "text-red-500"
-                        }
-                      >
-                        {collection.isPubliclyVisible !== false
-                          ? "Active"
-                          : "Hidden"}
-                      </span>
-                    </span>
-                  </div>
                 </div>
+
+                {/* Object Hierarchy - Parent & Siblings */}
+                {parentObject && (
+                  <div className="flex items-center gap-4 rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+                    {/* Parent Group Info */}
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                        Part of
+                      </span>
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Link
+                              href={`/objects/${parentObject._id}`}
+                              className="group flex items-center gap-2 rounded-full border border-border bg-background/50 py-1 pl-1 pr-3 transition-all hover:border-accent hover:bg-accent/5"
+                            >
+                              <Avatar className="h-6 w-6 ring-1 ring-border group-hover:ring-accent">
+                                <AvatarImage
+                                  src={parentObject.thumbnailUrl ?? undefined}
+                                  alt={parentObject.title}
+                                />
+                                <AvatarFallback className="bg-secondary text-[10px]">
+                                  <Box className="h-3 w-3 text-muted-foreground" />
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-xs font-medium text-foreground group-hover:text-accent">
+                                {parentObject.title}
+                              </span>
+                            </Link>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-xs border border-border bg-popover text-popover-foreground">
+                            <div className="space-y-1">
+                              <p className="font-medium">{parentObject.title}</p>
+                              {parentObject.accessionNumber && (
+                                <p className="text-xs text-muted-foreground">
+                                  {parentObject.accessionNumber}
+                                </p>
+                              )}
+                              <p className="text-xs text-muted-foreground">
+                                Parent object
+                              </p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+
+                    {/* Divider */}
+                    {siblingObjects && siblingObjects.length > 0 && (
+                      <div className="h-8 w-px bg-border/60" />
+                    )}
+
+                    {/* Siblings as pills */}
+                    {siblingObjects && siblingObjects.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                          Related
+                        </span>
+
+                        {/* Current object pill (highlighted) */}
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex cursor-default items-center gap-2 rounded-full border border-accent bg-accent/10 py-1 pl-1 pr-3">
+                                <Avatar className="h-6 w-6 ring-2 ring-accent">
+                                  <AvatarImage 
+                                    src={heroImage?.thumbnailUrl ?? heroImage?.url ?? undefined}
+                                    alt={collection.title}
+                                  />
+                                  <AvatarFallback className="bg-secondary text-[10px] font-medium text-muted-foreground">
+                                    {collection.title.charAt(0)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="text-xs font-medium text-accent">
+                                  {collection.title.split(" ").slice(0, 2).join(" ")}
+                                  {collection.title.split(" ").length > 2 && " ..."}
+                                </span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="max-w-xs border border-border bg-popover text-popover-foreground">
+                              <div className="space-y-1">
+                                <p className="font-medium">{collection.title}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {collection.accessionNumber}
+                                </p>
+                                <p className="text-xs text-accent">
+                                  Current object
+                                </p>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        {/* Sibling pills */}
+                        {siblingObjects.slice(0, 3).map((sibling) => (
+                          <TooltipProvider key={sibling._id} delayDuration={200}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Link
+                                  href={`/objects/${sibling._id}`}
+                                  className="group flex items-center gap-2 rounded-full border border-border bg-background/50 py-1 pl-1 pr-3 transition-all hover:border-accent hover:bg-accent/5"
+                                >
+                                  <Avatar className="h-6 w-6 ring-1 ring-border group-hover:ring-accent">
+                                    <AvatarImage
+                                      src={sibling.thumbnailUrl ?? undefined}
+                                      alt={sibling.title}
+                                    />
+                                    <AvatarFallback className="bg-secondary text-[10px] font-medium text-muted-foreground">
+                                      {sibling.title.charAt(0)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-xs font-medium text-foreground group-hover:text-accent">
+                                    {sibling.title.split(" ").slice(0, 2).join(" ")}
+                                    {sibling.title.split(" ").length > 2 && "..."}
+                                  </span>
+                                </Link>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom" className="max-w-xs border border-border bg-popover text-popover-foreground">
+                                <div className="space-y-1">
+                                  <p className="font-medium">{sibling.title}</p>
+                                  {sibling.accessionNumber && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {sibling.accessionNumber}
+                                    </p>
+                                  )}
+                                  <p className="text-xs text-muted-foreground">
+                                    Sibling object
+                                  </p>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ))}
+
+                        {/* More indicator */}
+                        {siblingObjects.length > 3 && (
+                          <div className="flex h-7 items-center rounded-full border border-border bg-secondary/50 px-2.5 text-[10px] font-medium text-muted-foreground">
+                            +{siblingObjects.length - 3} more
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -344,7 +633,13 @@ export default function ObjectDetailPage() {
               <PhysicalTab collection={collection} />
             )}
             {activeTab === "media" && (
-              <MediaTab collectionId={collectionId} />
+              <MediaTab
+                collectionId={collectionId}
+                onOpenLightbox={(index) => {
+                  setLightboxInitialIndex(index);
+                  setIsHeroLightboxOpen(true);
+                }}
+              />
             )}
             {activeTab === "digital" && (
               <DigitalAssetsTab collection={collection} />
@@ -372,6 +667,292 @@ export default function ObjectDetailPage() {
         organizationId={currentOrganizationId}
       />
     </SidebarProvider>
+
+    {/* Print Preview Modal - Outside SidebarProvider for print isolation */}
+    <Dialog open={isPrintModalOpen} onOpenChange={setIsPrintModalOpen}>
+        <DialogContent className="flex flex-col max-w-[210mm] w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0">
+          {/* Fixed Header */}
+          <DialogHeader className="flex-shrink-0 print:hidden border-b border-gray-200 p-6 pb-4">
+            <DialogTitle className="text-black">Print Preview</DialogTitle>
+          </DialogHeader>
+          
+          {/* Scrollable A4 Paper-like content */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="space-y-5 bg-white text-black p-6 print:p-[15mm] print:space-y-4 print:break-inside-avoid-page">
+            {/* Header */}
+            <div className="flex items-start gap-4 border-b border-gray-200 pb-4 print:gap-3 print:pb-3">
+              {heroImage?.url && (
+                <img
+                  src={heroImage.thumbnailUrl || heroImage.url}
+                  alt={collection.title}
+                  className="h-28 w-28 flex-shrink-0 rounded border border-gray-300 object-cover print:h-20 print:w-20"
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl font-bold text-black print:text-lg">
+                  {collection.title}
+                </h1>
+                {collection.alternativeTitle && (
+                  <p className="text-sm text-gray-600 italic print:text-xs">{collection.alternativeTitle}</p>
+                )}
+                <p className="mt-1 font-mono text-xs text-gray-600">
+                  {collection.accessionNumber}
+                </p>
+                {collection.alternateAccessionNumbers && collection.alternateAccessionNumbers.length > 0 && (
+                  <p className="text-[10px] text-gray-500">
+                    Alt: {collection.alternateAccessionNumbers.join(", ")}
+                  </p>
+                )}
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {collection.displayStatus && (
+                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-700">
+                      {collection.displayStatus}
+                    </span>
+                  )}
+                  <span className={cn(
+                    "rounded px-1.5 py-0.5 text-[10px] font-medium",
+                    collection.status === "active" ? "bg-green-100 text-green-700" :
+                    collection.status === "loaned" ? "bg-blue-100 text-blue-700" :
+                    "bg-red-100 text-red-700"
+                  )}>
+                    {collection.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Basic Information */}
+            <div className="print:break-inside-avoid">
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Basic Information</h2>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
+                {collection.objectType && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Object Type</p>
+                    <p className="text-black">{collection.objectType}</p>
+                  </div>
+                )}
+                {collection.objectName && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Object Name</p>
+                    <p className="text-black">{collection.objectName}</p>
+                  </div>
+                )}
+                {collection.creator && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Creator/Artist</p>
+                    <p className="text-black">{collection.creator}</p>
+                  </div>
+                )}
+                {collection.dateCreated && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Date Created</p>
+                    <p className="text-black">{collection.dateCreated}</p>
+                  </div>
+                )}
+                {collection.culture && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Culture</p>
+                    <p className="text-black">{collection.culture}</p>
+                  </div>
+                )}
+                {collection.period && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Period</p>
+                    <p className="text-black">{collection.period}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Physical Description */}
+            <div className="print:break-inside-avoid">
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Physical Description</h2>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
+                {collection.materials && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Materials</p>
+                    <p className="text-black">{collection.materials}</p>
+                  </div>
+                )}
+                {collection.technique && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Technique</p>
+                    <p className="text-black">{collection.technique}</p>
+                  </div>
+                )}
+                {collection.dimensions && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Dimensions</p>
+                    <p className="text-black">{collection.dimensions}</p>
+                  </div>
+                )}
+                {(collection.dimensionHeight || collection.dimensionWidth || collection.dimensionDepth) && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Detailed Dimensions</p>
+                    <p className="text-black">
+                      {[
+                        collection.dimensionHeight && `H: ${collection.dimensionHeight}`,
+                        collection.dimensionWidth && `W: ${collection.dimensionWidth}`,
+                        collection.dimensionDepth && `D: ${collection.dimensionDepth}`,
+                      ].filter(Boolean).join(" × ")} {collection.dimensionUnit || "cm"}
+                    </p>
+                  </div>
+                )}
+                {collection.dimensionWeight && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Weight</p>
+                    <p className="text-black">{collection.dimensionWeight} {collection.weightUnit || "kg"}</p>
+                  </div>
+                )}
+                {collection.condition && (
+                  <div className="col-span-2">
+                    <p className="text-xs font-medium text-gray-500">Condition</p>
+                    <p className="text-black">{collection.condition}</p>
+                  </div>
+                )}
+                {collection.inscriptions && (
+                  <div className="col-span-2">
+                    <p className="text-xs font-medium text-gray-500">Inscriptions</p>
+                    <p className="text-black whitespace-pre-wrap">{collection.inscriptions}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Description */}
+            {collection.description && (
+              <div>
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Description</h2>
+                <p className="text-sm text-black whitespace-pre-wrap print:text-xs">{collection.description}</p>
+              </div>
+            )}
+
+            {/* Provenance & Acquisition */}
+            {(collection.provenance || collection.creditLine || collection.acquisitionMethod || collection.donated_by) && (
+              <div>
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Provenance & Acquisition</h2>
+                <div className="space-y-2 text-sm print:text-xs print:space-y-1">
+                  {collection.creditLine && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">Credit Line</p>
+                      <p className="text-black">{collection.creditLine}</p>
+                    </div>
+                  )}
+                  {collection.acquisitionMethod && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">Acquisition Method</p>
+                      <p className="text-black">{collection.acquisitionMethod}</p>
+                    </div>
+                  )}
+                  {collection.donated_by && collection.donated_by.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">Donated By</p>
+                      <p className="text-black">{collection.donated_by.join(", ")}</p>
+                    </div>
+                  )}
+                  {collection.donated_date && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">Donation Date</p>
+                      <p className="text-black">{collection.donated_date}</p>
+                    </div>
+                  )}
+                  {collection.provenance && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">Provenance</p>
+                      <p className="text-black whitespace-pre-wrap">{collection.provenance}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Ownership History */}
+            {collection.ownershipHistory && collection.ownershipHistory.length > 0 && (
+              <div>
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Ownership History</h2>
+                <div className="space-y-2">
+                  {collection.ownershipHistory.map((entry) => (
+                    <div key={`${entry.owner}-${entry.startYear || "unknown"}`} className="rounded border border-gray-200 p-2 text-sm">
+                      <p className="font-medium text-black">{entry.owner}</p>
+                      {(entry.startYear || entry.endYear) && (
+                        <p className="text-xs text-gray-500">
+                          {entry.startYear || "?"} – {entry.endYear || "Present"}
+                        </p>
+                      )}
+                      {entry.description && (
+                        <p className="mt-1 text-gray-600">{entry.description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Exhibition History */}
+            {collection.exhibitionHistory && (
+              <div>
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Exhibition History</h2>
+                <p className="text-sm text-black whitespace-pre-wrap print:text-xs">{collection.exhibitionHistory}</p>
+              </div>
+            )}
+
+            {/* Location */}
+            {locationPath && locationPath.length > 0 && (
+              <div>
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Current Location</h2>
+                <p className="text-sm text-black print:text-xs">{locationPath.map((loc) => loc.name).join(" > ")}</p>
+              </div>
+            )}
+
+            {/* Tags */}
+            {collection.tags && collection.tags.length > 0 && (
+              <div>
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Tags</h2>
+                <div className="flex flex-wrap gap-2">
+                  {collection.tags.map((tag) => (
+                    <span key={tag} className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Legal & Visibility */}
+            <div>
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Legal & Visibility</h2>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
+                <div>
+                  <p className="text-xs font-medium text-gray-500 print:text-[10px]">Public Visibility</p>
+                  <p className="text-black">{collection.isPubliclyVisible ? "Yes" : "No"}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 print:text-[10px]">Legal Restrictions</p>
+                  <p className="text-black">{collection.legalRestrictions ? "Yes" : "None"}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer with print date */}
+            <div className="border-t border-gray-200 pt-3 text-[10px] text-gray-400 print:pt-2 print:text-[9px]">
+              <p>Printed on {new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>
+            </div>
+            </div>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 p-6 pt-4 border-t border-gray-200 bg-white print:hidden">
+            <Button variant="outline" onClick={() => setIsPrintModalOpen(false)} className="bg-gray-900 text-white border-gray-300 hover:!bg-gray-100 hover:text-black">
+              Cancel
+            </Button>
+            <Button onClick={() => window.print()} className="bg-gray-900 text-white hover:bg-gray-800">
+              <Printer className="mr-2 h-4 w-4" />
+              Print
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -389,13 +970,6 @@ function GeneralTab({ collection }: { collection: CollectionData }) {
       : "skip",
   );
 
-  const parentObject = useQuery(
-    api.collections.getParentObject,
-    collection._id
-      ? { collectionId: collection._id as Id<"collections"> }
-      : "skip",
-  );
-
   return (
     <div className="space-y-8">
       {/* Classification & Metadata */}
@@ -408,68 +982,6 @@ function GeneralTab({ collection }: { collection: CollectionData }) {
         </div>
 
         <div className="space-y-6 rounded-xl border border-border/60 bg-secondary/20 p-6">
-          {/* Title */}
-          <div className="grid gap-1">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Title
-            </label>
-            <div className="text-base font-medium text-foreground">
-              {collection.title}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-            {/* Accession Number */}
-            <div className="grid gap-1">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Accession Number & Alternates
-              </label>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="font-mono text-sm text-foreground">
-                  {collection.accessionNumber}
-                </span>
-                {collection.alternateAccessionNumbers &&
-                  collection.alternateAccessionNumbers.length > 0 && (
-                    <>
-                      <div className="h-4 w-px bg-border" />
-                      <div className="flex flex-wrap gap-2">
-                        {collection.alternateAccessionNumbers.map((num) => (
-                          <div
-                            key={num}
-                            className="flex items-center gap-1.5 rounded-md border border-border bg-secondary px-2 py-0.5 text-[11px] text-muted-foreground"
-                          >
-                            <span className="font-mono text-muted-foreground/70">
-                              Alt:
-                            </span>
-                            <span>{num}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-              </div>
-            </div>
-
-            {/* Parent Object */}
-            <div className="grid gap-1">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Parent Object
-              </label>
-              {parentObject ? (
-                <Link
-                  href={`/objects/${parentObject._id}`}
-                  className="text-sm text-accent hover:underline"
-                >
-                  {parentObject.title}
-                </Link>
-              ) : (
-                <span className="text-sm italic text-muted-foreground">None</span>
-              )}
-            </div>
-          </div>
-
-          <div className="my-2 h-px bg-border/50" />
-
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             {/* Collection Group */}
             <div className="grid gap-1">
@@ -557,29 +1069,8 @@ function GeneralTab({ collection }: { collection: CollectionData }) {
           )}
 
           {/* Status Display */}
-          <div className="flex items-center gap-8 border-t border-border/60 pt-4">
-            <div className="flex items-center gap-2.5">
-              <div className="relative flex h-2.5 w-2.5">
-                {collection.isPubliclyVisible !== false && (
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                )}
-                <span
-                  className={cn(
-                    "relative inline-flex h-2.5 w-2.5 rounded-full",
-                    collection.isPubliclyVisible !== false
-                      ? "bg-emerald-500"
-                      : "bg-muted-foreground",
-                  )}
-                />
-              </div>
-              <span className="text-sm font-medium text-muted-foreground">
-                {collection.isPubliclyVisible !== false
-                  ? "Publicly Visible"
-                  : "Not Public"}
-              </span>
-            </div>
-
-            {collection.isHighResDownloadable && (
+          {collection.isHighResDownloadable && (
+            <div className="flex items-center gap-8 border-t border-border/60 pt-4">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-2.5 w-2.5 items-center justify-center rounded-full bg-accent">
                   <CheckCircle className="h-1.5 w-1.5 text-white" />
@@ -588,8 +1079,8 @@ function GeneralTab({ collection }: { collection: CollectionData }) {
                   High-Res Downloadable
                 </span>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -769,7 +1260,13 @@ function PhysicalTab({ collection }: { collection: CollectionData }) {
   );
 }
 
-function MediaTab({ collectionId }: { collectionId: string }) {
+function MediaTab({
+  collectionId,
+  onOpenLightbox,
+}: {
+  collectionId: string;
+  onOpenLightbox: (index: number) => void;
+}) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -778,7 +1275,11 @@ function MediaTab({ collectionId }: { collectionId: string }) {
           Media Gallery
         </h3>
       </div>
-      <MediaGallery collectionId={collectionId} mediaType="images" />
+      <MediaGallery
+        collectionId={collectionId}
+        mediaType="images"
+        onOpenLightbox={onOpenLightbox}
+      />
     </div>
   );
 }
@@ -868,7 +1369,7 @@ function ProvenanceTab({ collection }: { collection: CollectionData }) {
               {collection.donated_by && collection.donated_by.length > 0 ? (
                 <div className="flex items-center gap-2">
                   <div className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-white">
-                    {collection.donated_by[0].charAt(0)}
+                    {collection.donated_by[0]?.charAt(0) ?? "?"}
                   </div>
                   <span className="text-sm text-muted-foreground">
                     {collection.donated_by.join(", ")}

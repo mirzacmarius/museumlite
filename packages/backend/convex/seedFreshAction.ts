@@ -162,10 +162,12 @@ export const resetAndSeed = internalAction({
     // Get the full collection data from the mutation
     for (const org of ORGANIZATIONS) {
       const orgId = orgIds[org.slug];
+      if (!orgId) continue;
+
       const pexelsQueries = COLLECTION_QUERIES[org.slug];
-      
+
       if (!pexelsQueries) continue;
-      
+
       // Create all collections for this org
       const collectionIds = await ctx.runMutation(internal.seedFresh.createAllCollectionsForOrg, {
         organizationId: orgId,
@@ -187,7 +189,7 @@ export const resetAndSeed = internalAction({
             const storageId = await ctx.storage.store(imageData.blob);
             
             await ctx.runMutation(internal.seedFresh.createMediaFile, {
-              collectionId,
+              collectionId: collectionId!,
               organizationId: orgId,
               userId: existingUser,
               storageId,

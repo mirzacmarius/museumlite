@@ -1176,6 +1176,7 @@ export const getChildObjects = query({
         v.literal("loaned"),
         v.literal("deaccessioned"),
       ),
+      thumbnailUrl: v.union(v.string(), v.null()),
     }),
   ),
   handler: async (ctx, args) => {
@@ -1186,11 +1187,137 @@ export const getChildObjects = query({
       )
       .collect();
 
-    return children.map((child) => ({
-      _id: child._id,
-      title: child.title,
-      accessionNumber: child.accessionNumber,
-      status: child.status,
-    }));
+    const results = await Promise.all(
+      children.map(async (child) => {
+        // Get primary image for thumbnail
+        const primaryMedia = await ctx.db
+          .query("mediaFiles")
+          .withIndex("by_collection", (q) => q.eq("collectionId", child._id))
+          .filter((q) => q.eq(q.field("isPrimary"), true))
+          .first();
+
+        let thumbnailUrl: string | null = null;
+        if (primaryMedia?.storageId) {
+          thumbnailUrl = await ctx.storage.getUrl(primaryMedia.storageId);
+        }
+
+        return {
+          _id: child._id,
+          title: child.title,
+          accessionNumber: child.accessionNumber,
+          status: child.status,
+          thumbnailUrl,
+        };
+      }),
+    );
+
+    return results;
+  },
+});
+
+/**
+ * Get sibling objects (objects that share the same parent)
+ */
+export const getSiblingObjects = query({
+  args: {
+    collectionId: v.id("collections"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("collections"),
+      title: v.string(),
+      accessionNumber: v.string(),
+      thumbnailUrl: v.union(v.string(), v.null()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection || !collection.parentObjectId) {
+      return [];
+    }
+
+    const siblings = await ctx.db
+      .query("collections")
+      .withIndex("by_parentObject", (q) =>
+        q.eq("parentObjectId", collection.parentObjectId),
+      )
+      .collect();
+
+    // Filter out the current collection and get thumbnails
+    const results = await Promise.all(
+      siblings
+        .filter((s) => s._id !== args.collectionId)
+        .slice(0, 5) // Limit to 5 siblings
+        .map(async (sibling) => {
+          // Get primary image for thumbnail
+          const primaryMedia = await ctx.db
+            .query("mediaFiles")
+            .withIndex("by_collection", (q) => q.eq("collectionId", sibling._id))
+            .filter((q) => q.eq(q.field("isPrimary"), true))
+            .first();
+
+          let thumbnailUrl: string | null = null;
+          if (primaryMedia?.storageId) {
+            thumbnailUrl = await ctx.storage.getUrl(primaryMedia.storageId);
+          }
+
+          return {
+            _id: sibling._id,
+            title: sibling.title,
+            accessionNumber: sibling.accessionNumber,
+            thumbnailUrl,
+          };
+        }),
+    );
+
+    return results;
+  },
+});
+
+/**
+ * Get parent object with thumbnail
+ */
+export const getParentObjectWithThumbnail = query({
+  args: {
+    collectionId: v.id("collections"),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id("collections"),
+      title: v.string(),
+      accessionNumber: v.string(),
+      thumbnailUrl: v.union(v.string(), v.null()),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection || !collection.parentObjectId) {
+      return null;
+    }
+
+    const parent = await ctx.db.get(collection.parentObjectId);
+    if (!parent) {
+      return null;
+    }
+
+    // Get primary image for thumbnail
+    const primaryMedia = await ctx.db
+      .query("mediaFiles")
+      .withIndex("by_collection", (q) => q.eq("collectionId", parent._id))
+      .filter((q) => q.eq(q.field("isPrimary"), true))
+      .first();
+
+    let thumbnailUrl: string | null = null;
+    if (primaryMedia?.storageId) {
+      thumbnailUrl = await ctx.storage.getUrl(primaryMedia.storageId);
+    }
+
+    return {
+      _id: parent._id,
+      title: parent.title,
+      accessionNumber: parent.accessionNumber,
+      thumbnailUrl,
+    };
   },
 });

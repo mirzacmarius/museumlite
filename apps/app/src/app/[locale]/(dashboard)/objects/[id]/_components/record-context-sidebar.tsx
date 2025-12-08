@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
 import {
   Sidebar,
   SidebarContent,
@@ -12,6 +13,7 @@ import {
   SidebarHeader,
   SidebarSeparator,
 } from "@v1/ui/sidebar";
+import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import { ImageOff, ShieldCheck } from "lucide-react";
 import Link from "next/link";
@@ -39,7 +41,7 @@ export function RecordContextSidebar({
   );
 
   const parentObject = useQuery(
-    api.collections.getParentObject,
+    api.collections.getParentObjectWithThumbnail,
     collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
   );
 
@@ -57,9 +59,20 @@ export function RecordContextSidebar({
   );
 
   // Get primary media for related objects
-  const relatedObjects = [
-    ...(parentObject ? [{ ...parentObject, relationship: "Parent" }] : []),
-    ...(childObjects?.map((c) => ({ ...c, relationship: "Child" })) ?? []),
+  const relatedObjects: Array<{
+    _id: string;
+    title: string;
+    accessionNumber: string;
+    thumbnailUrl?: string | null;
+    relationship: string;
+  }> = [
+    ...(parentObject
+      ? [{ ...parentObject, relationship: "Parent" as const }]
+      : []),
+    ...(childObjects?.map((c) => ({
+      ...c,
+      relationship: "Child" as const,
+    })) ?? []),
   ];
 
   return (
@@ -88,7 +101,7 @@ export function RecordContextSidebar({
                 {tags.map((tag) => (
                   <span
                     key={tag}
-                    className="cursor-pointer rounded bg-secondary px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+                    className="cursor-pointer rounded border border-border bg-secondary px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
                   >
                     {tag}
                   </span>
@@ -107,24 +120,28 @@ export function RecordContextSidebar({
               Related Objects ({relatedObjects.length})
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
                 {relatedObjects.map((obj) => (
                   <Link
                     key={obj._id}
                     href={`/objects/${obj._id}`}
-                    className="group flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-secondary/50"
+                    className="group flex items-center gap-2 rounded-full border border-border bg-background/50 py-1 pl-1 pr-3 transition-all hover:border-accent hover:bg-accent/5"
                   >
-                    <div className="flex h-10 w-10 items-center justify-center rounded border border-border bg-secondary">
-                      <ImageOff className="h-4 w-4 text-muted-foreground" />
-                    </div>
+                    <Avatar className="h-8 w-8 ring-1 ring-border group-hover:ring-accent">
+                      <AvatarImage
+                        src={obj.thumbnailUrl ?? undefined}
+                        alt={obj.title}
+                      />
+                      <AvatarFallback className="bg-secondary text-[10px]">
+                        <ImageOff className="h-3 w-3 text-muted-foreground" />
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="min-w-0">
-                      <p className="truncate text-[11px] font-medium text-muted-foreground group-hover:text-foreground">
-                        {obj.title}
+                      <p className="truncate text-xs font-medium text-muted-foreground group-hover:text-foreground">
+                        {obj.title.split(" ").slice(0, 2).join(" ")}
+                        {obj.title.split(" ").length > 2 && "..."}
                       </p>
-                      <p className="font-mono text-[10px] text-muted-foreground">
-                        {obj.accessionNumber}
-                      </p>
-                      <p className="mt-0.5 text-[10px] text-accent">
+                      <p className="text-[10px] text-accent">
                         {obj.relationship}
                       </p>
                     </div>
@@ -148,17 +165,20 @@ export function RecordContextSidebar({
                 recentActivity.map((activity, index) => (
                   <div key={activity._id} className="group relative">
                     <div
-                      className={`absolute -left-[17px] top-1 h-2 w-2 rounded-full ring-4 ring-background ${
-                        index === 0 ? "bg-accent" : "bg-muted-foreground/50"
-                      }`}
+                      className={cn(
+                        "absolute -left-[17px] top-1 h-2 w-2 rounded-full ring-4 ring-background transition-colors",
+                        index === 0
+                          ? "bg-accent"
+                          : "bg-muted-foreground/50 group-hover:bg-muted-foreground"
+                      )}
                     />
                     <div>
                       <p className="text-[11px] text-muted-foreground">
                         <span className="text-foreground">{activity.action}</span>
                       </p>
                       <p className="mt-0.5 text-[10px] text-muted-foreground">
-                        {formatRelativeTime(activity.timestamp)} 
-                        {activity.userName && ` by ${activity.userName}`}
+                        {formatRelativeTime(activity.timestamp)}
+                        {activity.userName && ` • ${activity.userName}`}
                       </p>
                     </div>
                   </div>

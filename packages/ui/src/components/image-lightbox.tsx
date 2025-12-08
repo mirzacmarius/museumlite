@@ -1,7 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Download, X, ZoomIn, ZoomOut } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  X,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { cn } from "../utils";
@@ -54,12 +61,16 @@ export function ImageLightbox({
           break;
         case "ArrowLeft":
           if (hasMultiple) {
-            setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+            setCurrentIndex((prev) =>
+              prev > 0 ? prev - 1 : images.length - 1,
+            );
           }
           break;
         case "ArrowRight":
           if (hasMultiple) {
-            setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+            setCurrentIndex((prev) =>
+              prev < images.length - 1 ? prev + 1 : 0,
+            );
           }
           break;
       }
