@@ -47,6 +47,8 @@ import type * as migrations from "../migrations.js";
 import type * as organizations from "../organizations.js";
 import type * as roles from "../roles.js";
 import type * as seed from "../seed.js";
+import type * as seedFresh from "../seedFresh.js";
+import type * as seedFreshAction from "../seedFreshAction.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as typeOptions from "../typeOptions.js";
 import type * as users from "../users.js";
@@ -109,6 +111,8 @@ declare const fullApi: ApiFromModules<{
   organizations: typeof organizations;
   roles: typeof roles;
   seed: typeof seed;
+  seedFresh: typeof seedFresh;
+  seedFreshAction: typeof seedFreshAction;
   subscriptions: typeof subscriptions;
   typeOptions: typeof typeOptions;
   users: typeof users;

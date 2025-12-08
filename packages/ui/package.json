@@ -23,6 +23,7 @@
     "./grid-pattern": "./src/components/grid-pattern.tsx",
     "./icon-3d-hover": "./src/components/icon-3d-hover.tsx",
     "./icons": "./src/components/icons.tsx",
+    "./image-lightbox": "./src/components/image-lightbox.tsx",
     "./input": "./src/components/input.tsx",
     "./label": "./src/components/label.tsx",
     "./logo": "./src/components/logo.tsx",

@@ -40,7 +40,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import {
+  ImageLightbox,
+  type LightboxImage,
+} from "@v1/ui/image-lightbox";
 import { MediaGallery } from "./_components/media-gallery";
 import { RecordContextSidebar } from "./_components/record-context-sidebar";
 
@@ -101,6 +105,21 @@ export default function ObjectDetailPage() {
   const primaryImage = media?.find((m) => m.isPrimary && m.fileType === "image");
   const firstImage = media?.find((m) => m.fileType === "image");
   const heroImage = primaryImage || firstImage;
+
+  // Hero lightbox state
+  const [isHeroLightboxOpen, setIsHeroLightboxOpen] = useState(false);
+  const heroLightboxImages: LightboxImage[] = useMemo(() => {
+    if (!media) return [];
+    return media
+      .filter((m) => m.fileType === "image" && m.url)
+      .map((m) => ({
+        id: m._id,
+        url: m.url as string,
+        thumbnailUrl: m.thumbnailUrl || undefined,
+        title: m.fileName,
+        caption: m.caption || undefined,
+      }));
+  }, [media]);
 
   if (!currentOrganizationId) {
     return (
@@ -193,12 +212,17 @@ export default function ObjectDetailPage() {
           <div className="border-b border-border/60 bg-secondary/10 px-8 py-8">
             <div className="mx-auto flex max-w-5xl items-start gap-8">
               {/* Hero Image */}
-              <div className="group relative shrink-0 cursor-zoom-in">
+              <button
+                type="button"
+                className="group relative shrink-0 cursor-zoom-in"
+                onClick={() => heroImage?.url && setIsHeroLightboxOpen(true)}
+                aria-label="View full size image"
+              >
                 {heroImage?.url ? (
                   <img
                     src={heroImage.thumbnailUrl || heroImage.url}
                     alt={collection.title}
-                    className="h-48 w-48 rounded-xl border border-border bg-secondary object-cover shadow-2xl"
+                    className="h-48 w-48 rounded-xl border border-border bg-secondary object-cover shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
                   />
                 ) : (
                   <div className="flex h-48 w-48 items-center justify-center rounded-xl border border-border bg-secondary">
@@ -208,7 +232,15 @@ export default function ObjectDetailPage() {
                 <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                   <Maximize2 className="h-6 w-6 text-white" />
                 </div>
-              </div>
+              </button>
+
+              {/* Hero Image Lightbox */}
+              <ImageLightbox
+                images={heroLightboxImages}
+                initialIndex={0}
+                isOpen={isHeroLightboxOpen}
+                onClose={() => setIsHeroLightboxOpen(false)}
+              />
 
               {/* Hero Info */}
               <div className="flex-1 space-y-4">
