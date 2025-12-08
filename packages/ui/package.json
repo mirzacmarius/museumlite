@@ -47,10 +47,14 @@
     "./upload-input": "./src/components/upload-input.tsx",
     "./utils": "./src/utils/index.ts"
   },
-  "files": ["tailwind.config.ts", "postcss.config.js", "globals.css"],
+  "files": [
+    "tailwind.config.ts",
+    "postcss.config.js",
+    "globals.css"
+  ],
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
-    "format": "biome --write .",
+    "format": "biome format --write .",
     "lint": "biome check .",
     "typecheck": "tsc --noEmit"
   },
@@ -88,8 +92,8 @@
   "devDependencies": {
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.43",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
     "tailwindcss": "^3.4.10",
     "typescript": "^5.5.4"
   }
