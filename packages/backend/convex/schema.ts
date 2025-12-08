@@ -142,6 +142,7 @@ export default defineSchema({
       ),
     ),
     title: v.string(),
+    alternativeTitle: v.optional(v.string()), // Alternative/subtitle
     creator: v.optional(v.string()), // Artist/maker name
     objectType: v.optional(v.string()),
     objectName: v.optional(v.string()),
@@ -149,14 +150,46 @@ export default defineSchema({
     period: v.optional(v.string()),
     dateCreated: v.optional(v.string()),
     materials: v.optional(v.string()),
+    technique: v.optional(v.string()), // e.g., "Carved, Drill-work, Polished"
     dimensions: v.optional(v.string()),
+    // Detailed dimensions
+    dimensionHeight: v.optional(v.number()), // in cm
+    dimensionWidth: v.optional(v.number()), // in cm
+    dimensionDepth: v.optional(v.number()), // in cm
+    dimensionWeight: v.optional(v.number()), // in kg
+    dimensionUnit: v.optional(v.string()), // "cm", "in", etc.
+    weightUnit: v.optional(v.string()), // "kg", "lb", etc.
     description: v.optional(v.string()),
     condition: v.optional(v.string()),
+    inscriptions: v.optional(v.string()), // Free-text description of inscriptions/marks
+    inscriptionMarks: v.optional(
+      v.array(
+        v.object({
+          label: v.string(), // e.g., "Mark A", "Mark B"
+          description: v.string(), // e.g., "Red painted accession number..."
+        }),
+      ),
+    ),
+    tags: v.optional(v.array(v.string())), // e.g., ["Imperial Portraiture", "Bearded", "Antonine"]
     provenance: v.optional(v.string()),
     exhibitionHistory: v.optional(v.string()),
+    // Structured provenance/ownership history
+    ownershipHistory: v.optional(
+      v.array(
+        v.object({
+          owner: v.string(),
+          startYear: v.optional(v.string()),
+          endYear: v.optional(v.string()),
+          description: v.optional(v.string()),
+          verified: v.optional(v.boolean()),
+          verificationSource: v.optional(v.string()),
+        }),
+      ),
+    ),
     donated_by: v.optional(v.array(v.string())), // List of donors (persons/organizations)
     donated_date: v.optional(v.string()), // Date of donation (ISO format or partial)
     donation_info: v.optional(v.string()), // Free-text info about the donation
+    creditLine: v.optional(v.string()), // e.g., "Gift of the Estate of Lord Carnarvon, 1924"
     previous_owners: v.optional(v.array(v.string())), // List of previous owners
     links: v.optional(
       v.array(
@@ -168,11 +201,16 @@ export default defineSchema({
     ), // List of external links
     parentObjectId: v.optional(v.id("collections")), // Parent object (e.g., treasure chest containing this object)
     currentLocationId: v.optional(v.id("locations")),
+    acquisitionMethod: v.optional(v.string()),
+    legalRestrictions: v.optional(v.boolean()),
+    isPubliclyVisible: v.optional(v.boolean()), // For "Public View: Active" status
+    isHighResDownloadable: v.optional(v.boolean()), // For high-res download permission
     status: v.union(
       v.literal("active"),
       v.literal("loaned"),
       v.literal("deaccessioned"),
     ),
+    displayStatus: v.optional(v.string()), // "On Display", "In Storage", etc.
     catalogedBy: v.id("users"),
     catalogedAt: v.number(),
     lastModifiedBy: v.optional(v.id("users")),
@@ -557,6 +595,47 @@ export default defineSchema({
     uploadedBy: v.id("users"),
     uploadedAt: v.number(),
   }).index("by_loan", ["loanId"]),
+
+  // Conservation treatments for objects
+  conservationTreatments: defineTable({
+    collectionId: v.id("collections"),
+    organizationId: v.id("organizations"),
+    treatmentType: v.union(
+      v.literal("routine"),
+      v.literal("stabilization"),
+      v.literal("restoration"),
+      v.literal("cleaning"),
+      v.literal("repair"),
+      v.literal("assessment"),
+      v.literal("other"),
+    ),
+    title: v.string(), // e.g., "Surface Cleaning", "Socle Reinforcement"
+    description: v.string(), // Detailed description of the treatment
+    performedBy: v.id("users"),
+    performedByName: v.optional(v.string()), // Cached name for display
+    performedAt: v.number(),
+    notes: v.optional(v.string()),
+  })
+    .index("by_collection", ["collectionId"])
+    .index("by_organization", ["organizationId"])
+    .index("by_performedAt", ["performedAt"]),
+
+  // Exhibition records for objects
+  exhibitions: defineTable({
+    collectionId: v.id("collections"),
+    organizationId: v.id("organizations"),
+    title: v.string(),
+    location: v.optional(v.string()), // e.g., "Wing A, Gallery 4 (Roman Hall)"
+    startDate: v.number(),
+    endDate: v.optional(v.number()),
+    isCurrent: v.boolean(),
+    isLoan: v.optional(v.boolean()), // If this was a loan exhibition
+    loanVenue: v.optional(v.string()), // e.g., "British Museum"
+    notes: v.optional(v.string()),
+  })
+    .index("by_collection", ["collectionId"])
+    .index("by_organization", ["organizationId"])
+    .index("by_startDate", ["startDate"]),
 
   // Activity tracking
   auditLog: defineTable({

@@ -72,6 +72,7 @@ export const create = mutation({
     collectionGroupId: v.optional(v.id("collectionGroups")),
     accessionNumber: v.optional(v.string()),
     title: v.string(),
+    alternativeTitle: v.optional(v.string()),
     creator: v.optional(v.string()),
     objectType: v.optional(v.string()),
     objectName: v.optional(v.string()),
@@ -79,14 +80,44 @@ export const create = mutation({
     period: v.optional(v.string()),
     dateCreated: v.optional(v.string()),
     materials: v.optional(v.string()),
+    technique: v.optional(v.string()),
     dimensions: v.optional(v.string()),
+    dimensionHeight: v.optional(v.number()),
+    dimensionWidth: v.optional(v.number()),
+    dimensionDepth: v.optional(v.number()),
+    dimensionWeight: v.optional(v.number()),
+    dimensionUnit: v.optional(v.string()),
+    weightUnit: v.optional(v.string()),
     description: v.optional(v.string()),
     condition: v.optional(v.string()),
+    inscriptions: v.optional(v.string()),
+    inscriptionMarks: v.optional(
+      v.array(
+        v.object({
+          label: v.string(),
+          description: v.string(),
+        }),
+      ),
+    ),
+    tags: v.optional(v.array(v.string())),
     provenance: v.optional(v.string()),
     exhibitionHistory: v.optional(v.string()),
+    ownershipHistory: v.optional(
+      v.array(
+        v.object({
+          owner: v.string(),
+          startYear: v.optional(v.string()),
+          endYear: v.optional(v.string()),
+          description: v.optional(v.string()),
+          verified: v.optional(v.boolean()),
+          verificationSource: v.optional(v.string()),
+        }),
+      ),
+    ),
     donated_by: v.optional(v.array(v.string())),
     donated_date: v.optional(v.string()),
     donation_info: v.optional(v.string()),
+    creditLine: v.optional(v.string()),
     previous_owners: v.optional(v.array(v.string())),
     links: v.optional(
       v.array(
@@ -99,6 +130,11 @@ export const create = mutation({
     parentObjectId: v.optional(v.id("collections")),
     currentLocationId: v.optional(v.id("locations")),
     alternateAccessionNumbers: v.optional(v.array(v.string())),
+    acquisitionMethod: v.optional(v.string()),
+    legalRestrictions: v.optional(v.boolean()),
+    isPubliclyVisible: v.optional(v.boolean()),
+    isHighResDownloadable: v.optional(v.boolean()),
+    displayStatus: v.optional(v.string()),
   },
   returns: v.id("collections"),
   handler: async (ctx, args) => {
@@ -138,6 +174,7 @@ export const create = mutation({
       collectionGroupId: args.collectionGroupId,
       accessionNumber,
       title: args.title,
+      alternativeTitle: args.alternativeTitle,
       creator: args.creator,
       objectType: args.objectType,
       objectName: args.objectName,
@@ -145,19 +182,36 @@ export const create = mutation({
       period: args.period,
       dateCreated: args.dateCreated,
       materials: args.materials,
+      technique: args.technique,
       dimensions: args.dimensions,
+      dimensionHeight: args.dimensionHeight,
+      dimensionWidth: args.dimensionWidth,
+      dimensionDepth: args.dimensionDepth,
+      dimensionWeight: args.dimensionWeight,
+      dimensionUnit: args.dimensionUnit,
+      weightUnit: args.weightUnit,
       description: args.description,
       condition: args.condition,
+      inscriptions: args.inscriptions,
+      inscriptionMarks: args.inscriptionMarks,
+      tags: args.tags,
       provenance: args.provenance,
       exhibitionHistory: args.exhibitionHistory,
+      ownershipHistory: args.ownershipHistory,
       donated_by: args.donated_by,
       donated_date: args.donated_date,
       donation_info: args.donation_info,
+      creditLine: args.creditLine,
       previous_owners: args.previous_owners,
       links: args.links,
       parentObjectId: args.parentObjectId,
       currentLocationId: args.currentLocationId,
       alternateAccessionNumbers: args.alternateAccessionNumbers,
+      acquisitionMethod: args.acquisitionMethod,
+      legalRestrictions: args.legalRestrictions,
+      isPubliclyVisible: args.isPubliclyVisible,
+      isHighResDownloadable: args.isHighResDownloadable,
+      displayStatus: args.displayStatus,
       status: "active",
       catalogedBy: userId,
       catalogedAt: Date.now(),
@@ -200,6 +254,7 @@ export const get = query({
         ),
       ),
       title: v.string(),
+      alternativeTitle: v.optional(v.string()),
       creator: v.optional(v.string()),
       objectType: v.optional(v.string()),
       objectName: v.optional(v.string()),
@@ -207,14 +262,44 @@ export const get = query({
       period: v.optional(v.string()),
       dateCreated: v.optional(v.string()),
       materials: v.optional(v.string()),
+      technique: v.optional(v.string()),
       dimensions: v.optional(v.string()),
+      dimensionHeight: v.optional(v.number()),
+      dimensionWidth: v.optional(v.number()),
+      dimensionDepth: v.optional(v.number()),
+      dimensionWeight: v.optional(v.number()),
+      dimensionUnit: v.optional(v.string()),
+      weightUnit: v.optional(v.string()),
       description: v.optional(v.string()),
       condition: v.optional(v.string()),
+      inscriptions: v.optional(v.string()),
+      inscriptionMarks: v.optional(
+        v.array(
+          v.object({
+            label: v.string(),
+            description: v.string(),
+          }),
+        ),
+      ),
+      tags: v.optional(v.array(v.string())),
       provenance: v.optional(v.string()),
       exhibitionHistory: v.optional(v.string()),
+      ownershipHistory: v.optional(
+        v.array(
+          v.object({
+            owner: v.string(),
+            startYear: v.optional(v.string()),
+            endYear: v.optional(v.string()),
+            description: v.optional(v.string()),
+            verified: v.optional(v.boolean()),
+            verificationSource: v.optional(v.string()),
+          }),
+        ),
+      ),
       donated_by: v.optional(v.array(v.string())),
       donated_date: v.optional(v.string()),
       donation_info: v.optional(v.string()),
+      creditLine: v.optional(v.string()),
       previous_owners: v.optional(v.array(v.string())),
       links: v.optional(
         v.array(
@@ -226,6 +311,11 @@ export const get = query({
       ),
       parentObjectId: v.optional(v.id("collections")),
       currentLocationId: v.optional(v.id("locations")),
+      acquisitionMethod: v.optional(v.string()),
+      legalRestrictions: v.optional(v.boolean()),
+      isPubliclyVisible: v.optional(v.boolean()),
+      isHighResDownloadable: v.optional(v.boolean()),
+      displayStatus: v.optional(v.string()),
       status: v.union(
         v.literal("active"),
         v.literal("loaned"),
@@ -659,6 +749,7 @@ export const update = mutation({
     collectionId: v.id("collections"),
     collectionGroupId: v.optional(v.id("collectionGroups")),
     title: v.optional(v.string()),
+    alternativeTitle: v.optional(v.string()),
     creator: v.optional(v.string()),
     objectType: v.optional(v.string()),
     objectName: v.optional(v.string()),
@@ -666,14 +757,44 @@ export const update = mutation({
     period: v.optional(v.string()),
     dateCreated: v.optional(v.string()),
     materials: v.optional(v.string()),
+    technique: v.optional(v.string()),
     dimensions: v.optional(v.string()),
+    dimensionHeight: v.optional(v.number()),
+    dimensionWidth: v.optional(v.number()),
+    dimensionDepth: v.optional(v.number()),
+    dimensionWeight: v.optional(v.number()),
+    dimensionUnit: v.optional(v.string()),
+    weightUnit: v.optional(v.string()),
     description: v.optional(v.string()),
     condition: v.optional(v.string()),
+    inscriptions: v.optional(v.string()),
+    inscriptionMarks: v.optional(
+      v.array(
+        v.object({
+          label: v.string(),
+          description: v.string(),
+        }),
+      ),
+    ),
+    tags: v.optional(v.array(v.string())),
     provenance: v.optional(v.string()),
     exhibitionHistory: v.optional(v.string()),
+    ownershipHistory: v.optional(
+      v.array(
+        v.object({
+          owner: v.string(),
+          startYear: v.optional(v.string()),
+          endYear: v.optional(v.string()),
+          description: v.optional(v.string()),
+          verified: v.optional(v.boolean()),
+          verificationSource: v.optional(v.string()),
+        }),
+      ),
+    ),
     donated_by: v.optional(v.array(v.string())),
     donated_date: v.optional(v.string()),
     donation_info: v.optional(v.string()),
+    creditLine: v.optional(v.string()),
     previous_owners: v.optional(v.array(v.string())),
     links: v.optional(
       v.array(
@@ -686,6 +807,11 @@ export const update = mutation({
     parentObjectId: v.optional(v.id("collections")),
     currentLocationId: v.optional(v.id("locations")),
     alternateAccessionNumbers: v.optional(v.array(v.string())),
+    acquisitionMethod: v.optional(v.string()),
+    legalRestrictions: v.optional(v.boolean()),
+    isPubliclyVisible: v.optional(v.boolean()),
+    isHighResDownloadable: v.optional(v.boolean()),
+    displayStatus: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -706,35 +832,11 @@ export const update = mutation({
       "collections.update",
     );
 
-    // Build update object
-    const updates: {
-      title?: string;
-      collectionGroupId?: Id<"collectionGroups">;
-      creator?: string;
-      objectType?: string;
-      objectName?: string;
-      culture?: string;
-      period?: string;
-      dateCreated?: string;
-      materials?: string;
-      dimensions?: string;
-      description?: string;
-      condition?: string;
-      provenance?: string;
-      exhibitionHistory?: string;
-      donated_by?: Array<string>;
-      donated_date?: string;
-      donation_info?: string;
-      previous_owners?: Array<string>;
-      links?: Array<{ url: string; label?: string }>;
-      parentObjectId?: Id<"collections">;
-      currentLocationId?: Id<"locations">;
-      alternateAccessionNumbers?: Array<string>;
-      lastModifiedBy?: Id<"users">;
-      lastModifiedAt?: number;
-    } = {};
+    // Build update object - using any to avoid verbose type definition
+    const updates: Record<string, unknown> = {};
 
     if (args.title !== undefined) updates.title = args.title;
+    if (args.alternativeTitle !== undefined) updates.alternativeTitle = args.alternativeTitle;
     if (args.collectionGroupId !== undefined) updates.collectionGroupId = args.collectionGroupId;
     if (args.creator !== undefined) updates.creator = args.creator;
     if (args.objectType !== undefined) updates.objectType = args.objectType;
@@ -743,22 +845,36 @@ export const update = mutation({
     if (args.period !== undefined) updates.period = args.period;
     if (args.dateCreated !== undefined) updates.dateCreated = args.dateCreated;
     if (args.materials !== undefined) updates.materials = args.materials;
+    if (args.technique !== undefined) updates.technique = args.technique;
     if (args.dimensions !== undefined) updates.dimensions = args.dimensions;
+    if (args.dimensionHeight !== undefined) updates.dimensionHeight = args.dimensionHeight;
+    if (args.dimensionWidth !== undefined) updates.dimensionWidth = args.dimensionWidth;
+    if (args.dimensionDepth !== undefined) updates.dimensionDepth = args.dimensionDepth;
+    if (args.dimensionWeight !== undefined) updates.dimensionWeight = args.dimensionWeight;
+    if (args.dimensionUnit !== undefined) updates.dimensionUnit = args.dimensionUnit;
+    if (args.weightUnit !== undefined) updates.weightUnit = args.weightUnit;
     if (args.description !== undefined) updates.description = args.description;
     if (args.condition !== undefined) updates.condition = args.condition;
+    if (args.inscriptions !== undefined) updates.inscriptions = args.inscriptions;
+    if (args.inscriptionMarks !== undefined) updates.inscriptionMarks = args.inscriptionMarks;
+    if (args.tags !== undefined) updates.tags = args.tags;
     if (args.provenance !== undefined) updates.provenance = args.provenance;
-    if (args.exhibitionHistory !== undefined)
-      updates.exhibitionHistory = args.exhibitionHistory;
+    if (args.exhibitionHistory !== undefined) updates.exhibitionHistory = args.exhibitionHistory;
+    if (args.ownershipHistory !== undefined) updates.ownershipHistory = args.ownershipHistory;
     if (args.donated_by !== undefined) updates.donated_by = args.donated_by;
     if (args.donated_date !== undefined) updates.donated_date = args.donated_date;
     if (args.donation_info !== undefined) updates.donation_info = args.donation_info;
+    if (args.creditLine !== undefined) updates.creditLine = args.creditLine;
     if (args.previous_owners !== undefined) updates.previous_owners = args.previous_owners;
     if (args.links !== undefined) updates.links = args.links;
     if (args.parentObjectId !== undefined) updates.parentObjectId = args.parentObjectId;
-    if (args.currentLocationId !== undefined)
-      updates.currentLocationId = args.currentLocationId;
-    if (args.alternateAccessionNumbers !== undefined)
-      updates.alternateAccessionNumbers = args.alternateAccessionNumbers;
+    if (args.currentLocationId !== undefined) updates.currentLocationId = args.currentLocationId;
+    if (args.alternateAccessionNumbers !== undefined) updates.alternateAccessionNumbers = args.alternateAccessionNumbers;
+    if (args.acquisitionMethod !== undefined) updates.acquisitionMethod = args.acquisitionMethod;
+    if (args.legalRestrictions !== undefined) updates.legalRestrictions = args.legalRestrictions;
+    if (args.isPubliclyVisible !== undefined) updates.isPubliclyVisible = args.isPubliclyVisible;
+    if (args.isHighResDownloadable !== undefined) updates.isHighResDownloadable = args.isHighResDownloadable;
+    if (args.displayStatus !== undefined) updates.displayStatus = args.displayStatus;
 
     updates.lastModifiedBy = userId;
     updates.lastModifiedAt = Date.now();
@@ -1060,6 +1176,7 @@ export const getChildObjects = query({
         v.literal("loaned"),
         v.literal("deaccessioned"),
       ),
+      thumbnailUrl: v.union(v.string(), v.null()),
     }),
   ),
   handler: async (ctx, args) => {
@@ -1070,11 +1187,137 @@ export const getChildObjects = query({
       )
       .collect();
 
-    return children.map((child) => ({
-      _id: child._id,
-      title: child.title,
-      accessionNumber: child.accessionNumber,
-      status: child.status,
-    }));
+    const results = await Promise.all(
+      children.map(async (child) => {
+        // Get primary image for thumbnail
+        const primaryMedia = await ctx.db
+          .query("mediaFiles")
+          .withIndex("by_collection", (q) => q.eq("collectionId", child._id))
+          .filter((q) => q.eq(q.field("isPrimary"), true))
+          .first();
+
+        let thumbnailUrl: string | null = null;
+        if (primaryMedia?.storageId) {
+          thumbnailUrl = await ctx.storage.getUrl(primaryMedia.storageId);
+        }
+
+        return {
+          _id: child._id,
+          title: child.title,
+          accessionNumber: child.accessionNumber,
+          status: child.status,
+          thumbnailUrl,
+        };
+      }),
+    );
+
+    return results;
+  },
+});
+
+/**
+ * Get sibling objects (objects that share the same parent)
+ */
+export const getSiblingObjects = query({
+  args: {
+    collectionId: v.id("collections"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("collections"),
+      title: v.string(),
+      accessionNumber: v.string(),
+      thumbnailUrl: v.union(v.string(), v.null()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection || !collection.parentObjectId) {
+      return [];
+    }
+
+    const siblings = await ctx.db
+      .query("collections")
+      .withIndex("by_parentObject", (q) =>
+        q.eq("parentObjectId", collection.parentObjectId),
+      )
+      .collect();
+
+    // Filter out the current collection and get thumbnails
+    const results = await Promise.all(
+      siblings
+        .filter((s) => s._id !== args.collectionId)
+        .slice(0, 5) // Limit to 5 siblings
+        .map(async (sibling) => {
+          // Get primary image for thumbnail
+          const primaryMedia = await ctx.db
+            .query("mediaFiles")
+            .withIndex("by_collection", (q) => q.eq("collectionId", sibling._id))
+            .filter((q) => q.eq(q.field("isPrimary"), true))
+            .first();
+
+          let thumbnailUrl: string | null = null;
+          if (primaryMedia?.storageId) {
+            thumbnailUrl = await ctx.storage.getUrl(primaryMedia.storageId);
+          }
+
+          return {
+            _id: sibling._id,
+            title: sibling.title,
+            accessionNumber: sibling.accessionNumber,
+            thumbnailUrl,
+          };
+        }),
+    );
+
+    return results;
+  },
+});
+
+/**
+ * Get parent object with thumbnail
+ */
+export const getParentObjectWithThumbnail = query({
+  args: {
+    collectionId: v.id("collections"),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id("collections"),
+      title: v.string(),
+      accessionNumber: v.string(),
+      thumbnailUrl: v.union(v.string(), v.null()),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection || !collection.parentObjectId) {
+      return null;
+    }
+
+    const parent = await ctx.db.get(collection.parentObjectId);
+    if (!parent) {
+      return null;
+    }
+
+    // Get primary image for thumbnail
+    const primaryMedia = await ctx.db
+      .query("mediaFiles")
+      .withIndex("by_collection", (q) => q.eq("collectionId", parent._id))
+      .filter((q) => q.eq(q.field("isPrimary"), true))
+      .first();
+
+    let thumbnailUrl: string | null = null;
+    if (primaryMedia?.storageId) {
+      thumbnailUrl = await ctx.storage.getUrl(primaryMedia.storageId);
+    }
+
+    return {
+      _id: parent._id,
+      title: parent.title,
+      accessionNumber: parent.accessionNumber,
+      thumbnailUrl,
+    };
   },
 });

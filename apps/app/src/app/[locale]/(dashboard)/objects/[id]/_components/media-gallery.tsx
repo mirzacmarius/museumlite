@@ -25,6 +25,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@v1/ui/dialog";
+import {
+  ImageLightbox,
+  useLightbox,
+  type LightboxImage,
+} from "@v1/ui/image-lightbox";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
@@ -33,22 +38,25 @@ import { useMutation, useQuery } from "convex/react";
 import {
   Edit,
   Image as ImageIcon,
+  Maximize2,
   Star,
   StarOff,
   Trash2,
   Upload,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface MediaGalleryProps {
   collectionId: string;
   mediaType?: "images" | "documents";
+  onOpenLightbox?: (index: number) => void;
 }
 
 export function MediaGallery({
   collectionId,
   mediaType = "images",
+  onOpenLightbox,
 }: MediaGalleryProps) {
   const { currentOrganizationId } = useOrganization();
   const media = useQuery(
@@ -252,6 +260,28 @@ export function MediaGallery({
   const showImages = mediaType === "images";
   const showDocuments = mediaType === "documents";
 
+  // Prepare lightbox images
+  const lightboxImages: LightboxImage[] = useMemo(
+    () =>
+      images
+        .filter((img) => img.url && img.fileType === "image")
+        .map((img) => ({
+          id: img._id,
+          url: img.url as string,
+          thumbnailUrl: img.thumbnailUrl || undefined,
+          title: img.fileName,
+          caption: img.caption || undefined,
+        })),
+    [images],
+  );
+
+  const {
+    isOpen: isLightboxOpen,
+    initialIndex: lightboxIndex,
+    openLightbox,
+    closeLightbox,
+  } = useLightbox(lightboxImages);
+
   return (
     <div className="space-y-6">
       {error && (
@@ -301,132 +331,176 @@ export function MediaGallery({
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {images.map((file) => (
-                <div
-                  key={file._id}
-                  className="group relative aspect-square overflow-hidden rounded-lg border"
-                >
-                  {file.url && (
-                    <>
-                      {file.fileType === "image" ? (
-                        <img
-                          src={file.thumbnailUrl || file.url}
-                          alt={file.caption || file.fileName}
-                          className="h-full w-full object-cover transition-opacity group-hover:opacity-90"
-                        />
-                      ) : file.fileType === "video" ? (
-                        <video
-                          src={file.url}
-                          className="h-full w-full object-cover"
-                          controls={false}
-                          aria-label={file.caption || file.fileName}
-                        >
-                          <track kind="captions" />
-                        </video>
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-muted">
-                          <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                        </div>
-                      )}
-
-                      {/* Overlay with actions */}
-                      <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
-                        <PermissionGate permission="media.upload">
-                          {!file.isPrimary && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => handleSetPrimary(file._id)}
-                              title="Set as primary"
-                            >
-                              <Star className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <MediaEditDialog
-                            media={file}
-                            onUpdate={async (updates) => {
-                              setError(null);
-                              try {
-                                await updateMedia({
-                                  mediaId: file._id as Id<"mediaFiles">,
-                                  ...updates,
-                                });
-                                setEditingMedia(null);
-                              } catch (err) {
-                                setError(
-                                  err instanceof Error
-                                    ? err.message
-                                    : "Failed to update media",
-                                );
+            <>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {images.map((file, index) => {
+                // Find the index in lightboxImages for this file
+                const lightboxIdx = lightboxImages.findIndex(
+                  (img) => img.id === file._id,
+                );
+                return (
+                  <div
+                    key={file._id}
+                    className="group relative aspect-square cursor-pointer overflow-hidden rounded-lg border border-border bg-secondary"
+                  >
+                    {file.url && (
+                      <>
+                        {file.fileType === "image" ? (
+                          <button
+                            type="button"
+                            className="h-full w-full cursor-pointer"
+                            onClick={() => {
+                              if (lightboxIdx >= 0) {
+                                if (onOpenLightbox) {
+                                  onOpenLightbox(lightboxIdx);
+                                } else {
+                                  openLightbox(lightboxIdx);
+                                }
                               }
                             }}
-                            open={editingMedia === file._id}
-                            onOpenChange={(open) =>
-                              setEditingMedia(open ? file._id : null)
-                            }
-                          />
-                          <AlertDialog
-                            open={deleteConfirmOpen === file._id}
-                            onOpenChange={(open) =>
-                              setDeleteConfirmOpen(open ? file._id : null)
-                            }
+                            aria-label={`View ${file.caption || file.fileName}`}
                           >
-                            <AlertDialogTrigger asChild>
+                            <img
+                              src={file.thumbnailUrl || file.url}
+                              alt={file.caption || file.fileName}
+                              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                            />
+                          </button>
+                        ) : file.fileType === "video" ? (
+                          <video
+                            src={file.url}
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                            controls={false}
+                            aria-label={file.caption || file.fileName}
+                          >
+                            <track kind="captions" />
+                          </video>
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-muted">
+                            <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                          </div>
+                        )}
+
+                        {/* File name overlay - visible by default, hidden on hover */}
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-6 text-xs text-white transition-opacity group-hover:opacity-0">
+                          <p className="truncate font-medium">{file.fileName}</p>
+                          {file.caption && (
+                            <p className="truncate text-[10px] text-white/70">
+                              {file.caption}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Hover Overlay with expand icon */}
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                          <Maximize2 className="h-6 w-6 text-white" />
+                        </div>
+
+                        {/* Action buttons on hover */}
+                        <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                          <PermissionGate permission="media.upload">
+                            {!file.isPrimary && (
                               <Button
                                 type="button"
                                 size="sm"
-                                variant="destructive"
-                                title="Delete"
+                                variant="secondary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSetPrimary(file._id);
+                                }}
+                                title="Set as primary"
+                                className="h-7 w-7 p-0"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Star className="h-3.5 w-3.5" />
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  Delete Media
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete this media
-                                  file? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDelete(file._id)}
+                            )}
+                            <MediaEditDialog
+                              media={file}
+                              onUpdate={async (updates) => {
+                                setError(null);
+                                try {
+                                  await updateMedia({
+                                    mediaId: file._id as Id<"mediaFiles">,
+                                    ...updates,
+                                  });
+                                  setEditingMedia(null);
+                                } catch (err) {
+                                  setError(
+                                    err instanceof Error
+                                      ? err.message
+                                      : "Failed to update media",
+                                  );
+                                }
+                              }}
+                              open={editingMedia === file._id}
+                              onOpenChange={(open) =>
+                                setEditingMedia(open ? file._id : null)
+                              }
+                            />
+                            <AlertDialog
+                              open={deleteConfirmOpen === file._id}
+                              onOpenChange={(open) =>
+                                setDeleteConfirmOpen(open ? file._id : null)
+                              }
+                            >
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={(e) => e.stopPropagation()}
+                                  title="Delete"
+                                  className="h-7 w-7 p-0"
                                 >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </PermissionGate>
-                      </div>
-
-                      {/* Primary badge */}
-                      {file.isPrimary && (
-                        <div className="absolute top-2 right-2 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">
-                          Primary
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    Delete Media
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete this media
+                                    file? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDelete(file._id)}
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </PermissionGate>
                         </div>
-                      )}
 
-                      {/* File name overlay */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2 text-xs text-white">
-                        <p className="truncate">{file.fileName}</p>
-                        {file.caption && (
-                          <p className="truncate text-muted-foreground">
-                            {file.caption}
-                          </p>
+                        {/* Primary badge */}
+                        {file.isPrimary && (
+                          <div className="absolute left-2 top-2 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">
+                            Primary
+                          </div>
                         )}
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
+
+            {/* Image Lightbox - only render when not using external lightbox */}
+            {!onOpenLightbox && (
+              <ImageLightbox
+                images={lightboxImages}
+                initialIndex={lightboxIndex}
+                isOpen={isLightboxOpen}
+                onClose={closeLightbox}
+              />
+            )}
+            </>
           )}
         </div>
       )}

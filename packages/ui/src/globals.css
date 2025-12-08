@@ -32,30 +32,35 @@
   }
 
   .dark {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
-    --card: 0 0% 3%;
-    --card-foreground: 0 0% 100%;
-    --popover: 0 0% 3%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 0 0% 100%;
-    --primary-foreground: 0 0% 0%;
-    --secondary: 0 0% 10%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 70%;
-    --accent: 0 0% 15%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 100% 30%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 0 0% 80%;
+    /* Zinc-based dark theme inspired by MuseumLite design */
+    --background: 240 10% 4%; /* zinc-950 */
+    --foreground: 0 0% 98%; /* zinc-50 */
+    --card: 240 6% 6%; /* slightly lighter than background */
+    --card-foreground: 0 0% 98%;
+    --popover: 240 6% 6%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%; /* white text for primary actions */
+    --primary-foreground: 240 10% 4%;
+    --secondary: 240 4% 10%; /* zinc-900 */
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 4% 16%; /* zinc-800 */
+    --muted-foreground: 240 5% 65%; /* zinc-400 */
+    --accent: 239 84% 67%; /* indigo-500 for accent */
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 4% 16%; /* zinc-800/60 equivalent */
+    --input: 240 4% 16%;
+    --ring: 239 84% 67%; /* indigo-500 */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    /* Custom status colors */
+    --status-active: 142 76% 36%; /* emerald-500 */
+    --status-warning: 38 92% 50%; /* amber-500 */
+    --status-info: 217 91% 60%; /* blue-500 */
   }
 }
 
