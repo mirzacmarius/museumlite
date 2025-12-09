@@ -340,8 +340,8 @@ export default function ObjectDetailPage() {
                     className={cn(
                       "flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px]",
                       collection.isPubliclyVisible !== false
-                        ? "border border-emerald-500/20 bg-emerald-950/30 text-emerald-400"
-                        : "border border-red-500/20 bg-red-950/30 text-red-400",
+                        ? "border border-emerald-500/30 bg-emerald-100 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-950/30 dark:text-emerald-400"
+                        : "border border-red-500/30 bg-red-100 text-red-700 dark:border-red-500/20 dark:bg-red-950/30 dark:text-red-400",
                     )}
                   >
                     <div className="relative flex h-2 w-2">
@@ -480,7 +480,7 @@ export default function ObjectDetailPage() {
                                   <Box className="h-3 w-3 text-muted-foreground" />
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="text-xs font-medium text-foreground group-hover:text-accent">
+                              <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
                                 {parentObject.title}
                               </span>
                             </Link>
@@ -519,7 +519,7 @@ export default function ObjectDetailPage() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div className="flex cursor-default items-center gap-2 rounded-full border border-accent bg-accent/10 py-1 pl-1 pr-3">
-                                <Avatar className="h-6 w-6 ring-2 ring-accent">
+                                <Avatar className="h-6 w-6 ring-1 ring-border group-hover:ring-accent">
                                   <AvatarImage 
                                     src={heroImage?.thumbnailUrl ?? heroImage?.url ?? undefined}
                                     alt={collection.title}
@@ -528,7 +528,7 @@ export default function ObjectDetailPage() {
                                     {collection.title.charAt(0)}
                                   </AvatarFallback>
                                 </Avatar>
-                                <span className="text-xs font-medium text-accent">
+                                <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
                                   {collection.title.split(" ").slice(0, 2).join(" ")}
                                   {collection.title.split(" ").length > 2 && " ..."}
                                 </span>
@@ -566,7 +566,7 @@ export default function ObjectDetailPage() {
                                       {sibling.title.charAt(0)}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <span className="text-xs font-medium text-foreground group-hover:text-accent">
+                                  <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
                                     {sibling.title.split(" ").slice(0, 2).join(" ")}
                                     {sibling.title.split(" ").length > 2 && "..."}
                                   </span>
@@ -942,7 +942,7 @@ export default function ObjectDetailPage() {
 
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 p-6 pt-4 border-t border-gray-200 bg-white print:hidden">
-            <Button variant="outline" onClick={() => setIsPrintModalOpen(false)} className="bg-gray-900 text-white border-gray-300 hover:!bg-gray-100 hover:text-black">
+            <Button variant="outline" onClick={() => setIsPrintModalOpen(false)} className="bg-gray-900 text-white border-gray-300 hover:bg-gray-100 hover:text-black">
               Cancel
             </Button>
             <Button onClick={() => window.print()} className="bg-gray-900 text-white hover:bg-gray-800">
@@ -1128,10 +1128,10 @@ function PhysicalTab({ collection }: { collection: CollectionData }) {
             Overall Condition
           </span>
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-100 dark:border-emerald-500/20 dark:bg-emerald-500/10">
               <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
             </div>
-            <span className="text-sm font-medium text-emerald-400">
+            <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
               {collection.condition || "Not assessed"}
             </span>
           </div>
@@ -1353,7 +1353,7 @@ function ProvenanceTab({ collection }: { collection: CollectionData }) {
                 Method
               </span>
               {collection.acquisitionMethod ? (
-                <span className="inline-flex items-center rounded border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-400">
+                <span className="inline-flex items-center rounded border border-emerald-500/30 bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
                   {collection.acquisitionMethod}
                 </span>
               ) : (
