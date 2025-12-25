@@ -174,6 +174,7 @@ export const listMembershipTypes = query({
   returns: v.array(
     v.object({
       _id: v.id("membershipTypes"),
+      _creationTime: v.number(),
       organizationId: v.id("organizations"),
       name: v.string(),
       description: v.optional(v.string()),
