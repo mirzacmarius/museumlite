@@ -73,7 +73,7 @@ export default function EditLoanPage() {
 
   if (loan === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex h-full w-full items-center justify-center bg-background">
         <p className="text-muted-foreground">Loan not found</p>
       </div>
     );
@@ -81,19 +81,19 @@ export default function EditLoanPage() {
 
   if (loan.status !== "pending") {
     return (
-      <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
-        <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-          <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
-            <div className="flex h-64 items-center justify-center">
-              <div className="text-center">
-                <p className="text-muted-foreground">
-                  Cannot edit loan that is not pending
-                </p>
-                <Button variant="outline" className="mt-4" asChild>
-                  <Link href={`/loans/${loanId}`}>Back to Loan</Link>
-                </Button>
-              </div>
-            </div>
+      <div className="flex h-full w-full bg-background px-6">
+        <div className="z-10 mx-auto flex h-full w-full max-w-screen-md flex-col items-center justify-center gap-6">
+          <div className="rounded-full bg-amber-100 p-3 text-amber-600 dark:bg-amber-900/30 dark:text-amber-500">
+            <Lock className="h-6 w-6" />
+          </div>
+          <div className="text-center">
+            <h1 className="text-lg font-semibold text-foreground">Loan Locked</h1>
+            <p className="text-muted-foreground mt-2 max-w-sm">
+              This loan is currently <span className="font-medium text-foreground">{loan.status}</span> and cannot be edited. Only pending loans can be modified.
+            </p>
+            <Button variant="outline" className="mt-6" asChild>
+              <Link href={`/loans/${loanId}`}>Return to Loan Details</Link>
+            </Button>
           </div>
         </div>
       </div>
@@ -135,174 +135,224 @@ export default function EditLoanPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-        <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
-          <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href={`/loans/${loanId}`}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Loan
-              </Link>
-            </Button>
-          </div>
+    <div className="min-h-screen w-full bg-background pb-20">
+      {/* Header */}
+      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
+        <div className="flex items-center gap-2 text-xs">
+          <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+            <Link href={`/loans/${loanId}`}>
+              <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          </Button>
+          <span className="text-muted-foreground">Loans</span>
+          <span className="text-muted-foreground/50">/</span>
+          <span className="text-muted-foreground">{loan.loanNumber}</span>
+          <span className="text-muted-foreground/50">/</span>
+          <span className="font-medium text-foreground">Edit</span>
+        </div>
+      </header>
 
-          <form onSubmit={handleSubmit} className="p-6">
-            {error && (
-              <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
-            <div className="mx-auto max-w-2xl space-y-6">
-              <div className="space-y-2">
-                <Label>Loan Number</Label>
-                <Input
-                  value={loan.loanNumber}
-                  disabled
-                  className="bg-muted"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Loan number cannot be changed
-                </p>
-              </div>
+      <div className="mx-auto max-w-3xl px-6 py-8">
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Edit Loan Record</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Update details for loan <span className="font-mono text-xs bg-secondary px-1.5 py-0.5 rounded">{loan.loanNumber}</span>
+          </p>
+        </div>
 
-              <div className="space-y-2">
-                <Label>Type</Label>
-                <Input
-                  value={loan.type === "incoming" ? "Incoming" : "Outgoing"}
-                  disabled
-                  className="bg-muted"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Loan type cannot be changed
-                </p>
-              </div>
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {error && (
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive flex items-center gap-2">
+              <Info className="h-4 w-4" />
+              {error}
+            </div>
+          )}
 
-              <div className="space-y-2">
-                <Label htmlFor="lenderBorrowerName">
-                  {loan.type === "incoming" ? "Lender" : "Borrower"} *
-                </Label>
-                <Input
-                  id="lenderBorrowerName"
-                  value={formData.lenderBorrowerName}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      lenderBorrowerName: e.target.value,
-                    })
-                  }
-                  placeholder="Name of lender or borrower"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="lenderBorrowerContact">
-                  Contact Information
-                </Label>
-                <Input
-                  id="lenderBorrowerContact"
-                  value={formData.lenderBorrowerContact}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      lenderBorrowerContact: e.target.value,
-                    })
-                  }
-                  placeholder="Email, phone, address"
-                />
+          {/* Core Info Card */}
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Core Information
+            </h2>
+            
+            <div className="grid gap-6">
+              {/* Read-only fields group */}
+              <div className="grid grid-cols-2 gap-4 rounded-lg bg-secondary/50 p-4 border border-border/50">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Loan Number</Label>
+                  <div className="font-mono text-sm font-medium">{loan.loanNumber}</div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Type</Label>
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset",
+                      loan.type === "incoming" 
+                        ? "bg-purple-50 text-purple-700 ring-purple-600/20 dark:bg-purple-900/20 dark:text-purple-400" 
+                        : "bg-cyan-50 text-cyan-700 ring-cyan-600/20 dark:bg-cyan-900/20 dark:text-cyan-400"
+                    )}>
+                      {loan.type === "incoming" ? "Incoming" : "Outgoing"}
+                    </span>
+                    <Lock className="h-3 w-3 text-muted-foreground/50" />
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date *</Label>
-                  <DatePicker
-                    id="startDate"
-                    date={formData.startDate}
-                    onSelect={(date: Date | undefined) =>
+                  <Label htmlFor="lenderBorrowerName">
+                    {loan.type === "incoming" ? "Lender" : "Borrower"} Name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="lenderBorrowerName"
+                    value={formData.lenderBorrowerName}
+                    onChange={(e) =>
                       setFormData({
                         ...formData,
-                        startDate: date || new Date(),
+                        lenderBorrowerName: e.target.value,
                       })
                     }
-                    placeholder="Select start date"
+                    placeholder="e.g. Museum of Modern Art"
+                    required
+                    className="bg-background"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="endDate">End Date</Label>
-                  <DatePicker
-                    id="endDate"
-                    date={formData.endDate}
-                    onSelect={(date: Date | undefined) =>
-                      setFormData({ ...formData, endDate: date })
+                  <Label htmlFor="lenderBorrowerContact">
+                    Contact Information
+                  </Label>
+                  <Input
+                    id="lenderBorrowerContact"
+                    value={formData.lenderBorrowerContact}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        lenderBorrowerContact: e.target.value,
+                      })
                     }
-                    placeholder="Select end date"
+                    placeholder="Email, phone, or address"
+                    className="bg-background"
                   />
                 </div>
               </div>
+            </div>
+          </div>
 
+          {/* Schedule & Financials Card */}
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Schedule & Value
+            </h2>
+
+            <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="insuranceValue">Insurance Value</Label>
-                <Input
-                  id="insuranceValue"
-                  type="number"
-                  step="0.01"
-                  value={formData.insuranceValue}
-                  onChange={(e) =>
+                <Label htmlFor="startDate">Start Date <span className="text-destructive">*</span></Label>
+                <DatePicker
+                  id="startDate"
+                  date={formData.startDate}
+                  onSelect={(date: Date | undefined) =>
                     setFormData({
                       ...formData,
-                      insuranceValue: e.target.value,
+                      startDate: date || new Date(),
                     })
                   }
-                  placeholder="0.00"
+                  placeholder="Select start date"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="terms">Terms</Label>
+                <Label htmlFor="endDate">End Date</Label>
+                <DatePicker
+                  id="endDate"
+                  date={formData.endDate}
+                  onSelect={(date: Date | undefined) =>
+                    setFormData({ ...formData, endDate: date })
+                  }
+                  placeholder="Select end date"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="insuranceValue">Insurance Value</Label>
+                <div className="relative">
+                  <Banknote className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="insuranceValue"
+                    type="number"
+                    step="0.01"
+                    value={formData.insuranceValue}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        insuranceValue: e.target.value,
+                      })
+                    }
+                    placeholder="0.00"
+                    className="pl-9 bg-background"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Terms & Notes Card */}
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Details
+            </h2>
+
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="terms">Terms & Conditions</Label>
                 <Textarea
                   id="terms"
                   value={formData.terms}
                   onChange={(e) =>
                     setFormData({ ...formData, terms: e.target.value })
                   }
-                  placeholder="Loan terms and conditions..."
+                  placeholder="Specific loan terms, restrictions, or requirements..."
                   rows={4}
+                  className="bg-background resize-none"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">Internal Notes</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) =>
                     setFormData({ ...formData, notes: e.target.value })
                   }
-                  placeholder="Additional notes about this loan..."
-                  rows={4}
+                  placeholder="Additional notes for staff..."
+                  rows={3}
+                  className="bg-background resize-none"
                 />
               </div>
-
-              <div className="flex justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.back()}
-                >
-                  Cancel
-                </Button>
-                <PermissionGate permission="loans.update">
-                  <Button type="submit" disabled={isSubmitting}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {isSubmitting ? "Updating..." : "Update Loan"}
-                  </Button>
-                </PermissionGate>
-              </div>
             </div>
-          </form>
-        </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-4 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.back()}
+              className="w-24"
+            >
+              Cancel
+            </Button>
+            <PermissionGate permission="loans.update">
+              <Button type="submit" disabled={isSubmitting} className="min-w-[140px]">
+                <Save className="mr-2 h-4 w-4" />
+                {isSubmitting ? "Saving..." : "Save Changes"}
+              </Button>
+            </PermissionGate>
+          </div>
+        </form>
       </div>
     </div>
   );
