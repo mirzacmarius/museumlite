@@ -86,11 +86,11 @@ export default function EditPatronPage() {
         email: patron.email || "",
         phone: patron.phone || "",
         dateOfBirth: patron.dateOfBirth
-          ? new Date(patron.dateOfBirth).toISOString().split("T")[0]
+          ? (new Date(patron.dateOfBirth).toISOString().split("T")[0] || "")
           : "",
-        membershipTypeId: patron.membershipTypeId || "",
+        membershipTypeId: patron.membershipTypeId ? String(patron.membershipTypeId) : "",
         expirationDate: patron.expirationDate
-          ? new Date(patron.expirationDate).toISOString().split("T")[0]
+          ? (new Date(patron.expirationDate).toISOString().split("T")[0] || "")
           : "",
         borrowingLimit: patron.borrowingLimit?.toString() || "",
         holdLimit: patron.holdLimit?.toString() || "",
@@ -219,21 +219,19 @@ export default function EditPatronPage() {
   return (
     <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 py-6">
-        {/* Header */}
-        <div className="flex items-center justify-between rounded-lg border border-border bg-card p-6 dark:bg-black">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href={`/library/patrons/${patronId}`}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Link>
-            </Button>
-            <div>
-              <h1 className="text-xl font-medium">Edit Patron</h1>
-              <p className="text-sm text-muted-foreground">
-                Update patron information
-              </p>
-            </div>
+        {/* Header - Matching design */}
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href={`/library/patrons/${patronId}`}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-xl font-medium">Edit Patron</h1>
+            <p className="text-sm text-muted-foreground">
+              Enter patron details below.
+            </p>
           </div>
         </div>
 
@@ -244,50 +242,35 @@ export default function EditPatronPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Personal Information */}
-          <div className="rounded-lg border border-border bg-card dark:bg-black">
-            <div className="border-b border-border p-6">
-              <h2 className="text-lg font-medium">Personal Information</h2>
-            </div>
-            <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
+          {/* Main Form Card - Matching design style */}
+          <div className="rounded-lg border border-border bg-card p-6 dark:bg-black">
+            <div className="space-y-6">
+              {/* Full Name - Combined from firstName/lastName to match design */}
               <div className="space-y-2">
-                <Label htmlFor="firstName">
-                  First Name <span className="text-red-500">*</span>
+                <Label htmlFor="fullName">
+                  Full Name <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) =>
+                  id="fullName"
+                  value={`${formData.firstName} ${formData.lastName}`.trim()}
+                  onChange={(e) => {
+                    const parts = e.target.value.trim().split(/\s+/);
+                    const firstName = parts[0] ?? "";
+                    const lastName = parts.slice(1).join(" ") ?? "";
                     setFormData((prev) => ({
                       ...prev,
-                      firstName: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter first name"
+                      firstName,
+                      lastName,
+                    }));
+                  }}
+                  placeholder="Enter full name"
                   required
                 />
               </div>
 
+              {/* Email Address - Matching design */}
               <div className="space-y-2">
-                <Label htmlFor="lastName">
-                  Last Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      lastName: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter last name"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email Address</Label>
                 <Input
                   id="email"
                   type="email"
@@ -299,118 +282,9 @@ export default function EditPatronPage() {
                 />
               </div>
 
+              {/* Patron Type - Matching design (membershipTypeId) */}
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, phone: e.target.value }))
-                  }
-                  placeholder="+1 (555) 123-4567"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                <Input
-                  id="dateOfBirth"
-                  type="date"
-                  value={formData.dateOfBirth}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      dateOfBirth: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Address */}
-          <div className="rounded-lg border border-border bg-card dark:bg-black">
-            <div className="border-b border-border p-6">
-              <h2 className="text-lg font-medium">Address</h2>
-            </div>
-            <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="street">Street Address</Label>
-                <Input
-                  id="street"
-                  value={formData.street}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, street: e.target.value }))
-                  }
-                  placeholder="123 Main Street"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, city: e.target.value }))
-                  }
-                  placeholder="City"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="state">State / Province</Label>
-                <Input
-                  id="state"
-                  value={formData.state}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, state: e.target.value }))
-                  }
-                  placeholder="State"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="postalCode">Postal Code</Label>
-                <Input
-                  id="postalCode"
-                  value={formData.postalCode}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      postalCode: e.target.value,
-                    }))
-                  }
-                  placeholder="12345"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
-                <Input
-                  id="country"
-                  value={formData.country}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      country: e.target.value,
-                    }))
-                  }
-                  placeholder="Country"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Membership */}
-          <div className="rounded-lg border border-border bg-card dark:bg-black">
-            <div className="border-b border-border p-6">
-              <h2 className="text-lg font-medium">Membership</h2>
-            </div>
-            <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="membershipType">Membership Type</Label>
+                <Label htmlFor="patronType">Patron Type</Label>
                 <Select
                   value={formData.membershipTypeId}
                   onValueChange={(value) =>
@@ -420,8 +294,8 @@ export default function EditPatronPage() {
                     }))
                   }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select membership type" />
+                  <SelectTrigger id="patronType">
+                    <SelectValue placeholder="Select patron type" />
                   </SelectTrigger>
                   <SelectContent>
                     {membershipTypes?.map((type: Doc<"membershipTypes">) => (
@@ -432,188 +306,327 @@ export default function EditPatronPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                {formData.membershipTypeId && membershipTypes && (
-                  <p className="text-xs text-muted-foreground">
-                    {(() => {
-                      const selected = membershipTypes.find(
-                        (t: Doc<"membershipTypes">) =>
-                          t._id === formData.membershipTypeId,
-                      );
-                      if (selected) {
-                        return `Borrowing limit: ${selected.borrowingLimit}, Hold limit: ${selected.holdLimit}, Loan period: ${selected.loanPeriodDays} days`;
-                      }
-                      return null;
-                    })()}
-                  </p>
-                )}
               </div>
 
+              {/* Status - Matching design */}
               <div className="space-y-2">
-                <Label htmlFor="expirationDate">Expiration Date</Label>
-                <Input
-                  id="expirationDate"
-                  type="date"
-                  value={formData.expirationDate}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      expirationDate: e.target.value,
-                    }))
-                  }
-                />
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={patron.status}
+                  onValueChange={(value) => {
+                    // Status is handled separately via updateStatus mutation
+                    // For now, display only
+                  }}
+                  disabled
+                >
+                  <SelectTrigger id="status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
+                    <SelectItem value="suspended">Suspended</SelectItem>
+                    <SelectItem value="blocked">Blocked</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-muted-foreground">
-                  Leave blank for no expiration
+                  Status changes are managed from the patron detail page
                 </p>
               </div>
 
+              {/* Additional Fields - Keeping all database fields but in collapsible/expandable sections */}
+              <div className="space-y-4 border-t border-border pt-4">
+                <details className="group">
+                  <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
+                    Additional Information
+                  </summary>
+                  <div className="mt-4 space-y-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone</Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={formData.phone}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              phone: e.target.value,
+                            }))
+                          }
+                          placeholder="+1 (555) 123-4567"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                        <Input
+                          id="dateOfBirth"
+                          type="date"
+                          value={formData.dateOfBirth}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              dateOfBirth: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </details>
+
+                <details className="group">
+                  <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
+                    Address
+                  </summary>
+                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="street">Street Address</Label>
+                      <Input
+                        id="street"
+                        value={formData.street}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            street: e.target.value,
+                          }))
+                        }
+                        placeholder="123 Main Street"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="city">City</Label>
+                      <Input
+                        id="city"
+                        value={formData.city}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            city: e.target.value,
+                          }))
+                        }
+                        placeholder="City"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="state">State / Province</Label>
+                      <Input
+                        id="state"
+                        value={formData.state}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            state: e.target.value,
+                          }))
+                        }
+                        placeholder="State"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="postalCode">Postal Code</Label>
+                      <Input
+                        id="postalCode"
+                        value={formData.postalCode}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            postalCode: e.target.value,
+                          }))
+                        }
+                        placeholder="12345"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="country">Country</Label>
+                      <Input
+                        id="country"
+                        value={formData.country}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            country: e.target.value,
+                          }))
+                        }
+                        placeholder="Country"
+                      />
+                    </div>
+                  </div>
+                </details>
+
+                <details className="group">
+                  <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
+                    Membership Details
+                  </summary>
+                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="expirationDate">Expiration Date</Label>
+                      <Input
+                        id="expirationDate"
+                        type="date"
+                        value={formData.expirationDate}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            expirationDate: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="borrowingLimit">Borrowing Limit</Label>
+                      <Input
+                        id="borrowingLimit"
+                        type="number"
+                        min="0"
+                        value={formData.borrowingLimit}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            borrowingLimit: e.target.value,
+                          }))
+                        }
+                        placeholder="Max items at once"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="holdLimit">Hold Limit</Label>
+                      <Input
+                        id="holdLimit"
+                        type="number"
+                        min="0"
+                        value={formData.holdLimit}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            holdLimit: e.target.value,
+                          }))
+                        }
+                        placeholder="Max holds at once"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="preferredBranch">Preferred Branch</Label>
+                      <LocationSelector
+                        organizationId={currentOrganizationId}
+                        value={formData.preferredBranch}
+                        onValueChange={(value) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            preferredBranch: value,
+                          }))
+                        }
+                        placeholder="Select preferred branch"
+                        allowNone={true}
+                      />
+                    </div>
+                  </div>
+                </details>
+
+                <details className="group">
+                  <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
+                    Notification Preferences
+                  </summary>
+                  <div className="mt-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Email Notifications</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Receive notifications via email
+                        </p>
+                      </div>
+                      <Switch
+                        checked={formData.emailNotifications}
+                        onCheckedChange={(checked) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            emailNotifications: checked,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>SMS Notifications</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Receive notifications via text message
+                        </p>
+                      </div>
+                      <Switch
+                        checked={formData.smsNotifications}
+                        onCheckedChange={(checked) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            smsNotifications: checked,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Due Date Reminders</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Get reminded before items are due
+                        </p>
+                      </div>
+                      <Switch
+                        checked={formData.dueDateReminder}
+                        onCheckedChange={(checked) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            dueDateReminder: checked,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Hold Ready Alerts</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Get notified when holds are ready for pickup
+                        </p>
+                      </div>
+                      <Switch
+                        checked={formData.holdReady}
+                        onCheckedChange={(checked) =>
+                          setFormData((prev) => ({ ...prev, holdReady: checked }))
+                        }
+                      />
+                    </div>
+                  </div>
+                </details>
+              </div>
+
+              {/* Notes - Matching design */}
               <div className="space-y-2">
-                <Label htmlFor="borrowingLimit">Borrowing Limit</Label>
-                <Input
-                  id="borrowingLimit"
-                  type="number"
-                  min="0"
-                  value={formData.borrowingLimit}
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
                   onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      borrowingLimit: e.target.value,
-                    }))
+                    setFormData((prev) => ({ ...prev, notes: e.target.value }))
                   }
-                  placeholder="Max items at once"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="holdLimit">Hold Limit</Label>
-                <Input
-                  id="holdLimit"
-                  type="number"
-                  min="0"
-                  value={formData.holdLimit}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      holdLimit: e.target.value,
-                    }))
-                  }
-                  placeholder="Max holds at once"
-                />
-              </div>
-
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="preferredBranch">Preferred Branch</Label>
-                <LocationSelector
-                  organizationId={currentOrganizationId}
-                  value={formData.preferredBranch}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      preferredBranch: value,
-                    }))
-                  }
-                  placeholder="Select preferred branch"
-                  allowNone={true}
+                  placeholder="Internal notes about this patron..."
+                  rows={4}
                 />
               </div>
             </div>
           </div>
 
-          {/* Notification Preferences */}
-          <div className="rounded-lg border border-border bg-card dark:bg-black">
-            <div className="border-b border-border p-6">
-              <h2 className="text-lg font-medium">Notification Preferences</h2>
-            </div>
-            <div className="space-y-4 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive notifications via email
-                  </p>
-                </div>
-                <Switch
-                  checked={formData.emailNotifications}
-                  onCheckedChange={(checked) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      emailNotifications: checked,
-                    }))
-                  }
-                />
-              </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>SMS Notifications</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive notifications via text message
-                  </p>
-                </div>
-                <Switch
-                  checked={formData.smsNotifications}
-                  onCheckedChange={(checked) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      smsNotifications: checked,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Due Date Reminders</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Get reminded before items are due
-                  </p>
-                </div>
-                <Switch
-                  checked={formData.dueDateReminder}
-                  onCheckedChange={(checked) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      dueDateReminder: checked,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Hold Ready Alerts</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Get notified when holds are ready for pickup
-                  </p>
-                </div>
-                <Switch
-                  checked={formData.holdReady}
-                  onCheckedChange={(checked) =>
-                    setFormData((prev) => ({ ...prev, holdReady: checked }))
-                  }
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div className="rounded-lg border border-border bg-card dark:bg-black">
-            <div className="border-b border-border p-6">
-              <h2 className="text-lg font-medium">Notes</h2>
-            </div>
-            <div className="p-6">
-              <Textarea
-                value={formData.notes}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, notes: e.target.value }))
-                }
-                placeholder="Internal notes about this patron..."
-                rows={3}
-              />
-            </div>
-          </div>
-
-          {/* Submit */}
-          <div className="flex justify-end gap-4">
+          {/* Submit - Matching design button style */}
+          <div className="flex justify-end gap-4 pt-4">
             <Button type="button" variant="outline" asChild>
               <Link href={`/library/patrons/${patronId}`}>Cancel</Link>
             </Button>
@@ -630,7 +643,7 @@ export default function EditPatronPage() {
               ) : (
                 <Save className="mr-2 h-4 w-4" />
               )}
-              Update Patron
+              Save Patron
             </Button>
           </div>
         </form>
