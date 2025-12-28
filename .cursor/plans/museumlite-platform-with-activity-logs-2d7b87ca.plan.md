@@ -1,33 +1,4 @@
----
-name: Museumlite Collection Management Platform Implementation Plan
-overview: ""
-todos:
-  - id: 23406888-8d48-40ca-b95b-d95e8b14eeaa
-    content: Create listOrganizationActivity query in packages/backend/convex/audit.ts with pagination, entityType filter, date range filter, and month grouping
-    status: pending
-  - id: 515253ae-c903-4419-aac5-19e8b2450cfd
-    content: "Create apps/app/src/app/[locale]/(dashboard)/activity/page.tsx with Vercel-style dark theme layout (black background, two-column: filters left, activity list right)"
-    status: pending
-  - id: f427c642-9f64-46fc-b634-8bc1e1fc1217
-    content: Create activity-filters.tsx component with date range dropdown and collapsible type filter in left sidebar
-    status: pending
-  - id: 010a2ec8-4b90-4472-87e6-4362573ca3d8
-    content: Create activity-list.tsx component that displays month-grouped activity items with pagination
-    status: pending
-  - id: d1754cd0-06be-4c4b-87ca-0f1e1e7500f3
-    content: Create activity-item.tsx component with icon, user action description format, bold key data, right-aligned timestamp
-    status: pending
-  - id: 3dc3de0f-93f7-461c-a9d0-17e4b8bf0caa
-    content: Add Activity link to navigation.tsx with appropriate icon and active state styling
-    status: pending
-  - id: 4b8453d3-6c1a-45f3-b7fc-6f47d60cb670
-    content: Add Activity page UI strings to locale files (en.ts, es.ts, fr.ts)
-    status: pending
-  - id: 72885956-ac91-4b95-aa3b-13ae9a47703a
-    content: Document Vercel-inspired design system rules in repository rules or cursor rules file
-    status: pending
----
-
+<!-- 2d7b87ca-e594-4abb-9d4a-2fde1d352a2a 9b9b2748-7b9c-4dde-8170-92f7ff3db808 -->
 # Museumlite Collection Management Platform Implementation Plan
 
 ## Architecture Overview
@@ -171,3 +142,14 @@ Configuration:
 
 - Update locales for Activity page UI strings
 - Update repository rules/cursor rules with Vercel-inspired design system guidelines
+
+### To-dos
+
+- [ ] Create listOrganizationActivity query in packages/backend/convex/audit.ts with pagination, entityType filter, date range filter, and month grouping
+- [ ] Create apps/app/src/app/[locale]/(dashboard)/activity/page.tsx with Vercel-style dark theme layout (black background, two-column: filters left, activity list right)
+- [ ] Create activity-filters.tsx component with date range dropdown and collapsible type filter in left sidebar
+- [ ] Create activity-list.tsx component that displays month-grouped activity items with pagination
+- [ ] Create activity-item.tsx component with icon, user action description format, bold key data, right-aligned timestamp
+- [ ] Add Activity link to navigation.tsx with appropriate icon and active state styling
+- [ ] Add Activity page UI strings to locale files (en.ts, es.ts, fr.ts)
+- [ ] Document Vercel-inspired design system rules in repository rules or cursor rules file
