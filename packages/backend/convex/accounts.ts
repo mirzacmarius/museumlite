@@ -66,6 +66,14 @@ export const list = query({
         contactPhone: v.optional(v.string()),
         contactEmail: v.optional(v.string()),
         notes: v.optional(v.string()),
+        accountType: v.optional(
+          v.union(
+            v.literal("lender"),
+            v.literal("borrower"),
+            v.literal("both"),
+            v.literal("institution"),
+          ),
+        ),
         createdBy: v.id("users"),
         createdAt: v.number(),
         lastModifiedBy: v.optional(v.id("users")),
@@ -148,6 +156,15 @@ export const get = query({
       contactPhone: v.optional(v.string()),
       contactEmail: v.optional(v.string()),
       notes: v.optional(v.string()),
+      accountType: v.optional(
+        v.union(
+          v.literal("lender"),
+          v.literal("borrower"),
+          v.literal("both"),
+          v.literal("institution"),
+        ),
+      ),
+      roleIds: v.array(v.id("roles")),
       createdBy: v.id("users"),
       createdAt: v.number(),
       lastModifiedBy: v.optional(v.id("users")),
@@ -163,7 +180,16 @@ export const get = query({
 
     await requirePermission(ctx, account.organizationId, "loans.read");
 
-    return account;
+    // Get associated roles
+    const accountRoles = await ctx.db
+      .query("accountRoles")
+      .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
+      .collect();
+
+    return {
+      ...account,
+      roleIds: accountRoles.map((ar) => ar.roleId),
+    };
   },
 });
 
@@ -185,6 +211,15 @@ export const create = mutation({
     contactPhone: v.optional(v.string()),
     contactEmail: v.optional(v.string()),
     notes: v.optional(v.string()),
+    accountType: v.optional(
+      v.union(
+        v.literal("lender"),
+        v.literal("borrower"),
+        v.literal("both"),
+        v.literal("institution"),
+      ),
+    ),
+    roleIds: v.optional(v.array(v.id("roles"))),
   },
   returns: v.id("accounts"),
   handler: async (ctx, args) => {
@@ -216,9 +251,22 @@ export const create = mutation({
       contactPhone: args.contactPhone?.trim() || undefined,
       contactEmail: args.contactEmail?.trim() || undefined,
       notes: args.notes?.trim() || undefined,
+      accountType: args.accountType,
       createdBy: userId,
       createdAt: Date.now(),
     });
+
+    // Associate roles with account if provided
+    if (args.roleIds && args.roleIds.length > 0) {
+      for (const roleId of args.roleIds) {
+        await ctx.db.insert("accountRoles", {
+          accountId,
+          roleId,
+          addedAt: Date.now(),
+          addedBy: userId,
+        });
+      }
+    }
 
     return accountId;
   },
@@ -242,6 +290,15 @@ export const update = mutation({
     contactPhone: v.optional(v.string()),
     contactEmail: v.optional(v.string()),
     notes: v.optional(v.string()),
+    accountType: v.optional(
+      v.union(
+        v.literal("lender"),
+        v.literal("borrower"),
+        v.literal("both"),
+        v.literal("institution"),
+      ),
+    ),
+    roleIds: v.optional(v.array(v.id("roles"))),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -270,6 +327,7 @@ export const update = mutation({
       contactPhone?: string;
       contactEmail?: string;
       notes?: string;
+      accountType?: "lender" | "borrower" | "both" | "institution";
       lastModifiedBy: Id<"users">;
       lastModifiedAt: number;
     } = {
@@ -304,8 +362,33 @@ export const update = mutation({
       updates.contactEmail = args.contactEmail.trim() || undefined;
     if (args.notes !== undefined)
       updates.notes = args.notes.trim() || undefined;
+    if (args.accountType !== undefined)
+      updates.accountType = args.accountType;
 
     await ctx.db.patch(args.accountId, updates);
+
+    // Update role associations if provided
+    if (args.roleIds !== undefined) {
+      // Remove existing role associations
+      const existingAccountRoles = await ctx.db
+        .query("accountRoles")
+        .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
+        .collect();
+
+      for (const accountRole of existingAccountRoles) {
+        await ctx.db.delete(accountRole._id);
+      }
+
+      // Add new role associations
+      for (const roleId of args.roleIds) {
+        await ctx.db.insert("accountRoles", {
+          accountId: args.accountId,
+          roleId,
+          addedAt: Date.now(),
+          addedBy: userId,
+        });
+      }
+    }
 
     return null;
   },
@@ -342,6 +425,16 @@ export const remove = mutation({
       throw new Error(
         "Cannot delete account that is used in existing loans. Please remove the account from all loans first.",
       );
+    }
+
+    // Remove associated role relationships
+    const accountRoles = await ctx.db
+      .query("accountRoles")
+      .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
+      .collect();
+
+    for (const accountRole of accountRoles) {
+      await ctx.db.delete(accountRole._id);
     }
 
     await ctx.db.delete(args.accountId);

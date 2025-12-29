@@ -22,6 +22,7 @@ import {
   RefreshCw,
   Settings,
   ShoppingCart,
+  Users,
 } from "lucide-react";
 import * as React from "react";
 
@@ -133,6 +134,11 @@ export function AppSidebar({
       title: "Loans",
       url: "/loans",
       icon: Handshake,
+    },
+    {
+      title: "Accounts",
+      url: "/accounts",
+      icon: Users,
     },
   ];
 

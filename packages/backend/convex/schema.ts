@@ -478,6 +478,14 @@ export default defineSchema({
     contactPhone: v.optional(v.string()),
     contactEmail: v.optional(v.string()),
     notes: v.optional(v.string()),
+    accountType: v.optional(
+      v.union(
+        v.literal("lender"),
+        v.literal("borrower"),
+        v.literal("both"),
+        v.literal("institution"),
+      ),
+    ),
     createdBy: v.id("users"),
     createdAt: v.number(),
     lastModifiedBy: v.optional(v.id("users")),
@@ -492,6 +500,18 @@ export default defineSchema({
       searchField: "businessName",
       filterFields: ["organizationId"],
     }),
+
+  // Many-to-many relationship between accounts and roles
+  // Defines which roles have access to manage specific accounts
+  accountRoles: defineTable({
+    accountId: v.id("accounts"),
+    roleId: v.id("roles"),
+    addedAt: v.number(),
+    addedBy: v.id("users"),
+  })
+    .index("by_account", ["accountId"])
+    .index("by_role", ["roleId"])
+    .index("by_account_and_role", ["accountId", "roleId"]),
 
   // Account number counter tracking
   accountCounters: defineTable({
