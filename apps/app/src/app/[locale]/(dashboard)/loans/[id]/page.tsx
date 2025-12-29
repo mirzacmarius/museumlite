@@ -51,6 +51,28 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
+type LoanStatus = "pending" | "active" | "dispatched" | "returned" | "cancelled";
+
+type LoanItem = {
+  accessionNumber: string;
+  title: string;
+  conditionOut?: string;
+  conditionIn?: string;
+};
+
+type Loan = {
+  _id: Id<"loans">;
+  loanNumber: string;
+  type: "incoming" | "outgoing";
+  lenderBorrowerName: string;
+  lenderBorrowerContact?: string;
+  startDate: number;
+  endDate?: number;
+  insuranceValue?: number;
+  status: LoanStatus;
+  items: LoanItem[];
+};
+
 export default function LoanDetailPage() {
   const params = useParams();
   const loanId = params.id as string;
@@ -61,8 +83,8 @@ export default function LoanDetailPage() {
 
   const loan = useQuery(
     api.loans.get,
-    loanId ? { loanId: loanId as Id<"loans"> } : "skip"
-  );
+    loanId ? { loanId: loanId as Id<"loans"> } : "skip",
+  ) as Loan | null | undefined;
 
   const organization = useQuery(
     api.organizations.get,
@@ -157,7 +179,14 @@ export default function LoanDetailPage() {
                 <div className="shrink-0 relative group">
                   {/* Borrower Logo Mockup */}
                   <div className="w-32 h-32 rounded-xl border border-border shadow-2xl bg-background flex items-center justify-center p-2 relative overflow-hidden">
-                    <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(#6b7280 1px, transparent 1px)", backgroundSize: "8px 8px" }}></div>
+                    <div
+                      className="absolute inset-0 opacity-10"
+                      style={{
+                        backgroundImage:
+                          "radial-gradient(#6b7280 1px, transparent 1px)",
+                        backgroundSize: "8px 8px",
+                      }}
+                    />
                     <span className="text-4xl font-bold tracking-tighter relative z-10 text-foreground">
                       {loan.lenderBorrowerName.slice(0, 4).toUpperCase()}
                     </span>
@@ -254,7 +283,7 @@ export default function LoanDetailPage() {
                       className="rounded-none border-b-2 border-transparent py-3 text-xs font-medium text-muted-foreground hover:text-foreground data-[state=active]:border-cyan-500 data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none flex items-center gap-1.5"
                     >
                       Facility Report
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                     </TabsTrigger>
                     <TabsTrigger
                       value="logistics"
@@ -361,7 +390,7 @@ export default function LoanDetailPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100">
-                    {loan.items.map((item: { accessionNumber: string; title: string; conditionOut?: string }) => (
+                    {loan.items.map((item) => (
                       <tr key={item.accessionNumber}>
                         <td className="py-2 font-mono">{item.accessionNumber}</td>
                         <td className="py-2">{item.title}</td>
@@ -374,11 +403,11 @@ export default function LoanDetailPage() {
 
               <div className="absolute bottom-12 left-12 right-12 border-t border-zinc-200 pt-8 flex justify-between items-end">
                 <div>
-                    <div className="h-12 w-48 border-b border-zinc-300 mb-1"></div>
+                    <div className="h-12 w-48 border-b border-zinc-300 mb-1" />
                     <div className="text-[10px] text-zinc-400 uppercase tracking-widest">Released By (Registrar)</div>
                 </div>
                 <div>
-                    <div className="h-12 w-48 border-b border-zinc-300 mb-1"></div>
+                    <div className="h-12 w-48 border-b border-zinc-300 mb-1" />
                     <div className="text-[10px] text-zinc-400 uppercase tracking-widest">Received By (Shipper)</div>
                 </div>
               </div>
@@ -390,7 +419,7 @@ export default function LoanDetailPage() {
   );
 }
 
-function OverviewTab({ loan }: { loan: any }) {
+function OverviewTab({ loan }: { loan: Loan }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* Left: Approval Pipeline */}
@@ -404,7 +433,7 @@ function OverviewTab({ loan }: { loan: any }) {
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-6">Approval Workflow</h3>
            <div className="relative">
-              <div className="absolute top-4 left-0 w-full h-0.5 bg-secondary z-0"></div>
+              <div className="absolute top-4 left-0 w-full h-0.5 bg-secondary z-0" />
               <div className="relative z-10 grid grid-cols-5 gap-4">
                 {/* Step 1 */}
                 <div className="flex flex-col gap-2">
@@ -500,7 +529,10 @@ function OverviewTab({ loan }: { loan: any }) {
         <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">Required Documents</h3>
            <div className="space-y-2">
-              <a href="#" className="flex items-center gap-3 p-2 rounded hover:bg-secondary transition-colors group">
+              <button
+                type="button"
+                className="flex w-full items-center gap-3 rounded p-2 text-left hover:bg-secondary transition-colors group"
+              >
                  <div className="w-8 h-8 rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
                     <FileText className="w-4 h-4" />
                  </div>
@@ -508,8 +540,11 @@ function OverviewTab({ loan }: { loan: any }) {
                     <p className="text-xs font-medium text-foreground truncate">Loan_Agreement_Final.pdf</p>
                     <p className="text-[10px] text-muted-foreground">Signed • 12MB</p>
                  </div>
-              </a>
-              <a href="#" className="flex items-center gap-3 p-2 rounded hover:bg-secondary transition-colors group">
+              </button>
+              <button
+                type="button"
+                className="flex w-full items-center gap-3 rounded p-2 text-left hover:bg-secondary transition-colors group"
+              >
                  <div className="w-8 h-8 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                      <Shield className="w-4 h-4" />
                  </div>
@@ -517,15 +552,18 @@ function OverviewTab({ loan }: { loan: any }) {
                     <p className="text-xs font-medium text-foreground truncate">MoMA_Insurance_Cert.pdf</p>
                     <p className="text-[10px] text-muted-foreground">Valid until Dec 2024</p>
                  </div>
-              </a>
-               <a href="#" className="flex items-center gap-3 p-2 rounded hover:bg-secondary transition-colors group opacity-60">
+              </button>
+              <button
+                type="button"
+                className="flex w-full items-center gap-3 rounded p-2 text-left hover:bg-secondary transition-colors group opacity-60"
+              >
                  <div className="w-8 h-8 rounded bg-secondary text-muted-foreground flex items-center justify-center shrink-0 border border-dashed border-border">
                      <Upload className="w-4 h-4" />
                  </div>
                  <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-muted-foreground italic">Upload Facility Report...</p>
                  </div>
-              </a>
+              </button>
            </div>
         </div>
       </div>
@@ -533,7 +571,7 @@ function OverviewTab({ loan }: { loan: any }) {
   );
 }
 
-function ObjectsTab({ loan }: { loan: any }) {
+function ObjectsTab({ loan }: { loan: Loan }) {
   return (
     <>
       <div className="flex items-center justify-between">
@@ -558,7 +596,7 @@ function ObjectsTab({ loan }: { loan: any }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
          {/* Mock Cards - Replace with real iteration when images are available */}
-         {loan.items.length > 0 ? loan.items.map((item: any, idx: number) => (
+         {loan.items.length > 0 ? loan.items.map((item) => (
            <div key={item.accessionNumber} className="bg-card border border-border rounded-xl overflow-hidden hover:border-foreground/20 transition-colors group">
               <div className="h-40 bg-secondary relative overflow-hidden flex items-center justify-center">
                  <Box className="w-10 h-10 text-muted-foreground/30" />
@@ -574,18 +612,18 @@ function ObjectsTab({ loan }: { loan: any }) {
                     <div>
                        <p className="text-[10px] uppercase text-muted-foreground font-medium">Condition Out</p>
                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> {item.conditionOut || "Stable"}
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {item.conditionOut || "Stable"}
                        </p>
                     </div>
                     <div>
                        <p className="text-[10px] uppercase text-muted-foreground font-medium">Status</p>
                        {item.conditionIn ? (
                          <p className="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Returned
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Returned
                          </p>
                        ) : (
                          <p className="text-xs text-amber-600 dark:text-amber-500 font-medium flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> On Loan
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> On Loan
                          </p>
                        )}
                     </div>
@@ -637,7 +675,7 @@ function FacilityTab() {
                             <span className="text-foreground font-mono">20.5°C</span>
                          </div>
                          <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500 w-[60%] rounded-full"></div>
+                            <div className="h-full bg-emerald-500 w-[60%] rounded-full" />
                          </div>
                          <div className="flex justify-between text-[10px] text-muted-foreground mt-1 font-mono">
                             <span>15°C</span>
@@ -654,10 +692,10 @@ function FacilityTab() {
                          </div>
                          <div className="relative pt-1">
                             <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                               <div className="h-full bg-amber-500 w-[70%] rounded-full"></div>
+                               <div className="h-full bg-amber-500 w-[70%] rounded-full" />
                             </div>
                             {/* Markers for safe zone */}
-                            <div className="absolute top-0 bottom-0 left-[45%] w-[10%] bg-emerald-500/10 border-x border-emerald-500/30"></div>
+                            <div className="absolute top-0 bottom-0 left-[45%] w-[10%] bg-emerald-500/10 border-x border-emerald-500/30" />
                          </div>
                          <p className="text-[10px] text-amber-600 dark:text-amber-500 mt-1 text-right">Deviating slightly (+4%)</p>
                       </div>
@@ -669,7 +707,7 @@ function FacilityTab() {
                             <span className="text-foreground font-mono">45 lx</span>
                          </div>
                          <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500 w-[20%] rounded-full"></div>
+                            <div className="h-full bg-emerald-500 w-[20%] rounded-full" />
                          </div>
                       </div>
                    </div>
@@ -745,7 +783,12 @@ function LogisticsTab() {
                      </div>
                      <p className="text-xs text-muted-foreground">Contains: Rothko (NM.1955.084) + 2 others</p>
                   </div>
-                  <button className="text-xs font-medium text-cyan-600 dark:text-cyan-500 hover:underline">Configure</button>
+                  <button
+                    type="button"
+                    className="text-xs font-medium text-cyan-600 dark:text-cyan-500 hover:underline"
+                  >
+                    Configure
+                  </button>
                </div>
             </div>
 
@@ -784,17 +827,17 @@ function ActivityTab() {
     return (
         <div className="relative pl-6 border-l border-border space-y-8">
            <div className="relative">
-              <div className="absolute -left-[29px] top-0 w-3 h-3 bg-secondary rounded-full border-2 border-background"></div>
+              <div className="absolute -left-[29px] top-0 w-3 h-3 bg-secondary rounded-full border-2 border-background" />
               <p className="text-xs text-muted-foreground mb-1">Oct 24, 09:30</p>
               <p className="text-sm text-foreground">Facility Report uploaded by MoMA (Version 2)</p>
            </div>
            <div className="relative">
-              <div className="absolute -left-[29px] top-0 w-3 h-3 bg-secondary rounded-full border-2 border-background"></div>
+              <div className="absolute -left-[29px] top-0 w-3 h-3 bg-secondary rounded-full border-2 border-background" />
               <p className="text-xs text-muted-foreground mb-1">Oct 20, 14:15</p>
               <p className="text-sm text-foreground">Loan Agreement countersigned</p>
            </div>
            <div className="relative">
-              <div className="absolute -left-[29px] top-0 w-3 h-3 bg-cyan-500 rounded-full border-2 border-background"></div>
+              <div className="absolute -left-[29px] top-0 w-3 h-3 bg-cyan-500 rounded-full border-2 border-background" />
               <p className="text-xs text-muted-foreground mb-1">Oct 12, 10:00</p>
               <p className="text-sm text-foreground">Outgoing Loan record created by E. Fisher</p>
            </div>
@@ -802,7 +845,7 @@ function ActivityTab() {
     );
 }
 
-function LoanContextSidebar({ loan }: { loan: any }) {
+function LoanContextSidebar({ loan }: { loan: Loan }) {
   return (
     <Sidebar
       side="right"

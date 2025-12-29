@@ -1629,7 +1629,12 @@ export const checkCollectionsInActiveLoans = query({
     }
 
     // Get the organization from the first collection
-    const firstCollection = await ctx.db.get(args.collectionIds[0]);
+    const firstCollectionId = args.collectionIds[0];
+    if (!firstCollectionId) {
+      return [];
+    }
+
+    const firstCollection = await ctx.db.get(firstCollectionId);
     if (!firstCollection) {
       return [];
     }

@@ -5,7 +5,7 @@ import { CollectionMultiSelectCombobox } from "@/components/collection-multi-sel
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import type { Doc, Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
@@ -42,7 +42,7 @@ function SelectedCollectionItem({
   hasIssue = false,
   issueMessage,
 }: {
-  collection: Doc<"collections">;
+  collection: Pick<Doc<"collections">, "_id" | "accessionNumber" | "title">;
   condition: string;
   onConditionChange: (value: string) => void;
   onRemove: () => void;
@@ -695,7 +695,6 @@ export default function NewLoanPage() {
                              <div className="flex -space-x-2 overflow-hidden">
                                 {selectedCollectionsList.slice(0, 5).map((c) => (
                                    <Avatar key={c._id} className="inline-block h-8 w-8 rounded-full ring-2 ring-background">
-                                      <AvatarImage src={c.thumbnailUrl || undefined} />
                                       <AvatarFallback className="bg-secondary text-[8px]">{c.accessionNumber.slice(0,2)}</AvatarFallback>
                                    </Avatar>
                                 ))}

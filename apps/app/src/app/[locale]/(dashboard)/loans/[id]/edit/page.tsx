@@ -9,8 +9,18 @@ import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
+import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
-import { ArrowLeft, Save } from "lucide-react";
+import {
+  ArrowLeft,
+  Banknote,
+  Building2,
+  Calendar,
+  FileText,
+  Info,
+  Lock,
+  Save,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
