@@ -64,7 +64,15 @@ export const create = mutation({
     notes: v.optional(v.string()),
     useDetailedConditionReports: v.optional(v.boolean()),
     collectionIds: v.optional(v.array(v.id("collections"))),
-    conditionOut: v.optional(v.string()),
+    conditionOut: v.optional(v.string()), // Deprecated: use itemsWithConditions instead
+    itemsWithConditions: v.optional(
+      v.array(
+        v.object({
+          collectionId: v.id("collections"),
+          conditionOut: v.optional(v.string()),
+        }),
+      ),
+    ),
   },
   returns: v.id("loans"),
   handler: async (ctx, args) => {
@@ -112,30 +120,42 @@ export const create = mutation({
     });
 
     // Add items if provided
-    if (args.collectionIds && args.collectionIds.length > 0) {
+    // Support both old format (collectionIds + conditionOut) and new format (itemsWithConditions)
+    const itemsToAdd = args.itemsWithConditions
+      ? args.itemsWithConditions
+      : args.collectionIds
+        ? args.collectionIds.map((id) => ({
+            collectionId: id,
+            conditionOut: args.conditionOut,
+          }))
+        : [];
+
+    if (itemsToAdd.length > 0) {
       // Verify collections belong to organization and are active
-      for (const collectionId of args.collectionIds) {
-        const collection = await ctx.db.get(collectionId);
+      for (const item of itemsToAdd) {
+        const collection = await ctx.db.get(item.collectionId);
         if (!collection) {
-          throw new Error(`Collection ${collectionId} not found`);
+          throw new Error(`Collection ${item.collectionId} not found`);
         }
 
         if (collection.organizationId !== args.organizationId) {
           throw new Error(
-            `Collection ${collectionId} does not belong to organization`,
+            `Collection ${item.collectionId} does not belong to organization`,
           );
         }
 
         if (collection.status !== "active") {
-          throw new Error(`Collection ${collectionId} is not active`);
+          throw new Error(`Collection ${item.collectionId} is not active`);
         }
 
         // Check if already in a loan
         const existingLoanItem = await ctx.db
           .query("loanItems")
-          .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+          .withIndex("by_collection", (q) =>
+            q.eq("collectionId", item.collectionId),
+          )
           .filter((q) => {
-            return q.eq(q.field("collectionId"), collectionId);
+            return q.eq(q.field("collectionId"), item.collectionId);
           })
           .first();
 
@@ -147,16 +167,16 @@ export const create = mutation({
               existingLoan.status === "active")
           ) {
             throw new Error(
-              `Collection ${collectionId} is already in an active loan`,
+              `Collection ${item.collectionId} is already in an active loan`,
             );
           }
         }
 
-        // Create loan item
+        // Create loan item with per-item condition
         await ctx.db.insert("loanItems", {
           loanId,
-          collectionId,
-          conditionOut: args.conditionOut,
+          collectionId: item.collectionId,
+          conditionOut: item.conditionOut,
         });
       }
     }
@@ -364,6 +384,7 @@ export const list = query({
       v.union(
         v.literal("pending"),
         v.literal("active"),
+        v.literal("dispatched"),
         v.literal("returned"),
         v.literal("cancelled"),
       ),
@@ -383,6 +404,7 @@ export const list = query({
         status: v.union(
           v.literal("pending"),
           v.literal("active"),
+          v.literal("dispatched"),
           v.literal("returned"),
           v.literal("cancelled"),
         ),
@@ -529,6 +551,7 @@ export const get = query({
       status: v.union(
         v.literal("pending"),
         v.literal("active"),
+        v.literal("dispatched"),
         v.literal("returned"),
         v.literal("cancelled"),
       ),
@@ -732,7 +755,7 @@ export const approve = mutation({
       changes: { status: "active" },
     });
 
-    // Notify all users in organization about loan approval
+    // Notify all users in organization about loan approval (except the approver)
     const userOrgs = await ctx.db
       .query("userOrganizations")
       .withIndex("by_organization", (q) =>
@@ -745,7 +768,7 @@ export const approve = mutation({
         await ctx.runMutation(internal.audit.createNotificationInternal, {
           organizationId: loan.organizationId,
           userId: userOrg.userId,
-          type: "workflow_approved",
+          type: "loan_approved",
           title: "Loan Approved",
           message: `Loan ${loan.loanNumber} has been approved and is now active.`,
           relatedEntityType: "loan",
@@ -765,6 +788,176 @@ export const returnLoan = mutation({
   args: {
     loanId: v.id("loans"),
     conditionIn: v.optional(v.string()),
+    loanItemIds: v.optional(v.array(v.id("loanItems"))), // Optional: return specific items (partial return)
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const loan = await ctx.db.get(args.loanId);
+    if (!loan) {
+      throw new Error("Loan not found");
+    }
+
+    // Check permission
+    await requirePermission(ctx, loan.organizationId, "loans.update");
+
+    if (loan.status !== "active" && loan.status !== "dispatched") {
+      throw new Error("Loan must be active or dispatched to return");
+    }
+
+    // Get all loan items
+    const allLoanItems = await ctx.db
+      .query("loanItems")
+      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+      .collect();
+
+    // Determine which items to return
+    const itemsToReturn = args.loanItemIds
+      ? allLoanItems.filter((item) => args.loanItemIds!.includes(item._id))
+      : allLoanItems; // If no specific items, return all
+
+    if (itemsToReturn.length === 0) {
+      throw new Error("No items selected to return");
+    }
+
+    // Return each selected item
+    const returnedItemIds: Id<"loanItems">[] = [];
+    for (const item of itemsToReturn) {
+      await ctx.db.patch(item.collectionId, {
+        status: "active",
+        lastModifiedBy: userId,
+        lastModifiedAt: Date.now(),
+      });
+
+      // Update condition in - always set it to mark item as returned
+      // Use provided value, existing value, or default to "Returned"
+      const conditionInValue = args.conditionIn || item.conditionIn || "Returned";
+      await ctx.db.patch(item._id, {
+        conditionIn: conditionInValue,
+      });
+      
+      returnedItemIds.push(item._id);
+      
+      // Log activity for each returned item
+      await ctx.runMutation(internal.audit.logAction, {
+        organizationId: loan.organizationId,
+        userId,
+        action: "item_returned",
+        entityType: "loanItem",
+        entityId: item._id,
+        changes: {
+          loanId: args.loanId,
+          collectionId: item.collectionId,
+          conditionIn: args.conditionIn || item.conditionIn || "Returned",
+        },
+      });
+    }
+
+    // After returning items, check if ALL items in the loan are now returned
+    // This handles the case where a partial return results in all items being returned
+    const updatedLoanItems = await ctx.db
+      .query("loanItems")
+      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+      .collect();
+    
+    // Check if all items now have conditionIn set (meaning all are returned)
+    const allItemsNowReturned = updatedLoanItems.every((item) => 
+      item.conditionIn != null && String(item.conditionIn).trim().length > 0
+    );
+
+    // Update loan status only if all items are now returned (either in this operation or after it)
+    if (allItemsNowReturned) {
+      await ctx.db.patch(args.loanId, {
+        status: "returned",
+      });
+
+      // Log audit action for full return
+      await ctx.runMutation(internal.audit.logAction, {
+        organizationId: loan.organizationId,
+        userId,
+        action: "returned",
+        entityType: "loan",
+        entityId: args.loanId,
+        changes: { 
+          status: "returned",
+          itemsReturned: returnedItemIds.length,
+          returnedItemIds: returnedItemIds,
+        },
+      });
+
+      // Notify all users about full loan return
+      const userOrgs = await ctx.db
+        .query("userOrganizations")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", loan.organizationId),
+        )
+        .collect();
+
+      for (const userOrg of userOrgs) {
+        if (userOrg.userId !== userId) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: loan.organizationId,
+            userId: userOrg.userId,
+            type: "loan_returned",
+            title: "Loan Returned",
+            message: `Loan ${loan.loanNumber} has been returned.`,
+            relatedEntityType: "loan",
+            relatedEntityId: args.loanId,
+          });
+        }
+      }
+    } else {
+      // Partial return - log action but don't change loan status
+      await ctx.runMutation(internal.audit.logAction, {
+        organizationId: loan.organizationId,
+        userId,
+        action: "items_returned",
+        entityType: "loan",
+        entityId: args.loanId,
+        changes: {
+          itemsReturned: itemsToReturn.length,
+          totalItems: allLoanItems.length,
+          returnedItemIds: returnedItemIds,
+        },
+      });
+
+      // Notify about partial return
+      const userOrgs = await ctx.db
+        .query("userOrganizations")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", loan.organizationId),
+        )
+        .collect();
+
+      for (const userOrg of userOrgs) {
+        if (userOrg.userId !== userId) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: loan.organizationId,
+            userId: userOrg.userId,
+            type: "loan_partial_return",
+            title: "Loan Items Returned",
+            message: `${itemsToReturn.length} of ${allLoanItems.length} items from loan ${loan.loanNumber} have been returned.`,
+            relatedEntityType: "loan",
+            relatedEntityId: args.loanId,
+          });
+        }
+      }
+    }
+
+    return null;
+  },
+});
+
+/**
+ * Dispatch loan (mark items as shipped)
+ */
+export const dispatch = mutation({
+  args: {
+    loanId: v.id("loans"),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -782,46 +975,25 @@ export const returnLoan = mutation({
     await requirePermission(ctx, loan.organizationId, "loans.update");
 
     if (loan.status !== "active") {
-      throw new Error("Loan is not active");
+      throw new Error("Loan must be active to dispatch");
     }
 
     // Update loan status
     await ctx.db.patch(args.loanId, {
-      status: "returned",
+      status: "dispatched",
     });
 
     // Log audit action
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: loan.organizationId,
       userId,
-      action: "returned",
+      action: "dispatched",
       entityType: "loan",
       entityId: args.loanId,
-      changes: { status: "returned" },
+      changes: { status: "dispatched" },
     });
 
-    // Update collection statuses back to active
-    const loanItems = await ctx.db
-      .query("loanItems")
-      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
-      .collect();
-
-    for (const item of loanItems) {
-      await ctx.db.patch(item.collectionId, {
-        status: "active",
-        lastModifiedBy: userId,
-        lastModifiedAt: Date.now(),
-      });
-
-      // Update condition in if provided
-      if (args.conditionIn !== undefined) {
-        await ctx.db.patch(item._id, {
-          conditionIn: args.conditionIn,
-        });
-      }
-    }
-
-    // Notify users about loan return
+    // Notify all users in organization about loan dispatch (except the dispatcher)
     const userOrgs = await ctx.db
       .query("userOrganizations")
       .withIndex("by_organization", (q) =>
@@ -834,9 +1006,9 @@ export const returnLoan = mutation({
         await ctx.runMutation(internal.audit.createNotificationInternal, {
           organizationId: loan.organizationId,
           userId: userOrg.userId,
-          type: "loan_returned",
-          title: "Loan Returned",
-          message: `Loan ${loan.loanNumber} has been returned.`,
+          type: "loan_dispatched",
+          title: "Loan Dispatched",
+          message: `Loan ${loan.loanNumber} has been dispatched.`,
           relatedEntityType: "loan",
           relatedEntityId: args.loanId,
         });
@@ -869,8 +1041,8 @@ export const cancel = mutation({
     // Check permission
     await requirePermission(ctx, loan.organizationId, "loans.update");
 
-    if (loan.status !== "pending" && loan.status !== "active") {
-      throw new Error("Can only cancel pending or active loans");
+    if (loan.status !== "pending" && loan.status !== "active" && loan.status !== "dispatched") {
+      throw new Error("Can only cancel pending, active, or dispatched loans");
     }
 
     // Update loan status
@@ -902,7 +1074,7 @@ export const cancel = mutation({
       });
     }
 
-    // Notify users about loan cancellation
+    // Notify all users in organization about loan cancellation (except the user who cancelled it)
     const userOrgs = await ctx.db
       .query("userOrganizations")
       .withIndex("by_organization", (q) =>
@@ -1367,6 +1539,139 @@ export const deleteLoanDocument = mutation({
 });
 
 /**
+ * TEST UTILITY: Delete all loans and loan items for an organization
+ * WARNING: This is a destructive operation for testing purposes only
+ */
+export const deleteAllLoans = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    deletedLoans: v.number(),
+    deletedLoanItems: v.number(),
+    updatedCollections: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Check permission
+    await requirePermission(ctx, args.organizationId, "loans.update");
+
+    // Get all loans for the organization
+    const loans = await ctx.db
+      .query("loans")
+      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .collect();
+
+    let deletedLoanItems = 0;
+    let updatedCollections = 0;
+
+    // For each loan, delete loan items and update collection statuses
+    for (const loan of loans) {
+      const loanItems = await ctx.db
+        .query("loanItems")
+        .withIndex("by_loan", (q) => q.eq("loanId", loan._id))
+        .collect();
+
+      for (const item of loanItems) {
+        // Update collection status back to active
+        await ctx.db.patch(item.collectionId, {
+          status: "active",
+          lastModifiedBy: userId,
+          lastModifiedAt: Date.now(),
+        });
+        updatedCollections++;
+
+        // Delete loan item
+        await ctx.db.delete(item._id);
+        deletedLoanItems++;
+      }
+
+      // Delete the loan
+      await ctx.db.delete(loan._id);
+    }
+
+    return {
+      deletedLoans: loans.length,
+      deletedLoanItems,
+      updatedCollections,
+    };
+  },
+});
+
+/**
+ * Check which collections are already in active or pending loans
+ */
+export const checkCollectionsInActiveLoans = query({
+  args: {
+    collectionIds: v.array(v.id("collections")),
+  },
+  returns: v.array(
+    v.object({
+      collectionId: v.id("collections"),
+      loanId: v.id("loans"),
+      loanNumber: v.string(),
+      status: v.union(
+        v.literal("pending"),
+        v.literal("active"),
+        v.literal("dispatched"),
+        v.literal("returned"),
+        v.literal("cancelled"),
+      ),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    if (args.collectionIds.length === 0) {
+      return [];
+    }
+
+    // Get the organization from the first collection
+    const firstCollection = await ctx.db.get(args.collectionIds[0]);
+    if (!firstCollection) {
+      return [];
+    }
+
+    await requirePermission(ctx, firstCollection.organizationId, "loans.read");
+
+    const results: Array<{
+      collectionId: Id<"collections">;
+      loanId: Id<"loans">;
+      loanNumber: string;
+      status: "pending" | "active" | "dispatched" | "returned" | "cancelled";
+    }> = [];
+
+    // Check each collection for active loans
+    for (const collectionId of args.collectionIds) {
+      const loanItems = await ctx.db
+        .query("loanItems")
+        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+        .collect();
+
+      for (const loanItem of loanItems) {
+        const loan = await ctx.db.get(loanItem.loanId);
+        if (
+          loan &&
+          (loan.status === "pending" || loan.status === "active" || loan.status === "dispatched")
+        ) {
+          results.push({
+            collectionId,
+            loanId: loan._id,
+            loanNumber: loan.loanNumber,
+            status: loan.status,
+          });
+          break; // Only need one active loan per collection
+        }
+      }
+    }
+
+    return results;
+  },
+});
+
+/**
  * Get loans for a specific collection object
  */
 export const getLoansForCollection = query({
@@ -1384,6 +1689,7 @@ export const getLoansForCollection = query({
       status: v.union(
         v.literal("pending"),
         v.literal("active"),
+        v.literal("dispatched"),
         v.literal("returned"),
         v.literal("cancelled"),
       ),

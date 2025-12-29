@@ -13,7 +13,6 @@ import {
   CheckCircle,
   Clock,
   Edit,
-  ExternalLink,
   Package,
   XCircle,
 } from "lucide-react";
@@ -72,6 +71,8 @@ export default function LoanDetailPage() {
         return <Clock className="h-5 w-5 text-yellow-500" />;
       case "active":
         return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case "dispatched":
+        return <Package className="h-5 w-5 text-purple-500" />;
       case "returned":
         return <CheckCircle className="h-5 w-5 text-blue-500" />;
       case "cancelled":
@@ -87,6 +88,8 @@ export default function LoanDetailPage() {
         return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400";
       case "active":
         return "bg-green-500/10 text-green-600 dark:text-green-400";
+      case "dispatched":
+        return "bg-purple-500/10 text-purple-600 dark:text-purple-400";
       case "returned":
         return "bg-blue-500/10 text-blue-600 dark:text-blue-400";
       case "cancelled":

@@ -16,12 +16,13 @@ import {
   Handshake,
   Plus,
   Search,
+  Truck,
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-type LoanStatus = "pending" | "active" | "returned" | "cancelled" | "all";
+type LoanStatus = "pending" | "active" | "dispatched" | "returned" | "cancelled" | "all";
 type LoanType = "incoming" | "outgoing" | "all";
 
 export default function LoansPage() {
@@ -191,6 +192,18 @@ export default function LoansPage() {
               >
                 <CheckCircle className="mr-2 inline h-4 w-4" />
                 Active
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter("dispatched")}
+                className={`px-4 py-3 text-sm font-medium transition-colors ${
+                  statusFilter === "dispatched"
+                    ? "border-b-2 border-primary text-primary"
+                    : "text-muted-foreground hover:text-primary"
+                }`}
+              >
+                <Truck className="mr-2 inline h-4 w-4" />
+                Dispatched
               </button>
               <button
                 type="button"

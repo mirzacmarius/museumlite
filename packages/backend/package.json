@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "convex dev --tail-logs",
     "setup": "convex dev --once && convex env set VALIDATE_ENV=true",
-    "seed": "convex dev --once && convex run init"
+    "seed": "convex dev --once && convex run init",
+    "test": "vitest",
+    "test:once": "vitest run",
+    "test:watch": "vitest --watch"
   },
   "type": "module",
   "author": "",
@@ -22,7 +25,10 @@
     "standardwebhooks": "^1.0.0"
   },
   "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
     "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.2"
+    "@types/react-dom": "^19.2.2",
+    "convex-test": "^0.0.41",
+    "vitest": "^4.0.16"
   }
 }

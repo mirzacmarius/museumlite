@@ -21,6 +21,7 @@ import {
   Building2,
   Filter,
   MapPin,
+  MoreVertical,
   Plus,
   Search,
   X,
@@ -28,6 +29,14 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { DeaccessionDialog } from "@/components/deaccession-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@v1/ui/dropdown-menu";
 
 export default function CollectionsPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
@@ -418,6 +427,8 @@ function CollectionListItem({
   item: CollectionListItem;
   organizationId: Id<"organizations">;
 }) {
+  const [isDeaccessionDialogOpen, setIsDeaccessionDialogOpen] = useState(false);
+
   const locationPath = useQuery(
     api.locations.getLocationPath,
     item.currentLocationId && organizationId
@@ -429,82 +440,133 @@ function CollectionListItem({
     collectionId: item._id,
   });
 
-  return (
-    <Link
-      href={`/objects/${item._id}`}
-      className="block rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent"
-    >
-      <div className="flex items-center gap-4">
-        {/* Primary Image Thumbnail */}
-        <div className="relative flex h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-          {primaryImageUrl ? (
-            <Image
-              src={primaryImageUrl}
-              alt={item.title}
-              fill
-              sizes="64px"
-              className="object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <Building2 className="h-6 w-6 text-muted-foreground" />
-            </div>
-          )}
-        </div>
+  const canDeaccession = item.status !== "deaccessioned";
 
-        {/* Content */}
-        <div className="flex flex-1 items-center justify-between">
-          <div className="flex-1">
-            <h3 className="font-medium">{item.title}</h3>
-            <div className="mt-1 flex items-center gap-4 text-sm text-muted-foreground">
-              <span>{item.accessionNumber}</span>
-              {locationPath && locationPath.length > 0 && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {locationPath.map((loc) => loc.name).join(" → ")}
+  return (
+    <>
+      <div className="group relative flex items-center gap-4 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent">
+        <Link
+          href={`/objects/${item._id}`}
+          className="flex flex-1 items-center gap-4 min-w-0 pr-2"
+        >
+          {/* Primary Image Thumbnail */}
+          <div className="relative flex h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+            {primaryImageUrl ? (
+              <Image
+                src={primaryImageUrl}
+                alt={item.title}
+                fill
+                sizes="64px"
+                className="object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <Building2 className="h-6 w-6 text-muted-foreground" />
+              </div>
+            )}
+          </div>
+
+          {/* Content */}
+          <div className="flex flex-1 items-center justify-between min-w-0">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-medium truncate">{item.title}</h3>
+              <div className="mt-1 flex items-center gap-4 text-sm text-muted-foreground">
+                <span>{item.accessionNumber}</span>
+                {locationPath && locationPath.length > 0 && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {locationPath.map((loc) => loc.name).join(" → ")}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="text-right flex-shrink-0 ml-4">
+              <div className="flex flex-wrap justify-end gap-1 mb-1">
+                {(() => {
+                  try {
+                    const types = item.objectType
+                      ? JSON.parse(item.objectType)
+                      : [];
+                    return Array.isArray(types) && types.length > 0 ? (
+                      types.map((type: string) => (
+                        <span
+                          key={type}
+                          className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-medium"
+                        >
+                          {type}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    );
+                  } catch {
+                    return (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    );
+                  }
+                })()}
+              </div>
+              {item.status === "deaccessioned" ? (
+                <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-600">
+                  <Archive className="mr-1 h-3 w-3" />
+                  Deaccessioned
                 </span>
+              ) : (
+                <p className="text-xs text-muted-foreground capitalize">
+                  {item.status}
+                </p>
               )}
             </div>
           </div>
-          <div className="text-right">
-            <div className="flex flex-wrap justify-end gap-1 mb-1">
-              {(() => {
-                try {
-                  const types = item.objectType
-                    ? JSON.parse(item.objectType)
-                    : [];
-                  return Array.isArray(types) && types.length > 0 ? (
-                    types.map((type: string) => (
-                      <span
-                        key={type}
-                        className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-medium"
-                      >
-                        {type}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-sm text-muted-foreground">—</span>
-                  );
-                } catch {
-                  return (
-                    <span className="text-sm text-muted-foreground">—</span>
-                  );
-                }
-              })()}
-            </div>
-            {item.status === "deaccessioned" ? (
-              <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-600">
-                <Archive className="mr-1 h-3 w-3" />
-                Deaccessioned
-              </span>
-            ) : (
-              <p className="text-xs text-muted-foreground capitalize">
-                {item.status}
-              </p>
-            )}
+        </Link>
+
+        {/* Quick Actions Dropdown - MUS-95 */}
+        {canDeaccession && (
+          <div
+            className="flex-shrink-0 ml-2 z-10"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                  <span className="sr-only">Quick actions</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                <PermissionGate permission="collections.create">
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDeaccessionDialogOpen(true);
+                    }}
+                  >
+                    <Archive className="mr-2 h-4 w-4" />
+                    Deaccession
+                  </DropdownMenuItem>
+                </PermissionGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        </div>
+        )}
       </div>
-    </Link>
+
+      {/* Deaccession Dialog */}
+      <DeaccessionDialog
+        open={isDeaccessionDialogOpen}
+        onOpenChange={setIsDeaccessionDialogOpen}
+        collectionId={item._id}
+        collectionTitle={item.title}
+        organizationId={organizationId}
+      />
+    </>
   );
 }

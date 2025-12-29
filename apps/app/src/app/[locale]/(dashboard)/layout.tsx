@@ -1,4 +1,5 @@
 import { AppSidebar } from "@/components/app-sidebar";
+import { NotificationBell } from "@/components/notification-bell";
 import { OrganizationProvider } from "@/components/organization-provider";
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -37,8 +38,9 @@ export default async function Layout({
           preloadedProducts={preloadedProducts}
         />
         <main className="min-h-[100vh] w-full bg-secondary dark:bg-black">
-          <div className="flex items-center p-4">
+          <div className="flex items-center justify-between p-4">
             <SidebarTrigger className="-ml-1" />
+            <NotificationBell />
           </div>
           {children}
         </main>

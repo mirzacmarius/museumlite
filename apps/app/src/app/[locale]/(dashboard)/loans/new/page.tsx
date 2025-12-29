@@ -1,6 +1,7 @@
 "use client";
 
 import { AccountCombobox } from "@/components/account-combobox";
+import { CollectionMultiSelectCombobox } from "@/components/collection-multi-select-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -17,11 +18,11 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
-import { useMutation, useQuery } from "convex/react";
-import { ArrowLeft, Save, Search, X } from "lucide-react";
+import { useMutation } from "convex/react";
+import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 export default function NewLoanPage() {
   const router = useRouter();
@@ -45,24 +46,6 @@ export default function NewLoanPage() {
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>(
     [],
   );
-  const [collectionSearchQuery, setCollectionSearchQuery] = useState("");
-
-  const collections = useQuery(
-    api.collections.list,
-    currentOrganizationId
-      ? {
-          organizationId: currentOrganizationId as Id<"organizations">,
-          paginationOpts: { numItems: 100, cursor: null },
-          status: "active",
-          search: collectionSearchQuery || undefined,
-        }
-      : "skip",
-  );
-
-  const availableCollections = useMemo(() => {
-    if (!collections?.page) return [];
-    return collections.page;
-  }, [collections]);
 
   if (!currentOrganizationId) {
     return (
@@ -331,109 +314,11 @@ export default function NewLoanPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by accession number or title..."
-                      value={collectionSearchQuery}
-                      onChange={(e) => setCollectionSearchQuery(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                  {collections === undefined ? (
-                    <p className="text-sm text-muted-foreground">
-                      Loading collections...
-                    </p>
-                  ) : availableCollections.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      {collectionSearchQuery
-                        ? "No collections found matching your search"
-                        : "No active collections available"}
-                    </p>
-                  ) : (
-                    <div className="max-h-[200px] space-y-1 overflow-y-auto rounded-md border border-border p-2">
-                      {availableCollections.map((collection) => {
-                        const isSelected = selectedCollectionIds.includes(
-                          collection._id,
-                        );
-                        return (
-                          <button
-                            key={collection._id}
-                            type="button"
-                            onClick={() => {
-                              if (isSelected) {
-                                setSelectedCollectionIds(
-                                  selectedCollectionIds.filter(
-                                    (id) => id !== collection._id,
-                                  ),
-                                );
-                              } else {
-                                setSelectedCollectionIds([
-                                  ...selectedCollectionIds,
-                                  collection._id,
-                                ]);
-                              }
-                            }}
-                            className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors ${
-                              isSelected
-                                ? "bg-primary text-primary-foreground"
-                                : "hover:bg-accent"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <span className="font-medium">
-                                  {collection.accessionNumber}
-                                </span>
-                                <span className="ml-2 text-muted-foreground">
-                                  {collection.title}
-                                </span>
-                              </div>
-                              {isSelected && <X className="h-4 w-4" />}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                  {selectedCollectionIds.length > 0 && (
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">
-                        Selected ({selectedCollectionIds.length}):
-                      </Label>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedCollectionIds.map((id) => {
-                          const collection = collections?.page.find(
-                            (c) => c._id === id,
-                          );
-                          return (
-                            <div
-                              key={id}
-                              className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-sm"
-                            >
-                              <span>
-                                {collection?.accessionNumber} -{" "}
-                                {collection?.title}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setSelectedCollectionIds(
-                                    selectedCollectionIds.filter(
-                                      (i) => i !== id,
-                                    ),
-                                  )
-                                }
-                                className="ml-1 hover:text-destructive"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                  <CollectionMultiSelectCombobox
+                    organizationId={currentOrganizationId as Id<"organizations">}
+                    selectedIds={selectedCollectionIds}
+                    onSelectionChange={setSelectedCollectionIds}
+                  />
                 </div>
 
                 {selectedCollectionIds.length > 0 && (
