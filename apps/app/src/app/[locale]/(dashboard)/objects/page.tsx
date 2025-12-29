@@ -524,7 +524,8 @@ function CollectionListItem({
         {canDeaccession && (
           <div
             className="flex-shrink-0 ml-2 z-10"
-            onPointerDown={(e) => {
+            onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
             }}
           >
