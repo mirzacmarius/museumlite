@@ -16,6 +16,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupConte
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@v1/ui/tabs";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
+import { LoanApprovalWorkflow } from "./_components/loan-approval-workflow";
 import {
   AlertCircle,
   ArrowDownToLine,
@@ -145,10 +146,6 @@ export default function LoanDetailPage() {
               >
                 <Printer className="h-4 w-4" />
               </Button>
-              <Button className="flex items-center gap-2 h-8 text-xs font-semibold">
-                <PackageCheck className="h-3.5 w-3.5" />
-                <span>Approve Dispatch</span>
-              </Button>
             </div>
           </header>
 
@@ -201,7 +198,7 @@ export default function LoanDetailPage() {
                   {/* Titles */}
                   <div>
                     <h1 className="text-3xl font-semibold text-foreground tracking-tight leading-tight mb-1">
-                      {loan.description || "Loan Collection"}
+                      Loan {loan.loanNumber}
                     </h1>
                     <p className="text-muted-foreground text-sm">
                       {loan.type === "outgoing" ? "Borrower" : "Lender"}: {loan.lenderBorrowerName}
@@ -364,7 +361,7 @@ export default function LoanDetailPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100">
-                    {loan.items.map((item) => (
+                    {loan.items.map((item: { accessionNumber: string; title: string; conditionOut?: string }) => (
                       <tr key={item.accessionNumber}>
                         <td className="py-2 font-mono">{item.accessionNumber}</td>
                         <td className="py-2">{item.title}</td>
@@ -398,6 +395,11 @@ function OverviewTab({ loan }: { loan: any }) {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* Left: Approval Pipeline */}
       <div className="col-span-2 space-y-6">
+        {/* Loan Workflow Actions */}
+        <LoanApprovalWorkflow
+          loanId={loan._id}
+          loanStatus={loan.status}
+        />
         {/* Status Flow */}
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-6">Approval Workflow</h3>
@@ -570,16 +572,30 @@ function ObjectsTab({ loan }: { loan: any }) {
                  
                  <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 gap-4">
                     <div>
-                       <p className="text-[10px] uppercase text-muted-foreground font-medium">Condition</p>
+                       <p className="text-[10px] uppercase text-muted-foreground font-medium">Condition Out</p>
                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> {item.conditionOut || "Stable"}
                        </p>
                     </div>
                     <div>
-                       <p className="text-[10px] uppercase text-muted-foreground font-medium">Prep Status</p>
-                       <p className="text-xs text-amber-600 dark:text-amber-500 font-medium">Needs Framing</p>
+                       <p className="text-[10px] uppercase text-muted-foreground font-medium">Status</p>
+                       {item.conditionIn ? (
+                         <p className="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Returned
+                         </p>
+                       ) : (
+                         <p className="text-xs text-amber-600 dark:text-amber-500 font-medium flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> On Loan
+                         </p>
+                       )}
                     </div>
                  </div>
+                 {item.conditionIn && (
+                   <div className="mt-2 pt-2 border-t border-border">
+                      <p className="text-[10px] uppercase text-muted-foreground font-medium">Condition In</p>
+                      <p className="text-xs text-muted-foreground">{item.conditionIn}</p>
+                   </div>
+                 )}
               </div>
            </div>
          )) : (

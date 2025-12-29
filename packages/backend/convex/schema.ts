@@ -521,6 +521,7 @@ export default defineSchema({
     status: v.union(
       v.literal("pending"),
       v.literal("active"),
+      v.literal("dispatched"),
       v.literal("returned"),
       v.literal("cancelled"),
     ),

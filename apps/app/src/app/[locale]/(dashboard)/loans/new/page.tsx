@@ -1,6 +1,7 @@
 "use client";
 
 import { AccountCombobox } from "@/components/account-combobox";
+import { CollectionMultiSelectCombobox } from "@/components/collection-multi-select-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -18,23 +19,101 @@ import {
 } from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
+import Image from "next/image";
 import { 
   ArrowLeft, 
   Save, 
-  Search, 
-  X, 
-  Building2,
-  Calendar,
+  X,
   Box,
-  ChevronRight,
   Info,
-  CheckCircle2
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@v1/ui/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
+// Component for selected collection item with condition input
+function SelectedCollectionItem({
+  collection,
+  condition,
+  onConditionChange,
+  onRemove,
+  hasIssue = false,
+  issueMessage,
+}: {
+  collection: Doc<"collections">;
+  condition: string;
+  onConditionChange: (value: string) => void;
+  onRemove: () => void;
+  hasIssue?: boolean;
+  issueMessage?: string;
+}) {
+  const primaryImageUrl = useQuery(api.media.getPrimaryImageUrl, {
+    collectionId: collection._id,
+  });
+
+  return (
+    <div className={cn(
+      "rounded-lg border p-3 space-y-2 transition-colors",
+      hasIssue 
+        ? "border-destructive bg-destructive/5" 
+        : "border-border bg-secondary/20"
+    )}>
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded bg-secondary ring-1 ring-border flex-shrink-0 overflow-hidden">
+          {primaryImageUrl ? (
+            <Image
+              src={primaryImageUrl}
+              alt={collection.title}
+              width={40}
+              height={40}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <Box className="h-5 w-5 text-muted-foreground" />
+            </div>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium truncate">{collection.title}</p>
+            {hasIssue && (
+              <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0" />
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground font-mono">{collection.accessionNumber}</p>
+          {hasIssue && issueMessage && (
+            <p className="text-xs text-destructive mt-1">{issueMessage}</p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="p-1 hover:bg-destructive/10 hover:text-destructive rounded transition-colors"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor={`condition-${collection._id}`} className="text-xs">
+          Condition Out
+        </Label>
+        <Input
+          id={`condition-${collection._id}`}
+          value={condition}
+          onChange={(e) => onConditionChange(e.target.value)}
+          placeholder="e.g. Good, Stable, minor wear..."
+          className={cn(
+            "bg-background text-sm",
+            hasIssue && "border-destructive"
+          )}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function NewLoanPage() {
   const router = useRouter();
@@ -55,28 +134,64 @@ export default function NewLoanPage() {
     terms: "",
     insuranceValue: "",
     notes: "",
-    conditionOut: "",
   });
   
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>([]);
-  const [collectionSearchQuery, setCollectionSearchQuery] = useState("");
+  // Store per-item conditions: { collectionId: conditionOut }
+  const [itemConditions, setItemConditions] = useState<Record<string, string>>({});
+  // Track collections that have issues (already in active loans)
+  const [problematicCollectionIds, setProblematicCollectionIds] = useState<Set<string>>(new Set());
 
-  const collections = useQuery(
+  // Fetch selected collections to display details
+  const selectedCollections = useQuery(
     api.collections.list,
-    currentOrganizationId
+    currentOrganizationId && selectedCollectionIds.length > 0
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
-          paginationOpts: { numItems: 100, cursor: null },
+          paginationOpts: { numItems: 1000, cursor: null },
           status: "active",
-          search: collectionSearchQuery || undefined,
         }
       : "skip",
   );
 
-  const availableCollections = useMemo(() => {
-    if (!collections?.page) return [];
-    return collections.page;
-  }, [collections]);
+  const selectedCollectionsList = useMemo(() => {
+    if (!selectedCollections?.page) return [];
+    return selectedCollections.page.filter(c => selectedCollectionIds.includes(c._id));
+  }, [selectedCollections?.page, selectedCollectionIds]);
+
+  // Validate that all selected collections belong to the current organization
+  const validCollectionIds = useMemo(() => {
+    if (!selectedCollections?.page || selectedCollectionIds.length === 0) {
+      return [];
+    }
+    // Filter to only include collections that exist in the fetched results
+    // This ensures they belong to the current organization
+    return selectedCollectionIds.filter((id) =>
+      selectedCollections.page.some((c) => c._id === id),
+    );
+  }, [selectedCollections?.page, selectedCollectionIds]);
+
+  // Check which collections are in active loans (skip during submission to avoid false positives)
+  const collectionsInActiveLoans = useQuery(
+    api.loans.checkCollectionsInActiveLoans,
+    currentOrganizationId && selectedCollectionIds.length > 0 && !isSubmitting
+      ? {
+          collectionIds: selectedCollectionIds as Id<"collections">[],
+        }
+      : "skip",
+  );
+
+  // Update problematic collection IDs when check results change
+  useEffect(() => {
+    if (collectionsInActiveLoans) {
+      const problematicIds = new Set(
+        collectionsInActiveLoans.map((item) => item.collectionId),
+      );
+      setProblematicCollectionIds(problematicIds);
+    } else {
+      setProblematicCollectionIds(new Set());
+    }
+  }, [collectionsInActiveLoans]);
 
   if (!currentOrganizationId) {
     return (
@@ -96,6 +211,43 @@ export default function NewLoanPage() {
       return;
     }
 
+    // Remove invalid collection IDs from state if any
+    if (validCollectionIds.length !== selectedCollectionIds.length) {
+      const invalidIds = selectedCollectionIds.filter(
+        (id) => !validCollectionIds.includes(id),
+      );
+      setSelectedCollectionIds(validCollectionIds);
+      // Remove conditions for invalid IDs
+      setItemConditions((prev) => {
+        const updated = { ...prev };
+        invalidIds.forEach((id) => {
+          delete updated[id];
+        });
+        return updated;
+      });
+      setError(
+        "Some selected collections are no longer available and have been removed. Please try again.",
+      );
+      return;
+    }
+
+    // Check if there are problematic collections (already in active loans)
+    if (problematicCollectionIds.size > 0) {
+      const problematicList = Array.from(problematicCollectionIds);
+      const problematicNames = selectedCollectionsList
+        .filter((c) => problematicList.includes(c._id))
+        .map((c) => c.title || c.accessionNumber)
+        .join(", ");
+      
+      setError(
+        `The following collections are already in active or pending loans and must be removed: ${problematicNames}. Please remove them before creating the loan.`,
+      );
+      return;
+    }
+
+    // Clear problematic state during submission to avoid showing false errors
+    setProblematicCollectionIds(new Set());
+    
     setIsSubmitting(true);
     try {
       await createLoan({
@@ -114,28 +266,36 @@ export default function NewLoanPage() {
           ? Number.parseFloat(formData.insuranceValue)
           : undefined,
         notes: formData.notes || undefined,
-        collectionIds:
-          selectedCollectionIds.length > 0
-            ? (selectedCollectionIds as Id<"collections">[])
+        itemsWithConditions:
+          validCollectionIds.length > 0
+            ? validCollectionIds.map((id) => ({
+                collectionId: id as Id<"collections">,
+                conditionOut: itemConditions[id] || undefined,
+              }))
             : undefined,
-        conditionOut: formData.conditionOut || undefined,
       });
       router.push("/loans");
     } catch (err) {
       console.error("Error creating loan:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to create loan. Please try again.",
-      );
+      let errorMessage = "Failed to create loan. Please try again.";
+      
+      if (err instanceof Error) {
+        // Provide more user-friendly error messages
+        if (err.message.includes("already in an active loan")) {
+          errorMessage = "One or more selected collections are already in an active or pending loan. Please remove them and try again.";
+        } else if (err.message.includes("does not belong to organization")) {
+          errorMessage = "One or more selected collections don't belong to this organization. Please refresh and try again.";
+        } else if (err.message.includes("is not active")) {
+          errorMessage = "One or more selected collections are not active. Please select only active collections.";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      setError(errorMessage);
       setIsSubmitting(false);
     }
   };
-
-  const selectedCollectionsList = useMemo(() => {
-    if (!collections?.page) return [];
-    return collections.page.filter(c => selectedCollectionIds.includes(c._id));
-  }, [collections?.page, selectedCollectionIds]);
 
   return (
     <div className="min-h-screen w-full bg-background pb-20">
@@ -384,59 +544,25 @@ export default function NewLoanPage() {
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label>Search Collection</Label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by accession number or title..."
-                      value={collectionSearchQuery}
-                      onChange={(e) => setCollectionSearchQuery(e.target.value)}
-                      className="pl-9 bg-background"
-                    />
-                  </div>
-                  
-                  {/* Search Results */}
-                  {collectionSearchQuery && (
-                    <div className="mt-2 max-h-[240px] overflow-y-auto rounded-md border border-border bg-background shadow-lg">
-                       {collections === undefined ? (
-                          <div className="p-4 text-center text-xs text-muted-foreground">Loading...</div>
-                       ) : availableCollections.length === 0 ? (
-                          <div className="p-4 text-center text-xs text-muted-foreground">No matches found</div>
-                       ) : (
-                          <div className="p-1">
-                             {availableCollections.map(collection => {
-                                const isSelected = selectedCollectionIds.includes(collection._id);
-                                return (
-                                  <button
-                                    key={collection._id}
-                                    type="button"
-                                    onClick={() => {
-                                        if (isSelected) {
-                                            setSelectedCollectionIds(prev => prev.filter(id => id !== collection._id));
-                                        } else {
-                                            setSelectedCollectionIds(prev => [...prev, collection._id]);
-                                        }
-                                    }}
-                                    className={cn(
-                                        "flex w-full items-center gap-3 rounded-md p-2 text-left text-sm transition-colors",
-                                        isSelected ? "bg-accent/10" : "hover:bg-accent/5"
-                                    )}
-                                  >
-                                     <div className="h-8 w-8 rounded bg-secondary flex items-center justify-center flex-shrink-0">
-                                        <Box className="h-4 w-4 text-muted-foreground" />
-                                     </div>
-                                     <div className="flex-1 min-w-0">
-                                        <p className="font-medium truncate text-foreground">{collection.title}</p>
-                                        <p className="text-xs text-muted-foreground font-mono">{collection.accessionNumber}</p>
-                                     </div>
-                                     {isSelected && <CheckCircle2 className="h-4 w-4 text-accent" />}
-                                  </button>
-                                )
-                             })}
-                          </div>
-                       )}
-                    </div>
-                  )}
+                  <Label>Select Collections</Label>
+                  <CollectionMultiSelectCombobox
+                    organizationId={currentOrganizationId as Id<"organizations">}
+                    selectedIds={selectedCollectionIds}
+                    onSelectionChange={(ids) => {
+                      setSelectedCollectionIds(ids);
+                      // Remove conditions for deselected items
+                      setItemConditions(prev => {
+                        const updated = { ...prev };
+                        Object.keys(updated).forEach(id => {
+                          if (!ids.includes(id)) {
+                            delete updated[id];
+                          }
+                        });
+                        return updated;
+                      });
+                    }}
+                    placeholder="Search and select collections..."
+                  />
                 </div>
 
                 {/* Selected Items List */}
@@ -448,49 +574,55 @@ export default function NewLoanPage() {
                             variant="ghost" 
                             size="sm" 
                             className="h-auto p-0 text-xs text-muted-foreground hover:text-destructive"
-                            onClick={() => setSelectedCollectionIds([])}
+                            onClick={() => {
+                              setSelectedCollectionIds([]);
+                              setItemConditions({});
+                            }}
                          >
                             Clear all
                          </Button>
                       </div>
                       
-                      <div className="grid gap-2">
-                        {selectedCollectionsList.map(collection => (
-                           <div key={collection._id} className="flex items-center gap-3 rounded-lg border border-border bg-secondary/20 p-2">
-                              <Avatar className="h-8 w-8 rounded bg-secondary ring-1 ring-border">
-                                <AvatarImage src={collection.thumbnailUrl || undefined} />
-                                <AvatarFallback className="rounded"><Box className="h-4 w-4 text-muted-foreground" /></AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0">
-                                 <p className="text-sm font-medium truncate">{collection.title}</p>
-                                 <p className="text-xs text-muted-foreground font-mono">{collection.accessionNumber}</p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => setSelectedCollectionIds(prev => prev.filter(id => id !== collection._id))}
-                                className="p-1 hover:bg-destructive/10 hover:text-destructive rounded transition-colors"
-                              >
-                                 <X className="h-4 w-4" />
-                              </button>
-                           </div>
-                        ))}
-                      </div>
+                      <div className="space-y-3">
+                        {selectedCollectionsList.map(collection => {
+                          const hasIssue = problematicCollectionIds.has(collection._id);
+                          const issueInfo = collectionsInActiveLoans?.find(
+                            (item) => item.collectionId === collection._id
+                          );
+                          const issueMessage = issueInfo
+                            ? `Already in ${issueInfo.status} loan ${issueInfo.loanNumber}`
+                            : undefined;
 
-                      <div className="pt-2">
-                        <Label htmlFor="conditionOut">Condition Out (All Items)</Label>
-                        <Input
-                          id="conditionOut"
-                          value={formData.conditionOut}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              conditionOut: e.target.value,
-                            })
-                          }
-                          placeholder="e.g. Good, Stable, minor wear..."
-                          className="mt-1.5 bg-background"
-                        />
-                        <p className="text-[10px] text-muted-foreground mt-1">Applied to all selected items initially.</p>
+                          return (
+                            <SelectedCollectionItem
+                              key={collection._id}
+                              collection={collection}
+                              condition={itemConditions[collection._id] || ""}
+                              onConditionChange={(value) =>
+                                setItemConditions(prev => ({
+                                  ...prev,
+                                  [collection._id]: value,
+                                }))
+                              }
+                              onRemove={() => {
+                                setSelectedCollectionIds(prev => prev.filter(id => id !== collection._id));
+                                setItemConditions(prev => {
+                                  const updated = { ...prev };
+                                  delete updated[collection._id];
+                                  return updated;
+                                });
+                                // Remove from problematic set
+                                setProblematicCollectionIds(prev => {
+                                  const updated = new Set(prev);
+                                  updated.delete(collection._id);
+                                  return updated;
+                                });
+                              }}
+                              hasIssue={hasIssue}
+                              issueMessage={issueMessage}
+                            />
+                          );
+                        })}
                       </div>
                    </div>
                 )}
