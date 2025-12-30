@@ -37,14 +37,9 @@ export default async function Layout({
           preloadedUser={preloadedUser}
           preloadedProducts={preloadedProducts}
         />
-        <main className="min-h-[100vh] w-full bg-secondary dark:bg-black">
-          <div className="flex items-center justify-between p-4">
-            <SidebarTrigger className="-ml-1" />
-            <NotificationBell />
-          </div>
-          {children}
-        </main>
+        <main className="min-h-[100vh] w-full bg-zinc-950">{children}</main>
         <Analytics />
+
         <SpeedInsights />
       </SidebarProvider>
     </OrganizationProvider>
