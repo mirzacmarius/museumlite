@@ -1,3 +1,5 @@
+"use client";
+
 import {
   OpenPanelComponent,
   type PostEventPayload,

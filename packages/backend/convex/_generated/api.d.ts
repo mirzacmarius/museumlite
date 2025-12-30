@@ -58,6 +58,7 @@ import type * as utils_accessionNumberParser from "../utils/accessionNumberParse
 import type * as utils_permissions from "../utils/permissions.js";
 import type * as utils_validators from "../utils/validators.js";
 import type * as web from "../web.js";
+import type * as workflows from "../workflows.js";
 
 import type {
   ApiFromModules,
@@ -123,6 +124,7 @@ declare const fullApi: ApiFromModules<{
   "utils/permissions": typeof utils_permissions;
   "utils/validators": typeof utils_validators;
   web: typeof web;
+  workflows: typeof workflows;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 
