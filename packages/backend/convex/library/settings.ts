@@ -96,7 +96,9 @@ export const update = mutation({
       .first();
 
     if (!settings) {
-      throw new Error("Library settings not found. Please enable the Library integration first.");
+      throw new Error(
+        "Library settings not found. Please enable the Library integration first.",
+      );
     }
 
     const updates: Record<string, any> = {
@@ -311,7 +313,8 @@ export const updateMembershipType = mutation({
     if (args.holdLimit !== undefined) updates.holdLimit = args.holdLimit;
     if (args.loanPeriodDays !== undefined)
       updates.loanPeriodDays = args.loanPeriodDays;
-    if (args.renewalLimit !== undefined) updates.renewalLimit = args.renewalLimit;
+    if (args.renewalLimit !== undefined)
+      updates.renewalLimit = args.renewalLimit;
     if (args.finePerDay !== undefined) updates.finePerDay = args.finePerDay;
     if (args.gracePeriodDays !== undefined)
       updates.gracePeriodDays = args.gracePeriodDays;
@@ -343,15 +346,12 @@ export const deleteMembershipType = mutation({
       throw new Error("Membership type not found");
     }
 
-    // Check if any patrons are using this membership type
     const patronsWithType = await ctx.db
       .query("patrons")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", membershipType.organizationId),
       )
-      .filter((q) =>
-        q.eq(q.field("membershipTypeId"), args.membershipTypeId),
-      )
+      .filter((q) => q.eq(q.field("membershipTypeId"), args.membershipTypeId))
       .first();
 
     if (patronsWithType) {
@@ -363,5 +363,82 @@ export const deleteMembershipType = mutation({
     await ctx.db.delete(args.membershipTypeId);
 
     return null;
+  },
+});
+
+/**
+ * Get combined library statistics for the dashboard
+ */
+export const getLibraryStats = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    totalItems: v.number(),
+    activePatrons: v.number(),
+    checkedOutItems: v.number(),
+    outstandingFines: v.number(),
+    overdueItems: v.number(),
+    pendingHolds: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    const items = await ctx.db
+      .query("libraryItems")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const totalItems = items.filter(
+      (i) => i.catalogStatus === "published",
+    ).length;
+
+    const patrons = await ctx.db
+      .query("patrons")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const activePatrons = patrons.filter((p) => p.status === "active").length;
+
+    const circulations = await ctx.db
+      .query("circulations")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", args.organizationId).eq("status", "active"),
+      )
+      .collect();
+
+    const checkedOutItems = circulations.length;
+    const overdueItems = circulations.filter((c) => c.dueDate < now).length;
+
+    const fines = await ctx.db
+      .query("libraryFines")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", args.organizationId).eq("status", "outstanding"),
+      )
+      .collect();
+
+    const outstandingFines = fines.reduce((sum, f) => sum + f.balance, 0);
+
+    const holds = await ctx.db
+      .query("libraryHolds")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", args.organizationId).eq("status", "pending"),
+      )
+      .collect();
+
+    const pendingHolds = holds.length;
+
+    return {
+      totalItems,
+      activePatrons,
+      checkedOutItems,
+      outstandingFines,
+      overdueItems,
+      pendingHolds,
+    };
   },
 });

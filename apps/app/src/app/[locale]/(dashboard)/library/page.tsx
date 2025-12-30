@@ -39,6 +39,13 @@ export default function LibraryDashboardPage() {
       : "skip",
   );
 
+  const libraryStats = useQuery(
+    api.library.settings.getLibraryStats,
+    currentOrganizationId && isLibraryEnabled
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
+  );
+
   if (isLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center">
@@ -165,14 +172,15 @@ export default function LibraryDashboardPage() {
           </div>
         </div>
 
-        {/* Stats Overview - Placeholder */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col rounded-lg border border-border bg-card p-4 dark:bg-black">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Total Items</span>
               <BookOpen className="h-4 w-4 text-muted-foreground" />
             </div>
-            <span className="mt-2 text-2xl font-semibold">0</span>
+            <span className="mt-2 text-2xl font-semibold">
+              {libraryStats?.totalItems ?? 0}
+            </span>
             <span className="text-xs text-muted-foreground">
               In your catalog
             </span>
@@ -184,7 +192,9 @@ export default function LibraryDashboardPage() {
               </span>
               <BookUser className="h-4 w-4 text-muted-foreground" />
             </div>
-            <span className="mt-2 text-2xl font-semibold">0</span>
+            <span className="mt-2 text-2xl font-semibold">
+              {libraryStats?.activePatrons ?? 0}
+            </span>
             <span className="text-xs text-muted-foreground">
               Registered members
             </span>
@@ -194,7 +204,9 @@ export default function LibraryDashboardPage() {
               <span className="text-sm text-muted-foreground">Checked Out</span>
               <RefreshCw className="h-4 w-4 text-muted-foreground" />
             </div>
-            <span className="mt-2 text-2xl font-semibold">0</span>
+            <span className="mt-2 text-2xl font-semibold">
+              {libraryStats?.checkedOutItems ?? 0}
+            </span>
             <span className="text-xs text-muted-foreground">
               Items in circulation
             </span>
@@ -206,7 +218,9 @@ export default function LibraryDashboardPage() {
               </span>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </div>
-            <span className="mt-2 text-2xl font-semibold">$0.00</span>
+            <span className="mt-2 text-2xl font-semibold">
+              ${(libraryStats?.outstandingFines ?? 0).toFixed(2)}
+            </span>
             <span className="text-xs text-muted-foreground">
               Total unpaid fines
             </span>

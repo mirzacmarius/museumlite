@@ -115,7 +115,9 @@ export const create = mutation({
       throw new Error("Organization not found");
     }
     if (!org.settings?.enabledIntegrations?.includes("library")) {
-      throw new Error("Library integration is not enabled for this organization");
+      throw new Error(
+        "Library integration is not enabled for this organization",
+      );
     }
 
     const itemId = await ctx.db.insert("libraryItems", {
@@ -190,7 +192,8 @@ export const get = query({
     // Get cover image URL if stored locally
     let coverImageUrl = item.coverImageUrl;
     if (item.coverImageId) {
-      coverImageUrl = await ctx.storage.getUrl(item.coverImageId) ?? item.coverImageUrl;
+      coverImageUrl =
+        (await ctx.storage.getUrl(item.coverImageId)) ?? item.coverImageUrl;
     }
 
     return {
@@ -258,7 +261,8 @@ export const list = query({
 
         // Filter by type and status if specified
         if (args.itemType && item.itemType !== args.itemType) return false;
-        if (args.catalogStatus && item.catalogStatus !== args.catalogStatus) return false;
+        if (args.catalogStatus && item.catalogStatus !== args.catalogStatus)
+          return false;
 
         // Search in additional fields
         return (
@@ -692,6 +696,7 @@ export const getByBarcode = query({
  */
 export const generateUploadUrl = mutation({
   args: {},
+  returns: v.string(),
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
@@ -739,6 +744,16 @@ export const getStats = query({
   args: {
     organizationId: v.id("organizations"),
   },
+  returns: v.object({
+    totalItems: v.number(),
+    publishedItems: v.number(),
+    draftItems: v.number(),
+    archivedItems: v.number(),
+    totalCopies: v.number(),
+    availableCopies: v.number(),
+    checkedOutCopies: v.number(),
+    byType: v.record(v.string(), v.number()),
+  }),
   handler: async (ctx, args) => {
     const allItems = await ctx.db
       .query("libraryItems")
@@ -751,7 +766,9 @@ export const getStats = query({
     const publishedItems = allItems.filter(
       (i) => i.catalogStatus === "published",
     ).length;
-    const draftItems = allItems.filter((i) => i.catalogStatus === "draft").length;
+    const draftItems = allItems.filter(
+      (i) => i.catalogStatus === "draft",
+    ).length;
     const archivedItems = allItems.filter(
       (i) => i.catalogStatus === "archived",
     ).length;
@@ -762,7 +779,6 @@ export const getStats = query({
       0,
     );
 
-    // Count by type
     const byType: Record<string, number> = {};
     for (const item of allItems) {
       byType[item.itemType] = (byType[item.itemType] || 0) + 1;

@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en" class="dark antialiased"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MuseumLite - Outgoing Loan Details</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+darkMode: 'class',
+theme: {
+extend: {
+fontFamily: {
+sans: ['Inter', 'sans-serif'],
+mono: ['JetBrains Mono', 'monospace'],
+},
+colors: {
+zinc: {
+850: '#1f1f22',
+925: '#101012',
+}
+}
+}
+}
+}
+</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Inter', sans-serif; }
+/* Subtle Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+.dark ::-webkit-scrollbar-thumb { background: #3f3f46; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+/* Animation Utilities */
+.animate-enter { animation: enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(4px); }
+@keyframes enter { to { opacity: 1; transform: translateY(0); } }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+/* Custom Range Slider for creative UI */
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 12px; width: 12px; border-radius: 50%; background: #6366f1; margin-top: -4px; cursor: pointer; }
+input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #27272a; border-radius: 2px; }
+</style>
+<style>
+@media print {
+body { background: white; color: black; display: block; height: auto; overflow: visible; }
+aside, main, header, .no-print { display: none !important; }
+#print-modal { display: block !important; position: static !important; z-index: 9999; width: 100%; height: auto; overflow: visible; }
+#print-modal .modal-backdrop, #print-modal .modal-header { display: none !important; }
+#print-modal .modal-content { position: static !important; box-shadow: none !important; border: none !important; width: 100% !important; height: auto !important; overflow: visible !important; padding: 0 !important; margin: 0 !important; background: white !important; transform: none !important; }
+#print-modal .print-scroll-area { padding: 0 !important; overflow: visible !important; height: auto !important; background: white !important; }
+#print-paper { box-shadow: none !important; margin: 0 !important; width: 100% !important; padding: 0 !important; min-height: 0 !important; border: none !important; }
+@page { size: auto; margin: 1.5cm; }
+}
+</style></head>
+  <body class="bg-white dark:bg-black text-zinc-600 dark:text-zinc-400 selection:bg-cyan-100 dark:selection:bg-cyan-900 selection:text-cyan-700 dark:selection:text-cyan-300 overflow-hidden h-screen flex text-sm transition-colors duration-300">
+    <!-- Sidebar -->
+    <aside class="w-64 border-r border-zinc-200 dark:border-zinc-800 flex flex-col h-full bg-zinc-50/80 dark:bg-zinc-950/50 backdrop-blur-xl hidden md:flex shrink-0 z-20 relative transition-all duration-300">
+      <!-- Organization Switcher -->
+      <div class="p-3 border-b border-zinc-200 dark:border-zinc-800 relative">
+        <button id="org-trigger" class="w-full flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-zinc-200/60 dark:hover:bg-zinc-900 transition-all duration-200 group border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-md shadow-lg shadow-cyan-500/20 flex items-center justify-center text-white font-semibold text-xs border border-white/10">
+              NM
+            </div>
+            <div class="text-left">
+              <p class="text-xs font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-zinc-950 dark:group-hover:text-white transition-colors">
+                National Museum
+              </p>
+              <p class="text-[10px] text-zinc-500 dark:text-zinc-500">
+                Registrar Division
+              </p>
+            </div>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevrons-up-down w-3.5 h-3.5 text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400">
+            <path d="m7 15 5 5 5-5"></path>
+            <path d="m7 9 5-5 5 5"></path>
+          </svg>
+        </button>
+      </div>
+
+      <nav class="flex-1 overflow-y-auto py-4 px-2">
+        <div class="space-y-6">
+          <!-- Workspace -->
+          <div class="px-1">
+            <div class="px-2 pb-2 text-[10px] font-semibold text-zinc-400 dark:text-zinc-600 uppercase tracking-widest">
+              Loan Management
+            </div>
+            <div class="space-y-0.5">
+              <a href="#" class="flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/60 dark:hover:bg-zinc-900 rounded-md transition-all group">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid w-4 h-4">
+                  <rect width="7" height="7" x="3" y="3" rx="1"></rect>
+                  <rect width="7" height="7" x="14" y="3" rx="1"></rect>
+                  <rect width="7" height="7" x="14" y="14" rx="1"></rect>
+                  <rect width="7" height="7" x="3" y="14" rx="1"></rect>
+                </svg>
+                <span class="">Overview</span>
+              </a>
+              <a href="#" class="flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/60 dark:hover:bg-zinc-900 rounded-md transition-all group">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-down-to-line w-4 h-4">
+                  <path d="M12 17V3"></path>
+                  <path d="m6 11 6 6 6-6"></path>
+                  <path d="M19 21H5"></path>
+                </svg>
+                <span class="">Incoming Loans</span>
+              </a>
+              <a href="#" class="flex items-center gap-2.5 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60 transition-all group text-xs text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/50 shadow-sm rounded-md pt-1.5 pr-3 pb-1.5 pl-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-from-line w-4 h-4 text-cyan-500">
+                  <path d="m18 9-6-6-6 6"></path>
+                  <path d="M12 3v14"></path>
+                  <path d="M5 21h14"></path>
+                </svg>
+                <span class="font-medium">Outgoing Loans</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Active Borrowers -->
+          <details open="" class="group/coll px-1">
+            <summary class="px-2 pb-2 flex items-center justify-between cursor-pointer list-none [&amp;::-webkit-details-marker]:hidden hover:text-zinc-900 dark:hover:text-zinc-100 text-zinc-500 dark:text-zinc-500 transition-colors group/summary">
+              <span class="text-[10px] font-semibold uppercase tracking-widest">
+                Active Borrowers
+              </span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right w-3 h-3 transition-transform duration-200 group-open/coll:rotate-90">
+                <path d="m9 18 6-6-6-6"></path>
+              </svg>
+            </summary>
+            <div class="space-y-0.5 pt-1">
+              <button class="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-800/80 rounded-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm text-left group">
+                <div class="w-4 h-4 bg-zinc-900 dark:bg-white text-white dark:text-black rounded flex items-center justify-center text-[8px] font-bold tracking-tight">
+                  MoMA
+                </div>
+                <span class="font-medium truncate">Museum of Modern Art</span>
+                <div class="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]"></div>
+              </button>
+              <button class="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/60 dark:hover:bg-zinc-900 rounded-md transition-all group text-left">
+                <div class="w-4 h-4 bg-zinc-200 dark:bg-zinc-800 rounded flex items-center justify-center text-[8px] font-bold">
+                  L
+                </div>
+                <span class="truncate">Louvre Abu Dhabi</span>
+              </button>
+              <button class="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/60 dark:hover:bg-zinc-900 rounded-md transition-all group text-left">
+                <div class="w-4 h-4 bg-zinc-200 dark:bg-zinc-800 rounded flex items-center justify-center text-[8px] font-bold">
+                  G
+                </div>
+                <span class="truncate">Getty Center</span>
+              </button>
+            </div>
+          </details>
+        </div>
+      </nav>
+
+      <!-- Profile Section -->
+      <div class="p-3 border-t border-zinc-200 dark:border-zinc-800 relative z-50">
+        <div class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white dark:hover:bg-zinc-900 hover:shadow-sm border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 cursor-pointer transition-all duration-200 group" onclick="toggleTheme()">
+          <div class="relative">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&amp;fit=facearea&amp;facepad=2&amp;w=48&amp;h=48&amp;q=80" alt="User" class="w-9 h-9 rounded-full border border-zinc-200 dark:border-zinc-700 shadow-sm">
+            <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-zinc-950 rounded-full"></div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+              Elena Fisher
+            </p>
+            <p class="text-[10px] text-zinc-500 dark:text-zinc-500 truncate">
+              Head Registrar
+            </p>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon w-3.5 h-3.5 text-zinc-400 dark:text-zinc-600 dark:hidden">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+          </svg>
+           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun w-3.5 h-3.5 text-zinc-400 dark:text-zinc-600 hidden dark:block">
+             <circle cx="12" cy="12" r="4"></circle>
+             <path d="M12 2v2"></path>
+             <path d="M12 20v2"></path>
+             <path d="m4.93 4.93 1.41 1.41"></path>
+             <path d="m17.66 17.66 1.41 1.41"></path>
+             <path d="M2 12h2"></path>
+             <path d="M20 12h2"></path>
+             <path d="m6.34 17.66-1.41 1.41"></path>
+             <path d="m19.07 4.93-1.41 1.41"></path>
+          </svg>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col min-w-0 bg-white dark:bg-black relative z-10 transition-colors duration-300">
+      <!-- Navbar -->
+      <header class="h-14 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-6 bg-white/80 dark:bg-black/80 backdrop-blur-xl sticky top-0 z-50">
+        <div class="flex items-center gap-2 text-xs">
+          <button class="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-md transition-colors text-zinc-500 dark:text-zinc-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left w-4 h-4">
+              <path d="m12 19-7-7 7-7"></path>
+              <path d="M19 12H5"></path>
+            </svg>
+          </button>
+          <span class="text-zinc-500 dark:text-zinc-500 flex items-center gap-2">
+            Loans
+          </span>
+          <span class="text-zinc-400 dark:text-zinc-700">/</span>
+          <span class="text-zinc-500 dark:text-zinc-500">Outgoing</span>
+          <span class="text-zinc-400 dark:text-zinc-700">/</span>
+          <span class="text-zinc-900 dark:text-zinc-100 font-medium">
+            L.OUT.2024.102
+          </span>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-1.5 px-2 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded text-[10px] font-medium text-amber-600 dark:text-amber-500">
+             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="8" y2="12"></line><line x1="12" x2="12.01" y1="16" y2="16"></line></svg>
+             Pending Facility Report Approval
+          </div>
+          <div class="h-4 w-px bg-zinc-200 dark:bg-zinc-800"></div>
+          <button class="p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors" title="Print Manifest" onclick="togglePrintModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-printer w-4 h-4">
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+              <path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"></path>
+              <rect x="6" y="14" width="12" height="8" rx="1"></rect>
+            </svg>
+          </button>
+          <button class="flex items-center gap-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-200 px-3 py-1.5 rounded-md text-xs font-semibold transition-all shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package-check w-3.5 h-3.5">
+              <path d="m16 16 2 2 4-4"></path>
+              <path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"></path>
+              <path d="m7.5 4.27 9 5.15"></path>
+              <polyline points="3.29 7 12 12 20.71 7"></polyline>
+              <line x1="12" x2="12" y1="22" y2="12"></line>
+            </svg>
+            <span>Approve Dispatch</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Scrollable Area -->
+      <div class="flex-1 overflow-y-auto p-0 scroll-smooth">
+        <!-- Hero Section -->
+        <div class="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-925 px-8 py-8 animate-enter transition-colors">
+          <div class="max-w-7xl mx-auto flex gap-8 items-start">
+            <div class="shrink-0 relative group">
+              <!-- Borrower Logo -->
+              <div class="w-32 h-32 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-2xl bg-white dark:bg-black flex items-center justify-center p-2 relative overflow-hidden">
+                <!-- Decorative grid background -->
+                <div class="absolute inset-0 opacity-10 dark:opacity-20" style="background-image: radial-gradient(#6b7280 1px, transparent 1px); background-size: 8px 8px;"></div>
+                <span class="text-4xl font-bold tracking-tighter dark:text-white relative z-10">MoMA</span>
+              </div>
+               <div class="absolute -bottom-2 -right-2 bg-green-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border-2 border-zinc-50 dark:border-zinc-925">
+                TRUSTED
+               </div>
+            </div>
+
+            <div class="flex-1 space-y-4">
+              <!-- Status & Type -->
+              <div class="flex items-center flex-wrap gap-2.5">
+                <div class="px-2 py-1 rounded bg-cyan-100 dark:bg-cyan-900/30 border border-cyan-200 dark:border-cyan-800 text-cyan-700 dark:text-cyan-400 text-[10px] font-bold uppercase tracking-wider shadow-sm">
+                  Outgoing Loan
+                </div>
+                <div class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-[11px] text-zinc-600 dark:text-zinc-300">
+                  <span class="font-medium">International</span>
+                </div>
+
+                <!-- Loan ID -->
+                <div class="flex items-center gap-1.5 text-xs text-zinc-900 dark:text-zinc-100 font-mono bg-white dark:bg-zinc-900 px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 shadow-sm ml-auto">
+                  <span class="text-zinc-400 select-none">ID:</span>
+                  <span>L.OUT.2024.102</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy w-3 h-3 text-zinc-400 dark:text-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer transition-colors">
+                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Titles -->
+              <div>
+                <h1 class="text-3xl font-semibold text-zinc-900 dark:text-white tracking-tight leading-tight mb-1">
+                  Abstract Expressionism: The 1950s
+                </h1>
+                <p class="text-zinc-500 dark:text-zinc-400 text-sm">
+                  Borrower: The Museum of Modern Art, New York
+                </p>
+              </div>
+
+              <!-- Metadata Row -->
+              <div class="flex items-center gap-6 pt-2">
+                <div class="flex items-center gap-2 text-xs">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-range w-4 h-4 text-zinc-400 dark:text-zinc-500">
+                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
+                    <line x1="16" x2="16" y1="2" y2="6"></line>
+                    <line x1="8" x2="8" y1="2" y2="6"></line>
+                    <line x1="3" x2="21" y1="10" y2="10"></line>
+                    <path d="M17 14h-6"></path>
+                    <path d="M13 18H7"></path>
+                    <path d="M7 14h.01"></path>
+                    <path d="M17 18h.01"></path>
+                  </svg>
+                  <span class="text-zinc-600 dark:text-zinc-400">
+                    Mar 01, 2024 — Sep 15, 2024
+                  </span>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layers w-4 h-4 text-zinc-400 dark:text-zinc-500">
+                     <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"></path>
+                     <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"></path>
+                     <path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"></path>
+                  </svg>
+                  <span class="text-zinc-600 dark:text-zinc-400">
+                    12 Objects (Paintings)
+                  </span>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-banknote w-4 h-4 text-zinc-400 dark:text-zinc-500"><rect width="20" height="12" x="2" y="6" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>
+                  <span class="text-zinc-600 dark:text-zinc-400">
+                    Total Value: $42,500,000
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="border-b border-zinc-200 dark:border-zinc-800 px-8 bg-white/80 dark:bg-black/80 sticky top-0 z-40 backdrop-blur-md transition-colors">
+          <div class="max-w-7xl mx-auto flex gap-6 text-xs font-medium overflow-x-auto no-scrollbar" id="tabs-container">
+            <button onclick="openTab(event, 'Overview')" class="tab-btn shrink-0 py-3 border-b-2 border-cyan-500 text-zinc-900 dark:text-zinc-100 transition-colors">
+              Overview &amp; Borrower
+            </button>
+            <button onclick="openTab(event, 'Objects')" class="tab-btn shrink-0 py-3 border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
+              Objects (12)
+            </button>
+             <button onclick="openTab(event, 'Facility')" class="tab-btn shrink-0 py-3 border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors flex items-center gap-1.5">
+              Facility Report
+               <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            </button>
+            <button onclick="openTab(event, 'Logistics')" class="tab-btn shrink-0 py-3 border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
+              Crating &amp; Shipping
+            </button>
+            <button onclick="openTab(event, 'Activity')" class="tab-btn shrink-0 py-3 border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
+              Activity Log
+            </button>
+          </div>
+        </div>
+
+        <div class="p-8 max-w-7xl mx-auto space-y-8 min-h-[500px]">
+          
+          <!-- TAB: OVERVIEW -->
+          <div id="Overview" class="tab-content animate-enter space-y-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <!-- Left: Approval Pipeline -->
+              <div class="col-span-2 space-y-6">
+                <!-- Status Flow -->
+                <div class="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
+                   <h3 class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-6">Approval Workflow</h3>
+                   <div class="relative">
+                      <div class="absolute top-4 left-0 w-full h-0.5 bg-zinc-100 dark:bg-zinc-800 z-0"></div>
+                      <div class="relative z-10 grid grid-cols-5 gap-4">
+                        <!-- Step 1 -->
+                        <div class="flex flex-col gap-2">
+                           <div class="w-8 h-8 rounded-full bg-cyan-600 border-4 border-white dark:border-zinc-900 flex items-center justify-center text-white z-10 shadow-lg shadow-cyan-900/20">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                           </div>
+                           <div class="pr-4">
+                              <p class="text-xs font-semibold text-zinc-900 dark:text-zinc-100">Request</p>
+                              <p class="text-[10px] text-zinc-500">Rec: Oct 12</p>
+                           </div>
+                        </div>
+                        <!-- Step 2 -->
+                        <div class="flex flex-col gap-2">
+                           <div class="w-8 h-8 rounded-full bg-cyan-600 border-4 border-white dark:border-zinc-900 flex items-center justify-center text-white z-10 shadow-lg shadow-cyan-900/20">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                           </div>
+                           <div class="pr-4">
+                              <p class="text-xs font-semibold text-zinc-900 dark:text-zinc-100">Curatorial</p>
+                              <p class="text-[10px] text-zinc-500">App: Oct 15</p>
+                           </div>
+                        </div>
+                        <!-- Step 3 -->
+                        <div class="flex flex-col gap-2">
+                           <div class="w-8 h-8 rounded-full bg-amber-500 border-4 border-white dark:border-zinc-900 flex items-center justify-center text-white z-10 shadow-lg shadow-amber-900/20 animate-pulse">
+                              <span class="text-[10px] font-bold">3</span>
+                           </div>
+                           <div class="pr-4">
+                              <p class="text-xs font-semibold text-amber-600 dark:text-amber-500">Facilities</p>
+                              <p class="text-[10px] text-zinc-500">Reviewing</p>
+                           </div>
+                        </div>
+                        <!-- Step 4 -->
+                        <div class="flex flex-col gap-2">
+                           <div class="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 border-4 border-white dark:border-zinc-900 flex items-center justify-center text-zinc-400 z-10">
+                              <span class="text-[10px] font-bold">4</span>
+                           </div>
+                           <div class="pr-4">
+                              <p class="text-xs font-medium text-zinc-400">Conservation</p>
+                              <p class="text-[10px] text-zinc-500">Pending</p>
+                           </div>
+                        </div>
+                        <!-- Step 5 -->
+                        <div class="flex flex-col gap-2">
+                           <div class="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 border-4 border-white dark:border-zinc-900 flex items-center justify-center text-zinc-400 z-10">
+                              <span class="text-[10px] font-bold">5</span>
+                           </div>
+                           <div class="pr-4">
+                              <p class="text-xs font-medium text-zinc-400">Dispatch</p>
+                              <p class="text-[10px] text-zinc-500">Locked</p>
+                           </div>
+                        </div>
+                      </div>
+                   </div>
+                </div>
+
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
+                   <div class="flex items-center justify-between mb-4">
+                      <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Borrower Details</h3>
+                      <span class="text-xs font-mono text-zinc-500">MoMA-NY-001</span>
+                   </div>
+                   <div class="grid grid-cols-2 gap-y-6 gap-x-12">
+                      <div>
+                         <label class="text-[10px] uppercase text-zinc-500 dark:text-zinc-500 font-semibold tracking-wide">Institution</label>
+                         <p class="text-sm text-zinc-800 dark:text-zinc-200 mt-1">The Museum of Modern Art</p>
+                         <p class="text-xs text-zinc-500">11 W 53rd St, New York, NY 10019</p>
+                      </div>
+                      <div>
+                         <label class="text-[10px] uppercase text-zinc-500 dark:text-zinc-500 font-semibold tracking-wide">Exhibition Space</label>
+                         <p class="text-sm text-zinc-800 dark:text-zinc-200 mt-1">The Robert B. Menschel Galleries</p>
+                         <p class="text-xs text-zinc-500">Floor 4, Wing West (Environment controlled)</p>
+                      </div>
+                      <div>
+                         <label class="text-[10px] uppercase text-zinc-500 dark:text-zinc-500 font-semibold tracking-wide">Loan Agreement</label>
+                         <div class="flex items-center gap-2 mt-1">
+                            <span class="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-900">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17 4 12"></path></svg>
+                               Countersigned
+                            </span>
+                            <span class="text-xs text-zinc-500">on Oct 20, 2023</span>
+                         </div>
+                      </div>
+                      <div>
+                         <label class="text-[10px] uppercase text-zinc-500 dark:text-zinc-500 font-semibold tracking-wide">Costs</label>
+                         <p class="text-sm text-zinc-800 dark:text-zinc-200 mt-1">All costs to be borne by Borrower</p>
+                         <p class="text-xs text-zinc-500">Wall-to-wall insurance coverage active</p>
+                      </div>
+                   </div>
+                </div>
+              </div>
+
+              <!-- Right: Key Docs -->
+              <div class="space-y-6">
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm">
+                   <h3 class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-4">Required Documents</h3>
+                   <div class="space-y-2">
+                      <a href="#" class="flex items-center gap-3 p-2 rounded hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors group">
+                         <div class="w-8 h-8 rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M16 13H8"></path><path d="M16 17H8"></path><path d="M10 9H8"></path></svg>
+                         </div>
+                         <div class="flex-1 min-w-0">
+                            <p class="text-xs font-medium text-zinc-900 dark:text-zinc-100 truncate">Loan_Agreement_Final.pdf</p>
+                            <p class="text-[10px] text-zinc-500">Signed • 12MB</p>
+                         </div>
+                      </a>
+                      <a href="#" class="flex items-center gap-3 p-2 rounded hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors group">
+                         <div class="w-8 h-8 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg>
+                         </div>
+                         <div class="flex-1 min-w-0">
+                            <p class="text-xs font-medium text-zinc-900 dark:text-zinc-100 truncate">MoMA_Insurance_Cert.pdf</p>
+                            <p class="text-[10px] text-zinc-500">Valid until Dec 2024</p>
+                         </div>
+                      </a>
+                       <a href="#" class="flex items-center gap-3 p-2 rounded hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors group opacity-60">
+                         <div class="w-8 h-8 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-400 flex items-center justify-center shrink-0 border border-dashed border-zinc-300 dark:border-zinc-700">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
+                         </div>
+                         <div class="flex-1 min-w-0">
+                            <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400 italic">Upload Facility Report...</p>
+                         </div>
+                      </a>
+                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: OBJECTS -->
+          <div id="Objects" class="tab-content hidden animate-enter space-y-6">
+            <!-- Filter Bar -->
+            <div class="flex items-center justify-between">
+              <div class="flex gap-2">
+                 <div class="relative group">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                       <svg class="h-4 w-4 text-zinc-400 group-focus-within:text-cyan-500 transition-colors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                    </div>
+                    <input type="text" class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs rounded-lg block w-64 pl-10 p-2 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all" placeholder="Search accession number...">
+                 </div>
+              </div>
+              <div class="flex gap-2">
+                 <button class="px-3 py-1.5 text-xs font-medium bg-zinc-900 dark:bg-white text-white dark:text-black rounded-lg hover:opacity-90 transition-opacity">
+                    Add Object
+                 </button>
+              </div>
+            </div>
+
+            <!-- Grid of Objects -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+               <!-- Card 1 -->
+               <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors group">
+                  <div class="h-40 bg-zinc-100 dark:bg-zinc-800 relative overflow-hidden">
+                     <img src="https://images.unsplash.com/photo-1541963463532-d68292c34b19?q=80&amp;w=600&amp;auto=format&amp;fit=crop" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity">
+                     <div class="absolute top-2 right-2 px-2 py-1 bg-black/50 backdrop-blur-md rounded text-[10px] font-mono text-white">NM.1952.001</div>
+                  </div>
+                  <div class="p-4">
+                     <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 truncate">Number 10, 1949</h3>
+                     <p class="text-xs text-zinc-500">Jackson Pollock • Oil on canvas</p>
+                     
+                     <div class="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 grid grid-cols-2 gap-4">
+                        <div>
+                           <p class="text-[10px] uppercase text-zinc-400 font-medium">Condition</p>
+                           <p class="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Stable
+                           </p>
+                        </div>
+                        <div>
+                           <p class="text-[10px] uppercase text-zinc-400 font-medium">Prep Status</p>
+                           <p class="text-xs text-amber-600 dark:text-amber-500 font-medium">Needs Framing</p>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               <!-- Card 2 -->
+               <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors group">
+                  <div class="h-40 bg-zinc-100 dark:bg-zinc-800 relative overflow-hidden">
+                     <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/917d6f93-fb36-439a-8c48-884b67b35381_1600w.jpg" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity">
+                     <div class="absolute top-2 right-2 px-2 py-1 bg-black/50 backdrop-blur-md rounded text-[10px] font-mono text-white">NM.1955.084</div>
+                  </div>
+                  <div class="p-4">
+                     <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 truncate">Orange and Yellow</h3>
+                     <p class="text-xs text-zinc-500">Mark Rothko • Acrylic on canvas</p>
+                     
+                     <div class="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 grid grid-cols-2 gap-4">
+                        <div>
+                           <p class="text-[10px] uppercase text-zinc-400 font-medium">Condition</p>
+                           <p class="text-xs text-zinc-600 dark:text-zinc-300 font-medium flex items-center gap-1">
+                              <span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span> In Review
+                           </p>
+                        </div>
+                        <div>
+                           <p class="text-[10px] uppercase text-zinc-400 font-medium">Prep Status</p>
+                           <p class="text-xs text-zinc-500">Pending</p>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               
+               <!-- Card 3 -->
+               <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors group">
+                  <div class="h-40 bg-zinc-100 dark:bg-zinc-800 relative overflow-hidden flex items-center justify-center">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-300 dark:text-zinc-700"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg>
+                     <div class="absolute top-2 right-2 px-2 py-1 bg-black/50 backdrop-blur-md rounded text-[10px] font-mono text-white">NM.1960.012</div>
+                  </div>
+                  <div class="p-4">
+                     <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 truncate">Study for Woman I</h3>
+                     <p class="text-xs text-zinc-500">Willem de Kooning • Charcoal</p>
+                     
+                     <div class="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 grid grid-cols-2 gap-4">
+                        <div>
+                           <p class="text-[10px] uppercase text-zinc-400 font-medium">Condition</p>
+                           <p class="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Stable
+                           </p>
+                        </div>
+                        <div>
+                           <p class="text-[10px] uppercase text-zinc-400 font-medium">Prep Status</p>
+                           <p class="text-xs text-cyan-600 dark:text-cyan-500 font-medium">Ready to Pack</p>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+          </div>
+
+          <!-- TAB: FACILITY REPORT -->
+          <div id="Facility" class="tab-content hidden animate-enter space-y-6">
+             <div class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-xl p-4 flex gap-4 items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-amber-600 dark:text-amber-500 mt-1"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="8" y2="12"></line><line x1="12" x2="12.01" y1="16" y2="16"></line></svg>
+                <div>
+                   <h4 class="text-sm font-semibold text-amber-800 dark:text-amber-500">Review Required</h4>
+                   <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">The environmental readings from MoMA Gallery 4 show slight humidity fluctuations (45% ± 4%). Conservation approval is pending.</p>
+                </div>
+                <button class="ml-auto bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-100 px-3 py-1.5 rounded text-xs font-semibold whitespace-nowrap">
+                   Review Logs
+                </button>
+             </div>
+
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Environment Stats -->
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
+                   <h3 class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-6 flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-cyan-500"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"></path></svg>
+                      Climate Control (Gallery 4)
+                   </h3>
+                   <div class="space-y-6">
+                      <!-- Temperature -->
+                      <div>
+                         <div class="flex justify-between text-xs mb-2">
+                            <span class="text-zinc-500">Temperature</span>
+                            <span class="text-zinc-900 dark:text-zinc-100 font-mono">20.5°C</span>
+                         </div>
+                         <div class="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-emerald-500 w-[60%] rounded-full"></div>
+                         </div>
+                         <div class="flex justify-between text-[10px] text-zinc-400 mt-1 font-mono">
+                            <span>15°C</span>
+                            <span>Target: 21°C</span>
+                            <span>25°C</span>
+                         </div>
+                      </div>
+                      
+                      <!-- Humidity -->
+                      <div>
+                         <div class="flex justify-between text-xs mb-2">
+                            <span class="text-zinc-500">Relative Humidity</span>
+                            <span class="text-amber-600 dark:text-amber-500 font-mono">49%</span>
+                         </div>
+                         <div class="relative pt-1">
+                            <div class="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                               <div class="h-full bg-amber-500 w-[70%] rounded-full"></div>
+                            </div>
+                            <!-- Markers for safe zone -->
+                            <div class="absolute top-0 bottom-0 left-[45%] w-[10%] bg-emerald-500/10 border-x border-emerald-500/30"></div>
+                         </div>
+                         <p class="text-[10px] text-amber-600 dark:text-amber-500 mt-1 text-right">Deviating slightly (+4%)</p>
+                      </div>
+
+                      <!-- Lux -->
+                       <div>
+                         <div class="flex justify-between text-xs mb-2">
+                            <span class="text-zinc-500">Light Level (Lux)</span>
+                            <span class="text-zinc-900 dark:text-zinc-100 font-mono">45 lx</span>
+                         </div>
+                         <div class="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-emerald-500 w-[20%] rounded-full"></div>
+                         </div>
+                      </div>
+                   </div>
+                </div>
+
+                <!-- Security Info -->
+                 <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
+                   <h3 class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-6 flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"></path></svg>
+                      Security &amp; Access
+                   </h3>
+                   <ul class="space-y-4">
+                      <li class="flex items-center justify-between text-xs">
+                         <span class="text-zinc-600 dark:text-zinc-300">24/7 Guard Presence</span>
+                         <span class="text-emerald-600 dark:text-emerald-400 font-medium">Confirmed</span>
+                      </li>
+                      <li class="flex items-center justify-between text-xs">
+                         <span class="text-zinc-600 dark:text-zinc-300">CCTV Coverage</span>
+                         <span class="text-emerald-600 dark:text-emerald-400 font-medium">100% Gallery 4</span>
+                      </li>
+                      <li class="flex items-center justify-between text-xs">
+                         <span class="text-zinc-600 dark:text-zinc-300">Fire Suppression</span>
+                         <span class="text-zinc-900 dark:text-zinc-100">Dry Pipe / Pre-action</span>
+                      </li>
+                      <li class="flex items-center justify-between text-xs">
+                         <span class="text-zinc-600 dark:text-zinc-300">Display Cases</span>
+                         <span class="text-zinc-900 dark:text-zinc-100">Acrylic, Alarmed</span>
+                      </li>
+                   </ul>
+                   <div class="mt-6 p-3 bg-zinc-50 dark:bg-zinc-800 rounded border border-zinc-200 dark:border-zinc-700">
+                      <p class="text-[10px] text-zinc-500 uppercase font-bold mb-1">Registrar Note</p>
+                      <p class="text-xs italic text-zinc-600 dark:text-zinc-300">"MoMA has retrofitted Gallery 4 with new vibration sensors in Q3 2023. Approved for high-value loans."</p>
+                   </div>
+                </div>
+             </div>
+          </div>
+
+          <!-- TAB: LOGISTICS -->
+           <div id="Logistics" class="tab-content hidden animate-enter space-y-6">
+               <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <!-- Crate List -->
+                  <div class="lg:col-span-2 space-y-4">
+                     <h3 class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Crating Plan</h3>
+                     <!-- Crate 1 -->
+                     <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex gap-4 items-center">
+                        <div class="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded border border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center shrink-0">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-400 mb-1"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>
+                           <span class="text-[10px] font-mono text-zinc-500">#01</span>
+                        </div>
+                        <div class="flex-1">
+                           <div class="flex justify-between items-start mb-1">
+                              <h4 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Standard Painting Crate</h4>
+                              <span class="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700">120x140x30 cm</span>
+                           </div>
+                           <p class="text-xs text-zinc-500 mb-2">Contains: Pollock (NM.1952.001)</p>
+                           <div class="flex items-center gap-4 text-[10px] text-zinc-400">
+                              <span class="flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"></path><path d="M3.34 19a10 10 0 1 1 17.32 0"></path></svg> Shock Sensors</span>
+                              <span class="flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg> Tyvek Lined</span>
+                           </div>
+                        </div>
+                     </div>
+                     <!-- Crate 2 -->
+                     <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex gap-4 items-center opacity-70">
+                        <div class="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded border border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center shrink-0 border-dashed">
+                           <span class="text-[10px] font-mono text-zinc-500">#02</span>
+                        </div>
+                        <div class="flex-1">
+                           <div class="flex justify-between items-start mb-1">
+                              <h4 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Slotted Travel Frame</h4>
+                              <span class="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700">Pending Size</span>
+                           </div>
+                           <p class="text-xs text-zinc-500">Contains: Rothko (NM.1955.084) + 2 others</p>
+                        </div>
+                        <button class="text-xs font-medium text-cyan-600 dark:text-cyan-500 hover:underline">Configure</button>
+                     </div>
+                  </div>
+
+                  <!-- Transport Agent -->
+                  <div class="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6">
+                      <h3 class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-4">Transport Agent</h3>
+                      <div class="flex items-center gap-3 mb-4">
+                         <div class="w-10 h-10 bg-white dark:bg-zinc-800 rounded-lg flex items-center justify-center shadow-sm">
+                            <span class="font-bold text-xs">DAF</span>
+                         </div>
+                         <div>
+                            <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Dietl International</p>
+                            <p class="text-[10px] text-zinc-500">Fine Art Shipping</p>
+                         </div>
+                      </div>
+                      <div class="space-y-3">
+                         <div class="flex justify-between text-xs border-b border-zinc-200 dark:border-zinc-700 pb-2">
+                            <span class="text-zinc-500">Service Level</span>
+                            <span class="text-zinc-900 dark:text-zinc-100">Tarmac Supervision</span>
+                         </div>
+                         <div class="flex justify-between text-xs border-b border-zinc-200 dark:border-zinc-700 pb-2">
+                            <span class="text-zinc-500">Route</span>
+                            <span class="text-zinc-900 dark:text-zinc-100">JFK &gt; LHR</span>
+                         </div>
+                         <div class="flex justify-between text-xs">
+                            <span class="text-zinc-500">Courier</span>
+                            <span class="text-zinc-900 dark:text-zinc-100">Elena Fisher (NM)</span>
+                         </div>
+                      </div>
+                  </div>
+               </div>
+           </div>
+
+          <!-- Activity Log Placeholder -->
+           <div id="Activity" class="tab-content hidden animate-enter">
+              <div class="relative pl-6 border-l border-zinc-200 dark:border-zinc-800 space-y-8">
+                 <div class="relative">
+                    <div class="absolute -left-[29px] top-0 w-3 h-3 bg-zinc-200 dark:bg-zinc-700 rounded-full border-2 border-white dark:border-black"></div>
+                    <p class="text-xs text-zinc-500 mb-1">Oct 24, 09:30</p>
+                    <p class="text-sm text-zinc-900 dark:text-zinc-100">Facility Report uploaded by MoMA (Version 2)</p>
+                 </div>
+                 <div class="relative">
+                    <div class="absolute -left-[29px] top-0 w-3 h-3 bg-zinc-200 dark:bg-zinc-700 rounded-full border-2 border-white dark:border-black"></div>
+                    <p class="text-xs text-zinc-500 mb-1">Oct 20, 14:15</p>
+                    <p class="text-sm text-zinc-900 dark:text-zinc-100">Loan Agreement countersigned</p>
+                 </div>
+                 <div class="relative">
+                    <div class="absolute -left-[29px] top-0 w-3 h-3 bg-cyan-500 rounded-full border-2 border-white dark:border-black"></div>
+                    <p class="text-xs text-zinc-500 mb-1">Oct 12, 10:00</p>
+                    <p class="text-sm text-zinc-900 dark:text-zinc-100">Outgoing Loan record created by E. Fisher</p>
+                 </div>
+              </div>
+           </div>
+
+          <!-- Bottom Padding -->
+          <div class="h-12"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Right Panel (Context) -->
+    <aside class="w-80 border-l border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 flex flex-col h-full hidden 2xl:flex shrink-0 z-30 transition-colors">
+      <div class="p-4 border-b border-zinc-200 dark:border-zinc-800">
+        <h3 class="text-xs font-semibold text-zinc-900 dark:text-zinc-100 mb-1">
+          Borrower Context
+        </h3>
+        <p class="text-[10px] text-zinc-500 dark:text-zinc-400">
+          MoMA (Museum of Modern Art)
+        </p>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4 space-y-6">
+        <!-- Relationship Score -->
+        <div>
+           <span class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 block mb-3">
+            Relationship Status
+          </span>
+          <div class="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 p-3 rounded-lg flex items-center gap-3">
+             <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">A+</div>
+             <div class="flex-1">
+                <p class="text-xs font-semibold text-emerald-900 dark:text-emerald-100">Preferred Partner</p>
+                <p class="text-[10px] text-emerald-700 dark:text-emerald-500">0 Incidents in 15 years</p>
+             </div>
+          </div>
+        </div>
+
+        <div class="h-px bg-zinc-200 dark:bg-zinc-800"></div>
+
+        <!-- Contact -->
+        <div>
+          <span class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 block mb-3">
+            Registrar Contact
+          </span>
+          <div class="flex items-center gap-3 p-3 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-sm">
+            <div class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center text-xs font-bold">
+              JD
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                James Davis
+              </p>
+              <p class="text-[10px] text-zinc-500">Senior Registrar</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-px bg-zinc-200 dark:bg-zinc-800"></div>
+
+        <!-- Past Loans -->
+        <div>
+          <span class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 block mb-3">
+            Loan History
+          </span>
+          <div class="space-y-2">
+            <div class="p-2 rounded-lg hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer group">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-[10px] font-bold text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100">2021</span>
+                <span class="px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[9px] text-zinc-500">Returned</span>
+              </div>
+              <p class="text-xs font-medium text-zinc-800 dark:text-zinc-200">
+                Cézanne Drawing
+              </p>
+            </div>
+            <div class="p-2 rounded-lg hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer group">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-[10px] font-bold text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100">2019</span>
+                <span class="px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[9px] text-zinc-500">Returned</span>
+              </div>
+              <p class="text-xs font-medium text-zinc-800 dark:text-zinc-200">
+                Surrealism Objects
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <script>
+      // Initialize Lucide Icons
+      lucide.createIcons();
+
+      // Tab Switching Logic
+      function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+          tabcontent[i].classList.add("hidden");
+        }
+        tablinks = document.getElementsByClassName("tab-btn");
+        for (i = 0; i < tablinks.length; i++) {
+          tablinks[i].classList.remove("border-cyan-500", "text-zinc-900", "dark:text-zinc-100");
+          tablinks[i].classList.add("border-transparent", "text-zinc-500", "dark:text-zinc-400");
+        }
+        document.getElementById(tabName).classList.remove("hidden");
+        evt.currentTarget.classList.remove("border-transparent", "text-zinc-500", "dark:text-zinc-400");
+        evt.currentTarget.classList.add("border-cyan-500", "text-zinc-900", "dark:text-zinc-100");
+      }
+    </script>
+
+    <!-- Print Modal -->
+    <div id="print-modal" class="fixed inset-0 z-[100] hidden">
+      <div class="modal-backdrop absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="togglePrintModal()"></div>
+      <div class="modal-content absolute inset-4 md:inset-10 bg-white dark:bg-zinc-900 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-enter ring-1 ring-zinc-200 dark:ring-zinc-800">
+        <div class="modal-header h-14 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-6 bg-zinc-50 dark:bg-black">
+          <h3 class="font-medium text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+            Print Dispatch Manifest
+          </h3>
+          <div class="flex items-center gap-3">
+            <button onclick="window.print()" class="bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black px-4 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-2 shadow-sm">
+              Print
+            </button>
+            <button onclick="togglePrintModal()" class="p-1.5 text-zinc-400 hover:text-zinc-600 transition-colors rounded-full hover:bg-zinc-200/50">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div class="print-scroll-area flex-1 overflow-y-auto bg-zinc-100/50 dark:bg-zinc-950/50 p-8 flex justify-center">
+          <div id="print-paper" class="bg-white text-zinc-900 w-[210mm] min-h-[297mm] shadow-xl p-[15mm] space-y-8 relative mx-auto box-border">
+            <div class="border-b border-zinc-200 pb-6 flex justify-between items-start">
+              <div>
+                <div class="flex items-center gap-2 text-zinc-400 mb-2">
+                  <div class="w-6 h-6 bg-cyan-600 rounded flex items-center justify-center text-white font-bold text-xs">
+                    NM
+                  </div>
+                  <span class="text-[10px] uppercase tracking-widest font-semibold">
+                    National Museum
+                  </span>
+                </div>
+                <h1 class="text-2xl font-serif text-zinc-900 font-bold tracking-tight leading-none">
+                  Outgoing Loan Manifest
+                </h1>
+                <p class="text-zinc-500 mt-2 font-mono text-sm">
+                  Ref: L.OUT.2024.102
+                </p>
+              </div>
+              <div class="text-right text-xs text-zinc-400">
+                <p>Date: Oct 24, 2024</p>
+                <p>Page 1 of 4</p>
+              </div>
+            </div>
+            
+            <div class="bg-zinc-50 border border-zinc-100 p-4 rounded text-sm grid grid-cols-2 gap-8">
+              <div>
+                 <h4 class="font-bold text-zinc-900 uppercase text-[10px] tracking-wide mb-1">Lender</h4>
+                 <p>National Museum</p>
+              </div>
+              <div>
+                 <h4 class="font-bold text-zinc-900 uppercase text-[10px] tracking-wide mb-1">Borrower (Consignee)</h4>
+                 <p>Museum of Modern Art (MoMA)</p>
+                 <p class="text-zinc-500 text-xs">11 W 53rd St, New York, NY 10019</p>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-bold text-zinc-900 uppercase text-[10px] tracking-wide mb-4 border-b border-zinc-100 pb-1">
+                Crate #1 Contents
+              </h4>
+              <table class="w-full text-xs text-left">
+                <thead>
+                  <tr class="border-b border-zinc-200">
+                    <th class="py-2">Acc. No</th>
+                    <th class="py-2">Object Title / Artist</th>
+                    <th class="py-2 text-right">Insurance Value</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-zinc-100">
+                  <tr>
+                    <td class="py-2 font-mono">NM.1952.001</td>
+                    <td class="py-2">Number 10, 1949 (Pollock)</td>
+                    <td class="py-2 text-right">$25,000,000</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+             <div>
+              <h4 class="font-bold text-zinc-900 uppercase text-[10px] tracking-wide mb-4 border-b border-zinc-100 pb-1">
+                Crate #2 Contents
+              </h4>
+              <table class="w-full text-xs text-left">
+                <thead>
+                  <tr class="border-b border-zinc-200">
+                    <th class="py-2">Acc. No</th>
+                    <th class="py-2">Object Title / Artist</th>
+                    <th class="py-2 text-right">Insurance Value</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-zinc-100">
+                  <tr>
+                    <td class="py-2 font-mono">NM.1955.084</td>
+                    <td class="py-2">Orange and Yellow (Rothko)</td>
+                    <td class="py-2 text-right">$15,500,000</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2 font-mono">NM.1960.012</td>
+                    <td class="py-2">Study for Woman I (de Kooning)</td>
+                    <td class="py-2 text-right">$2,000,000</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="absolute bottom-12 left-12 right-12 border-t border-zinc-200 pt-8 flex justify-between items-end">
+              <div>
+                  <div class="h-12 w-48 border-b border-zinc-300 mb-1"></div>
+                  <div class="text-[10px] text-zinc-400 uppercase tracking-widest">Released By (Registrar)</div>
+              </div>
+              <div>
+                  <div class="h-12 w-48 border-b border-zinc-300 mb-1"></div>
+                  <div class="text-[10px] text-zinc-400 uppercase tracking-widest">Received By (Shipper)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function togglePrintModal() {
+        const modal = document.getElementById('print-modal');
+        modal.classList.toggle('hidden');
+      }
+
+      function toggleTheme() {
+        document.documentElement.classList.toggle('dark');
+        const sun = document.querySelector('.lucide-sun');
+        const moon = document.querySelector('.lucide-moon');
+        sun.classList.toggle('hidden');
+        moon.classList.toggle('hidden');
+      }
+    </script>
+  
+</body></html>

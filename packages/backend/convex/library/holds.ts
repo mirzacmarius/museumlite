@@ -68,7 +68,9 @@ export const place = mutation({
     }
 
     // Check if patron already has a hold on this item
-    const existingHoldOnItem = existingHolds.find((h) => h.itemId === args.itemId);
+    const existingHoldOnItem = existingHolds.find(
+      (h) => h.itemId === args.itemId,
+    );
     if (existingHoldOnItem) {
       throw new Error("Patron already has a hold on this item");
     }
@@ -248,9 +250,7 @@ export const get = query({
 
     const patron = await ctx.db.get(hold.patronId);
     const item = await ctx.db.get(hold.itemId);
-    const copy = hold.copyId
-      ? await ctx.db.get(hold.copyId)
-      : null;
+    const copy = hold.copyId ? await ctx.db.get(hold.copyId) : null;
     const pickupLocation = hold.pickupLocationId
       ? await ctx.db.get(hold.pickupLocationId)
       : null;
@@ -318,7 +318,9 @@ export const list = query({
       query = ctx.db
         .query("libraryHolds")
         .withIndex("by_organization_and_status", (q) =>
-          q.eq("organizationId", args.organizationId).eq("status", args.status!),
+          q
+            .eq("organizationId", args.organizationId)
+            .eq("status", args.status!),
         );
     } else {
       query = ctx.db
@@ -401,6 +403,14 @@ export const getStatistics = query({
   args: {
     organizationId: v.id("organizations"),
   },
+  returns: v.object({
+    total: v.number(),
+    pending: v.number(),
+    available: v.number(),
+    fulfilled: v.number(),
+    expired: v.number(),
+    placedToday: v.number(),
+  }),
   handler: async (ctx, args) => {
     const holds = await ctx.db
       .query("libraryHolds")
@@ -414,7 +424,6 @@ export const getStatistics = query({
     const fulfilled = holds.filter((h) => h.status === "fulfilled").length;
     const expired = holds.filter((h) => h.status === "expired").length;
 
-    // Count holds placed today
     const now = Date.now();
     const today = new Date(now);
     today.setHours(0, 0, 0, 0);

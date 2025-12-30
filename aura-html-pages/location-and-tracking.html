@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MuseumLite - Collections Overview</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+// Main Navigation Logic
+document.querySelectorAll('.nav-item').forEach(link => {
+link.addEventListener('click', (e) => {
+const btn = e.currentTarget;
+const target = btn.dataset.target;
+// Reset nav styles
+document.querySelectorAll('.nav-item').forEach(el => {
+el.className = 'nav-item w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 rounded-md transition-all group';
+});
+// Active style
+btn.className = 'nav-item w-full flex items-center gap-2.5 px-3 py-1.5 text-xs rounded-md transition-all group bg-zinc-800/40 border border-zinc-800/60 shadow-sm text-zinc-200';
+// Title Update
+const titleMap = {
+'overview': 'Collections Overview',
+'catalog': 'Object Catalog',
+'assets': 'Digital Assets',
+'accessions': 'Accessions Workflow',
+'deaccessions': 'Deaccession Records',
+'location': 'Location & Tracking',
+'loans': 'Loans & Transport',
+'transit': 'Transit Log',
+'exhibitions': 'Exhibition Management',
+'installations': 'Installation Planning',
+'conservation': 'Conservation Reports',
+'insurance': 'Insurance Policies',
+'library-catalog': 'Library Catalog',
+'library-circulation': 'Circulation Desk',
+'library-patrons': 'Patron Management',
+'library-fines': 'Fines & Fees',
+'library-acquisitions': 'Acquisitions',
+'publishing': 'Public Portal',
+'users': 'User Management',
+'settings': 'System Settings'
+};
+const titleEl = document.getElementById('page-title');
+if(titleEl) titleEl.textContent = titleMap[target] || 'Overview';
+// Hide/Show Pages
+document.querySelectorAll('.page-overview').forEach(el => el.classList.add('hidden'));
+document.querySelectorAll('.page-content').forEach(el => el.classList.add('hidden'));
+if (target === 'overview') {
+document.querySelectorAll('.page-overview').forEach(el => el.classList.remove('hidden'));
+} else {
+const p = document.getElementById('page-' + target);
+if(p) p.classList.remove('hidden');
+}
+});
+});
+// Exhibition Details Tabs Logic
+const exTabs = document.querySelectorAll('.ex-tab-btn');
+exTabs.forEach(tab => {
+tab.addEventListener('click', () => {
+// Reset tabs
+exTabs.forEach(t => {
+t.className = 'ex-tab-btn px-4 py-2 text-xs font-medium text-zinc-400 border-b-2 border-transparent hover:text-zinc-200 transition-all';
+});
+// Activate tab
+tab.className = 'ex-tab-btn px-4 py-2 text-xs font-medium text-indigo-400 border-b-2 border-indigo-500 transition-all';
+// Show content
+const targetId = tab.dataset.target;
+document.querySelectorAll('.ex-tab-content').forEach(c => c.classList.add('hidden'));
+document.getElementById(targetId).classList.remove('hidden');
+});
+});
+});
+// Global functions for inline onclicks
+window.showExhibitionDetails = (id) => {
+document.getElementById('exhibition-main').classList.add('hidden');
+document.getElementById('exhibition-details').classList.remove('hidden');
+};
+window.hideExhibitionDetails = () => {
+document.getElementById('exhibition-details').classList.add('hidden');
+document.getElementById('exhibition-main').classList.remove('hidden');
+};
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Inter', sans-serif; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+.animate-enter { animation: enter 0.4s ease-out forwards; opacity: 0; transform: translateY(10px); }
+@keyframes enter { to { opacity: 1; transform: translateY(0); } }
+</style></head>
+<body class="bg-zinc-950 text-zinc-400 antialiased overflow-hidden h-screen flex text-sm selection:bg-indigo-500/30 selection:text-indigo-200">
+
+    <!-- Sidebar -->
+    <aside class="w-64 border-r border-zinc-800/60 flex flex-col h-full bg-zinc-950 hidden md:flex shrink-0 z-20">
+      <div class="p-3 border-b border-zinc-800/60">
+        <button class="flex hover:bg-zinc-900 transition-all duration-200 w-full border border-transparent rounded-lg p-2 items-center justify-between group">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-md shadow-inner flex items-center justify-center text-white font-bold text-xs border border-white/10 tracking-tight">ML</div>
+            <div class="text-left">
+              <p class="text-xs font-semibold text-zinc-200 group-hover:text-white transition-colors">MuseumLite</p>
+              <p class="text-[10px] text-zinc-500">Enterprise Edition</p>
+            </div>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-600 group-hover:text-zinc-400"><path d="m7 15 5 5 5-5"></path><path d="m7 9 5-5 5 5"></path></svg>
+        </button>
+      </div>
+
+      <nav class="flex-1 overflow-y-auto p-2">
+        <div class="px-2 mb-6 mt-2">
+           <div class="relative group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-2.5 top-2 text-zinc-500 group-focus-within:text-zinc-300 transition-colors"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+            <input type="text" placeholder="Search..." class="w-full bg-zinc-900/40 border border-zinc-800/60 rounded-md text-xs py-1.5 pl-8 pr-3 text-zinc-300 placeholder-zinc-600 focus:outline-none focus:bg-zinc-900 focus:border-zinc-700 transition-all">
+          </div>
+        </div>
+
+        <div class="space-y-6 px-1">
+            <!-- Core -->
+            <div>
+                <div class="px-2 pb-2 text-[10px] font-medium text-zinc-500 uppercase tracking-widest">Core Inventory</div>
+                <div class="space-y-0.5">
+                    <button data-target="overview" class="nav-item w-full flex items-center gap-2.5 px-3 py-1.5 text-xs rounded-md transition-all group bg-zinc-800/40 border border-zinc-800/60 shadow-sm text-zinc-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-400"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
+                        <span class="font-medium">Overview</span>
+                    </button>
+                    <button data-target="catalog" class="nav-item w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 rounded-md transition-all group">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5V19A9 3 0 0 0 21 19V5"></path><path d="M3 12A9 3 0 0 0 21 12"></path></svg>
+                        <span>Object Catalog</span>
+                    </button>
+                    <button data-target="assets" class="nav-item w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 rounded-md transition-all group">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg>
+                        <span>Digital Assets</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Exhibitions -->
+            <div>
+                <div class="px-2 pb-2 text-[10px] font-medium text-zinc-500 uppercase tracking-widest">Exhibitions</div>
+                 <div class="space-y-0.5">
+                    <button data-target="exhibitions" class="nav-item w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 rounded-md transition-all group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2h10"></path><path d="M5 6h14"></path><rect width="18" height="12" x="3" y="10" rx="2"></rect></svg>
+                        <span>Exhibitions</span>
+                    </button>
+                    <button data-target="loans" class="nav-item w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 rounded-md transition-all group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg>
+                        <span>Loans &amp; Transport</span>
+                    </button>
+                     <button data-target="installations" class="nav-item w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 rounded-md transition-all group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 12-8.5 8.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L12 9"></path><path d="M17.64 15 22 10.64"></path><path d="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.4-.93-2.25V2.44A1.12 1.12 0 0 0 17.61 1.3c-.85 0-1.65.33-2.25.93L14.11 3.48"></path></svg>
+                        <span>Installations</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Management -->
+            <div>
+                 <div class="px-2 pb-2 text-[10px] font-medium text-zinc-500 uppercase tracking-widest">Management</div>
+                 <div class="space-y-0.5">
+                    <button data-target="accessions" class="nav-item w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 rounded-md transition-all group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 22h2a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v3"></path><path d="M14 2v6h6"></path><circle cx="8" cy="16" r="6"></circle><path d="M9.5 17.5 8 16.25V14"></path></svg>
+                        <span>Accessions</span>
+                    </button>
+                     <button data-target="location" class="nav-item w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 rounded-md transition-all group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        <span>Location</span>
+                    </button>
+                    <button data-target="conservation" class="nav-item w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 rounded-md transition-all group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                        <span>Conservation</span>
+                    </button>
+                 </div>
+            </div>
+        </div>
+      </nav>
+      
+      <div class="p-3 border-t border-zinc-800/60">
+        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-900/50 cursor-pointer transition-colors">
+          <div class="relative">
+            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&amp;fit=facearea&amp;facepad=2&amp;w=48&amp;h=48&amp;q=80" alt="User" class="w-8 h-8 rounded-full border border-zinc-700">
+            <div class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-zinc-950 rounded-full"></div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-medium text-zinc-200 truncate">Dr. E. Vance</p>
+            <p class="text-[10px] text-zinc-500 truncate">Lead Curator</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col min-w-0 bg-zinc-950 relative z-10">
+        <!-- Main Navbar -->
+        <header class="h-14 border-b border-zinc-800/60 flex items-center justify-between px-6 bg-zinc-950/80 backdrop-blur-xl sticky top-0 z-50">
+            <div class="flex items-center gap-2 text-xs">
+            <span class="text-zinc-500 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12h4"></path><path d="M10 8h4"></path><path d="M14 21v-3a2 2 0 0 0-4 0v3"></path><path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2"></path><path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"></path></svg>
+                MuseumLite
+            </span>
+            <span class="text-zinc-700">/</span>
+            <span class="text-zinc-300 font-medium" id="page-title">Collections Overview</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <button class="flex items-center gap-2 bg-zinc-900 text-zinc-300 hover:text-white border border-zinc-800 hover:border-zinc-700 px-3 py-1.5 rounded-md text-xs font-medium transition-all">
+                    <span>Quick Action</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Page: Overview (Stats) -->
+        <div class="flex-1 overflow-y-auto page-overview p-6">
+             <div class="flex flex-col items-center justify-center h-full text-center space-y-4">
+                 <div class="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center border border-zinc-800">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-600"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
+                 </div>
+                 <h2 class="text-zinc-300 text-lg font-medium">Dashboard Overview</h2>
+                 <p class="text-zinc-500 max-w-sm text-xs">Navigate to "Exhibitions" in the sidebar to view the detailed exhibition design functionality.</p>
+             </div>
+        </div>
+
+        <!-- Page: Exhibitions (List & Details) -->
+        <div id="page-exhibitions" class="page-content hidden flex-1 flex flex-col overflow-hidden h-full">
+            
+            <!-- View: Exhibition List (Main) -->
+            <div id="exhibition-main" class="flex flex-col h-full">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold text-zinc-200 tracking-tight">Exhibition Calendar</h3>
+                        <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)]">
+                            + New Exhibition
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Card 1 -->
+                        <div onclick="showExhibitionDetails(1)" class="group bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-indigo-500/30 transition-all shadow-lg cursor-pointer">
+                            <div class="h-40 bg-zinc-800 relative overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1545989253-02cc26577f88?auto=format&amp;fit=crop&amp;w=800&amp;q=80" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
+                                <div class="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent"></div>
+                                <div class="absolute top-3 right-3 bg-black/60 backdrop-blur px-2 py-0.5 rounded text-[10px] text-white border border-white/10 font-medium shadow-sm flex items-center gap-1.5">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    Current
+                                </div>
+                                <div class="absolute bottom-3 left-3 right-3">
+                                    <h4 class="text-base font-semibold text-white mb-0.5 drop-shadow-md">Ancient Metals</h4>
+                                    <p class="text-[11px] text-zinc-300">West Wing • Gallery 3</p>
+                                </div>
+                            </div>
+                            <div class="p-4 space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <span class="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Dates</span>
+                                        <p class="text-xs text-zinc-300 mt-0.5">Oct 1 - Dec 15, 2024</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Objects</span>
+                                        <p class="text-xs text-zinc-300 mt-0.5">48 Items</p>
+                                    </div>
+                                </div>
+                                <div class="space-y-1.5">
+                                    <div class="flex justify-between text-[10px] text-zinc-400">
+                                        <span>Exhibition Run</span>
+                                        <span>45% Complete</span>
+                                    </div>
+                                    <div class="w-full bg-zinc-950 h-1.5 rounded-full overflow-hidden border border-zinc-800">
+                                        <div class="bg-indigo-500 w-[45%] h-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                         <!-- Card 2 -->
+                        <div class="group bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-amber-500/30 transition-all shadow-lg cursor-pointer">
+                            <div class="h-40 bg-zinc-800 relative overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&amp;fit=crop&amp;w=800&amp;q=80" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
+                                <div class="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent"></div>
+                                <div class="absolute top-3 right-3 bg-amber-600/90 backdrop-blur px-2 py-0.5 rounded text-[10px] text-white border border-white/10 font-medium shadow-sm">
+                                    Planning
+                                </div>
+                                <div class="absolute bottom-3 left-3 right-3">
+                                    <h4 class="text-base font-semibold text-white mb-0.5 drop-shadow-md">Modern Abstract</h4>
+                                    <p class="text-[11px] text-zinc-300">Main Hall</p>
+                                </div>
+                            </div>
+                             <div class="p-4 space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <span class="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Target Open</span>
+                                        <p class="text-xs text-zinc-300 mt-0.5">Jan 10, 2025</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Curation</span>
+                                        <p class="text-xs text-zinc-300 mt-0.5">12/45 Selected</p>
+                                    </div>
+                                </div>
+                                <div class="space-y-1.5">
+                                    <div class="flex justify-between text-[10px] text-zinc-400">
+                                        <span>Planning Phase</span>
+                                        <span>Object Selection</span>
+                                    </div>
+                                    <div class="w-full bg-zinc-950 h-1.5 rounded-full overflow-hidden border border-zinc-800">
+                                        <div class="bg-amber-500 w-[25%] h-full"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View: Exhibition Details (The new functionality) -->
+            <div id="exhibition-details" class="hidden h-full flex flex-col bg-zinc-950 animate-in slide-in-from-right-4 duration-300">
+                <!-- Details Header -->
+                <div class="shrink-0 border-b border-zinc-800 bg-zinc-900/30">
+                    <div class="px-6 py-4">
+                        <div class="flex items-center gap-2 mb-4">
+                            <button onclick="hideExhibitionDetails()" class="flex items-center gap-1 text-xs text-zinc-500 hover:text-white transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+                                Back to Calendar
+                            </button>
+                            <span class="text-zinc-700">/</span>
+                            <span class="text-xs text-zinc-400">Exhibitions</span>
+                            <span class="text-zinc-700">/</span>
+                            <span class="text-xs text-zinc-200">Ancient Metals</span>
+                        </div>
+                        <div class="flex justify-between items-start">
+                            <div class="flex gap-5">
+                                <div class="w-16 h-16 rounded-lg overflow-hidden border border-zinc-700 shadow-lg relative shrink-0">
+                                    <img src="https://images.unsplash.com/photo-1545989253-02cc26577f88?auto=format&amp;fit=crop&amp;w=200&amp;q=80" class="w-full h-full object-cover">
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-3 mb-1">
+                                        <h1 class="text-2xl font-bold text-white tracking-tight">Ancient Metals</h1>
+                                        <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-medium uppercase tracking-wide">Active Exhibition</span>
+                                    </div>
+                                    <p class="text-sm text-zinc-400 max-w-2xl">A retrospective on metallurgy in the ancient Mediterranean world, featuring loans from the Louvre and British Museum.</p>
+                                    <div class="flex gap-4 mt-3 text-xs text-zinc-500">
+                                        <span class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Oct 1 - Dec 15, 2024</span>
+                                        <span class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg> Gallery 3 (West Wing)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 rounded text-xs font-medium transition-colors">
+                                    Edit Details
+                                </button>
+                                <button class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-medium transition-colors shadow-lg shadow-indigo-500/20">
+                                    Manage Access
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Internal Tabs -->
+                    <div class="px-6 flex gap-2 border-t border-zinc-800/60 bg-zinc-950/50">
+                        <button data-target="ex-tab-overview" class="ex-tab-btn px-4 py-2 text-xs font-medium text-indigo-400 border-b-2 border-indigo-500 transition-all">Overview</button>
+                        <button data-target="ex-tab-objects" class="ex-tab-btn px-4 py-2 text-xs font-medium text-zinc-400 border-b-2 border-transparent hover:text-zinc-200 transition-all">Curatorial List <span class="ml-1 px-1.5 py-0.5 bg-zinc-800 rounded-full text-[9px]">48</span></button>
+                        <button data-target="ex-tab-plan" class="ex-tab-btn px-4 py-2 text-xs font-medium text-zinc-400 border-b-2 border-transparent hover:text-zinc-200 transition-all">Floor Plan</button>
+                        <button data-target="ex-tab-logistics" class="ex-tab-btn px-4 py-2 text-xs font-medium text-zinc-400 border-b-2 border-transparent hover:text-zinc-200 transition-all">Logistics &amp; Install</button>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Overview -->
+                <div id="ex-tab-overview" class="ex-tab-content flex-1 overflow-y-auto custom-scrollbar p-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Left Column (Stats & Timeline) -->
+                        <div class="lg:col-span-2 space-y-6">
+                            <!-- Stats Cards -->
+                            <div class="grid grid-cols-3 gap-4">
+                                <div class="bg-zinc-900 border border-zinc-800 p-4 rounded-xl">
+                                    <div class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-1">Total Objects</div>
+                                    <div class="text-2xl font-bold text-white tracking-tight">48</div>
+                                    <div class="text-[10px] text-emerald-400 mt-1 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 100% Installed</div>
+                                </div>
+                                <div class="bg-zinc-900 border border-zinc-800 p-4 rounded-xl">
+                                    <div class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-1">Insurance Value</div>
+                                    <div class="text-2xl font-bold text-white tracking-tight">$4.2M</div>
+                                    <div class="text-[10px] text-zinc-500 mt-1">Updated yesterday</div>
+                                </div>
+                                <div class="bg-zinc-900 border border-zinc-800 p-4 rounded-xl">
+                                    <div class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-1">Visitor Est.</div>
+                                    <div class="text-2xl font-bold text-white tracking-tight">12.5k</div>
+                                    <div class="text-[10px] text-indigo-400 mt-1">Trending +4%</div>
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="bg-zinc-900/30 border border-zinc-800 rounded-xl p-6">
+                                <h3 class="text-sm font-semibold text-zinc-200 mb-3">Curatorial Statement</h3>
+                                <p class="text-xs text-zinc-400 leading-relaxed mb-4">
+                                    "Ancient Metals" explores the transformative power of metallurgy in the Bronze and Iron Ages. From the ritualistic use of gold in funerary practices to the utilitarian revolution of iron weaponry, this exhibition traces the technological and cultural shifts that defined early civilizations.
+                                </p>
+                                <div class="flex items-center gap-3 pt-4 border-t border-zinc-800/60">
+                                    <div class="flex -space-x-2">
+                                        <div class="w-7 h-7 rounded-full bg-indigo-600 border border-zinc-900 flex items-center justify-center text-[10px] text-white font-medium">EV</div>
+                                        <div class="w-7 h-7 rounded-full bg-zinc-700 border border-zinc-900 flex items-center justify-center text-[10px] text-zinc-300">JS</div>
+                                        <div class="w-7 h-7 rounded-full bg-zinc-800 border border-zinc-900 flex items-center justify-center text-[10px] text-zinc-500">+2</div>
+                                    </div>
+                                    <span class="text-xs text-zinc-500">Curatorial Team</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column (Timeline/Tasks) -->
+                        <div class="space-y-6">
+                            <div class="bg-zinc-900/30 border border-zinc-800 rounded-xl p-6">
+                                <h3 class="text-sm font-semibold text-zinc-200 mb-4">Exhibition Timeline</h3>
+                                <div class="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-px before:bg-zinc-800">
+                                    <div class="relative pl-6">
+                                        <div class="absolute left-1 top-1.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-zinc-950"></div>
+                                        <h4 class="text-xs font-medium text-zinc-200">Opening Reception</h4>
+                                        <p class="text-[10px] text-zinc-500">Oct 1, 2024 • Completed</p>
+                                    </div>
+                                    <div class="relative pl-6">
+                                        <div class="absolute left-1 top-1.5 w-2.5 h-2.5 bg-indigo-500 rounded-full border-2 border-zinc-950 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></div>
+                                        <h4 class="text-xs font-medium text-white">Public Tours</h4>
+                                        <p class="text-[10px] text-zinc-400">Current Phase • Ends Dec 10</p>
+                                    </div>
+                                    <div class="relative pl-6">
+                                        <div class="absolute left-1 top-1.5 w-2.5 h-2.5 bg-zinc-700 rounded-full border-2 border-zinc-950"></div>
+                                        <h4 class="text-xs font-medium text-zinc-400">De-installation Start</h4>
+                                        <p class="text-[10px] text-zinc-500">Dec 16, 2024</p>
+                                    </div>
+                                     <div class="relative pl-6">
+                                        <div class="absolute left-1 top-1.5 w-2.5 h-2.5 bg-zinc-700 rounded-full border-2 border-zinc-950"></div>
+                                        <h4 class="text-xs font-medium text-zinc-400">Loan Returns</h4>
+                                        <p class="text-[10px] text-zinc-500">Jan 5, 2025</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Objects -->
+                <div id="ex-tab-objects" class="ex-tab-content hidden flex-1 flex flex-col overflow-hidden">
+                    <div class="px-6 py-3 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/10">
+                        <div class="flex gap-2">
+                             <div class="relative">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-2.5 top-2 text-zinc-500"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                                <input type="text" placeholder="Filter objects..." class="bg-zinc-900 border border-zinc-800 rounded-md py-1.5 pl-8 pr-3 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 w-64">
+                            </div>
+                            <button class="px-3 py-1.5 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded text-xs hover:bg-zinc-800 transition-colors flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                                Filters
+                            </button>
+                        </div>
+                        <div class="flex gap-2">
+                             <button class="p-1.5 bg-zinc-800 text-white rounded shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg></button>
+                             <button class="p-1.5 text-zinc-500 hover:text-white transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"></line><line x1="8" x2="21" y1="12" y2="12"></line><line x1="8" x2="21" y1="18" y2="18"></line><line x1="3" x2="3.01" y1="6" y2="6"></line><line x1="3" x2="3.01" y1="12" y2="12"></line><line x1="3" x2="3.01" y1="18" y2="18"></line></svg></button>
+                             <button class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-medium ml-2 shadow-lg shadow-indigo-500/20">Add Objects</button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto custom-scrollbar p-6">
+                        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                            <!-- Object Card 1 -->
+                            <div class="group bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-600 transition-all cursor-move relative">
+                                <div class="aspect-square bg-zinc-950 relative">
+                                    <img src="https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?auto=format&amp;fit=crop&amp;w=400&amp;q=80" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity">
+                                    <div class="absolute top-2 right-2">
+                                        <span class="px-1.5 py-0.5 rounded bg-black/60 backdrop-blur text-[9px] text-white border border-white/10">Case 2A</span>
+                                    </div>
+                                </div>
+                                <div class="p-3">
+                                    <h4 class="text-xs font-medium text-zinc-200 truncate">Bronze Figurine</h4>
+                                    <p class="text-[10px] text-zinc-500 font-mono mb-2">BF-9921</p>
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                        <span class="text-[10px] text-zinc-400">Condition Stable</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Object Card 2 -->
+                            <div class="group bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-600 transition-all cursor-move relative">
+                                <div class="aspect-square bg-zinc-950 relative flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-700"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>
+                                    <div class="absolute top-2 right-2">
+                                        <span class="px-1.5 py-0.5 rounded bg-black/60 backdrop-blur text-[9px] text-white border border-white/10">Wall 4</span>
+                                    </div>
+                                </div>
+                                <div class="p-3">
+                                    <h4 class="text-xs font-medium text-zinc-200 truncate">Iron Shield Fragment</h4>
+                                    <p class="text-[10px] text-zinc-500 font-mono mb-2">IS-1102</p>
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                                        <span class="text-[10px] text-zinc-400">Treatment req.</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                             <!-- Object Card 3 -->
+                            <div class="group bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-600 transition-all cursor-move relative">
+                                <div class="aspect-square bg-zinc-950 relative">
+                                    <img src="https://images.unsplash.com/photo-1628155930542-3c7a64e2c833?auto=format&amp;fit=crop&amp;w=400&amp;q=80" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity">
+                                    <div class="absolute top-2 right-2">
+                                        <span class="px-1.5 py-0.5 rounded bg-blue-600/90 backdrop-blur text-[9px] text-white border border-white/10">Loan</span>
+                                    </div>
+                                </div>
+                                <div class="p-3">
+                                    <h4 class="text-xs font-medium text-zinc-200 truncate">Gold Wreath</h4>
+                                    <p class="text-[10px] text-zinc-500 font-mono mb-2">LN-0442 (Louvre)</p>
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                        <span class="text-[10px] text-zinc-400">Condition Stable</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Placeholder Cards -->
+                            <div class="group bg-zinc-900 border border-dashed border-zinc-800 rounded-lg flex items-center justify-center cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-700 transition-all">
+                                <div class="text-center">
+                                    <div class="w-8 h-8 mx-auto rounded-full bg-zinc-800 flex items-center justify-center mb-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-500"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+                                    </div>
+                                    <span class="text-[10px] text-zinc-500 font-medium">Add Placeholder</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                 <!-- Tab Content: Floor Plan -->
+                <div id="ex-tab-plan" class="ex-tab-content hidden flex-1 flex flex-col overflow-hidden relative bg-zinc-900">
+                    <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
+                    <div class="absolute top-4 left-4 z-10 flex gap-2">
+                        <div class="px-3 py-1.5 bg-zinc-950/80 backdrop-blur border border-zinc-800 rounded-md text-xs text-zinc-300 shadow-xl">
+                            Gallery 3 Layout
+                        </div>
+                        <div class="px-3 py-1.5 bg-zinc-950/80 backdrop-blur border border-zinc-800 rounded-md text-xs text-zinc-400 flex items-center gap-2 shadow-xl">
+                            <div class="w-2 h-2 rounded-full bg-indigo-500"></div> Case
+                            <div class="w-2 h-2 rounded-full bg-zinc-500 ml-2"></div> Wall
+                        </div>
+                    </div>
+                    <div class="absolute bottom-4 right-4 z-10 flex gap-2">
+                         <button class="p-2 bg-zinc-950 border border-zinc-800 rounded-md text-white hover:bg-zinc-900 shadow-xl"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"></path><path d="M12 19V5"></path></svg></button>
+                         <button class="p-2 bg-zinc-950 border border-zinc-800 rounded-md text-white hover:bg-zinc-900 shadow-xl"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="m5 12 14 0"></path></svg></button>
+                    </div>
+                    
+                    <!-- Simplified Visual Representation of a gallery plan -->
+                    <div class="flex-1 flex items-center justify-center p-12">
+                         <div class="w-[600px] h-[400px] border-4 border-zinc-700 bg-zinc-950 relative shadow-2xl">
+                             <!-- Entrance -->
+                             <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-4 bg-zinc-900 border-x border-t border-zinc-700 flex items-center justify-center"><span class="text-[9px] text-zinc-600 uppercase">Entrance</span></div>
+                             
+                             <!-- Cases -->
+                             <div class="absolute top-1/4 left-1/4 w-12 h-24 border border-indigo-500/50 bg-indigo-500/10 flex items-center justify-center text-[9px] text-indigo-400">Case 1</div>
+                             <div class="absolute top-1/4 right-1/4 w-12 h-24 border border-indigo-500/50 bg-indigo-500/10 flex items-center justify-center text-[9px] text-indigo-400">Case 2</div>
+                             
+                             <!-- Center Vitrine -->
+                             <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border border-indigo-500/50 bg-indigo-500/10 rounded-full flex items-center justify-center text-[9px] text-indigo-400">Center Vitrine</div>
+
+                              <!-- Wall Object Markers -->
+                             <div class="absolute top-0 left-1/4 -translate-y-1/2 w-4 h-4 rounded-full bg-zinc-600 border-2 border-zinc-950"></div>
+                             <div class="absolute top-0 right-1/4 -translate-y-1/2 w-4 h-4 rounded-full bg-zinc-600 border-2 border-zinc-950"></div>
+                             <div class="absolute top-1/2 right-0 translate-x-1/2 w-4 h-4 rounded-full bg-zinc-600 border-2 border-zinc-950"></div>
+                         </div>
+                    </div>
+                </div>
+
+                 <!-- Tab Content: Logistics -->
+                <div id="ex-tab-logistics" class="ex-tab-content hidden flex-1 flex flex-col overflow-hidden bg-zinc-950">
+                    <div class="flex-1 overflow-y-auto custom-scrollbar p-6">
+                        <div class="flex gap-6 h-full">
+                            <!-- Column 1: Todo -->
+                            <div class="flex-1 min-w-[250px] bg-zinc-900/20 rounded-xl border border-zinc-800/60 flex flex-col">
+                                <div class="p-3 border-b border-zinc-800/60 flex justify-between items-center">
+                                    <h4 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Installation Tasks</h4>
+                                    <span class="bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded text-[10px]">4</span>
+                                </div>
+                                <div class="p-3 space-y-3 overflow-y-auto">
+                                    <div class="bg-zinc-900 border border-zinc-800 p-3 rounded-lg shadow-sm cursor-pointer hover:border-zinc-700 group">
+                                         <div class="flex justify-between mb-1"><span class="text-[10px] text-amber-500 bg-amber-500/10 px-1 rounded">Priority</span></div>
+                                         <p class="text-xs text-zinc-200 font-medium mb-1 group-hover:text-indigo-400 transition-colors">Install Vinyl Lettering</p>
+                                         <p class="text-[10px] text-zinc-500">Entrance Wall • Tech Team</p>
+                                    </div>
+                                    <div class="bg-zinc-900 border border-zinc-800 p-3 rounded-lg shadow-sm cursor-pointer hover:border-zinc-700 group">
+                                         <p class="text-xs text-zinc-200 font-medium mb-1 group-hover:text-indigo-400 transition-colors">Case 2 Lighting Adj.</p>
+                                         <p class="text-[10px] text-zinc-500">Conservation check required</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Column 2: In Progress -->
+                            <div class="flex-1 min-w-[250px] bg-zinc-900/20 rounded-xl border border-zinc-800/60 flex flex-col">
+                                <div class="p-3 border-b border-zinc-800/60 flex justify-between items-center">
+                                    <h4 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">In Progress</h4>
+                                    <span class="bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded text-[10px]">2</span>
+                                </div>
+                                <div class="p-3 space-y-3 overflow-y-auto">
+                                     <div class="bg-zinc-900 border-l-2 border-l-indigo-500 border-y border-r border-zinc-800 p-3 rounded-r-lg shadow-sm cursor-pointer">
+                                         <p class="text-xs text-zinc-200 font-medium mb-1">Mount Making: Gold Wreath</p>
+                                         <p class="text-[10px] text-zinc-500">Workshop • J. Doe</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Column 3: Logistics -->
+                             <div class="flex-1 min-w-[250px] bg-zinc-900/20 rounded-xl border border-zinc-800/60 flex flex-col">
+                                <div class="p-3 border-b border-zinc-800/60 flex justify-between items-center">
+                                    <h4 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Shipments</h4>
+                                    <button class="text-[10px] text-indigo-400 hover:text-white">+ Schedule</button>
+                                </div>
+                                <div class="p-3 space-y-3 overflow-y-auto">
+                                    <div class="p-3 border border-dashed border-zinc-700 rounded-lg flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded bg-zinc-800 flex items-center justify-center text-zinc-500"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"></rect><rect width="20" height="8" x="2" y="14" rx="2" ry="2"></rect><line x1="6" x2="6.01" y1="6" y2="6"></line><line x1="6" x2="6.01" y1="18" y2="18"></line></svg></div>
+                                        <div>
+                                            <p class="text-xs text-zinc-300 font-medium">Crate #224 (Paris)</p>
+                                            <p class="text-[10px] text-emerald-400">Arrived • Customs Cleared</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        
+    </main>
+
+</body></html>

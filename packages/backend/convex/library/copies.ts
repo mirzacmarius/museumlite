@@ -127,9 +127,7 @@ export const get = query({
     const item = await ctx.db.get(copy.itemId);
 
     // Get location if set
-    const location = copy.locationId
-      ? await ctx.db.get(copy.locationId)
-      : null;
+    const location = copy.locationId ? await ctx.db.get(copy.locationId) : null;
 
     return {
       ...copy,
@@ -196,9 +194,7 @@ export const getByBarcode = query({
     const item = await ctx.db.get(copy.itemId);
 
     // Get location if set
-    const location = copy.locationId
-      ? await ctx.db.get(copy.locationId)
-      : null;
+    const location = copy.locationId ? await ctx.db.get(copy.locationId) : null;
 
     return {
       ...copy,
@@ -475,8 +471,8 @@ export const generateBarcode = query({
   args: {
     organizationId: v.id("organizations"),
   },
+  returns: v.string(),
   handler: async (ctx, args) => {
-    // Get library settings for prefix
     const settings = await ctx.db
       .query("librarySettings")
       .withIndex("by_organization", (q) =>
@@ -486,7 +482,6 @@ export const generateBarcode = query({
 
     const prefix = settings?.cardNumberPrefix || "LIB";
 
-    // Get highest existing barcode number
     const copies = await ctx.db
       .query("itemCopies")
       .withIndex("by_organization", (q) =>
@@ -498,8 +493,8 @@ export const generateBarcode = query({
     for (const copy of copies) {
       if (copy.barcode.startsWith(prefix)) {
         const numPart = copy.barcode.slice(prefix.length);
-        const num = parseInt(numPart, 10);
-        if (!isNaN(num) && num > maxNumber) {
+        const num = Number.parseInt(numPart, 10);
+        if (!Number.isNaN(num) && num > maxNumber) {
           maxNumber = num;
         }
       }

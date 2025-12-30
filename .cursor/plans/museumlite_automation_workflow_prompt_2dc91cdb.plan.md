@@ -22,505 +22,361 @@ todos:
     status: pending
 ---
 
-# Museumlite Automation Workflow - Comprehensive Plan
+# Museumlite Automated Development Workflow Prompt
 
-## Additional Features from Full Application Backlog
+## Current App Analysis (Audit Results)
 
-### Phase 6: Advanced Features & Infrastructure
+### Existing Pages (Frontend)
 
-#### 6.1 Advanced Search & Filtering
+| Module | List | Detail | Edit | New | Status |
 
-**Objective**: Implement comprehensive search and filtering capabilities
+|--------|------|--------|------|-----|--------|
 
-**Tasks**:
+| Objects | Yes | Yes | Yes | Yes | Complete |
 
-1. Full-text search implementation:
+| Collections | Yes | Yes | **NO** | Yes | Missing Edit |
 
-- Backend: Use Convex search indexes for collections, objects, loans
-- Search across: title, description, accessionNumber, creator, materials, tags
-- Frontend: Global search bar in header, search results page
-- Files: `packages/backend/convex/search.ts`, `apps/app/src/components/global-search.tsx`
+| Accessions | Yes | Yes | Yes | Yes | Complete + Workflow |
 
-2. Advanced filters:
+| Deaccessions | Yes | Yes | Yes | Yes | Complete + Workflow |
 
-- Date range filters (created, modified, loan dates)
-- Location filters (hierarchical)
-- Status filters (active, loaned, deaccessioned)
-- Type filters (objectType, objectName, culture, period)
-- Boolean operators (AND, OR, NOT)
-- Files: `apps/app/src/components/advanced-filters.tsx`
+| Loans | Yes | Yes | Yes | Yes | Complete + Workflow |
 
-3. Saved searches:
+| Locations | Yes | Yes | - | - | Tree-based UI |
 
-- Save filter combinations for reuse
-- Schema: `savedSearches` table (organizationId, userId, name, filters, createdAt)
-- Backend: `packages/backend/convex/savedSearches.ts`
-- Frontend: Save/load search UI in filter component
+| Library/Catalog | Yes | Yes | Yes | Yes | Complete |
 
-4. Export filtered results:
+| Library/Patrons | Yes | Yes | **NO** | Yes | Missing Edit |
 
-- Export to CSV/JSON
-- Include all filtered fields
-- Files: `packages/backend/convex/export.ts`
+| Library/Circulation | Yes | - | - | - | Basic list only |
 
-**Success Criteria**: Full-text search works, advanced filters functional, saved searches work, export works
+| Library/Fines | Yes | - | - | - | Basic list only |
 
-**Dependencies**: Phase 4 (basic implementation complete)
+| Library/Acquisitions | Yes | - | - | - | Basic list only |
 
-#### 6.2 Reporting & Analytics
+| Activity | Yes | - | - | - | Log viewer |
 
-**Objective**: Create dashboard analytics and custom reporting
+| Settings | Yes | - | - | - | Multiple sub-pages |
 
-**Tasks**:
+### Backend Tables WITHOUT Frontend UI
 
-1. Dashboard analytics:
+1. **collectionGroups** - No UI for managing collection groups
+2. **accounts** - No dedicated CRM for lenders/borrowers/institutions
+3. **conservationTreatments** - Schema exists, no dedicated tracking UI
+4. **exhibitions** - Schema exists, no management UI (only object-level display)
+5. **workflowConfigs** - No UI to configure approval workflows
+6. **webhooks / apiKeys** - No integration management UI
+7. **importJobs** - No bulk import UI
 
-- Object counts by status, type, location
-- Loan status overview
-- Recent activity summary
-- Charts/graphs (use recharts or similar)
-- Files: `apps/app/src/app/[locale]/(dashboard)/analytics/page.tsx`
-- Backend: `packages/backend/convex/analytics.ts`
+### Critical Missing Functionality (Deep Analysis)
 
-2. Custom reports builder:
+**PRIORITY 1 - Missing Edit/Delete Pages:**
 
-- Select fields to include
-- Apply filters
-- Choose format (table, list, summary)
-- Schedule reports (future enhancement)
-- Files: `apps/app/src/app/[locale]/(dashboard)/reports/builder/page.tsx`
+1. **Collections Edit** - Settings button disabled, no way to edit group name/description, collection edit page needs redesign and all collection data as fields
+2. **Patrons Edit** - Edit link exists (`/library/patrons/${id}/edit`) but page likely missing
+3. **Objects Delete** - No delete functionality in object detail UI
+4. **Collections Delete** - No delete for collection groups
 
-3. Pre-built reports:
+**PRIORITY 2 - Missing Core Modules:**
 
-- Collection catalog report
-- Loan report
-- Accession report
-- Location inventory report
+1. **Accounts/CRM Module** - `accounts` table exists, NO frontend pages
 
-**Success Criteria**: Dashboard shows analytics, custom reports can be created, reports export correctly
+                                                                                                                                                                                                - Need: List, Detail, New, Edit pages
+                                                                                                                                                                                                - For managing lenders, borrowers, institutions, contacts
 
-**Dependencies**: Phase 4
+2. **Exhibitions Management** - `exhibitions` table exists, only object-level display
 
-#### 6.3 Email Notifications
+                                                                                                                                                                                                - Need: Dedicated `/exhibitions` route with full CRUD
+                                                                                                                                                                                                - Schedule, install, deinstall, planning features
 
-**Objective**: Add email notifications for workflow events
+3. **Conservation Module** - `conservationTreatments` table exists, only object-level display
 
-**Tasks**:
+                                                                                                                                                                                                - Need: Dedicated `/conservation` route
+                                                                                                                                                                                                - Treatment scheduling, condition assessments, reports
 
-1. Email service integration:
+**PRIORITY 3 - Workflow & Configuration:**
 
-- Use Resend (already configured)
-- Email templates for workflow events
-- Files: `packages/backend/convex/email.ts`, `packages/email/templates/`
+1. **Workflow Configuration UI** - `workflowConfigs` table exists, NO UI
 
-2. Notification types:
+                                                                                                                                                                                                - Need: Settings page to configure approval steps per workflow type
+                                                                                                                                                                                                - Visual workflow builder
 
-- Workflow approval requests
-- Workflow approved/rejected
-- Task assignments
-- Loan reminders (upcoming return dates)
-- Accession/deaccession status changes
+2. **Notification Center** - `notifications` table exists, no dedicated UI
 
-3. User preferences:
+                                                                                                                                                                                                - Need: Bell icon in header, notifications panel/page
 
-- Email notification settings per user
-- Opt-in/opt-out per notification type
-- Schema: Add `emailPreferences` to users table or separate table
+**PRIORITY 4 - Bulk Operations & Tools:**
 
-4. Background jobs:
+1. **Import Tools** - `importJobs` table exists, NO UI
 
-- Scheduled email sending for reminders
-- Use Convex scheduled functions or cron
+                                                                                                                                                                                                                                                                - CSV import wizard
+                                                                                                                                                                                                                                                                - Media bulk upload
+                                                                                                                                                                                                                                                                - Progress tracking
 
-**Success Criteria**: Email notifications sent for workflow events, user preferences work, scheduled emails work
+2. **Export Tools** - Partial (PDF print exists)
 
-**Dependencies**: Phase 5 (workflows), Resend configured
+                                                                                                                                                                                                                                                                - CSV export for lists
+                                                                                                                                                                                                                                                                - Full collection export
+                                                                                                                                                                                                                                                                - Report generation
 
-#### 6.4 Thumbnail Generation
+3. **Bulk Actions** - Missing across all list pages
 
-**Objective**: Generate thumbnails for images automatically
+                                                                                                                                                                                                                                                                - Multi-select with checkboxes
+                                                                                                                                                                                                                                                                - Bulk status change, move, delete, export
 
-**Tasks**:
+**PRIORITY 5 - UX/UI Gaps:**
 
-1. Backend thumbnail generation:
+1. **Media Gallery Enhancements**
 
-- Use Convex actions or scheduled functions
-- Generate thumbnails on media upload
-- Store thumbnails in Convex storage
-- Update `mediaFiles` table with `thumbnailStorageId`
-- Files: `packages/backend/convex/media.ts` (update), `packages/backend/convex/actions/generateThumbnail.ts`
+                                                                                                                                                                                                                                                                - PDF preview in gallery (missing)
+                                                                                                                                                                                                                                                                - 3D object viewer (for Sketchfab embeds)
+                                                                                                                                                                                                                                                                - Document section in media tab
 
-2. Image optimization:
+2. **Keyboard Shortcuts** - None implemented
+3. **Global Search** - No cross-module search
+4. **Dashboard Widgets** - Main dashboard is basic
+5. **Calendar View** - For loans due dates, exhibition schedules
 
-- Multiple sizes (thumbnail, small, medium, large)
-- WebP format support
-- Lazy loading in gallery
-- Files: `apps/app/src/app/[locale]/(dashboard)/objects/[id]/_components/media-gallery.tsx`
+**PRIORITY 6 - New Modules (Future):**
 
-3. Background processing:
+1. **Shipping/Logistics** - Crating, transport, courier management
+2. **Inventory/Audit** - Physical inventory tracking workflows
+3. **Public Portal** - External-facing collection website
+4. **Reports Module** - Custom report builder
 
-- Queue system for thumbnail generation
-- Progress tracking
-- Error handling and retries
+---
 
-**Success Criteria**: Thumbnails generated automatically, multiple sizes available, lazy loading works
+## Improved Prompt for Cursor Composer Agent
 
-**Dependencies**: Phase 4 (media upload)
+```
+You are an autonomous development agent for Museumlite, a museum/collection management platform. Execute the following workflow with minimal user intervention, only requesting confirmation at phase completions.
 
-#### 6.5 Loan Documents
+## TOOLS & RESPONSIBILITIES
 
-**Objective**: Add document management for loans
+| Tool | Responsibility |
+|------|---------------|
+| **Cursor Agent** | Planning, auditing, analysis, Linear task creation, Droid prompt generation, design review coordination |
+| **Droid CLI** | Implementation (frontend + backend), has Linear MCP integrated |
+| **aura.build** | UI design generation via browser automation |
+| **Linear** | Task management, progress tracking (source of truth for session state) |
 
-**Tasks**:
+## AURA.BUILD INTEGRATION
 
-1. Schema verification:
+### Browser Automation Steps:
+1. Navigate to https://aura.build/create
+2. Reference existing designs in "Recent Chat" sidebar:
+   - Museum Collections Admin Dashboard
+   - Museum Loans Manager Dashboard  
+   - Museum Collection Object Detail Dashboard
+   - Logistics Services Landing Page
+3. Design style: Classic museum aesthetic + Modern SaaS (elegant, professional, data-focused)
+4. Generate design with detailed prompt including:
+   - Page purpose and user flow
+   - Data fields to display
+   - Actions/buttons needed
+   - Reference to existing app patterns
+5. Copy shareable link
+6. Present to user: "Design ready for review: [link]. Reply 'approved' or provide feedback."
+7. Wait for approval before implementation
 
-- Check if `loanDocuments` table exists in schema
-- If not, add: organizationId, loanId, storageId, fileName, documentType (agreement, insurance, condition_report, other), uploadedBy, uploadedAt
-- Indexes: by_loan, by_organization
+### Design Prompt Template for aura.build:
+```
 
-2. Backend implementation:
+Design a [page type] for a museum collection management system.
+
+Style: Match the existing Museum Collections Admin Dashboard - elegant, professional,
+
+dark mode compatible, modern SaaS aesthetic with museum sophistication.
+
+Page: [Page Name]
+
+Purpose: [What users accomplish here]
+
+Layout:
+
+- [Header with breadcrumbs, title, primary actions]
+- [Main content area with specific components]
+- [Sidebar if needed]
+
+Data to display:
+
+
+...
+
+Actions:
+
+- [Button 1]: [what it does]
+- [Button 2]: [what it does]
+
+...
+
+States to show: Empty state, Loading, Error, Success
+
+````
+
+---
+
+## WORKFLOW PHASES
+
+### PHASE 1: LINEAR PROJECT SETUP
+1. Create Linear project: "Museumlite Development"
+2. Create labels: `design`, `frontend`, `backend`, `workflow`, `bug`, `enhancement`
+3. Create milestones for each module
+4. Output: Linear project link and confirmation
+
+### PHASE 2: TASK CREATION (Module by Module)
+Create Linear tasks based on audit findings above. Priority order:
 
-- Upload documents (use Convex storage)
-- List documents for loan
-- Delete documents
-- Files: `packages/backend/convex/loanDocuments.ts`
+**Priority 1 - Core Fixes:**
+- [ ] Collections: Add edit page
+- [ ] Patrons: Add edit page
+- [ ] Loans: Verify complete workflow (approve, dispatch, return, cancel)
 
-3. Frontend implementation:
+**Priority 2 - New Modules:**
+- [ ] Accounts/CRM module (full CRUD)
+- [ ] Collection Groups management
+- [ ] Exhibitions module (full CRUD + scheduling)
+- [ ] Conservation tracking module
 
-- Document upload UI in loan detail page
-- Document list with download/delete
-- Document type selector
-- Files: `apps/app/src/app/[locale]/(dashboard)/loans/[id]/_components/loan-documents.tsx`
+**Priority 3 - Enhancements:**
+- [ ] Workflow Configuration UI
+- [ ] Import/Export tools
+- [ ] Media gallery: PDF preview, 3D viewer
+- [ ] Shipping/Logistics management
+- [ ] Inventory/Audit workflows
 
-**Success Criteria**: Documents can be uploaded, listed, downloaded, and deleted for loans
+**Priority 4 - Integrations:**
+- [ ] Calendar integration
+- [ ] Email notifications enhancement
+- [ ] Barcode/QR scanning UI
+- [ ] Public collection portal
 
-**Dependencies**: Phase 4 (loans module)
+### PHASE 3: DESIGN & IMPLEMENTATION CYCLE
+For each task (repeat):
 
-#### 6.6 API Endpoints
+1. **Design Phase:**
+   - Create Linear sub-task: "Design: [Feature]"
+   - Open aura.build via browser
+   - Generate design using template above
+   - Present link for approval
+   - Wait for user response
 
-**Objective**: Create RESTful API for external integrations
+2. **Implementation Phase (via Droid):**
+   Generate Droid prompt:
+   ```
+   ## Task: [Feature Name]
+   **Linear Task:** [ID]
+   **Design:** [aura.build link]
+   
+   ### Frontend
+   - Path: apps/app/src/app/[locale]/(dashboard)/[module]/
+   - Components: Use @v1/ui (Button, Dialog, Input, etc.)
+   - Patterns: Follow existing pages like loans/[id]/page.tsx
+   
+   ### Backend (if needed)
+   - Schema: packages/backend/convex/schema.ts
+   - Functions: packages/backend/convex/[module].ts
+   - Permissions: Follow requirePermission() pattern
+   
+   ### Specific Requirements:
+   [List from design]
+   
+   ### Git
+   - Branch: feature/[module-feature]
+   - Commit message format: "feat([module]): [description]"
+   ```
 
-**Tasks**:
+3. **Verification:**
+   - Check for linter errors
+   - Verify page loads
+   - Test basic functionality
+   - If errors: Fix (max 2 attempts), then notify user
 
-1. API authentication:
+4. **Update Linear:** Mark task complete
 
-- API key management (schema exists: `apiKeys` table)
-- Key generation and rotation
-- Permission scoping per key
-- Files: `packages/backend/convex/apiKeys.ts`, `packages/backend/convex/http.ts`
+### PHASE 4: WORKFLOW INTEGRATION
+For modules with approval workflows:
+1. Verify notification triggers exist
+2. Test complete workflow: Create -> Submit -> Approve -> Complete
+3. Add workflow status badges to list views
+4. Implement bulk actions where appropriate
 
-2. RESTful endpoints:
+### PHASE 5: DOCUMENTATION & CLEANUP
+- Update README with new features
+- Add JSDoc comments to complex functions
+- Create user guide sections per module
+- Run `bun lint` and fix issues
+- Merge feature branches to main
 
-- Collections API (GET, POST, PUT, DELETE)
-- Loans API
-- Locations API
-- Accessions/Deaccessions API
-- Rate limiting
-- Files: `packages/backend/convex/http/` directory
+---
 
-3. API documentation:
+## ERROR HANDLING
 
-- OpenAPI/Swagger spec
-- Postman collection
-- Files: `docs/api/`
+| Scenario | Action |
+|----------|--------|
+| Implementation error | Attempt fix (max 2 tries) |
+| Still broken | Rollback, notify user, continue next task |
+| Design rejected | Request specific feedback, regenerate |
+| Backend schema conflict | Stop, notify user for decision |
 
-4. API key management UI:
+## PHASE COMPLETION OUTPUT
 
-- Create/manage API keys in settings
-- Show usage statistics
-- Files: `apps/app/src/app/[locale]/(dashboard)/settings/api/page.tsx`
+At end of each phase, provide:
+````
 
-**Success Criteria**: API endpoints work, authentication works, documentation complete, UI for key management
+## Phase [N] Complete
 
-**Dependencies**: Phase 4
+### Completed Tasks
 
-#### 6.7 Webhooks
+- [x] Task 1
+- [x] Task 2
 
-**Objective**: Implement webhook system for external integrations
+### Linear Updates
 
-**Tasks**:
+- [N] tasks created
+- [N] tasks completed
 
-1. Backend implementation:
+### Next Phase Preview
 
-- Webhook registration (schema exists: `webhooks` table)
-- Webhook triggering on events
-- Retry logic for failed webhooks
-- Signature verification
-- Files: `packages/backend/convex/webhooks.ts`, `packages/backend/convex/actions/triggerWebhook.ts`
+- Task A
+- Task B
 
-2. Supported events:
+### Blockers/Decisions Needed
 
-- collection.created, collection.updated, collection.deleted
-- loan.created, loan.approved, loan.returned
-- accession.approved, deaccession.approved
-- workflow.step_completed
+- [Any issues requiring user input]
 
-3. Frontend implementation:
+Ready to proceed to Phase [N+1]? (yes/no)
 
-- Webhook management UI in settings
-- Create/edit/delete webhooks
-- View webhook logs
-- Test webhook functionality
-- Files: `apps/app/src/app/[locale]/(dashboard)/settings/webhooks/page.tsx`
+```
 
-**Success Criteria**: Webhooks can be created, triggered on events, retry logic works, UI functional
+## SESSION CONTINUITY
+- Linear task status O= source of truth
+- On session start: Query Linear for incomplete tasks
+- Resume from first incomplete task in priority order
+```
 
-**Dependencies**: Phase 4, Phase 5 (workflows)
+---
 
-#### 6.8 Real-time Polish
+## Key File Paths
 
-**Objective**: Add presence indicators and conflict handling
+| Purpose | Path |
 
-**Tasks**:
+|---------|------|
 
-1. Presence indicators:
+| Frontend Routes | `apps/app/src/app/[locale]/(dashboard)/` |
 
-- Show who is viewing/editing a record
-- Use Convex presence API
-- Display user avatars/names
-- Files: `apps/app/src/components/presence-indicator.tsx`
+| Backend Functions | `packages/backend/convex/` |
 
-2. Conflict handling:
+| Schema | `packages/backend/convex/schema.ts` |
 
-- Detect concurrent edits
-- Show conflict warnings
-- Merge strategies or last-write-wins with warnings
-- Files: Update edit pages with conflict detection
+| UI Components | `packages/ui/src/components/` |
 
-3. Optimistic updates:
+| Shared Utils | `packages/ui/src/utils/` |
 
-- Show immediate feedback
-- Rollback on error
-- Files: Update mutations with optimistic updates
+## Existing aura.build Designs (Reference)
 
-**Success Criteria**: Presence indicators work, conflicts detected and handled, optimistic updates work
-
-**Dependencies**: Phase 4
-
-#### 6.9 Data Validation
-
-**Objective**: Enhance data validation throughout the application
-
-**Tasks**:
-
-1. Accession number uniqueness:
-
-- Validate on create/update
-- Check organization scope
-- Show clear error messages
-- Files: `packages/backend/convex/collections.ts` (update create/update)
-
-2. Required field validation:
-
-- Frontend validation before submit
-- Backend validation as safety net
-- Clear error messages
-- Files: All form components
-
-3. Date consistency checks:
-
-- Loan end date after start date
-- Accession date not in future
-- Date ranges logical
-- Files: Validation helpers in `packages/backend/convex/utils/validation.ts`
-
-4. Location validation:
-
-- Parent location exists
-- No circular references
-- Location type hierarchy valid
-- Files: `packages/backend/convex/locations.ts` (update)
-
-**Success Criteria**: All validations work, clear error messages, data integrity maintained
-
-**Dependencies**: Phase 4
-
-#### 6.10 Performance Optimization
-
-**Objective**: Optimize application performance
-
-**Tasks**:
-
-1. Pagination:
-
-- Ensure all list pages use pagination
-- Cursor-based pagination for large datasets
-- Page size configuration
-- Files: All list pages, backend list functions
-
-2. Query optimization:
-
-- Review all database queries
-- Ensure proper indexes exist
-- Use indexes in queries
-- Files: `packages/backend/convex/schema.ts` (verify indexes), all query functions
-
-3. Caching strategies:
-
-- Cache frequently accessed data
-- Use Convex query caching
-- Invalidate cache on updates
-- Files: Update queries with caching hints
-
-4. Image optimization:
-
-- Lazy loading for images
-- Responsive images (srcset)
-- WebP format with fallbacks
-- Files: Media gallery components
-
-5. Code splitting:
-
-- Lazy load heavy components
-- Route-based code splitting
-- Files: Update Next.js pages with dynamic imports
-
-**Success Criteria**: Pages load quickly, queries optimized, images lazy loaded, code split properly
-
-**Dependencies**: Phase 4
-
-#### 6.11 Security Enhancements
-
-**Objective**: Strengthen application security
-
-**Tasks**:
-
-1. Input validation and sanitization:
-
-- Validate all user inputs
-- Sanitize HTML content
-- Prevent XSS attacks
-- Files: All mutation handlers, form components
-
-2. Permission checks:
-
-- Verify all mutations check permissions
-- Audit permission checks
-- Files: All backend mutation functions
-
-3. Rate limiting:
-
-- Implement rate limiting on API endpoints
-- Rate limit mutations
-- Use Convex rate limiting
-- Files: `packages/backend/convex/utils/rateLimit.ts`
-
-4. Audit logging:
-
-- Log all sensitive operations
-- Include IP address, user agent
-- Files: Ensure all mutations log to auditLog
-
-5. Security headers:
-
-- Configure security headers in Next.js
-- CSP headers
-- Files: `apps/app/next.config.mjs`
-
-**Success Criteria**: All inputs validated, permissions checked, rate limiting works, audit logging complete
-
-**Dependencies**: Phase 4
-
-#### 6.12 Internationalization
-
-**Objective**: Complete i18n implementation
-
-**Tasks**:
-
-1. Extend locales:
-
-- Add all missing strings to locale files
-- Museum-specific terminology
-- Files: `apps/app/src/locales/en.ts`, `es.ts`, `fr.ts`
-
-2. Date/time formatting:
-
-- Locale-aware date formatting
-- Timezone handling
-- Relative time (e.g., "2 days ago")
-- Files: Date utility functions
-
-3. Number formatting:
-
-- Locale-aware number formatting
-- Currency formatting
-- Files: Number utility functions
-
-4. RTL support (if needed):
-
-- Right-to-left language support
-- Layout adjustments
-- Files: CSS and layout components
-
-**Success Criteria**: All strings translated, dates formatted correctly, numbers formatted correctly
-
-**Dependencies**: Phase 4
-
-#### 6.13 Testing Strategy
-
-**Objective**: Implement comprehensive testing
-
-**Tasks**:
-
-1. Unit tests:
-
-- Test permission logic
-- Test validation functions
-- Test utility functions
-- Files: `packages/backend/convex/__tests__/`, `apps/app/src/__tests__/`
-
-2. Integration tests:
-
-- Test workflows end-to-end
-- Test API endpoints
-- Test database operations
-- Files: `tests/integration/`
-
-3. E2E tests:
-
-- Critical user paths
-- Use Playwright or similar
-- Files: `tests/e2e/`
-
-4. Test data:
-
-- Seed data for tests
-- Test fixtures
-- Files: `tests/fixtures/`
-
-**Success Criteria**: Unit tests pass, integration tests pass, E2E tests pass, good test coverage
-
-**Dependencies**: All previous phases
-
-### Phase 7: Documentation & Final Polish
-
-#### 7.1 Code Documentation
-
-- Add JSDoc to all backend functions
-- Add JSDoc to complex frontend components
-- Document API endpoints
-- Document workflow system
-
-#### 7.2 User Documentation
-
-- User guides for each module
-- Workflow documentation
-- FAQ section
-- Video tutorials (optional)
-
-#### 7.3 Developer Documentation
-
-- Architecture overview
-- Adding new modules guide
-- Workflow system documentation
-- Permission system documentation
-- API documentation
-
-#### 7.4 Final Polish
-
-- Code cleanup
-- Remove unused code
-- Optimize bundle size
-- Final accessibility audit
-- Performance audit
+- Outgoing loans - museumlite.aura.build/outgoing-loans
+- Loans overview - museumlite.aura.build/loans-overview, chat: <https://www.aura.build/editor/4c876c2e-23fc-4fea-a78e-6f52bace54f1> and museumlite.aura.build/loans-overview-page, chat: <https://www.aura.build/editor/e885ef40-a7c3-4874-9716-29507d357bea>
+- Loans - museumlite.aura.build/outgoing-loans aura chat: <https://www.aura.build/editor/b3b4cce8-ecfc-4715-8779-408407177aff>
+- Object - museumlite.aura.build/object, aura chat: <https://www.aura.build/editor/39cf7a71-ff0c-42e3-b56c-6dcaae876b48>
+- Dashboard as administrator - museumlite.aura.build/dashboard-as-admin, aura chat: <https://www.aura.build/editor/36524e45-6764-4d14-abab-f8fce77b783c>

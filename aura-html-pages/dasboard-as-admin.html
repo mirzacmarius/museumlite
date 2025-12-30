@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MuseumLite - Collections &amp; Analytics</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Inter', sans-serif; }
+/* Subtle Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+/* Animation Utilities */
+.hover-trigger .hover-target { opacity: 0; transform: translateY(4px); transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+.hover-trigger:hover .hover-target { opacity: 1; transform: translateY(0); }
+.animate-enter { animation: enter 0.4s ease-out forwards; opacity: 0; transform: translateY(10px); }
+@keyframes enter { to { opacity: 1; transform: translateY(0); } }
+.glass-panel {
+background: rgba(24, 24, 27, 0.7);
+backdrop-filter: blur(12px);
+-webkit-backdrop-filter: blur(12px);
+}
+</style></head>
+  <body class="bg-zinc-950 text-zinc-400 antialiased selection:bg-indigo-500/30 selection:text-indigo-200 overflow-hidden h-screen flex text-sm">
+    <!-- Sidebar -->
+    <aside class="w-64 border-r border-zinc-800/60 flex flex-col h-full bg-zinc-950 hidden md:flex shrink-0 z-20">
+      <!-- Organization Switcher -->
+      <div class="p-3 border-b border-zinc-800/60 relative">
+        <button class="w-full flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-zinc-900 transition-all duration-200 group border border-transparent hover:border-zinc-800" data-dropdown-trigger="org-menu">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-md shadow-inner flex items-center justify-center text-white font-medium text-xs border border-white/10">
+              NM
+            </div>
+            <div class="text-left">
+              <p class="text-xs font-medium text-zinc-200 group-hover:text-white transition-colors">
+                National Museum
+              </p>
+              <p class="text-[10px] text-zinc-500">Enterprise Plan</p>
+            </div>
+          </div>
+          <i data-lucide="chevrons-up-down" class="w-3.5 h-3.5 text-zinc-600 group-hover:text-zinc-400 transition-colors"></i>
+        </button>
+        <div class="absolute top-full left-2 right-2 mt-2 p-1 bg-zinc-950 border border-zinc-800 rounded-lg shadow-2xl z-50 flex flex-col gap-0.5 ring-1 ring-black/50 animate-in fade-in zoom-in-95 duration-100 hidden" id="org-menu" data-dropdown-menu="true">
+          <div class="px-2 py-1.5 text-[10px] font-medium text-zinc-500 uppercase tracking-widest">
+            Switch Organization
+          </div>
+          <button class="w-full flex items-center justify-between px-2 py-1.5 text-xs text-zinc-200 bg-zinc-900 rounded-md border border-zinc-800/50">
+            <span class="flex items-center gap-2">
+              <div class="w-5 h-5 bg-indigo-500 rounded flex items-center justify-center text-[9px] text-white">
+                NM
+              </div>
+              National Museum
+            </span>
+            <i data-lucide="check" class="w-3.5 h-3.5 text-indigo-500"></i>
+          </button>
+          <button class="w-full flex items-center justify-between px-2 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 rounded-md transition-colors">
+            <span class="flex items-center gap-2">
+              <div class="w-5 h-5 bg-zinc-800 rounded flex items-center justify-center text-[9px] text-zinc-400">
+                LA
+              </div>
+              Louvre Abu Dhabi
+            </span>
+          </button>
+          <div class="h-px bg-zinc-800/50 my-1 mx-1"></div>
+          <button class="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-400 hover:text-white hover:bg-zinc-900 rounded-md transition-colors">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            Create Organization
+          </button>
+          <button class="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-400 hover:text-white hover:bg-zinc-900 rounded-md transition-colors">
+            <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+            Settings
+          </button>
+        </div>
+      </div>
+
+      <nav class="flex-1 overflow-y-auto py-4 px-2">
+        <div class="px-2 mb-6">
+          <div class="relative group">
+            <i data-lucide="search" class="absolute left-2.5 top-2 w-3.5 h-3.5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors"></i>
+            <input type="text" placeholder="Search users, roles, policies..." class="w-full bg-zinc-900/40 border border-zinc-800/60 rounded-md text-xs py-1.5 pl-8 pr-3 text-zinc-300 placeholder-zinc-600 focus:outline-none focus:bg-zinc-900 focus:border-zinc-700 transition-all">
+            <div class="absolute right-2 top-1.5 flex gap-1">
+              <span class="text-[10px] bg-zinc-800 text-zinc-500 px-1 rounded border border-zinc-700">
+                ⌘K
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="space-y-6">
+          <!-- Workspace -->
+          <div class="px-1">
+            <div class="px-2 pb-2 text-[10px] font-medium text-zinc-500 uppercase tracking-widest">
+              Workspace
+            </div>
+            <div class="space-y-0.5">
+              <a href="#" class="flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-200 bg-zinc-800/40 rounded-md border border-zinc-800/60 shadow-sm">
+                <i data-lucide="layout-grid" class="w-4 h-4 text-indigo-400"></i>
+                <span class="font-medium">All Objects</span>
+              </a>
+              <a href="#" class="flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 rounded-md transition-all group">
+                <i data-lucide="inbox" class="w-4 h-4 group-hover:text-zinc-400 transition-colors"></i>
+                <span>New Arrivals</span>
+                <span class="ml-auto w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+              </a>
+              <a href="#" class="flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 rounded-md transition-all group">
+                <i data-lucide="clipboard-list" class="w-4 h-4 group-hover:text-zinc-400 transition-colors"></i>
+                <span>My Assignments</span>
+              </a>
+              <a href="#" class="flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 rounded-md transition-all group">
+                <i data-lucide="history" class="w-4 h-4 group-hover:text-zinc-400 transition-colors"></i>
+                <span>Recent Activity</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Collections -->
+          <details open="" class="group/coll px-1">
+            <summary class="px-2 pb-2 flex items-center justify-between cursor-pointer list-none [&amp;::-webkit-details-marker]:hidden hover:text-zinc-300 text-zinc-500 transition-colors group/summary">
+              <span class="text-[10px] font-medium uppercase tracking-widest">
+                Platform Modules
+              </span>
+              <i data-lucide="chevron-right" class="w-3 h-3 transition-transform duration-200 group-open/coll:rotate-90"></i>
+            </summary>
+            <div class="space-y-0.5 pt-1">
+              <button class="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50 rounded-md transition-all group text-left">
+                <i data-lucide="database" class="w-3.5 h-3.5 group-hover:text-zinc-300 transition-colors"></i>
+                <span>Collection Schema</span>
+              </button>
+              <button class="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50 rounded-md transition-all group text-left">
+                <i data-lucide="image" class="w-3.5 h-3.5 group-hover:text-zinc-300 transition-colors"></i>
+                <span>Media Library</span>
+              </button>
+              <button class="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50 rounded-md transition-all group text-left">
+                <i data-lucide="git-branch" class="w-3.5 h-3.5 group-hover:text-zinc-300 transition-colors"></i>
+                <span>Workflows</span>
+              </button>
+            </div>
+          </details>
+
+          <!-- Exhibitions -->
+          <details class="group/exhib px-1">
+            <summary class="px-2 pb-2 flex items-center justify-between cursor-pointer list-none [&amp;::-webkit-details-marker]:hidden hover:text-zinc-300 text-zinc-500 transition-colors group/summary">
+              <span class="text-[10px] font-medium uppercase tracking-widest">
+                System
+              </span>
+              <i data-lucide="chevron-right" class="w-3 h-3 transition-transform duration-200 group-open/exhib:rotate-90"></i>
+            </summary>
+            <div class="space-y-0.5 pt-1">
+              <a href="#" class="flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 rounded-md transition-all group">
+                <i data-lucide="settings" class="w-4 h-4 group-hover:text-zinc-400 transition-colors"></i>
+                <span>General Settings</span>
+              </a>
+              <a href="#" class="flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 rounded-md transition-all group">
+                <i data-lucide="credit-card" class="w-4 h-4 group-hover:text-zinc-400 transition-colors"></i>
+                <span>Billing &amp; Plan</span>
+              </a>
+            </div>
+          </details>
+
+          <!-- Conservation -->
+
+          <!-- Management -->
+        </div>
+      </nav>
+
+      <div class="p-3 border-t border-zinc-800/60">
+        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-900/50 cursor-pointer transition-colors">
+          <div class="relative">
+            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&amp;fit=facearea&amp;facepad=2&amp;w=48&amp;h=48&amp;q=80" alt="User" class="w-8 h-8 rounded-full border border-zinc-700">
+            <div class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-zinc-950 rounded-full"></div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-medium text-zinc-200 truncate">
+              Dr. A. Carter
+            </p>
+            <p class="text-[10px] text-zinc-500 truncate">Senior Curator</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col min-w-0 bg-zinc-950 relative z-10">
+      <!-- Navbar -->
+      <header class="h-14 border-b border-zinc-800/60 flex items-center justify-between px-6 bg-zinc-950/80 backdrop-blur-xl sticky top-0 z-50">
+        <div class="flex items-center gap-2 text-xs">
+          <span class="text-zinc-500 flex items-center gap-2">
+            <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
+            National Museum
+          </span>
+          <span class="text-zinc-700">/</span>
+          <span class="text-zinc-300 font-medium">
+            Collections &amp; Analytics
+          </span>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-md p-0.5">
+            <button class="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors">
+              <i data-lucide="list" class="w-3.5 h-3.5"></i>
+            </button>
+            <button class="p-1.5 bg-zinc-800 text-zinc-200 rounded shadow-sm border border-zinc-700">
+              <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+          <div class="h-4 w-px bg-zinc-800"></div>
+          <button class="flex items-center gap-2 bg-indigo-600 text-white hover:bg-indigo-500 border border-indigo-500 px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-lg shadow-indigo-500/20">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>Add Object</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Filters -->
+      <div class="px-6 py-3 border-b border-zinc-800/60 flex flex-wrap items-center justify-between gap-4 bg-zinc-950/50 backdrop-blur-sm">
+        <div class="flex items-center gap-2">
+          <div class="relative">
+            <button data-dropdown-trigger="" class="flex items-center gap-2 text-xs text-zinc-300 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-md hover:border-zinc-700 hover:bg-zinc-800/80 transition-all group shadow-sm">
+              <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-400"></i>
+              <span>Category</span>
+              <i data-lucide="chevron-down" class="w-3 h-3 text-zinc-600 group-hover:text-zinc-500 ml-1"></i>
+            </button>
+            <div data-dropdown-menu="" class="hidden absolute top-full left-0 mt-2 w-48 bg-zinc-950 border border-zinc-800 rounded-lg shadow-2xl z-50 p-1 flex flex-col gap-0.5 ring-1 ring-white/5 animate-in fade-in zoom-in-95 duration-100">
+              <button class="w-full text-left px-2 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 rounded-md transition-colors">
+                Fine Arts
+              </button>
+              <button class="w-full text-left px-2 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 rounded-md transition-colors">
+                Archaeology
+              </button>
+              <button class="w-full text-left px-2 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 rounded-md transition-colors">
+                Textiles &amp; Fabrics
+              </button>
+              <div class="h-px bg-zinc-800/50 my-1 mx-1"></div>
+              <button class="w-full text-left px-2 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 rounded-md transition-colors">
+                View All Categories
+              </button>
+            </div>
+          </div>
+          <div class="relative">
+            <button data-dropdown-trigger="" class="flex items-center gap-2 text-xs text-zinc-300 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-md hover:border-zinc-700 hover:bg-zinc-800/80 transition-all group shadow-sm">
+              <i data-lucide="circle-dot" class="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-400"></i>
+              <span>Status</span>
+              <i data-lucide="chevron-down" class="w-3 h-3 text-zinc-600 group-hover:text-zinc-500 ml-1"></i>
+            </button>
+            <div data-dropdown-menu="" class="hidden absolute top-full left-0 mt-2 w-40 bg-zinc-950 border border-zinc-800 rounded-lg shadow-2xl z-50 p-1 flex flex-col gap-0.5 ring-1 ring-white/5 animate-in fade-in zoom-in-95 duration-100">
+              <button class="w-full text-left px-2 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 rounded-md transition-colors flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                On Display
+              </button>
+              <button class="w-full text-left px-2 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 rounded-md transition-colors flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                In Storage
+              </button>
+              <button class="w-full text-left px-2 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 rounded-md transition-colors flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                Loaned Out
+              </button>
+              <button class="w-full text-left px-2 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 rounded-md transition-colors flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                Conservation
+              </button>
+            </div>
+          </div>
+          <div class="h-4 w-px bg-zinc-800 mx-1"></div>
+          <button class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+            Reset filters
+          </button>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-[10px] uppercase tracking-widest text-zinc-600 font-medium">
+            Sort by
+          </span>
+          <div class="relative">
+            <button data-dropdown-trigger="" class="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-200">
+              Acquisition Date
+              <i data-lucide="chevron-down" class="w-3 h-3 ml-1"></i>
+            </button>
+            <div data-dropdown-menu="" class="hidden absolute top-full right-0 mt-2 w-44 bg-zinc-950 border border-zinc-800 rounded-lg shadow-2xl z-50 p-1 flex flex-col gap-0.5 ring-1 ring-white/5 animate-in fade-in zoom-in-95 duration-100">
+              <button class="w-full text-left px-2 py-1.5 text-xs text-zinc-200 bg-zinc-900 rounded-md transition-colors flex justify-between items-center">
+                Acquisition Date
+                <i data-lucide="check" class="w-3 h-3 text-indigo-500"></i>
+              </button>
+              <button class="w-full text-left px-2 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 rounded-md transition-colors">
+                Valuation (High-Low)
+              </button>
+              <button class="w-full text-left px-2 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 rounded-md transition-colors">
+                Condition
+              </button>
+              <button class="w-full text-left px-2 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 rounded-md transition-colors">
+                Alphabetical
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrollable Grid -->
+      <div class="flex-1 overflow-y-auto p-6 scroll-smooth">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="hover-trigger group relative bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden hover:border-amber-500/30 hover:ring-1 hover:ring-amber-500/30 transition-all duration-300 flex flex-col cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-amber-900/10 animate-enter" style="animation-delay: 0ms;">
+            <div class="relative aspect-[2/1] bg-zinc-900 overflow-hidden">
+              <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-90 z-10"></div>
+              <img src="https://images.unsplash.com/photo-1549887552-93f954d31871?q=80&amp;w=600&amp;auto=format&amp;fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out will-change-transform opacity-60 group-hover:opacity-80">
+              <div class="absolute top-2 right-2 z-20 flex gap-1 hover-target">
+                <button class="p-1.5 bg-zinc-950/80 backdrop-blur-md rounded-md border border-zinc-800 hover:text-white text-zinc-400">
+                  <i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+              <div class="absolute top-2 left-2 z-20">
+                <div class="flex items-center gap-1.5 px-2 py-1 bg-zinc-950/90 backdrop-blur-md rounded-md border border-amber-500/30 shadow-sm">
+                  <i data-lucide="pillar" class="w-3 h-3 text-amber-400"></i>
+                  <span class="text-[10px] font-medium text-amber-200">
+                    Permanent
+                  </span>
+                </div>
+              </div>
+              <div class="absolute bottom-3 left-3 right-3 z-20">
+                <h3 class="text-sm font-semibold text-white tracking-tight leading-snug drop-shadow-md">
+                  Greco-Roman
+                </h3>
+                <p class="text-[11px] text-zinc-300 truncate opacity-90">
+                  1,240 Items • Floor 2
+                </p>
+              </div>
+            </div>
+            <div class="p-3 bg-zinc-900/20 flex-1 flex flex-col justify-end">
+              <div class="flex items-center justify-between text-[11px] text-zinc-500 border-t border-zinc-800/50 pt-2">
+                <span>Top Valuation</span>
+                <span class="text-zinc-300 font-medium">$12.5M</span>
+              </div>
+            </div>
+          </div>
+          <div class="hover-trigger group relative bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden hover:border-rose-500/30 hover:ring-1 hover:ring-rose-500/30 transition-all duration-300 flex flex-col cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-rose-900/10 animate-enter" style="animation-delay: 100ms;">
+            <div class="relative aspect-[2/1] bg-zinc-900 overflow-hidden">
+              <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-90 z-10"></div>
+              <img src="https://images.unsplash.com/photo-1576769939526-9d22d5b6256f?q=80&amp;w=600&amp;auto=format&amp;fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out will-change-transform opacity-60 group-hover:opacity-80">
+              <div class="absolute top-2 left-2 z-20">
+                <div class="flex items-center gap-1.5 px-2 py-1 bg-zinc-950/90 backdrop-blur-md rounded-md border border-rose-500/30 shadow-sm">
+                  <i data-lucide="palette" class="w-3 h-3 text-rose-400"></i>
+                  <span class="text-[10px] font-medium text-rose-200">
+                    On Display
+                  </span>
+                </div>
+              </div>
+              <div class="absolute bottom-3 left-3 right-3 z-20">
+                <h3 class="text-sm font-semibold text-white tracking-tight leading-snug drop-shadow-md">
+                  European Painting
+                </h3>
+                <p class="text-[11px] text-zinc-300 truncate opacity-90">
+                  856 Items • West Wing
+                </p>
+              </div>
+            </div>
+            <div class="p-3 bg-zinc-900/20 flex-1 flex flex-col justify-end">
+              <div class="flex items-center justify-between text-[11px] text-zinc-500 border-t border-zinc-800/50 pt-2">
+                <span>Top Valuation</span>
+                <span class="text-zinc-300 font-medium">$28.2M</span>
+              </div>
+            </div>
+          </div>
+          <div class="hover-trigger group relative bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden hover:border-cyan-500/30 hover:ring-1 hover:ring-cyan-500/30 transition-all duration-300 flex flex-col cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-cyan-900/10 animate-enter" style="animation-delay: 200ms;">
+            <div class="relative aspect-[2/1] bg-zinc-900 overflow-hidden">
+              <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-90 z-10"></div>
+              <img src="https://images.unsplash.com/photo-1610701596007-11502861dcfa?q=80&amp;w=600&amp;auto=format&amp;fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out will-change-transform opacity-60 group-hover:opacity-80">
+              <div class="absolute top-2 left-2 z-20">
+                <div class="flex items-center gap-1.5 px-2 py-1 bg-zinc-950/90 backdrop-blur-md rounded-md border border-cyan-500/30 shadow-sm">
+                  <i data-lucide="box" class="w-3 h-3 text-cyan-400"></i>
+                  <span class="text-[10px] font-medium text-cyan-200">
+                    In Storage
+                  </span>
+                </div>
+              </div>
+              <div class="absolute bottom-3 left-3 right-3 z-20">
+                <h3 class="text-sm font-semibold text-white tracking-tight leading-snug drop-shadow-md">
+                  Ceramics
+                </h3>
+                <p class="text-[11px] text-zinc-300 truncate opacity-90">
+                  4,100 Items • Vault B
+                </p>
+              </div>
+            </div>
+            <div class="p-3 bg-zinc-900/20 flex-1 flex flex-col justify-end">
+              <div class="flex items-center justify-between text-[11px] text-zinc-500 border-t border-zinc-800/50 pt-2">
+                <span>Top Valuation</span>
+                <span class="text-zinc-300 font-medium">$2.1M</span>
+              </div>
+            </div>
+          </div>
+          <div class="hover-trigger group relative bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden hover:border-purple-500/30 hover:ring-1 hover:ring-purple-500/30 transition-all duration-300 flex flex-col cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-purple-900/10 animate-enter" style="animation-delay: 300ms;">
+            <div class="relative aspect-[2/1] bg-zinc-900 overflow-hidden">
+              <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-90 z-10"></div>
+              <img src="https://images.unsplash.com/photo-1544211181-70cb8f751430?q=80&amp;w=600&amp;auto=format&amp;fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out will-change-transform opacity-50 grayscale">
+              <div class="absolute top-2 left-2 z-20">
+                <div class="flex items-center gap-1.5 px-2 py-1 bg-zinc-950/90 backdrop-blur-md rounded-md border border-purple-500/30 shadow-sm">
+                  <i data-lucide="plane" class="w-3 h-3 text-purple-400"></i>
+                  <span class="text-[10px] font-medium text-purple-200">
+                    Outgoing Loan
+                  </span>
+                </div>
+              </div>
+              <div class="absolute bottom-3 left-3 right-3 z-20">
+                <h3 class="text-sm font-semibold text-white tracking-tight leading-snug drop-shadow-md">
+                  Active Loans
+                </h3>
+                <p class="text-[11px] text-zinc-300 truncate opacity-90">
+                  12 Exhibitions • External
+                </p>
+              </div>
+            </div>
+            <div class="p-3 bg-zinc-900/20 flex-1 flex flex-col justify-end">
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] text-purple-300 bg-purple-500/10 border border-purple-500/20 px-1.5 py-0.5 rounded">
+                  Retrieval: Oct 2024
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+          <!-- Card 1: Administrators -->
+          <div class="hover-trigger group relative bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/30 transition-all duration-300 flex flex-col cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-indigo-900/10 animate-enter" style="animation-delay: 0ms;">
+            <div class="relative aspect-[2/1] bg-zinc-900 overflow-hidden">
+              <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-90 z-10"></div>
+              <img src="https://images.unsplash.com/photo-1558494949-ef526b0042a0?q=80&amp;w=600&amp;auto=format&amp;fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out will-change-transform opacity-60 group-hover:opacity-80">
+
+              <div class="absolute top-2 right-2 z-20 flex gap-1 hover-target">
+                <button class="p-1.5 bg-zinc-950/80 backdrop-blur-md rounded-md border border-zinc-800 hover:text-white text-zinc-400">
+                  <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+
+              <div class="absolute top-2 left-2 z-20">
+                <div class="flex items-center gap-1.5 px-2 py-1 bg-zinc-950/90 backdrop-blur-md rounded-md border border-indigo-500/30 shadow-sm">
+                  <i data-lucide="shield-alert" class="w-3 h-3 text-indigo-400"></i>
+                  <span class="text-[10px] font-medium text-indigo-200">
+                    System Level
+                  </span>
+                </div>
+              </div>
+
+              <div class="absolute bottom-3 left-3 right-3 z-20">
+                <h3 class="text-sm font-semibold text-white tracking-tight leading-snug drop-shadow-md">
+                  Administrators
+                </h3>
+                <p class="text-[11px] text-zinc-300 truncate opacity-90">
+                  3 Users • Full Access
+                </p>
+              </div>
+            </div>
+
+            <div class="p-3 bg-zinc-900/20 flex-1">
+              <p class="text-[11px] text-zinc-500 leading-relaxed mb-3">
+                Full control over system configuration, billing, user
+                management, and security policies. Can delete data.
+              </p>
+              <div class="flex items-center -space-x-2">
+                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&amp;fit=facearea&amp;facepad=2&amp;w=32&amp;h=32&amp;q=80" class="w-6 h-6 rounded-full border border-zinc-800 ring-2 ring-zinc-950">
+                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&amp;fit=facearea&amp;facepad=2&amp;w=32&amp;h=32&amp;q=80" class="w-6 h-6 rounded-full border border-zinc-800 ring-2 ring-zinc-950">
+                <div class="w-6 h-6 rounded-full bg-zinc-800 border border-zinc-700 ring-2 ring-zinc-950 flex items-center justify-center text-[9px] text-zinc-400">
+                  +1
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Curators -->
+          <div class="hover-trigger group relative bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden hover:border-blue-500/30 hover:ring-1 hover:ring-blue-500/30 transition-all duration-300 flex flex-col cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-blue-900/10 animate-enter" style="animation-delay: 100ms;">
+            <div class="relative aspect-[2/1] bg-zinc-900 overflow-hidden">
+              <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-90 z-10"></div>
+              <img src="https://images.unsplash.com/photo-1518998053901-5348d3961a04?q=80&amp;w=600&amp;auto=format&amp;fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out will-change-transform opacity-60 group-hover:opacity-80">
+
+              <div class="absolute top-2 left-2 z-20">
+                <div class="flex items-center gap-1.5 px-2 py-1 bg-zinc-950/90 backdrop-blur-md rounded-md border border-blue-500/30 shadow-sm">
+                  <i data-lucide="pen-tool" class="w-3 h-3 text-blue-400"></i>
+                  <span class="text-[10px] font-medium text-blue-200">
+                    Write Access
+                  </span>
+                </div>
+              </div>
+
+              <div class="absolute bottom-3 left-3 right-3 z-20">
+                <h3 class="text-sm font-semibold text-white tracking-tight leading-snug drop-shadow-md">
+                  Curators
+                </h3>
+                <p class="text-[11px] text-zinc-300 truncate opacity-90">
+                  12 Users • Collection Management
+                </p>
+              </div>
+            </div>
+
+            <div class="p-3 bg-zinc-900/20 flex-1">
+              <p class="text-[11px] text-zinc-500 leading-relaxed mb-3">
+                Can create/edit objects, upload media, manage exhibitions, and
+                publish narratives. Limited deletion rights.
+              </p>
+              <div class="flex items-center -space-x-2">
+                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&amp;fit=facearea&amp;facepad=2&amp;w=32&amp;h=32&amp;q=80" class="w-6 h-6 rounded-full border border-zinc-800 ring-2 ring-zinc-950">
+                <div class="w-6 h-6 rounded-full bg-zinc-800 border border-zinc-700 ring-2 ring-zinc-950 flex items-center justify-center text-[9px] text-zinc-400">
+                  +11
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Registrars -->
+          <div class="hover-trigger group relative bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden hover:border-emerald-500/30 hover:ring-1 hover:ring-emerald-500/30 transition-all duration-300 flex flex-col cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-emerald-900/10 animate-enter" style="animation-delay: 200ms;">
+            <div class="relative aspect-[2/1] bg-zinc-900 overflow-hidden">
+              <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-90 z-10"></div>
+              <img src="https://images.unsplash.com/photo-1566576912906-60030087529d?q=80&amp;w=600&amp;auto=format&amp;fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out will-change-transform opacity-60 group-hover:opacity-80">
+
+              <div class="absolute top-2 left-2 z-20">
+                <div class="flex items-center gap-1.5 px-2 py-1 bg-zinc-950/90 backdrop-blur-md rounded-md border border-emerald-500/30 shadow-sm">
+                  <i data-lucide="truck" class="w-3 h-3 text-emerald-400"></i>
+                  <span class="text-[10px] font-medium text-emerald-200">
+                    Logistics
+                  </span>
+                </div>
+              </div>
+
+              <div class="absolute bottom-3 left-3 right-3 z-20">
+                <h3 class="text-sm font-semibold text-white tracking-tight leading-snug drop-shadow-md">
+                  Registrars
+                </h3>
+                <p class="text-[11px] text-zinc-300 truncate opacity-90">
+                  4 Users • Operations
+                </p>
+              </div>
+            </div>
+
+            <div class="p-3 bg-zinc-900/20 flex-1">
+              <p class="text-[11px] text-zinc-500 leading-relaxed mb-3">
+                Manage location tracking, loans, insurance, shipping, and
+                condition reports. Can print labels.
+              </p>
+              <div class="flex items-center -space-x-2">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&amp;fit=facearea&amp;facepad=2&amp;w=32&amp;h=32&amp;q=80" class="w-6 h-6 rounded-full border border-zinc-800 ring-2 ring-zinc-950">
+                <div class="w-6 h-6 rounded-full bg-zinc-800 border border-zinc-700 ring-2 ring-zinc-950 flex items-center justify-center text-[9px] text-zinc-400">
+                  +3
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: Guest/External -->
+          <div class="hover-trigger group relative bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden hover:border-zinc-600 transition-all duration-300 flex flex-col cursor-pointer shadow-lg animate-enter" style="animation-delay: 300ms;">
+            <div class="relative aspect-[2/1] bg-zinc-900 overflow-hidden">
+              <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-90 z-10"></div>
+              <img src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&amp;w=600&amp;auto=format&amp;fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out will-change-transform opacity-50 grayscale">
+
+              <div class="absolute top-2 left-2 z-20">
+                <div class="flex items-center gap-1.5 px-2 py-1 bg-zinc-950/90 backdrop-blur-md rounded-md border border-zinc-700 shadow-sm">
+                  <i data-lucide="eye" class="w-3 h-3 text-zinc-400"></i>
+                  <span class="text-[10px] font-medium text-zinc-400">
+                    Read Only
+                  </span>
+                </div>
+              </div>
+
+              <div class="absolute bottom-3 left-3 right-3 z-20">
+                <h3 class="text-sm font-semibold text-white tracking-tight leading-snug drop-shadow-md">
+                  Guest Researchers
+                </h3>
+                <p class="text-[11px] text-zinc-300 truncate opacity-90">
+                  8 Active • External
+                </p>
+              </div>
+            </div>
+
+            <div class="p-3 bg-zinc-900/20 flex-1">
+              <p class="text-[11px] text-zinc-500 leading-relaxed mb-3">
+                Limited view of public/approved collections. Can download
+                low-res renditions. No edit rights.
+              </p>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">
+                  Expires in 7 days
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Right Panel (Deep Inspector) -->
+    <aside class="w-96 border-l border-zinc-800/60 bg-zinc-950 flex flex-col h-full hidden 2xl:flex shrink-0 z-30 shadow-xl">
+      <!-- Breadcrumbs -->
+      <div class="h-10 border-b border-zinc-800/60 flex items-center px-4 gap-2 text-[10px] text-zinc-500">
+        <span class="hover:text-zinc-300 cursor-pointer transition-colors">
+          Collections
+        </span>
+        <i data-lucide="chevron-right" class="w-3 h-3 text-zinc-700"></i>
+        <span class="text-zinc-300">Object Detail</span>
+      </div>
+
+      <div class="flex-1 overflow-y-auto custom-scrollbar">
+        <!-- Header Image -->
+        <div class="h-48 relative group cursor-pointer overflow-hidden bg-zinc-900">
+          <img src="https://images.unsplash.com/photo-1549887552-93f954d31871?q=80&amp;w=600&amp;auto=format&amp;fit=crop" class="absolute inset-0 w-full h-full object-cover opacity-80">
+          <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent"></div>
+          <div class="absolute bottom-4 left-4 right-4">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-[10px] text-amber-200 font-medium">
+                GR-2023-442
+              </span>
+              <span class="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[10px] text-zinc-400">
+                Sculpture
+              </span>
+            </div>
+            <h2 class="text-xl font-semibold text-white tracking-tight leading-tight mb-1">
+              Bust of Marcus Aurelius
+            </h2>
+            <p class="text-xs text-zinc-400 font-medium flex items-center gap-1">
+              <i data-lucide="map-pin" class="w-3 h-3"></i>
+              Gallery 4 • Case 12
+            </p>
+          </div>
+        </div>
+
+        <div class="p-5 space-y-6">
+          <!-- Quick stats -->
+          <div class="grid grid-cols-2 gap-2 pb-4 border-b border-zinc-800/60">
+            <div class="bg-zinc-900/40 p-2.5 rounded border border-zinc-800/50 flex flex-col">
+              <span class="text-[10px] text-zinc-500 mb-1">Condition</span>
+              <span class="text-xs font-medium text-emerald-400 flex items-center gap-1.5">
+                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                Stable
+              </span>
+            </div>
+            <div class="bg-zinc-900/40 p-2.5 rounded border border-zinc-800/50 flex flex-col">
+              <span class="text-[10px] text-zinc-500 mb-1">Last Appraisal</span>
+              <span class="text-xs font-medium text-zinc-200">$2,450,000</span>
+            </div>
+          </div>
+
+          <!-- Permissions -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-[11px] font-medium text-white uppercase tracking-wider flex items-center gap-2">
+                <i data-lucide="info" class="w-3 h-3 text-indigo-500"></i>
+                Provenance
+              </h4>
+            </div>
+            <div class="bg-zinc-900/20 rounded-lg border border-zinc-800/60 overflow-hidden p-3 space-y-3">
+              <div>
+                <span class="text-[10px] text-zinc-500 block">
+                  Artist / Maker
+                </span>
+                <span class="text-xs text-zinc-300">
+                  Unknown Roman Sculptor
+                </span>
+              </div>
+              <div>
+                <span class="text-[10px] text-zinc-500 block">Date</span>
+                <span class="text-xs text-zinc-300">c. 161–180 AD</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-zinc-500 block">Acquisition</span>
+                <span class="text-xs text-zinc-300">
+                  Purchase, 1984 (Fund B)
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div>
+            <h4 class="text-[11px] font-medium text-white uppercase tracking-wider mb-3 flex items-center gap-2">
+              <i data-lucide="history" class="w-3 h-3 text-indigo-500"></i>
+              Movement History
+            </h4>
+            <div class="relative pl-4 space-y-4 before:absolute before:left-1.5 before:top-2 before:bottom-2 before:w-px before:bg-zinc-800">
+              <div class="relative">
+                <div class="absolute -left-4 top-1 w-3 h-3 bg-zinc-950 border-2 border-zinc-700 rounded-full z-10"></div>
+                <div>
+                  <p class="text-[11px] text-zinc-300">
+                    Moved to
+                    <span class="text-indigo-400">Gallery 4</span>
+                  </p>
+                  <span class="text-[10px] text-zinc-500">
+                    Today, 09:42 AM • by M. Chen
+                  </span>
+                </div>
+              </div>
+              <div class="relative">
+                <div class="absolute -left-4 top-1 w-3 h-3 bg-zinc-950 border-2 border-zinc-700 rounded-full z-10"></div>
+                <div>
+                  <p class="text-[11px] text-zinc-300">
+                    Condition Check (Annual)
+                  </p>
+                  <span class="text-[10px] text-zinc-500">
+                    Oct 12, 2023 • by Conservation
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Module Access -->
+          <div class="p-3 rounded-lg bg-zinc-900/40 border border-zinc-800/60">
+            <h4 class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <i data-lucide="tag" class="w-3 h-3"></i>
+              Tags
+            </h4>
+            <div class="flex flex-wrap gap-1.5">
+              <span class="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[10px] text-zinc-400">
+                Marble
+              </span>
+              <span class="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[10px] text-zinc-400">
+                Imperial
+              </span>
+              <span class="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[10px] text-zinc-400">
+                Portraiture
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="p-4 border-t border-zinc-800/60 bg-zinc-950/80 backdrop-blur">
+        <div class="flex gap-2">
+          <button class="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-2 group border border-zinc-700">
+            <i data-lucide="history" class="w-3.5 h-3.5"></i>
+            <span>Full History</span>
+          </button>
+          <button class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-md transition-all shadow-lg shadow-indigo-900/20 flex items-center justify-center gap-2 group">
+            <span>View Record</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <script>
+      lucide.createIcons();
+    </script>
+
+    <script>
+      document.addEventListener('click',function(e){const t=e.target.closest('[data-dropdown-trigger]');document.querySelectorAll('[data-dropdown-menu]').forEach(n=>{if(t&&(t.dataset.dropdownTrigger===n.id||t.nextElementSibling===n))return;n.classList.add('hidden')});if(t){const i=t.dataset.dropdownTrigger,n=i?document.getElementById(i):t.nextElementSibling;n&&n.classList.toggle('hidden')}});
+    </script>
+  
+</body></html>

@@ -92,9 +92,7 @@ export const get = query({
     const reviewedBy = request.reviewedBy
       ? await ctx.db.get(request.reviewedBy)
       : null;
-    const vendor = request.vendorId
-      ? await ctx.db.get(request.vendorId)
-      : null;
+    const vendor = request.vendorId ? await ctx.db.get(request.vendorId) : null;
     const libraryItem = request.libraryItemId
       ? await ctx.db.get(request.libraryItemId)
       : null;
@@ -126,7 +124,9 @@ export const list = query({
       query = ctx.db
         .query("libraryAcquisitionRequests")
         .withIndex("by_organization_and_status", (q) =>
-          q.eq("organizationId", args.organizationId).eq("status", args.status!),
+          q
+            .eq("organizationId", args.organizationId)
+            .eq("status", args.status!),
         );
     } else {
       query = ctx.db
@@ -409,6 +409,25 @@ export const getStatistics = query({
   args: {
     organizationId: v.id("organizations"),
   },
+  returns: v.object({
+    total: v.number(),
+    submitted: v.number(),
+    underReview: v.number(),
+    approved: v.number(),
+    ordered: v.number(),
+    received: v.number(),
+    cataloged: v.number(),
+    rejected: v.number(),
+    totalSpent: v.number(),
+    pendingBudget: v.number(),
+    byPriority: v.object({
+      urgent: v.number(),
+      high: v.number(),
+      normal: v.number(),
+      low: v.number(),
+    }),
+    thisMonth: v.number(),
+  }),
   handler: async (ctx, args) => {
     const requests = await ctx.db
       .query("libraryAcquisitionRequests")
@@ -418,26 +437,27 @@ export const getStatistics = query({
       .collect();
 
     const submitted = requests.filter((r) => r.status === "submitted").length;
-    const underReview = requests.filter((r) => r.status === "under_review").length;
+    const underReview = requests.filter(
+      (r) => r.status === "under_review",
+    ).length;
     const approved = requests.filter((r) => r.status === "approved").length;
     const ordered = requests.filter((r) => r.status === "ordered").length;
     const received = requests.filter((r) => r.status === "received").length;
     const cataloged = requests.filter((r) => r.status === "cataloged").length;
     const rejected = requests.filter((r) => r.status === "rejected").length;
 
-    // Calculate total spent
     const totalSpent = requests
-      .filter((r) => r.actualPrice && ["received", "cataloged"].includes(r.status))
+      .filter(
+        (r) => r.actualPrice && ["received", "cataloged"].includes(r.status),
+      )
       .reduce((sum, r) => sum + (r.actualPrice || 0) * r.quantity, 0);
 
-    // Calculate pending budget
     const pendingBudget = requests
       .filter((r) =>
         ["submitted", "under_review", "approved", "ordered"].includes(r.status),
       )
       .reduce((sum, r) => sum + (r.estimatedPrice || 0) * r.quantity, 0);
 
-    // Requests by priority
     const byPriority = {
       urgent: requests.filter((r) => r.priority === "urgent").length,
       high: requests.filter((r) => r.priority === "high").length,
@@ -445,7 +465,6 @@ export const getStatistics = query({
       low: requests.filter((r) => r.priority === "low").length,
     };
 
-    // Requests this month
     const now = Date.now();
     const thisMonth = new Date(now);
     thisMonth.setDate(1);

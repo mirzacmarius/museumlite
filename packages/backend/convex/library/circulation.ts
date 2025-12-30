@@ -88,7 +88,9 @@ export const checkout = mutation({
     }
 
     if (!item.isCirculating) {
-      throw new Error("This item is for reference only and cannot be checked out");
+      throw new Error(
+        "This item is for reference only and cannot be checked out",
+      );
     }
 
     // Calculate due date
@@ -151,11 +153,7 @@ export const checkin = mutation({
   args: {
     circulationId: v.id("circulations"),
     condition: v.optional(
-      v.union(
-        v.literal("good"),
-        v.literal("damaged"),
-        v.literal("lost"),
-      ),
+      v.union(v.literal("good"), v.literal("damaged"), v.literal("lost")),
     ),
     notes: v.optional(v.string()),
   },
@@ -196,7 +194,8 @@ export const checkin = mutation({
         )
         .first();
 
-      const gracePeriodMs = (settings?.gracePeriodDays || 0) * 24 * 60 * 60 * 1000;
+      const gracePeriodMs =
+        (settings?.gracePeriodDays || 0) * 24 * 60 * 60 * 1000;
       const overdueTime = now - circulation.dueDate - gracePeriodMs;
 
       if (overdueTime > 0) {
@@ -732,10 +731,17 @@ export const getStatistics = query({
   args: {
     organizationId: v.id("organizations"),
   },
+  returns: v.object({
+    activeCheckouts: v.number(),
+    overdueItems: v.number(),
+    lostItems: v.number(),
+    checkoutsToday: v.number(),
+    returnsToday: v.number(),
+    dueSoon: v.number(),
+  }),
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    // Get all circulations for this org
     const allCirculations = await ctx.db
       .query("circulations")
       .withIndex("by_organization", (q) =>
@@ -751,7 +757,6 @@ export const getStatistics = query({
     ).length;
     const lostCount = allCirculations.filter((c) => c.status === "lost").length;
 
-    // Calculate checkouts today
     const today = new Date(now);
     today.setHours(0, 0, 0, 0);
     const todayStart = today.getTime();
@@ -760,16 +765,16 @@ export const getStatistics = query({
       (c) => c.checkoutDate >= todayStart,
     ).length;
 
-    // Calculate returns today
     const returnsToday = allCirculations.filter(
       (c) => c.returnDate && c.returnDate >= todayStart,
     ).length;
 
-    // Due soon (next 3 days)
     const threeDaysFromNow = now + 3 * 24 * 60 * 60 * 1000;
     const dueSoonCount = allCirculations.filter(
       (c) =>
-        c.status === "active" && c.dueDate > now && c.dueDate <= threeDaysFromNow,
+        c.status === "active" &&
+        c.dueDate > now &&
+        c.dueDate <= threeDaysFromNow,
     ).length;
 
     return {

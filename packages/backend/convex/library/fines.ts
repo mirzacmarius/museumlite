@@ -292,12 +292,8 @@ export const get = query({
     const circulation = fine.circulationId
       ? await ctx.db.get(fine.circulationId)
       : null;
-    const item = circulation
-      ? await ctx.db.get(circulation.itemId)
-      : null;
-    const copy = fine.copyId
-      ? await ctx.db.get(fine.copyId)
-      : null;
+    const item = circulation ? await ctx.db.get(circulation.itemId) : null;
+    const copy = fine.copyId ? await ctx.db.get(fine.copyId) : null;
 
     return {
       ...fine,
@@ -326,7 +322,9 @@ export const list = query({
       query = ctx.db
         .query("libraryFines")
         .withIndex("by_organization_and_status", (q) =>
-          q.eq("organizationId", args.organizationId).eq("status", args.status!),
+          q
+            .eq("organizationId", args.organizationId)
+            .eq("status", args.status!),
         );
     } else {
       query = ctx.db
@@ -402,6 +400,23 @@ export const getStatistics = query({
   args: {
     organizationId: v.id("organizations"),
   },
+  returns: v.object({
+    totalFines: v.number(),
+    outstandingCount: v.number(),
+    paidCount: v.number(),
+    waivedCount: v.number(),
+    totalOutstanding: v.number(),
+    totalCollected: v.number(),
+    totalWaived: v.number(),
+    byType: v.object({
+      overdue: v.number(),
+      lost_item: v.number(),
+      damaged_item: v.number(),
+      other: v.number(),
+    }),
+    createdToday: v.number(),
+    collectedToday: v.number(),
+  }),
   handler: async (ctx, args) => {
     const fines = await ctx.db
       .query("libraryFines")
@@ -418,19 +433,20 @@ export const getStatistics = query({
     const totalCollected = paid.reduce((sum, f) => sum + f.amount, 0);
     const totalWaived = waived.reduce((sum, f) => sum + f.amount, 0);
 
-    // Count by type
     const byType = {
       overdue: fines.filter((f) => f.fineType === "overdue").length,
       lost_item: fines.filter((f) => f.fineType === "lost_item").length,
       damaged_item: fines.filter((f) => f.fineType === "damaged_item").length,
       other: fines.filter((f) =>
-        ["processing_fee", "replacement_cost", "membership_fee", "other"].includes(
-          f.fineType,
-        ),
+        [
+          "processing_fee",
+          "replacement_cost",
+          "membership_fee",
+          "other",
+        ].includes(f.fineType),
       ).length,
     };
 
-    // Fines created today
     const now = Date.now();
     const today = new Date(now);
     today.setHours(0, 0, 0, 0);
@@ -438,7 +454,6 @@ export const getStatistics = query({
 
     const createdToday = fines.filter((f) => f.createdAt >= todayStart).length;
 
-    // Get payments today
     const payments = await ctx.db
       .query("libraryPayments")
       .withIndex("by_organization", (q) =>

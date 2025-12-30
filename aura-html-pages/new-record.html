@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MuseumLite - Accession Object</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Inter', sans-serif; }
+/* Subtle Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+/* Animation Utilities */
+.animate-enter { animation: enter 0.4s ease-out forwards; opacity: 0; transform: translateY(10px); }
+@keyframes enter { to { opacity: 1; transform: translateY(0); } }
+/* Custom Checkbox/Toggle Styles */
+.toggle-checkbox:checked { right: 0; border-color: #6366f1; }
+.toggle-checkbox:checked + .toggle-label { background-color: #4f46e5; }
+.input-group:focus-within label { color: #818cf8; }
+.input-group:focus-within { border-color: #4f46e5; background-color: rgba(39, 39, 42, 0.4); }
+</style></head>
+  <body class="bg-zinc-950 text-zinc-400 antialiased selection:bg-indigo-500/30 selection:text-indigo-200 overflow-hidden h-screen flex text-sm">
+    <!-- Sidebar -->
+    <aside class="w-64 border-r border-zinc-800/60 flex flex-col h-full bg-zinc-950 hidden md:flex shrink-0 z-20">
+      <!-- Organization Switcher -->
+      <div class="p-3 border-b border-zinc-800/60 relative">
+        <button class="w-full flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-zinc-900 transition-all duration-200 group border border-transparent hover:border-zinc-800" onclick="document.getElementById('org-menu').classList.toggle('hidden')">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-md shadow-inner flex items-center justify-center text-white font-medium text-xs border border-white/10">
+              NM
+            </div>
+            <div class="text-left">
+              <p class="text-xs font-medium text-zinc-200 group-hover:text-white transition-colors">
+                National Museum
+              </p>
+              <p class="text-[10px] text-zinc-500">Enterprise Plan</p>
+            </div>
+          </div>
+          <i data-lucide="chevrons-up-down" class="w-3.5 h-3.5 text-zinc-600 group-hover:text-zinc-400 transition-colors"></i>
+        </button>
+      </div>
+
+      <nav class="flex-1 overflow-y-auto py-4 px-2">
+        <div class="space-y-6">
+          <!-- Workspace -->
+          <div class="px-1">
+            <div class="px-2 pb-2 text-[10px] font-medium text-zinc-500 uppercase tracking-widest">
+              Workspace
+            </div>
+            <div class="space-y-0.5">
+              <a href="#" class="flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50 rounded-md transition-all group">
+                <i data-lucide="layout-grid" class="w-4 h-4 group-hover:text-zinc-400 transition-colors"></i>
+                <span class="font-medium">All Objects</span>
+              </a>
+              <a href="#" class="flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-200 bg-zinc-800/40 rounded-md border border-zinc-800/60 shadow-sm">
+                <i data-lucide="plus-circle" class="w-4 h-4 text-indigo-400"></i>
+                <span>Accessioning</span>
+                <span class="ml-auto w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></span>
+              </a>
+              <a href="#" class="flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 rounded-md transition-all group">
+                <i data-lucide="clipboard-list" class="w-4 h-4 group-hover:text-zinc-400 transition-colors"></i>
+                <span>My Assignments</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Collections -->
+          <details open="" class="group/coll px-1">
+            <summary class="px-2 pb-2 flex items-center justify-between cursor-pointer list-none [&amp;::-webkit-details-marker]:hidden hover:text-zinc-300 text-zinc-500 transition-colors group/summary">
+              <span class="text-[10px] font-medium uppercase tracking-widest">
+                Collections
+              </span>
+              <i data-lucide="chevron-right" class="w-3 h-3 transition-transform duration-200 group-open/coll:rotate-90"></i>
+            </summary>
+            <div class="space-y-0.5 pt-1">
+              <button class="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50 rounded-md transition-all group text-left">
+                <div class="w-1 h-4 bg-amber-600/20 rounded-full border border-amber-600/40"></div>
+                <span>Greco-Roman Antiquity</span>
+              </button>
+              <button class="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50 rounded-md transition-all group text-left">
+                <div class="w-1 h-4 bg-emerald-600/20 rounded-full border border-emerald-600/40"></div>
+                <span>Renaissance Art</span>
+              </button>
+            </div>
+          </details>
+        </div>
+      </nav>
+
+      <div class="p-3 border-t border-zinc-800/60">
+        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-900/50 cursor-pointer transition-colors">
+          <div class="relative">
+            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&amp;fit=facearea&amp;facepad=2&amp;w=48&amp;h=48&amp;q=80" alt="User" class="w-8 h-8 rounded-full border border-zinc-700">
+            <div class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-zinc-950 rounded-full"></div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-medium text-zinc-200 truncate">
+              Dr. A. Carter
+            </p>
+            <p class="text-[10px] text-zinc-500 truncate">Senior Curator</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content: Form -->
+    <main class="flex-1 flex flex-col min-w-0 bg-zinc-950 relative z-10">
+      <!-- Navbar -->
+      <header class="h-14 border-b border-zinc-800/60 flex items-center justify-between px-6 bg-zinc-950/80 backdrop-blur-xl sticky top-0 z-50">
+        <div class="flex items-center gap-2 text-xs">
+          <button class="p-1 hover:bg-zinc-900 rounded-md transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4 text-zinc-500"></i>
+          </button>
+          <span class="text-zinc-500 flex items-center gap-2">
+            National Museum
+          </span>
+          <span class="text-zinc-700">/</span>
+          <span class="text-zinc-500">Processing</span>
+          <span class="text-zinc-700">/</span>
+          <span class="text-zinc-300 font-medium">New Record</span>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <span class="text-[11px] text-zinc-500">Last autosave: Just now</span>
+          <div class="h-4 w-px bg-zinc-800"></div>
+          <button class="text-xs text-zinc-400 hover:text-white px-3 py-1.5 rounded-md hover:bg-zinc-900 transition-colors">
+            Save Draft
+          </button>
+          <button class="flex items-center gap-2 bg-indigo-600 text-white hover:bg-indigo-500 border border-indigo-500 px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)]">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+            <span>Publish Record</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Form Content -->
+      <div class="flex-1 overflow-y-auto p-8 scroll-smooth">
+        <div class="max-w-4xl mx-auto space-y-8 animate-enter">
+          <!-- Section: Object Identity -->
+          <div class="space-y-6">
+            <div class="flex gap-6 items-start">
+              <!-- Image Upload Box -->
+              <div class="shrink-0 group relative">
+                <div class="w-32 h-32 rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 flex flex-col items-center justify-center text-zinc-500 gap-2 hover:border-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-300 transition-all cursor-pointer overflow-hidden">
+                  <i data-lucide="image-plus" class="w-6 h-6"></i>
+                  <span class="text-[10px] font-medium">Add Primary</span>
+                </div>
+              </div>
+
+              <!-- Main Title Inputs -->
+              <div class="flex-1 space-y-4">
+                <div class="relative group input-group border-b border-zinc-800 transition-colors pb-1">
+                  <label for="title" class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1 transition-colors">
+                    Object Title
+                  </label>
+                  <input type="text" id="title" placeholder="e.g., Bust of Marcus Aurelius" class="w-full bg-transparent text-2xl font-medium text-zinc-200 placeholder-zinc-700 focus:outline-none py-1" autofocus="">
+                </div>
+                <div class="relative group input-group border-b border-zinc-800 transition-colors pb-1 mt-4">
+                  <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1 transition-colors">
+                    Alternate Title(s)
+                  </label>
+                  <input type="text" placeholder="e.g. The Philosopher Emperor" class="w-full bg-transparent text-sm font-medium text-zinc-300 placeholder-zinc-700 focus:outline-none py-1">
+                </div>
+
+                <div class="grid grid-cols-2 gap-6">
+                  <!-- Accession Number -->
+                  <div class="bg-zinc-900/30 rounded-md border border-zinc-800/60 p-2 group focus-within:ring-1 focus-within:ring-indigo-500/50 focus-within:border-indigo-500/50 transition-all">
+                    <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1 group-focus-within:text-indigo-400 transition-colors">
+                      Accession Number
+                    </label>
+                    <div class="flex items-center gap-2">
+                      <input type="text" value="NM.2024.10.001" class="w-full bg-transparent text-xs text-zinc-300 font-mono focus:outline-none">
+                      <button class="text-zinc-600 hover:text-indigo-400">
+                        <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Alt Accession Numbers -->
+                  <div class="bg-zinc-900/30 rounded-md border border-zinc-800/60 p-2 group focus-within:ring-1 focus-within:ring-indigo-500/50 focus-within:border-indigo-500/50 transition-all">
+                    <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1 group-focus-within:text-indigo-400 transition-colors">
+                      Alt. Accession Nos
+                    </label>
+                    <input type="text" placeholder="e.g. OLD.99.1" class="w-full bg-transparent text-xs text-zinc-300 font-mono focus:outline-none">
+                  </div>
+
+                  <!-- Collection -->
+
+                  <!-- Object Type -->
+
+                  <!-- Parent Object -->
+
+                  <!-- Culture -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="h-px bg-zinc-800/50"></div>
+
+          <!-- Section: Details Grid -->
+          <div>
+            <h3 class="text-xs font-medium text-white mb-4 flex items-center gap-2">
+              <i data-lucide="tag" class="w-4 h-4 text-indigo-500"></i>
+              Classification
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+              <div class="input-group border border-zinc-800/60 bg-zinc-900/20 rounded-lg p-2.5 transition-all relative">
+                <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">
+                  Collection
+                </label>
+                <select class="w-full bg-transparent text-sm text-zinc-300 focus:outline-none appearance-none cursor-pointer">
+                  <option>Greco-Roman Antiquity</option>
+                  <option>Renaissance Art</option>
+                  <option>Modern Textiles</option>
+                </select>
+                <i data-lucide="chevron-down" class="absolute right-2.5 bottom-3 w-3.5 h-3.5 text-zinc-600 pointer-events-none"></i>
+              </div>
+              <div class="input-group border border-zinc-800/60 bg-zinc-900/20 rounded-lg p-2.5 transition-all relative">
+                <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">
+                  Object Type
+                </label>
+                <select class="w-full bg-transparent text-sm text-zinc-300 focus:outline-none appearance-none cursor-pointer">
+                  <option>Sculpture</option>
+                  <option>Painting</option>
+                  <option>Ceramic</option>
+                  <option>Textile</option>
+                </select>
+                <i data-lucide="chevron-down" class="absolute right-2.5 bottom-3 w-3.5 h-3.5 text-zinc-600 pointer-events-none"></i>
+              </div>
+              <div class="input-group border border-zinc-800/60 bg-zinc-900/20 rounded-lg p-2.5 transition-all">
+                <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">
+                  Parent Object
+                </label>
+                <div class="flex items-center gap-2">
+                  <i data-lucide="link-2" class="w-3.5 h-3.5 text-zinc-600"></i>
+                  <input type="text" placeholder="Search parent..." class="w-full bg-transparent text-sm text-zinc-300 focus:outline-none">
+                </div>
+              </div>
+              <div class="input-group border border-zinc-800/60 bg-zinc-900/20 rounded-lg p-2.5 transition-all">
+                <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">
+                  Culture
+                </label>
+                <input type="text" placeholder="e.g. Roman" class="w-full bg-transparent text-sm text-zinc-300 focus:outline-none">
+              </div>
+              <div class="input-group border border-zinc-800/60 bg-zinc-900/20 rounded-lg p-2.5 transition-all">
+                <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">
+                  Artist / Maker
+                </label>
+                <input type="text" placeholder="Unknown or Name" class="w-full bg-transparent text-sm text-zinc-300 placeholder-zinc-700 focus:outline-none">
+              </div>
+              <div class="input-group border border-zinc-800/60 bg-zinc-900/20 rounded-lg p-2.5 transition-all">
+                <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">
+                  Date / Period
+                </label>
+                <input type="text" placeholder="e.g. Late 2nd Century AD" class="w-full bg-transparent text-sm text-zinc-300 placeholder-zinc-700 focus:outline-none">
+              </div>
+            </div>
+          </div>
+          <div class="h-px bg-zinc-800/50"></div>
+          <div>
+            <h3 class="text-xs font-medium text-white mb-4 flex items-center gap-2">
+              <i data-lucide="scan-line" class="w-4 h-4 text-rose-500"></i>
+              Physical Description
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+              <div class="input-group border border-zinc-800/60 bg-zinc-900/20 rounded-lg p-2.5 transition-all">
+                <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">
+                  Medium / Material
+                </label>
+                <input type="text" placeholder="e.g. Marble, Oil on Canvas" class="w-full bg-transparent text-sm text-zinc-300 placeholder-zinc-700 focus:outline-none">
+              </div>
+              <div class="input-group border border-zinc-800/60 bg-zinc-900/20 rounded-lg p-2.5 transition-all flex gap-2">
+                <div class="flex-1">
+                  <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">
+                    Dimensions
+                  </label>
+                  <input type="text" placeholder="H x W x D" class="w-full bg-transparent text-sm text-zinc-300 placeholder-zinc-700 focus:outline-none">
+                </div>
+                <div class="w-px bg-zinc-800"></div>
+                <div class="w-20">
+                  <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">
+                    Unit
+                  </label>
+                  <select class="w-full bg-transparent text-sm text-zinc-300 focus:outline-none appearance-none">
+                    <option>cm</option>
+                    <option>in</option>
+                  </select>
+                </div>
+              </div>
+              <div class="input-group border border-zinc-800/60 bg-zinc-900/20 rounded-lg p-2.5 transition-all">
+                <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">
+                  Location in Museum
+                </label>
+                <div class="flex items-center gap-2">
+                  <i data-lucide="map-pin" class="w-3.5 h-3.5 text-zinc-600"></i>
+                  <input type="text" placeholder="e.g. Wing A, Gallery 4" class="w-full bg-transparent text-sm text-zinc-300 placeholder-zinc-700 focus:outline-none">
+                </div>
+              </div>
+              <div class="input-group border border-zinc-800/60 bg-zinc-900/20 rounded-lg p-2.5 transition-all">
+                <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">
+                  Condition
+                </label>
+                <div class="flex items-center gap-2">
+                  <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                  <select class="w-full bg-transparent text-sm text-zinc-300 focus:outline-none appearance-none cursor-pointer">
+                    <option>Excellent</option>
+                    <option>Good</option>
+                    <option>Fair</option>
+                    <option>Poor</option>
+                  </select>
+                </div>
+              </div>
+              <div class="md:col-span-2 input-group border border-zinc-800/60 bg-zinc-900/20 rounded-lg p-2.5 transition-all">
+                <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">
+                  Description
+                </label>
+                <textarea rows="3" placeholder="Enter detailed description" class="w-full bg-transparent text-sm text-zinc-300 placeholder-zinc-700 focus:outline-none resize-none"></textarea>
+              </div>
+              <div class="md:col-span-2 input-group border border-zinc-800/60 bg-zinc-900/20 rounded-lg p-2.5 transition-all">
+                <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">
+                  Provenance
+                </label>
+                <textarea rows="2" placeholder="Enter provenance information" class="w-full bg-transparent text-sm text-zinc-300 placeholder-zinc-700 focus:outline-none resize-none"></textarea>
+              </div>
+              <div class="md:col-span-2 input-group border border-zinc-800/60 bg-zinc-900/20 rounded-lg p-2.5 transition-all">
+                <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">
+                  Exhibition History
+                </label>
+                <textarea rows="2" placeholder="Enter exhibition history" class="w-full bg-transparent text-sm text-zinc-300 placeholder-zinc-700 focus:outline-none resize-none"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="h-px bg-zinc-800/50"></div>
+
+          <!-- Section: Acquisition -->
+          <div>
+            <h3 class="text-xs font-medium text-white mb-4 flex items-center gap-2">
+              <i data-lucide="building-2" class="w-4 h-4 text-emerald-500"></i>
+              Acquisition Data
+            </h3>
+            <div class="bg-zinc-900/30 border border-zinc-800/60 rounded-xl p-4 space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">
+                    Acquisition Method
+                  </label>
+                  <div class="flex gap-2">
+                    <button class="flex-1 py-1.5 text-xs rounded border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 font-medium">
+                      Gift
+                    </button>
+                    <button class="flex-1 py-1.5 text-xs rounded border border-zinc-800 bg-zinc-900 text-zinc-500 hover:text-zinc-300">
+                      Purchase
+                    </button>
+                    <button class="flex-1 py-1.5 text-xs rounded border border-zinc-800 bg-zinc-900 text-zinc-500 hover:text-zinc-300">
+                      Bequest
+                    </button>
+                  </div>
+                </div>
+                <div class="input-group border-b border-zinc-800 transition-all">
+                  <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">
+                    Acquisition Date
+                  </label>
+                  <input type="date" class="w-full bg-transparent text-sm text-zinc-300 focus:outline-none py-1 [color-scheme:dark]">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 gap-4">
+                <div class="input-group border-b border-zinc-800 transition-all pb-1">
+                  <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">
+                    Donated by
+                  </label>
+                  <input type="text" placeholder="Select or add donors..." class="w-full bg-transparent text-sm text-zinc-300 placeholder-zinc-700 focus:outline-none">
+                </div>
+              </div>
+
+              <div class="pt-2 pb-2">
+                <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">
+                  Previous Owner(s)
+                </label>
+                <div class="bg-zinc-950/50 border border-zinc-800/50 border-dashed rounded-lg p-4 text-center">
+                  <p class="text-xs text-zinc-500 mb-3">
+                    No entries yet. Click "Add Previous Owner(s)" to add one.
+                  </p>
+                  <button class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1.5 rounded border border-zinc-700 transition-colors">
+                    Add Previous Owner(s)
+                  </button>
+                </div>
+              </div>
+              <div class="input-group border-b border-zinc-800 transition-all pb-1 mb-2">
+                <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">
+                  Info about the Donation
+                </label>
+                <textarea rows="2" placeholder="Info about the donation..." class="w-full bg-transparent text-sm text-zinc-300 placeholder-zinc-700 focus:outline-none resize-none"></textarea>
+              </div>
+              <div class="flex items-center justify-between pt-2">
+                <div class="flex items-center gap-2">
+                  <label for="toggle-restrictions" class="flex items-center cursor-pointer relative">
+                    <input type="checkbox" id="toggle-restrictions" class="sr-only toggle-checkbox">
+                    <div class="w-8 h-4 bg-zinc-800 rounded-full border border-zinc-700 toggle-label transition-colors"></div>
+                    <div class="absolute left-0.5 top-0.5 bg-white w-3 h-3 rounded-full transition-transform transform translate-x-0 toggle-dot"></div>
+                  </label>
+                  <span class="text-xs text-zinc-400">
+                    Legal restrictions apply
+                  </span>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-zinc-500">
+                  <i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i>
+                  <span>Insurance Valuation Required</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="h-px bg-zinc-800/50"></div>
+          <div>
+            <h3 class="text-xs font-medium text-white mb-4 flex items-center gap-2">
+              <i data-lucide="link" class="w-4 h-4 text-sky-500"></i>
+              Links
+            </h3>
+            <div class="bg-zinc-900/30 border border-zinc-800/60 rounded-xl p-4 space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="input-group border-b border-zinc-800 transition-all pb-1">
+                  <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">
+                    Link Description
+                  </label>
+                  <input type="text" placeholder="Link Description" class="w-full bg-transparent text-sm text-zinc-300 placeholder-zinc-700 focus:outline-none">
+                </div>
+                <div class="input-group border-b border-zinc-800 transition-all pb-1">
+                  <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">
+                    Link URL
+                  </label>
+                  <input type="text" placeholder="Link URL" class="w-full bg-transparent text-sm text-zinc-300 placeholder-zinc-700 focus:outline-none">
+                </div>
+              </div>
+              <div class="pt-2 flex justify-start">
+                <button class="flex items-center gap-2 text-xs text-zinc-500 hover:text-indigo-400 transition-colors py-1">
+                  <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                  <span>Add another link</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Right Panel (Uploads & Context) -->
+    <aside class="w-80 border-l border-zinc-800/60 bg-zinc-950 flex flex-col h-full hidden 2xl:flex shrink-0 z-30">
+      <div class="p-4 border-b border-zinc-800/60">
+        <h3 class="text-xs font-medium text-white mb-1">
+          Media &amp; Attachments
+        </h3>
+        <p class="text-[10px] text-zinc-500">
+          Manage digital assets for this record
+        </p>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4 space-y-4">
+        <div class="grid grid-cols-3 gap-2 mb-2">
+          <div class="bg-zinc-900/30 border border-zinc-800/60 rounded-lg p-2 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900/50 hover:border-zinc-700 transition-all cursor-pointer group h-20">
+            <i data-lucide="image" class="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors"></i>
+            <span class="text-[10px] font-medium text-zinc-400 group-hover:text-zinc-200">
+              Images
+            </span>
+          </div>
+          <div class="bg-zinc-900/30 border border-zinc-800/60 rounded-lg p-2 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900/50 hover:border-zinc-700 transition-all cursor-pointer group h-20">
+            <i data-lucide="file-text" class="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors"></i>
+            <span class="text-[10px] font-medium text-zinc-400 group-hover:text-zinc-200">
+              PDFs
+            </span>
+          </div>
+          <div class="bg-zinc-900/30 border border-zinc-800/60 rounded-lg p-2 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900/50 hover:border-zinc-700 transition-all cursor-pointer group h-20">
+            <i data-lucide="box" class="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors"></i>
+            <span class="text-[10px] font-medium text-zinc-400 group-hover:text-zinc-200">
+              3D
+            </span>
+          </div>
+        </div>
+        <!-- Upload Zone -->
+        <div class="rounded-lg border border-dashed border-zinc-700 bg-zinc-900/20 p-6 flex flex-col items-center justify-center text-center gap-3 hover:bg-zinc-900/40 hover:border-zinc-500 transition-all cursor-pointer group">
+          <div class="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <i data-lucide="upload-cloud" class="w-5 h-5 text-indigo-500"></i>
+          </div>
+          <div>
+            <p class="text-xs font-medium text-zinc-300">Click to upload</p>
+            <p class="text-[10px] text-zinc-500 mt-1">
+              or drag and drop images, PDFs
+            </p>
+          </div>
+        </div>
+
+        <!-- Upload Queue -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+              Queue (2)
+            </span>
+            <button class="text-[10px] text-indigo-400 hover:text-indigo-300">
+              Upload All
+            </button>
+          </div>
+          <div class="space-y-2">
+            <!-- Item 1 -->
+            <div class="flex items-center gap-3 p-2 rounded-md bg-zinc-900/50 border border-zinc-800/50 group">
+              <div class="w-8 h-8 rounded bg-zinc-800 flex items-center justify-center shrink-0">
+                <i data-lucide="file-image" class="w-4 h-4 text-zinc-500"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-[11px] text-zinc-300 truncate">
+                  front_view_highres.jpg
+                </p>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <div class="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
+                    <div class="h-full bg-indigo-500 w-[70%]"></div>
+                  </div>
+                  <span class="text-[9px] text-zinc-500">70%</span>
+                </div>
+              </div>
+              <button class="text-zinc-600 hover:text-white">
+                <i data-lucide="x" class="w-3 h-3"></i>
+              </button>
+            </div>
+            <!-- Item 2 -->
+            <div class="flex items-center gap-3 p-2 rounded-md bg-zinc-900/50 border border-zinc-800/50 group">
+              <div class="w-8 h-8 rounded bg-zinc-800 flex items-center justify-center shrink-0">
+                <i data-lucide="file-text" class="w-4 h-4 text-zinc-500"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-[11px] text-zinc-300 truncate">
+                  provenance_scan.pdf
+                </p>
+                <p class="text-[9px] text-emerald-500 flex items-center gap-1">
+                  <i data-lucide="check" class="w-2.5 h-2.5"></i>
+                  Ready
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-px bg-zinc-800/50 my-2"></div>
+
+        <!-- Smart Check -->
+        <div class="bg-indigo-900/10 border border-indigo-500/20 rounded-lg p-3">
+          <div class="flex items-center gap-2 mb-2">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-400"></i>
+            <span class="text-[11px] font-medium text-indigo-200">
+              Similarity Check
+            </span>
+          </div>
+          <p class="text-[10px] text-indigo-300/70 leading-relaxed mb-2">
+            We found 1 object in the database with a similar description. Verify
+            to avoid duplicates.
+          </p>
+          <a href="#" class="flex items-center gap-2 p-2 bg-zinc-950/50 rounded border border-indigo-500/10 hover:border-indigo-500/30 transition-colors">
+            <img src="https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?q=80&amp;w=600&amp;auto=format&amp;fit=crop" class="w-6 h-6 rounded object-cover opacity-70">
+            <div class="min-w-0">
+              <p class="text-[10px] text-zinc-300 truncate">
+                Black-Figure Amphora
+              </p>
+              <p class="text-[9px] text-zinc-500 font-mono">GR.1994.01.2</p>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-zinc-800/60 bg-zinc-950/80">
+        <div class="flex justify-between items-center text-[10px] text-zinc-500 mb-2">
+          <span>Completion</span>
+          <span>45%</span>
+        </div>
+        <div class="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
+          <div class="h-full bg-emerald-500 w-[45%] rounded-full"></div>
+        </div>
+      </div>
+    </aside>
+
+    <script>
+      lucide.createIcons();
+
+      // Simple toggle logic for checkbox visual
+      const toggle = document.getElementById('toggle-restrictions');
+      toggle.addEventListener('change', function() {
+        const dot = this.parentElement.querySelector('.toggle-dot');
+        if(this.checked) {
+            dot.style.transform = 'translateX(100%)';
+            dot.parentElement.querySelector('.toggle-label').classList.replace('bg-zinc-800', 'bg-indigo-600');
+            dot.parentElement.querySelector('.toggle-label').classList.replace('border-zinc-700', 'border-indigo-600');
+        } else {
+            dot.style.transform = 'translateX(0)';
+            dot.parentElement.querySelector('.toggle-label').classList.replace('bg-indigo-600', 'bg-zinc-800');
+            dot.parentElement.querySelector('.toggle-label').classList.replace('border-indigo-600', 'border-zinc-700');
+        }
+      });
+    </script>
+  
+</body></html>

@@ -80,7 +80,8 @@ export const create = mutation({
 
     // Get membership type for limits
     let membershipType = "Standard";
-    let borrowingLimit = args.borrowingLimit ?? settings?.maxHoldsPerPatron ?? 10;
+    let borrowingLimit =
+      args.borrowingLimit ?? settings?.maxHoldsPerPatron ?? 10;
     let holdLimit = args.holdLimit ?? settings?.maxHoldsPerPatron ?? 5;
 
     if (args.membershipTypeId) {
@@ -101,7 +102,8 @@ export const create = mutation({
 
       if (defaultMembership) {
         membershipType = defaultMembership.name;
-        borrowingLimit = args.borrowingLimit ?? defaultMembership.borrowingLimit;
+        borrowingLimit =
+          args.borrowingLimit ?? defaultMembership.borrowingLimit;
         holdLimit = args.holdLimit ?? defaultMembership.holdLimit;
       }
     }
@@ -244,19 +246,17 @@ export const list = query({
 
     if (args.search && args.search.trim()) {
       // Use search index
-      query = ctx.db
-        .query("patrons")
-        .withSearchIndex("search_patrons", (q) => {
-          let searchQuery = q
-            .search("lastName", args.search!)
-            .eq("organizationId", args.organizationId);
+      query = ctx.db.query("patrons").withSearchIndex("search_patrons", (q) => {
+        let searchQuery = q
+          .search("lastName", args.search!)
+          .eq("organizationId", args.organizationId);
 
-          if (args.status) {
-            searchQuery = searchQuery.eq("status", args.status);
-          }
+        if (args.status) {
+          searchQuery = searchQuery.eq("status", args.status);
+        }
 
-          return searchQuery;
-        });
+        return searchQuery;
+      });
     } else if (args.status) {
       query = ctx.db
         .query("patrons")
@@ -533,7 +533,9 @@ export const search = query({
     const byCardNumber = await ctx.db
       .query("patrons")
       .withIndex("by_organization_and_cardNumber", (q) =>
-        q.eq("organizationId", args.organizationId).eq("cardNumber", searchQuery),
+        q
+          .eq("organizationId", args.organizationId)
+          .eq("cardNumber", searchQuery),
       )
       .first();
 
@@ -545,7 +547,9 @@ export const search = query({
     const byLastName = await ctx.db
       .query("patrons")
       .withSearchIndex("search_patrons", (q) =>
-        q.search("lastName", searchQuery).eq("organizationId", args.organizationId),
+        q
+          .search("lastName", searchQuery)
+          .eq("organizationId", args.organizationId),
       )
       .take(limit);
 
@@ -689,12 +693,8 @@ export const getFines = query({
         const circulation = fine.circulationId
           ? await ctx.db.get(fine.circulationId)
           : null;
-        const item = circulation
-          ? await ctx.db.get(circulation.itemId)
-          : null;
-        const copy = circulation
-          ? await ctx.db.get(circulation.copyId)
-          : null;
+        const item = circulation ? await ctx.db.get(circulation.itemId) : null;
+        const copy = circulation ? await ctx.db.get(circulation.copyId) : null;
         return {
           ...fine,
           item,
@@ -752,6 +752,7 @@ export const generateNewCardNumber = query({
   args: {
     organizationId: v.id("organizations"),
   },
+  returns: v.string(),
   handler: async (ctx, args) => {
     return generateCardNumber(ctx, args.organizationId);
   },
@@ -764,6 +765,15 @@ export const getStatistics = query({
   args: {
     organizationId: v.id("organizations"),
   },
+  returns: v.object({
+    total: v.number(),
+    active: v.number(),
+    expired: v.number(),
+    suspended: v.number(),
+    blocked: v.number(),
+    newThisMonth: v.number(),
+    totalFinesBalance: v.number(),
+  }),
   handler: async (ctx, args) => {
     const patrons = await ctx.db
       .query("patrons")
@@ -774,10 +784,11 @@ export const getStatistics = query({
 
     const activeCount = patrons.filter((p) => p.status === "active").length;
     const expiredCount = patrons.filter((p) => p.status === "expired").length;
-    const suspendedCount = patrons.filter((p) => p.status === "suspended").length;
+    const suspendedCount = patrons.filter(
+      (p) => p.status === "suspended",
+    ).length;
     const blockedCount = patrons.filter((p) => p.status === "blocked").length;
 
-    // Count patrons registered this month
     const now = Date.now();
     const thisMonth = new Date(now);
     thisMonth.setDate(1);
@@ -788,7 +799,6 @@ export const getStatistics = query({
       (p) => p.registrationDate >= thisMonthStart,
     ).length;
 
-    // Calculate total fines balance
     const totalFinesBalance = patrons.reduce(
       (sum, p) => sum + (p.fineBalance || 0),
       0,
