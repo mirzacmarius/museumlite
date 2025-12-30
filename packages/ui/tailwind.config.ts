@@ -102,39 +102,10 @@ const config = {
             height: "0",
           },
         },
-        enter: {
-          from: {
-            opacity: "0",
-            transform: "translateY(10px)",
-          },
-          to: {
-            opacity: "1",
-            transform: "translateY(0)",
-          },
-        },
-        "fade-in": {
-          from: {
-            opacity: "0",
-          },
-          to: {
-            opacity: "1",
-          },
-        },
-        "slide-in-right": {
-          from: {
-            transform: "translateX(100%)",
-          },
-          to: {
-            transform: "translateX(0)",
-          },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        enter: "enter 0.4s ease-out forwards",
-        "fade-in": "fade-in 0.2s ease-out",
-        "slide-in-right": "slide-in-right 0.3s ease-out",
       },
     },
   },
