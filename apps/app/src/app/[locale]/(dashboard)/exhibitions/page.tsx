@@ -1,0 +1,221 @@
+"use client";
+
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { api } from "@v1/backend/convex/_generated/api";
+import { Button } from "@v1/ui/button";
+import { Input } from "@v1/ui/input";
+import { useQuery } from "convex/react";
+import {
+  Calendar,
+  GalleryVerticalEnd,
+  MapPin,
+  Plus,
+  Search,
+  Box,
+} from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+
+export default function ExhibitionsPage() {
+  const { currentOrganizationId, isLoading } = useOrganization();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-zinc-950">
+        <p className="text-zinc-500">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!currentOrganizationId) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-zinc-950 px-6 py-8">
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-900/50 p-8">
+          <GalleryVerticalEnd className="h-12 w-12 text-zinc-500" />
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-zinc-200">
+              No Organization Found
+            </h3>
+            <p className="mt-2 text-sm text-zinc-500">
+              You need to create an organization to manage exhibitions.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full w-full bg-zinc-950 px-6">
+      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+        <div className="flex w-full flex-col rounded-lg border border-zinc-800 bg-zinc-900/20">
+          <div className="flex w-full items-center justify-between rounded-lg p-6">
+            <div className="flex flex-col gap-2">
+              <h2 className="text-xl font-medium text-zinc-100">Exhibitions</h2>
+              <p className="text-sm font-normal text-zinc-500">
+                Manage your exhibition history and planning
+              </p>
+            </div>
+            <PermissionGate permission="collections.update">
+              <Button
+                asChild
+                className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-100 dark:text-zinc-900"
+              >
+                <Link href="/exhibitions/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Exhibition
+                </Link>
+              </Button>
+            </PermissionGate>
+          </div>
+          <div className="flex w-full px-6">
+            <div className="w-full border-b border-zinc-800" />
+          </div>
+
+          <div className="border-b border-zinc-800 px-6 py-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+              <Input
+                placeholder="Search by title, location, or notes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 bg-zinc-900/50 border-zinc-800 text-zinc-300 placeholder:text-zinc-600 focus-visible:ring-zinc-700"
+              />
+            </div>
+          </div>
+
+          <ExhibitionList
+            organizationId={currentOrganizationId}
+            searchQuery={searchQuery}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExhibitionList({
+  organizationId,
+  searchQuery,
+}: {
+  organizationId: string;
+  searchQuery: string;
+}) {
+  const exhibitions = useQuery(api.exhibitions.listByOrganization, {
+    organizationId: organizationId as Id<"organizations">,
+  });
+
+  if (exhibitions === undefined) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <p className="text-zinc-500">Loading exhibitions...</p>
+      </div>
+    );
+  }
+
+  const filteredExhibitions = exhibitions.filter((ex) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      ex.title.toLowerCase().includes(query) ||
+      ex.location?.toLowerCase().includes(query) ||
+      ex.notes?.toLowerCase().includes(query) ||
+      ex.collectionTitle?.toLowerCase().includes(query)
+    );
+  });
+
+  if (filteredExhibitions.length === 0) {
+    return (
+      <div className="flex h-64 flex-col items-center justify-center gap-4">
+        <GalleryVerticalEnd className="h-12 w-12 text-zinc-700" />
+        <div className="text-center">
+          <p className="text-zinc-400">No exhibitions found</p>
+          <p className="mt-2 text-sm text-zinc-600">
+            {searchQuery
+              ? "Try adjusting your search query"
+              : "Create your first exhibition record to get started"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2 lg:grid-cols-3">
+      {filteredExhibitions.map((ex) => (
+        <ExhibitionCard key={ex._id} exhibition={ex} />
+      ))}
+    </div>
+  );
+}
+
+function ExhibitionCard({ exhibition }: { exhibition: any }) {
+  const isPast = exhibition.endDate && exhibition.endDate < Date.now();
+  const isUpcoming = exhibition.startDate > Date.now();
+
+  let statusColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+  let statusText = "Current";
+
+  if (isPast) {
+    statusColor = "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
+    statusText = "Past";
+  } else if (isUpcoming) {
+    statusColor = "bg-blue-500/10 text-blue-400 border-blue-500/20";
+    statusText = "Upcoming";
+  }
+
+  return (
+    <Link
+      href={`/exhibitions/${exhibition._id}`}
+      className="group flex flex-col justify-between rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-5 transition-all hover:bg-zinc-900/80 hover:border-zinc-700 hover:shadow-lg hover:shadow-zinc-950/50"
+    >
+      <div className="space-y-4">
+        <div className="flex items-start justify-between">
+          <span
+            className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider ${statusColor}`}
+          >
+            {statusText}
+          </span>
+          {exhibition.isLoan && (
+            <span className="text-[10px] font-medium text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+              LOAN
+            </span>
+          )}
+        </div>
+
+        <div>
+          <h3 className="font-semibold text-zinc-100 group-hover:text-white line-clamp-2">
+            {exhibition.title}
+          </h3>
+          {exhibition.location && (
+            <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500">
+              <MapPin className="h-3 w-3" />
+              {exhibition.location}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3 border-t border-zinc-800/50 pt-4 text-xs text-zinc-400">
+          <div className="flex items-center gap-1.5">
+            <Calendar className="h-3.5 w-3.5 text-zinc-600" />
+            <span>
+              {new Date(exhibition.startDate).toLocaleDateString()}
+              {exhibition.endDate
+                ? ` — ${new Date(exhibition.endDate).toLocaleDateString()}`
+                : " (Ongoing)"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {exhibition.collectionTitle && (
+        <div className="mt-4 flex items-center gap-2 rounded-lg bg-zinc-950/50 px-3 py-2 text-xs text-zinc-500 group-hover:text-zinc-400 transition-colors">
+          <Box className="h-3.5 w-3.5" />
+          <span className="truncate">{exhibition.collectionTitle}</span>
+        </div>
+      )}
+    </Link>
+  );
+}
