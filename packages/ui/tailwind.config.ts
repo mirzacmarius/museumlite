@@ -102,10 +102,29 @@ const config = {
             height: "0",
           },
         },
+        enter: {
+          from: {
+            opacity: "0",
+            transform: "translateY(10px)",
+          },
+          to: {
+            opacity: "1",
+            transform: "translateY(0)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        enter: "enter 0.4s ease-out forwards",
+      },
+      animationDelay: {
+        "0": "0ms",
+        "100": "100ms",
+        "200": "200ms",
+        "300": "300ms",
+        "400": "400ms",
+        "500": "500ms",
       },
     },
   },

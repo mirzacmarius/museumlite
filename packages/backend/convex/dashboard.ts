@@ -2,9 +2,6 @@ import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
-/**
- * Get dashboard analytics for an organization
- */
 export const getAnalytics = query({
   args: {
     organizationId: v.id("organizations"),
@@ -40,6 +37,25 @@ export const getAnalytics = query({
     locations: v.object({
       total: v.number(),
     }),
+    recentCollectionGroups: v.array(
+      v.object({
+        id: v.string(),
+        name: v.string(),
+        description: v.optional(v.string()),
+        itemsCount: v.number(),
+        imageUrl: v.optional(v.string()),
+      }),
+    ),
+    recentObjects: v.array(
+      v.object({
+        id: v.string(),
+        title: v.string(),
+        accessionNumber: v.string(),
+        objectType: v.optional(v.string()),
+        status: v.string(),
+        imageUrl: v.optional(v.string()),
+      }),
+    ),
     recentActivity: v.array(
       v.object({
         type: v.union(
@@ -200,6 +216,74 @@ export const getAnalytics = query({
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, 5);
 
+    const recentGroups = allCollectionGroups
+      .sort((a, b) => b._creationTime - a._creationTime)
+      .slice(0, 4);
+
+    const recentCollectionGroups = await Promise.all(
+      recentGroups.map(async (group) => {
+        const groupItem = await ctx.db
+          .query("collectionGroupItems")
+          .withIndex("by_collectionGroup", (q) =>
+            q.eq("collectionGroupId", group._id),
+          )
+          .first();
+
+        let imageUrl: string | undefined;
+        if (groupItem) {
+          const primaryMedia = await ctx.db
+            .query("mediaFiles")
+            .withIndex("by_collection", (q) =>
+              q.eq("collectionId", groupItem.collectionId),
+            )
+            .filter((q) => q.eq(q.field("isPrimary"), true))
+            .first();
+
+          if (primaryMedia?.storageId) {
+            const url = await ctx.storage.getUrl(primaryMedia.storageId);
+            imageUrl = url ?? undefined;
+          }
+        }
+
+        return {
+          id: group._id,
+          name: group.name,
+          description: group.description,
+          itemsCount: group.itemsCount ?? 0,
+          imageUrl,
+        };
+      }),
+    );
+
+    const recentObjectsList = allObjects
+      .sort((a, b) => b._creationTime - a._creationTime)
+      .slice(0, 4);
+
+    const recentObjects = await Promise.all(
+      recentObjectsList.map(async (obj) => {
+        const primaryMedia = await ctx.db
+          .query("mediaFiles")
+          .withIndex("by_collection", (q) => q.eq("collectionId", obj._id))
+          .filter((q) => q.eq(q.field("isPrimary"), true))
+          .first();
+
+        let imageUrl: string | undefined;
+        if (primaryMedia?.storageId) {
+          const url = await ctx.storage.getUrl(primaryMedia.storageId);
+          imageUrl = url ?? undefined;
+        }
+
+        return {
+          id: obj._id,
+          title: obj.title,
+          accessionNumber: obj.accessionNumber,
+          objectType: obj.objectType,
+          status: obj.status,
+          imageUrl,
+        };
+      }),
+    );
+
     return {
       collections: collectionsStats,
       objects: objectsStats,
@@ -209,6 +293,8 @@ export const getAnalytics = query({
       locations: {
         total: allLocations.length,
       },
+      recentCollectionGroups,
+      recentObjects,
       recentActivity,
     };
   },

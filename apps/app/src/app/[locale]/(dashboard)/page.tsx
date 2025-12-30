@@ -1,29 +1,39 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import {
-  Activity,
-  ArrowDownRight,
-  ArrowUpRight,
-  Box,
+  ArrowLeftRight,
   Building2,
-  CheckCircle,
-  Clock,
+  Eye,
   FileCheck,
+  FileClock,
   FileX,
   Handshake,
-  MapPin,
-  Plus,
+  Package,
+  Presentation,
+  ScanBarcode,
+  Server,
+  Settings,
   TrendingUp,
-  XCircle,
-  Zap,
 } from "lucide-react";
 import Link from "next/link";
+
+function formatRelativeTime(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp;
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) return `${days}d ago`;
+  if (hours > 0) return `${hours}h ago`;
+  if (minutes > 0) return `${minutes}m ago`;
+  return "Just now";
+}
 
 export default function DashboardPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
@@ -37,472 +47,512 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="flex h-full w-full items-center justify-center bg-zinc-950">
+        <p className="text-zinc-500">Loading...</p>
       </div>
     );
   }
 
   if (!organizations || organizations.length === 0) {
     return (
-      <>
-        <div className="flex h-full w-full items-center justify-center bg-secondary px-4 py-0 dark:bg-black">
-          <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8 dark:bg-black">
-            <Building2 className="h-12 w-12 text-muted-foreground" />
-            <div className="text-center">
-              <h3 className="text-lg font-semibold">No Organization Found</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                You need to create an organization to view the dashboard.
-              </p>
-            </div>
+      <div className="flex h-full w-full items-center justify-center bg-zinc-950 px-4">
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-900/50 p-8">
+          <Building2 className="h-12 w-12 text-zinc-500" />
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-zinc-200">
+              No Organization Found
+            </h3>
+            <p className="mt-2 text-sm text-zinc-500">
+              You need to create an organization to view the dashboard.
+            </p>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
   if (!currentOrganizationId) {
     return (
-      <>
-        <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
-          <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8 dark:bg-black">
-            <Building2 className="h-12 w-12 text-muted-foreground" />
-            <div className="text-center">
-              <h3 className="text-lg font-semibold">Select an Organization</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Please select an organization from the dropdown above to view
-                the dashboard.
-              </p>
-            </div>
+      <div className="flex h-full w-full items-center justify-center bg-zinc-950 px-6">
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-900/50 p-8">
+          <Building2 className="h-12 w-12 text-zinc-500" />
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-zinc-200">
+              Select an Organization
+            </h3>
+            <p className="mt-2 text-sm text-zinc-500">
+              Please select an organization from the dropdown above to view the
+              dashboard.
+            </p>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
   if (analytics === undefined) {
     return (
-      <>
-        <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
-          <p className="text-muted-foreground">Loading analytics...</p>
-        </div>
-      </>
+      <div className="flex h-full w-full items-center justify-center bg-zinc-950 px-6">
+        <p className="text-zinc-500">Loading analytics...</p>
+      </div>
     );
   }
 
   return (
-    <>
-      <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
-        <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-          <div className="flex w-full flex-col gap-6">
-            {/* Quick Actions */}
-            <div className="flex flex-wrap gap-3">
-              <PermissionGate permission="collections.create">
-                <Link href="/objects/new">
-                  <Button className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add Object
-                  </Button>
-                </Link>
-              </PermissionGate>
-              <PermissionGate permission="collections.create">
-                <Link href="/accessions/new">
-                  <Button variant="outline" className="gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    New Accession
-                  </Button>
-                </Link>
-              </PermissionGate>
-              <PermissionGate permission="loans.create">
-                <Link href="/loans/new">
-                  <Button variant="outline" className="gap-2">
-                    <Handshake className="h-4 w-4" />
-                    New Loan
-                  </Button>
-                </Link>
-              </PermissionGate>
-              <PermissionGate permission="locations.create">
-                <Link href="/locations/new">
-                  <Button variant="outline" className="gap-2">
-                    <MapPin className="h-4 w-4" />
-                    New Location
-                  </Button>
-                </Link>
-              </PermissionGate>
+    <div className="flex h-full w-full flex-col bg-zinc-950">
+      <div className="px-6 py-4 border-b border-zinc-800/60 bg-zinc-950/50 backdrop-blur-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-lg p-3 flex items-center gap-3">
+            <div className="p-2 bg-indigo-500/10 rounded-md border border-indigo-500/20">
+              <Package className="w-4 h-4 text-indigo-400" />
             </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
-              {/* Collections Card */}
-              <Link
-                href="/collections"
-                className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-blue-50 to-blue-100/50 p-6 shadow-sm transition-all hover:shadow-md dark:from-blue-950/20 dark:to-blue-900/10"
-              >
-                <div className="relative z-10 flex flex-col gap-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Collections
-                      </p>
-                      <p className="mt-2 text-4xl font-bold text-blue-700 dark:text-blue-400">
-                        {analytics.collections.total}
-                      </p>
-                    </div>
-                    <FileCheck className="h-6 w-6 flex-shrink-0 text-blue-700 dark:text-blue-400" />
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Collection groups
-                  </div>
-                </div>
-              </Link>
-
-              {/* Objects Card */}
-              <Link
-                href="/objects"
-                className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-indigo-50 to-indigo-100/50 p-6 shadow-sm transition-all hover:shadow-md dark:from-indigo-950/20 dark:to-indigo-900/10"
-              >
-                <div className="relative z-10 flex flex-col gap-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Objects
-                      </p>
-                      <p className="mt-2 text-4xl font-bold text-indigo-700 dark:text-indigo-400">
-                        {analytics.objects.total}
-                      </p>
-                    </div>
-                    <Box className="h-6 w-6 flex-shrink-0 text-indigo-700 dark:text-indigo-400" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Active</span>
-                      <span className="font-semibold">
-                        {analytics.objects.active}
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-indigo-200 dark:bg-indigo-900/30">
-                      <div
-                        className="h-full rounded-full bg-indigo-600 transition-all"
-                        style={{
-                          width: `${
-                            analytics.objects.total > 0
-                              ? (analytics.objects.active /
-                                  analytics.objects.total) *
-                                100
-                              : 0
-                          }%`,
-                        }}
-                      />
-                    </div>
-                    <div className="flex gap-4 text-xs text-muted-foreground">
-                      <span>{analytics.objects.loaned} loaned</span>
-                      <span>
-                        {analytics.objects.deaccessioned} deaccessioned
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-
-              {/* Loans Card */}
-              <Link
-                href="/loans"
-                className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-green-50 to-emerald-100/50 p-6 shadow-sm transition-all hover:shadow-md dark:from-green-950/20 dark:to-emerald-900/10"
-              >
-                <div className="relative z-10 flex flex-col gap-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Loans
-                      </p>
-                      <p className="mt-2 text-4xl font-bold text-green-700 dark:text-green-400">
-                        {analytics.loans.active}
-                      </p>
-                    </div>
-                    <Handshake className="h-6 w-6 flex-shrink-0 text-green-700 dark:text-green-400" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex gap-4 text-xs text-muted-foreground">
-                      <span>{analytics.loans.total} total</span>
-                      <span>{analytics.loans.incoming} incoming</span>
-                      <span>{analytics.loans.outgoing} outgoing</span>
-                    </div>
-                    <div className="flex gap-4 text-xs text-muted-foreground">
-                      <span>{analytics.loans.pending} pending</span>
-                      <span>{analytics.loans.returned} returned</span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-
-              {/* Accessions Card */}
-              <Link
-                href="/accessions"
-                className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-amber-50 to-yellow-100/50 p-6 shadow-sm transition-all hover:shadow-md dark:from-amber-950/20 dark:to-yellow-900/10"
-              >
-                <div className="relative z-10 flex flex-col gap-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Accessions
-                      </p>
-                      <p className="mt-2 text-4xl font-bold text-amber-700 dark:text-amber-400">
-                        {analytics.accessions.pending}
-                      </p>
-                    </div>
-                    <TrendingUp className="h-6 w-6 flex-shrink-0 text-amber-700 dark:text-amber-400" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Pending</span>
-                      <span className="font-semibold">
-                        {analytics.accessions.pending}
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-amber-200 dark:bg-amber-900/30">
-                      <div
-                        className="h-full rounded-full bg-amber-600 transition-all"
-                        style={{
-                          width: `${
-                            analytics.accessions.pending +
-                              analytics.accessions.approved +
-                              analytics.accessions.rejected >
-                            0
-                              ? (analytics.accessions.pending /
-                                  (analytics.accessions.pending +
-                                    analytics.accessions.approved +
-                                    analytics.accessions.rejected)) *
-                                100
-                              : 0
-                          }%`,
-                        }}
-                      />
-                    </div>
-                    <div className="flex gap-4 text-xs text-muted-foreground">
-                      <span>{analytics.accessions.approved} approved</span>
-                      <span>{analytics.accessions.rejected} rejected</span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-
-              {/* Locations Card */}
-              <Link
-                href="/locations"
-                className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-purple-50 to-violet-100/50 p-6 shadow-sm transition-all hover:shadow-md dark:from-purple-950/20 dark:to-violet-900/10"
-              >
-                <div className="relative z-10 flex flex-col gap-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Locations
-                      </p>
-                      <p className="mt-2 text-4xl font-bold text-purple-700 dark:text-purple-400">
-                        {analytics.locations.total}
-                      </p>
-                    </div>
-                    <MapPin className="h-6 w-6 flex-shrink-0 text-purple-700 dark:text-purple-400" />
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Active locations in use
-                  </div>
-                </div>
-              </Link>
+            <div>
+              <div className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">
+                Total Objects
+              </div>
+              <div className="text-lg font-semibold text-zinc-200">
+                {analytics.objects.total.toLocaleString()}
+              </div>
             </div>
+          </div>
 
-            {/* Detailed Stats */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              {/* Loans Breakdown */}
-              <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Loans Overview</h3>
-                  <Link href="/loans">
-                    <Button variant="ghost" size="sm">
-                      View All
-                    </Button>
-                  </Link>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-yellow-600" />
-                      <span className="text-sm">Pending</span>
-                    </div>
-                    <span className="font-semibold">
-                      {analytics.loans.pending}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Active</span>
-                    </div>
-                    <span className="font-semibold">
-                      {analytics.loans.active}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-blue-600" />
-                      <span className="text-sm">Returned</span>
-                    </div>
-                    <span className="font-semibold">
-                      {analytics.loans.returned}
-                    </span>
-                  </div>
-                  <div className="border-t border-border pt-4 mt-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <ArrowDownRight className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm">Incoming</span>
-                      </div>
-                      <span className="font-semibold">
-                        {analytics.loans.incoming}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="flex items-center gap-2">
-                        <ArrowUpRight className="h-4 w-4 text-purple-600" />
-                        <span className="text-sm">Outgoing</span>
-                      </div>
-                      <span className="font-semibold">
-                        {analytics.loans.outgoing}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+          <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-lg p-3 flex items-center gap-3">
+            <div className="p-2 bg-emerald-500/10 rounded-md border border-emerald-500/20">
+              <Eye className="w-4 h-4 text-emerald-400" />
+            </div>
+            <div>
+              <div className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">
+                Items on Display
               </div>
-
-              {/* Workflows Breakdown */}
-              <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Workflows</h3>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Link
-                        href="/accessions"
-                        className="flex items-center gap-2 text-sm font-medium hover:underline"
-                      >
-                        <TrendingUp className="h-4 w-4" />
-                        Accessions
-                      </Link>
-                    </div>
-                    <div className="flex gap-4 text-xs text-muted-foreground">
-                      <span>
-                        <Clock className="inline h-3 w-3 mr-1" />
-                        {analytics.accessions.pending} pending
-                      </span>
-                      <span>
-                        <CheckCircle className="inline h-3 w-3 mr-1 text-green-600" />
-                        {analytics.accessions.approved} approved
-                      </span>
-                      <span>
-                        <XCircle className="inline h-3 w-3 mr-1 text-red-600" />
-                        {analytics.accessions.rejected} rejected
-                      </span>
-                    </div>
-                  </div>
-                  <div className="border-t border-border pt-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <Link
-                        href="/deaccessions"
-                        className="flex items-center gap-2 text-sm font-medium hover:underline"
-                      >
-                        <FileX className="h-4 w-4" />
-                        Deaccessions
-                      </Link>
-                    </div>
-                    <div className="flex gap-4 text-xs text-muted-foreground">
-                      <span>
-                        <Clock className="inline h-3 w-3 mr-1" />
-                        {analytics.deaccessions.pending} pending
-                      </span>
-                      <span>
-                        <CheckCircle className="inline h-3 w-3 mr-1 text-green-600" />
-                        {analytics.deaccessions.approved} approved
-                      </span>
-                      <span>
-                        <XCircle className="inline h-3 w-3 mr-1 text-red-600" />
-                        {analytics.deaccessions.rejected} rejected
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              <div className="text-lg font-semibold text-zinc-200">
+                {analytics.objects.active.toLocaleString()}
               </div>
+            </div>
+          </div>
 
-              {/* Recent Activity */}
-              <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Recent Activity</h3>
-                </div>
-                {analytics.recentActivity.length === 0 ? (
-                  <div className="text-center py-4">
-                    <p className="text-sm text-muted-foreground">
-                      No recent activity
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {analytics.recentActivity.map((activity) => {
-                      const getActivityIcon = () => {
-                        switch (activity.type) {
-                          case "collection":
-                            return (
-                              <FileCheck className="h-4 w-4 text-blue-600" />
-                            );
-                          case "loan":
-                            return (
-                              <Handshake className="h-4 w-4 text-green-600" />
-                            );
-                          case "accession":
-                            return (
-                              <TrendingUp className="h-4 w-4 text-amber-600" />
-                            );
-                          case "deaccession":
-                            return <FileX className="h-4 w-4 text-red-600" />;
-                        }
-                      };
+          <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-lg p-3 flex items-center gap-3">
+            <div className="p-2 bg-amber-500/10 rounded-md border border-amber-500/20">
+              <FileClock className="w-4 h-4 text-amber-400" />
+            </div>
+            <div>
+              <div className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">
+                Pending Accessions
+              </div>
+              <div className="text-lg font-semibold text-zinc-200">
+                {analytics.accessions.pending}
+              </div>
+            </div>
+          </div>
 
-                      const getActivityLink = () => {
-                        switch (activity.type) {
-                          case "collection":
-                            return `/collections/${activity.id}`;
-                          case "loan":
-                            return `/loans/${activity.id}`;
-                          case "accession":
-                            return `/accessions/${activity.id}`;
-                          case "deaccession":
-                            return `/deaccessions/${activity.id}`;
-                        }
-                      };
-
-                      return (
-                        <Link
-                          key={`${activity.type}-${activity.id}`}
-                          href={getActivityLink()}
-                          className="group flex items-center gap-2 text-sm font-medium hover:underline"
-                        >
-                          {getActivityIcon()}
-                          <span className="flex-1 truncate">
-                            {activity.title}
-                          </span>
-                          {activity.subtitle && (
-                            <span className="text-xs text-muted-foreground truncate max-w-[120px]">
-                              {activity.subtitle}
-                            </span>
-                          )}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
+          <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-lg p-3 flex items-center gap-3">
+            <div className="p-2 bg-blue-500/10 rounded-md border border-blue-500/20">
+              <ArrowLeftRight className="w-4 h-4 text-blue-400" />
+            </div>
+            <div>
+              <div className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">
+                Active Loans
+              </div>
+              <div className="text-lg font-semibold text-zinc-200">
+                {analytics.loans.active}
               </div>
             </div>
           </div>
         </div>
       </div>
-    </>
+
+      <div className="flex-1 overflow-y-auto scroll-smooth p-6">
+        <h3 className="text-xs font-semibold text-zinc-400 mb-4 uppercase tracking-wider">
+          Departments & Collections
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+          <Link href="/collections" className="block">
+            <div
+              className="hover-trigger group relative bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/30 transition-all duration-300 flex flex-col cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-indigo-900/10 animate-enter"
+              style={{ animationDelay: "0ms" }}
+            >
+              <div className="relative aspect-[4/3] bg-zinc-900 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-80 z-10" />
+                <img
+                  src="https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?q=80&w=600&auto=format&fit=crop"
+                  alt="Collections"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out will-change-transform opacity-90 group-hover:opacity-100"
+                />
+
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30 pointer-events-none">
+                  <span className="bg-black/60 backdrop-blur-md text-white text-[11px] font-medium px-3 py-1.5 rounded-full border border-white/10 shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                    View Details
+                  </span>
+                </div>
+
+                <div className="absolute top-2 right-2 z-20 flex flex-col gap-2 hover-target">
+                  <button
+                    onClick={(e) => e.preventDefault()}
+                    className="w-8 h-8 bg-zinc-950/80 backdrop-blur-md rounded-lg flex items-center justify-center text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-600 transition-all shadow-lg"
+                  >
+                    <Settings className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="absolute top-2 left-2 z-20">
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-zinc-950/90 backdrop-blur-md rounded-md border border-zinc-800/50 shadow-sm">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span className="text-[10px] font-medium text-zinc-300">
+                      Active Dept
+                    </span>
+                  </div>
+                </div>
+
+                <div className="absolute bottom-3 left-3 right-3 z-20">
+                  <h3 className="text-sm font-semibold text-white tracking-tight leading-snug drop-shadow-md">
+                    Collection Groups
+                  </h3>
+                  <p className="text-[11px] text-zinc-300 truncate opacity-90">
+                    {analytics.collections.total} Groups Available
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-zinc-900/20">
+                <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-[10px]">
+                  <div className="group/item">
+                    <span className="block text-zinc-600 uppercase tracking-widest text-[9px] mb-0.5">
+                      Cataloged Items
+                    </span>
+                    <span className="text-zinc-300 font-medium group-hover/item:text-indigo-400 transition-colors flex items-center gap-1">
+                      {analytics.objects.total.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-zinc-600 uppercase tracking-widest text-[9px] mb-0.5">
+                      Pending Accessions
+                    </span>
+                    <span className="font-mono text-zinc-400">
+                      {analytics.accessions.pending} Items
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-zinc-600 uppercase tracking-widest text-[9px] mb-0.5">
+                      Storage
+                    </span>
+                    <span className="text-zinc-400 flex items-center gap-1 truncate">
+                      <Server className="w-3 h-3 text-zinc-600" />
+                      All Zones
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-zinc-600 uppercase tracking-widest text-[9px] mb-0.5">
+                      Active
+                    </span>
+                    <span className="text-zinc-300">
+                      {analytics.objects.active}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/objects" className="block">
+            <div
+              className="hover-trigger group relative bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden hover:border-blue-500/30 hover:ring-1 hover:ring-blue-500/30 transition-all duration-300 flex flex-col cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-blue-900/10 animate-enter"
+              style={{ animationDelay: "100ms" }}
+            >
+              <div className="relative aspect-[4/3] bg-zinc-900 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-80 z-10" />
+                <img
+                  src="https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?q=80&w=600&auto=format&fit=crop"
+                  alt="Objects"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out will-change-transform opacity-90 group-hover:opacity-100"
+                />
+
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30 pointer-events-none">
+                  <span className="bg-black/60 backdrop-blur-md text-white text-[11px] font-medium px-3 py-1.5 rounded-full border border-white/10 shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                    View Details
+                  </span>
+                </div>
+
+                <div className="absolute top-2 right-2 z-20 flex flex-col gap-2 hover-target">
+                  <button
+                    onClick={(e) => e.preventDefault()}
+                    className="w-8 h-8 bg-zinc-950/80 backdrop-blur-md rounded-lg flex items-center justify-center text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-600 transition-all shadow-lg"
+                  >
+                    <Settings className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="absolute top-2 left-2 z-20">
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-zinc-950/90 backdrop-blur-md rounded-md border border-blue-500/30 shadow-sm">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    <span className="text-[10px] font-medium text-blue-300">
+                      {analytics.objects.loaned} Loaned
+                    </span>
+                  </div>
+                </div>
+
+                <div className="absolute bottom-3 left-3 right-3 z-20">
+                  <h3 className="text-sm font-semibold text-white tracking-tight leading-snug drop-shadow-md">
+                    Object Catalog
+                  </h3>
+                  <p className="text-[11px] text-zinc-300 truncate opacity-90">
+                    {analytics.objects.active} Active Items
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-zinc-900/20">
+                <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-[10px]">
+                  <div className="group/item">
+                    <span className="block text-zinc-600 uppercase tracking-widest text-[9px] mb-0.5">
+                      Cataloged Items
+                    </span>
+                    <span className="text-zinc-300 font-medium group-hover/item:text-blue-400 transition-colors flex items-center gap-1">
+                      {analytics.objects.total.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-zinc-600 uppercase tracking-widest text-[9px] mb-0.5">
+                      Loans Out
+                    </span>
+                    <span className="font-mono text-zinc-400">
+                      {analytics.objects.loaned} Items
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-zinc-600 uppercase tracking-widest text-[9px] mb-0.5">
+                      Storage
+                    </span>
+                    <span className="text-zinc-400 flex items-center gap-1 truncate">
+                      <Server className="w-3 h-3 text-zinc-600" />
+                      All Zones
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-zinc-600 uppercase tracking-widest text-[9px] mb-0.5">
+                      Deaccessioned
+                    </span>
+                    <span className="text-zinc-300">
+                      {analytics.objects.deaccessioned}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          <div
+            className="hover-trigger group relative bg-zinc-900/40 border border-dashed border-zinc-700 rounded-xl overflow-hidden hover:border-zinc-500 transition-all duration-300 flex flex-col cursor-pointer hover:bg-zinc-900/60 animate-enter"
+            style={{ animationDelay: "200ms" }}
+          >
+            <div className="relative aspect-[4/3] flex items-center justify-center flex-col gap-3">
+              <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-700 transition-colors">
+                <Presentation className="w-6 h-6 text-zinc-400 group-hover:text-zinc-200" />
+              </div>
+              <div className="text-center">
+                <h3 className="text-sm font-medium text-zinc-300">
+                  New Exhibition
+                </h3>
+                <p className="text-[11px] text-zinc-500">Draft a proposal</p>
+              </div>
+            </div>
+            <div className="p-3 border-t border-zinc-800/60 bg-zinc-900/10">
+              <div className="text-[10px] text-center text-zinc-500">
+                Curatorial Team
+              </div>
+            </div>
+          </div>
+
+          <Link href="/accessions" className="block">
+            <div
+              className="hover-trigger group relative bg-zinc-900/40 border border-zinc-800/60 rounded-xl overflow-hidden hover:border-amber-500/30 hover:ring-1 hover:ring-amber-500/30 transition-all duration-300 flex flex-col cursor-pointer shadow-lg animate-enter"
+              style={{ animationDelay: "300ms" }}
+            >
+              <div className="relative aspect-[4/3] bg-zinc-950 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-80 z-10" />
+
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30 pointer-events-none">
+                  <span className="bg-black/60 backdrop-blur-md text-white text-[11px] font-medium px-3 py-1.5 rounded-full border border-white/10 shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                    View Details
+                  </span>
+                </div>
+
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+                  <FileClock className="w-10 h-10 text-zinc-800" />
+                </div>
+
+                <div className="absolute top-2 left-2 z-20">
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-zinc-900/90 backdrop-blur-md rounded-md border border-amber-500/30 shadow-sm text-amber-500">
+                    <ScanBarcode className="w-3 h-3" />
+                    <span className="text-[10px] font-medium">
+                      {analytics.accessions.pending} Pending
+                    </span>
+                  </div>
+                </div>
+
+                <div className="absolute bottom-3 left-3 right-3 z-20">
+                  <h3 className="text-sm font-medium text-white tracking-tight leading-snug">
+                    Accessions Workflow
+                  </h3>
+                  <p className="text-[11px] text-zinc-500 truncate">
+                    Review incoming items
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-zinc-900/20">
+                <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-[10px]">
+                  <div className="group/item">
+                    <span className="block text-zinc-600 uppercase tracking-widest text-[9px] mb-0.5">
+                      Approved
+                    </span>
+                    <span className="text-zinc-400 group-hover/item:text-amber-400 transition-colors flex items-center gap-1">
+                      {analytics.accessions.approved}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-zinc-600 uppercase tracking-widest text-[9px] mb-0.5">
+                      Status
+                    </span>
+                    <span className="font-mono text-zinc-500 bg-amber-900/10 text-amber-500 px-1 py-0.5 rounded border border-amber-900/30">
+                      Processing
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-zinc-600 uppercase tracking-widest text-[9px] mb-0.5">
+                      Rejected
+                    </span>
+                    <span className="text-zinc-400 flex items-center gap-1 truncate">
+                      {analytics.accessions.rejected}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
+        </div>
+
+        <div className="mt-8">
+          <h3 className="text-xs font-semibold text-zinc-400 mb-4 uppercase tracking-wider">
+            Recent Activity Log
+          </h3>
+          <div className="rounded-xl border border-zinc-800/60 overflow-hidden bg-zinc-900/20">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-zinc-900/50 text-zinc-500 font-medium">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Object / Collection</th>
+                  <th className="px-4 py-3 font-medium">Action</th>
+                  <th className="px-4 py-3 font-medium">User</th>
+                  <th className="px-4 py-3 font-medium text-right">Time</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/60">
+                {analytics.recentActivity.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-4 py-8 text-center text-zinc-500"
+                    >
+                      No recent activity
+                    </td>
+                  </tr>
+                ) : (
+                  analytics.recentActivity.map((activity) => {
+                    const getActivityIcon = () => {
+                      switch (activity.type) {
+                        case "collection":
+                          return <FileCheck className="w-4 h-4" />;
+                        case "loan":
+                          return <Handshake className="w-4 h-4" />;
+                        case "accession":
+                          return <TrendingUp className="w-4 h-4" />;
+                        case "deaccession":
+                          return <FileX className="w-4 h-4" />;
+                        default:
+                          return <FileCheck className="w-4 h-4" />;
+                      }
+                    };
+
+                    const getActivityBadgeColor = () => {
+                      switch (activity.type) {
+                        case "collection":
+                          return "bg-indigo-500/10 text-indigo-400 border-indigo-500/20";
+                        case "loan":
+                          return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+                        case "accession":
+                          return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+                        case "deaccession":
+                          return "bg-red-500/10 text-red-400 border-red-500/20";
+                        default:
+                          return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
+                      }
+                    };
+
+                    const getActivityLink = () => {
+                      switch (activity.type) {
+                        case "collection":
+                          return `/collections/${activity.id}`;
+                        case "loan":
+                          return `/loans/${activity.id}`;
+                        case "accession":
+                          return `/accessions/${activity.id}`;
+                        case "deaccession":
+                          return `/deaccessions/${activity.id}`;
+                        default:
+                          return "#";
+                      }
+                    };
+
+                    const getInitials = () => {
+                      switch (activity.type) {
+                        case "collection":
+                          return "OB";
+                        case "loan":
+                          return "LN";
+                        case "accession":
+                          return "AC";
+                        case "deaccession":
+                          return "DA";
+                        default:
+                          return "??";
+                      }
+                    };
+
+                    return (
+                      <tr
+                        key={`${activity.type}-${activity.id}`}
+                        className="hover:bg-zinc-900/40 transition-colors cursor-pointer"
+                        onClick={() =>
+                          (window.location.href = getActivityLink())
+                        }
+                      >
+                        <td className="px-4 py-3 text-zinc-300">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">
+                              {getInitials()}
+                            </div>
+                            {activity.title}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] border ${getActivityBadgeColor()}`}
+                          >
+                            {activity.subtitle || activity.type}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-zinc-400">System</td>
+                        <td className="px-4 py-3 text-right text-zinc-500 font-mono text-[10px]">
+                          {formatRelativeTime(activity.timestamp)}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

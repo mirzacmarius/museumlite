@@ -2,6 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+.hover-trigger .hover-target {
+  opacity: 0;
+  transform: translateY(4px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hover-trigger:hover .hover-target {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.animate-enter {
+  animation: enter 0.4s ease-out forwards;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+@keyframes enter {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.glass-panel {
+  background: rgba(24, 24, 27, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

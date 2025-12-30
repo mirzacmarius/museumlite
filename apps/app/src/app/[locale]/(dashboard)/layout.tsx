@@ -37,12 +37,12 @@ export default async function Layout({
           preloadedUser={preloadedUser}
           preloadedProducts={preloadedProducts}
         />
-        <main className="min-h-[100vh] w-full bg-secondary dark:bg-black">
-          <div className="flex items-center justify-between p-4">
+        <main className="flex min-h-screen w-full flex-col bg-zinc-950">
+          <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-zinc-800/60 bg-zinc-950/80 px-6 backdrop-blur-xl">
             <SidebarTrigger className="-ml-1" />
             <NotificationBell />
-          </div>
-          {children}
+          </header>
+          <div className="flex-1">{children}</div>
         </main>
         <Analytics />
         <SpeedInsights />
