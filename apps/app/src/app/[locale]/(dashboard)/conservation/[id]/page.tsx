@@ -1,0 +1,236 @@
+"use client";
+
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { api } from "@v1/backend/convex/_generated/api";
+import { Button } from "@v1/ui/button";
+import { useQuery, useMutation } from "convex/react";
+import {
+  ArrowLeft,
+  Calendar,
+  Loader2,
+  Pencil,
+  Trash2,
+  User,
+  Box,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { use } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@v1/ui/alert-dialog";
+
+const TREATMENT_TYPE_STYLES: Record<string, string> = {
+  routine: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
+  stabilization: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  restoration: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  cleaning: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
+  repair: "bg-rose-500/10 text-rose-400 border-rose-500/20",
+  assessment: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  other: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
+};
+
+export default function TreatmentDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+  const router = useRouter();
+  const treatment = useQuery(api.conservationTreatments.get, {
+    id: id as Id<"conservationTreatments">,
+  });
+  const removeTreatment = useMutation(api.conservationTreatments.remove);
+
+  if (treatment === undefined) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-zinc-950">
+        <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+      </div>
+    );
+  }
+
+  if (treatment === null) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-zinc-950">
+        <p className="text-zinc-500">Treatment record not found</p>
+        <Button asChild variant="outline">
+          <Link href="/conservation">Back to List</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const handleDelete = async () => {
+    try {
+      await removeTreatment({ id: id as Id<"conservationTreatments"> });
+      toast.success("Treatment record deleted");
+      router.push("/conservation");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete treatment record");
+    }
+  };
+
+  const typeStyle =
+    TREATMENT_TYPE_STYLES[treatment.treatmentType] ||
+    TREATMENT_TYPE_STYLES.other;
+
+  return (
+    <div className="flex h-full w-full bg-zinc-950 px-6 py-8">
+      <div className="mx-auto w-full max-w-4xl space-y-8">
+        <div className="flex items-start justify-between">
+          <div className="space-y-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className="-ml-3 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+            >
+              <Link href="/conservation">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to List
+              </Link>
+            </Button>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <span
+                  className={`rounded-full border px-2.5 py-0.5 text-xs font-medium uppercase tracking-wider ${typeStyle}`}
+                >
+                  {treatment.treatmentType}
+                </span>
+                <span className="text-sm text-zinc-500">
+                  Created{" "}
+                  {new Date(treatment._creationTime).toLocaleDateString()}
+                </span>
+              </div>
+              <h1 className="text-3xl font-semibold text-zinc-100">
+                {treatment.title}
+              </h1>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <PermissionGate permission="collections.update">
+              <Button
+                variant="outline"
+                asChild
+                className="border-zinc-800 bg-zinc-900/50 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+              >
+                <Link href={`/conservation/${id}/edit`}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit
+                </Link>
+              </Button>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="border-red-900/30 bg-red-950/10 text-red-400 hover:bg-red-950/30 hover:text-red-300 hover:border-red-900/50"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete
+                      the conservation treatment record.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      className="bg-red-600 text-white hover:bg-red-700"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </PermissionGate>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-6 space-y-4">
+              <h3 className="text-lg font-medium text-zinc-200">Description</h3>
+              <div className="prose prose-invert max-w-none text-zinc-400 whitespace-pre-wrap">
+                {treatment.description}
+              </div>
+            </div>
+
+            {treatment.notes && (
+              <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-6 space-y-4">
+                <h3 className="text-lg font-medium text-zinc-200">Notes</h3>
+                <div className="prose prose-invert max-w-none text-zinc-400 whitespace-pre-wrap">
+                  {treatment.notes}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-6 space-y-6">
+              <h3 className="text-sm font-medium uppercase tracking-wider text-zinc-500">
+                Details
+              </h3>
+
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <Box className="mt-0.5 h-4 w-4 text-zinc-500" />
+                  <div>
+                    <p className="text-xs text-zinc-500">Collection Object</p>
+                    <Link
+                      href={`/collections/${treatment.collectionId}`}
+                      className="text-sm text-blue-400 hover:text-blue-300 hover:underline"
+                    >
+                      {treatment.collectionTitle || "Unknown Object"}
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Calendar className="mt-0.5 h-4 w-4 text-zinc-500" />
+                  <div>
+                    <p className="text-xs text-zinc-500">Date Performed</p>
+                    <p className="text-sm text-zinc-300">
+                      {new Date(treatment.performedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <User className="mt-0.5 h-4 w-4 text-zinc-500" />
+                  <div>
+                    <p className="text-xs text-zinc-500">Performed By</p>
+                    <p className="text-sm text-zinc-300">
+                      {treatment.performedByName || "Unknown"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
