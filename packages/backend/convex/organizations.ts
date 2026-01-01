@@ -49,12 +49,30 @@ export const create = mutation({
       throw new Error("Organization slug already exists");
     }
 
-    // Create organization
+    const orgPrefix = args.slug.toUpperCase().substring(0, 3);
+    const defaultAccessionFormat = `${orgPrefix}-{YYYY}-{####}`;
+
+    const defaultSettings = {
+      autoGenerateAccessionNumbers: true,
+      accessionNumberFormat: defaultAccessionFormat,
+    };
+
+    const mergedSettings = args.settings
+      ? {
+          ...defaultSettings,
+          ...args.settings,
+          autoGenerateAccessionNumbers:
+            args.settings.autoGenerateAccessionNumbers ?? true,
+          accessionNumberFormat:
+            args.settings.accessionNumberFormat || defaultAccessionFormat,
+        }
+      : defaultSettings;
+
     const organizationId = await ctx.db.insert("organizations", {
       name: args.name,
       slug: args.slug,
       type: args.type,
-      settings: args.settings,
+      settings: mergedSettings,
       subscriptionTier: "free",
     });
 
