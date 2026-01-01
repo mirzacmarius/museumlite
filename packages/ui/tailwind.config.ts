@@ -118,17 +118,25 @@ const config = {
         "accordion-up": "accordion-up 0.2s ease-out",
         enter: "enter 0.4s ease-out forwards",
       },
-      animationDelay: {
-        "0": "0ms",
-        "100": "100ms",
-        "200": "200ms",
-        "300": "300ms",
-        "400": "400ms",
-        "500": "500ms",
-      },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    ({
+      addUtilities,
+    }: {
+      addUtilities: (utilities: Record<string, Record<string, string>>) => void;
+    }) => {
+      addUtilities({
+        ".delay-0": { "animation-delay": "0ms" },
+        ".delay-100": { "animation-delay": "100ms" },
+        ".delay-200": { "animation-delay": "200ms" },
+        ".delay-300": { "animation-delay": "300ms" },
+        ".delay-400": { "animation-delay": "400ms" },
+        ".delay-500": { "animation-delay": "500ms" },
+      });
+    },
+  ],
 } satisfies Config;
 
 export default config;
