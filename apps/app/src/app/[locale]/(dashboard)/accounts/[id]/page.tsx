@@ -84,9 +84,7 @@ export default function AccountDetailPage() {
       await deleteAccount({ accountId });
       router.push("/accounts");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to delete account",
-      );
+      setError(err instanceof Error ? err.message : "Failed to delete account");
       setIsDeleting(false);
     }
   };
@@ -139,8 +137,8 @@ export default function AccountDetailPage() {
                     <AlertDialogTitle>Delete Account</AlertDialogTitle>
                     <AlertDialogDescription>
                       Are you sure you want to delete "{account.businessName}"?
-                      This action cannot be undone. If this account is used in any
-                      loans, it cannot be deleted.
+                      This action cannot be undone. If this account is used in
+                      any loans, it cannot be deleted.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -182,7 +180,9 @@ export default function AccountDetailPage() {
                   <div className="flex items-start gap-3">
                     <Building2 className="mt-0.5 h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium">{account.businessName}</p>
+                      <p className="text-sm font-medium">
+                        {account.businessName}
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         Business Name
                       </p>

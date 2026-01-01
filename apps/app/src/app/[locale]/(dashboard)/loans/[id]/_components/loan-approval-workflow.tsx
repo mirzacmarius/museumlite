@@ -44,8 +44,12 @@ export function LoanApprovalWorkflow({
   const [error, setError] = useState<string | null>(null);
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
-  const [pendingReturnItemIds, setPendingReturnItemIds] = useState<string[]>([]);
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [pendingReturnItemIds, setPendingReturnItemIds] = useState<string[]>(
+    [],
+  );
 
   const approveLoan = useMutation(api.loans.approve);
   const dispatchLoan = useMutation(api.loans.dispatch);
@@ -59,15 +63,15 @@ export function LoanApprovalWorkflow({
 
   const loanItems = loan?.items || [];
   const hasMultipleItems = loanItems.length > 1;
-  
+
   // Debug: Log loan items to verify conditionIn is present
   // Remove this after debugging
-  // console.log("Loan items:", loanItems.map(item => ({ 
-  //   id: item._id, 
-  //   accessionNumber: item.accessionNumber, 
-  //   conditionIn: item.conditionIn 
+  // console.log("Loan items:", loanItems.map(item => ({
+  //   id: item._id,
+  //   accessionNumber: item.accessionNumber,
+  //   conditionIn: item.conditionIn
   // })));
-  
+
   // Reset selected items when both dialogs are closed
   useEffect(() => {
     if (!isReturnDialogOpen && !isConfirmDialogOpen) {
@@ -86,15 +90,19 @@ export function LoanApprovalWorkflow({
       setSelectedItemIds((prev) => {
         const newSet = new Set(prev);
         let changed = false;
-        loanItems.forEach((item: { _id: Id<"loanItems">; conditionIn?: string }) => {
-          // An item is returned if conditionIn exists and is not empty
-          // Use safe check that handles undefined, null, and empty strings
-          const hasConditionIn = item.conditionIn != null && String(item.conditionIn).trim().length > 0;
-          if (hasConditionIn && newSet.has(item._id)) {
-            newSet.delete(item._id);
-            changed = true;
-          }
-        });
+        loanItems.forEach(
+          (item: { _id: Id<"loanItems">; conditionIn?: string }) => {
+            // An item is returned if conditionIn exists and is not empty
+            // Use safe check that handles undefined, null, and empty strings
+            const hasConditionIn =
+              item.conditionIn != null &&
+              String(item.conditionIn).trim().length > 0;
+            if (hasConditionIn && newSet.has(item._id)) {
+              newSet.delete(item._id);
+              changed = true;
+            }
+          },
+        );
         return changed ? newSet : prev;
       });
     }
@@ -187,7 +195,9 @@ export function LoanApprovalWorkflow({
           loanId: loanId as Id<"loans">,
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to dispatch loan");
+        setError(
+          err instanceof Error ? err.message : "Failed to dispatch loan",
+        );
       } finally {
         setIsSubmitting(false);
       }
@@ -230,9 +240,10 @@ export function LoanApprovalWorkflow({
       try {
         await returnLoan({
           loanId: loanId as Id<"loans">,
-          loanItemIds: itemIdsToReturn.length > 0 
-            ? (itemIdsToReturn as Id<"loanItems">[])
-            : undefined, // If empty, return all items
+          loanItemIds:
+            itemIdsToReturn.length > 0
+              ? (itemIdsToReturn as Id<"loanItems">[])
+              : undefined, // If empty, return all items
         });
         // Close dialogs and clear state
         setIsReturnDialogOpen(false);
@@ -249,7 +260,9 @@ export function LoanApprovalWorkflow({
     };
 
     const isFullReturn = pendingReturnItemIds.length === loanItems.length;
-    const isPartialReturn = pendingReturnItemIds.length > 0 && pendingReturnItemIds.length < loanItems.length;
+    const isPartialReturn =
+      pendingReturnItemIds.length > 0 &&
+      pendingReturnItemIds.length < loanItems.length;
 
     return (
       <div className="space-y-4">
@@ -281,12 +294,16 @@ export function LoanApprovalWorkflow({
                   <CheckCircle className="mr-2 h-4 w-4" />
                   Mark as Returned
                 </Button>
-                <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
+                <Dialog
+                  open={isReturnDialogOpen}
+                  onOpenChange={setIsReturnDialogOpen}
+                >
                   <DialogContent className="max-w-2xl">
                     <DialogHeader>
                       <DialogTitle>Return Loan Items</DialogTitle>
                       <DialogDescription>
-                        Select which items to return. If all items are returned, the loan status will be updated to "Returned".
+                        Select which items to return. If all items are returned,
+                        the loan status will be updated to "Returned".
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
@@ -301,97 +318,141 @@ export function LoanApprovalWorkflow({
                             className="h-7 text-xs"
                             onClick={() => {
                               const nonReturnedItems = loanItems
-                                .filter((item: { _id: Id<"loanItems">; conditionIn?: string }) => {
-                                  // An item is returned if conditionIn exists and is not empty
-                                  return !(item.conditionIn && item.conditionIn.trim().length > 0);
-                                })
-                                .map((item: { _id: Id<"loanItems"> }) => item._id);
+                                .filter(
+                                  (item: {
+                                    _id: Id<"loanItems">;
+                                    conditionIn?: string;
+                                  }) => {
+                                    // An item is returned if conditionIn exists and is not empty
+                                    return !(
+                                      item.conditionIn &&
+                                      item.conditionIn.trim().length > 0
+                                    );
+                                  },
+                                )
+                                .map(
+                                  (item: { _id: Id<"loanItems"> }) => item._id,
+                                );
                               setSelectedItemIds(new Set(nonReturnedItems));
                             }}
                           >
                             Select All
                           </Button>
                         </div>
-                        {loanItems.some((item: { conditionIn?: string }) => 
-                          item.conditionIn != null && String(item.conditionIn).trim().length > 0
+                        {loanItems.some(
+                          (item: { conditionIn?: string }) =>
+                            item.conditionIn != null &&
+                            String(item.conditionIn).trim().length > 0,
                         ) && (
                           <div className="flex items-start gap-2 rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 text-sm">
                             <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                             <div className="flex-1 text-blue-800 dark:text-blue-200">
-                              <p className="font-medium mb-1">Some items are already returned</p>
+                              <p className="font-medium mb-1">
+                                Some items are already returned
+                              </p>
                               <p className="text-xs">
-                                Items marked as "RETURNED" have already been returned and cannot be selected again. Only items that are still on loan can be returned.
+                                Items marked as "RETURNED" have already been
+                                returned and cannot be selected again. Only
+                                items that are still on loan can be returned.
                               </p>
                             </div>
                           </div>
                         )}
                         <div className="border rounded-lg divide-y max-h-[400px] overflow-y-auto">
-                          {loanItems.map((item: { _id: Id<"loanItems">; accessionNumber: string; title: string; conditionIn?: string }) => {
-                            // An item is returned if conditionIn exists (not undefined, not null, not empty string)
-                            // Use a safe check that handles undefined/null/empty string
-                            const hasConditionIn = item.conditionIn != null && String(item.conditionIn).trim().length > 0;
-                            const isReturned = hasConditionIn;
-                            
-                            // Debug: Uncomment to verify conditionIn values
-                            // if (isReturnDialogOpen) {
-                            //   console.log(`Item ${item.accessionNumber}: conditionIn="${item.conditionIn}", isReturned=${isReturned}`);
-                            // }
-                            
-                            return (
-                              <div
-                                key={item._id}
-                                className={cn(
-                                  "flex items-center space-x-3 p-3",
-                                  isReturned ? "opacity-50 bg-muted/40 border-l-4 border-l-blue-500" : "hover:bg-muted/50"
-                                )}
-                              >
-                                <Checkbox
-                                  id={`item-${item._id}`}
-                                  checked={selectedItemIds.has(item._id) && !isReturned}
-                                  disabled={isReturned}
-                                  onCheckedChange={(checked) => {
-                                    if (isReturned) {
-                                      // Double-check: if item is returned, don't allow selection
-                                      return;
-                                    }
-                                    const newSet = new Set(selectedItemIds);
-                                    if (checked) {
-                                      newSet.add(item._id);
-                                    } else {
-                                      newSet.delete(item._id);
-                                    }
-                                    setSelectedItemIds(newSet);
-                                  }}
-                                />
-                                <Label
-                                  htmlFor={`item-${item._id}`}
+                          {loanItems.map(
+                            (item: {
+                              _id: Id<"loanItems">;
+                              accessionNumber: string;
+                              title: string;
+                              conditionIn?: string;
+                            }) => {
+                              // An item is returned if conditionIn exists (not undefined, not null, not empty string)
+                              // Use a safe check that handles undefined/null/empty string
+                              const hasConditionIn =
+                                item.conditionIn != null &&
+                                String(item.conditionIn).trim().length > 0;
+                              const isReturned = hasConditionIn;
+
+                              // Debug: Uncomment to verify conditionIn values
+                              // if (isReturnDialogOpen) {
+                              //   console.log(`Item ${item.accessionNumber}: conditionIn="${item.conditionIn}", isReturned=${isReturned}`);
+                              // }
+
+                              return (
+                                <div
+                                  key={item._id}
                                   className={cn(
-                                    "flex-1",
-                                    isReturned ? "cursor-not-allowed" : "cursor-pointer"
+                                    "flex items-center space-x-3 p-3",
+                                    isReturned
+                                      ? "opacity-50 bg-muted/40 border-l-4 border-l-blue-500"
+                                      : "hover:bg-muted/50",
                                   )}
                                 >
-                                  <div className="flex items-center gap-2">
-                                    <span className={cn("font-medium", isReturned && "line-through")}>
-                                      {item.accessionNumber}
-                                    </span>
-                                    {isReturned && (
-                                      <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded">
-                                        RETURNED
-                                      </span>
+                                  <Checkbox
+                                    id={`item-${item._id}`}
+                                    checked={
+                                      selectedItemIds.has(item._id) &&
+                                      !isReturned
+                                    }
+                                    disabled={isReturned}
+                                    onCheckedChange={(checked) => {
+                                      if (isReturned) {
+                                        // Double-check: if item is returned, don't allow selection
+                                        return;
+                                      }
+                                      const newSet = new Set(selectedItemIds);
+                                      if (checked) {
+                                        newSet.add(item._id);
+                                      } else {
+                                        newSet.delete(item._id);
+                                      }
+                                      setSelectedItemIds(newSet);
+                                    }}
+                                  />
+                                  <Label
+                                    htmlFor={`item-${item._id}`}
+                                    className={cn(
+                                      "flex-1",
+                                      isReturned
+                                        ? "cursor-not-allowed"
+                                        : "cursor-pointer",
                                     )}
-                                  </div>
-                                  <div className={cn("text-sm", isReturned ? "text-muted-foreground" : "text-muted-foreground")}>
-                                    {item.title}
-                                  </div>
-                                  {isReturned && item.conditionIn && (
-                                    <div className="text-xs text-muted-foreground mt-1">
-                                      Condition In: {item.conditionIn}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span
+                                        className={cn(
+                                          "font-medium",
+                                          isReturned && "line-through",
+                                        )}
+                                      >
+                                        {item.accessionNumber}
+                                      </span>
+                                      {isReturned && (
+                                        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded">
+                                          RETURNED
+                                        </span>
+                                      )}
                                     </div>
-                                  )}
-                                </Label>
-                              </div>
-                            );
-                          })}
+                                    <div
+                                      className={cn(
+                                        "text-sm",
+                                        isReturned
+                                          ? "text-muted-foreground"
+                                          : "text-muted-foreground",
+                                      )}
+                                    >
+                                      {item.title}
+                                    </div>
+                                    {isReturned && item.conditionIn && (
+                                      <div className="text-xs text-muted-foreground mt-1">
+                                        Condition In: {item.conditionIn}
+                                      </div>
+                                    )}
+                                  </Label>
+                                </div>
+                              );
+                            },
+                          )}
                         </div>
                         {selectedItemIds.size === 0 && (
                           <p className="text-sm text-destructive">
@@ -420,30 +481,53 @@ export function LoanApprovalWorkflow({
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-                <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+                <AlertDialog
+                  open={isConfirmDialogOpen}
+                  onOpenChange={setIsConfirmDialogOpen}
+                >
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>
-                        {isFullReturn ? "Confirm Full Return" : "Confirm Partial Return"}
+                        {isFullReturn
+                          ? "Confirm Full Return"
+                          : "Confirm Partial Return"}
                       </AlertDialogTitle>
                       <AlertDialogDescription asChild>
                         <div className="space-y-2">
                           {isFullReturn ? (
                             <>
                               <div className="font-medium">
-                                You are about to return all {loanItems.length} {pluralize(loanItems.length, "item")} from this loan.
+                                You are about to return all {loanItems.length}{" "}
+                                {pluralize(loanItems.length, "item")} from this
+                                loan.
                               </div>
                               <div>
-                                This will mark the loan as <strong>"Returned"</strong> and update the status of all collection items back to "active".
+                                This will mark the loan as{" "}
+                                <strong>"Returned"</strong> and update the
+                                status of all collection items back to "active".
                               </div>
                             </>
                           ) : (
                             <>
                               <div className="font-medium">
-                                You are about to return {pendingReturnItemIds.length} of {loanItems.length} {pluralize(loanItems.length, "item")} from this loan.
+                                You are about to return{" "}
+                                {pendingReturnItemIds.length} of{" "}
+                                {loanItems.length}{" "}
+                                {pluralize(loanItems.length, "item")} from this
+                                loan.
                               </div>
                               <div>
-                                This is a <strong>partial return</strong>. The loan will remain <strong>"{loanStatus}"</strong> and only the selected items will be marked as returned. The remaining {loanItems.length - pendingReturnItemIds.length} {pluralize(loanItems.length - pendingReturnItemIds.length, "item")} will stay on loan.
+                                This is a <strong>partial return</strong>. The
+                                loan will remain <strong>"{loanStatus}"</strong>{" "}
+                                and only the selected items will be marked as
+                                returned. The remaining{" "}
+                                {loanItems.length - pendingReturnItemIds.length}{" "}
+                                {pluralize(
+                                  loanItems.length -
+                                    pendingReturnItemIds.length,
+                                  "item",
+                                )}{" "}
+                                will stay on loan.
                               </div>
                             </>
                           )}
@@ -454,17 +538,23 @@ export function LoanApprovalWorkflow({
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel onClick={() => {
-                        setIsConfirmDialogOpen(false);
-                        setIsReturnDialogOpen(true);
-                      }}>
+                      <AlertDialogCancel
+                        onClick={() => {
+                          setIsConfirmDialogOpen(false);
+                          setIsReturnDialogOpen(true);
+                        }}
+                      >
                         Go Back
                       </AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => handleReturn(pendingReturnItemIds)}
                         className="bg-blue-600 hover:bg-blue-700"
                       >
-                        {isSubmitting ? "Returning..." : isFullReturn ? "Return All Items" : "Confirm Partial Return"}
+                        {isSubmitting
+                          ? "Returning..."
+                          : isFullReturn
+                            ? "Return All Items"
+                            : "Confirm Partial Return"}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -485,8 +575,8 @@ export function LoanApprovalWorkflow({
                   <AlertDialogHeader>
                     <AlertDialogTitle>Mark Loan as Returned</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to mark this loan as returned? This will
-                      update the status of all associated collection items.
+                      Are you sure you want to mark this loan as returned? This
+                      will update the status of all associated collection items.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -542,9 +632,10 @@ export function LoanApprovalWorkflow({
       try {
         await returnLoan({
           loanId: loanId as Id<"loans">,
-          loanItemIds: itemIdsToReturn.length > 0 
-            ? (itemIdsToReturn as Id<"loanItems">[])
-            : undefined, // If empty, return all items
+          loanItemIds:
+            itemIdsToReturn.length > 0
+              ? (itemIdsToReturn as Id<"loanItems">[])
+              : undefined, // If empty, return all items
         });
         // Close dialogs and clear state
         setIsReturnDialogOpen(false);
@@ -561,7 +652,9 @@ export function LoanApprovalWorkflow({
     };
 
     const isFullReturn = pendingReturnItemIds.length === loanItems.length;
-    const isPartialReturn = pendingReturnItemIds.length > 0 && pendingReturnItemIds.length < loanItems.length;
+    const isPartialReturn =
+      pendingReturnItemIds.length > 0 &&
+      pendingReturnItemIds.length < loanItems.length;
 
     return (
       <div className="space-y-4">
@@ -582,12 +675,16 @@ export function LoanApprovalWorkflow({
                 <CheckCircle className="mr-2 h-4 w-4" />
                 Mark as Returned
               </Button>
-              <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
+              <Dialog
+                open={isReturnDialogOpen}
+                onOpenChange={setIsReturnDialogOpen}
+              >
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>Return Loan Items</DialogTitle>
                     <DialogDescription>
-                      Select which items to return. If all items are returned, the loan status will be updated to "Returned".
+                      Select which items to return. If all items are returned,
+                      the loan status will be updated to "Returned".
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
@@ -596,98 +693,141 @@ export function LoanApprovalWorkflow({
                         <Label className="text-sm font-medium">
                           Select Items to Return
                         </Label>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={() => {
-                              const nonReturnedItems = loanItems
-                                .filter((item: { _id: Id<"loanItems">; conditionIn?: string }) => {
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            const nonReturnedItems = loanItems
+                              .filter(
+                                (item: {
+                                  _id: Id<"loanItems">;
+                                  conditionIn?: string;
+                                }) => {
                                   // An item is returned if conditionIn exists and is not empty
-                                  return !(item.conditionIn && item.conditionIn.trim().length > 0);
-                                })
-                                .map((item: { _id: Id<"loanItems"> }) => item._id);
-                              setSelectedItemIds(new Set(nonReturnedItems));
-                            }}
-                          >
-                            Select All
-                          </Button>
+                                  return !(
+                                    item.conditionIn &&
+                                    item.conditionIn.trim().length > 0
+                                  );
+                                },
+                              )
+                              .map(
+                                (item: { _id: Id<"loanItems"> }) => item._id,
+                              );
+                            setSelectedItemIds(new Set(nonReturnedItems));
+                          }}
+                        >
+                          Select All
+                        </Button>
                       </div>
-                      {loanItems.some((item: { conditionIn?: string }) => 
-                        item.conditionIn != null && String(item.conditionIn).trim().length > 0
+                      {loanItems.some(
+                        (item: { conditionIn?: string }) =>
+                          item.conditionIn != null &&
+                          String(item.conditionIn).trim().length > 0,
                       ) && (
                         <div className="flex items-start gap-2 rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 text-sm">
                           <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                           <div className="flex-1 text-blue-800 dark:text-blue-200">
-                            <p className="font-medium mb-1">Some items are already returned</p>
+                            <p className="font-medium mb-1">
+                              Some items are already returned
+                            </p>
                             <p className="text-xs">
-                              Items marked as "RETURNED" have already been returned and cannot be selected again. Only items that are still on loan can be returned.
+                              Items marked as "RETURNED" have already been
+                              returned and cannot be selected again. Only items
+                              that are still on loan can be returned.
                             </p>
                           </div>
                         </div>
                       )}
                       <div className="border rounded-lg divide-y max-h-[400px] overflow-y-auto">
-                        {loanItems.map((item: { _id: Id<"loanItems">; accessionNumber: string; title: string; conditionIn?: string }) => {
-                          // An item is returned if conditionIn exists (not undefined, not null, not empty string)
-                          // Use a safe check that handles undefined/null/empty string
-                          const hasConditionIn = item.conditionIn != null && String(item.conditionIn).trim().length > 0;
-                          const isReturned = hasConditionIn;
-                          
-                          return (
-                            <div
-                              key={item._id}
-                              className={cn(
-                                "flex items-center space-x-3 p-3",
-                                isReturned ? "opacity-50 bg-muted/40 border-l-4 border-l-blue-500" : "hover:bg-muted/50"
-                              )}
-                            >
-                              <Checkbox
-                                id={`item-${item._id}`}
-                                checked={selectedItemIds.has(item._id) && !isReturned}
-                                disabled={isReturned}
-                                onCheckedChange={(checked) => {
-                                  if (isReturned) {
-                                    // Double-check: if item is returned, don't allow selection
-                                    return;
-                                  }
-                                  const newSet = new Set(selectedItemIds);
-                                  if (checked) {
-                                    newSet.add(item._id);
-                                  } else {
-                                    newSet.delete(item._id);
-                                  }
-                                  setSelectedItemIds(newSet);
-                                }}
-                              />
-                              <Label
-                                htmlFor={`item-${item._id}`}
+                        {loanItems.map(
+                          (item: {
+                            _id: Id<"loanItems">;
+                            accessionNumber: string;
+                            title: string;
+                            conditionIn?: string;
+                          }) => {
+                            // An item is returned if conditionIn exists (not undefined, not null, not empty string)
+                            // Use a safe check that handles undefined/null/empty string
+                            const hasConditionIn =
+                              item.conditionIn != null &&
+                              String(item.conditionIn).trim().length > 0;
+                            const isReturned = hasConditionIn;
+
+                            return (
+                              <div
+                                key={item._id}
                                 className={cn(
-                                  "flex-1",
-                                  isReturned ? "cursor-not-allowed" : "cursor-pointer"
+                                  "flex items-center space-x-3 p-3",
+                                  isReturned
+                                    ? "opacity-50 bg-muted/40 border-l-4 border-l-blue-500"
+                                    : "hover:bg-muted/50",
                                 )}
                               >
-                                <div className="flex items-center gap-2">
-                                  <span className={cn("font-medium", isReturned && "line-through")}>
-                                    {item.accessionNumber}
-                                  </span>
-                                  {isReturned && (
-                                    <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded">
-                                      RETURNED
-                                    </span>
+                                <Checkbox
+                                  id={`item-${item._id}`}
+                                  checked={
+                                    selectedItemIds.has(item._id) && !isReturned
+                                  }
+                                  disabled={isReturned}
+                                  onCheckedChange={(checked) => {
+                                    if (isReturned) {
+                                      // Double-check: if item is returned, don't allow selection
+                                      return;
+                                    }
+                                    const newSet = new Set(selectedItemIds);
+                                    if (checked) {
+                                      newSet.add(item._id);
+                                    } else {
+                                      newSet.delete(item._id);
+                                    }
+                                    setSelectedItemIds(newSet);
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`item-${item._id}`}
+                                  className={cn(
+                                    "flex-1",
+                                    isReturned
+                                      ? "cursor-not-allowed"
+                                      : "cursor-pointer",
                                   )}
-                                </div>
-                                <div className={cn("text-sm", isReturned ? "text-muted-foreground" : "text-muted-foreground")}>
-                                  {item.title}
-                                </div>
-                                {isReturned && item.conditionIn && (
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    Condition In: {item.conditionIn}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className={cn(
+                                        "font-medium",
+                                        isReturned && "line-through",
+                                      )}
+                                    >
+                                      {item.accessionNumber}
+                                    </span>
+                                    {isReturned && (
+                                      <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded">
+                                        RETURNED
+                                      </span>
+                                    )}
                                   </div>
-                                )}
-                              </Label>
-                            </div>
-                          );
-                        })}
+                                  <div
+                                    className={cn(
+                                      "text-sm",
+                                      isReturned
+                                        ? "text-muted-foreground"
+                                        : "text-muted-foreground",
+                                    )}
+                                  >
+                                    {item.title}
+                                  </div>
+                                  {isReturned && item.conditionIn && (
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                      Condition In: {item.conditionIn}
+                                    </div>
+                                  )}
+                                </Label>
+                              </div>
+                            );
+                          },
+                        )}
                       </div>
                       {selectedItemIds.size === 0 && (
                         <p className="text-sm text-destructive">
@@ -716,30 +856,52 @@ export function LoanApprovalWorkflow({
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-              <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+              <AlertDialog
+                open={isConfirmDialogOpen}
+                onOpenChange={setIsConfirmDialogOpen}
+              >
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>
-                      {isFullReturn ? "Confirm Full Return" : "Confirm Partial Return"}
+                      {isFullReturn
+                        ? "Confirm Full Return"
+                        : "Confirm Partial Return"}
                     </AlertDialogTitle>
                     <AlertDialogDescription asChild>
                       <div className="space-y-2">
                         {isFullReturn ? (
                           <>
                             <div className="font-medium">
-                              You are about to return all {loanItems.length} {pluralize(loanItems.length, "item")} from this loan.
+                              You are about to return all {loanItems.length}{" "}
+                              {pluralize(loanItems.length, "item")} from this
+                              loan.
                             </div>
                             <div>
-                              This will mark the loan as <strong>"Returned"</strong> and update the status of all collection items back to "active".
+                              This will mark the loan as{" "}
+                              <strong>"Returned"</strong> and update the status
+                              of all collection items back to "active".
                             </div>
                           </>
                         ) : (
                           <>
                             <div className="font-medium">
-                              You are about to return {pendingReturnItemIds.length} of {loanItems.length} {pluralize(loanItems.length, "item")} from this loan.
+                              You are about to return{" "}
+                              {pendingReturnItemIds.length} of{" "}
+                              {loanItems.length}{" "}
+                              {pluralize(loanItems.length, "item")} from this
+                              loan.
                             </div>
                             <div>
-                              This is a <strong>partial return</strong>. The loan will remain <strong>"{loanStatus}"</strong> and only the selected items will be marked as returned. The remaining {loanItems.length - pendingReturnItemIds.length} {pluralize(loanItems.length - pendingReturnItemIds.length, "item")} will stay on loan.
+                              This is a <strong>partial return</strong>. The
+                              loan will remain <strong>"{loanStatus}"</strong>{" "}
+                              and only the selected items will be marked as
+                              returned. The remaining{" "}
+                              {loanItems.length - pendingReturnItemIds.length}{" "}
+                              {pluralize(
+                                loanItems.length - pendingReturnItemIds.length,
+                                "item",
+                              )}{" "}
+                              will stay on loan.
                             </div>
                           </>
                         )}
@@ -750,17 +912,23 @@ export function LoanApprovalWorkflow({
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => {
-                      setIsConfirmDialogOpen(false);
-                      setIsReturnDialogOpen(true);
-                    }}>
+                    <AlertDialogCancel
+                      onClick={() => {
+                        setIsConfirmDialogOpen(false);
+                        setIsReturnDialogOpen(true);
+                      }}
+                    >
                       Go Back
                     </AlertDialogCancel>
                     <AlertDialogAction
                       onClick={() => handleReturn(pendingReturnItemIds)}
                       className="bg-blue-600 hover:bg-blue-700"
                     >
-                      {isSubmitting ? "Returning..." : isFullReturn ? "Return All Items" : "Confirm Partial Return"}
+                      {isSubmitting
+                        ? "Returning..."
+                        : isFullReturn
+                          ? "Return All Items"
+                          : "Confirm Partial Return"}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -781,8 +949,8 @@ export function LoanApprovalWorkflow({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Mark Loan as Returned</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to mark this loan as returned? This will
-                    update the status of all associated collection items.
+                    Are you sure you want to mark this loan as returned? This
+                    will update the status of all associated collection items.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

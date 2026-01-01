@@ -531,7 +531,7 @@ export const get = query({
         v.object({
           _id: v.id("accounts"),
           accountNumber: v.string(),
-          businessName: v.string(),
+          businessName: v.optional(v.string()),
           phone: v.optional(v.string()),
           email: v.optional(v.string()),
           address: v.optional(v.string()),
@@ -584,8 +584,24 @@ export const get = query({
 
     await requirePermission(ctx, loan.organizationId, "loans.read");
 
-    // Get account details if linked
-    let account = undefined;
+    let account:
+      | {
+          _id: Id<"accounts">;
+          accountNumber: string;
+          businessName: string | undefined;
+          phone: string | undefined;
+          email: string | undefined;
+          address: string | undefined;
+          address2: string | undefined;
+          zipCode: string | undefined;
+          city: string | undefined;
+          country: string | undefined;
+          contactPerson: string | undefined;
+          contactPhone: string | undefined;
+          contactEmail: string | undefined;
+        }
+      | undefined = undefined;
+
     if (loan.accountId) {
       const accountData = await ctx.db.get(loan.accountId);
       if (accountData) {
@@ -835,13 +851,14 @@ export const returnLoan = mutation({
 
       // Update condition in - always set it to mark item as returned
       // Use provided value, existing value, or default to "Returned"
-      const conditionInValue = args.conditionIn || item.conditionIn || "Returned";
+      const conditionInValue =
+        args.conditionIn || item.conditionIn || "Returned";
       await ctx.db.patch(item._id, {
         conditionIn: conditionInValue,
       });
-      
+
       returnedItemIds.push(item._id);
-      
+
       // Log activity for each returned item
       await ctx.runMutation(internal.audit.logAction, {
         organizationId: loan.organizationId,
@@ -863,10 +880,11 @@ export const returnLoan = mutation({
       .query("loanItems")
       .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
       .collect();
-    
+
     // Check if all items now have conditionIn set (meaning all are returned)
-    const allItemsNowReturned = updatedLoanItems.every((item) => 
-      item.conditionIn != null && String(item.conditionIn).trim().length > 0
+    const allItemsNowReturned = updatedLoanItems.every(
+      (item) =>
+        item.conditionIn != null && String(item.conditionIn).trim().length > 0,
     );
 
     // Update loan status only if all items are now returned (either in this operation or after it)
@@ -882,7 +900,7 @@ export const returnLoan = mutation({
         action: "returned",
         entityType: "loan",
         entityId: args.loanId,
-        changes: { 
+        changes: {
           status: "returned",
           itemsReturned: returnedItemIds.length,
           returnedItemIds: returnedItemIds,
@@ -1041,7 +1059,11 @@ export const cancel = mutation({
     // Check permission
     await requirePermission(ctx, loan.organizationId, "loans.update");
 
-    if (loan.status !== "pending" && loan.status !== "active" && loan.status !== "dispatched") {
+    if (
+      loan.status !== "pending" &&
+      loan.status !== "active" &&
+      loan.status !== "dispatched"
+    ) {
       throw new Error("Can only cancel pending, active, or dispatched loans");
     }
 
@@ -1563,7 +1585,9 @@ export const deleteAllLoans = mutation({
     // Get all loans for the organization
     const loans = await ctx.db
       .query("loans")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
       .collect();
 
     let deletedLoanItems = 0;
@@ -1659,7 +1683,9 @@ export const checkCollectionsInActiveLoans = query({
         const loan = await ctx.db.get(loanItem.loanId);
         if (
           loan &&
-          (loan.status === "pending" || loan.status === "active" || loan.status === "dispatched")
+          (loan.status === "pending" ||
+            loan.status === "active" ||
+            loan.status === "dispatched")
         ) {
           results.push({
             collectionId,

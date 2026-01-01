@@ -71,7 +71,9 @@ export const get = query({
 
     const ordersCount = requests.length;
     const totalSpent = requests
-      .filter((r) => r.actualPrice && ["received", "cataloged"].includes(r.status))
+      .filter(
+        (r) => r.actualPrice && ["received", "cataloged"].includes(r.status),
+      )
       .reduce((sum, r) => sum + (r.actualPrice || 0) * r.quantity, 0);
 
     return {

@@ -97,9 +97,13 @@ export default function EditLoanPage() {
             <Lock className="h-6 w-6" />
           </div>
           <div className="text-center">
-            <h1 className="text-lg font-semibold text-foreground">Loan Locked</h1>
+            <h1 className="text-lg font-semibold text-foreground">
+              Loan Locked
+            </h1>
             <p className="text-muted-foreground mt-2 max-w-sm">
-              This loan is currently <span className="font-medium text-foreground">{loan.status}</span> and cannot be edited. Only pending loans can be modified.
+              This loan is currently{" "}
+              <span className="font-medium text-foreground">{loan.status}</span>{" "}
+              and cannot be edited. Only pending loans can be modified.
             </p>
             <Button variant="outline" className="mt-6" asChild>
               <Link href={`/loans/${loanId}`}>Return to Loan Details</Link>
@@ -164,9 +168,14 @@ export default function EditLoanPage() {
 
       <div className="mx-auto max-w-3xl px-6 py-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Edit Loan Record</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            Edit Loan Record
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Update details for loan <span className="font-mono text-xs bg-secondary px-1.5 py-0.5 rounded">{loan.loanNumber}</span>
+            Update details for loan{" "}
+            <span className="font-mono text-xs bg-secondary px-1.5 py-0.5 rounded">
+              {loan.loanNumber}
+            </span>
           </p>
         </div>
 
@@ -184,23 +193,29 @@ export default function EditLoanPage() {
               <Building2 className="h-4 w-4" />
               Core Information
             </h2>
-            
+
             <div className="grid gap-6">
               {/* Read-only fields group */}
               <div className="grid grid-cols-2 gap-4 rounded-lg bg-secondary/50 p-4 border border-border/50">
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Loan Number</Label>
-                  <div className="font-mono text-sm font-medium">{loan.loanNumber}</div>
+                  <Label className="text-xs text-muted-foreground">
+                    Loan Number
+                  </Label>
+                  <div className="font-mono text-sm font-medium">
+                    {loan.loanNumber}
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Type</Label>
                   <div className="flex items-center gap-2">
-                    <span className={cn(
-                      "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset",
-                      loan.type === "incoming" 
-                        ? "bg-purple-50 text-purple-700 ring-purple-600/20 dark:bg-purple-900/20 dark:text-purple-400" 
-                        : "bg-cyan-50 text-cyan-700 ring-cyan-600/20 dark:bg-cyan-900/20 dark:text-cyan-400"
-                    )}>
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset",
+                        loan.type === "incoming"
+                          ? "bg-purple-50 text-purple-700 ring-purple-600/20 dark:bg-purple-900/20 dark:text-purple-400"
+                          : "bg-cyan-50 text-cyan-700 ring-cyan-600/20 dark:bg-cyan-900/20 dark:text-cyan-400",
+                      )}
+                    >
                       {loan.type === "incoming" ? "Incoming" : "Outgoing"}
                     </span>
                     <Lock className="h-3 w-3 text-muted-foreground/50" />
@@ -211,7 +226,8 @@ export default function EditLoanPage() {
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="lenderBorrowerName">
-                    {loan.type === "incoming" ? "Lender" : "Borrower"} Name <span className="text-destructive">*</span>
+                    {loan.type === "incoming" ? "Lender" : "Borrower"} Name{" "}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="lenderBorrowerName"
@@ -258,7 +274,9 @@ export default function EditLoanPage() {
 
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date <span className="text-destructive">*</span></Label>
+                <Label htmlFor="startDate">
+                  Start Date <span className="text-destructive">*</span>
+                </Label>
                 <DatePicker
                   id="startDate"
                   date={formData.startDate}
@@ -356,7 +374,11 @@ export default function EditLoanPage() {
               Cancel
             </Button>
             <PermissionGate permission="loans.update">
-              <Button type="submit" disabled={isSubmitting} className="min-w-[140px]">
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="min-w-[140px]"
+              >
                 <Save className="mr-2 h-4 w-4" />
                 {isSubmitting ? "Saving..." : "Save Changes"}
               </Button>

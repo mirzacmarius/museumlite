@@ -22,7 +22,13 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 
-type LoanStatus = "pending" | "active" | "dispatched" | "returned" | "cancelled" | "all";
+type LoanStatus =
+  | "pending"
+  | "active"
+  | "dispatched"
+  | "returned"
+  | "cancelled"
+  | "all";
 type LoanType = "incoming" | "outgoing" | "all";
 
 export default function LoansPage() {

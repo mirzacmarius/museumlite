@@ -41,7 +41,11 @@ export default function NewAccountPage() {
     contactPhone: "",
     contactEmail: "",
     notes: "",
-    accountType: "" as "lender" | "borrower" | "both" | "institution" | "",
+    accountType: "institution" as
+      | "lender"
+      | "borrower"
+      | "both"
+      | "institution",
     selectedRoles: [] as Id<"roles">[],
   });
 
@@ -102,8 +106,11 @@ export default function NewAccountPage() {
         contactPhone: formData.contactPhone || undefined,
         contactEmail: formData.contactEmail || undefined,
         notes: formData.notes || undefined,
-        accountType: formData.accountType || undefined,
-        roleIds: formData.selectedRoles.length > 0 ? formData.selectedRoles : undefined,
+        accountType: formData.accountType,
+        roleIds:
+          formData.selectedRoles.length > 0
+            ? formData.selectedRoles
+            : undefined,
       });
       router.push("/accounts");
     } catch (err) {
@@ -338,9 +345,9 @@ export default function NewAccountPage() {
                   <Label htmlFor="accountType">Account Type</Label>
                   <Select
                     value={formData.accountType}
-                    onValueChange={(value: "lender" | "borrower" | "both" | "institution" | "") =>
-                      setFormData({ ...formData, accountType: value })
-                    }
+                    onValueChange={(
+                      value: "lender" | "borrower" | "both" | "institution",
+                    ) => setFormData({ ...formData, accountType: value })}
                   >
                     <SelectTrigger id="accountType">
                       <SelectValue placeholder="Select account type" />
@@ -348,7 +355,9 @@ export default function NewAccountPage() {
                     <SelectContent>
                       <SelectItem value="lender">Lender</SelectItem>
                       <SelectItem value="borrower">Borrower</SelectItem>
-                      <SelectItem value="both">Both (Lender & Borrower)</SelectItem>
+                      <SelectItem value="both">
+                        Both (Lender & Borrower)
+                      </SelectItem>
                       <SelectItem value="institution">Institution</SelectItem>
                     </SelectContent>
                   </Select>
@@ -360,44 +369,46 @@ export default function NewAccountPage() {
             </div>
 
             {/* Permissions */}
-            {rolesWithLoansPermissions && rolesWithLoansPermissions.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Shield className="h-4 w-4" />
-                  Roles with Account Access
-                </h3>
-                <div className="space-y-4 rounded-lg border border-border p-4">
-                  <p className="text-sm text-muted-foreground">
-                    Select which roles can manage this account. Roles with loans permissions are shown below.
-                  </p>
-                  <div className="space-y-3">
-                    {rolesWithLoansPermissions.map((role) => (
-                      <div
-                        key={role._id}
-                        className="flex items-center space-x-2"
-                      >
-                        <Checkbox
-                          id={`role-${role._id}`}
-                          checked={formData.selectedRoles.includes(role._id)}
-                          onCheckedChange={() => toggleRole(role._id)}
-                        />
-                        <Label
-                          htmlFor={`role-${role._id}`}
-                          className="text-sm font-normal cursor-pointer flex-1"
+            {rolesWithLoansPermissions &&
+              rolesWithLoansPermissions.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Roles with Account Access
+                  </h3>
+                  <div className="space-y-4 rounded-lg border border-border p-4">
+                    <p className="text-sm text-muted-foreground">
+                      Select which roles can manage this account. Roles with
+                      loans permissions are shown below.
+                    </p>
+                    <div className="space-y-3">
+                      {rolesWithLoansPermissions.map((role) => (
+                        <div
+                          key={role._id}
+                          className="flex items-center space-x-2"
                         >
-                          {role.name}
-                          {role.description && (
-                            <span className="ml-2 text-xs text-muted-foreground">
-                              - {role.description}
-                            </span>
-                          )}
-                        </Label>
-                      </div>
-                    ))}
+                          <Checkbox
+                            id={`role-${role._id}`}
+                            checked={formData.selectedRoles.includes(role._id)}
+                            onCheckedChange={() => toggleRole(role._id)}
+                          />
+                          <Label
+                            htmlFor={`role-${role._id}`}
+                            className="text-sm font-normal cursor-pointer flex-1"
+                          >
+                            {role.name}
+                            {role.description && (
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                - {role.description}
+                              </span>
+                            )}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
             <div className="flex justify-end gap-4 pt-4">
               <Button type="button" variant="outline" asChild>

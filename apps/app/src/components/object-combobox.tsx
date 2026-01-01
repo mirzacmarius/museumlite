@@ -52,11 +52,17 @@ export function ObjectCombobox({
     if (!collections) return [];
     return collections.page
       .filter((obj: { _id: Id<"collections"> }) => obj._id !== collectionId)
-      .map((obj: { _id: Id<"collections">; title: string; accessionNumber: string }) => ({
-        value: obj._id,
-        label: obj.title,
-        accessionNumber: obj.accessionNumber,
-      }));
+      .map(
+        (obj: {
+          _id: Id<"collections">;
+          title: string;
+          accessionNumber: string;
+        }) => ({
+          value: obj._id,
+          label: obj.title,
+          accessionNumber: obj.accessionNumber,
+        }),
+      );
   }, [collections, collectionId]);
 
   // Get selected object
@@ -109,26 +115,32 @@ export function ObjectCombobox({
           <CommandList>
             <CommandEmpty>No objects found.</CommandEmpty>
             <CommandGroup>
-              {filteredObjects.map((obj: { value: string; label: string; accessionNumber: string }) => (
-                <CommandItem
-                  key={obj.value}
-                  value={obj.value}
-                  onSelect={() => handleSelect(obj.value)}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === obj.value ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                  <div className="flex flex-col">
-                    <span>{obj.label}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {obj.accessionNumber}
-                    </span>
-                  </div>
-                </CommandItem>
-              ))}
+              {filteredObjects.map(
+                (obj: {
+                  value: string;
+                  label: string;
+                  accessionNumber: string;
+                }) => (
+                  <CommandItem
+                    key={obj.value}
+                    value={obj.value}
+                    onSelect={() => handleSelect(obj.value)}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === obj.value ? "opacity-100" : "opacity-0",
+                      )}
+                    />
+                    <div className="flex flex-col">
+                      <span>{obj.label}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {obj.accessionNumber}
+                      </span>
+                    </div>
+                  </CommandItem>
+                ),
+              )}
             </CommandGroup>
           </CommandList>
         </Command>

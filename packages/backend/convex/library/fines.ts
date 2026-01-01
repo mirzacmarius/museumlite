@@ -1,10 +1,9 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import { mutation, query } from "../_generated/server";
 
-// Fine type validator
 const fineTypeValidator = v.union(
   v.literal("overdue"),
   v.literal("lost_item"),
@@ -15,7 +14,6 @@ const fineTypeValidator = v.union(
   v.literal("other"),
 );
 
-// Fine status validator
 const fineStatusValidator = v.union(
   v.literal("outstanding"),
   v.literal("paid"),
@@ -24,7 +22,6 @@ const fineStatusValidator = v.union(
   v.literal("refunded"),
 );
 
-// Payment method validator
 const paymentMethodValidator = v.union(
   v.literal("cash"),
   v.literal("card"),
@@ -33,12 +30,9 @@ const paymentMethodValidator = v.union(
   v.literal("other"),
 );
 
-/**
- * Create a fine manually
- */
 export const create = mutation({
   args: {
-    patronId: v.id("patrons"),
+    accountId: v.id("accounts"),
     fineType: fineTypeValidator,
     description: v.string(),
     amount: v.number(),
@@ -52,16 +46,16 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    const patron = await ctx.db.get(args.patronId);
-    if (!patron) {
-      throw new Error("Patron not found");
+    const account = await ctx.db.get(args.accountId);
+    if (!account) {
+      throw new Error("Account not found");
     }
 
     const now = Date.now();
 
     const fineId = await ctx.db.insert("libraryFines", {
-      organizationId: patron.organizationId,
-      patronId: args.patronId,
+      organizationId: account.organizationId,
+      accountId: args.accountId,
       fineType: args.fineType,
       description: args.description,
       amount: args.amount,
@@ -73,21 +67,17 @@ export const create = mutation({
       notes: args.notes,
     });
 
-    // Update patron fine balance
-    await ctx.db.patch(args.patronId, {
-      fineBalance: patron.fineBalance + args.amount,
+    await ctx.db.patch(args.accountId, {
+      fineBalance: (account.fineBalance || 0) + args.amount,
     });
 
     return fineId;
   },
 });
 
-/**
- * Record a payment
- */
 export const recordPayment = mutation({
   args: {
-    patronId: v.id("patrons"),
+    accountId: v.id("accounts"),
     amount: v.number(),
     paymentMethod: paymentMethodValidator,
     fineIds: v.optional(v.array(v.id("libraryFines"))),
@@ -101,9 +91,9 @@ export const recordPayment = mutation({
       throw new Error("Not authenticated");
     }
 
-    const patron = await ctx.db.get(args.patronId);
-    if (!patron) {
-      throw new Error("Patron not found");
+    const account = await ctx.db.get(args.accountId);
+    if (!account) {
+      throw new Error("Account not found");
     }
 
     if (args.amount <= 0) {
@@ -114,13 +104,12 @@ export const recordPayment = mutation({
     let remainingPayment = args.amount;
     const paidFineIds: Id<"libraryFines">[] = [];
 
-    // If specific fines are specified, pay those
     if (args.fineIds && args.fineIds.length > 0) {
       for (const fineId of args.fineIds) {
         if (remainingPayment <= 0) break;
 
         const fine = await ctx.db.get(fineId);
-        if (!fine || fine.patronId !== args.patronId) continue;
+        if (!fine || fine.accountId !== args.accountId) continue;
         if (fine.status !== "outstanding") continue;
 
         const paymentForFine = Math.min(remainingPayment, fine.balance);
@@ -138,15 +127,13 @@ export const recordPayment = mutation({
         paidFineIds.push(fineId);
       }
     } else {
-      // Apply payment to oldest outstanding fines first
       const outstandingFines = await ctx.db
         .query("libraryFines")
-        .withIndex("by_patron_and_status", (q) =>
-          q.eq("patronId", args.patronId).eq("status", "outstanding"),
+        .withIndex("by_account_and_status", (q) =>
+          q.eq("accountId", args.accountId).eq("status", "outstanding"),
         )
         .collect();
 
-      // Sort by creation date (oldest first)
       outstandingFines.sort((a, b) => a.createdAt - b.createdAt);
 
       for (const fine of outstandingFines) {
@@ -168,10 +155,9 @@ export const recordPayment = mutation({
       }
     }
 
-    // Create payment record
     const paymentId = await ctx.db.insert("libraryPayments", {
-      organizationId: patron.organizationId,
-      patronId: args.patronId,
+      organizationId: account.organizationId,
+      accountId: args.accountId,
       amount: args.amount,
       paymentMethod: args.paymentMethod,
       fineIds: paidFineIds,
@@ -181,17 +167,13 @@ export const recordPayment = mutation({
       notes: args.notes,
     });
 
-    // Update patron fine balance
-    const newBalance = Math.max(0, patron.fineBalance - args.amount);
-    await ctx.db.patch(args.patronId, { fineBalance: newBalance });
+    const newBalance = Math.max(0, (account.fineBalance || 0) - args.amount);
+    await ctx.db.patch(args.accountId, { fineBalance: newBalance });
 
     return paymentId;
   },
 });
 
-/**
- * Waive a fine
- */
 export const waive = mutation({
   args: {
     fineId: v.id("libraryFines"),
@@ -213,18 +195,16 @@ export const waive = mutation({
       throw new Error("Can only waive outstanding fines");
     }
 
-    // Update fine
     await ctx.db.patch(args.fineId, {
       status: "waived",
       waivedBy: userId,
       waivedReason: args.reason,
     });
 
-    // Update patron fine balance
-    const patron = await ctx.db.get(fine.patronId);
-    if (patron) {
-      await ctx.db.patch(fine.patronId, {
-        fineBalance: Math.max(0, patron.fineBalance - fine.balance),
+    const account = await ctx.db.get(fine.accountId);
+    if (account) {
+      await ctx.db.patch(fine.accountId, {
+        fineBalance: Math.max(0, (account.fineBalance || 0) - fine.balance),
       });
     }
 
@@ -232,9 +212,6 @@ export const waive = mutation({
   },
 });
 
-/**
- * Forgive a fine
- */
 export const forgive = mutation({
   args: {
     fineId: v.id("libraryFines"),
@@ -256,18 +233,16 @@ export const forgive = mutation({
       throw new Error("Can only forgive outstanding fines");
     }
 
-    // Update fine
     await ctx.db.patch(args.fineId, {
       status: "forgiven",
       waivedBy: userId,
       waivedReason: args.reason,
     });
 
-    // Update patron fine balance
-    const patron = await ctx.db.get(fine.patronId);
-    if (patron) {
-      await ctx.db.patch(fine.patronId, {
-        fineBalance: Math.max(0, patron.fineBalance - fine.balance),
+    const account = await ctx.db.get(fine.accountId);
+    if (account) {
+      await ctx.db.patch(fine.accountId, {
+        fineBalance: Math.max(0, (account.fineBalance || 0) - fine.balance),
       });
     }
 
@@ -275,9 +250,6 @@ export const forgive = mutation({
   },
 });
 
-/**
- * Get a fine by ID
- */
 export const get = query({
   args: {
     fineId: v.id("libraryFines"),
@@ -288,7 +260,7 @@ export const get = query({
       return null;
     }
 
-    const patron = await ctx.db.get(fine.patronId);
+    const account = await ctx.db.get(fine.accountId);
     const circulation = fine.circulationId
       ? await ctx.db.get(fine.circulationId)
       : null;
@@ -297,7 +269,7 @@ export const get = query({
 
     return {
       ...fine,
-      patron,
+      account,
       circulation,
       copy,
       item,
@@ -305,9 +277,6 @@ export const get = query({
   },
 });
 
-/**
- * List fines for organization
- */
 export const list = query({
   args: {
     organizationId: v.id("organizations"),
@@ -316,39 +285,33 @@ export const list = query({
     fineType: v.optional(fineTypeValidator),
   },
   handler: async (ctx, args) => {
-    let query;
-
-    if (args.status) {
-      query = ctx.db
-        .query("libraryFines")
-        .withIndex("by_organization_and_status", (q) =>
-          q
-            .eq("organizationId", args.organizationId)
-            .eq("status", args.status!),
-        );
-    } else {
-      query = ctx.db
-        .query("libraryFines")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        );
-    }
+    const query = args.status
+      ? ctx.db
+          .query("libraryFines")
+          .withIndex("by_organization_and_status", (q) =>
+            q
+              .eq("organizationId", args.organizationId)
+              .eq("status", args.status!),
+          )
+      : ctx.db
+          .query("libraryFines")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          );
 
     const fines = await query.paginate(args.paginationOpts);
 
-    // Filter by type if specified
     let filteredPage = fines.page;
     if (args.fineType) {
       filteredPage = fines.page.filter((f) => f.fineType === args.fineType);
     }
 
-    // Enrich with patron data
     const enrichedPage = await Promise.all(
       filteredPage.map(async (fine) => {
-        const patron = await ctx.db.get(fine.patronId);
+        const account = await ctx.db.get(fine.accountId);
         return {
           ...fine,
-          patron,
+          account,
         };
       }),
     );
@@ -360,22 +323,18 @@ export const list = query({
   },
 });
 
-/**
- * Get payments for a patron
- */
 export const getPaymentHistory = query({
   args: {
-    patronId: v.id("patrons"),
+    accountId: v.id("accounts"),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     const payments = await ctx.db
       .query("libraryPayments")
-      .withIndex("by_patron", (q) => q.eq("patronId", args.patronId))
+      .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
       .order("desc")
       .paginate(args.paginationOpts);
 
-    // Enrich with staff who received payment
     const enrichedPage = await Promise.all(
       payments.page.map(async (payment) => {
         const receivedBy = await ctx.db.get(payment.receivedBy);
@@ -393,9 +352,6 @@ export const getPaymentHistory = query({
   },
 });
 
-/**
- * Get fine statistics
- */
 export const getStatistics = query({
   args: {
     organizationId: v.id("organizations"),
@@ -479,9 +435,6 @@ export const getStatistics = query({
   },
 });
 
-/**
- * Generate receipt for a payment
- */
 export const getReceipt = query({
   args: {
     paymentId: v.id("libraryPayments"),
@@ -492,10 +445,9 @@ export const getReceipt = query({
       return null;
     }
 
-    const patron = await ctx.db.get(payment.patronId);
+    const account = await ctx.db.get(payment.accountId);
     const receivedBy = await ctx.db.get(payment.receivedBy);
 
-    // Get details of paid fines
     const fines = await Promise.all(
       payment.fineIds.map(async (fineId) => {
         const fine = await ctx.db.get(fineId);
@@ -503,7 +455,6 @@ export const getReceipt = query({
       }),
     );
 
-    // Get library settings for receipt header/footer
     const settings = await ctx.db
       .query("librarySettings")
       .withIndex("by_organization", (q) =>
@@ -513,7 +464,7 @@ export const getReceipt = query({
 
     return {
       payment,
-      patron,
+      account,
       receivedBy,
       fines: fines.filter(Boolean),
       receiptHeader: settings?.receiptHeader,

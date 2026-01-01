@@ -30,22 +30,28 @@ export const getDashboardStats = query({
       .collect();
 
     const totalItems = items.length;
-    const publishedItems = items.filter((i) => i.catalogStatus === "published").length;
+    const publishedItems = items.filter(
+      (i) => i.catalogStatus === "published",
+    ).length;
     const totalCopies = items.reduce((sum, i) => sum + i.totalCopies, 0);
-    const availableCopies = items.reduce((sum, i) => sum + i.availableCopies, 0);
+    const availableCopies = items.reduce(
+      (sum, i) => sum + i.availableCopies,
+      0,
+    );
 
-    // Patron stats
-    const patrons = await ctx.db
-      .query("patrons")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
+    const patronAccounts = await ctx.db
+      .query("accounts")
+      .withIndex("by_organization_and_accountType", (q) =>
+        q.eq("organizationId", args.organizationId).eq("accountType", "patron"),
       )
       .collect();
 
-    const totalPatrons = patrons.length;
-    const activePatrons = patrons.filter((p) => p.status === "active").length;
-    const newPatronsThisMonth = patrons.filter(
-      (p) => p.registrationDate >= thisMonthStart,
+    const totalPatrons = patronAccounts.length;
+    const activePatrons = patronAccounts.filter(
+      (p) => p.status === "active",
+    ).length;
+    const newPatronsThisMonth = patronAccounts.filter(
+      (p) => p.registrationDate && p.registrationDate >= thisMonthStart,
     ).length;
 
     // Circulation stats
@@ -56,7 +62,9 @@ export const getDashboardStats = query({
       )
       .collect();
 
-    const activeCheckouts = circulations.filter((c) => c.status === "active").length;
+    const activeCheckouts = circulations.filter(
+      (c) => c.status === "active",
+    ).length;
     const overdueItems = circulations.filter(
       (c) => c.status === "active" && c.dueDate < now,
     ).length;
@@ -93,7 +101,9 @@ export const getDashboardStats = query({
       .filter((f) => f.status === "outstanding")
       .reduce((sum, f) => sum + f.balance, 0);
     const collectedThisMonth = fines
-      .filter((f) => f.status === "paid" && f.paidAt && f.paidAt >= thisMonthStart)
+      .filter(
+        (f) => f.status === "paid" && f.paidAt && f.paidAt >= thisMonthStart,
+      )
       .reduce((sum, f) => sum + f.amount, 0);
 
     return {
@@ -213,29 +223,20 @@ export const getPatronReport = query({
     endDate: v.number(),
   },
   handler: async (ctx, args) => {
-    // New registrations
-    const patrons = await ctx.db
-      .query("patrons")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) =>
-        q.and(
-          q.gte(q.field("registrationDate"), args.startDate),
-          q.lte(q.field("registrationDate"), args.endDate),
-        ),
+    const allPatronAccounts = await ctx.db
+      .query("accounts")
+      .withIndex("by_organization_and_accountType", (q) =>
+        q.eq("organizationId", args.organizationId).eq("accountType", "patron"),
       )
       .collect();
 
-    // Get all patrons for activity analysis
-    const allPatrons = await ctx.db
-      .query("patrons")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const newRegistrations = allPatronAccounts.filter(
+      (p) =>
+        p.registrationDate &&
+        p.registrationDate >= args.startDate &&
+        p.registrationDate <= args.endDate,
+    );
 
-    // Get circulations in date range
     const circulations = await ctx.db
       .query("circulations")
       .withIndex("by_organization", (q) =>
@@ -249,43 +250,41 @@ export const getPatronReport = query({
       )
       .collect();
 
-    // Active patrons (those who borrowed during period)
-    const activePatronIds = new Set(circulations.map((c) => c.patronId));
+    const activeAccountIds = new Set(circulations.map((c) => c.accountId));
 
-    // Top borrowers
-    const patronCheckouts = new Map<string, number>();
+    const accountCheckouts = new Map<string, number>();
     for (const circ of circulations) {
-      const count = patronCheckouts.get(circ.patronId) || 0;
-      patronCheckouts.set(circ.patronId, count + 1);
+      const count = accountCheckouts.get(circ.accountId) || 0;
+      accountCheckouts.set(circ.accountId, count + 1);
     }
 
-    const topBorrowerIds = Array.from(patronCheckouts.entries())
+    const topBorrowerIds = Array.from(accountCheckouts.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10);
 
     const topBorrowers = await Promise.all(
-      topBorrowerIds.map(async ([patronId, count]) => {
-        const patron = await ctx.db.get(patronId as Id<"patrons">);
+      topBorrowerIds.map(async ([accountId, count]) => {
+        const account = await ctx.db.get(accountId as Id<"accounts">);
         return {
-          patron,
+          patron: account,
           checkoutCount: count,
         };
       }),
     );
 
-    // Status breakdown
     const statusBreakdown = {
-      active: allPatrons.filter((p) => p.status === "active").length,
-      expired: allPatrons.filter((p) => p.status === "expired").length,
-      suspended: allPatrons.filter((p) => p.status === "suspended").length,
-      blocked: allPatrons.filter((p) => p.status === "blocked").length,
+      active: allPatronAccounts.filter((p) => p.status === "active").length,
+      expired: allPatronAccounts.filter((p) => p.status === "expired").length,
+      suspended: allPatronAccounts.filter((p) => p.status === "suspended")
+        .length,
+      blocked: allPatronAccounts.filter((p) => p.status === "blocked").length,
     };
 
     return {
       summary: {
-        newRegistrations: patrons.length,
-        activePatrons: activePatronIds.size,
-        totalPatrons: allPatrons.length,
+        newRegistrations: newRegistrations.length,
+        activePatrons: activeAccountIds.size,
+        totalPatrons: allPatronAccounts.length,
       },
       statusBreakdown,
       topBorrowers: topBorrowers.filter((t) => t.patron !== null),
@@ -339,11 +338,16 @@ export const getCollectionReport = query({
 
     // Total copies
     const totalCopies = items.reduce((sum, i) => sum + i.totalCopies, 0);
-    const availableCopies = items.reduce((sum, i) => sum + i.availableCopies, 0);
+    const availableCopies = items.reduce(
+      (sum, i) => sum + i.availableCopies,
+      0,
+    );
 
     // Recent additions (last 30 days)
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    const recentAdditions = items.filter((i) => i.createdAt >= thirtyDaysAgo).length;
+    const recentAdditions = items.filter(
+      (i) => i.createdAt >= thirtyDaysAgo,
+    ).length;
 
     return {
       summary: {
@@ -411,9 +415,12 @@ export const getFinancialReport = query({
         .reduce((sum, f) => sum + f.amount, 0),
       other: fines
         .filter((f) =>
-          ["processing_fee", "replacement_cost", "membership_fee", "other"].includes(
-            f.fineType,
-          ),
+          [
+            "processing_fee",
+            "replacement_cost",
+            "membership_fee",
+            "other",
+          ].includes(f.fineType),
         )
         .reduce((sum, f) => sum + f.amount, 0),
     };
@@ -456,7 +463,9 @@ export const getFinancialReport = query({
       .collect();
 
     const acquisitionSpending = acquisitions
-      .filter((a) => a.actualPrice && ["received", "cataloged"].includes(a.status))
+      .filter(
+        (a) => a.actualPrice && ["received", "cataloged"].includes(a.status),
+      )
       .reduce((sum, a) => sum + (a.actualPrice || 0) * a.quantity, 0);
 
     return {

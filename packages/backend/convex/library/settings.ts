@@ -346,17 +346,19 @@ export const deleteMembershipType = mutation({
       throw new Error("Membership type not found");
     }
 
-    const patronsWithType = await ctx.db
-      .query("patrons")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", membershipType.organizationId),
+    const accountsWithType = await ctx.db
+      .query("accounts")
+      .withIndex("by_organization_and_accountType", (q) =>
+        q
+          .eq("organizationId", membershipType.organizationId)
+          .eq("accountType", "patron"),
       )
       .filter((q) => q.eq(q.field("membershipTypeId"), args.membershipTypeId))
       .first();
 
-    if (patronsWithType) {
+    if (accountsWithType) {
       throw new Error(
-        "Cannot delete membership type that is assigned to patrons",
+        "Cannot delete membership type that is assigned to patron accounts",
       );
     }
 
@@ -395,14 +397,16 @@ export const getLibraryStats = query({
       (i) => i.catalogStatus === "published",
     ).length;
 
-    const patrons = await ctx.db
-      .query("patrons")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
+    const patronAccounts = await ctx.db
+      .query("accounts")
+      .withIndex("by_organization_and_accountType", (q) =>
+        q.eq("organizationId", args.organizationId).eq("accountType", "patron"),
       )
       .collect();
 
-    const activePatrons = patrons.filter((p) => p.status === "active").length;
+    const activePatrons = patronAccounts.filter(
+      (p) => p.status === "active",
+    ).length;
 
     const circulations = await ctx.db
       .query("circulations")

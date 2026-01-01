@@ -1,11 +1,11 @@
 /**
  * Pluralizes a word based on the count.
- * 
+ *
  * @param count - The number to check for pluralization
  * @param singular - The singular form of the word
  * @param plural - Optional plural form. If not provided, adds 's' to singular
  * @returns The appropriate form of the word
- * 
+ *
  * @example
  * pluralize(1, 'item') // 'item'
  * pluralize(2, 'item') // 'items'
@@ -25,12 +25,12 @@ export function pluralize(
 
 /**
  * Formats a count with the appropriate plural form.
- * 
+ *
  * @param count - The number to format
  * @param singular - The singular form of the word
  * @param plural - Optional plural form. If not provided, adds 's' to singular
  * @returns A formatted string with count and word
- * 
+ *
  * @example
  * formatCount(1, 'item') // '1 item'
  * formatCount(2, 'item') // '2 items'

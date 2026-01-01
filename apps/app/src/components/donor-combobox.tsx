@@ -140,12 +140,12 @@ export function DonorCombobox({
       setEmailError("Email address is required");
       return false;
     }
-    
+
     if (!validateEmail(newDonorEmail.trim())) {
       setEmailError("Please enter a valid email address");
       return false;
     }
-    
+
     setEmailError(null);
 
     // Check if donor already exists (case-insensitive) before creating
@@ -170,8 +170,7 @@ export function DonorCombobox({
     // Check for email match
     const existingByEmail = donorOptions.find(
       (d) =>
-        d.email &&
-        d.email.toLowerCase() === newDonorEmail.trim().toLowerCase(),
+        d.email && d.email.toLowerCase() === newDonorEmail.trim().toLowerCase(),
     );
 
     if (existingByEmail) {
@@ -323,7 +322,7 @@ export function DonorCombobox({
               onKeyDown={(e) => {
                 // Stop propagation to prevent parent handlers from interfering
                 e.stopPropagation();
-                
+
                 if (e.key === "Enter" && inputValue.trim()) {
                   e.preventDefault();
                   // If there are filtered donors, select the first one
@@ -497,7 +496,11 @@ export function DonorCombobox({
                 placeholder="donor@example.com"
                 className={emailError ? "border-destructive" : ""}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && newDonorName.trim() && newDonorEmail.trim()) {
+                  if (
+                    e.key === "Enter" &&
+                    newDonorName.trim() &&
+                    newDonorEmail.trim()
+                  ) {
                     e.preventDefault();
                     handleConfirmCreateDonor();
                   }

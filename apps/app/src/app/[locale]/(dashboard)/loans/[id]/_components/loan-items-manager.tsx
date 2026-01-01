@@ -176,9 +176,7 @@ export function LoanItemsManager({
       setIsReturnDialogOpen(false);
       setSelectedItemToReturn(null);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to return item",
-      );
+      setError(err instanceof Error ? err.message : "Failed to return item");
     }
   };
 
@@ -384,9 +382,9 @@ export function LoanItemsManager({
               <div className="flex items-center gap-2">
                 {canReturnItems && !item.conditionIn && (
                   <PermissionGate permission="loans.update">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleReturnItemClick(item)}
                     >
                       <RotateCcw className="mr-2 h-4 w-4" />
@@ -441,20 +439,22 @@ export function LoanItemsManager({
           <DialogHeader>
             <DialogTitle>Return Loan Item</DialogTitle>
             <DialogDescription>
-              {loanType === "incoming" 
-                ? "This will mark the item as returned and move it to deaccessions." 
+              {loanType === "incoming"
+                ? "This will mark the item as returned and move it to deaccessions."
                 : "This will mark the item as returned and set its status back to active."}
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedItemToReturn && (
             <div className="space-y-4 py-2">
               <div className="rounded-md bg-muted p-3 text-sm">
-                <span className="font-medium">{selectedItemToReturn.accessionNumber}</span>
+                <span className="font-medium">
+                  {selectedItemToReturn.accessionNumber}
+                </span>
                 <span className="mx-2">•</span>
                 <span>{selectedItemToReturn.title}</span>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="conditionIn">Condition In (Optional)</Label>
                 <Input
@@ -464,7 +464,7 @@ export function LoanItemsManager({
                   placeholder="Condition upon return"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="returnNotes">Notes (Optional)</Label>
                 <Input
@@ -476,14 +476,15 @@ export function LoanItemsManager({
               </div>
             </div>
           )}
-          
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsReturnDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsReturnDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleReturnItemConfirm}>
-              Confirm Return
-            </Button>
+            <Button onClick={handleReturnItemConfirm}>Confirm Return</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

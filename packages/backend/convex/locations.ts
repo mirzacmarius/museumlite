@@ -598,7 +598,8 @@ export const reorder = mutation({
       }
 
       // Check if creating a cycle
-      let currentParentId: Id<"locations"> | undefined = args.newParentLocationId;
+      let currentParentId: Id<"locations"> | undefined =
+        args.newParentLocationId;
       while (currentParentId) {
         if (currentParentId === args.locationId) {
           throw new Error("Cannot create circular location hierarchy");
@@ -638,7 +639,7 @@ export const reorder = mutation({
     for (let i = 0; i < sortedSiblings.length; i++) {
       const sibling = sortedSiblings[i];
       if (!sibling) continue;
-      
+
       if (sibling._id === args.locationId) {
         // Update the moved location with new parent and sortOrder
         await ctx.db.patch(args.locationId, {

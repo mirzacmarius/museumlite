@@ -72,7 +72,12 @@ export default function EditAccountPage() {
         contactPhone: account.contactPhone || "",
         contactEmail: account.contactEmail || "",
         notes: account.notes || "",
-        accountType: (account.accountType || "") as "lender" | "borrower" | "both" | "institution" | "",
+        accountType: (account.accountType || "") as
+          | "lender"
+          | "borrower"
+          | "both"
+          | "institution"
+          | "",
         selectedRoles: account.roleIds || [],
       });
     }
@@ -81,9 +86,7 @@ export default function EditAccountPage() {
   // Get roles that have loans permissions
   const rolesWithLoansPermissions = roles?.filter((role) => {
     // Check if role has any loans-related permissions
-    return role.permissions.some(
-      (perm) => perm.category === "loans"
-    );
+    return role.permissions.some((perm) => perm.category === "loans");
   });
 
   const groupedPermissions = permissions?.reduce(
@@ -158,7 +161,10 @@ export default function EditAccountPage() {
         contactEmail: formData.contactEmail || undefined,
         notes: formData.notes || undefined,
         accountType: formData.accountType || undefined,
-        roleIds: formData.selectedRoles.length > 0 ? formData.selectedRoles : undefined,
+        roleIds:
+          formData.selectedRoles.length > 0
+            ? formData.selectedRoles
+            : undefined,
       });
       router.push(`/accounts/${accountId}`);
     } catch (err) {
@@ -389,9 +395,14 @@ export default function EditAccountPage() {
                     <Label htmlFor="accountType">Account Type</Label>
                     <Select
                       value={formData.accountType}
-                      onValueChange={(value: "lender" | "borrower" | "both" | "institution" | "") =>
-                        setFormData({ ...formData, accountType: value })
-                      }
+                      onValueChange={(
+                        value:
+                          | "lender"
+                          | "borrower"
+                          | "both"
+                          | "institution"
+                          | "",
+                      ) => setFormData({ ...formData, accountType: value })}
                     >
                       <SelectTrigger id="accountType">
                         <SelectValue placeholder="Select account type" />
@@ -399,7 +410,9 @@ export default function EditAccountPage() {
                       <SelectContent>
                         <SelectItem value="lender">Lender</SelectItem>
                         <SelectItem value="borrower">Borrower</SelectItem>
-                        <SelectItem value="both">Both (Lender & Borrower)</SelectItem>
+                        <SelectItem value="both">
+                          Both (Lender & Borrower)
+                        </SelectItem>
                         <SelectItem value="institution">Institution</SelectItem>
                       </SelectContent>
                     </Select>
@@ -418,9 +431,11 @@ export default function EditAccountPage() {
                 </h3>
                 <div className="space-y-4 rounded-lg border border-border p-4">
                   <p className="text-sm text-muted-foreground">
-                    Select which roles can manage this account. Roles with loans permissions are shown below.
+                    Select which roles can manage this account. Roles with loans
+                    permissions are shown below.
                   </p>
-                  {rolesWithLoansPermissions && rolesWithLoansPermissions.length > 0 ? (
+                  {rolesWithLoansPermissions &&
+                  rolesWithLoansPermissions.length > 0 ? (
                     <div className="space-y-3">
                       {rolesWithLoansPermissions.map((role) => (
                         <div
@@ -448,43 +463,49 @@ export default function EditAccountPage() {
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      No roles found. Roles with loans permissions will appear here.
+                      No roles found. Roles with loans permissions will appear
+                      here.
                     </p>
                   )}
                 </div>
               </div>
 
               {/* Permissions Details */}
-              {groupedPermissions && Object.keys(groupedPermissions).length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
-                    Available Permissions
-                  </h3>
-                  <div className="space-y-4 rounded-lg border border-border p-4">
-                    {Object.entries(groupedPermissions).map(([category, perms]) => (
-                      <div key={category} className="space-y-2">
-                        <h4 className="text-sm font-medium capitalize">
-                          {category}
-                        </h4>
-                        <div className="space-y-1 pl-4">
-                          {perms.map((perm) => (
-                            <div
-                              key={perm._id}
-                              className="text-xs text-muted-foreground"
-                            >
-                              • {perm.name}
-                              {perm.description && (
-                                <span className="ml-2">- {perm.description}</span>
-                              )}
+              {groupedPermissions &&
+                Object.keys(groupedPermissions).length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Available Permissions
+                    </h3>
+                    <div className="space-y-4 rounded-lg border border-border p-4">
+                      {Object.entries(groupedPermissions).map(
+                        ([category, perms]) => (
+                          <div key={category} className="space-y-2">
+                            <h4 className="text-sm font-medium capitalize">
+                              {category}
+                            </h4>
+                            <div className="space-y-1 pl-4">
+                              {perms.map((perm) => (
+                                <div
+                                  key={perm._id}
+                                  className="text-xs text-muted-foreground"
+                                >
+                                  • {perm.name}
+                                  {perm.description && (
+                                    <span className="ml-2">
+                                      - {perm.description}
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                          </div>
+                        ),
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               <div className="flex justify-end gap-4">
                 <Button

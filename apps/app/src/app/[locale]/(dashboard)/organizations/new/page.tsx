@@ -64,116 +64,113 @@ export default function NewOrganizationPage() {
 
   return (
     <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
-        <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-          <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
-            <div className="flex w-full items-center justify-between rounded-lg p-6">
-              <div className="flex flex-col gap-2">
-                <h2 className="text-xl font-medium text-primary">
-                  Organization Details
-                </h2>
-                <p className="text-sm font-normal text-primary/60">
-                  Create a new organization to start managing collections
+      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+        <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
+          <div className="flex w-full items-center justify-between rounded-lg p-6">
+            <div className="flex flex-col gap-2">
+              <h2 className="text-xl font-medium text-primary">
+                Organization Details
+              </h2>
+              <p className="text-sm font-normal text-primary/60">
+                Create a new organization to start managing collections
+              </p>
+            </div>
+          </div>
+          <div className="flex w-full px-6">
+            <div className="w-full border-b border-border" />
+          </div>
+          <form onSubmit={handleSubmit} className="p-6">
+            <div className="space-y-6">
+              <div>
+                <label
+                  htmlFor="name"
+                  className="mb-2 block text-sm font-medium"
+                >
+                  Organization Name *
+                </label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  placeholder="e.g., Metropolitan Museum of Art"
+                  required
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="slug"
+                  className="mb-2 block text-sm font-medium"
+                >
+                  Slug (URL-friendly identifier)
+                </label>
+                <Input
+                  id="slug"
+                  type="text"
+                  value={formData.slug}
+                  onChange={(e) =>
+                    setFormData({ ...formData, slug: e.target.value })
+                  }
+                  placeholder="Auto-generated from name"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Leave empty to auto-generate from name
                 </p>
               </div>
-            </div>
-            <div className="flex w-full px-6">
-              <div className="w-full border-b border-border" />
-            </div>
-            <form onSubmit={handleSubmit} className="p-6">
-              <div className="space-y-6">
-                <div>
-                  <label
-                    htmlFor="name"
-                    className="mb-2 block text-sm font-medium"
-                  >
-                    Organization Name *
-                  </label>
-                  <Input
-                    id="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    placeholder="e.g., Metropolitan Museum of Art"
-                    required
-                  />
-                </div>
 
-                <div>
-                  <label
-                    htmlFor="slug"
-                    className="mb-2 block text-sm font-medium"
-                  >
-                    Slug (URL-friendly identifier)
-                  </label>
-                  <Input
-                    id="slug"
-                    type="text"
-                    value={formData.slug}
-                    onChange={(e) =>
-                      setFormData({ ...formData, slug: e.target.value })
-                    }
-                    placeholder="Auto-generated from name"
-                  />
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Leave empty to auto-generate from name
-                  </p>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="type"
-                    className="mb-2 block text-sm font-medium"
-                  >
-                    Organization Type *
-                  </label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value) =>
-                      setFormData({
-                        ...formData,
-                        type: value as typeof formData.type,
-                      })
-                    }
-                  >
-                    <SelectTrigger id="type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="museum">Museum</SelectItem>
-                      <SelectItem value="gallery">Gallery</SelectItem>
-                      <SelectItem value="library">Library</SelectItem>
-                      <SelectItem value="collector">Collector</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {error && (
-                  <div className="rounded-lg border border-destructive bg-destructive/10 p-3">
-                    <p className="text-sm text-destructive">{error}</p>
-                  </div>
-                )}
-
-                <div className="flex gap-4">
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting || !formData.name}
-                  >
-                    {isSubmitting ? "Creating..." : "Create Organization"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => router.back()}
-                  >
-                    Cancel
-                  </Button>
-                </div>
+              <div>
+                <label
+                  htmlFor="type"
+                  className="mb-2 block text-sm font-medium"
+                >
+                  Organization Type *
+                </label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      type: value as typeof formData.type,
+                    })
+                  }
+                >
+                  <SelectTrigger id="type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="museum">Museum</SelectItem>
+                    <SelectItem value="gallery">Gallery</SelectItem>
+                    <SelectItem value="library">Library</SelectItem>
+                    <SelectItem value="collector">Collector</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </form>
-          </div>
+
+              {error && (
+                <div className="rounded-lg border border-destructive bg-destructive/10 p-3">
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
+              )}
+
+              <div className="flex gap-4">
+                <Button type="submit" disabled={isSubmitting || !formData.name}>
+                  {isSubmitting ? "Creating..." : "Create Organization"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.back()}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </form>
         </div>
       </div>
+    </div>
   );
 }

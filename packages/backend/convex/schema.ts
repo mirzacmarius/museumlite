@@ -44,7 +44,7 @@ export default defineSchema({
         locationTypes: v.optional(v.array(v.string())),
         enableDetailedConditionReports: v.optional(v.boolean()),
         // Integrations
-        enabledIntegrations: v.optional(v.array(v.string())), // ["library", etc.] 
+        enabledIntegrations: v.optional(v.array(v.string())), // ["library", etc.]
       }),
     ),
     subscriptionTier: v.optional(
@@ -462,30 +462,92 @@ export default defineSchema({
     .index("by_fromLocation", ["fromLocationId"])
     .index("by_movedAt", ["movedAt"]),
 
-  // Client accounts (lenders/borrowers)
+  // Unified accounts (museum lenders/borrowers + library patrons)
   accounts: defineTable({
     organizationId: v.id("organizations"),
-    accountNumber: v.string(),
-    businessName: v.string(),
+    accountNumber: v.string(), // ACC-XXXXX format
+
+    // Account type - distinguishes museum vs library accounts
+    // Optional to support existing accounts before migration
+    accountType: v.optional(
+      v.union(
+        v.literal("lender"), // Museum: lends objects TO museum
+        v.literal("borrower"), // Museum: borrows objects FROM museum
+        v.literal("both"), // Museum: both lender and borrower
+        v.literal("institution"), // Museum: institutional partner
+        v.literal("patron"), // Library: individual library member
+      ),
+    ),
+
+    // Business/Organization info (for institutions - lender/borrower/institution)
+    businessName: v.optional(v.string()),
+    contactPerson: v.optional(v.string()),
+    contactPhone: v.optional(v.string()),
+    contactEmail: v.optional(v.string()),
+
+    // Personal info (for individuals - patron type)
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    dateOfBirth: v.optional(v.number()),
+
+    // Contact info (shared)
     phone: v.optional(v.string()),
     email: v.optional(v.string()),
+
+    // Address (flat format for backward compatibility)
     address: v.optional(v.string()),
     address2: v.optional(v.string()),
     zipCode: v.optional(v.string()),
     city: v.optional(v.string()),
     country: v.optional(v.string()),
-    contactPerson: v.optional(v.string()),
-    contactPhone: v.optional(v.string()),
-    contactEmail: v.optional(v.string()),
-    notes: v.optional(v.string()),
-    accountType: v.optional(
+
+    // Structured address (for library patrons)
+    structuredAddress: v.optional(
+      v.object({
+        street: v.string(),
+        city: v.string(),
+        state: v.optional(v.string()),
+        postalCode: v.string(),
+        country: v.optional(v.string()),
+      }),
+    ),
+
+    // Library-specific fields (for patron accounts)
+    cardNumber: v.optional(v.string()), // Library card number
+    pin: v.optional(v.string()),
+    membershipTypeId: v.optional(v.id("membershipTypes")),
+    membershipType: v.optional(v.string()),
+    registrationDate: v.optional(v.number()),
+    expirationDate: v.optional(v.number()),
+    status: v.optional(
       v.union(
-        v.literal("lender"),
-        v.literal("borrower"),
-        v.literal("both"),
-        v.literal("institution"),
+        v.literal("active"),
+        v.literal("expired"),
+        v.literal("suspended"),
+        v.literal("blocked"),
+        v.literal("inactive"),
       ),
     ),
+    blockReason: v.optional(v.string()),
+    borrowingLimit: v.optional(v.number()),
+    holdLimit: v.optional(v.number()),
+    fineBalance: v.optional(v.number()),
+    preferredBranch: v.optional(v.id("locations")),
+    notificationPreferences: v.optional(
+      v.object({
+        email: v.boolean(),
+        sms: v.boolean(),
+        dueDateReminder: v.boolean(),
+        holdReady: v.boolean(),
+      }),
+    ),
+    totalCheckouts: v.optional(v.number()),
+
+    // Link to user account (for self-service portal)
+    userId: v.optional(v.id("users")),
+
+    // Audit fields
+    notes: v.optional(v.string()),
     createdBy: v.id("users"),
     createdAt: v.number(),
     lastModifiedBy: v.optional(v.id("users")),
@@ -496,9 +558,19 @@ export default defineSchema({
       "organizationId",
       "accountNumber",
     ])
+    .index("by_organization_and_accountType", ["organizationId", "accountType"])
+    .index("by_organization_and_cardNumber", ["organizationId", "cardNumber"])
+    .index("by_cardNumber", ["cardNumber"])
+    .index("by_email", ["email"])
+    .index("by_status", ["status"])
+    .index("by_user", ["userId"])
     .searchIndex("search_accounts", {
       searchField: "businessName",
-      filterFields: ["organizationId"],
+      filterFields: ["organizationId", "accountType"],
+    })
+    .searchIndex("search_accounts_by_name", {
+      searchField: "lastName",
+      filterFields: ["organizationId", "accountType", "status"],
     }),
 
   // Many-to-many relationship between accounts and roles
@@ -933,86 +1005,7 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_location", ["locationId"]),
 
-  // Patrons - Library members
-  patrons: defineTable({
-    organizationId: v.id("organizations"),
-    userId: v.optional(v.id("users")),
-
-    // Library card
-    cardNumber: v.string(),
-    pin: v.optional(v.string()),
-
-    // Personal info
-    firstName: v.string(),
-    lastName: v.string(),
-    email: v.optional(v.string()),
-    phone: v.optional(v.string()),
-    dateOfBirth: v.optional(v.number()),
-
-    // Address
-    address: v.optional(
-      v.object({
-        street: v.string(),
-        city: v.string(),
-        state: v.optional(v.string()),
-        postalCode: v.string(),
-        country: v.optional(v.string()),
-      }),
-    ),
-
-    // Membership
-    membershipTypeId: v.optional(v.id("membershipTypes")),
-    membershipType: v.string(),
-    registrationDate: v.number(),
-    expirationDate: v.optional(v.number()),
-
-    // Status
-    status: v.union(
-      v.literal("active"),
-      v.literal("expired"),
-      v.literal("suspended"),
-      v.literal("blocked"),
-      v.literal("inactive"),
-    ),
-    blockReason: v.optional(v.string()),
-
-    // Limits & privileges
-    borrowingLimit: v.number(),
-    holdLimit: v.number(),
-
-    // Balances
-    fineBalance: v.number(),
-
-    // Preferences
-    preferredBranch: v.optional(v.id("locations")),
-    notificationPreferences: v.optional(
-      v.object({
-        email: v.boolean(),
-        sms: v.boolean(),
-        dueDateReminder: v.boolean(),
-        holdReady: v.boolean(),
-      }),
-    ),
-
-    // Statistics
-    totalCheckouts: v.optional(v.number()),
-
-    notes: v.optional(v.string()),
-    createdBy: v.id("users"),
-    createdAt: v.number(),
-  })
-    .index("by_organization", ["organizationId"])
-    .index("by_cardNumber", ["cardNumber"])
-    .index("by_organization_and_cardNumber", ["organizationId", "cardNumber"])
-    .index("by_email", ["email"])
-    .index("by_status", ["status"])
-    .index("by_user", ["userId"])
-    .searchIndex("search_patrons", {
-      searchField: "lastName",
-      filterFields: ["organizationId", "status"],
-    }),
-
-  // Membership Types - Configurable membership tiers
+  // Membership Types - Configurable membership tiers for library patrons
   membershipTypes: defineTable({
     organizationId: v.id("organizations"),
     name: v.string(),
@@ -1033,20 +1026,17 @@ export default defineSchema({
   // Circulations - Checkout/checkin transactions
   circulations: defineTable({
     organizationId: v.id("organizations"),
-    patronId: v.id("patrons"),
+    accountId: v.id("accounts"),
     copyId: v.id("itemCopies"),
     itemId: v.id("libraryItems"),
 
-    // Dates
     checkoutDate: v.number(),
     dueDate: v.number(),
     returnDate: v.optional(v.number()),
 
-    // Renewals
     renewalCount: v.number(),
     lastRenewalDate: v.optional(v.number()),
 
-    // Status
     status: v.union(
       v.literal("active"),
       v.literal("returned"),
@@ -1074,18 +1064,18 @@ export default defineSchema({
     notes: v.optional(v.string()),
   })
     .index("by_organization", ["organizationId"])
-    .index("by_patron", ["patronId"])
+    .index("by_account", ["accountId"])
     .index("by_copy", ["copyId"])
     .index("by_item", ["itemId"])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_dueDate", ["dueDate"])
-    .index("by_patron_and_status", ["patronId", "status"]),
+    .index("by_account_and_status", ["accountId", "status"]),
 
   // Holds - Reservations queue
   libraryHolds: defineTable({
     organizationId: v.id("organizations"),
-    patronId: v.id("patrons"),
+    accountId: v.id("accounts"),
     itemId: v.id("libraryItems"),
     copyId: v.optional(v.id("itemCopies")),
 
@@ -1115,7 +1105,7 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_organization", ["organizationId"])
-    .index("by_patron", ["patronId"])
+    .index("by_account", ["accountId"])
     .index("by_item", ["itemId"])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
@@ -1124,7 +1114,7 @@ export default defineSchema({
   // Fines - Fee tracking
   libraryFines: defineTable({
     organizationId: v.id("organizations"),
-    patronId: v.id("patrons"),
+    accountId: v.id("accounts"),
     circulationId: v.optional(v.id("circulations")),
     copyId: v.optional(v.id("itemCopies")),
 
@@ -1160,16 +1150,16 @@ export default defineSchema({
     notes: v.optional(v.string()),
   })
     .index("by_organization", ["organizationId"])
-    .index("by_patron", ["patronId"])
+    .index("by_account", ["accountId"])
     .index("by_circulation", ["circulationId"])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
-    .index("by_patron_and_status", ["patronId", "status"]),
+    .index("by_account_and_status", ["accountId", "status"]),
 
   // Payments - Payment transactions
   libraryPayments: defineTable({
     organizationId: v.id("organizations"),
-    patronId: v.id("patrons"),
+    accountId: v.id("accounts"),
 
     amount: v.number(),
     paymentMethod: v.union(
@@ -1180,7 +1170,6 @@ export default defineSchema({
       v.literal("other"),
     ),
 
-    // Applied to fines
     fineIds: v.array(v.id("libraryFines")),
 
     receiptNumber: v.optional(v.string()),
@@ -1190,7 +1179,7 @@ export default defineSchema({
     notes: v.optional(v.string()),
   })
     .index("by_organization", ["organizationId"])
-    .index("by_patron", ["patronId"])
+    .index("by_account", ["accountId"])
     .index("by_receivedAt", ["receivedAt"]),
 
   // Acquisition Requests - Purchase requests

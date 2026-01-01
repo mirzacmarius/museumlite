@@ -159,9 +159,7 @@ export function ActivityList({
         <>
           {sortedMonths.map((month) => (
             <div key={month} className="mb-8">
-              <h2 className="mb-4 text-base font-semibold">
-                {month}
-              </h2>
+              <h2 className="mb-4 text-base font-semibold">{month}</h2>
               <div className="flex flex-col">
                 {groupedActivities[month]?.map((activity) => (
                   <ActivityItem

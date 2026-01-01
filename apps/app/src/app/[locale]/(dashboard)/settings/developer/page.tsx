@@ -52,7 +52,9 @@ export default function DeveloperUtilitiesPage() {
   return (
     <div className="w-full space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Developer Utilities</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Developer Utilities
+        </h1>
         <p className="text-muted-foreground mt-2">
           Administrative tools for testing and development. Use with caution.
         </p>
@@ -69,8 +71,8 @@ export default function DeveloperUtilitiesPage() {
               <div>
                 <h3 className="text-lg font-semibold">Delete All Loans</h3>
                 <p className="text-sm text-muted-foreground">
-                  Permanently delete all loans, loan items, and restore collection statuses to "active".
-                  This action cannot be undone.
+                  Permanently delete all loans, loan items, and restore
+                  collection statuses to "active". This action cannot be undone.
                 </p>
               </div>
 
@@ -78,9 +80,19 @@ export default function DeveloperUtilitiesPage() {
                 <div className="rounded-md bg-muted p-4 space-y-1">
                   <p className="text-sm font-medium">Operation completed:</p>
                   <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Deleted {deleteResult.deletedLoans} loan{deleteResult.deletedLoans !== 1 ? "s" : ""}</li>
-                    <li>Deleted {deleteResult.deletedLoanItems} loan item{deleteResult.deletedLoanItems !== 1 ? "s" : ""}</li>
-                    <li>Updated {deleteResult.updatedCollections} collection{deleteResult.updatedCollections !== 1 ? "s" : ""} status to active</li>
+                    <li>
+                      Deleted {deleteResult.deletedLoans} loan
+                      {deleteResult.deletedLoans !== 1 ? "s" : ""}
+                    </li>
+                    <li>
+                      Deleted {deleteResult.deletedLoanItems} loan item
+                      {deleteResult.deletedLoanItems !== 1 ? "s" : ""}
+                    </li>
+                    <li>
+                      Updated {deleteResult.updatedCollections} collection
+                      {deleteResult.updatedCollections !== 1 ? "s" : ""} status
+                      to active
+                    </li>
                   </ul>
                 </div>
               )}
@@ -88,7 +100,10 @@ export default function DeveloperUtilitiesPage() {
               <PermissionGate permission="loans.update">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={isDeletingLoans || !currentOrganizationId}>
+                    <Button
+                      variant="destructive"
+                      disabled={isDeletingLoans || !currentOrganizationId}
+                    >
                       <Trash2 className="mr-2 h-4 w-4" />
                       {isDeletingLoans ? "Deleting..." : "Delete All Loans"}
                     </Button>
@@ -100,7 +115,9 @@ export default function DeveloperUtilitiesPage() {
                         Delete All Loans?
                       </AlertDialogTitle>
                       <AlertDialogDescription className="space-y-2">
-                        <p className="font-medium">This will permanently delete:</p>
+                        <p className="font-medium">
+                          This will permanently delete:
+                        </p>
                         <ul className="list-disc list-inside space-y-1 text-sm">
                           <li>All loans in your organization</li>
                           <li>All loan items</li>

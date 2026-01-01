@@ -54,10 +54,13 @@ const plans = [
 
 export function PricingSection() {
   return (
-    <section id="pricing" className="py-32 px-4 relative bg-black overflow-hidden">
+    <section
+      id="pricing"
+      className="py-32 px-4 relative bg-black overflow-hidden"
+    >
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-20">
-          <motion.h2 
+          <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -86,28 +89,44 @@ export function PricingSection() {
                 </div>
               )}
 
-              <SpotlightCard 
+              <SpotlightCard
                 className={`h-full p-8 flex flex-col transition-all duration-300
-                ${plan.popular 
-                  ? "bg-white/10 border-neon-blue/50 shadow-[0_0_30px_rgba(0,243,255,0.1)]" 
-                  : "bg-white/5 border-white/10 hover:bg-white/10"
+                ${
+                  plan.popular
+                    ? "bg-white/10 border-neon-blue/50 shadow-[0_0_30px_rgba(0,243,255,0.1)]"
+                    : "bg-white/5 border-white/10 hover:bg-white/10"
                 }`}
-                spotlightColor={plan.popular ? "rgba(0, 243, 255, 0.3)" : undefined}
+                spotlightColor={
+                  plan.popular ? "rgba(0, 243, 255, 0.3)" : undefined
+                }
               >
                 <div className="mb-8">
-                  <h3 className="text-xl font-semibold text-white mb-2">{plan.name}</h3>
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    {plan.name}
+                  </h3>
                   <div className="flex items-baseline gap-1 mb-4">
-                    {plan.price !== "Custom" && <span className="text-4xl font-bold text-white">$</span>}
-                    <span className="text-5xl font-bold text-white">{plan.price}</span>
-                    {plan.price !== "Custom" && <span className="text-gray-400">/mo</span>}
+                    {plan.price !== "Custom" && (
+                      <span className="text-4xl font-bold text-white">$</span>
+                    )}
+                    <span className="text-5xl font-bold text-white">
+                      {plan.price}
+                    </span>
+                    {plan.price !== "Custom" && (
+                      <span className="text-gray-400">/mo</span>
+                    )}
                   </div>
                   <p className="text-gray-400 text-sm">{plan.description}</p>
                 </div>
 
                 <ul className="space-y-4 mb-8 flex-1">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3 text-gray-300">
-                      <div className={`mt-1 w-5 h-5 rounded-full flex items-center justify-center ${plan.popular ? "bg-neon-blue/20 text-neon-blue" : "bg-white/10 text-white"}`}>
+                    <li
+                      key={feature}
+                      className="flex items-start gap-3 text-gray-300"
+                    >
+                      <div
+                        className={`mt-1 w-5 h-5 rounded-full flex items-center justify-center ${plan.popular ? "bg-neon-blue/20 text-neon-blue" : "bg-white/10 text-white"}`}
+                      >
                         <Check className="w-3 h-3" />
                       </div>
                       <span className="text-sm">{feature}</span>
@@ -115,12 +134,16 @@ export function PricingSection() {
                   ))}
                 </ul>
 
-                <Link href={plan.price === "Custom" ? "/contact" : "/register"} className="w-full">
-                  <Button 
+                <Link
+                  href={plan.price === "Custom" ? "/contact" : "/register"}
+                  className="w-full"
+                >
+                  <Button
                     className={`w-full h-12 rounded-full font-semibold text-base transition-all
-                      ${plan.popular 
-                        ? "bg-neon-blue text-black hover:bg-neon-blue/90 hover:shadow-[0_0_20px_rgba(0,243,255,0.4)]" 
-                        : "bg-white text-black hover:bg-gray-200"
+                      ${
+                        plan.popular
+                          ? "bg-neon-blue text-black hover:bg-neon-blue/90 hover:shadow-[0_0_20px_rgba(0,243,255,0.4)]"
+                          : "bg-white text-black hover:bg-gray-200"
                       }`}
                   >
                     {plan.cta}

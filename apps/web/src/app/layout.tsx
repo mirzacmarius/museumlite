@@ -66,7 +66,6 @@ export default function RootLayout({
           <Footer />
           <SpeedInsights />
           <Analytics />
-
         </ConvexClientProvider>
 
         <AnalyticsProvider />

@@ -2,9 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
-import type { Id } from "../_generated/dataModel";
 
-// Circulation status validator
 const circulationStatusValidator = v.union(
   v.literal("active"),
   v.literal("returned"),
@@ -13,12 +11,9 @@ const circulationStatusValidator = v.union(
   v.literal("claimed_returned"),
 );
 
-/**
- * Checkout an item to a patron
- */
 export const checkout = mutation({
   args: {
-    patronId: v.id("patrons"),
+    accountId: v.id("accounts"),
     copyId: v.id("itemCopies"),
     dueDate: v.optional(v.number()),
   },
@@ -29,49 +24,50 @@ export const checkout = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Get patron
-    const patron = await ctx.db.get(args.patronId);
-    if (!patron) {
-      throw new Error("Patron not found");
+    const account = await ctx.db.get(args.accountId);
+    if (!account) {
+      throw new Error("Account not found");
     }
 
-    // Check patron status
-    if (patron.status !== "active") {
-      throw new Error(`Cannot checkout: Patron status is ${patron.status}`);
+    if (account.accountType !== "patron") {
+      throw new Error("Only patron accounts can checkout library items");
     }
 
-    // Check patron fine balance
+    if (account.status !== "active") {
+      throw new Error(`Cannot checkout: Account status is ${account.status}`);
+    }
+
     const settings = await ctx.db
       .query("librarySettings")
       .withIndex("by_organization", (q) =>
-        q.eq("organizationId", patron.organizationId),
+        q.eq("organizationId", account.organizationId),
       )
       .first();
 
     if (
       settings?.fineThresholdForBlock &&
-      patron.fineBalance >= settings.fineThresholdForBlock
+      account.fineBalance &&
+      account.fineBalance >= settings.fineThresholdForBlock
     ) {
       throw new Error(
-        `Cannot checkout: Patron has outstanding fines of $${patron.fineBalance.toFixed(2)}`,
+        `Cannot checkout: Account has outstanding fines of $${account.fineBalance.toFixed(2)}`,
       );
     }
 
-    // Check borrowing limit
     const activeCheckouts = await ctx.db
       .query("circulations")
-      .withIndex("by_patron_and_status", (q) =>
-        q.eq("patronId", args.patronId).eq("status", "active"),
+      .withIndex("by_account_and_status", (q) =>
+        q.eq("accountId", args.accountId).eq("status", "active"),
       )
       .collect();
 
-    if (activeCheckouts.length >= patron.borrowingLimit) {
+    const borrowingLimit = account.borrowingLimit ?? 10;
+    if (activeCheckouts.length >= borrowingLimit) {
       throw new Error(
-        `Patron has reached borrowing limit of ${patron.borrowingLimit}`,
+        `Account has reached borrowing limit of ${borrowingLimit}`,
       );
     }
 
-    // Get copy
     const copy = await ctx.db.get(args.copyId);
     if (!copy) {
       throw new Error("Copy not found");
@@ -81,7 +77,6 @@ export const checkout = mutation({
       throw new Error(`Copy is not available (status: ${copy.status})`);
     }
 
-    // Get item
     const item = await ctx.db.get(copy.itemId);
     if (!item) {
       throw new Error("Library item not found");
@@ -93,16 +88,14 @@ export const checkout = mutation({
       );
     }
 
-    // Calculate due date
     const now = Date.now();
     let dueDate = args.dueDate;
 
     if (!dueDate) {
-      // Get loan period from item, membership type, or settings
       let loanPeriodDays = item.loanPeriodDays;
 
-      if (!loanPeriodDays && patron.membershipTypeId) {
-        const membershipType = await ctx.db.get(patron.membershipTypeId);
+      if (!loanPeriodDays && account.membershipTypeId) {
+        const membershipType = await ctx.db.get(account.membershipTypeId);
         if (membershipType) {
           loanPeriodDays = membershipType.loanPeriodDays;
         }
@@ -115,10 +108,9 @@ export const checkout = mutation({
       dueDate = now + loanPeriodDays * 24 * 60 * 60 * 1000;
     }
 
-    // Create circulation record
     const circulationId = await ctx.db.insert("circulations", {
-      organizationId: patron.organizationId,
-      patronId: args.patronId,
+      organizationId: account.organizationId,
+      accountId: args.accountId,
       copyId: args.copyId,
       itemId: copy.itemId,
       checkoutDate: now,
@@ -129,26 +121,20 @@ export const checkout = mutation({
       checkedOutBy: userId,
     });
 
-    // Update copy status
     await ctx.db.patch(args.copyId, { status: "checked_out" });
 
-    // Update item available copies
     await ctx.db.patch(copy.itemId, {
       availableCopies: Math.max(0, item.availableCopies - 1),
     });
 
-    // Update patron total checkouts
-    await ctx.db.patch(args.patronId, {
-      totalCheckouts: (patron.totalCheckouts || 0) + 1,
+    await ctx.db.patch(args.accountId, {
+      totalCheckouts: (account.totalCheckouts || 0) + 1,
     });
 
     return circulationId;
   },
 });
 
-/**
- * Checkin (return) an item
- */
 export const checkin = mutation({
   args: {
     circulationId: v.id("circulations"),
@@ -180,9 +166,8 @@ export const checkin = mutation({
     const now = Date.now();
     const copy = await ctx.db.get(circulation.copyId);
     const item = await ctx.db.get(circulation.itemId);
-    const patron = await ctx.db.get(circulation.patronId);
+    const account = await ctx.db.get(circulation.accountId);
 
-    // Calculate fine if overdue
     let fineAmount = 0;
     let fineCreated = false;
 
@@ -201,10 +186,9 @@ export const checkin = mutation({
       if (overdueTime > 0) {
         const overdueDays = Math.ceil(overdueTime / (24 * 60 * 60 * 1000));
 
-        // Get fine rate from membership type or settings
         let finePerDay = settings?.finePerDayDefault || 0.25;
-        if (patron?.membershipTypeId) {
-          const membershipType = await ctx.db.get(patron.membershipTypeId);
+        if (account?.membershipTypeId) {
+          const membershipType = await ctx.db.get(account.membershipTypeId);
           if (membershipType) {
             finePerDay = membershipType.finePerDay;
           }
@@ -212,16 +196,14 @@ export const checkin = mutation({
 
         fineAmount = overdueDays * finePerDay;
 
-        // Cap fine if max is set
         if (settings?.maxFinePerItem && fineAmount > settings.maxFinePerItem) {
           fineAmount = settings.maxFinePerItem;
         }
 
         if (fineAmount > 0) {
-          // Create fine record
           await ctx.db.insert("libraryFines", {
             organizationId: circulation.organizationId,
-            patronId: circulation.patronId,
+            accountId: circulation.accountId,
             circulationId: args.circulationId,
             copyId: circulation.copyId,
             fineType: "overdue",
@@ -233,10 +215,9 @@ export const checkin = mutation({
             createdAt: now,
           });
 
-          // Update patron fine balance
-          if (patron) {
-            await ctx.db.patch(circulation.patronId, {
-              fineBalance: patron.fineBalance + fineAmount,
+          if (account) {
+            await ctx.db.patch(circulation.accountId, {
+              fineBalance: (account.fineBalance || 0) + fineAmount,
             });
           }
 
@@ -245,13 +226,12 @@ export const checkin = mutation({
       }
     }
 
-    // Handle damaged/lost condition
     if (args.condition === "damaged" || args.condition === "lost") {
       const replacementCost = copy?.replacementCost || 25;
 
       await ctx.db.insert("libraryFines", {
         organizationId: circulation.organizationId,
-        patronId: circulation.patronId,
+        accountId: circulation.accountId,
         circulationId: args.circulationId,
         copyId: circulation.copyId,
         fineType: args.condition === "lost" ? "lost_item" : "damaged_item",
@@ -263,13 +243,12 @@ export const checkin = mutation({
         createdAt: now,
       });
 
-      if (patron) {
-        await ctx.db.patch(circulation.patronId, {
-          fineBalance: patron.fineBalance + replacementCost,
+      if (account) {
+        await ctx.db.patch(circulation.accountId, {
+          fineBalance: (account.fineBalance || 0) + replacementCost,
         });
       }
 
-      // Update copy status
       if (copy) {
         await ctx.db.patch(circulation.copyId, {
           status: args.condition === "lost" ? "lost" : "damaged",
@@ -277,12 +256,10 @@ export const checkin = mutation({
         });
       }
     } else {
-      // Return copy to available
       if (copy) {
         await ctx.db.patch(circulation.copyId, { status: "available" });
       }
 
-      // Update item available copies
       if (item) {
         await ctx.db.patch(circulation.itemId, {
           availableCopies: item.availableCopies + 1,
@@ -290,7 +267,6 @@ export const checkin = mutation({
       }
     }
 
-    // Update circulation record
     await ctx.db.patch(args.circulationId, {
       status: "returned",
       returnDate: now,
@@ -300,7 +276,6 @@ export const checkin = mutation({
       fineStatus: fineAmount > 0 ? "billed" : "none",
     });
 
-    // Check for holds on this item and notify next in queue
     const pendingHolds = await ctx.db
       .query("libraryHolds")
       .withIndex("by_item_and_status", (q) =>
@@ -309,41 +284,34 @@ export const checkin = mutation({
       .collect();
 
     if (pendingHolds.length > 0) {
-      // Sort by queue position and get the first one
       pendingHolds.sort((a, b) => a.queuePosition - b.queuePosition);
       const nextHold = pendingHolds[0];
 
-      // Safety check (should always exist due to length check above)
-      if (!nextHold) {
-        throw new Error("No pending hold found");
-      }
+      if (nextHold) {
+        const settings = await ctx.db
+          .query("librarySettings")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", circulation.organizationId),
+          )
+          .first();
 
-      // Update hold status to available
-      const settings = await ctx.db
-        .query("librarySettings")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", circulation.organizationId),
-        )
-        .first();
+        const holdExpirationDays = settings?.holdExpirationDays || 7;
+        const expirationDate = now + holdExpirationDays * 24 * 60 * 60 * 1000;
 
-      const holdExpirationDays = settings?.holdExpirationDays || 7;
-      const expirationDate = now + holdExpirationDays * 24 * 60 * 60 * 1000;
+        await ctx.db.patch(nextHold._id, {
+          status: "available",
+          copyId: copy?._id,
+          availableDate: now,
+          expirationDate,
+        });
 
-      await ctx.db.patch(nextHold._id, {
-        status: "available",
-        copyId: copy?._id,
-        availableDate: now,
-        expirationDate,
-      });
-
-      // Mark the copy as on hold
-      if (copy && args.condition !== "damaged" && args.condition !== "lost") {
-        await ctx.db.patch(circulation.copyId, { status: "on_hold" });
-        // Decrement available copies again since it's on hold
-        if (item) {
-          await ctx.db.patch(circulation.itemId, {
-            availableCopies: Math.max(0, item.availableCopies),
-          });
+        if (copy && args.condition !== "damaged" && args.condition !== "lost") {
+          await ctx.db.patch(circulation.copyId, { status: "on_hold" });
+          if (item) {
+            await ctx.db.patch(circulation.itemId, {
+              availableCopies: Math.max(0, item.availableCopies),
+            });
+          }
         }
       }
     }
@@ -356,9 +324,6 @@ export const checkin = mutation({
   },
 });
 
-/**
- * Renew a checkout
- */
 export const renew = mutation({
   args: {
     circulationId: v.id("circulations"),
@@ -383,14 +348,13 @@ export const renew = mutation({
       throw new Error("Cannot renew: Item is not currently checked out");
     }
 
-    const patron = await ctx.db.get(circulation.patronId);
-    if (!patron) {
-      throw new Error("Patron not found");
+    const account = await ctx.db.get(circulation.accountId);
+    if (!account) {
+      throw new Error("Account not found");
     }
 
     const item = await ctx.db.get(circulation.itemId);
 
-    // Get settings
     const settings = await ctx.db
       .query("librarySettings")
       .withIndex("by_organization", (q) =>
@@ -398,10 +362,9 @@ export const renew = mutation({
       )
       .first();
 
-    // Get max renewals
     let maxRenewals = item?.maxRenewals;
-    if (maxRenewals === undefined && patron.membershipTypeId) {
-      const membershipType = await ctx.db.get(patron.membershipTypeId);
+    if (maxRenewals === undefined && account.membershipTypeId) {
+      const membershipType = await ctx.db.get(account.membershipTypeId);
       if (membershipType) {
         maxRenewals = membershipType.renewalLimit;
       }
@@ -416,7 +379,6 @@ export const renew = mutation({
       );
     }
 
-    // Check for holds on this item
     const holdCount = await ctx.db
       .query("libraryHolds")
       .withIndex("by_item_and_status", (q) =>
@@ -428,11 +390,10 @@ export const renew = mutation({
       throw new Error("Cannot renew: Item has pending holds");
     }
 
-    // Calculate new due date
     const now = Date.now();
     let renewalPeriodDays = settings?.renewalPeriodDays;
-    if (!renewalPeriodDays && patron.membershipTypeId) {
-      const membershipType = await ctx.db.get(patron.membershipTypeId);
+    if (!renewalPeriodDays && account.membershipTypeId) {
+      const membershipType = await ctx.db.get(account.membershipTypeId);
       if (membershipType) {
         renewalPeriodDays = membershipType.loanPeriodDays;
       }
@@ -441,18 +402,16 @@ export const renew = mutation({
       renewalPeriodDays = settings?.defaultLoanPeriodDays || 14;
     }
 
-    // New due date is from current due date or today, whichever is later
     const baseDate = Math.max(circulation.dueDate, now);
     const newDueDate = baseDate + renewalPeriodDays * 24 * 60 * 60 * 1000;
 
     const newRenewalCount = circulation.renewalCount + 1;
 
-    // Update circulation
     await ctx.db.patch(args.circulationId, {
       dueDate: newDueDate,
       renewalCount: newRenewalCount,
       lastRenewalDate: now,
-      status: "active", // Reset from overdue if applicable
+      status: "active",
     });
 
     return {
@@ -463,9 +422,6 @@ export const renew = mutation({
   },
 });
 
-/**
- * Mark an item as lost
- */
 export const markLost = mutation({
   args: {
     circulationId: v.id("circulations"),
@@ -488,15 +444,14 @@ export const markLost = mutation({
 
     const copy = await ctx.db.get(circulation.copyId);
     const item = await ctx.db.get(circulation.itemId);
-    const patron = await ctx.db.get(circulation.patronId);
+    const account = await ctx.db.get(circulation.accountId);
 
     const now = Date.now();
     const replacementCost = copy?.replacementCost || 25;
 
-    // Create lost item fine
     await ctx.db.insert("libraryFines", {
       organizationId: circulation.organizationId,
-      patronId: circulation.patronId,
+      accountId: circulation.accountId,
       circulationId: args.circulationId,
       copyId: circulation.copyId,
       fineType: "lost_item",
@@ -508,22 +463,16 @@ export const markLost = mutation({
       createdAt: now,
     });
 
-    // Update patron fine balance
-    if (patron) {
-      await ctx.db.patch(circulation.patronId, {
-        fineBalance: patron.fineBalance + replacementCost,
+    if (account) {
+      await ctx.db.patch(circulation.accountId, {
+        fineBalance: (account.fineBalance || 0) + replacementCost,
       });
     }
 
-    // Update copy status
     if (copy) {
       await ctx.db.patch(circulation.copyId, { status: "lost" });
     }
 
-    // Update item available copies (it's no longer available)
-    // Note: It was already decremented at checkout, so no change needed
-
-    // Update circulation
     await ctx.db.patch(args.circulationId, {
       status: "lost",
       fineAmount: replacementCost,
@@ -534,9 +483,6 @@ export const markLost = mutation({
   },
 });
 
-/**
- * Mark as claimed returned
- */
 export const markClaimedReturned = mutation({
   args: {
     circulationId: v.id("circulations"),
@@ -563,9 +509,6 @@ export const markClaimedReturned = mutation({
   },
 });
 
-/**
- * Get a circulation by ID
- */
 export const get = query({
   args: {
     circulationId: v.id("circulations"),
@@ -576,29 +519,25 @@ export const get = query({
       return null;
     }
 
-    const patron = await ctx.db.get(circulation.patronId);
+    const account = await ctx.db.get(circulation.accountId);
     const copy = await ctx.db.get(circulation.copyId);
     const item = await ctx.db.get(circulation.itemId);
 
     return {
       ...circulation,
-      patron,
+      account,
       copy,
       item,
     };
   },
 });
 
-/**
- * Get circulation by copy barcode
- */
 export const getByBarcode = query({
   args: {
     organizationId: v.id("organizations"),
     barcode: v.string(),
   },
   handler: async (ctx, args) => {
-    // Find copy by barcode
     const copy = await ctx.db
       .query("itemCopies")
       .withIndex("by_organization_and_barcode", (q) =>
@@ -610,7 +549,6 @@ export const getByBarcode = query({
       return null;
     }
 
-    // Find active circulation for this copy
     const circulation = await ctx.db
       .query("circulations")
       .withIndex("by_copy", (q) => q.eq("copyId", copy._id))
@@ -626,23 +564,20 @@ export const getByBarcode = query({
       return { copy, circulation: null };
     }
 
-    const patron = await ctx.db.get(circulation.patronId);
+    const account = await ctx.db.get(circulation.accountId);
     const item = await ctx.db.get(circulation.itemId);
 
     return {
       copy,
       circulation: {
         ...circulation,
-        patron,
+        account,
         item,
       },
     };
   },
 });
 
-/**
- * List active circulations (checkouts)
- */
 export const listActive = query({
   args: {
     organizationId: v.id("organizations"),
@@ -656,15 +591,14 @@ export const listActive = query({
       )
       .paginate(args.paginationOpts);
 
-    // Enrich with related data
     const enrichedPage = await Promise.all(
       circulations.page.map(async (circulation) => {
-        const patron = await ctx.db.get(circulation.patronId);
+        const account = await ctx.db.get(circulation.accountId);
         const copy = await ctx.db.get(circulation.copyId);
         const item = await ctx.db.get(circulation.itemId);
         return {
           ...circulation,
-          patron,
+          account,
           copy,
           item,
         };
@@ -678,9 +612,6 @@ export const listActive = query({
   },
 });
 
-/**
- * List overdue items
- */
 export const listOverdue = query({
   args: {
     organizationId: v.id("organizations"),
@@ -689,7 +620,6 @@ export const listOverdue = query({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    // Get all active circulations past due date
     const circulations = await ctx.db
       .query("circulations")
       .withIndex("by_organization_and_status", (q) =>
@@ -698,10 +628,9 @@ export const listOverdue = query({
       .filter((q) => q.lt(q.field("dueDate"), now))
       .paginate(args.paginationOpts);
 
-    // Enrich with related data
     const enrichedPage = await Promise.all(
       circulations.page.map(async (circulation) => {
-        const patron = await ctx.db.get(circulation.patronId);
+        const account = await ctx.db.get(circulation.accountId);
         const copy = await ctx.db.get(circulation.copyId);
         const item = await ctx.db.get(circulation.itemId);
         const daysOverdue = Math.ceil(
@@ -709,7 +638,7 @@ export const listOverdue = query({
         );
         return {
           ...circulation,
-          patron,
+          account,
           copy,
           item,
           daysOverdue,
@@ -724,9 +653,6 @@ export const listOverdue = query({
   },
 });
 
-/**
- * Get circulation statistics
- */
 export const getStatistics = query({
   args: {
     organizationId: v.id("organizations"),
@@ -788,9 +714,6 @@ export const getStatistics = query({
   },
 });
 
-/**
- * Search for items to checkout by barcode or title
- */
 export const searchForCheckout = query({
   args: {
     organizationId: v.id("organizations"),
@@ -802,7 +725,6 @@ export const searchForCheckout = query({
       return [];
     }
 
-    // Try exact barcode match first
     const copyByBarcode = await ctx.db
       .query("itemCopies")
       .withIndex("by_organization_and_barcode", (q) =>
@@ -820,7 +742,6 @@ export const searchForCheckout = query({
       ];
     }
 
-    // Search by title
     const items = await ctx.db
       .query("libraryItems")
       .withSearchIndex("search_library_items", (q) =>
@@ -831,7 +752,6 @@ export const searchForCheckout = query({
       )
       .take(10);
 
-    // Get available copies for each item
     const results = await Promise.all(
       items.map(async (item) => {
         const copies = await ctx.db

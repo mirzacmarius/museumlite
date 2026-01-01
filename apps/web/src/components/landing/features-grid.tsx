@@ -18,7 +18,8 @@ const features = [
   {
     icon: Archive,
     title: "Object Cataloging",
-    description: "Comprehensive cataloging with unlimited media attachments and detailed metadata.",
+    description:
+      "Comprehensive cataloging with unlimited media attachments and detailed metadata.",
     className: "md:col-span-2",
   },
   {
@@ -52,7 +53,7 @@ export function FeaturesGrid() {
     <section className="py-32 px-4 relative bg-black">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-20">
-          <motion.h2 
+          <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -60,14 +61,15 @@ export function FeaturesGrid() {
           >
             Powering the Future
           </motion.h2>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
             className="text-gray-400 text-lg max-w-2xl mx-auto"
           >
-            Advanced tools designed for the next generation of museums and galleries.
+            Advanced tools designed for the next generation of museums and
+            galleries.
           </motion.p>
         </div>
 
@@ -86,7 +88,9 @@ export function FeaturesGrid() {
                   <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                     <feature.icon className="w-6 h-6 text-neon-blue" />
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-3">{feature.title}</h3>
+                  <h3 className="text-2xl font-bold text-white mb-3">
+                    {feature.title}
+                  </h3>
                   <p className="text-gray-400 leading-relaxed">
                     {feature.description}
                   </p>

@@ -51,11 +51,7 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "collections.create",
-    );
+    await requirePermission(ctx, args.organizationId, "collections.create");
 
     // Check if donor already exists (case-insensitive name or same email)
     const allDonors = await ctx.db

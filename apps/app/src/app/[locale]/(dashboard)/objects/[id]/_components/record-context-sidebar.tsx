@@ -169,12 +169,14 @@ export function RecordContextSidebar({
                         "absolute -left-[17px] top-1 h-2 w-2 rounded-full ring-4 ring-background transition-colors",
                         index === 0
                           ? "bg-accent"
-                          : "bg-muted-foreground/50 group-hover:bg-muted-foreground"
+                          : "bg-muted-foreground/50 group-hover:bg-muted-foreground",
                       )}
                     />
                     <div>
                       <p className="text-[11px] text-muted-foreground">
-                        <span className="text-foreground">{activity.action}</span>
+                        <span className="text-foreground">
+                          {activity.action}
+                        </span>
                       </p>
                       <p className="mt-0.5 text-[10px] text-muted-foreground">
                         {formatRelativeTime(activity.timestamp)}

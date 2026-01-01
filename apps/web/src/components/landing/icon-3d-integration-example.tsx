@@ -5,7 +5,7 @@ import { IconHover3D } from "@v1/ui/icon-3d-hover";
 
 /**
  * Example: How to integrate IconHover3D component in your landing page
- * 
+ *
  * This shows different use cases for the 3D hover icon component
  */
 
@@ -59,21 +59,21 @@ export function IconHover3DSection() {
           className="space-y-8"
         >
           <motion.div variants={itemVariants}>
-            <IconHover3D 
+            <IconHover3D
               heading="Collection Management"
               text="Comprehensive tools to catalog, organize, and track your entire collection with professional-grade features and intuitive workflows."
             />
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <IconHover3D 
+            <IconHover3D
               heading="Digital Archive"
               text="Secure digital preservation with high-resolution imaging, detailed metadata, and long-term accessibility for future generations."
             />
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <IconHover3D 
+            <IconHover3D
               heading="Public Gallery"
               text="Share your collection with the world through beautiful, customizable online galleries with advanced search and filtering."
             />
@@ -113,10 +113,7 @@ export function IconHover3DGrid() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
             >
-              <IconHover3D 
-                heading={feature.heading}
-                text={feature.text}
-              />
+              <IconHover3D heading={feature.heading} text={feature.text} />
             </motion.div>
           ))}
         </div>
@@ -129,7 +126,7 @@ export function IconHover3DGrid() {
 export function IconHover3DInline() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] space-y-8">
-      <IconHover3D 
+      <IconHover3D
         heading="Quick Demo"
         text="Hover over this component to see the 3D animation effect in action."
         width={500}

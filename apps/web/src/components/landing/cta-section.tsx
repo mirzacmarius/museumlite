@@ -8,10 +8,9 @@ import { Button } from "@v1/ui/button";
 export function CTASection() {
   return (
     <section className="py-32 px-4 relative bg-black overflow-hidden">
-      
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-neon-blue/10 via-transparent to-transparent pointer-events-none" />
-      
+
       {/* Glowing Orb */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-neon-blue/20 rounded-full blur-[100px] pointer-events-none" />
 
@@ -27,9 +26,10 @@ export function CTASection() {
               future?
             </span>
           </h2>
-          
+
           <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
-            Join the revolution in collection management. Start your free trial today.
+            Join the revolution in collection management. Start your free trial
+            today.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
@@ -39,9 +39,12 @@ export function CTASection() {
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </Link>
-            
+
             <Link href="#pricing">
-              <Button variant="outline" className="h-14 px-10 rounded-full border-white/20 bg-transparent text-white hover:bg-white/10 text-lg font-medium backdrop-blur-sm">
+              <Button
+                variant="outline"
+                className="h-14 px-10 rounded-full border-white/20 bg-transparent text-white hover:bg-white/10 text-lg font-medium backdrop-blur-sm"
+              >
                 View Pricing
               </Button>
             </Link>

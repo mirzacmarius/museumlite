@@ -1,10 +1,9 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { mutation, query, type MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import { type MutationCtx, mutation, query } from "../_generated/server";
 
-// Hold status validator
 const holdStatusValidator = v.union(
   v.literal("pending"),
   v.literal("available"),
@@ -13,12 +12,9 @@ const holdStatusValidator = v.union(
   v.literal("expired"),
 );
 
-/**
- * Place a hold on an item
- */
 export const place = mutation({
   args: {
-    patronId: v.id("patrons"),
+    accountId: v.id("accounts"),
     itemId: v.id("libraryItems"),
     pickupLocationId: v.optional(v.id("locations")),
     notes: v.optional(v.string()),
@@ -30,18 +26,19 @@ export const place = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Get patron
-    const patron = await ctx.db.get(args.patronId);
-    if (!patron) {
-      throw new Error("Patron not found");
+    const account = await ctx.db.get(args.accountId);
+    if (!account) {
+      throw new Error("Account not found");
     }
 
-    // Check patron status
-    if (patron.status !== "active") {
-      throw new Error(`Cannot place hold: Patron status is ${patron.status}`);
+    if (account.accountType !== "patron") {
+      throw new Error("Only patron accounts can place holds");
     }
 
-    // Get item
+    if (account.status !== "active") {
+      throw new Error(`Cannot place hold: Account status is ${account.status}`);
+    }
+
     const item = await ctx.db.get(args.itemId);
     if (!item) {
       throw new Error("Library item not found");
@@ -51,10 +48,9 @@ export const place = mutation({
       throw new Error("This item is for reference only and cannot be held");
     }
 
-    // Check hold limit
     const existingHolds = await ctx.db
       .query("libraryHolds")
-      .withIndex("by_patron", (q) => q.eq("patronId", args.patronId))
+      .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
       .filter((q) =>
         q.or(
           q.eq(q.field("status"), "pending"),
@@ -63,22 +59,21 @@ export const place = mutation({
       )
       .collect();
 
-    if (existingHolds.length >= patron.holdLimit) {
-      throw new Error(`Patron has reached hold limit of ${patron.holdLimit}`);
+    const holdLimit = account.holdLimit ?? 5;
+    if (existingHolds.length >= holdLimit) {
+      throw new Error(`Account has reached hold limit of ${holdLimit}`);
     }
 
-    // Check if patron already has a hold on this item
     const existingHoldOnItem = existingHolds.find(
       (h) => h.itemId === args.itemId,
     );
     if (existingHoldOnItem) {
-      throw new Error("Patron already has a hold on this item");
+      throw new Error("Account already has a hold on this item");
     }
 
-    // Check if patron currently has this item checked out
     const activeCheckout = await ctx.db
       .query("circulations")
-      .withIndex("by_patron", (q) => q.eq("patronId", args.patronId))
+      .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
       .filter((q) =>
         q.and(
           q.eq(q.field("itemId"), args.itemId),
@@ -91,10 +86,9 @@ export const place = mutation({
       .first();
 
     if (activeCheckout) {
-      throw new Error("Patron already has this item checked out");
+      throw new Error("Account already has this item checked out");
     }
 
-    // Get current queue position for this item
     const pendingHolds = await ctx.db
       .query("libraryHolds")
       .withIndex("by_item_and_status", (q) =>
@@ -107,12 +101,12 @@ export const place = mutation({
     const now = Date.now();
 
     const holdId = await ctx.db.insert("libraryHolds", {
-      organizationId: patron.organizationId,
-      patronId: args.patronId,
+      organizationId: account.organizationId,
+      accountId: args.accountId,
       itemId: args.itemId,
       holdDate: now,
       queuePosition,
-      pickupLocationId: args.pickupLocationId || patron.preferredBranch,
+      pickupLocationId: args.pickupLocationId || account.preferredBranch,
       status: "pending",
       notes: args.notes,
       createdAt: now,
@@ -122,9 +116,6 @@ export const place = mutation({
   },
 });
 
-/**
- * Cancel a hold
- */
 export const cancel = mutation({
   args: {
     holdId: v.id("libraryHolds"),
@@ -145,13 +136,11 @@ export const cancel = mutation({
       throw new Error(`Cannot cancel hold with status: ${hold.status}`);
     }
 
-    // If hold was available, release the copy
     if (hold.status === "available" && hold.copyId) {
       const copy = await ctx.db.get(hold.copyId);
       if (copy && copy.status === "on_hold") {
         await ctx.db.patch(hold.copyId, { status: "available" });
 
-        // Update item available copies
         const item = await ctx.db.get(hold.itemId);
         if (item) {
           await ctx.db.patch(hold.itemId, {
@@ -161,19 +150,14 @@ export const cancel = mutation({
       }
     }
 
-    // Update hold status
     await ctx.db.patch(args.holdId, { status: "cancelled" });
 
-    // Reorder queue positions for remaining holds
     await reorderHoldQueue(ctx, hold.itemId);
 
     return null;
   },
 });
 
-/**
- * Mark a hold as fulfilled (patron picked up the item)
- */
 export const fulfill = mutation({
   args: {
     holdId: v.id("libraryHolds"),
@@ -196,16 +180,12 @@ export const fulfill = mutation({
 
     await ctx.db.patch(args.holdId, { status: "fulfilled" });
 
-    // Reorder queue
     await reorderHoldQueue(ctx, hold.itemId);
 
     return null;
   },
 });
 
-/**
- * Update hold pickup location
- */
 export const updatePickupLocation = mutation({
   args: {
     holdId: v.id("libraryHolds"),
@@ -235,9 +215,6 @@ export const updatePickupLocation = mutation({
   },
 });
 
-/**
- * Get a hold by ID
- */
 export const get = query({
   args: {
     holdId: v.id("libraryHolds"),
@@ -248,7 +225,7 @@ export const get = query({
       return null;
     }
 
-    const patron = await ctx.db.get(hold.patronId);
+    const account = await ctx.db.get(hold.accountId);
     const item = await ctx.db.get(hold.itemId);
     const copy = hold.copyId ? await ctx.db.get(hold.copyId) : null;
     const pickupLocation = hold.pickupLocationId
@@ -257,7 +234,7 @@ export const get = query({
 
     return {
       ...hold,
-      patron,
+      account,
       item,
       copy,
       pickupLocation,
@@ -265,9 +242,6 @@ export const get = query({
   },
 });
 
-/**
- * List holds for an item
- */
 export const listByItem = query({
   args: {
     itemId: v.id("libraryItems"),
@@ -284,16 +258,14 @@ export const listByItem = query({
       )
       .collect();
 
-    // Sort by queue position
     holds.sort((a, b) => a.queuePosition - b.queuePosition);
 
-    // Enrich with patron data
     const enrichedHolds = await Promise.all(
       holds.map(async (hold) => {
-        const patron = await ctx.db.get(hold.patronId);
+        const account = await ctx.db.get(hold.accountId);
         return {
           ...hold,
-          patron,
+          account,
         };
       }),
     );
@@ -302,9 +274,6 @@ export const listByItem = query({
   },
 });
 
-/**
- * List all holds (for organization)
- */
 export const list = query({
   args: {
     organizationId: v.id("organizations"),
@@ -312,37 +281,32 @@ export const list = query({
     status: v.optional(holdStatusValidator),
   },
   handler: async (ctx, args) => {
-    let query;
-
-    if (args.status) {
-      query = ctx.db
-        .query("libraryHolds")
-        .withIndex("by_organization_and_status", (q) =>
-          q
-            .eq("organizationId", args.organizationId)
-            .eq("status", args.status!),
-        );
-    } else {
-      query = ctx.db
-        .query("libraryHolds")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        );
-    }
+    const query = args.status
+      ? ctx.db
+          .query("libraryHolds")
+          .withIndex("by_organization_and_status", (q) =>
+            q
+              .eq("organizationId", args.organizationId)
+              .eq("status", args.status!),
+          )
+      : ctx.db
+          .query("libraryHolds")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          );
 
     const holds = await query.paginate(args.paginationOpts);
 
-    // Enrich with related data
     const enrichedPage = await Promise.all(
       holds.page.map(async (hold) => {
-        const patron = await ctx.db.get(hold.patronId);
+        const account = await ctx.db.get(hold.accountId);
         const item = await ctx.db.get(hold.itemId);
         const pickupLocation = hold.pickupLocationId
           ? await ctx.db.get(hold.pickupLocationId)
           : null;
         return {
           ...hold,
-          patron,
+          account,
           item,
           pickupLocation,
         };
@@ -356,9 +320,6 @@ export const list = query({
   },
 });
 
-/**
- * List holds ready for pickup
- */
 export const listAvailable = query({
   args: {
     organizationId: v.id("organizations"),
@@ -372,17 +333,16 @@ export const listAvailable = query({
       )
       .paginate(args.paginationOpts);
 
-    // Enrich with related data
     const enrichedPage = await Promise.all(
       holds.page.map(async (hold) => {
-        const patron = await ctx.db.get(hold.patronId);
+        const account = await ctx.db.get(hold.accountId);
         const item = await ctx.db.get(hold.itemId);
         const pickupLocation = hold.pickupLocationId
           ? await ctx.db.get(hold.pickupLocationId)
           : null;
         return {
           ...hold,
-          patron,
+          account,
           item,
           pickupLocation,
         };
@@ -396,9 +356,6 @@ export const listAvailable = query({
   },
 });
 
-/**
- * Get hold statistics
- */
 export const getStatistics = query({
   args: {
     organizationId: v.id("organizations"),
@@ -442,9 +399,6 @@ export const getStatistics = query({
   },
 });
 
-/**
- * Expire old holds (should be called periodically)
- */
 export const expireOldHolds = mutation({
   args: {
     organizationId: v.id("organizations"),
@@ -453,7 +407,6 @@ export const expireOldHolds = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    // Get available holds that have expired
     const expiredHolds = await ctx.db
       .query("libraryHolds")
       .withIndex("by_organization_and_status", (q) =>
@@ -468,13 +421,11 @@ export const expireOldHolds = mutation({
       .collect();
 
     for (const hold of expiredHolds) {
-      // Release the copy
       if (hold.copyId) {
         const copy = await ctx.db.get(hold.copyId);
         if (copy && copy.status === "on_hold") {
           await ctx.db.patch(hold.copyId, { status: "available" });
 
-          // Update item available copies
           const item = await ctx.db.get(hold.itemId);
           if (item) {
             await ctx.db.patch(hold.itemId, {
@@ -484,10 +435,8 @@ export const expireOldHolds = mutation({
         }
       }
 
-      // Mark hold as expired
       await ctx.db.patch(hold._id, { status: "expired" });
 
-      // Move to next person in queue
       await notifyNextInQueue(ctx, hold.itemId);
     }
 
@@ -495,9 +444,6 @@ export const expireOldHolds = mutation({
   },
 });
 
-/**
- * Helper: Reorder hold queue positions after cancellation
- */
 async function reorderHoldQueue(ctx: MutationCtx, itemId: Id<"libraryItems">) {
   const pendingHolds = await ctx.db
     .query("libraryHolds")
@@ -506,10 +452,8 @@ async function reorderHoldQueue(ctx: MutationCtx, itemId: Id<"libraryItems">) {
     )
     .collect();
 
-  // Sort by hold date
   pendingHolds.sort((a, b) => a.holdDate - b.holdDate);
 
-  // Update queue positions
   for (let i = 0; i < pendingHolds.length; i++) {
     const hold = pendingHolds[i];
     if (hold) {
@@ -518,9 +462,6 @@ async function reorderHoldQueue(ctx: MutationCtx, itemId: Id<"libraryItems">) {
   }
 }
 
-/**
- * Helper: Notify next person in queue when item becomes available
- */
 async function notifyNextInQueue(ctx: MutationCtx, itemId: Id<"libraryItems">) {
   const pendingHolds = await ctx.db
     .query("libraryHolds")
@@ -533,7 +474,6 @@ async function notifyNextInQueue(ctx: MutationCtx, itemId: Id<"libraryItems">) {
     return;
   }
 
-  // Sort by queue position
   pendingHolds.sort((a, b) => a.queuePosition - b.queuePosition);
   const nextHold = pendingHolds[0];
 
@@ -541,7 +481,6 @@ async function notifyNextInQueue(ctx: MutationCtx, itemId: Id<"libraryItems">) {
     return;
   }
 
-  // Check if there's an available copy
   const availableCopy = await ctx.db
     .query("itemCopies")
     .withIndex("by_item", (q) => q.eq("itemId", itemId))
@@ -560,10 +499,8 @@ async function notifyNextInQueue(ctx: MutationCtx, itemId: Id<"libraryItems">) {
     const now = Date.now();
     const expirationDate = now + holdExpirationDays * 24 * 60 * 60 * 1000;
 
-    // Mark copy as on hold
     await ctx.db.patch(availableCopy._id, { status: "on_hold" });
 
-    // Update item available copies
     const item = await ctx.db.get(itemId);
     if (item) {
       await ctx.db.patch(itemId, {
@@ -571,7 +508,6 @@ async function notifyNextInQueue(ctx: MutationCtx, itemId: Id<"libraryItems">) {
       });
     }
 
-    // Update hold
     await ctx.db.patch(nextHold._id, {
       status: "available",
       copyId: availableCopy._id,

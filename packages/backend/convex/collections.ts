@@ -421,10 +421,12 @@ export const list = query({
         });
 
       let searchResults = await searchQuery.collect();
-      
+
       // Filter out deaccessioned items if no status filter is provided
       if (!args.status) {
-        searchResults = searchResults.filter((c) => c.status !== "deaccessioned");
+        searchResults = searchResults.filter(
+          (c) => c.status !== "deaccessioned",
+        );
       }
 
       // Also search other fields that aren't in the searchIndex
@@ -467,7 +469,7 @@ export const list = query({
 
       // Combine and deduplicate
       allResults = [...searchResults, ...additionalResults];
-      
+
       // Apply deaccession filter if no status specified (safety net for search results)
       if (!args.status) {
         allResults = allResults.filter((c) => c.status !== "deaccessioned");
@@ -524,7 +526,7 @@ export const list = query({
       }
 
       allResults = await query.collect();
-      
+
       // Apply deaccession filter if no status specified (safety net for non-search results)
       if (!args.status) {
         allResults = allResults.filter((c) => c.status !== "deaccessioned");
@@ -566,7 +568,9 @@ export const list = query({
     }
 
     if (args.collectionGroupId && args.search) {
-      allResults = allResults.filter((c) => c.collectionGroupId === args.collectionGroupId);
+      allResults = allResults.filter(
+        (c) => c.collectionGroupId === args.collectionGroupId,
+      );
     }
 
     // Apply date range filters if not already applied (for search case)
@@ -668,7 +672,7 @@ export const search = query({
       });
 
     let results = await searchQuery.take(limit);
-    
+
     // Filter out deaccessioned items if no status filter is provided
     if (!args.status) {
       results = results.filter((c) => c.status !== "deaccessioned");
@@ -836,8 +840,10 @@ export const update = mutation({
     const updates: Record<string, unknown> = {};
 
     if (args.title !== undefined) updates.title = args.title;
-    if (args.alternativeTitle !== undefined) updates.alternativeTitle = args.alternativeTitle;
-    if (args.collectionGroupId !== undefined) updates.collectionGroupId = args.collectionGroupId;
+    if (args.alternativeTitle !== undefined)
+      updates.alternativeTitle = args.alternativeTitle;
+    if (args.collectionGroupId !== undefined)
+      updates.collectionGroupId = args.collectionGroupId;
     if (args.creator !== undefined) updates.creator = args.creator;
     if (args.objectType !== undefined) updates.objectType = args.objectType;
     if (args.objectName !== undefined) updates.objectName = args.objectName;
@@ -847,34 +853,54 @@ export const update = mutation({
     if (args.materials !== undefined) updates.materials = args.materials;
     if (args.technique !== undefined) updates.technique = args.technique;
     if (args.dimensions !== undefined) updates.dimensions = args.dimensions;
-    if (args.dimensionHeight !== undefined) updates.dimensionHeight = args.dimensionHeight;
-    if (args.dimensionWidth !== undefined) updates.dimensionWidth = args.dimensionWidth;
-    if (args.dimensionDepth !== undefined) updates.dimensionDepth = args.dimensionDepth;
-    if (args.dimensionWeight !== undefined) updates.dimensionWeight = args.dimensionWeight;
-    if (args.dimensionUnit !== undefined) updates.dimensionUnit = args.dimensionUnit;
+    if (args.dimensionHeight !== undefined)
+      updates.dimensionHeight = args.dimensionHeight;
+    if (args.dimensionWidth !== undefined)
+      updates.dimensionWidth = args.dimensionWidth;
+    if (args.dimensionDepth !== undefined)
+      updates.dimensionDepth = args.dimensionDepth;
+    if (args.dimensionWeight !== undefined)
+      updates.dimensionWeight = args.dimensionWeight;
+    if (args.dimensionUnit !== undefined)
+      updates.dimensionUnit = args.dimensionUnit;
     if (args.weightUnit !== undefined) updates.weightUnit = args.weightUnit;
     if (args.description !== undefined) updates.description = args.description;
     if (args.condition !== undefined) updates.condition = args.condition;
-    if (args.inscriptions !== undefined) updates.inscriptions = args.inscriptions;
-    if (args.inscriptionMarks !== undefined) updates.inscriptionMarks = args.inscriptionMarks;
+    if (args.inscriptions !== undefined)
+      updates.inscriptions = args.inscriptions;
+    if (args.inscriptionMarks !== undefined)
+      updates.inscriptionMarks = args.inscriptionMarks;
     if (args.tags !== undefined) updates.tags = args.tags;
     if (args.provenance !== undefined) updates.provenance = args.provenance;
-    if (args.exhibitionHistory !== undefined) updates.exhibitionHistory = args.exhibitionHistory;
-    if (args.ownershipHistory !== undefined) updates.ownershipHistory = args.ownershipHistory;
+    if (args.exhibitionHistory !== undefined)
+      updates.exhibitionHistory = args.exhibitionHistory;
+    if (args.ownershipHistory !== undefined)
+      updates.ownershipHistory = args.ownershipHistory;
     if (args.donated_by !== undefined) updates.donated_by = args.donated_by;
-    if (args.donated_date !== undefined) updates.donated_date = args.donated_date;
-    if (args.donation_info !== undefined) updates.donation_info = args.donation_info;
+    if (args.donated_date !== undefined)
+      updates.donated_date = args.donated_date;
+    if (args.donation_info !== undefined)
+      updates.donation_info = args.donation_info;
     if (args.creditLine !== undefined) updates.creditLine = args.creditLine;
-    if (args.previous_owners !== undefined) updates.previous_owners = args.previous_owners;
+    if (args.previous_owners !== undefined)
+      updates.previous_owners = args.previous_owners;
     if (args.links !== undefined) updates.links = args.links;
-    if (args.parentObjectId !== undefined) updates.parentObjectId = args.parentObjectId;
-    if (args.currentLocationId !== undefined) updates.currentLocationId = args.currentLocationId;
-    if (args.alternateAccessionNumbers !== undefined) updates.alternateAccessionNumbers = args.alternateAccessionNumbers;
-    if (args.acquisitionMethod !== undefined) updates.acquisitionMethod = args.acquisitionMethod;
-    if (args.legalRestrictions !== undefined) updates.legalRestrictions = args.legalRestrictions;
-    if (args.isPubliclyVisible !== undefined) updates.isPubliclyVisible = args.isPubliclyVisible;
-    if (args.isHighResDownloadable !== undefined) updates.isHighResDownloadable = args.isHighResDownloadable;
-    if (args.displayStatus !== undefined) updates.displayStatus = args.displayStatus;
+    if (args.parentObjectId !== undefined)
+      updates.parentObjectId = args.parentObjectId;
+    if (args.currentLocationId !== undefined)
+      updates.currentLocationId = args.currentLocationId;
+    if (args.alternateAccessionNumbers !== undefined)
+      updates.alternateAccessionNumbers = args.alternateAccessionNumbers;
+    if (args.acquisitionMethod !== undefined)
+      updates.acquisitionMethod = args.acquisitionMethod;
+    if (args.legalRestrictions !== undefined)
+      updates.legalRestrictions = args.legalRestrictions;
+    if (args.isPubliclyVisible !== undefined)
+      updates.isPubliclyVisible = args.isPubliclyVisible;
+    if (args.isHighResDownloadable !== undefined)
+      updates.isHighResDownloadable = args.isHighResDownloadable;
+    if (args.displayStatus !== undefined)
+      updates.displayStatus = args.displayStatus;
 
     updates.lastModifiedBy = userId;
     updates.lastModifiedAt = Date.now();
@@ -882,7 +908,10 @@ export const update = mutation({
     await ctx.db.patch(args.collectionId, updates);
 
     // Handle moving between groups (update counts)
-    if (args.collectionGroupId !== undefined && args.collectionGroupId !== collection.collectionGroupId) {
+    if (
+      args.collectionGroupId !== undefined &&
+      args.collectionGroupId !== collection.collectionGroupId
+    ) {
       // Decrement old group
       if (collection.collectionGroupId) {
         const oldGroup = await ctx.db.get(collection.collectionGroupId);
@@ -892,7 +921,7 @@ export const update = mutation({
           });
         }
       }
-      
+
       // Increment new group
       if (args.collectionGroupId) {
         const newGroup = await ctx.db.get(args.collectionGroupId);
@@ -1252,7 +1281,9 @@ export const getSiblingObjects = query({
           // Get primary image for thumbnail
           const primaryMedia = await ctx.db
             .query("mediaFiles")
-            .withIndex("by_collection", (q) => q.eq("collectionId", sibling._id))
+            .withIndex("by_collection", (q) =>
+              q.eq("collectionId", sibling._id),
+            )
             .filter((q) => q.eq(q.field("isPrimary"), true))
             .first();
 

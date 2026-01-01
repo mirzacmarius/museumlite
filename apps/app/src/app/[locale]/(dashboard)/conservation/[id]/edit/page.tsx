@@ -22,7 +22,16 @@ import { useState, useEffect, use } from "react";
 import { toast } from "sonner";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
-const TREATMENT_TYPES = [
+type TreatmentType =
+  | "routine"
+  | "stabilization"
+  | "restoration"
+  | "cleaning"
+  | "repair"
+  | "assessment"
+  | "other";
+
+const TREATMENT_TYPES: { value: TreatmentType; label: string }[] = [
   { value: "routine", label: "Routine Maintenance" },
   { value: "stabilization", label: "Stabilization" },
   { value: "restoration", label: "Restoration" },
@@ -30,7 +39,7 @@ const TREATMENT_TYPES = [
   { value: "repair", label: "Repair" },
   { value: "assessment", label: "Condition Assessment" },
   { value: "other", label: "Other" },
-] as const;
+];
 
 export default function EditTreatmentPage({
   params,
@@ -76,7 +85,7 @@ export default function EditTreatmentPage({
       setIsSubmitting(true);
       await updateTreatment({
         id: id as Id<"conservationTreatments">,
-        treatmentType: formData.treatmentType as any,
+        treatmentType: formData.treatmentType as TreatmentType,
         title: formData.title,
         description: formData.description,
         performedAt: formData.performedAt.getTime(),

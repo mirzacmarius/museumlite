@@ -135,7 +135,7 @@ export default function CollectionEditPage() {
   });
 
   // Upload handling
-    const { startUpload } = useUploadFiles(
+  const { startUpload } = useUploadFiles(
     async () => {
       if (!collection) {
         throw new Error("Collection not loaded");
@@ -329,11 +329,13 @@ export default function CollectionEditPage() {
         donated_date: collection.donated_date || "",
         donation_info: collection.donation_info || "",
         previous_owners: collection.previous_owners || [],
-        links: collection.links && collection.links.length > 0 
-          ? collection.links 
-          : [{ url: "", label: "" }],
+        links:
+          collection.links && collection.links.length > 0
+            ? collection.links
+            : [{ url: "", label: "" }],
         parentObjectId: (collection.parentObjectId as string) || "",
-        currentLocationId: (collection.currentLocationId as string) || "__none__",
+        currentLocationId:
+          (collection.currentLocationId as string) || "__none__",
         alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
       });
     }
@@ -478,7 +480,8 @@ export default function CollectionEditPage() {
           ? (formData.parentObjectId as Id<"collections">)
           : undefined,
         currentLocationId:
-          formData.currentLocationId && formData.currentLocationId !== "__none__"
+          formData.currentLocationId &&
+          formData.currentLocationId !== "__none__"
             ? (formData.currentLocationId as Id<"locations">)
             : undefined,
         alternateAccessionNumbers: formData.alternateAccessionNumbers,
@@ -497,7 +500,11 @@ export default function CollectionEditPage() {
 
   const updateField = (
     field: keyof CollectionFormData,
-    value: string | string[] | Array<{ url: string; label?: string }> | undefined,
+    value:
+      | string
+      | string[]
+      | Array<{ url: string; label?: string }>
+      | undefined,
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -514,9 +521,7 @@ export default function CollectionEditPage() {
                   Back
                 </Link>
               </Button>
-              <h2 className="text-xl font-medium text-primary">
-                Edit Object
-              </h2>
+              <h2 className="text-xl font-medium text-primary">Edit Object</h2>
             </div>
           </div>
 
@@ -554,9 +559,7 @@ export default function CollectionEditPage() {
                     </div>
 
                     <div>
-                      <Label htmlFor="accessionNumber">
-                        Accession Number
-                      </Label>
+                      <Label htmlFor="accessionNumber">Accession Number</Label>
                       <Input
                         id="accessionNumber"
                         value={collection.accessionNumber}
@@ -592,8 +595,8 @@ export default function CollectionEditPage() {
                         </TagsInputList>
                       </TagsInput>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Historical accession numbers previously assigned to
-                        this object
+                        Historical accession numbers previously assigned to this
+                        object
                       </p>
                     </div>
 
@@ -631,9 +634,7 @@ export default function CollectionEditPage() {
                       <Input
                         id="culture"
                         value={formData.culture || ""}
-                        onChange={(e) =>
-                          updateField("culture", e.target.value)
-                        }
+                        onChange={(e) => updateField("culture", e.target.value)}
                         placeholder="e.g., French"
                       />
                     </div>
@@ -643,9 +644,7 @@ export default function CollectionEditPage() {
                       <Input
                         id="period"
                         value={formData.period || ""}
-                        onChange={(e) =>
-                          updateField("period", e.target.value)
-                        }
+                        onChange={(e) => updateField("period", e.target.value)}
                         placeholder="e.g., 19th Century"
                       />
                     </div>
@@ -667,9 +666,7 @@ export default function CollectionEditPage() {
                       <Input
                         id="creator"
                         value={formData.creator || ""}
-                        onChange={(e) =>
-                          updateField("creator", e.target.value)
-                        }
+                        onChange={(e) => updateField("creator", e.target.value)}
                         placeholder="e.g., Vincent van Gogh"
                       />
                     </div>
@@ -729,15 +726,14 @@ export default function CollectionEditPage() {
                     Location Information
                   </h3>
                   <div>
-                    <Label htmlFor="currentLocationId">
-                      Current Location
-                    </Label>
+                    <Label htmlFor="currentLocationId">Current Location</Label>
                     <LocationSelector
                       organizationId={collection.organizationId}
                       value={
                         formData.currentLocationId !== ""
                           ? formData.currentLocationId
-                          : (collection.currentLocationId as string) || "__none__"
+                          : (collection.currentLocationId as string) ||
+                            "__none__"
                       }
                       onValueChange={(value) =>
                         updateField("currentLocationId", value)
@@ -753,11 +749,10 @@ export default function CollectionEditPage() {
                     Object Relationships
                   </h3>
                   <div>
-                    <Label htmlFor="parentObjectId">
-                      Parent Object
-                    </Label>
+                    <Label htmlFor="parentObjectId">Parent Object</Label>
                     <p className="mb-2 text-xs text-muted-foreground">
-                      Link this object to a parent object (e.g., a treasure chest containing this object)
+                      Link this object to a parent object (e.g., a treasure
+                      chest containing this object)
                     </p>
                     <ObjectCombobox
                       organizationId={collection.organizationId}
@@ -893,7 +888,10 @@ export default function CollectionEditPage() {
                   <h3 className="mb-3 text-base font-semibold">Links</h3>
                   <div className="space-y-3">
                     {(formData.links || []).map((link, index) => (
-                      <div key={`${link.url}-${link.label || ""}-${index}`} className="flex gap-2">
+                      <div
+                        key={`${link.url}-${link.label || ""}-${index}`}
+                        className="flex gap-2"
+                      >
                         <div className="flex-1">
                           <Label htmlFor={`link-label-${index}`}>Label</Label>
                           <Input
@@ -912,7 +910,12 @@ export default function CollectionEditPage() {
                         </div>
                         <div className="flex-1">
                           <Label htmlFor={`link-url-${index}`}>
-                            URL {index === 0 ? "" : <span className="text-red-500">*</span>}
+                            URL{" "}
+                            {index === 0 ? (
+                              ""
+                            ) : (
+                              <span className="text-red-500">*</span>
+                            )}
                           </Label>
                           <Input
                             id={`link-url-${index}`}
@@ -980,7 +983,10 @@ export default function CollectionEditPage() {
                       </Button>
                     )}
                     {collection.status === "active" && hasActiveLoan && (
-                      <div className="flex items-center text-xs text-muted-foreground" title="Cannot deaccession - item is on active loan">
+                      <div
+                        className="flex items-center text-xs text-muted-foreground"
+                        title="Cannot deaccession - item is on active loan"
+                      >
                         <AlertOctagon className="mr-2 h-4 w-4" />
                         Cannot deaccession (On Loan)
                       </div>
@@ -1051,9 +1057,7 @@ export default function CollectionEditPage() {
                                       type="button"
                                       size="sm"
                                       variant="secondary"
-                                      onClick={() =>
-                                        handleSetPrimary(file._id)
-                                      }
+                                      onClick={() => handleSetPrimary(file._id)}
                                       title="Set as primary"
                                     >
                                       <Star className="h-3 w-3" />

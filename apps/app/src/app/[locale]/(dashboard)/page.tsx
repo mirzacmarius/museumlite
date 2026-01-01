@@ -187,6 +187,7 @@ export default function DashboardPage() {
 
                 <div className="absolute top-2 right-2 z-20 flex flex-col gap-2 hover-target">
                   <button
+                    type="button"
                     onClick={(e) => e.preventDefault()}
                     className="w-8 h-8 bg-zinc-950/80 backdrop-blur-md rounded-lg flex items-center justify-center text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-600 transition-all shadow-lg"
                   >
@@ -274,6 +275,7 @@ export default function DashboardPage() {
 
                 <div className="absolute top-2 right-2 z-20 flex flex-col gap-2 hover-target">
                   <button
+                    type="button"
                     onClick={(e) => e.preventDefault()}
                     className="w-8 h-8 bg-zinc-950/80 backdrop-blur-md rounded-lg flex items-center justify-center text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-600 transition-all shadow-lg"
                   >
@@ -517,13 +519,23 @@ export default function DashboardPage() {
                       }
                     };
 
+                    const handleNavigate = () => {
+                      window.location.href = getActivityLink();
+                    };
+
                     return (
                       <tr
                         key={`${activity.type}-${activity.id}`}
                         className="hover:bg-zinc-900/40 transition-colors cursor-pointer"
-                        onClick={() =>
-                          (window.location.href = getActivityLink())
-                        }
+                        onClick={handleNavigate}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleNavigate();
+                          }
+                        }}
+                        tabIndex={0}
+                        role="button"
                       >
                         <td className="px-4 py-3 text-zinc-300">
                           <div className="flex items-center gap-2">

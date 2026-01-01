@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: "Museumlite",
   description:
     "Museumlite is a platform for managing museum collections and objects.",
-    keywords: [
+  keywords: [
     "Museumlite",
     "Museum",
     "Collections",
@@ -224,7 +224,7 @@ export const metadata: Metadata = {
     "Memorabilia Management Application",
     "Exhibition Management Application",
     "Inventory Management Application",
-    "Sales Management Application"
+    "Sales Management Application",
   ],
 };
 

@@ -173,9 +173,7 @@ export default function EditAccessionPage() {
               <div className="space-y-2">
                 <Label>Date Received</Label>
                 <Input
-                  value={new Date(
-                    accession.dateReceived,
-                  ).toLocaleDateString()}
+                  value={new Date(accession.dateReceived).toLocaleDateString()}
                   disabled
                   className="bg-muted"
                 />

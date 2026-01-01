@@ -8,10 +8,9 @@ import Link from "next/link";
 export function HeroSection() {
   return (
     <section className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-black selection:bg-neon-purple/30">
-      
       {/* Background Effects */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-      
+
       {/* Particles / Stars */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(20)].map((_, i) => {
@@ -21,7 +20,7 @@ export function HeroSection() {
           const randomAnimateY = Math.random() * -100;
           const randomWidth = Math.random() * 4;
           const randomHeight = Math.random() * 4;
-          
+
           return (
             <motion.div
               key={particleId}
@@ -56,7 +55,6 @@ export function HeroSection() {
 
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 text-center">
-        
         {/* Badge */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -65,7 +63,9 @@ export function HeroSection() {
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8 hover:bg-white/10 transition-colors cursor-pointer group"
         >
           <Sparkles className="w-4 h-4 text-neon-blue group-hover:animate-spin" />
-          <span className="text-sm font-medium text-gray-300">The Future of Collection Management</span>
+          <span className="text-sm font-medium text-gray-300">
+            The Future of Collection Management
+          </span>
         </motion.div>
 
         {/* Main Heading */}
@@ -75,7 +75,9 @@ export function HeroSection() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="text-5xl md:text-8xl font-bold tracking-tighter mb-6 drop-shadow-2xl"
         >
-          <span className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">Museum</span>
+          <span className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+            Museum
+          </span>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-purple animate-gradient-x drop-shadow-[0_0_25px_rgba(0,243,255,0.4)]">
             Lite
           </span>
@@ -87,10 +89,22 @@ export function HeroSection() {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed"
         >
-          Experience the next generation of museum software. 
-          <span className="text-white font-medium drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]"> AI-powered</span>, 
-          <span className="text-white font-medium drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]"> lightning fast</span>, and 
-          <span className="text-white font-medium drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]"> beautifully designed</span> for the modern curator.
+          Experience the next generation of museum software.
+          <span className="text-white font-medium drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+            {" "}
+            AI-powered
+          </span>
+          ,
+          <span className="text-white font-medium drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+            {" "}
+            lightning fast
+          </span>
+          , and
+          <span className="text-white font-medium drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+            {" "}
+            beautifully designed
+          </span>{" "}
+          for the modern curator.
         </motion.p>
 
         {/* Buttons */}
@@ -109,8 +123,11 @@ export function HeroSection() {
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full animate-shimmer group-hover:animate-none" />
             </Button>
           </Link>
-          
-          <Button variant="outline" className="h-14 px-8 rounded-full border-white/20 bg-transparent text-white hover:bg-white/10 text-lg font-medium backdrop-blur-sm transition-all hover:scale-105">
+
+          <Button
+            variant="outline"
+            className="h-14 px-8 rounded-full border-white/20 bg-transparent text-white hover:bg-white/10 text-lg font-medium backdrop-blur-sm transition-all hover:scale-105"
+          >
             <PlayCircle className="mr-2 w-5 h-5" />
             Watch Demo
           </Button>
@@ -118,46 +135,45 @@ export function HeroSection() {
 
         {/* Floating UI Elements (Decorative) */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-6xl pointer-events-none z-[-1]">
-           {/* Left Card */}
-           <motion.div
+          {/* Left Card */}
+          <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1, delay: 0.5 }}
             className="absolute top-[20%] left-[5%] hidden md:block p-4 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-xl rotate-[-6deg] w-64"
-           >
-             <div className="flex items-center gap-3 mb-3">
-               <div className="w-10 h-10 rounded-full bg-neon-blue/20 flex items-center justify-center">
-                 <Sparkles className="w-5 h-5 text-neon-blue" />
-               </div>
-               <div>
-                 <div className="h-2 w-20 bg-white/20 rounded mb-1" />
-                 <div className="h-2 w-12 bg-white/10 rounded" />
-               </div>
-             </div>
-             <div className="h-20 bg-white/5 rounded-lg border border-white/5" />
-           </motion.div>
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-neon-blue/20 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-neon-blue" />
+              </div>
+              <div>
+                <div className="h-2 w-20 bg-white/20 rounded mb-1" />
+                <div className="h-2 w-12 bg-white/10 rounded" />
+              </div>
+            </div>
+            <div className="h-20 bg-white/5 rounded-lg border border-white/5" />
+          </motion.div>
 
-           {/* Right Card */}
-           <motion.div
+          {/* Right Card */}
+          <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1, delay: 0.7 }}
             className="absolute bottom-[30%] right-[5%] hidden md:block p-4 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-xl rotate-[6deg] w-64"
-           >
-             <div className="flex items-center justify-between mb-3">
-               <div className="h-2 w-24 bg-white/20 rounded" />
-               <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
-             </div>
-             <div className="space-y-2">
-               <div className="h-2 w-full bg-white/5 rounded" />
-               <div className="h-2 w-[80%] bg-white/5 rounded" />
-               <div className="h-2 w-[60%] bg-white/5 rounded" />
-             </div>
-           </motion.div>
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="h-2 w-24 bg-white/20 rounded" />
+              <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-2 w-full bg-white/5 rounded" />
+              <div className="h-2 w-[80%] bg-white/5 rounded" />
+              <div className="h-2 w-[60%] bg-white/5 rounded" />
+            </div>
+          </motion.div>
         </div>
-
       </div>
-      
+
       {/* Bottom Fade */}
       <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black to-transparent pointer-events-none" />
     </section>

@@ -36,10 +36,10 @@ import Link from "next/link";
 import { useState } from "react";
 
 interface SelectedPatron {
-  _id: Id<"patrons">;
-  firstName: string;
-  lastName: string;
-  cardNumber: string;
+  _id: Id<"accounts">;
+  firstName?: string;
+  lastName?: string;
+  cardNumber?: string;
 }
 
 interface SelectedCopy {
@@ -54,7 +54,7 @@ interface SelectedCopy {
     _id: Id<"circulations">;
     dueDate: number;
     item?: { title: string } | null;
-    patron?: { firstName: string; lastName: string } | null;
+    account?: { firstName?: string; lastName?: string } | null;
   } | null;
 }
 
@@ -67,12 +67,16 @@ interface CheckinResult {
 export default function LibraryCirculationPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedPatron, setSelectedPatron] = useState<SelectedPatron | null>(null);
+  const [selectedPatron, setSelectedPatron] = useState<SelectedPatron | null>(
+    null,
+  );
   const [selectedCopy, setSelectedCopy] = useState<SelectedCopy | null>(null);
   const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false);
   const [isCheckinDialogOpen, setIsCheckinDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [checkinResult, setCheckinResult] = useState<CheckinResult | null>(null);
+  const [checkinResult, setCheckinResult] = useState<CheckinResult | null>(
+    null,
+  );
 
   const isLibraryEnabled = useQuery(
     api.integrations.isEnabled,
@@ -122,7 +126,7 @@ export default function LibraryCirculationPage() {
   );
 
   const patronLookup = useQuery(
-    api.library.patrons.getByCardNumber,
+    api.accounts.getByCardNumber,
     currentOrganizationId && searchQuery.trim()
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
@@ -166,12 +170,12 @@ export default function LibraryCirculationPage() {
   };
 
   const handleCheckout = async (
-    patronId: Id<"patrons">,
+    accountId: Id<"accounts">,
     copyId: Id<"itemCopies">,
   ) => {
     setIsProcessing(true);
     try {
-      await checkout({ patronId, copyId });
+      await checkout({ accountId, copyId });
       setIsCheckoutDialogOpen(false);
       setSelectedPatron(null);
       setSelectedCopy(null);
@@ -413,7 +417,7 @@ export default function LibraryCirculationPage() {
                         <div>
                           <p className="font-medium">{item.item?.title}</p>
                           <p className="text-sm text-muted-foreground">
-                            {item.patron?.firstName} {item.patron?.lastName} |{" "}
+                            {item.account?.firstName} {item.account?.lastName} |{" "}
                             {item.copy?.barcode}
                           </p>
                         </div>
@@ -464,7 +468,7 @@ export default function LibraryCirculationPage() {
                         <div>
                           <p className="font-medium">{item.item?.title}</p>
                           <p className="text-sm text-muted-foreground">
-                            {item.patron?.firstName} {item.patron?.lastName} |{" "}
+                            {item.account?.firstName} {item.account?.lastName} |{" "}
                             {item.copy?.barcode}
                           </p>
                         </div>
@@ -624,8 +628,8 @@ export default function LibraryCirculationPage() {
                         Checked out to
                       </p>
                       <p className="font-medium">
-                        {selectedCopy.circulation.patron?.firstName}{" "}
-                        {selectedCopy.circulation.patron?.lastName}
+                        {selectedCopy.circulation.account?.firstName}{" "}
+                        {selectedCopy.circulation.account?.lastName}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         Due: {formatDate(selectedCopy.circulation.dueDate)}

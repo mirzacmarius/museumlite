@@ -51,7 +51,7 @@ type PaymentMethod = "cash" | "card" | "check" | "online" | "other";
 
 interface SelectedFine {
   _id: Id<"libraryFines">;
-  patronId: Id<"patrons">;
+  accountId: Id<"accounts">;
   description: string;
   balance: number;
 }
@@ -102,7 +102,7 @@ export default function LibraryFinesPage() {
     setIsProcessing(true);
     try {
       await recordPayment({
-        patronId: selectedFine.patronId,
+        accountId: selectedFine.accountId,
         amount: Number.parseFloat(paymentAmount),
         paymentMethod,
         fineIds: [selectedFine._id],
@@ -373,7 +373,7 @@ export default function LibraryFinesPage() {
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="font-medium">
-                            {fine.patron?.firstName} {fine.patron?.lastName}
+                            {fine.account?.firstName} {fine.account?.lastName}
                           </p>
                           {getStatusBadge(fine.status)}
                           {getFineTypeBadge(fine.fineType)}
@@ -410,7 +410,12 @@ export default function LibraryFinesPage() {
                           <Button
                             size="sm"
                             onClick={() => {
-                              setSelectedFine(fine);
+                              setSelectedFine({
+                                _id: fine._id,
+                                accountId: fine.accountId,
+                                description: fine.description,
+                                balance: fine.balance,
+                              });
                               setPaymentAmount(fine.balance.toString());
                               setIsPaymentDialogOpen(true);
                             }}

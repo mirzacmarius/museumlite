@@ -166,7 +166,17 @@ const TREATMENT_TYPE_STYLES: Record<string, string> = {
   other: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
 };
 
-function TreatmentCard({ treatment }: { treatment: any }) {
+interface Treatment {
+  _id: string;
+  treatmentType: string;
+  title: string;
+  description: string;
+  performedAt: number;
+  performedByName?: string;
+  collectionTitle?: string;
+}
+
+function TreatmentCard({ treatment }: { treatment: Treatment }) {
   const typeStyle =
     TREATMENT_TYPE_STYLES[treatment.treatmentType] ||
     TREATMENT_TYPE_STYLES.other;

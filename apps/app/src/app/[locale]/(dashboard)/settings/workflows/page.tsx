@@ -234,7 +234,7 @@ export default function WorkflowsSettingsPage() {
                   const role = roles?.find((r) => r._id === step.roleId);
                   return (
                     <div
-                      key={index}
+                      key={`${step.stepNumber}-${step.roleId}`}
                       className="flex items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-950/50 p-3"
                     >
                       <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-800 text-xs font-medium text-zinc-400">
@@ -339,7 +339,7 @@ export default function WorkflowsSettingsPage() {
                 <div className="space-y-3">
                   {formData.steps.map((step, index) => (
                     <div
-                      key={index}
+                      key={`form-step-${index}-${step.roleId}`}
                       className="flex items-start gap-3 rounded-lg border border-zinc-800 bg-zinc-900/30 p-4"
                     >
                       <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs font-medium text-zinc-400 mt-2.5">

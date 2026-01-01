@@ -35,7 +35,6 @@ import type * as library_fines from "../library/fines.js";
 import type * as library_holds from "../library/holds.js";
 import type * as library_isbnLookup from "../library/isbnLookup.js";
 import type * as library_items from "../library/items.js";
-import type * as library_patrons from "../library/patrons.js";
 import type * as library_reports from "../library/reports.js";
 import type * as library_settings from "../library/settings.js";
 import type * as library_vendors from "../library/vendors.js";
@@ -101,7 +100,6 @@ declare const fullApi: ApiFromModules<{
   "library/holds": typeof library_holds;
   "library/isbnLookup": typeof library_isbnLookup;
   "library/items": typeof library_items;
-  "library/patrons": typeof library_patrons;
   "library/reports": typeof library_reports;
   "library/settings": typeof library_settings;
   "library/vendors": typeof library_vendors;

@@ -17,9 +17,9 @@ export default {
         marquee: "marquee 25s linear infinite",
         marquee2: "marquee2 25s linear infinite",
         "pulse-slow": "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-        "float": "float 6s ease-in-out infinite",
-        "scan": "scan 4s linear infinite",
-        "shimmer": "shimmer 8s linear infinite",
+        float: "float 6s ease-in-out infinite",
+        scan: "scan 4s linear infinite",
+        shimmer: "shimmer 8s linear infinite",
       },
       keyframes: {
         marquee: {

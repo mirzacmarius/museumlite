@@ -57,8 +57,7 @@ export default function CollectionsPage() {
           <div className="text-center">
             <h3 className="text-lg font-semibold">No Organization Found</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You need to create an organization to start managing
-              collections.
+              You need to create an organization to start managing collections.
             </p>
           </div>
           <Button asChild>
@@ -522,9 +521,7 @@ function CollectionListItem({
 
         {/* Quick Actions Dropdown - MUS-95 */}
         {canDeaccession && (
-          <div
-            className="flex-shrink-0 ml-2 z-10"
-          >
+          <div className="flex-shrink-0 ml-2 z-10">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -540,7 +537,10 @@ function CollectionListItem({
                   <span className="sr-only">Quick actions</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuContent
+                align="end"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <PermissionGate permission="collections.create">
                   <DropdownMenuItem
                     onClick={(e) => {

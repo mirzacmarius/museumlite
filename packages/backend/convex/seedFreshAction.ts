@@ -123,12 +123,17 @@ export const resetAndSeed = internalAction({
     await ctx.runMutation(internal.seedFresh.clearAllData);
 
     // Step 2: Find or create user
-    const existingUser = await ctx.runQuery(internal.seedFresh.findUserByEmail, {
-      email: "mirzacmarius@gmail.com",
-    });
+    const existingUser = await ctx.runQuery(
+      internal.seedFresh.findUserByEmail,
+      {
+        email: "mirzacmarius@gmail.com",
+      },
+    );
 
     if (!existingUser) {
-      console.log("User with email mirzacmarius@gmail.com not found. Please log in first.");
+      console.log(
+        "User with email mirzacmarius@gmail.com not found. Please log in first.",
+      );
       return null;
     }
 
@@ -137,28 +142,31 @@ export const resetAndSeed = internalAction({
     // Step 3: Create organizations
     console.log("Creating organizations...");
     const orgIds: Record<string, Id<"organizations">> = {};
-    
+
     for (const org of ORGANIZATIONS) {
-      const orgId = await ctx.runMutation(internal.seedFresh.createOrganization, {
-        name: org.name,
-        slug: org.slug,
-        type: org.type,
-        subscriptionTier: org.subscriptionTier,
-      });
+      const orgId = await ctx.runMutation(
+        internal.seedFresh.createOrganization,
+        {
+          name: org.name,
+          slug: org.slug,
+          type: org.type,
+          subscriptionTier: org.subscriptionTier,
+        },
+      );
       orgIds[org.slug] = orgId;
-      
+
       // Assign user as admin
       await ctx.runMutation(internal.seedFresh.assignUserToOrg, {
         userId: existingUser,
         organizationId: orgId,
       });
-      
+
       console.log(`Created organization: ${org.name}`);
     }
 
     // Step 4: Create collections with images
     console.log("Creating collection objects with images...");
-    
+
     // Get the full collection data from the mutation
     for (const org of ORGANIZATIONS) {
       const orgId = orgIds[org.slug];
@@ -169,25 +177,28 @@ export const resetAndSeed = internalAction({
       if (!pexelsQueries) continue;
 
       // Create all collections for this org
-      const collectionIds = await ctx.runMutation(internal.seedFresh.createAllCollectionsForOrg, {
-        organizationId: orgId,
-        userId: existingUser,
-        orgSlug: org.slug,
-        prefix: org.prefix,
-      });
-      
+      const collectionIds = await ctx.runMutation(
+        internal.seedFresh.createAllCollectionsForOrg,
+        {
+          organizationId: orgId,
+          userId: existingUser,
+          orgSlug: org.slug,
+          prefix: org.prefix,
+        },
+      );
+
       // Fetch and upload images from Lorem Picsum
       for (let i = 0; i < collectionIds.length; i++) {
         const collectionId = collectionIds[i];
         // Create unique seed based on org index and collection index
-        const orgIndex = ORGANIZATIONS.findIndex(o => o.slug === org.slug);
-        const imageSeed = (orgIndex * 100) + i + 1000; // Ensures unique seeds
-        
+        const orgIndex = ORGANIZATIONS.findIndex((o) => o.slug === org.slug);
+        const imageSeed = orgIndex * 100 + i + 1000; // Ensures unique seeds
+
         try {
           const imageData = await fetchPlaceholderImage(imageSeed);
           if (imageData) {
             const storageId = await ctx.storage.store(imageData.blob);
-            
+
             await ctx.runMutation(internal.seedFresh.createMediaFile, {
               collectionId: collectionId!,
               organizationId: orgId,
@@ -197,17 +208,25 @@ export const resetAndSeed = internalAction({
               fileSize: imageData.blob.size,
               photographer: imageData.photographer,
             });
-            
-            console.log(`Uploaded image for collection ${i + 1} in ${org.name}`);
+
+            console.log(
+              `Uploaded image for collection ${i + 1} in ${org.name}`,
+            );
           } else {
-            console.log(`Could not get image for collection ${i + 1} in ${org.name}`);
+            console.log(
+              `Could not get image for collection ${i + 1} in ${org.name}`,
+            );
           }
         } catch (error) {
-          console.log(`Could not fetch image ${i + 1} for ${org.name}: ${error}`);
+          console.log(
+            `Could not fetch image ${i + 1} for ${org.name}: ${error}`,
+          );
         }
       }
-      
-      console.log(`Created ${collectionIds.length} collections for ${org.name}`);
+
+      console.log(
+        `Created ${collectionIds.length} collections for ${org.name}`,
+      );
     }
 
     console.log("Database seeding completed successfully!");
@@ -219,19 +238,21 @@ export const resetAndSeed = internalAction({
  * Fetch image from Lorem Picsum (free, no API key, no rate limits)
  * Uses seed-based URLs for consistent images per collection
  */
-async function fetchPlaceholderImage(seed: number): Promise<{ blob: Blob; photographer: string } | null> {
+async function fetchPlaceholderImage(
+  seed: number,
+): Promise<{ blob: Blob; photographer: string } | null> {
   try {
     // Lorem Picsum provides beautiful random images
     // Using seed ensures same image for same seed value
     const imageUrl = `https://picsum.photos/seed/${seed}/800/600`;
-    
+
     const imageResponse = await fetch(imageUrl);
     if (!imageResponse.ok) {
       throw new Error(`Failed to fetch image: ${imageResponse.status}`);
     }
 
     const blob = await imageResponse.blob();
-    
+
     return {
       blob,
       photographer: "Lorem Picsum",

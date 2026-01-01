@@ -44,7 +44,7 @@ interface AccountComboboxProps {
     account:
       | {
           _id: string;
-          businessName: string;
+          businessName?: string;
           contactPerson?: string;
           email?: string;
           phone?: string;
@@ -147,6 +147,7 @@ export function AccountCombobox({
     try {
       const accountId = await createAccount({
         organizationId: organizationId as Id<"organizations">,
+        accountType: "institution",
         businessName: formData.businessName.trim(),
         phone: formData.phone.trim() || undefined,
         email: formData.email.trim() || undefined,

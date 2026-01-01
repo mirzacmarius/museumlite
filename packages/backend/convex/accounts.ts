@@ -38,51 +38,21 @@ async function generateAccountNumber(
   return `ACC-${String(nextValue).padStart(5, "0")}`;
 }
 
-/**
- * List all accounts for an organization
- */
+const accountTypeValidator = v.union(
+  v.literal("lender"),
+  v.literal("borrower"),
+  v.literal("both"),
+  v.literal("institution"),
+  v.literal("patron"),
+);
+
 export const list = query({
   args: {
     organizationId: v.id("organizations"),
     paginationOpts: v.optional(paginationOptsValidator),
     search: v.optional(v.string()),
+    accountType: v.optional(accountTypeValidator),
   },
-  returns: v.object({
-    accounts: v.array(
-      v.object({
-        _id: v.id("accounts"),
-        _creationTime: v.number(),
-        organizationId: v.id("organizations"),
-        accountNumber: v.string(),
-        businessName: v.string(),
-        phone: v.optional(v.string()),
-        email: v.optional(v.string()),
-        address: v.optional(v.string()),
-        address2: v.optional(v.string()),
-        zipCode: v.optional(v.string()),
-        city: v.optional(v.string()),
-        country: v.optional(v.string()),
-        contactPerson: v.optional(v.string()),
-        contactPhone: v.optional(v.string()),
-        contactEmail: v.optional(v.string()),
-        notes: v.optional(v.string()),
-        accountType: v.optional(
-          v.union(
-            v.literal("lender"),
-            v.literal("borrower"),
-            v.literal("both"),
-            v.literal("institution"),
-          ),
-        ),
-        createdBy: v.id("users"),
-        createdAt: v.number(),
-        lastModifiedBy: v.optional(v.id("users")),
-        lastModifiedAt: v.optional(v.number()),
-      }),
-    ),
-    isDone: v.boolean(),
-    continueCursor: v.optional(v.string()),
-  }),
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "loans.read");
 
@@ -94,15 +64,40 @@ export const list = query({
       .order("desc")
       .collect();
 
+    if (args.accountType) {
+      results = results.filter(
+        (account) => account.accountType === args.accountType,
+      );
+    }
+
     if (args.search && args.search.trim().length > 0) {
       const searchLower = args.search.toLowerCase();
-      results = results.filter(
-        (account) =>
-          account.businessName.toLowerCase().includes(searchLower) ||
-          account.accountNumber.toLowerCase().includes(searchLower) ||
-          account.email?.toLowerCase().includes(searchLower) ||
-          account.contactPerson?.toLowerCase().includes(searchLower),
-      );
+      results = results.filter((account) => {
+        const businessNameMatch = account.businessName
+          ?.toLowerCase()
+          .includes(searchLower);
+        const nameMatch =
+          account.firstName?.toLowerCase().includes(searchLower) ||
+          account.lastName?.toLowerCase().includes(searchLower);
+        const accountNumberMatch = account.accountNumber
+          .toLowerCase()
+          .includes(searchLower);
+        const emailMatch = account.email?.toLowerCase().includes(searchLower);
+        const contactMatch = account.contactPerson
+          ?.toLowerCase()
+          .includes(searchLower);
+        const cardMatch = account.cardNumber
+          ?.toLowerCase()
+          .includes(searchLower);
+        return (
+          businessNameMatch ||
+          nameMatch ||
+          accountNumberMatch ||
+          emailMatch ||
+          contactMatch ||
+          cardMatch
+        );
+      });
     }
 
     if (args.paginationOpts) {
@@ -138,40 +133,6 @@ export const get = query({
   args: {
     accountId: v.id("accounts"),
   },
-  returns: v.union(
-    v.object({
-      _id: v.id("accounts"),
-      _creationTime: v.number(),
-      organizationId: v.id("organizations"),
-      accountNumber: v.string(),
-      businessName: v.string(),
-      phone: v.optional(v.string()),
-      email: v.optional(v.string()),
-      address: v.optional(v.string()),
-      address2: v.optional(v.string()),
-      zipCode: v.optional(v.string()),
-      city: v.optional(v.string()),
-      country: v.optional(v.string()),
-      contactPerson: v.optional(v.string()),
-      contactPhone: v.optional(v.string()),
-      contactEmail: v.optional(v.string()),
-      notes: v.optional(v.string()),
-      accountType: v.optional(
-        v.union(
-          v.literal("lender"),
-          v.literal("borrower"),
-          v.literal("both"),
-          v.literal("institution"),
-        ),
-      ),
-      roleIds: v.array(v.id("roles")),
-      createdBy: v.id("users"),
-      createdAt: v.number(),
-      lastModifiedBy: v.optional(v.id("users")),
-      lastModifiedAt: v.optional(v.number()),
-    }),
-    v.null(),
-  ),
   handler: async (ctx, args) => {
     const account = await ctx.db.get(args.accountId);
     if (!account) {
@@ -193,32 +154,74 @@ export const get = query({
   },
 });
 
+const statusValidator = v.union(
+  v.literal("active"),
+  v.literal("expired"),
+  v.literal("suspended"),
+  v.literal("blocked"),
+  v.literal("inactive"),
+);
+
+const notificationPreferencesValidator = v.object({
+  email: v.boolean(),
+  sms: v.boolean(),
+  dueDateReminder: v.boolean(),
+  holdReady: v.boolean(),
+});
+
+const structuredAddressValidator = v.object({
+  street: v.string(),
+  city: v.string(),
+  state: v.optional(v.string()),
+  postalCode: v.string(),
+  country: v.optional(v.string()),
+});
+
 /**
  * Create a new account
  */
 export const create = mutation({
   args: {
     organizationId: v.id("organizations"),
-    businessName: v.string(),
+    accountType: accountTypeValidator,
+
+    // Business/Organization info (for institutions)
+    businessName: v.optional(v.string()),
+    contactPerson: v.optional(v.string()),
+    contactPhone: v.optional(v.string()),
+    contactEmail: v.optional(v.string()),
+
+    // Personal info (for patrons)
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    dateOfBirth: v.optional(v.number()),
+
+    // Contact info (shared)
     phone: v.optional(v.string()),
     email: v.optional(v.string()),
+
+    // Address fields
     address: v.optional(v.string()),
     address2: v.optional(v.string()),
     zipCode: v.optional(v.string()),
     city: v.optional(v.string()),
     country: v.optional(v.string()),
-    contactPerson: v.optional(v.string()),
-    contactPhone: v.optional(v.string()),
-    contactEmail: v.optional(v.string()),
+    structuredAddress: v.optional(structuredAddressValidator),
+
+    // Library-specific fields (for patrons)
+    cardNumber: v.optional(v.string()),
+    pin: v.optional(v.string()),
+    membershipTypeId: v.optional(v.id("membershipTypes")),
+    membershipType: v.optional(v.string()),
+    registrationDate: v.optional(v.number()),
+    expirationDate: v.optional(v.number()),
+    status: v.optional(statusValidator),
+    borrowingLimit: v.optional(v.number()),
+    holdLimit: v.optional(v.number()),
+    preferredBranch: v.optional(v.id("locations")),
+    notificationPreferences: v.optional(notificationPreferencesValidator),
+
     notes: v.optional(v.string()),
-    accountType: v.optional(
-      v.union(
-        v.literal("lender"),
-        v.literal("borrower"),
-        v.literal("both"),
-        v.literal("institution"),
-      ),
-    ),
     roleIds: v.optional(v.array(v.id("roles"))),
   },
   returns: v.id("accounts"),
@@ -230,8 +233,17 @@ export const create = mutation({
 
     await requirePermission(ctx, args.organizationId, "loans.create");
 
-    if (!args.businessName.trim()) {
-      throw new Error("Business name is required");
+    // Validation based on account type
+    if (args.accountType === "patron") {
+      if (!args.firstName?.trim() || !args.lastName?.trim()) {
+        throw new Error(
+          "First name and last name are required for patron accounts",
+        );
+      }
+    } else {
+      if (!args.businessName?.trim()) {
+        throw new Error("Business name is required for non-patron accounts");
+      }
     }
 
     const accountNumber = await generateAccountNumber(ctx, args.organizationId);
@@ -239,19 +251,47 @@ export const create = mutation({
     const accountId = await ctx.db.insert("accounts", {
       organizationId: args.organizationId,
       accountNumber,
-      businessName: args.businessName.trim(),
+      accountType: args.accountType,
+
+      // Business/Organization info
+      businessName: args.businessName?.trim() || undefined,
+      contactPerson: args.contactPerson?.trim() || undefined,
+      contactPhone: args.contactPhone?.trim() || undefined,
+      contactEmail: args.contactEmail?.trim() || undefined,
+
+      // Personal info
+      firstName: args.firstName?.trim() || undefined,
+      lastName: args.lastName?.trim() || undefined,
+      dateOfBirth: args.dateOfBirth,
+
+      // Contact info
       phone: args.phone?.trim() || undefined,
       email: args.email?.trim() || undefined,
+
+      // Address fields
       address: args.address?.trim() || undefined,
       address2: args.address2?.trim() || undefined,
       zipCode: args.zipCode?.trim() || undefined,
       city: args.city?.trim() || undefined,
       country: args.country?.trim() || undefined,
-      contactPerson: args.contactPerson?.trim() || undefined,
-      contactPhone: args.contactPhone?.trim() || undefined,
-      contactEmail: args.contactEmail?.trim() || undefined,
+      structuredAddress: args.structuredAddress,
+
+      // Library-specific fields
+      cardNumber: args.cardNumber?.trim() || undefined,
+      pin: args.pin,
+      membershipTypeId: args.membershipTypeId,
+      membershipType: args.membershipType?.trim() || undefined,
+      registrationDate: args.registrationDate,
+      expirationDate: args.expirationDate,
+      status: args.status,
+      borrowingLimit: args.borrowingLimit,
+      holdLimit: args.holdLimit,
+      fineBalance: args.accountType === "patron" ? 0 : undefined,
+      preferredBranch: args.preferredBranch,
+      notificationPreferences: args.notificationPreferences,
+      totalCheckouts: args.accountType === "patron" ? 0 : undefined,
+
       notes: args.notes?.trim() || undefined,
-      accountType: args.accountType,
       createdBy: userId,
       createdAt: Date.now(),
     });
@@ -278,7 +318,14 @@ export const create = mutation({
 export const update = mutation({
   args: {
     accountId: v.id("accounts"),
+    accountType: v.optional(accountTypeValidator),
     businessName: v.optional(v.string()),
+    contactPerson: v.optional(v.string()),
+    contactPhone: v.optional(v.string()),
+    contactEmail: v.optional(v.string()),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    dateOfBirth: v.optional(v.number()),
     phone: v.optional(v.string()),
     email: v.optional(v.string()),
     address: v.optional(v.string()),
@@ -286,18 +333,20 @@ export const update = mutation({
     zipCode: v.optional(v.string()),
     city: v.optional(v.string()),
     country: v.optional(v.string()),
-    contactPerson: v.optional(v.string()),
-    contactPhone: v.optional(v.string()),
-    contactEmail: v.optional(v.string()),
+    structuredAddress: v.optional(structuredAddressValidator),
+    cardNumber: v.optional(v.string()),
+    pin: v.optional(v.string()),
+    membershipTypeId: v.optional(v.id("membershipTypes")),
+    membershipType: v.optional(v.string()),
+    registrationDate: v.optional(v.number()),
+    expirationDate: v.optional(v.number()),
+    status: v.optional(statusValidator),
+    blockReason: v.optional(v.string()),
+    borrowingLimit: v.optional(v.number()),
+    holdLimit: v.optional(v.number()),
+    preferredBranch: v.optional(v.id("locations")),
+    notificationPreferences: v.optional(notificationPreferencesValidator),
     notes: v.optional(v.string()),
-    accountType: v.optional(
-      v.union(
-        v.literal("lender"),
-        v.literal("borrower"),
-        v.literal("both"),
-        v.literal("institution"),
-      ),
-    ),
     roleIds: v.optional(v.array(v.id("roles"))),
   },
   returns: v.null(),
@@ -314,33 +363,25 @@ export const update = mutation({
 
     await requirePermission(ctx, account.organizationId, "loans.update");
 
-    const updates: {
-      businessName?: string;
-      phone?: string;
-      email?: string;
-      address?: string;
-      address2?: string;
-      zipCode?: string;
-      city?: string;
-      country?: string;
-      contactPerson?: string;
-      contactPhone?: string;
-      contactEmail?: string;
-      notes?: string;
-      accountType?: "lender" | "borrower" | "both" | "institution";
-      lastModifiedBy: Id<"users">;
-      lastModifiedAt: number;
-    } = {
+    const updates: Record<string, unknown> = {
       lastModifiedBy: userId,
       lastModifiedAt: Date.now(),
     };
 
-    if (args.businessName !== undefined) {
-      if (!args.businessName.trim()) {
-        throw new Error("Business name cannot be empty");
-      }
-      updates.businessName = args.businessName.trim();
-    }
+    if (args.accountType !== undefined) updates.accountType = args.accountType;
+    if (args.businessName !== undefined)
+      updates.businessName = args.businessName.trim() || undefined;
+    if (args.contactPerson !== undefined)
+      updates.contactPerson = args.contactPerson.trim() || undefined;
+    if (args.contactPhone !== undefined)
+      updates.contactPhone = args.contactPhone.trim() || undefined;
+    if (args.contactEmail !== undefined)
+      updates.contactEmail = args.contactEmail.trim() || undefined;
+    if (args.firstName !== undefined)
+      updates.firstName = args.firstName.trim() || undefined;
+    if (args.lastName !== undefined)
+      updates.lastName = args.lastName.trim() || undefined;
+    if (args.dateOfBirth !== undefined) updates.dateOfBirth = args.dateOfBirth;
     if (args.phone !== undefined)
       updates.phone = args.phone.trim() || undefined;
     if (args.email !== undefined)
@@ -354,22 +395,35 @@ export const update = mutation({
     if (args.city !== undefined) updates.city = args.city.trim() || undefined;
     if (args.country !== undefined)
       updates.country = args.country.trim() || undefined;
-    if (args.contactPerson !== undefined)
-      updates.contactPerson = args.contactPerson.trim() || undefined;
-    if (args.contactPhone !== undefined)
-      updates.contactPhone = args.contactPhone.trim() || undefined;
-    if (args.contactEmail !== undefined)
-      updates.contactEmail = args.contactEmail.trim() || undefined;
+    if (args.structuredAddress !== undefined)
+      updates.structuredAddress = args.structuredAddress;
+    if (args.cardNumber !== undefined)
+      updates.cardNumber = args.cardNumber.trim() || undefined;
+    if (args.pin !== undefined) updates.pin = args.pin;
+    if (args.membershipTypeId !== undefined)
+      updates.membershipTypeId = args.membershipTypeId;
+    if (args.membershipType !== undefined)
+      updates.membershipType = args.membershipType.trim() || undefined;
+    if (args.registrationDate !== undefined)
+      updates.registrationDate = args.registrationDate;
+    if (args.expirationDate !== undefined)
+      updates.expirationDate = args.expirationDate;
+    if (args.status !== undefined) updates.status = args.status;
+    if (args.blockReason !== undefined)
+      updates.blockReason = args.blockReason.trim() || undefined;
+    if (args.borrowingLimit !== undefined)
+      updates.borrowingLimit = args.borrowingLimit;
+    if (args.holdLimit !== undefined) updates.holdLimit = args.holdLimit;
+    if (args.preferredBranch !== undefined)
+      updates.preferredBranch = args.preferredBranch;
+    if (args.notificationPreferences !== undefined)
+      updates.notificationPreferences = args.notificationPreferences;
     if (args.notes !== undefined)
       updates.notes = args.notes.trim() || undefined;
-    if (args.accountType !== undefined)
-      updates.accountType = args.accountType;
 
     await ctx.db.patch(args.accountId, updates);
 
-    // Update role associations if provided
     if (args.roleIds !== undefined) {
-      // Remove existing role associations
       const existingAccountRoles = await ctx.db
         .query("accountRoles")
         .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
@@ -379,7 +433,6 @@ export const update = mutation({
         await ctx.db.delete(accountRole._id);
       }
 
-      // Add new role associations
       for (const roleId of args.roleIds) {
         await ctx.db.insert("accountRoles", {
           accountId: args.accountId,
@@ -440,6 +493,34 @@ export const remove = mutation({
     await ctx.db.delete(args.accountId);
 
     return null;
+  },
+});
+
+/**
+ * Get a patron account by card number (for library circulation)
+ */
+export const getByCardNumber = query({
+  args: {
+    organizationId: v.id("organizations"),
+    cardNumber: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "loans.read");
+
+    const account = await ctx.db
+      .query("accounts")
+      .withIndex("by_organization_and_cardNumber", (q) =>
+        q
+          .eq("organizationId", args.organizationId)
+          .eq("cardNumber", args.cardNumber),
+      )
+      .first();
+
+    if (!account || account.accountType !== "patron") {
+      return null;
+    }
+
+    return account;
   },
 });
 

@@ -64,10 +64,7 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import {
-  ImageLightbox,
-  type LightboxImage,
-} from "@v1/ui/image-lightbox";
+import { ImageLightbox, type LightboxImage } from "@v1/ui/image-lightbox";
 import { MediaGallery } from "./_components/media-gallery";
 import { RecordContextSidebar } from "./_components/record-context-sidebar";
 
@@ -140,7 +137,9 @@ export default function ObjectDetailPage() {
   );
 
   // Get primary image
-  const primaryImage = media?.find((m) => m.isPrimary && m.fileType === "image");
+  const primaryImage = media?.find(
+    (m) => m.isPrimary && m.fileType === "image",
+  );
   const firstImage = media?.find((m) => m.fileType === "image");
   const heroImage = primaryImage || firstImage;
 
@@ -196,756 +195,933 @@ export default function ObjectDetailPage() {
     );
   }
 
-  const locationString = locationPath?.map((loc) => loc.name).join(", ") || null;
+  const locationString =
+    locationPath?.map((loc) => loc.name).join(", ") || null;
 
   return (
     <>
-    <SidebarProvider
-      style={{ "--sidebar-width": "20rem" } as React.CSSProperties}
-      className="flex min-h-screen w-full print:hidden"
-    >
-      {/* Main Content */}
-      <main className="z-10 flex min-w-0 flex-1 flex-col bg-background">
-        {/* Navbar */}
-        <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
-          <div className="flex items-center gap-2 text-xs">
-            <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-              <Link href="/objects">
-                <ArrowLeft className="h-4 w-4 text-muted-foreground" />
-              </Link>
-            </Button>
-            <span className="text-muted-foreground">Collections</span>
-            <span className="text-muted-foreground/50">/</span>
-            {collectionGroup && (
-              <>
-                <span className="text-muted-foreground">
-                  {collectionGroup.name}
-                </span>
-                <span className="text-muted-foreground/50">/</span>
-              </>
-            )}
-            <span className="font-medium text-foreground">{collection.title}</span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                  title="Share"
-                >
-                  <Share2 className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={handleCopyLink}>
-                  {linkCopied ? (
-                    <Check className="mr-2 h-4 w-4 text-green-500" />
-                  ) : (
-                    <Link2 className="mr-2 h-4 w-4" />
-                  )}
-                  {linkCopied ? "Link Copied!" : "Copy Object Link"}
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <FileDown className="mr-2 h-4 w-4" />
-                  Export to PDF
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Send className="mr-2 h-4 w-4" />
-                  Request Loan
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              title="Print Record"
-              onClick={() => setIsPrintModalOpen(true)}
-            >
-              <Printer className="h-4 w-4" />
-            </Button>
-            <div className="h-4 w-px bg-border" />
-            <PermissionGate permission="collections.update">
-              <Button asChild>
-                <Link href={`/objects/${collectionId}/edit`}>
-                  <Pencil className="mr-2 h-3.5 w-3.5" />
-                  Edit Object
+      <SidebarProvider
+        style={{ "--sidebar-width": "20rem" } as React.CSSProperties}
+        className="flex min-h-screen w-full print:hidden"
+      >
+        {/* Main Content */}
+        <main className="z-10 flex min-w-0 flex-1 flex-col bg-background">
+          {/* Navbar */}
+          <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
+            <div className="flex items-center gap-2 text-xs">
+              <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+                <Link href="/objects">
+                  <ArrowLeft className="h-4 w-4 text-muted-foreground" />
                 </Link>
               </Button>
-            </PermissionGate>
-          </div>
-        </header>
+              <span className="text-muted-foreground">Collections</span>
+              <span className="text-muted-foreground/50">/</span>
+              {collectionGroup && (
+                <>
+                  <span className="text-muted-foreground">
+                    {collectionGroup.name}
+                  </span>
+                  <span className="text-muted-foreground/50">/</span>
+                </>
+              )}
+              <span className="font-medium text-foreground">
+                {collection.title}
+              </span>
+            </div>
 
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto">
-          {/* Hero Section */}
-          <div className="border-b border-border/60 bg-secondary/10 px-8 py-8">
-            <div className="mx-auto flex max-w-5xl items-start gap-8">
-              {/* Hero Image */}
-              <button
-                type="button"
-                className="group relative shrink-0 cursor-zoom-in"
-                onClick={() => heroImage?.url && setIsHeroLightboxOpen(true)}
-                aria-label="View full size image"
+            <div className="flex items-center gap-3">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    title="Share"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={handleCopyLink}>
+                    {linkCopied ? (
+                      <Check className="mr-2 h-4 w-4 text-green-500" />
+                    ) : (
+                      <Link2 className="mr-2 h-4 w-4" />
+                    )}
+                    {linkCopied ? "Link Copied!" : "Copy Object Link"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Export to PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <Send className="mr-2 h-4 w-4" />
+                    Request Loan
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                title="Print Record"
+                onClick={() => setIsPrintModalOpen(true)}
               >
-                {heroImage?.url ? (
-                  <img
-                    src={heroImage.thumbnailUrl || heroImage.url}
-                    alt={collection.title}
-                    className="h-48 w-48 rounded-xl border border-border bg-secondary object-cover shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
-                  />
-                ) : (
-                  <div className="flex h-48 w-48 items-center justify-center rounded-xl border border-border bg-secondary">
-                    <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                <Printer className="h-4 w-4" />
+              </Button>
+              <div className="h-4 w-px bg-border" />
+              <PermissionGate permission="collections.update">
+                <Button asChild>
+                  <Link href={`/objects/${collectionId}/edit`}>
+                    <Pencil className="mr-2 h-3.5 w-3.5" />
+                    Edit Object
+                  </Link>
+                </Button>
+              </PermissionGate>
+            </div>
+          </header>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Hero Section */}
+            <div className="border-b border-border/60 bg-secondary/10 px-8 py-8">
+              <div className="mx-auto flex max-w-5xl items-start gap-8">
+                {/* Hero Image */}
+                <button
+                  type="button"
+                  className="group relative shrink-0 cursor-zoom-in"
+                  onClick={() => heroImage?.url && setIsHeroLightboxOpen(true)}
+                  aria-label="View full size image"
+                >
+                  {heroImage?.url ? (
+                    <img
+                      src={heroImage.thumbnailUrl || heroImage.url}
+                      alt={collection.title}
+                      className="h-48 w-48 rounded-xl border border-border bg-secondary object-cover shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
+                    />
+                  ) : (
+                    <div className="flex h-48 w-48 items-center justify-center rounded-xl border border-border bg-secondary">
+                      <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                    <Maximize2 className="h-6 w-6 text-white" />
                   </div>
-                )}
-                <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                  <Maximize2 className="h-6 w-6 text-white" />
-                </div>
-              </button>
+                </button>
 
-              {/* Hero Image Lightbox */}
-              <ImageLightbox
-                images={heroLightboxImages}
-                initialIndex={lightboxInitialIndex}
-                isOpen={isHeroLightboxOpen}
-                onClose={() => setIsHeroLightboxOpen(false)}
-              />
+                {/* Hero Image Lightbox */}
+                <ImageLightbox
+                  images={heroLightboxImages}
+                  initialIndex={lightboxInitialIndex}
+                  isOpen={isHeroLightboxOpen}
+                  onClose={() => setIsHeroLightboxOpen(false)}
+                />
 
-              {/* Hero Info */}
-              <div className="flex-1 space-y-4">
-                {/* Status, Accession & Alternates Row */}
-                <div className="flex flex-wrap items-center gap-2.5">
-                  {/* Display Status Badge */}
-                  <div
-                    className={cn(
-                      "rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider",
-                      collection.displayStatus === "On Display" ||
-                        collection.status === "active"
-                        ? "border border-amber-500/20 bg-amber-500/10 text-amber-500"
-                        : collection.status === "loaned"
-                          ? "border border-blue-500/20 bg-blue-500/10 text-blue-500"
-                          : "border border-red-500/20 bg-red-500/10 text-red-500",
-                    )}
-                  >
-                    {collection.displayStatus || collection.status}
-                  </div>
-
-                  {/* Public/Private Badge */}
-                  <div
-                    className={cn(
-                      "flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px]",
-                      collection.isPubliclyVisible !== false
-                        ? "border border-emerald-500/30 bg-emerald-100 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-950/30 dark:text-emerald-400"
-                        : "border border-red-500/30 bg-red-100 text-red-700 dark:border-red-500/20 dark:bg-red-950/30 dark:text-red-400",
-                    )}
-                  >
-                    <div className="relative flex h-2 w-2">
-                      {collection.isPubliclyVisible !== false && (
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                {/* Hero Info */}
+                <div className="flex-1 space-y-4">
+                  {/* Status, Accession & Alternates Row */}
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {/* Display Status Badge */}
+                    <div
+                      className={cn(
+                        "rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider",
+                        collection.displayStatus === "On Display" ||
+                          collection.status === "active"
+                          ? "border border-amber-500/20 bg-amber-500/10 text-amber-500"
+                          : collection.status === "loaned"
+                            ? "border border-blue-500/20 bg-blue-500/10 text-blue-500"
+                            : "border border-red-500/20 bg-red-500/10 text-red-500",
                       )}
-                      <span
-                        className={cn(
-                          "relative inline-flex h-2 w-2 rounded-full",
-                          collection.isPubliclyVisible !== false
-                            ? "bg-emerald-500"
-                            : "bg-red-500",
-                        )}
-                      />
+                    >
+                      {collection.displayStatus || collection.status}
                     </div>
-                    <span className="font-medium">
-                      {collection.isPubliclyVisible !== false ? "Public" : "Private"}
-                    </span>
+
+                    {/* Public/Private Badge */}
+                    <div
+                      className={cn(
+                        "flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px]",
+                        collection.isPubliclyVisible !== false
+                          ? "border border-emerald-500/30 bg-emerald-100 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-950/30 dark:text-emerald-400"
+                          : "border border-red-500/30 bg-red-100 text-red-700 dark:border-red-500/20 dark:bg-red-950/30 dark:text-red-400",
+                      )}
+                    >
+                      <div className="relative flex h-2 w-2">
+                        {collection.isPubliclyVisible !== false && (
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                        )}
+                        <span
+                          className={cn(
+                            "relative inline-flex h-2 w-2 rounded-full",
+                            collection.isPubliclyVisible !== false
+                              ? "bg-emerald-500"
+                              : "bg-red-500",
+                          )}
+                        />
+                      </div>
+                      <span className="font-medium">
+                        {collection.isPubliclyVisible !== false
+                          ? "Public"
+                          : "Private"}
+                      </span>
+                    </div>
+
+                    {/* Main Accession Number */}
+                    <Popover open={copied} onOpenChange={setCopied}>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="flex cursor-pointer items-center gap-1.5 rounded border border-border bg-secondary px-2 py-1 font-mono text-xs text-foreground transition-colors hover:bg-secondary/80"
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              collection.accessionNumber,
+                            );
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 1500);
+                          }}
+                        >
+                          <span>{collection.accessionNumber}</span>
+                          {copied ? (
+                            <Check className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <Copy className="h-3 w-3 text-muted-foreground transition-colors hover:text-foreground" />
+                          )}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto px-3 py-1.5 text-xs">
+                        Copied to clipboard
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Alternate Accession Numbers */}
+                    {collection.alternateAccessionNumbers &&
+                      collection.alternateAccessionNumbers.length > 0 && (
+                        <>
+                          <div className="mx-1 h-4 w-px bg-border" />
+                          <div className="flex items-center gap-2">
+                            {collection.alternateAccessionNumbers.map(
+                              (altNum, idx) => (
+                                <div
+                                  key={altNum}
+                                  className="flex items-center gap-1.5 rounded-md border border-border bg-secondary/50 px-2 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+                                >
+                                  <span className="select-none font-mono text-muted-foreground/60">
+                                    {idx === 0 ? "ID:" : "ALT:"}
+                                  </span>
+                                  <span>{altNum}</span>
+                                </div>
+                              ),
+                            )}
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button
+                                  type="button"
+                                  className="rounded-full p-0.5 text-muted-foreground/50 transition-colors hover:bg-secondary hover:text-muted-foreground"
+                                >
+                                  <Info className="h-3.5 w-3.5" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-64 p-3 text-xs">
+                                <p className="font-medium text-foreground">
+                                  Alternative Identifiers
+                                </p>
+                                <p className="mt-1.5 leading-relaxed text-muted-foreground">
+                                  Previous catalog numbers, legacy IDs, or
+                                  external system references used to identify
+                                  this object before or alongside the current
+                                  accession number.
+                                </p>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        </>
+                      )}
                   </div>
 
-                  {/* Main Accession Number */}
-                  <Popover open={copied} onOpenChange={setCopied}>
-                    <PopoverTrigger asChild>
-                      <button
-                        type="button"
-                        className="flex cursor-pointer items-center gap-1.5 rounded border border-border bg-secondary px-2 py-1 font-mono text-xs text-foreground transition-colors hover:bg-secondary/80"
-                        onClick={() => {
-                          navigator.clipboard.writeText(collection.accessionNumber);
-                          setCopied(true);
-                          setTimeout(() => setCopied(false), 1500);
-                        }}
-                      >
-                        <span>{collection.accessionNumber}</span>
-                        {copied ? (
-                          <Check className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <Copy className="h-3 w-3 text-muted-foreground transition-colors hover:text-foreground" />
-                        )}
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto px-3 py-1.5 text-xs">
-                      Copied to clipboard
-                    </PopoverContent>
-                  </Popover>
-
-                  {/* Alternate Accession Numbers */}
-                  {collection.alternateAccessionNumbers &&
-                    collection.alternateAccessionNumbers.length > 0 && (
-                      <>
-                        <div className="mx-1 h-4 w-px bg-border" />
-                        <div className="flex items-center gap-2">
-                          {collection.alternateAccessionNumbers.map((altNum, idx) => (
-                            <div
-                              key={altNum}
-                              className="flex items-center gap-1.5 rounded-md border border-border bg-secondary/50 px-2 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
-                            >
-                              <span className="select-none font-mono text-muted-foreground/60">
-                                {idx === 0 ? "ID:" : "ALT:"}
-                              </span>
-                              <span>{altNum}</span>
-                            </div>
-                          ))}
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <button
-                                type="button"
-                                className="rounded-full p-0.5 text-muted-foreground/50 transition-colors hover:bg-secondary hover:text-muted-foreground"
-                              >
-                                <Info className="h-3.5 w-3.5" />
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-64 p-3 text-xs">
-                              <p className="font-medium text-foreground">
-                                Alternative Identifiers
-                              </p>
-                              <p className="mt-1.5 leading-relaxed text-muted-foreground">
-                                Previous catalog numbers, legacy IDs, or external system
-                                references used to identify this object before or alongside
-                                the current accession number.
-                              </p>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                      </>
+                  <div>
+                    <h1 className="mb-1 text-3xl font-semibold leading-tight tracking-tight text-foreground">
+                      {collection.title}
+                    </h1>
+                    {collection.alternativeTitle && (
+                      <p className="text-sm text-muted-foreground">
+                        Alternative Title: {collection.alternativeTitle}
+                      </p>
                     )}
-                </div>
+                  </div>
 
-                <div>
-                  <h1 className="mb-1 text-3xl font-semibold leading-tight tracking-tight text-foreground">
-                    {collection.title}
-                  </h1>
-                  {collection.alternativeTitle && (
-                    <p className="text-sm text-muted-foreground">
-                      Alternative Title: {collection.alternativeTitle}
-                    </p>
-                  )}
-                </div>
-
-                {/* Metadata Row */}
-                <div className="flex items-center gap-6 pt-2">
-                  {locationString && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{locationString}</span>
-                    </div>
-                  )}
-                  {collection.dateCreated && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{collection.dateCreated}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Object Hierarchy - Parent & Siblings */}
-                {parentObject && (
-                  <div className="flex items-center gap-4 rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
-                    {/* Parent Group Info */}
-                    <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
-                        Part of
-                      </span>
-                      <TooltipProvider delayDuration={200}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Link
-                              href={`/objects/${parentObject._id}`}
-                              className="group flex items-center gap-2 rounded-full border border-border bg-background/50 py-1 pl-1 pr-3 transition-all hover:border-accent hover:bg-accent/5"
-                            >
-                              <Avatar className="h-6 w-6 ring-1 ring-border group-hover:ring-accent">
-                                <AvatarImage
-                                  src={parentObject.thumbnailUrl ?? undefined}
-                                  alt={parentObject.title}
-                                />
-                                <AvatarFallback className="bg-secondary text-[10px]">
-                                  <Box className="h-3 w-3 text-muted-foreground" />
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
-                                {parentObject.title}
-                              </span>
-                            </Link>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom" className="max-w-xs border border-border bg-popover text-popover-foreground">
-                            <div className="space-y-1">
-                              <p className="font-medium">{parentObject.title}</p>
-                              {parentObject.accessionNumber && (
-                                <p className="text-xs text-muted-foreground">
-                                  {parentObject.accessionNumber}
-                                </p>
-                              )}
-                              <p className="text-xs text-muted-foreground">
-                                Parent object
-                              </p>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-
-                    {/* Divider */}
-                    {siblingObjects && siblingObjects.length > 0 && (
-                      <div className="h-8 w-px bg-border/60" />
-                    )}
-
-                    {/* Siblings as pills */}
-                    {siblingObjects && siblingObjects.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
-                          Related
+                  {/* Metadata Row */}
+                  <div className="flex items-center gap-6 pt-2">
+                    {locationString && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">
+                          {locationString}
                         </span>
+                      </div>
+                    )}
+                    {collection.dateCreated && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">
+                          {collection.dateCreated}
+                        </span>
+                      </div>
+                    )}
+                  </div>
 
-                        {/* Current object pill (highlighted) */}
+                  {/* Object Hierarchy - Parent & Siblings */}
+                  {parentObject && (
+                    <div className="flex items-center gap-4 rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+                      {/* Parent Group Info */}
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                          Part of
+                        </span>
                         <TooltipProvider delayDuration={200}>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="flex cursor-default items-center gap-2 rounded-full border border-accent bg-accent/10 py-1 pl-1 pr-3">
+                              <Link
+                                href={`/objects/${parentObject._id}`}
+                                className="group flex items-center gap-2 rounded-full border border-border bg-background/50 py-1 pl-1 pr-3 transition-all hover:border-accent hover:bg-accent/5"
+                              >
                                 <Avatar className="h-6 w-6 ring-1 ring-border group-hover:ring-accent">
-                                  <AvatarImage 
-                                    src={heroImage?.thumbnailUrl ?? heroImage?.url ?? undefined}
-                                    alt={collection.title}
+                                  <AvatarImage
+                                    src={parentObject.thumbnailUrl ?? undefined}
+                                    alt={parentObject.title}
                                   />
-                                  <AvatarFallback className="bg-secondary text-[10px] font-medium text-muted-foreground">
-                                    {collection.title.charAt(0)}
+                                  <AvatarFallback className="bg-secondary text-[10px]">
+                                    <Box className="h-3 w-3 text-muted-foreground" />
                                   </AvatarFallback>
                                 </Avatar>
                                 <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
-                                  {collection.title.split(" ").slice(0, 2).join(" ")}
-                                  {collection.title.split(" ").length > 2 && " ..."}
+                                  {parentObject.title}
                                 </span>
-                              </div>
+                              </Link>
                             </TooltipTrigger>
-                            <TooltipContent side="bottom" className="max-w-xs border border-border bg-popover text-popover-foreground">
+                            <TooltipContent
+                              side="bottom"
+                              className="max-w-xs border border-border bg-popover text-popover-foreground"
+                            >
                               <div className="space-y-1">
-                                <p className="font-medium">{collection.title}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {collection.accessionNumber}
+                                <p className="font-medium">
+                                  {parentObject.title}
                                 </p>
-                                <p className="text-xs text-accent">
-                                  Current object
+                                {parentObject.accessionNumber && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {parentObject.accessionNumber}
+                                  </p>
+                                )}
+                                <p className="text-xs text-muted-foreground">
+                                  Parent object
                                 </p>
                               </div>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
+                      </div>
 
-                        {/* Sibling pills */}
-                        {siblingObjects.slice(0, 3).map((sibling) => (
-                          <TooltipProvider key={sibling._id} delayDuration={200}>
+                      {/* Divider */}
+                      {siblingObjects && siblingObjects.length > 0 && (
+                        <div className="h-8 w-px bg-border/60" />
+                      )}
+
+                      {/* Siblings as pills */}
+                      {siblingObjects && siblingObjects.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                            Related
+                          </span>
+
+                          {/* Current object pill (highlighted) */}
+                          <TooltipProvider delayDuration={200}>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Link
-                                  href={`/objects/${sibling._id}`}
-                                  className="group flex items-center gap-2 rounded-full border border-border bg-background/50 py-1 pl-1 pr-3 transition-all hover:border-accent hover:bg-accent/5"
-                                >
+                                <div className="flex cursor-default items-center gap-2 rounded-full border border-accent bg-accent/10 py-1 pl-1 pr-3">
                                   <Avatar className="h-6 w-6 ring-1 ring-border group-hover:ring-accent">
                                     <AvatarImage
-                                      src={sibling.thumbnailUrl ?? undefined}
-                                      alt={sibling.title}
+                                      src={
+                                        heroImage?.thumbnailUrl ??
+                                        heroImage?.url ??
+                                        undefined
+                                      }
+                                      alt={collection.title}
                                     />
                                     <AvatarFallback className="bg-secondary text-[10px] font-medium text-muted-foreground">
-                                      {sibling.title.charAt(0)}
+                                      {collection.title.charAt(0)}
                                     </AvatarFallback>
                                   </Avatar>
                                   <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
-                                    {sibling.title.split(" ").slice(0, 2).join(" ")}
-                                    {sibling.title.split(" ").length > 2 && "..."}
+                                    {collection.title
+                                      .split(" ")
+                                      .slice(0, 2)
+                                      .join(" ")}
+                                    {collection.title.split(" ").length > 2 &&
+                                      " ..."}
                                   </span>
-                                </Link>
+                                </div>
                               </TooltipTrigger>
-                              <TooltipContent side="bottom" className="max-w-xs border border-border bg-popover text-popover-foreground">
+                              <TooltipContent
+                                side="bottom"
+                                className="max-w-xs border border-border bg-popover text-popover-foreground"
+                              >
                                 <div className="space-y-1">
-                                  <p className="font-medium">{sibling.title}</p>
-                                  {sibling.accessionNumber && (
-                                    <p className="text-xs text-muted-foreground">
-                                      {sibling.accessionNumber}
-                                    </p>
-                                  )}
+                                  <p className="font-medium">
+                                    {collection.title}
+                                  </p>
                                   <p className="text-xs text-muted-foreground">
-                                    Sibling object
+                                    {collection.accessionNumber}
+                                  </p>
+                                  <p className="text-xs text-accent">
+                                    Current object
                                   </p>
                                 </div>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
-                        ))}
 
-                        {/* More indicator */}
-                        {siblingObjects.length > 3 && (
-                          <div className="flex h-7 items-center rounded-full border border-border bg-secondary/50 px-2.5 text-[10px] font-medium text-muted-foreground">
-                            +{siblingObjects.length - 3} more
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                          {/* Sibling pills */}
+                          {siblingObjects.slice(0, 3).map((sibling) => (
+                            <TooltipProvider
+                              key={sibling._id}
+                              delayDuration={200}
+                            >
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Link
+                                    href={`/objects/${sibling._id}`}
+                                    className="group flex items-center gap-2 rounded-full border border-border bg-background/50 py-1 pl-1 pr-3 transition-all hover:border-accent hover:bg-accent/5"
+                                  >
+                                    <Avatar className="h-6 w-6 ring-1 ring-border group-hover:ring-accent">
+                                      <AvatarImage
+                                        src={sibling.thumbnailUrl ?? undefined}
+                                        alt={sibling.title}
+                                      />
+                                      <AvatarFallback className="bg-secondary text-[10px] font-medium text-muted-foreground">
+                                        {sibling.title.charAt(0)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
+                                      {sibling.title
+                                        .split(" ")
+                                        .slice(0, 2)
+                                        .join(" ")}
+                                      {sibling.title.split(" ").length > 2 &&
+                                        "..."}
+                                    </span>
+                                  </Link>
+                                </TooltipTrigger>
+                                <TooltipContent
+                                  side="bottom"
+                                  className="max-w-xs border border-border bg-popover text-popover-foreground"
+                                >
+                                  <div className="space-y-1">
+                                    <p className="font-medium">
+                                      {sibling.title}
+                                    </p>
+                                    {sibling.accessionNumber && (
+                                      <p className="text-xs text-muted-foreground">
+                                        {sibling.accessionNumber}
+                                      </p>
+                                    )}
+                                    <p className="text-xs text-muted-foreground">
+                                      Sibling object
+                                    </p>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ))}
+
+                          {/* More indicator */}
+                          {siblingObjects.length > 3 && (
+                            <div className="flex h-7 items-center rounded-full border border-border bg-secondary/50 px-2.5 text-[10px] font-medium text-muted-foreground">
+                              +{siblingObjects.length - 3} more
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Tab Navigation */}
-          <div className="sticky top-14 z-40 border-b border-border/60 bg-background/50 px-8 backdrop-blur-md">
-            <div className="mx-auto flex max-w-5xl gap-6 text-xs font-medium">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    "border-b-2 py-3 transition-colors",
-                    activeTab === tab.id
-                      ? "border-accent text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground/80",
-                  )}
-                >
-                  {tab.label}
-                </button>
-              ))}
+            {/* Tab Navigation */}
+            <div className="sticky top-14 z-40 border-b border-border/60 bg-background/50 px-8 backdrop-blur-md">
+              <div className="mx-auto flex max-w-5xl gap-6 text-xs font-medium">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      "border-b-2 py-3 transition-colors",
+                      activeTab === tab.id
+                        ? "border-accent text-foreground"
+                        : "border-transparent text-muted-foreground hover:text-foreground/80",
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tab Content */}
+            <div className="mx-auto min-h-[500px] max-w-5xl space-y-8 p-8">
+              {activeTab === "general" && (
+                <GeneralTab collection={collection} />
+              )}
+              {activeTab === "physical" && (
+                <PhysicalTab collection={collection} />
+              )}
+              {activeTab === "media" && (
+                <MediaTab
+                  collectionId={collectionId}
+                  onOpenLightbox={(index) => {
+                    setLightboxInitialIndex(index);
+                    setIsHeroLightboxOpen(true);
+                  }}
+                />
+              )}
+              {activeTab === "digital" && (
+                <DigitalAssetsTab collection={collection} />
+              )}
+              {activeTab === "provenance" && (
+                <ProvenanceTab collection={collection} />
+              )}
+              {activeTab === "conservation" && (
+                <ConservationTab
+                  collectionId={collectionId}
+                  organizationId={currentOrganizationId}
+                />
+              )}
+              {activeTab === "exhibitions" && (
+                <ExhibitionsTab
+                  collectionId={collectionId}
+                  organizationId={currentOrganizationId}
+                />
+              )}
+              {activeTab === "logs" && (
+                <LogsTab
+                  collectionId={collectionId}
+                  organizationId={currentOrganizationId}
+                />
+              )}
             </div>
           </div>
+        </main>
 
-          {/* Tab Content */}
-          <div className="mx-auto min-h-[500px] max-w-5xl space-y-8 p-8">
-            {activeTab === "general" && (
-              <GeneralTab collection={collection} />
-            )}
-            {activeTab === "physical" && (
-              <PhysicalTab collection={collection} />
-            )}
-            {activeTab === "media" && (
-              <MediaTab
-                collectionId={collectionId}
-                onOpenLightbox={(index) => {
-                  setLightboxInitialIndex(index);
-                  setIsHeroLightboxOpen(true);
-                }}
-              />
-            )}
-            {activeTab === "digital" && (
-              <DigitalAssetsTab collection={collection} />
-            )}
-            {activeTab === "provenance" && (
-              <ProvenanceTab collection={collection} />
-            )}
-            {activeTab === "conservation" && (
-              <ConservationTab collectionId={collectionId} organizationId={currentOrganizationId} />
-            )}
-            {activeTab === "exhibitions" && (
-              <ExhibitionsTab collectionId={collectionId} organizationId={currentOrganizationId} />
-            )}
-            {activeTab === "logs" && (
-              <LogsTab collectionId={collectionId} organizationId={currentOrganizationId} />
-            )}
-          </div>
-        </div>
-      </main>
+        {/* Right Sidebar */}
+        <RecordContextSidebar
+          collectionId={collectionId}
+          tags={collection.tags}
+          organizationId={currentOrganizationId}
+        />
+      </SidebarProvider>
 
-      {/* Right Sidebar */}
-      <RecordContextSidebar
-        collectionId={collectionId}
-        tags={collection.tags}
-        organizationId={currentOrganizationId}
-      />
-    </SidebarProvider>
-
-    {/* Print Preview Modal - Outside SidebarProvider for print isolation */}
-    <Dialog open={isPrintModalOpen} onOpenChange={setIsPrintModalOpen}>
+      {/* Print Preview Modal - Outside SidebarProvider for print isolation */}
+      <Dialog open={isPrintModalOpen} onOpenChange={setIsPrintModalOpen}>
         <DialogContent className="flex flex-col max-w-[210mm] w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0">
           {/* Fixed Header */}
           <DialogHeader className="flex-shrink-0 print:hidden border-b border-gray-200 p-6 pb-4">
             <DialogTitle className="text-black">Print Preview</DialogTitle>
           </DialogHeader>
-          
+
           {/* Scrollable A4 Paper-like content */}
           <div className="flex-1 overflow-y-auto">
             <div className="space-y-5 bg-white text-black p-6 print:p-[15mm] print:space-y-4 print:break-inside-avoid-page">
-            {/* Header */}
-            <div className="flex items-start gap-4 border-b border-gray-200 pb-4 print:gap-3 print:pb-3">
-              {heroImage?.url && (
-                <img
-                  src={heroImage.thumbnailUrl || heroImage.url}
-                  alt={collection.title}
-                  className="h-28 w-28 flex-shrink-0 rounded border border-gray-300 object-cover print:h-20 print:w-20"
-                />
-              )}
-              <div className="flex-1 min-w-0">
-                <h1 className="text-xl font-bold text-black print:text-lg">
-                  {collection.title}
-                </h1>
-                {collection.alternativeTitle && (
-                  <p className="text-sm text-gray-600 italic print:text-xs">{collection.alternativeTitle}</p>
+              {/* Header */}
+              <div className="flex items-start gap-4 border-b border-gray-200 pb-4 print:gap-3 print:pb-3">
+                {heroImage?.url && (
+                  <img
+                    src={heroImage.thumbnailUrl || heroImage.url}
+                    alt={collection.title}
+                    className="h-28 w-28 flex-shrink-0 rounded border border-gray-300 object-cover print:h-20 print:w-20"
+                  />
                 )}
-                <p className="mt-1 font-mono text-xs text-gray-600">
-                  {collection.accessionNumber}
-                </p>
-                {collection.alternateAccessionNumbers && collection.alternateAccessionNumbers.length > 0 && (
-                  <p className="text-[10px] text-gray-500">
-                    Alt: {collection.alternateAccessionNumbers.join(", ")}
-                  </p>
-                )}
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {collection.displayStatus && (
-                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-700">
-                      {collection.displayStatus}
-                    </span>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-xl font-bold text-black print:text-lg">
+                    {collection.title}
+                  </h1>
+                  {collection.alternativeTitle && (
+                    <p className="text-sm text-gray-600 italic print:text-xs">
+                      {collection.alternativeTitle}
+                    </p>
                   )}
-                  <span className={cn(
-                    "rounded px-1.5 py-0.5 text-[10px] font-medium",
-                    collection.status === "active" ? "bg-green-100 text-green-700" :
-                    collection.status === "loaned" ? "bg-blue-100 text-blue-700" :
-                    "bg-red-100 text-red-700"
-                  )}>
-                    {collection.status}
-                  </span>
+                  <p className="mt-1 font-mono text-xs text-gray-600">
+                    {collection.accessionNumber}
+                  </p>
+                  {collection.alternateAccessionNumbers &&
+                    collection.alternateAccessionNumbers.length > 0 && (
+                      <p className="text-[10px] text-gray-500">
+                        Alt: {collection.alternateAccessionNumbers.join(", ")}
+                      </p>
+                    )}
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {collection.displayStatus && (
+                      <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-700">
+                        {collection.displayStatus}
+                      </span>
+                    )}
+                    <span
+                      className={cn(
+                        "rounded px-1.5 py-0.5 text-[10px] font-medium",
+                        collection.status === "active"
+                          ? "bg-green-100 text-green-700"
+                          : collection.status === "loaned"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-red-100 text-red-700",
+                      )}
+                    >
+                      {collection.status}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Basic Information */}
-            <div className="print:break-inside-avoid">
-              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Basic Information</h2>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
-                {collection.objectType && (
-                  <div>
-                    <p className="text-xs font-medium text-gray-500">Object Type</p>
-                    <p className="text-black">{collection.objectType}</p>
-                  </div>
-                )}
-                {collection.objectName && (
-                  <div>
-                    <p className="text-xs font-medium text-gray-500">Object Name</p>
-                    <p className="text-black">{collection.objectName}</p>
-                  </div>
-                )}
-                {collection.creator && (
-                  <div>
-                    <p className="text-xs font-medium text-gray-500">Creator/Artist</p>
-                    <p className="text-black">{collection.creator}</p>
-                  </div>
-                )}
-                {collection.dateCreated && (
-                  <div>
-                    <p className="text-xs font-medium text-gray-500">Date Created</p>
-                    <p className="text-black">{collection.dateCreated}</p>
-                  </div>
-                )}
-                {collection.culture && (
-                  <div>
-                    <p className="text-xs font-medium text-gray-500">Culture</p>
-                    <p className="text-black">{collection.culture}</p>
-                  </div>
-                )}
-                {collection.period && (
-                  <div>
-                    <p className="text-xs font-medium text-gray-500">Period</p>
-                    <p className="text-black">{collection.period}</p>
-                  </div>
-                )}
+              {/* Basic Information */}
+              <div className="print:break-inside-avoid">
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                  Basic Information
+                </h2>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
+                  {collection.objectType && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        Object Type
+                      </p>
+                      <p className="text-black">{collection.objectType}</p>
+                    </div>
+                  )}
+                  {collection.objectName && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        Object Name
+                      </p>
+                      <p className="text-black">{collection.objectName}</p>
+                    </div>
+                  )}
+                  {collection.creator && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        Creator/Artist
+                      </p>
+                      <p className="text-black">{collection.creator}</p>
+                    </div>
+                  )}
+                  {collection.dateCreated && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        Date Created
+                      </p>
+                      <p className="text-black">{collection.dateCreated}</p>
+                    </div>
+                  )}
+                  {collection.culture && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        Culture
+                      </p>
+                      <p className="text-black">{collection.culture}</p>
+                    </div>
+                  )}
+                  {collection.period && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        Period
+                      </p>
+                      <p className="text-black">{collection.period}</p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Physical Description */}
-            <div className="print:break-inside-avoid">
-              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Physical Description</h2>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
-                {collection.materials && (
+              {/* Physical Description */}
+              <div className="print:break-inside-avoid">
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                  Physical Description
+                </h2>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
+                  {collection.materials && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        Materials
+                      </p>
+                      <p className="text-black">{collection.materials}</p>
+                    </div>
+                  )}
+                  {collection.technique && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        Technique
+                      </p>
+                      <p className="text-black">{collection.technique}</p>
+                    </div>
+                  )}
+                  {collection.dimensions && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        Dimensions
+                      </p>
+                      <p className="text-black">{collection.dimensions}</p>
+                    </div>
+                  )}
+                  {(collection.dimensionHeight ||
+                    collection.dimensionWidth ||
+                    collection.dimensionDepth) && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        Detailed Dimensions
+                      </p>
+                      <p className="text-black">
+                        {[
+                          collection.dimensionHeight &&
+                            `H: ${collection.dimensionHeight}`,
+                          collection.dimensionWidth &&
+                            `W: ${collection.dimensionWidth}`,
+                          collection.dimensionDepth &&
+                            `D: ${collection.dimensionDepth}`,
+                        ]
+                          .filter(Boolean)
+                          .join(" × ")}{" "}
+                        {collection.dimensionUnit || "cm"}
+                      </p>
+                    </div>
+                  )}
+                  {collection.dimensionWeight && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        Weight
+                      </p>
+                      <p className="text-black">
+                        {collection.dimensionWeight}{" "}
+                        {collection.weightUnit || "kg"}
+                      </p>
+                    </div>
+                  )}
+                  {collection.condition && (
+                    <div className="col-span-2">
+                      <p className="text-xs font-medium text-gray-500">
+                        Condition
+                      </p>
+                      <p className="text-black">{collection.condition}</p>
+                    </div>
+                  )}
+                  {collection.inscriptions && (
+                    <div className="col-span-2">
+                      <p className="text-xs font-medium text-gray-500">
+                        Inscriptions
+                      </p>
+                      <p className="text-black whitespace-pre-wrap">
+                        {collection.inscriptions}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Description */}
+              {collection.description && (
+                <div>
+                  <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                    Description
+                  </h2>
+                  <p className="text-sm text-black whitespace-pre-wrap print:text-xs">
+                    {collection.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Provenance & Acquisition */}
+              {(collection.provenance ||
+                collection.creditLine ||
+                collection.acquisitionMethod ||
+                collection.donated_by) && (
+                <div>
+                  <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                    Provenance & Acquisition
+                  </h2>
+                  <div className="space-y-2 text-sm print:text-xs print:space-y-1">
+                    {collection.creditLine && (
+                      <div>
+                        <p className="text-xs font-medium text-gray-500">
+                          Credit Line
+                        </p>
+                        <p className="text-black">{collection.creditLine}</p>
+                      </div>
+                    )}
+                    {collection.acquisitionMethod && (
+                      <div>
+                        <p className="text-xs font-medium text-gray-500">
+                          Acquisition Method
+                        </p>
+                        <p className="text-black">
+                          {collection.acquisitionMethod}
+                        </p>
+                      </div>
+                    )}
+                    {collection.donated_by &&
+                      collection.donated_by.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-500">
+                            Donated By
+                          </p>
+                          <p className="text-black">
+                            {collection.donated_by.join(", ")}
+                          </p>
+                        </div>
+                      )}
+                    {collection.donated_date && (
+                      <div>
+                        <p className="text-xs font-medium text-gray-500">
+                          Donation Date
+                        </p>
+                        <p className="text-black">{collection.donated_date}</p>
+                      </div>
+                    )}
+                    {collection.provenance && (
+                      <div>
+                        <p className="text-xs font-medium text-gray-500">
+                          Provenance
+                        </p>
+                        <p className="text-black whitespace-pre-wrap">
+                          {collection.provenance}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Ownership History */}
+              {collection.ownershipHistory &&
+                collection.ownershipHistory.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500">Materials</p>
-                    <p className="text-black">{collection.materials}</p>
+                    <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                      Ownership History
+                    </h2>
+                    <div className="space-y-2">
+                      {collection.ownershipHistory.map((entry) => (
+                        <div
+                          key={`${entry.owner}-${entry.startYear || "unknown"}`}
+                          className="rounded border border-gray-200 p-2 text-sm"
+                        >
+                          <p className="font-medium text-black">
+                            {entry.owner}
+                          </p>
+                          {(entry.startYear || entry.endYear) && (
+                            <p className="text-xs text-gray-500">
+                              {entry.startYear || "?"} –{" "}
+                              {entry.endYear || "Present"}
+                            </p>
+                          )}
+                          {entry.description && (
+                            <p className="mt-1 text-gray-600">
+                              {entry.description}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
-                {collection.technique && (
-                  <div>
-                    <p className="text-xs font-medium text-gray-500">Technique</p>
-                    <p className="text-black">{collection.technique}</p>
+
+              {/* Exhibition History */}
+              {collection.exhibitionHistory && (
+                <div>
+                  <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                    Exhibition History
+                  </h2>
+                  <p className="text-sm text-black whitespace-pre-wrap print:text-xs">
+                    {collection.exhibitionHistory}
+                  </p>
+                </div>
+              )}
+
+              {/* Location */}
+              {locationPath && locationPath.length > 0 && (
+                <div>
+                  <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                    Current Location
+                  </h2>
+                  <p className="text-sm text-black print:text-xs">
+                    {locationPath.map((loc) => loc.name).join(" > ")}
+                  </p>
+                </div>
+              )}
+
+              {/* Tags */}
+              {collection.tags && collection.tags.length > 0 && (
+                <div>
+                  <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                    Tags
+                  </h2>
+                  <div className="flex flex-wrap gap-2">
+                    {collection.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700"
+                      >
+                        {tag}
+                      </span>
+                    ))}
                   </div>
-                )}
-                {collection.dimensions && (
+                </div>
+              )}
+
+              {/* Legal & Visibility */}
+              <div>
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                  Legal & Visibility
+                </h2>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
                   <div>
-                    <p className="text-xs font-medium text-gray-500">Dimensions</p>
-                    <p className="text-black">{collection.dimensions}</p>
-                  </div>
-                )}
-                {(collection.dimensionHeight || collection.dimensionWidth || collection.dimensionDepth) && (
-                  <div>
-                    <p className="text-xs font-medium text-gray-500">Detailed Dimensions</p>
+                    <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                      Public Visibility
+                    </p>
                     <p className="text-black">
-                      {[
-                        collection.dimensionHeight && `H: ${collection.dimensionHeight}`,
-                        collection.dimensionWidth && `W: ${collection.dimensionWidth}`,
-                        collection.dimensionDepth && `D: ${collection.dimensionDepth}`,
-                      ].filter(Boolean).join(" × ")} {collection.dimensionUnit || "cm"}
+                      {collection.isPubliclyVisible ? "Yes" : "No"}
                     </p>
                   </div>
-                )}
-                {collection.dimensionWeight && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500">Weight</p>
-                    <p className="text-black">{collection.dimensionWeight} {collection.weightUnit || "kg"}</p>
+                    <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                      Legal Restrictions
+                    </p>
+                    <p className="text-black">
+                      {collection.legalRestrictions ? "Yes" : "None"}
+                    </p>
                   </div>
-                )}
-                {collection.condition && (
-                  <div className="col-span-2">
-                    <p className="text-xs font-medium text-gray-500">Condition</p>
-                    <p className="text-black">{collection.condition}</p>
-                  </div>
-                )}
-                {collection.inscriptions && (
-                  <div className="col-span-2">
-                    <p className="text-xs font-medium text-gray-500">Inscriptions</p>
-                    <p className="text-black whitespace-pre-wrap">{collection.inscriptions}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Description */}
-            {collection.description && (
-              <div>
-                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Description</h2>
-                <p className="text-sm text-black whitespace-pre-wrap print:text-xs">{collection.description}</p>
-              </div>
-            )}
-
-            {/* Provenance & Acquisition */}
-            {(collection.provenance || collection.creditLine || collection.acquisitionMethod || collection.donated_by) && (
-              <div>
-                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Provenance & Acquisition</h2>
-                <div className="space-y-2 text-sm print:text-xs print:space-y-1">
-                  {collection.creditLine && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500">Credit Line</p>
-                      <p className="text-black">{collection.creditLine}</p>
-                    </div>
-                  )}
-                  {collection.acquisitionMethod && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500">Acquisition Method</p>
-                      <p className="text-black">{collection.acquisitionMethod}</p>
-                    </div>
-                  )}
-                  {collection.donated_by && collection.donated_by.length > 0 && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500">Donated By</p>
-                      <p className="text-black">{collection.donated_by.join(", ")}</p>
-                    </div>
-                  )}
-                  {collection.donated_date && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500">Donation Date</p>
-                      <p className="text-black">{collection.donated_date}</p>
-                    </div>
-                  )}
-                  {collection.provenance && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500">Provenance</p>
-                      <p className="text-black whitespace-pre-wrap">{collection.provenance}</p>
-                    </div>
-                  )}
                 </div>
               </div>
-            )}
 
-            {/* Ownership History */}
-            {collection.ownershipHistory && collection.ownershipHistory.length > 0 && (
-              <div>
-                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Ownership History</h2>
-                <div className="space-y-2">
-                  {collection.ownershipHistory.map((entry) => (
-                    <div key={`${entry.owner}-${entry.startYear || "unknown"}`} className="rounded border border-gray-200 p-2 text-sm">
-                      <p className="font-medium text-black">{entry.owner}</p>
-                      {(entry.startYear || entry.endYear) && (
-                        <p className="text-xs text-gray-500">
-                          {entry.startYear || "?"} – {entry.endYear || "Present"}
-                        </p>
-                      )}
-                      {entry.description && (
-                        <p className="mt-1 text-gray-600">{entry.description}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
+              {/* Footer with print date */}
+              <div className="border-t border-gray-200 pt-3 text-[10px] text-gray-400 print:pt-2 print:text-[9px]">
+                <p>
+                  Printed on{" "}
+                  {new Date().toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </p>
               </div>
-            )}
-
-            {/* Exhibition History */}
-            {collection.exhibitionHistory && (
-              <div>
-                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Exhibition History</h2>
-                <p className="text-sm text-black whitespace-pre-wrap print:text-xs">{collection.exhibitionHistory}</p>
-              </div>
-            )}
-
-            {/* Location */}
-            {locationPath && locationPath.length > 0 && (
-              <div>
-                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Current Location</h2>
-                <p className="text-sm text-black print:text-xs">{locationPath.map((loc) => loc.name).join(" > ")}</p>
-              </div>
-            )}
-
-            {/* Tags */}
-            {collection.tags && collection.tags.length > 0 && (
-              <div>
-                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Tags</h2>
-                <div className="flex flex-wrap gap-2">
-                  {collection.tags.map((tag) => (
-                    <span key={tag} className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Legal & Visibility */}
-            <div>
-              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">Legal & Visibility</h2>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
-                <div>
-                  <p className="text-xs font-medium text-gray-500 print:text-[10px]">Public Visibility</p>
-                  <p className="text-black">{collection.isPubliclyVisible ? "Yes" : "No"}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-gray-500 print:text-[10px]">Legal Restrictions</p>
-                  <p className="text-black">{collection.legalRestrictions ? "Yes" : "None"}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer with print date */}
-            <div className="border-t border-gray-200 pt-3 text-[10px] text-gray-400 print:pt-2 print:text-[9px]">
-              <p>Printed on {new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>
-            </div>
             </div>
           </div>
 
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 p-6 pt-4 border-t border-gray-200 bg-white print:hidden">
-            <Button variant="outline" onClick={() => setIsPrintModalOpen(false)} className="bg-gray-900 text-white border-gray-300 hover:bg-gray-100 hover:text-black">
+            <Button
+              variant="outline"
+              onClick={() => setIsPrintModalOpen(false)}
+              className="bg-gray-900 text-white border-gray-300 hover:bg-gray-100 hover:text-black"
+            >
               Cancel
             </Button>
-            <Button onClick={() => window.print()} className="bg-gray-900 text-white hover:bg-gray-800">
+            <Button
+              onClick={() => window.print()}
+              className="bg-gray-900 text-white hover:bg-gray-800"
+            >
               <Printer className="mr-2 h-4 w-4" />
               Print
             </Button>
@@ -960,7 +1136,9 @@ export default function ObjectDetailPage() {
 // TAB COMPONENTS
 // ============================================
 
-type CollectionData = NonNullable<FunctionReturnType<typeof api.collections.get>>;
+type CollectionData = NonNullable<
+  FunctionReturnType<typeof api.collections.get>
+>;
 
 function GeneralTab({ collection }: { collection: CollectionData }) {
   const collectionGroup = useQuery(
@@ -1003,7 +1181,9 @@ function GeneralTab({ collection }: { collection: CollectionData }) {
                   ? (() => {
                       try {
                         const types = JSON.parse(collection.objectType);
-                        return Array.isArray(types) ? types.join(" / ") : collection.objectType;
+                        return Array.isArray(types)
+                          ? types.join(" / ")
+                          : collection.objectType;
                       } catch {
                         return collection.objectType;
                       }
@@ -1237,7 +1417,9 @@ function PhysicalTab({ collection }: { collection: CollectionData }) {
         </h3>
         <div className="space-y-3 rounded-xl border border-border/60 bg-secondary/20 p-4">
           {collection.inscriptions ? (
-            <p className="text-sm text-muted-foreground">{collection.inscriptions}</p>
+            <p className="text-sm text-muted-foreground">
+              {collection.inscriptions}
+            </p>
           ) : (
             <p className="text-sm text-muted-foreground">
               No inscriptions documented.
@@ -1251,7 +1433,9 @@ function PhysicalTab({ collection }: { collection: CollectionData }) {
                 <span className="shrink-0 rounded border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
                   {mark.label}
                 </span>
-                <p className="text-xs text-muted-foreground">{mark.description}</p>
+                <p className="text-xs text-muted-foreground">
+                  {mark.description}
+                </p>
               </div>
             ))}
         </div>
@@ -1412,7 +1596,8 @@ function ProvenanceTab({ collection }: { collection: CollectionData }) {
           Ownership History
         </h3>
 
-        {collection.ownershipHistory && collection.ownershipHistory.length > 0 ? (
+        {collection.ownershipHistory &&
+        collection.ownershipHistory.length > 0 ? (
           <div className="relative space-y-8 border-l border-border pl-8">
             {collection.ownershipHistory.map((entry, index) => (
               <div key={`${entry.owner}-${index}`} className="relative">
@@ -1480,9 +1665,7 @@ function ConservationTab({
 }) {
   const treatments = useQuery(
     api.conservationTreatments?.list,
-    collectionId
-      ? { collectionId: collectionId as Id<"collections"> }
-      : "skip",
+    collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
   );
 
   return (
@@ -1566,9 +1749,7 @@ function ExhibitionsTab({
 }) {
   const exhibitions = useQuery(
     api.exhibitions?.list,
-    collectionId
-      ? { collectionId: collectionId as Id<"collections"> }
-      : "skip",
+    collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
   );
 
   const collection = useQuery(
@@ -1599,12 +1780,16 @@ function ExhibitionsTab({
             >
               <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border border-border bg-secondary text-center">
                 <span className="text-[10px] font-bold uppercase text-muted-foreground">
-                  {exhibition.isCurrent ? "Now" : new Date(exhibition.startDate).getFullYear()}
+                  {exhibition.isCurrent
+                    ? "Now"
+                    : new Date(exhibition.startDate).getFullYear()}
                 </span>
                 <span
                   className={cn(
                     "text-xs font-bold",
-                    exhibition.isCurrent ? "text-accent" : "text-muted-foreground",
+                    exhibition.isCurrent
+                      ? "text-accent"
+                      : "text-muted-foreground",
                   )}
                 >
                   {exhibition.isCurrent ? "Open" : "Past"}
@@ -1691,7 +1876,10 @@ function LogsTab({
           <tbody className="divide-y divide-border/60">
             {auditLogs === undefined ? (
               <tr>
-                <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                <td
+                  colSpan={3}
+                  className="px-4 py-8 text-center text-muted-foreground"
+                >
                   Loading logs...
                 </td>
               </tr>
@@ -1726,14 +1914,19 @@ function LogsTab({
                   </td>
                   <td className="px-4 py-3">
                     <p className="text-xs text-muted-foreground">
-                      <span className="font-medium text-accent">{log.action}</span>
+                      <span className="font-medium text-accent">
+                        {log.action}
+                      </span>
                     </p>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                <td
+                  colSpan={3}
+                  className="px-4 py-8 text-center text-muted-foreground"
+                >
                   No audit logs found
                 </td>
               </tr>

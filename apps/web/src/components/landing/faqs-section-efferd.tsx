@@ -13,7 +13,7 @@ export function FaqsSectionEfferd() {
     <section id="faq" className="py-32 px-4 relative bg-black">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-16">
-          <motion.h2 
+          <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -32,7 +32,12 @@ export function FaqsSectionEfferd() {
           viewport={{ once: true }}
           transition={{ delay: 0.2 }}
         >
-          <Accordion collapsible defaultValue="item-1" type="single" className="space-y-4">
+          <Accordion
+            collapsible
+            defaultValue="item-1"
+            type="single"
+            className="space-y-4"
+          >
             {questions.map((item) => (
               <AccordionItem
                 key={item.id}

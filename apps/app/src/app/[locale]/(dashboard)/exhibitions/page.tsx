@@ -151,7 +151,18 @@ function ExhibitionList({
   );
 }
 
-function ExhibitionCard({ exhibition }: { exhibition: any }) {
+interface Exhibition {
+  _id: string;
+  title: string;
+  location?: string;
+  notes?: string;
+  collectionTitle?: string;
+  startDate: number;
+  endDate?: number;
+  isLoan?: boolean;
+}
+
+function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
   const isPast = exhibition.endDate && exhibition.endDate < Date.now();
   const isUpcoming = exhibition.startDate > Date.now();
 

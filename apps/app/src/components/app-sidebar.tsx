@@ -34,6 +34,7 @@ import { useOrganization } from "@/components/organization-provider";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { CheckoutLink } from "@convex-dev/polar/react";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
 import { Button } from "@v1/ui/button";
 import {
@@ -57,7 +58,6 @@ import {
 } from "@v1/ui/sidebar";
 import { cn } from "@v1/ui/utils";
 import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -166,7 +166,7 @@ export function AppSidebar({
     },
     {
       title: "Patrons",
-      url: "/library/patrons",
+      url: "/accounts?type=patron",
       icon: BookUser,
     },
     {
@@ -196,7 +196,10 @@ export function AppSidebar({
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="w-full flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-zinc-900 transition-all duration-200 group border border-transparent hover:border-zinc-800 data-[state=open]:bg-zinc-900 outline-none">
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-zinc-900 transition-all duration-200 group border border-transparent hover:border-zinc-800 data-[state=open]:bg-zinc-900 outline-none"
+                >
                   <div className="flex items-center gap-3">
                     <div className="size-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-md shadow-inner flex items-center justify-center text-white font-medium text-xs border border-white/10 shrink-0">
                       <Logo className="size-5 text-white" />
@@ -412,7 +415,10 @@ export function AppSidebar({
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex w-full items-center gap-3 p-2 rounded-lg hover:bg-zinc-900/50 cursor-pointer transition-colors text-left outline-none group-data-[state=open]:bg-zinc-900/50">
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-3 p-2 rounded-lg hover:bg-zinc-900/50 cursor-pointer transition-colors text-left outline-none group-data-[state=open]:bg-zinc-900/50"
+                >
                   <div className="relative shrink-0">
                     <Avatar className="h-8 w-8 rounded-full border border-zinc-700">
                       <AvatarImage
@@ -421,7 +427,7 @@ export function AppSidebar({
                       />
                       <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                     </Avatar>
-                    <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-zinc-950 rounded-full"></div>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-zinc-950 rounded-full" />
                   </div>
                   <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
                     <p className="text-xs font-medium text-zinc-200 truncate">

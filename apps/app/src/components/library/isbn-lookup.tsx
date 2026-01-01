@@ -74,10 +74,14 @@ export function IsbnLookup({ onDataFound, onIsbnChange }: IsbnLookupProps) {
         });
         setError(null);
       } else {
-        setError("No book found with this ISBN. Please enter details manually.");
+        setError(
+          "No book found with this ISBN. Please enter details manually.",
+        );
       }
     } catch (err) {
-      setError("Failed to look up ISBN. Please try again or enter details manually.");
+      setError(
+        "Failed to look up ISBN. Please try again or enter details manually.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -127,9 +131,7 @@ export function IsbnLookup({ onDataFound, onIsbnChange }: IsbnLookupProps) {
         </Button>
       </div>
 
-      {error && (
-        <p className="text-sm text-destructive">{error}</p>
-      )}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       <p className="text-xs text-muted-foreground">
         Powered by Open Library. Data may not always be available or accurate.

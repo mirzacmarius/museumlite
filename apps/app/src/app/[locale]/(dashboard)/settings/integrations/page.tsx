@@ -17,13 +17,7 @@ import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
 import { Switch } from "@v1/ui/switch";
 import { useMutation, useQuery } from "convex/react";
-import {
-  BookOpen,
-  Check,
-  ChevronRight,
-  Loader2,
-  Settings,
-} from "lucide-react";
+import { BookOpen, Check, ChevronRight, Loader2, Settings } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -50,7 +44,10 @@ export default function IntegrationsSettingsPage() {
   const enableIntegration = useMutation(api.integrations.enable);
   const disableIntegration = useMutation(api.integrations.disable);
 
-  const handleToggle = async (integrationId: string, currentlyEnabled: boolean) => {
+  const handleToggle = async (
+    integrationId: string,
+    currentlyEnabled: boolean,
+  ) => {
     if (!currentOrganizationId) return;
 
     if (currentlyEnabled) {
@@ -99,7 +96,10 @@ export default function IntegrationsSettingsPage() {
     );
   }
 
-  if (availableIntegrations === undefined || enabledIntegrations === undefined) {
+  if (
+    availableIntegrations === undefined ||
+    enabledIntegrations === undefined
+  ) {
     return (
       <div className="flex h-full w-full flex-col gap-6">
         <div className="flex w-full items-center justify-center rounded-lg border border-border bg-card p-12">
@@ -142,7 +142,9 @@ export default function IntegrationsSettingsPage() {
                   </div>
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-medium">{integration.name}</h3>
+                      <h3 className="text-lg font-medium">
+                        {integration.name}
+                      </h3>
                       {isEnabled && (
                         <Badge variant="secondary" className="text-xs">
                           <Check className="mr-1 h-3 w-3" />
@@ -161,7 +163,9 @@ export default function IntegrationsSettingsPage() {
                   ) : (
                     <Switch
                       checked={isEnabled}
-                      onCheckedChange={() => handleToggle(integration.id, isEnabled)}
+                      onCheckedChange={() =>
+                        handleToggle(integration.id, isEnabled)
+                      }
                     />
                   )}
                 </div>
@@ -210,8 +214,8 @@ export default function IntegrationsSettingsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Disable Integration</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to disable this integration? The data will be
-              preserved, but the features will no longer be accessible until
+              Are you sure you want to disable this integration? The data will
+              be preserved, but the features will no longer be accessible until
               re-enabled.
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -9,7 +9,7 @@ const DemoOne = () => {
 
 const DemoTwo = () => {
   return (
-    <IconHover3D 
+    <IconHover3D
       heading="Museum Collections"
       text="Explore curated collections from museums around the world with detailed cataloging and rich metadata."
     />
@@ -18,7 +18,7 @@ const DemoTwo = () => {
 
 const DemoThree = () => {
   return (
-    <IconHover3D 
+    <IconHover3D
       heading="Digital Archive"
       text="Access comprehensive digital archives with powerful search capabilities and preservation standards."
     />

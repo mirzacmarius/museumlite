@@ -27,9 +27,7 @@ export default function ActivityPage() {
       <div className="flex h-full w-full items-center justify-center">
         <div className="flex flex-col items-center gap-4 rounded-lg border p-8">
           <div className="text-center">
-            <h3 className="text-lg font-semibold">
-              Select an Organization
-            </h3>
+            <h3 className="text-lg font-semibold">Select an Organization</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               Please select an organization from the dropdown above to view
               activity.

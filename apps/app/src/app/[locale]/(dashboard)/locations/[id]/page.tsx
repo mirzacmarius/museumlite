@@ -103,8 +103,8 @@ export default function LocationDetailPage() {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete Location</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to delete this location? This
-                      action cannot be undone.
+                      Are you sure you want to delete this location? This action
+                      cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -189,9 +189,7 @@ export default function LocationDetailPage() {
                     <label className="text-sm font-medium text-muted-foreground">
                       Notes
                     </label>
-                    <p className="mt-1 whitespace-pre-wrap">
-                      {location.notes}
-                    </p>
+                    <p className="mt-1 whitespace-pre-wrap">{location.notes}</p>
                   </div>
                 )}
               </div>
