@@ -34,7 +34,6 @@ import {
   Building2,
   ExternalLink,
   FolderInput,
-  MapPin,
   PlusCircle,
   Search,
   Settings,
@@ -419,20 +418,12 @@ type CollectionGroupItem = FunctionReturnType<
 
 function CollectionListItem({
   item,
-  organizationId,
   onRemove,
 }: {
   item: CollectionGroupItem;
   organizationId: Id<"organizations">;
   onRemove?: () => void;
 }) {
-  const locationPath = useQuery(
-    api.locations.getLocationPath,
-    item.currentLocationId && organizationId
-      ? { locationId: item.currentLocationId }
-      : "skip",
-  );
-
   const primaryImageUrl = useQuery(api.media.getPrimaryImageUrl, {
     collectionId: item.collectionId,
   });
@@ -443,7 +434,6 @@ function CollectionListItem({
         href={`/objects/${item.collectionId}`}
         className="flex flex-1 items-center gap-4"
       >
-        {/* Primary Image Thumbnail */}
         <div className="flex h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
           {primaryImageUrl ? (
             <img
@@ -459,46 +449,19 @@ function CollectionListItem({
           )}
         </div>
 
-        {/* Content */}
         <div className="flex flex-1 items-center justify-between">
           <div className="flex-1">
             <h3 className="font-medium">{item.title}</h3>
-            <div className="mt-1 flex items-center gap-4 text-sm text-muted-foreground">
-              <span>{item.accessionNumber}</span>
-              {locationPath && locationPath.length > 0 && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {locationPath.map((loc) => loc.name).join(" -> ")}
-                </span>
-              )}
-            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {item.accessionNumber}
+            </p>
+            {item.description && (
+              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                {item.description}
+              </p>
+            )}
           </div>
           <div className="text-right">
-            <div className="flex flex-wrap justify-end gap-1 mb-1">
-              {(() => {
-                try {
-                  const types = item.objectType
-                    ? JSON.parse(item.objectType)
-                    : [];
-                  return Array.isArray(types) && types.length > 0 ? (
-                    types.map((type: string) => (
-                      <span
-                        key={type}
-                        className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-medium"
-                      >
-                        {type}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-sm text-muted-foreground">-</span>
-                  );
-                } catch {
-                  return (
-                    <span className="text-sm text-muted-foreground">-</span>
-                  );
-                }
-              })()}
-            </div>
             {item.status === "deaccessioned" ? (
               <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-600">
                 <Archive className="mr-1 h-3 w-3" />

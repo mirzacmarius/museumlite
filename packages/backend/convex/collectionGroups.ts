@@ -326,7 +326,7 @@ export const listItems = query({
       collectionId: v.id("collections"),
       accessionNumber: v.string(),
       title: v.string(),
-      objectType: v.optional(v.string()),
+      description: v.optional(v.string()),
       currentLocationId: v.optional(v.id("locations")),
       status: v.union(
         v.literal("active"),
@@ -356,7 +356,7 @@ export const listItems = query({
       collectionId: Id<"collections">;
       accessionNumber: string;
       title: string;
-      objectType?: string;
+      description?: string;
       currentLocationId?: Id<"locations">;
       status: "active" | "loaned" | "deaccessioned";
       addedAt: number;
@@ -370,7 +370,7 @@ export const listItems = query({
           collectionId: collection._id,
           accessionNumber: collection.accessionNumber,
           title: collection.title,
-          objectType: collection.objectType,
+          description: collection.description,
           currentLocationId: collection.currentLocationId,
           status: collection.status,
           addedAt: groupItem.addedAt,
