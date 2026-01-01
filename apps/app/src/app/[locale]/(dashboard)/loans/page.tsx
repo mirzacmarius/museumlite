@@ -315,6 +315,8 @@ function LoanList({
         return <Clock className="h-4 w-4" />;
       case "active":
         return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case "dispatched":
+        return <Truck className="h-4 w-4 text-purple-500" />;
       case "returned":
         return <CheckCircle className="h-4 w-4 text-blue-500" />;
       case "cancelled":
@@ -330,6 +332,8 @@ function LoanList({
         return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400";
       case "active":
         return "bg-green-500/10 text-green-600 dark:text-green-400";
+      case "dispatched":
+        return "bg-purple-500/10 text-purple-600 dark:text-purple-400";
       case "returned":
         return "bg-blue-500/10 text-blue-600 dark:text-blue-400";
       case "cancelled":
