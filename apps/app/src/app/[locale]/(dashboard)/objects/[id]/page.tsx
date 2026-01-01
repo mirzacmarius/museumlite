@@ -7,6 +7,17 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
 import { Button } from "@v1/ui/button";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@v1/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -28,7 +39,7 @@ import {
 } from "@v1/ui/tooltip";
 import { SidebarProvider } from "@v1/ui/sidebar";
 import { cn } from "@v1/ui/utils";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
   ArrowLeft,
@@ -60,9 +71,10 @@ import {
   Share2,
   Stethoscope,
   Tag,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { ImageLightbox, type LightboxImage } from "@v1/ui/image-lightbox";
 import { MediaGallery } from "./_components/media-gallery";
@@ -150,6 +162,22 @@ export default function ObjectDetailPage() {
   // Print modal state
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+
+  const router = useRouter();
+  const deleteCollection = useMutation(api.collections.deleteCollection);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!collection?._id) return;
+    setIsDeleting(true);
+    try {
+      await deleteCollection({ collectionId: collection._id });
+      router.push("/objects");
+    } catch (error) {
+      console.error("Failed to delete object:", error);
+      setIsDeleting(false);
+    }
+  };
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -278,6 +306,35 @@ export default function ObjectDetailPage() {
                     Edit Object
                   </Link>
                 </Button>
+              </PermissionGate>
+              <PermissionGate permission="collections.delete">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive">
+                      <Trash2 className="mr-2 h-3.5 w-3.5" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Object</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete "{collection.title}"?
+                        This will mark the object as deaccessioned.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {isDeleting ? "Deleting..." : "Delete Object"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </PermissionGate>
             </div>
           </header>
