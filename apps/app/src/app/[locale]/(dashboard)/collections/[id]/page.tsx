@@ -102,9 +102,11 @@ export default function CollectionGroupDetailPage() {
             </div>
             <div className="flex gap-2">
               <PermissionGate permission="collections.update">
-                <Button variant="outline" disabled>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
+                <Button variant="outline" asChild>
+                  <Link href={`/collections/${group._id}/edit`}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </Link>
                 </Button>
               </PermissionGate>
               <PermissionGate permission="collections.update">
