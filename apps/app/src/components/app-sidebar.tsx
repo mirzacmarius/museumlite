@@ -104,14 +104,14 @@ export function AppSidebar({
       icon: LayoutDashboard,
     },
     {
-      title: "Collections",
-      url: "/collections",
-      icon: Archive,
-    },
-    {
       title: "Objects",
       url: "/objects",
       icon: Box,
+    },
+    {
+      title: "Collections",
+      url: "/collections",
+      icon: Archive,
     },
     {
       title: "Locations",
