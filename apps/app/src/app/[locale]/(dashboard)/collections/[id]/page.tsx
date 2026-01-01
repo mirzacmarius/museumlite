@@ -41,16 +41,30 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 export default function CollectionGroupDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const groupId = params.id as Id<"collectionGroups">;
   const { currentOrganizationId } = useOrganization();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const group = useQuery(api.collectionGroups.get, { groupId });
+  const deleteGroup = useMutation(api.collectionGroups.deleteGroup);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteGroup({ groupId });
+      router.push("/collections");
+    } catch (error) {
+      console.error("Failed to delete collection:", error);
+      setIsDeleting(false);
+    }
+  };
 
   if (!currentOrganizationId) {
     return (
@@ -124,6 +138,35 @@ export default function CollectionGroupDetailPage() {
                     New Object
                   </Link>
                 </Button>
+              </PermissionGate>
+              <PermissionGate permission="collections.delete">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Collection</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete "{group.name}"? Objects
+                        in this collection will be unlinked but not deleted.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {isDeleting ? "Deleting..." : "Delete Collection"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </PermissionGate>
             </div>
           </div>
