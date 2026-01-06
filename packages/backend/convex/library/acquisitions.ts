@@ -2,7 +2,14 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
+import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
+import {
+  requirePermission,
+  canInitiateWorkflow,
+  canApproveAtStep,
+  getUsersToNotifyForWorkflowStep,
+} from "../utils/permissions";
 
 // Priority validator
 const priorityValidator = v.union(
@@ -50,7 +57,36 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
+    const canInitiate = await canInitiateWorkflow(
+      ctx,
+      args.organizationId,
+      "acquisition",
+    );
+
+    if (!canInitiate) {
+      throw new Error("Permission denied: cannot initiate acquisition request");
+    }
+
     const now = Date.now();
+
+    const workflowConfig = await ctx.db
+      .query("workflowConfigs")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => q.eq(q.field("workflowType"), "acquisition"))
+      .first();
+
+    const workflowHistory = workflowConfig
+      ? [
+          {
+            step: 0,
+            approvedBy: userId,
+            approvedAt: now,
+            comment: "Created",
+          },
+        ]
+      : [];
 
     const requestId = await ctx.db.insert("libraryAcquisitionRequests", {
       organizationId: args.organizationId,
@@ -69,7 +105,41 @@ export const create = mutation({
       fundSource: args.fundSource,
       status: "submitted",
       notes: args.notes,
+      workflowStep: workflowConfig ? 1 : undefined,
+      workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
     });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "created",
+      entityType: "libraryAcquisitionRequest",
+      entityId: requestId,
+      changes: { title: args.title, status: "submitted" },
+    });
+
+    if (workflowConfig) {
+      const usersToNotify = await getUsersToNotifyForWorkflowStep(
+        ctx,
+        args.organizationId,
+        "acquisition",
+        1,
+      );
+
+      for (const approverId of usersToNotify) {
+        if (approverId !== userId) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: args.organizationId,
+            userId: approverId,
+            type: "workflow_pending",
+            title: "New Acquisition Request",
+            message: `Acquisition request for "${args.title}" is pending your approval at step 1.`,
+            relatedEntityType: "libraryAcquisitionRequest",
+            relatedEntityId: requestId,
+          });
+        }
+      }
+    }
 
     return requestId;
   },
@@ -87,6 +157,8 @@ export const get = query({
     if (!request) {
       return null;
     }
+
+    await requirePermission(ctx, request.organizationId, "collections.read");
 
     const requestedBy = await ctx.db.get(request.requestedBy);
     const reviewedBy = request.reviewedBy
@@ -118,6 +190,8 @@ export const list = query({
     priority: v.optional(priorityValidator),
   },
   handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
     let query;
 
     if (args.status) {
@@ -166,13 +240,15 @@ export const list = query({
   },
 });
 
-/**
- * Update request status (workflow)
- */
 export const updateStatus = mutation({
   args: {
     requestId: v.id("libraryAcquisitionRequests"),
-    status: requestStatusValidator,
+    status: v.union(
+      v.literal("ordered"),
+      v.literal("received"),
+      v.literal("cataloged"),
+      v.literal("cancelled"),
+    ),
     reviewNotes: v.optional(v.string()),
   },
   returns: v.null(),
@@ -187,30 +263,40 @@ export const updateStatus = mutation({
       throw new Error("Request not found");
     }
 
+    await requirePermission(ctx, request.organizationId, "collections.update");
+
+    const validTransitions: Record<string, string[]> = {
+      approved: ["ordered", "cancelled"],
+      ordered: ["received", "cancelled"],
+      received: ["cataloged"],
+    };
+
+    const allowed = validTransitions[request.status];
+    if (!allowed || !allowed.includes(args.status)) {
+      throw new Error(
+        `Invalid status transition from ${request.status} to ${args.status}`,
+      );
+    }
+
     const now = Date.now();
     const updates: Record<string, unknown> = {
       status: args.status,
     };
 
-    // Add review info for certain status changes
-    if (
-      args.status === "approved" ||
-      args.status === "rejected" ||
-      args.status === "under_review"
-    ) {
-      updates.reviewedBy = userId;
-      updates.reviewedAt = now;
-      if (args.reviewNotes) {
-        updates.reviewNotes = args.reviewNotes;
-      }
-    }
-
-    // Add received date
     if (args.status === "received") {
       updates.receivedDate = now;
     }
 
     await ctx.db.patch(args.requestId, updates);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: request.organizationId,
+      userId,
+      action: "status_changed",
+      entityType: "libraryAcquisitionRequest",
+      entityId: args.requestId,
+      changes: { from: request.status, to: args.status },
+    });
 
     return null;
   },
@@ -240,6 +326,14 @@ export const updateOrderInfo = mutation({
       throw new Error("Request not found");
     }
 
+    await requirePermission(ctx, request.organizationId, "collections.update");
+
+    if (!["approved", "ordered"].includes(request.status)) {
+      throw new Error(
+        "Can only update order info for approved or ordered requests",
+      );
+    }
+
     const updates: Record<string, unknown> = {};
 
     if (args.orderNumber !== undefined) updates.orderNumber = args.orderNumber;
@@ -249,12 +343,20 @@ export const updateOrderInfo = mutation({
     if (args.vendorId !== undefined) updates.vendorId = args.vendorId;
     if (args.actualPrice !== undefined) updates.actualPrice = args.actualPrice;
 
-    // If order number is set, update status to ordered
     if (args.orderNumber && request.status === "approved") {
       updates.status = "ordered";
     }
 
     await ctx.db.patch(args.requestId, updates);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: request.organizationId,
+      userId,
+      action: "updated",
+      entityType: "libraryAcquisitionRequest",
+      entityId: args.requestId,
+      changes: updates,
+    });
 
     return null;
   },
@@ -275,9 +377,29 @@ export const linkToItem = mutation({
       throw new Error("Not authenticated");
     }
 
+    const request = await ctx.db.get(args.requestId);
+    if (!request) {
+      throw new Error("Request not found");
+    }
+
+    await requirePermission(ctx, request.organizationId, "collections.update");
+
+    if (request.status !== "received") {
+      throw new Error("Can only link items to received requests");
+    }
+
     await ctx.db.patch(args.requestId, {
       libraryItemId: args.libraryItemId,
       status: "cataloged",
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: request.organizationId,
+      userId,
+      action: "linked_to_item",
+      entityType: "libraryAcquisitionRequest",
+      entityId: args.requestId,
+      changes: { libraryItemId: args.libraryItemId, status: "cataloged" },
     });
 
     return null;
@@ -315,7 +437,8 @@ export const update = mutation({
       throw new Error("Request not found");
     }
 
-    // Only allow updates on submitted or under_review requests
+    await requirePermission(ctx, request.organizationId, "collections.update");
+
     if (!["submitted", "under_review"].includes(request.status)) {
       throw new Error("Cannot update request in current status");
     }
@@ -337,6 +460,15 @@ export const update = mutation({
     if (args.notes !== undefined) updates.notes = args.notes;
 
     await ctx.db.patch(args.requestId, updates);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: request.organizationId,
+      userId,
+      action: "updated",
+      entityType: "libraryAcquisitionRequest",
+      entityId: args.requestId,
+      changes: updates,
+    });
 
     return null;
   },
@@ -361,20 +493,27 @@ export const cancel = mutation({
       throw new Error("Request not found");
     }
 
-    // Can't cancel already received or cataloged items
+    await requirePermission(ctx, request.organizationId, "collections.update");
+
     if (["received", "cataloged"].includes(request.status)) {
       throw new Error("Cannot cancel request that has been received");
     }
 
     await ctx.db.patch(args.requestId, { status: "cancelled" });
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: request.organizationId,
+      userId,
+      action: "cancelled",
+      entityType: "libraryAcquisitionRequest",
+      entityId: args.requestId,
+      changes: { status: "cancelled" },
+    });
+
     return null;
   },
 });
 
-/**
- * Delete a request
- */
 export const remove = mutation({
   args: {
     requestId: v.id("libraryAcquisitionRequests"),
@@ -391,10 +530,20 @@ export const remove = mutation({
       throw new Error("Request not found");
     }
 
-    // Only allow deletion of submitted, rejected, or cancelled requests
+    await requirePermission(ctx, request.organizationId, "collections.delete");
+
     if (!["submitted", "rejected", "cancelled"].includes(request.status)) {
       throw new Error("Cannot delete request in current status");
     }
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: request.organizationId,
+      userId,
+      action: "deleted",
+      entityType: "libraryAcquisitionRequest",
+      entityId: args.requestId,
+      changes: { title: request.title },
+    });
 
     await ctx.db.delete(args.requestId);
 
@@ -429,6 +578,8 @@ export const getStatistics = query({
     thisMonth: v.number(),
   }),
   handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
     const requests = await ctx.db
       .query("libraryAcquisitionRequests")
       .withIndex("by_organization", (q) =>
@@ -489,5 +640,261 @@ export const getStatistics = query({
       byPriority,
       thisMonth: thisMonthCount,
     };
+  },
+});
+
+export const approve = mutation({
+  args: {
+    requestId: v.id("libraryAcquisitionRequests"),
+    comment: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const request = await ctx.db.get(args.requestId);
+    if (!request) {
+      throw new Error("Request not found");
+    }
+
+    if (!["submitted", "under_review"].includes(request.status)) {
+      throw new Error("Request is not pending approval");
+    }
+
+    const workflowConfig = await ctx.db
+      .query("workflowConfigs")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", request.organizationId),
+      )
+      .filter((q) => q.eq(q.field("workflowType"), "acquisition"))
+      .first();
+
+    const now = Date.now();
+
+    if (workflowConfig) {
+      const currentStep = request.workflowStep ?? 1;
+      const canApprove = await canApproveAtStep(
+        ctx,
+        request.organizationId,
+        "acquisition",
+        currentStep,
+      );
+
+      if (!canApprove) {
+        throw new Error("Permission denied: cannot approve at this step");
+      }
+
+      const history = request.workflowHistory ?? [];
+      history.push({
+        step: currentStep,
+        approvedBy: userId,
+        approvedAt: now,
+        comment: args.comment,
+      });
+
+      const isLastStep = currentStep >= workflowConfig.steps.length;
+
+      if (isLastStep) {
+        await ctx.db.patch(args.requestId, {
+          status: "approved",
+          reviewedBy: userId,
+          reviewedAt: now,
+          reviewNotes: args.comment,
+          workflowHistory: history,
+        });
+
+        await ctx.runMutation(internal.audit.logAction, {
+          organizationId: request.organizationId,
+          userId,
+          action: "approved",
+          entityType: "libraryAcquisitionRequest",
+          entityId: args.requestId,
+          changes: { status: "approved", step: currentStep },
+        });
+
+        const creatorEntry = history.find((h) => h.step === 0);
+        const creatorId = creatorEntry?.approvedBy;
+        if (creatorId && creatorId !== userId) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: request.organizationId,
+            userId: creatorId,
+            type: "workflow_approved",
+            title: "Acquisition Request Approved",
+            message: `Acquisition request for "${request.title}" has been approved.`,
+            relatedEntityType: "libraryAcquisitionRequest",
+            relatedEntityId: args.requestId,
+          });
+        }
+      } else {
+        await ctx.db.patch(args.requestId, {
+          status: "under_review",
+          workflowStep: currentStep + 1,
+          workflowHistory: history,
+        });
+
+        await ctx.runMutation(internal.audit.logAction, {
+          organizationId: request.organizationId,
+          userId,
+          action: "step_approved",
+          entityType: "libraryAcquisitionRequest",
+          entityId: args.requestId,
+          changes: { step: currentStep, nextStep: currentStep + 1 },
+        });
+
+        const usersToNotify = await getUsersToNotifyForWorkflowStep(
+          ctx,
+          request.organizationId,
+          "acquisition",
+          currentStep + 1,
+        );
+
+        for (const approverId of usersToNotify) {
+          if (approverId !== userId) {
+            await ctx.runMutation(internal.audit.createNotificationInternal, {
+              organizationId: request.organizationId,
+              userId: approverId,
+              type: "workflow_pending",
+              title: "Acquisition Request Requires Your Approval",
+              message: `Acquisition request for "${request.title}" is pending your approval at step ${currentStep + 1}.`,
+              relatedEntityType: "libraryAcquisitionRequest",
+              relatedEntityId: args.requestId,
+            });
+          }
+        }
+      }
+    } else {
+      await ctx.db.patch(args.requestId, {
+        status: "approved",
+        reviewedBy: userId,
+        reviewedAt: now,
+        reviewNotes: args.comment,
+      });
+
+      await ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.organizationId,
+        userId,
+        action: "approved",
+        entityType: "libraryAcquisitionRequest",
+        entityId: args.requestId,
+        changes: { status: "approved" },
+      });
+    }
+
+    return null;
+  },
+});
+
+export const reject = mutation({
+  args: {
+    requestId: v.id("libraryAcquisitionRequests"),
+    comment: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const request = await ctx.db.get(args.requestId);
+    if (!request) {
+      throw new Error("Request not found");
+    }
+
+    if (!["submitted", "under_review"].includes(request.status)) {
+      throw new Error("Request is not pending approval");
+    }
+
+    const currentStep = request.workflowStep ?? 1;
+    const canApprove = await canApproveAtStep(
+      ctx,
+      request.organizationId,
+      "acquisition",
+      currentStep,
+    );
+
+    if (!canApprove) {
+      throw new Error("Permission denied: cannot reject at this step");
+    }
+
+    const now = Date.now();
+    const history = request.workflowHistory ?? [];
+    history.push({
+      step: currentStep,
+      approvedBy: userId,
+      approvedAt: now,
+      comment: args.comment ? `Rejected: ${args.comment}` : "Rejected",
+    });
+
+    await ctx.db.patch(args.requestId, {
+      status: "rejected",
+      reviewedBy: userId,
+      reviewedAt: now,
+      reviewNotes: args.comment,
+      workflowHistory: history,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: request.organizationId,
+      userId,
+      action: "rejected",
+      entityType: "libraryAcquisitionRequest",
+      entityId: args.requestId,
+      changes: { status: "rejected", comment: args.comment },
+    });
+
+    const creatorEntry = history.find((h) => h.step === 0);
+    const creatorId = creatorEntry?.approvedBy ?? request.requestedBy;
+    if (creatorId && creatorId !== userId) {
+      await ctx.runMutation(internal.audit.createNotificationInternal, {
+        organizationId: request.organizationId,
+        userId: creatorId,
+        type: "workflow_rejected",
+        title: "Acquisition Request Rejected",
+        message: `Acquisition request for "${request.title}" has been rejected.${args.comment ? ` Reason: ${args.comment}` : ""}`,
+        relatedEntityType: "libraryAcquisitionRequest",
+        relatedEntityId: args.requestId,
+      });
+    }
+
+    return null;
+  },
+});
+
+export const getWorkflowHistory = query({
+  args: {
+    requestId: v.id("libraryAcquisitionRequests"),
+  },
+  returns: v.array(
+    v.object({
+      step: v.number(),
+      approvedBy: v.id("users"),
+      approvedAt: v.number(),
+      comment: v.optional(v.string()),
+      approverName: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const request = await ctx.db.get(args.requestId);
+    if (!request) {
+      throw new Error("Request not found");
+    }
+
+    const history = request.workflowHistory ?? [];
+
+    const enrichedHistory = await Promise.all(
+      history.map(async (item) => {
+        const approver = await ctx.db.get(item.approvedBy);
+        return {
+          ...item,
+          approverName: approver?.name || approver?.email || undefined,
+        };
+      }),
+    );
+
+    return enrichedHistory;
   },
 });

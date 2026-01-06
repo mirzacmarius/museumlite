@@ -176,33 +176,29 @@ export const addDefaultWorkflowsToOrgs = internalMutation({
           continue;
         }
 
-        // Create default deaccession workflow
-        await ctx.db.insert("workflowConfigs", {
-          organizationId: org._id,
-          workflowType: "deaccession",
-          steps: [
-            {
-              stepNumber: 1,
-              roleId: adminRole._id,
-              name: "Administrator Approval",
-            },
-          ],
-          canInitiateRoles: [adminRole._id],
-        });
+        const workflowTypes = [
+          "accession",
+          "deaccession",
+          "loan",
+          "acquisition",
+          "exhibition",
+          "conservation",
+        ] as const;
 
-        // Create default accession workflow
-        await ctx.db.insert("workflowConfigs", {
-          organizationId: org._id,
-          workflowType: "accession",
-          steps: [
-            {
-              stepNumber: 1,
-              roleId: adminRole._id,
-              name: "Administrator Approval",
-            },
-          ],
-          canInitiateRoles: [adminRole._id],
-        });
+        for (const workflowType of workflowTypes) {
+          await ctx.db.insert("workflowConfigs", {
+            organizationId: org._id,
+            workflowType,
+            steps: [
+              {
+                stepNumber: 1,
+                roleId: adminRole._id,
+                name: "Administrator Approval",
+              },
+            ],
+            canInitiateRoles: [adminRole._id],
+          });
+        }
 
         console.log(`✓ Added default workflows for ${org.name}`);
         updatedCount++;

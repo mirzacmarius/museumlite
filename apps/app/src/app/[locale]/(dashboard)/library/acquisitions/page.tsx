@@ -128,6 +128,8 @@ export default function LibraryAcquisitionsPage() {
 
   const createRequest = useMutation(api.library.acquisitions.create);
   const updateStatus = useMutation(api.library.acquisitions.updateStatus);
+  const approveRequest = useMutation(api.library.acquisitions.approve);
+  const rejectRequest = useMutation(api.library.acquisitions.reject);
 
   const handleCreateRequest = async () => {
     if (!currentOrganizationId || !newRequest.title.trim()) return;
@@ -168,13 +170,38 @@ export default function LibraryAcquisitionsPage() {
 
   const handleStatusChange = async (
     requestId: Id<"libraryAcquisitionRequests">,
-    newStatus: RequestStatus,
+    newStatus: "ordered" | "received" | "cataloged" | "cancelled",
   ) => {
     setIsProcessing(true);
     try {
       await updateStatus({ requestId, status: newStatus });
     } catch (error) {
       console.error("Failed to update status:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleApprove = async (requestId: Id<"libraryAcquisitionRequests">) => {
+    setIsProcessing(true);
+    try {
+      await approveRequest({ requestId });
+    } catch (error) {
+      console.error("Failed to approve request:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleReject = async (
+    requestId: Id<"libraryAcquisitionRequests">,
+    comment?: string,
+  ) => {
+    setIsProcessing(true);
+    try {
+      await rejectRequest({ requestId, comment });
+    } catch (error) {
+      console.error("Failed to reject request:", error);
     } finally {
       setIsProcessing(false);
     }
@@ -497,27 +524,12 @@ export default function LibraryAcquisitionsPage() {
                           </p>
                         )}
                       </div>
-                      {/* Quick actions based on status */}
                       {request.status === "submitted" && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            handleStatusChange(request._id, "under_review")
-                          }
-                          disabled={isProcessing}
-                        >
-                          Review
-                        </Button>
-                      )}
-                      {request.status === "under_review" && (
                         <>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                              handleStatusChange(request._id, "rejected")
-                            }
+                            onClick={() => handleReject(request._id)}
                             disabled={isProcessing}
                           >
                             <X className="mr-1 h-3 w-3" />
@@ -525,9 +537,28 @@ export default function LibraryAcquisitionsPage() {
                           </Button>
                           <Button
                             size="sm"
-                            onClick={() =>
-                              handleStatusChange(request._id, "approved")
-                            }
+                            onClick={() => handleApprove(request._id)}
+                            disabled={isProcessing}
+                          >
+                            <Check className="mr-1 h-3 w-3" />
+                            Review
+                          </Button>
+                        </>
+                      )}
+                      {request.status === "under_review" && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleReject(request._id)}
+                            disabled={isProcessing}
+                          >
+                            <X className="mr-1 h-3 w-3" />
+                            Reject
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleApprove(request._id)}
                             disabled={isProcessing}
                           >
                             <Check className="mr-1 h-3 w-3" />

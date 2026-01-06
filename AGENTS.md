@@ -1,133 +1,167 @@
-# PROJECT KNOWLEDGE BASE
+# AGENTS.md - Coding Agent Guidelines
 
-**Generated:** 2025-12-30
-**Commit:** fb9c3a1
-**Branch:** main
+Museum/Library collection management SaaS. Turborepo monorepo: Convex backend, Next.js 15 App Router, Bun, Biome.
 
-## OVERVIEW
+## Commands
 
-Museum/Library collection management SaaS ("MuseumLite"). Turborepo monorepo with Convex backend, Next.js 16 App Router, Bun package manager, Biome linting.
+```bash
+# Development
+bun dev                    # All apps + Convex backend in parallel
+bun dev:app                # Main app only (port 3000)
+bun dev:web                # Marketing site only
 
-## STRUCTURE
+# Quality checks
+bun run lint               # Biome lint + sherif monorepo check
+bun run typecheck          # TypeScript check all workspaces
+bun run format             # Biome format (writes files)
+
+# Testing (from packages/backend/)
+bun test                   # Run all tests (vitest)
+bun test:once              # Run once without watch
+bun test loans.test.ts     # Run single test file
+bun test -t "approve"      # Run tests matching pattern
+
+# Utilities
+bunx knip                  # Find unused exports/dependencies
+gh pr create               # GitHub CLI is available
+```
+
+## Project Structure
 
 ```
-v1/
-├── apps/
-│   ├── app/              # Main product (dashboard, collections, loans, library)
-│   └── web/              # Marketing site
-├── packages/
-│   ├── backend/          # Convex (API, Auth, DB, Storage, Jobs)
-│   │   └── convex/       # All Convex functions, schema, HTTP endpoints
-│   ├── ui/               # Shared shadcn/ui components
-│   ├── email/            # React Email templates
-│   ├── analytics/        # OpenPanel integration
-│   └── logger/           # Logging utilities
-├── tooling/typescript/   # Shared TS configs
-├── turbo.json            # Turborepo config
-└── biome.json            # Linter/formatter config
+apps/app/                  # Main product (dashboard, collections, loans)
+apps/web/                  # Marketing site
+packages/backend/convex/   # Convex functions, schema, HTTP endpoints
+packages/ui/               # Shared shadcn/ui components
+packages/email/            # React Email templates
 ```
 
-## WHERE TO LOOK
-
-| Task | Location | Notes |
-|------|----------|-------|
-| Add Convex query/mutation | `packages/backend/convex/` | Use new function syntax with validators |
-| Add UI component | `packages/ui/src/components/` | Export via package.json |
-| Add dashboard page | `apps/app/src/app/[locale]/(dashboard)/` | Route groups: `(dashboard)`, `(public)` |
-| Add API endpoint | `packages/backend/convex/http.ts` | No Next.js API routes - use Convex HTTP actions |
-| Library integration | `packages/backend/convex/library/` | Patrons, circulation, holds, fines |
-| Add locale | `apps/app/src/locales/` | Support: en, fr, es |
-
-## RULES REFERENCE
-
-Detailed coding rules in `.cursor/rules/`:
-- **`coding_rules.mdc`**: React, Tailwind, Next.js, TypeScript conventions
-- **`convex_rules.mdc`**: Convex function syntax, validators, schema design, full examples
-
-**Always consult these files for implementation details.**
-
-## CONVENTIONS
-
-### General
-- Only create abstractions when actually needed
-- Prefer clear function/variable names over inline comments
-- Avoid helper functions when simple inline expression suffices
-- Don't use emojis in code or commits
+## Code Style
 
 ### TypeScript
 - `strict: true` + `noUncheckedIndexedAccess: true` enabled
-- Never cast to `any`
-- Don't unnecessarily add `try`/`catch`
-- Use `Id<'tableName'>` for Convex document IDs, not `string`
-- Prefer interfaces over types, avoid enums (use union types)
+- **Never** cast to `any` or use `@ts-ignore`
+- Use `Id<'tableName'>` for Convex IDs, not `string`
+- Prefer interfaces over types; use union types instead of enums
+- Don't wrap in unnecessary `try/catch`
+
+### Naming
+- Directories: lowercase with dashes (`components/auth-wizard`)
+- Variables: descriptive with auxiliaries (`isLoading`, `hasError`)
+- Named exports only (no default exports except pages)
+
+### Imports (Biome auto-organizes)
+```typescript
+// External packages first, then internal
+import { query } from "./_generated/server";
+import { v } from "convex/values";
+import { internal } from "./_generated/api";
+```
 
 ### React/Next.js
-- RSC-first: minimize `use client`, `useEffect`, `useState`
-- Avoid massive JSX blocks - compose smaller components
-- Colocate components that change together
+- RSC-first: minimize `"use client"`, `useEffect`, `useState`
+- Compose smaller components; avoid massive JSX blocks
 - URL state via `nuqs` for search params
-- Named exports only (no default exports)
-- Use `next/font`, `next/script` when applicable
-- `next/image` above fold: use `priority` sparingly
-- Be mindful of serialized prop size for RSC → child components
+- Wrap client components in `Suspense` with fallback
 
 ### Styling
-- Tailwind v4 with shadcn/ui dark theme (Vercel-inspired)
-- Prefer built-in values, occasionally dynamic, rarely globals
+- Tailwind v4 + shadcn/ui dark theme
 - Use `border-white/10` for subtle borders
 - Timestamps: right-aligned, `text-white/60`, relative format
 
-### Middleware
-- **Non-standard**: Located at `apps/app/src/proxy.ts` (not `middleware.ts`)
-- Chains `convexAuthNextjsMiddleware` + `createI18nMiddleware`
+## Convex Functions (CRITICAL)
 
-## ANTI-PATTERNS (THIS PROJECT)
+**Always use this syntax:**
+```typescript
+import { query, mutation } from "./_generated/server";
+import { v } from "convex/values";
 
-| Pattern | Why | Alternative |
-|---------|-----|-------------|
-| `.filter()` in Convex queries | Performance | Use `.withIndex()` |
-| `ctx.db` in actions | Actions lack DB access | Use `ctx.runQuery`/`ctx.runMutation` |
-| `v.bigint()` | Deprecated | Use `v.int64()` |
-| `ctx.storage.getMetadata` | Deprecated | Query `_storage` system table |
-| `crons.hourly/daily/weekly` | Removed | Use `crons.interval` or `crons.cron` |
-| Missing return validators | Required | Always add `returns: v.null()` minimum |
-| `useEffect` for data | React anti-pattern | Fetch in RSC or use event handlers |
-
-## UNIQUE STYLES
-
-- **Convex Function Syntax**: Always use object form `query({ args, returns, handler })`
-- **Discriminated Unions**: Use `as const` for string literals
-- **Activity Descriptions**: Format as "You [action] [entity] [identifier]"
-- **Design System**: Black background, white text, `border-white/10`, lucide-react icons
-
-## COMMANDS
-
-```bash
-bun dev              # All apps + backend in parallel
-bun dev:app          # Main app only (port 3000)
-bun dev:web          # Marketing site only
-bun run lint         # Turbo lint + sherif monorepo check
-bun run typecheck    # TypeScript check all workspaces
-bun run format       # Biome format
-bun run test         # Vitest (edge-runtime for backend)
+export const myFunction = query({
+  args: { id: v.id("items") },
+  returns: v.object({ title: v.string() }),
+  handler: async (ctx, args) => {
+    const doc = await ctx.db.get(args.id);
+    return { title: doc?.title ?? "" };
+  },
+});
 ```
 
-**Available Tools:**
-- `gh` CLI installed - use for GitHub operations
-- `knip` - use to remove unused code when making large changes
+### Convex Rules
+- **Always** include `args` and `returns` validators
+- Return `null` with `returns: v.null()` when no return value
+- Use `.withIndex()` not `.filter()` for queries (performance)
+- Actions: add `"use node";` at top; no `ctx.db` access (use `ctx.runQuery`)
+- Use `v.int64()` not `v.bigint()` (deprecated)
+- Query `_storage` system table, not `ctx.storage.getMetadata` (deprecated)
 
-## BUILD & DEPLOY
+### Function Types
+| Type | Usage | Reference |
+|------|-------|-----------|
+| `query`/`mutation`/`action` | Public API | `api.file.function` |
+| `internalQuery`/`internalMutation`/`internalAction` | Private | `internal.file.function` |
 
-- **CI**: GitHub Actions runs `lint` + `typecheck` on push
-- **Deploy**: Vercel with custom build - deploys Convex backend first, injects URL
-- **Patches**: `postinstall` runs `scripts/apply-patches.js` for node_modules fixes
-- **Monorepo Health**: Use `bun lint:repo` (sherif) for dependency consistency
+## Anti-Patterns
 
-## NOTES
+| Don't | Do Instead |
+|-------|------------|
+| `.filter()` in queries | `.withIndex()` with schema index |
+| `ctx.db` in actions | `ctx.runQuery`/`ctx.runMutation` |
+| `v.bigint()` | `v.int64()` |
+| `as any`, `@ts-ignore` | Proper typing |
+| `useEffect` for data fetching | Fetch in RSC |
+| `crons.hourly()` | `crons.interval({ hours: 1 })` |
+| Missing return validator | `returns: v.null()` minimum |
 
-- Multi-tenant: Organizations with roles/permissions
-- Schema: 1391 lines, 50+ tables (collections, loans, library integration)
-- Auth: `@convex-dev/auth` with Google OAuth
-- Billing: Polar.sh integration via webhooks
-- Invitation emails: TODO in `organizations.ts`
-- Tests: Colocated in `packages/backend/convex/*.test.ts`, uses `convex-test`
+## Testing
+
+Tests use `convex-test` with edge-runtime. Location: `packages/backend/convex/*.test.ts`
+
+```typescript
+import { convexTest } from "convex-test";
+import { expect, test } from "vitest";
+import { api } from "./_generated/api";
+import schema from "./schema";
+
+test("should create and retrieve item", async () => {
+  const t = convexTest(schema);
+  const id = await t.mutation(api.items.create, { title: "Test" });
+  const item = await t.query(api.items.get, { id });
+  expect(item?.title).toBe("Test");
+});
+```
+
+## File Locations
+
+| Task | Location |
+|------|----------|
+| Add Convex function | `packages/backend/convex/` |
+| Add UI component | `packages/ui/src/components/` |
+| Add dashboard page | `apps/app/src/app/[locale]/(dashboard)/` |
+| Add HTTP endpoint | `packages/backend/convex/http.ts` |
+| Add locale | `apps/app/src/locales/` (en, fr, es) |
+
+## Schema Conventions
+
+- Index names include all fields: `by_organization_and_status`
+- Use discriminated unions with `v.literal()`:
+```typescript
+status: v.union(v.literal("pending"), v.literal("active"))
+```
+
+## Error Handling
+
+- Use early returns and guard clauses
+- Validate entity existence before operations
+- Model expected errors as return values, not exceptions
+- Use Zod for form validation in frontend
+
+## Design System
+
+- Background: black, text: white
+- Borders: `border-white/10`
+- Icons: lucide-react, `h-4 w-4`
+- Activity format: "You [action] [entity] [identifier]"
+
+## Middleware Note
+
+Non-standard location: `apps/app/src/proxy.ts` (not `middleware.ts`)

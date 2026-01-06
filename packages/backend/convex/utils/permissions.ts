@@ -130,13 +130,49 @@ export async function canAccess(
   return await hasPermission(ctx, organizationId, permissionName);
 }
 
-/**
- * Check if user can initiate a workflow
- */
+type WorkflowType =
+  | "accession"
+  | "deaccession"
+  | "loan"
+  | "acquisition"
+  | "exhibition"
+  | "conservation";
+
+function getFallbackPermissionForWorkflow(workflowType: WorkflowType): string {
+  switch (workflowType) {
+    case "accession":
+    case "deaccession":
+    case "exhibition":
+    case "conservation":
+      return "collections.create";
+    case "loan":
+      return "loans.create";
+    case "acquisition":
+      return "collections.create";
+  }
+}
+
+function getApprovalPermissionForWorkflow(workflowType: WorkflowType): string {
+  switch (workflowType) {
+    case "accession":
+      return "collections.approve_accession";
+    case "deaccession":
+      return "collections.approve_deaccession";
+    case "loan":
+      return "loans.approve";
+    case "acquisition":
+      return "collections.approve_acquisition";
+    case "exhibition":
+      return "collections.approve_exhibition";
+    case "conservation":
+      return "collections.approve_conservation";
+  }
+}
+
 export async function canInitiateWorkflow(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
-  workflowType: "accession" | "deaccession",
+  workflowType: WorkflowType,
 ): Promise<boolean> {
   const userId = await getAuthUserId(ctx);
   if (!userId) {
@@ -151,7 +187,6 @@ export async function canInitiateWorkflow(
     return false;
   }
 
-  // Get workflow config
   const workflowConfig = await ctx.db
     .query("workflowConfigs")
     .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
@@ -159,21 +194,20 @@ export async function canInitiateWorkflow(
     .first();
 
   if (!workflowConfig) {
-    // No config means anyone with basic permissions can initiate
-    return await hasPermission(ctx, organizationId, "collections.create");
+    return await hasPermission(
+      ctx,
+      organizationId,
+      getFallbackPermissionForWorkflow(workflowType),
+    );
   }
 
-  // Check if user's role is in canInitiateRoles
   return workflowConfig.canInitiateRoles.includes(userOrganization.roleId);
 }
 
-/**
- * Check if user can approve at a specific workflow step
- */
 export async function canApproveAtStep(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
-  workflowType: "accession" | "deaccession",
+  workflowType: WorkflowType,
   stepNumber: number,
 ): Promise<boolean> {
   const userId = await getAuthUserId(ctx);
@@ -189,7 +223,6 @@ export async function canApproveAtStep(
     return false;
   }
 
-  // Get workflow config
   const workflowConfig = await ctx.db
     .query("workflowConfigs")
     .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
@@ -197,13 +230,10 @@ export async function canApproveAtStep(
     .first();
 
   if (!workflowConfig) {
-    // No config means only admins/curators can approve
     return await hasPermission(
       ctx,
       organizationId,
-      workflowType === "accession"
-        ? "collections.approve_accession"
-        : "collections.approve_deaccession",
+      getApprovalPermissionForWorkflow(workflowType),
     );
   }
 
@@ -218,17 +248,12 @@ export async function canApproveAtStep(
   return step.roleId === userOrganization.roleId;
 }
 
-/**
- * Get users who should be notified for a workflow step
- * Returns users with the required role for the next step
- */
 export async function getUsersToNotifyForWorkflowStep(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
-  workflowType: "accession" | "deaccession",
+  workflowType: WorkflowType,
   stepNumber: number,
 ): Promise<Id<"users">[]> {
-  // Get workflow config
   const workflowConfig = await ctx.db
     .query("workflowConfigs")
     .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
@@ -236,11 +261,7 @@ export async function getUsersToNotifyForWorkflowStep(
     .first();
 
   if (!workflowConfig) {
-    // No workflow config - notify all users with approval permission
-    const permissionName =
-      workflowType === "accession"
-        ? "collections.approve_accession"
-        : "collections.approve_deaccession";
+    const permissionName = getApprovalPermissionForWorkflow(workflowType);
 
     // Get all users in organization
     const userOrgs = await ctx.db

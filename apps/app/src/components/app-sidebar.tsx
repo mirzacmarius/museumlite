@@ -1,32 +1,36 @@
 "use client";
 
 import {
-  Archive,
   BookCopy,
-  BookOpen,
   BookUser,
-  Box,
   Building2,
+  CalendarRange,
   Check,
   ChevronRight,
   ChevronsUpDown,
-  CreditCard,
+  ClipboardList,
   DollarSign,
   FileCheck,
+  FileHeart,
   FileX,
-  Handshake,
-  LayoutDashboard,
+  History,
+  Inbox,
+  LayoutGrid,
   Library,
   LogOut,
   MapPin,
+  Microscope,
   Plus,
+  Presentation,
   RefreshCw,
   Search,
-  Settings,
+  Settings2,
+  ShieldCheck,
   ShoppingCart,
+  Truck,
   Users,
 } from "lucide-react";
-import * as React from "react";
+import type * as React from "react";
 
 import { LanguageSwitcher } from "@/app/[locale]/(dashboard)/_components/language-switcher";
 import { ThemeSwitcher } from "@/app/[locale]/(dashboard)/_components/theme-switcher";
@@ -60,6 +64,124 @@ import { cn } from "@v1/ui/utils";
 import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+
+const COLLECTION_COLORS = [
+  "#d97706",
+  "#059669",
+  "#2563eb",
+  "#e11d48",
+  "#7c3aed",
+  "#0891b2",
+];
+
+function NavSection({
+  title,
+  children,
+  defaultOpen = false,
+  forceOpen = false,
+  actionIcon,
+  onAction,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+  forceOpen?: boolean;
+  actionIcon?: React.ReactNode;
+  onAction?: () => void;
+}) {
+  return (
+    <details
+      className="group/section px-1 mb-2 group-data-[collapsible=icon]:hidden"
+      open={defaultOpen || forceOpen}
+    >
+      <summary className="px-2 pb-2 flex items-center justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:text-zinc-300 text-zinc-500 transition-colors group/summary">
+        <span className="text-[10px] font-medium uppercase tracking-widest">
+          {title}
+        </span>
+        <div className="flex items-center gap-2">
+          {actionIcon && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                onAction?.();
+              }}
+              className="opacity-0 group-hover/summary:opacity-100 transition-opacity hover:text-white"
+            >
+              {actionIcon}
+            </button>
+          )}
+          <ChevronRight className="w-3 h-3 transition-transform duration-200 group-open/section:rotate-90" />
+        </div>
+      </summary>
+      <div className="space-y-0.5 pt-1">{children}</div>
+    </details>
+  );
+}
+
+function NavItem({
+  href,
+  icon: Icon,
+  title,
+  isActive,
+  badge,
+  indicator,
+  colorIndicator,
+}: {
+  href: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  title: string;
+  isActive?: boolean;
+  badge?: string | number;
+  indicator?: boolean;
+  colorIndicator?: string;
+}) {
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        asChild
+        isActive={isActive}
+        tooltip={title}
+        className={cn(
+          "flex items-center gap-2.5 px-3 py-1.5 text-xs rounded-md transition-all group h-auto",
+          isActive
+            ? "text-zinc-200 bg-zinc-800/40 border border-zinc-800/60 shadow-sm hover:bg-zinc-800/40 hover:text-zinc-200"
+            : "text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 bg-transparent border border-transparent",
+        )}
+      >
+        <Link href={href}>
+          {colorIndicator ? (
+            <div
+              className="w-1 h-4 rounded-full border"
+              style={{
+                backgroundColor: `${colorIndicator}20`,
+                borderColor: `${colorIndicator}40`,
+              }}
+            />
+          ) : Icon ? (
+            <Icon
+              className={cn(
+                "size-4 shrink-0",
+                isActive
+                  ? "text-indigo-400"
+                  : "group-hover:text-zinc-400 transition-colors",
+              )}
+            />
+          ) : null}
+          <span className="font-medium flex-1">{title}</span>
+          {badge !== undefined && (
+            <span className="ml-auto text-[9px] bg-zinc-800 text-zinc-400 px-1 rounded">
+              {badge}
+            </span>
+          )}
+          {indicator && (
+            <span className="ml-auto w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+          )}
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
 
 export function AppSidebar({
   preloadedUser,
@@ -97,94 +219,78 @@ export function AppSidebar({
       : "skip",
   );
 
-  const navMain = [
+  const collectionGroups = useQuery(
+    api.collectionGroups.list,
+    currentOrganizationId
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
+  );
+
+  const navWorkspace = [
+    { title: "All Objects", url: "/objects", icon: LayoutGrid },
+    { title: "New Arrivals", url: "/accessions", icon: Inbox, indicator: true },
     {
-      title: "Dashboard",
-      url: "/",
-      icon: LayoutDashboard,
+      title: "My Assignments",
+      url: "/activity?filter=assigned",
+      icon: ClipboardList,
     },
+    { title: "Recent Activity", url: "/activity", icon: History },
+  ];
+
+  const navExhibitions = [
+    { title: "Active Rotations", url: "/exhibitions", icon: Presentation },
     {
-      title: "Objects",
-      url: "/objects",
-      icon: Box,
-    },
-    {
-      title: "Collections",
-      url: "/collections",
-      icon: Archive,
-    },
-    {
-      title: "Locations",
-      url: "/locations",
-      icon: MapPin,
-    },
-    {
-      title: "Accessions",
-      url: "/accessions",
-      icon: FileCheck,
-    },
-    {
-      title: "Deaccessions",
-      url: "/deaccessions",
-      icon: FileX,
-    },
-    {
-      title: "Loans",
-      url: "/loans",
-      icon: Handshake,
-    },
-    {
-      title: "Accounts",
-      url: "/accounts",
-      icon: Users,
+      title: "Planning Queue",
+      url: "/exhibitions?status=planning",
+      icon: CalendarRange,
     },
   ];
 
-  const navSecondary = [
+  const navConservation = [
     {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
+      title: "Lab Requests",
+      url: "/conservation",
+      icon: Microscope,
+      badge: "2",
     },
     {
-      title: "Settings",
-      url: "/settings",
-      icon: Settings,
+      title: "Condition Reports",
+      url: "/conservation?type=reports",
+      icon: FileHeart,
     },
+  ];
+
+  const navManagement = [
+    { title: "Donors & Sources", url: "/accounts", icon: Users },
+    { title: "Loans & Transport", url: "/loans", icon: Truck },
+    { title: "Locations", url: "/locations", icon: MapPin },
+    { title: "Accessions", url: "/accessions", icon: FileCheck },
+    { title: "Deaccessions", url: "/deaccessions", icon: FileX },
+    {
+      title: "Insurance & Audit",
+      url: "/settings/activity",
+      icon: ShieldCheck,
+    },
+    { title: "Settings", url: "/settings", icon: Settings2 },
   ];
 
   const navLibrary = [
-    {
-      title: "Library",
-      url: "/library",
-      icon: Library,
-    },
-    {
-      title: "Catalog",
-      url: "/library/catalog",
-      icon: BookCopy,
-    },
-    {
-      title: "Patrons",
-      url: "/accounts?type=patron",
-      icon: BookUser,
-    },
-    {
-      title: "Circulation",
-      url: "/library/circulation",
-      icon: RefreshCw,
-    },
-    {
-      title: "Fines",
-      url: "/library/fines",
-      icon: DollarSign,
-    },
-    {
-      title: "Acquisitions",
-      url: "/library/acquisitions",
-      icon: ShoppingCart,
-    },
+    { title: "Overview", url: "/library", icon: Library },
+    { title: "Catalog", url: "/library/catalog", icon: BookCopy },
+    { title: "Patrons", url: "/accounts?type=patron", icon: BookUser },
+    { title: "Circulation", url: "/library/circulation", icon: RefreshCw },
+    { title: "Fines", url: "/library/fines", icon: DollarSign },
+    { title: "Acquisitions", url: "/library/acquisitions", icon: ShoppingCart },
   ];
+
+  const isPathActive = (url: string) => {
+    if (url === "/") return pathname === "/";
+    if (url.includes("?")) {
+      const basePath = url.split("?")[0];
+      return pathname?.startsWith(basePath ?? "");
+    }
+    return pathname?.startsWith(url);
+  };
 
   return (
     <Sidebar
@@ -258,13 +364,13 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="py-4 px-2 gap-0">
+      <SidebarContent className="py-4 px-2 gap-0 overflow-y-auto">
         <div className="px-2 mb-6 group-data-[collapsible=icon]:hidden">
           <div className="relative group">
             <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Search objects, loans..."
               className="w-full bg-zinc-900/40 border border-zinc-800/60 rounded-md text-xs py-1.5 pl-8 pr-3 text-zinc-300 placeholder-zinc-600 focus:outline-none focus:bg-zinc-900 focus:border-zinc-700 transition-all"
             />
             <div className="absolute right-2 top-1.5 flex gap-1">
@@ -280,136 +386,124 @@ export function AppSidebar({
             Workspace
           </div>
           <SidebarMenu>
-            {navMain.map((item) => {
-              const isActive =
-                item.url === "/"
-                  ? pathname === "/"
-                  : pathname?.startsWith(item.url);
-
-              return (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive}
-                    tooltip={item.title}
-                    className={cn(
-                      "flex items-center gap-2.5 px-3 py-1.5 text-xs rounded-md transition-all group h-auto",
-                      isActive
-                        ? "text-zinc-200 bg-zinc-800/40 border border-zinc-800/60 shadow-sm hover:bg-zinc-800/40 hover:text-zinc-200"
-                        : "text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 bg-transparent border border-transparent",
-                    )}
-                  >
-                    <Link href={item.url}>
-                      <item.icon
-                        className={cn(
-                          "size-4 shrink-0",
-                          isActive
-                            ? "text-indigo-400"
-                            : "group-hover:text-zinc-400 transition-colors",
-                        )}
-                      />
-                      <span className="font-medium">{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              );
-            })}
+            {navWorkspace.map((item) => (
+              <NavItem
+                key={item.title}
+                href={item.url}
+                icon={item.icon}
+                title={item.title}
+                isActive={isPathActive(item.url)}
+                indicator={item.indicator}
+              />
+            ))}
           </SidebarMenu>
         </div>
 
-        {isLibraryEnabled && (
-          <details
-            className="group/coll px-1 mb-2 group-data-[collapsible=icon]:hidden"
-            open
-          >
-            <summary className="px-2 pb-2 flex items-center justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:text-zinc-300 text-zinc-500 transition-colors group/summary">
-              <span className="text-[10px] font-medium uppercase tracking-widest">
-                Library
-              </span>
-              <ChevronRight className="w-3 h-3 transition-transform duration-200 group-open/coll:rotate-90" />
-            </summary>
-            <SidebarMenu className="pt-1">
-              {navLibrary.map((item) => {
-                const isActive =
-                  item.url === "/library"
-                    ? pathname === "/library"
-                    : pathname?.startsWith(item.url);
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      tooltip={item.title}
-                      className={cn(
-                        "flex items-center gap-2.5 px-3 py-1.5 text-xs rounded-md transition-all group h-auto",
-                        isActive
-                          ? "text-zinc-200 bg-zinc-800/40 border border-zinc-800/60 shadow-sm hover:bg-zinc-800/40 hover:text-zinc-200"
-                          : "text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 bg-transparent border border-transparent",
-                      )}
-                    >
-                      <Link href={item.url}>
-                        <item.icon
-                          className={cn(
-                            "size-4 shrink-0",
-                            isActive
-                              ? "text-indigo-400"
-                              : "group-hover:text-zinc-400 transition-colors",
-                          )}
-                        />
-                        <span className="font-medium">{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </details>
-        )}
-
-        <details
-          className="group/sys px-1 group-data-[collapsible=icon]:hidden"
-          open
+        <NavSection
+          title="Collections"
+          defaultOpen
+          actionIcon={<Plus className="w-3 h-3" />}
+          onAction={() => router.push("/collections/new")}
         >
-          <summary className="px-2 pb-2 flex items-center justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:text-zinc-300 text-zinc-500 transition-colors group/summary">
-            <span className="text-[10px] font-medium uppercase tracking-widest">
-              System
-            </span>
-            <ChevronRight className="w-3 h-3 transition-transform duration-200 group-open/sys:rotate-90" />
-          </summary>
-          <SidebarMenu className="pt-1">
-            {navSecondary.map((item) => {
-              const isActive = pathname?.startsWith(item.url);
-              return (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive}
-                    tooltip={item.title}
-                    className={cn(
-                      "flex items-center gap-2.5 px-3 py-1.5 text-xs rounded-md transition-all group h-auto",
-                      isActive
-                        ? "text-zinc-200 bg-zinc-800/40 border border-zinc-800/60 shadow-sm hover:bg-zinc-800/40 hover:text-zinc-200"
-                        : "text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 bg-transparent border border-transparent",
-                    )}
-                  >
-                    <Link href={item.url}>
-                      <item.icon
-                        className={cn(
-                          "size-4 shrink-0",
-                          isActive
-                            ? "text-indigo-400"
-                            : "group-hover:text-zinc-400 transition-colors",
-                        )}
-                      />
-                      <span className="font-medium">{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              );
-            })}
+          <SidebarMenu>
+            {collectionGroups?.slice(0, 5).map((group, index) => (
+              <NavItem
+                key={group._id}
+                href={`/objects?collectionGroup=${group._id}`}
+                title={group.name}
+                isActive={pathname?.includes(`collectionGroup=${group._id}`)}
+                colorIndicator={
+                  COLLECTION_COLORS[index % COLLECTION_COLORS.length]
+                }
+              />
+            ))}
+            {(!collectionGroups || collectionGroups.length === 0) && (
+              <div className="px-3 py-2 text-[11px] text-zinc-600">
+                No collections yet
+              </div>
+            )}
+            {collectionGroups && collectionGroups.length > 5 && (
+              <NavItem
+                href="/collections"
+                title={`View all ${collectionGroups.length} collections`}
+                isActive={pathname === "/collections"}
+              />
+            )}
           </SidebarMenu>
-        </details>
+        </NavSection>
+
+        <NavSection
+          title="Exhibitions"
+          forceOpen={navExhibitions.some((item) => isPathActive(item.url))}
+        >
+          <SidebarMenu>
+            {navExhibitions.map((item) => (
+              <NavItem
+                key={item.title}
+                href={item.url}
+                icon={item.icon}
+                title={item.title}
+                isActive={isPathActive(item.url)}
+              />
+            ))}
+          </SidebarMenu>
+        </NavSection>
+
+        <NavSection
+          title="Conservation"
+          forceOpen={navConservation.some((item) => isPathActive(item.url))}
+        >
+          <SidebarMenu>
+            {navConservation.map((item) => (
+              <NavItem
+                key={item.title}
+                href={item.url}
+                icon={item.icon}
+                title={item.title}
+                isActive={isPathActive(item.url)}
+                badge={item.badge}
+              />
+            ))}
+          </SidebarMenu>
+        </NavSection>
+
+        <NavSection
+          title="Management"
+          forceOpen={navManagement.some((item) => isPathActive(item.url))}
+        >
+          <SidebarMenu>
+            {navManagement.map((item) => (
+              <NavItem
+                key={item.title}
+                href={item.url}
+                icon={item.icon}
+                title={item.title}
+                isActive={isPathActive(item.url)}
+              />
+            ))}
+          </SidebarMenu>
+        </NavSection>
+
+        {isLibraryEnabled && (
+          <NavSection
+            title="Library"
+            forceOpen={navLibrary.some((item) => isPathActive(item.url))}
+          >
+            <SidebarMenu>
+              {navLibrary.map((item) => (
+                <NavItem
+                  key={item.title}
+                  href={item.url}
+                  icon={item.icon}
+                  title={item.title}
+                  isActive={isPathActive(item.url)}
+                />
+              ))}
+            </SidebarMenu>
+          </NavSection>
+        )}
       </SidebarContent>
+
       <SidebarFooter className="p-3 border-t border-zinc-800/60 bg-zinc-950">
         <SidebarMenu>
           <SidebarMenuItem>

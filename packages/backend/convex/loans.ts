@@ -4,7 +4,12 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, query } from "./_generated/server";
-import { requirePermission } from "./utils/permissions";
+import {
+  requirePermission,
+  canInitiateWorkflow,
+  canApproveAtStep,
+  getUsersToNotifyForWorkflowStep,
+} from "./utils/permissions";
 
 /**
  * Generate loan number
@@ -103,6 +108,27 @@ export const create = mutation({
       loanNumber = await generateLoanNumber(ctx, args.organizationId);
     }
 
+    // Check for workflow config to set up workflow tracking
+    const workflowConfig = await ctx.db
+      .query("workflowConfigs")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => q.eq(q.field("workflowType"), "loan"))
+      .first();
+
+    // Store creator in workflow history for notification purposes
+    const workflowHistory = workflowConfig
+      ? [
+          {
+            step: 0,
+            approvedBy: userId,
+            approvedAt: Date.now(),
+            comment: "Created",
+          },
+        ]
+      : [];
+
     const loanId = await ctx.db.insert("loans", {
       organizationId: args.organizationId,
       loanNumber,
@@ -117,6 +143,8 @@ export const create = mutation({
       insuranceValue: args.insuranceValue,
       notes: args.notes,
       useDetailedConditionReports: args.useDetailedConditionReports ?? false,
+      workflowStep: workflowConfig ? 1 : undefined,
+      workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
     });
 
     // Add items if provided
@@ -191,45 +219,66 @@ export const create = mutation({
       changes: { loanNumber, type: args.type, status: "pending" },
     });
 
-    // Notify users with loan approval permission
-    const userOrgs = await ctx.db
-      .query("userOrganizations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    for (const userOrg of userOrgs) {
-      // Check if user has loan approval permission
-      const role = await ctx.db.get(userOrg.roleId);
-      if (!role) continue;
-
-      const rolePermissions = await ctx.db
-        .query("rolePermissions")
-        .withIndex("by_role", (q) => q.eq("roleId", role._id))
-        .collect();
-
-      const permissions = await Promise.all(
-        rolePermissions.map((rp) => ctx.db.get(rp.permissionId)),
+    if (workflowConfig) {
+      const usersToNotify = await getUsersToNotifyForWorkflowStep(
+        ctx,
+        args.organizationId,
+        "loan",
+        1,
       );
 
-      const permissionNames = permissions
-        .filter((p): p is NonNullable<typeof p> => p !== null)
-        .map((p) => p.name);
+      for (const approverId of usersToNotify) {
+        if (approverId !== userId) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: args.organizationId,
+            userId: approverId,
+            type: "workflow_pending",
+            title: "New Loan Requires Approval",
+            message: `Loan ${loanNumber} (${args.type}) is pending your approval at step 1.`,
+            relatedEntityType: "loan",
+            relatedEntityId: loanId,
+          });
+        }
+      }
+    } else {
+      const userOrgs = await ctx.db
+        .query("userOrganizations")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect();
 
-      if (
-        permissionNames.includes("loans.approve") &&
-        userOrg.userId !== userId
-      ) {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
-          organizationId: args.organizationId,
-          userId: userOrg.userId,
-          type: "workflow_pending",
-          title: "New Loan Requires Approval",
-          message: `Loan ${loanNumber} (${args.type}) is pending your approval.`,
-          relatedEntityType: "loan",
-          relatedEntityId: loanId,
-        });
+      for (const userOrg of userOrgs) {
+        const role = await ctx.db.get(userOrg.roleId);
+        if (!role) continue;
+
+        const rolePermissions = await ctx.db
+          .query("rolePermissions")
+          .withIndex("by_role", (q) => q.eq("roleId", role._id))
+          .collect();
+
+        const permissions = await Promise.all(
+          rolePermissions.map((rp) => ctx.db.get(rp.permissionId)),
+        );
+
+        const permissionNames = permissions
+          .filter((p): p is NonNullable<typeof p> => p !== null)
+          .map((p) => p.name);
+
+        if (
+          permissionNames.includes("loans.approve") &&
+          userOrg.userId !== userId
+        ) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: args.organizationId,
+            userId: userOrg.userId,
+            type: "workflow_pending",
+            title: "New Loan Requires Approval",
+            message: `Loan ${loanNumber} (${args.type}) is pending your approval.`,
+            relatedEntityType: "loan",
+            relatedEntityId: loanId,
+          });
+        }
       }
     }
 
@@ -729,12 +778,10 @@ export const update = mutation({
   },
 });
 
-/**
- * Approve loan
- */
 export const approve = mutation({
   args: {
     loanId: v.id("loans"),
+    comment: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -748,48 +795,144 @@ export const approve = mutation({
       throw new Error("Loan not found");
     }
 
-    // Check permission
     await requirePermission(ctx, loan.organizationId, "loans.approve");
 
     if (loan.status !== "pending") {
       throw new Error("Loan is not pending");
     }
 
-    await ctx.db.patch(args.loanId, {
-      status: "active",
-      approvedBy: userId,
-      approvedAt: Date.now(),
-    });
-
-    // Log audit action
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: loan.organizationId,
-      userId,
-      action: "approved",
-      entityType: "loan",
-      entityId: args.loanId,
-      changes: { status: "active" },
-    });
-
-    // Notify all users in organization about loan approval (except the approver)
-    const userOrgs = await ctx.db
-      .query("userOrganizations")
+    const workflowConfig = await ctx.db
+      .query("workflowConfigs")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", loan.organizationId),
       )
-      .collect();
+      .filter((q) => q.eq(q.field("workflowType"), "loan"))
+      .first();
 
-    for (const userOrg of userOrgs) {
-      if (userOrg.userId !== userId) {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
-          organizationId: loan.organizationId,
-          userId: userOrg.userId,
-          type: "loan_approved",
-          title: "Loan Approved",
-          message: `Loan ${loan.loanNumber} has been approved and is now active.`,
-          relatedEntityType: "loan",
-          relatedEntityId: args.loanId,
+    if (workflowConfig) {
+      const currentStep = loan.workflowStep ?? 1;
+      const canApprove = await canApproveAtStep(
+        ctx,
+        loan.organizationId,
+        "loan",
+        currentStep,
+      );
+
+      if (!canApprove) {
+        throw new Error("Permission denied: cannot approve at this step");
+      }
+
+      const history = loan.workflowHistory ?? [];
+      history.push({
+        step: currentStep,
+        approvedBy: userId,
+        approvedAt: Date.now(),
+        comment: args.comment,
+      });
+
+      const isLastStep = currentStep >= workflowConfig.steps.length;
+
+      if (isLastStep) {
+        await ctx.db.patch(args.loanId, {
+          status: "active",
+          approvedBy: userId,
+          approvedAt: Date.now(),
+          workflowHistory: history,
         });
+
+        await ctx.runMutation(internal.audit.logAction, {
+          organizationId: loan.organizationId,
+          userId,
+          action: "approved",
+          entityType: "loan",
+          entityId: args.loanId,
+          changes: { status: "active", step: currentStep },
+        });
+
+        const creatorEntry = history.find((h) => h.step === 0);
+        const creatorId = creatorEntry?.approvedBy;
+        if (creatorId && creatorId !== userId) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: loan.organizationId,
+            userId: creatorId,
+            type: "workflow_approved",
+            title: "Loan Approved",
+            message: `Loan ${loan.loanNumber} has been fully approved and is now active.`,
+            relatedEntityType: "loan",
+            relatedEntityId: args.loanId,
+          });
+        }
+      } else {
+        await ctx.db.patch(args.loanId, {
+          workflowStep: currentStep + 1,
+          workflowHistory: history,
+        });
+
+        await ctx.runMutation(internal.audit.logAction, {
+          organizationId: loan.organizationId,
+          userId,
+          action: "step_approved",
+          entityType: "loan",
+          entityId: args.loanId,
+          changes: { step: currentStep, nextStep: currentStep + 1 },
+        });
+
+        const usersToNotify = await getUsersToNotifyForWorkflowStep(
+          ctx,
+          loan.organizationId,
+          "loan",
+          currentStep + 1,
+        );
+
+        for (const approverId of usersToNotify) {
+          if (approverId !== userId) {
+            await ctx.runMutation(internal.audit.createNotificationInternal, {
+              organizationId: loan.organizationId,
+              userId: approverId,
+              type: "workflow_pending",
+              title: "Loan Requires Your Approval",
+              message: `Loan ${loan.loanNumber} is pending your approval at step ${currentStep + 1}.`,
+              relatedEntityType: "loan",
+              relatedEntityId: args.loanId,
+            });
+          }
+        }
+      }
+    } else {
+      await ctx.db.patch(args.loanId, {
+        status: "active",
+        approvedBy: userId,
+        approvedAt: Date.now(),
+      });
+
+      await ctx.runMutation(internal.audit.logAction, {
+        organizationId: loan.organizationId,
+        userId,
+        action: "approved",
+        entityType: "loan",
+        entityId: args.loanId,
+        changes: { status: "active" },
+      });
+
+      const userOrgs = await ctx.db
+        .query("userOrganizations")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", loan.organizationId),
+        )
+        .collect();
+
+      for (const userOrg of userOrgs) {
+        if (userOrg.userId !== userId) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: loan.organizationId,
+            userId: userOrg.userId,
+            type: "loan_approved",
+            title: "Loan Approved",
+            message: `Loan ${loan.loanNumber} has been approved and is now active.`,
+            relatedEntityType: "loan",
+            relatedEntityId: args.loanId,
+          });
+        }
       }
     }
 
@@ -797,9 +940,79 @@ export const approve = mutation({
   },
 });
 
-/**
- * Mark loan as returned
- */
+export const reject = mutation({
+  args: {
+    loanId: v.id("loans"),
+    comment: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const loan = await ctx.db.get(args.loanId);
+    if (!loan) {
+      throw new Error("Loan not found");
+    }
+
+    if (loan.status !== "pending") {
+      throw new Error("Loan is not pending approval");
+    }
+
+    const currentStep = loan.workflowStep ?? 1;
+    const canApprove = await canApproveAtStep(
+      ctx,
+      loan.organizationId,
+      "loan",
+      currentStep,
+    );
+
+    if (!canApprove) {
+      await requirePermission(ctx, loan.organizationId, "loans.approve");
+    }
+
+    const history = loan.workflowHistory ?? [];
+    history.push({
+      step: currentStep,
+      approvedBy: userId,
+      approvedAt: Date.now(),
+      comment: args.comment ? `Rejected: ${args.comment}` : "Rejected",
+    });
+
+    await ctx.db.patch(args.loanId, {
+      status: "cancelled",
+      workflowHistory: history,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: loan.organizationId,
+      userId,
+      action: "rejected",
+      entityType: "loan",
+      entityId: args.loanId,
+      changes: { status: "cancelled", comment: args.comment },
+    });
+
+    const creatorEntry = history.find((h) => h.step === 0);
+    const creatorId = creatorEntry?.approvedBy;
+    if (creatorId && creatorId !== userId) {
+      await ctx.runMutation(internal.audit.createNotificationInternal, {
+        organizationId: loan.organizationId,
+        userId: creatorId,
+        type: "workflow_rejected",
+        title: "Loan Rejected",
+        message: `Loan ${loan.loanNumber} has been rejected.${args.comment ? ` Reason: ${args.comment}` : ""}`,
+        relatedEntityType: "loan",
+        relatedEntityId: args.loanId,
+      });
+    }
+
+    return null;
+  },
+});
+
 export const returnLoan = mutation({
   args: {
     loanId: v.id("loans"),
@@ -1734,7 +1947,6 @@ export const getLoansForCollection = query({
 
     await requirePermission(ctx, collection.organizationId, "loans.read");
 
-    // Get all loan items for this collection
     const loanItems = await ctx.db
       .query("loanItems")
       .withIndex("by_collection", (q) =>
@@ -1742,10 +1954,8 @@ export const getLoansForCollection = query({
       )
       .collect();
 
-    // Get unique loan IDs
     const loanIds = [...new Set(loanItems.map((item) => item.loanId))];
 
-    // Get loan details
     const loans = await Promise.all(
       loanIds.map(async (loanId) => {
         const loan = await ctx.db.get(loanId);
@@ -1765,5 +1975,42 @@ export const getLoansForCollection = query({
     return loans.filter(
       (loan): loan is NonNullable<typeof loan> => loan !== null,
     );
+  },
+});
+
+export const getWorkflowHistory = query({
+  args: {
+    loanId: v.id("loans"),
+  },
+  returns: v.array(
+    v.object({
+      step: v.number(),
+      approvedBy: v.id("users"),
+      approvedAt: v.number(),
+      comment: v.optional(v.string()),
+      approverName: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const loan = await ctx.db.get(args.loanId);
+    if (!loan) {
+      throw new Error("Loan not found");
+    }
+
+    await requirePermission(ctx, loan.organizationId, "loans.read");
+
+    const history = loan.workflowHistory ?? [];
+
+    const enrichedHistory = await Promise.all(
+      history.map(async (item) => {
+        const approver = await ctx.db.get(item.approvedBy);
+        return {
+          ...item,
+          approverName: approver?.name || approver?.username || undefined,
+        };
+      }),
+    );
+
+    return enrichedHistory;
   },
 });

@@ -103,33 +103,29 @@ export const create = mutation({
         joinedAt: Date.now(),
       });
 
-      // Create default workflow configurations
-      // Both deaccession and accession require admin approval by default
-      await ctx.db.insert("workflowConfigs", {
-        organizationId,
-        workflowType: "deaccession",
-        steps: [
-          {
-            stepNumber: 1,
-            roleId: adminRole._id,
-            name: "Administrator Approval",
-          },
-        ],
-        canInitiateRoles: [adminRole._id],
-      });
+      const workflowTypes = [
+        "accession",
+        "deaccession",
+        "loan",
+        "acquisition",
+        "exhibition",
+        "conservation",
+      ] as const;
 
-      await ctx.db.insert("workflowConfigs", {
-        organizationId,
-        workflowType: "accession",
-        steps: [
-          {
-            stepNumber: 1,
-            roleId: adminRole._id,
-            name: "Administrator Approval",
-          },
-        ],
-        canInitiateRoles: [adminRole._id],
-      });
+      for (const workflowType of workflowTypes) {
+        await ctx.db.insert("workflowConfigs", {
+          organizationId,
+          workflowType,
+          steps: [
+            {
+              stepNumber: 1,
+              roleId: adminRole._id,
+              name: "Administrator Approval",
+            },
+          ],
+          canInitiateRoles: [adminRole._id],
+        });
+      }
     }
 
     return organizationId;
@@ -345,7 +341,14 @@ export const getWorkflowConfigs = query({
   returns: v.array(
     v.object({
       _id: v.id("workflowConfigs"),
-      workflowType: v.union(v.literal("accession"), v.literal("deaccession")),
+      workflowType: v.union(
+        v.literal("accession"),
+        v.literal("deaccession"),
+        v.literal("loan"),
+        v.literal("acquisition"),
+        v.literal("exhibition"),
+        v.literal("conservation"),
+      ),
       steps: v.array(
         v.object({
           stepNumber: v.number(),
@@ -357,7 +360,6 @@ export const getWorkflowConfigs = query({
     }),
   ),
   handler: async (ctx, args) => {
-    // No permission check - anyone in the organization can view workflow configs
     return await ctx.db
       .query("workflowConfigs")
       .withIndex("by_organization", (q) =>
@@ -373,7 +375,14 @@ export const getWorkflowConfigs = query({
 export const updateWorkflowConfig = mutation({
   args: {
     organizationId: v.id("organizations"),
-    workflowType: v.union(v.literal("accession"), v.literal("deaccession")),
+    workflowType: v.union(
+      v.literal("accession"),
+      v.literal("deaccession"),
+      v.literal("loan"),
+      v.literal("acquisition"),
+      v.literal("exhibition"),
+      v.literal("conservation"),
+    ),
     steps: v.array(
       v.object({
         stepNumber: v.number(),
@@ -390,14 +399,12 @@ export const updateWorkflowConfig = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Check permission
     await requirePermission(
       ctx,
       args.organizationId,
       "organization.manage_settings",
     );
 
-    // Check if workflow config exists
     const existing = await ctx.db
       .query("workflowConfigs")
       .withIndex("by_organization", (q) =>

@@ -96,11 +96,13 @@ Usage: `glass-panel` utility class
 ### Hover Effects
 
 Card hover pattern:
+
 ```
 hover:border-{accent}-500/30 hover:ring-1 hover:ring-{accent}-500/30
 ```
 
 Image scale on hover:
+
 ```
 group-hover:scale-105 transition-transform duration-700
 ```
@@ -122,6 +124,7 @@ With staggered delays: `delay-0`, `delay-100`, `delay-200`, `delay-300`, `delay-
 ### Hover Target
 
 For revealing elements on hover:
+
 ```html
 <div class="hover-trigger group">
   <div class="hover-target">Revealed on hover</div>

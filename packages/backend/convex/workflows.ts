@@ -6,6 +6,10 @@ import { requirePermission } from "./utils/permissions";
 const workflowTypeValidator = v.union(
   v.literal("accession"),
   v.literal("deaccession"),
+  v.literal("loan"),
+  v.literal("acquisition"),
+  v.literal("exhibition"),
+  v.literal("conservation"),
 );
 
 const stepValidator = v.object({

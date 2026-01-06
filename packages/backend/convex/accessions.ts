@@ -138,7 +138,7 @@ export const create = mutation({
       cost: args.cost,
       notes: args.notes,
       status: workflowConfig ? "pending" : "approved", // Auto-approve if no workflow
-      workflowStep: workflowConfig ? 1 : undefined,
+      workflowStep: workflowConfig ? 0 : undefined, // Start at Draft/Intake (step 0)
       workflowHistory,
     });
 
@@ -440,6 +440,48 @@ export const update = mutation({
     if (args.notes !== undefined) updates.notes = args.notes;
 
     await ctx.db.patch(args.accessionId, updates);
+
+    return null;
+  },
+});
+
+/**
+ * Update workflow step (for Kanban drag-and-drop)
+ */
+export const updateWorkflowStep = mutation({
+  args: {
+    accessionId: v.id("accessions"),
+    workflowStep: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const accession = await ctx.db.get(args.accessionId);
+    if (!accession) {
+      throw new Error("Accession not found");
+    }
+
+    await requirePermission(
+      ctx,
+      accession.organizationId,
+      "collections.update",
+    );
+
+    if (accession.status !== "pending") {
+      throw new Error("Can only update workflow step for pending accessions");
+    }
+
+    if (args.workflowStep < 0 || args.workflowStep > 2) {
+      throw new Error("Invalid workflow step");
+    }
+
+    await ctx.db.patch(args.accessionId, {
+      workflowStep: args.workflowStep,
+    });
 
     return null;
   },

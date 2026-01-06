@@ -28,7 +28,13 @@ import { ArrowDown, ArrowUp, Edit, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Checkbox } from "@v1/ui/checkbox";
 
-type WorkflowType = "accession" | "deaccession";
+type WorkflowType =
+  | "accession"
+  | "deaccession"
+  | "loan"
+  | "acquisition"
+  | "exhibition"
+  | "conservation";
 
 interface WorkflowStep {
   stepNumber: number;
@@ -192,6 +198,25 @@ export default function WorkflowsSettingsPage() {
     }));
   };
 
+  const getWorkflowTitle = (type: WorkflowType | null): string => {
+    switch (type) {
+      case "accession":
+        return "Accession";
+      case "deaccession":
+        return "Deaccession";
+      case "loan":
+        return "Loan";
+      case "acquisition":
+        return "Acquisition";
+      case "exhibition":
+        return "Exhibition";
+      case "conservation":
+        return "Conservation";
+      default:
+        return "";
+    }
+  };
+
   const renderWorkflowCard = (type: WorkflowType, title: string) => {
     const config = getWorkflowConfig(type);
     const stepCount = config?.steps.length || 0;
@@ -298,15 +323,17 @@ export default function WorkflowsSettingsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         {renderWorkflowCard("accession", "Accession Workflow")}
         {renderWorkflowCard("deaccession", "Deaccession Workflow")}
+        {renderWorkflowCard("loan", "Loan Workflow")}
+        {renderWorkflowCard("acquisition", "Acquisition Workflow")}
+        {renderWorkflowCard("exhibition", "Exhibition Workflow")}
+        {renderWorkflowCard("conservation", "Conservation Workflow")}
       </div>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto bg-zinc-950 border-zinc-800">
           <DialogHeader>
             <DialogTitle className="text-zinc-100">
-              Edit{" "}
-              {editingWorkflow === "accession" ? "Accession" : "Deaccession"}{" "}
-              Workflow
+              Edit {getWorkflowTitle(editingWorkflow)} Workflow
             </DialogTitle>
             <DialogDescription className="text-zinc-400">
               Configure the approval steps and initiation permissions for this

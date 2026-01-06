@@ -71,7 +71,7 @@ export function DeaccessionDialog({
   );
 
   const deaccessionWorkflow = workflowConfigs?.find(
-    (w) => w.workflowType === "deaccession",
+    (w: { workflowType: string }) => w.workflowType === "deaccession",
   );
 
   const handleSubmit = async () => {

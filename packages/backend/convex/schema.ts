@@ -622,17 +622,16 @@ export default defineSchema({
     approvedBy: v.optional(v.id("users")),
     approvedAt: v.optional(v.number()),
     notes: v.optional(v.string()),
-    workflowConfig: v.optional(
-      v.object({
-        steps: v.array(
-          v.object({
-            stepNumber: v.number(),
-            roleId: v.id("roles"),
-            name: v.string(),
-          }),
-        ),
-        canInitiateRoles: v.array(v.id("roles")),
-      }),
+    workflowStep: v.optional(v.number()),
+    workflowHistory: v.optional(
+      v.array(
+        v.object({
+          step: v.number(),
+          approvedBy: v.id("users"),
+          approvedAt: v.number(),
+          comment: v.optional(v.string()),
+        }),
+      ),
     ),
     useDetailedConditionReports: v.optional(v.boolean()),
   })
@@ -702,33 +701,81 @@ export default defineSchema({
       v.literal("assessment"),
       v.literal("other"),
     ),
-    title: v.string(), // e.g., "Surface Cleaning", "Socle Reinforcement"
-    description: v.string(), // Detailed description of the treatment
+    title: v.string(),
+    description: v.string(),
     performedBy: v.id("users"),
-    performedByName: v.optional(v.string()), // Cached name for display
+    performedByName: v.optional(v.string()),
     performedAt: v.number(),
     notes: v.optional(v.string()),
+    status: v.optional(
+      v.union(
+        v.literal("proposed"),
+        v.literal("approved"),
+        v.literal("in_progress"),
+        v.literal("completed"),
+        v.literal("rejected"),
+      ),
+    ),
+    workflowStep: v.optional(v.number()),
+    workflowHistory: v.optional(
+      v.array(
+        v.object({
+          step: v.number(),
+          approvedBy: v.id("users"),
+          approvedAt: v.number(),
+          comment: v.optional(v.string()),
+        }),
+      ),
+    ),
+    approvedBy: v.optional(v.id("users")),
+    approvedAt: v.optional(v.number()),
+    createdBy: v.optional(v.id("users")),
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
-    .index("by_performedAt", ["performedAt"]),
+    .index("by_performedAt", ["performedAt"])
+    .index("by_organization_and_status", ["organizationId", "status"]),
 
   // Exhibition records for objects
   exhibitions: defineTable({
     collectionId: v.id("collections"),
     organizationId: v.id("organizations"),
     title: v.string(),
-    location: v.optional(v.string()), // e.g., "Wing A, Gallery 4 (Roman Hall)"
+    location: v.optional(v.string()),
     startDate: v.number(),
     endDate: v.optional(v.number()),
     isCurrent: v.boolean(),
-    isLoan: v.optional(v.boolean()), // If this was a loan exhibition
-    loanVenue: v.optional(v.string()), // e.g., "British Museum"
+    isLoan: v.optional(v.boolean()),
+    loanVenue: v.optional(v.string()),
     notes: v.optional(v.string()),
+    status: v.optional(
+      v.union(
+        v.literal("proposed"),
+        v.literal("approved"),
+        v.literal("active"),
+        v.literal("closed"),
+        v.literal("rejected"),
+      ),
+    ),
+    workflowStep: v.optional(v.number()),
+    workflowHistory: v.optional(
+      v.array(
+        v.object({
+          step: v.number(),
+          approvedBy: v.id("users"),
+          approvedAt: v.number(),
+          comment: v.optional(v.string()),
+        }),
+      ),
+    ),
+    approvedBy: v.optional(v.id("users")),
+    approvedAt: v.optional(v.number()),
+    createdBy: v.optional(v.id("users")),
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
-    .index("by_startDate", ["startDate"]),
+    .index("by_startDate", ["startDate"])
+    .index("by_organization_and_status", ["organizationId", "status"]),
 
   // Activity tracking
   auditLog: defineTable({
@@ -766,7 +813,14 @@ export default defineSchema({
   // Organization workflow configurations
   workflowConfigs: defineTable({
     organizationId: v.id("organizations"),
-    workflowType: v.union(v.literal("accession"), v.literal("deaccession")),
+    workflowType: v.union(
+      v.literal("accession"),
+      v.literal("deaccession"),
+      v.literal("loan"),
+      v.literal("acquisition"),
+      v.literal("exhibition"),
+      v.literal("conservation"),
+    ),
     steps: v.array(
       v.object({
         stepNumber: v.number(),
@@ -1226,6 +1280,19 @@ export default defineSchema({
     reviewedBy: v.optional(v.id("users")),
     reviewedAt: v.optional(v.number()),
     reviewNotes: v.optional(v.string()),
+
+    // Multi-step workflow
+    workflowStep: v.optional(v.number()),
+    workflowHistory: v.optional(
+      v.array(
+        v.object({
+          step: v.number(),
+          approvedBy: v.id("users"),
+          approvedAt: v.number(),
+          comment: v.optional(v.string()),
+        }),
+      ),
+    ),
 
     // Order tracking
     orderNumber: v.optional(v.string()),
