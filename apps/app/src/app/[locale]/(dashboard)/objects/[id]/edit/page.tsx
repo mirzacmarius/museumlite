@@ -893,22 +893,6 @@ export default function CollectionEditPage() {
                         className="flex gap-2"
                       >
                         <div className="flex-1">
-                          <Label htmlFor={`link-label-${index}`}>Label</Label>
-                          <Input
-                            id={`link-label-${index}`}
-                            value={link.label || ""}
-                            onChange={(e) => {
-                              const newLinks = [...(formData.links || [])];
-                              newLinks[index] = {
-                                url: newLinks[index]?.url || "",
-                                label: e.target.value,
-                              };
-                              updateField("links", newLinks);
-                            }}
-                            placeholder="Link name (optional)"
-                          />
-                        </div>
-                        <div className="flex-1">
                           <Label htmlFor={`link-url-${index}`}>
                             URL{" "}
                             {index === 0 ? (
@@ -929,8 +913,34 @@ export default function CollectionEditPage() {
                               };
                               updateField("links", newLinks);
                             }}
+                            onBlur={(e) => {
+                              const newLinks = [...(formData.links || [])];
+                              if (e.target.value && !newLinks[index]?.label) {
+                                newLinks[index] = {
+                                  url: newLinks[index]?.url || "",
+                                  label: e.target.value,
+                                };
+                                updateField("links", newLinks);
+                              }
+                            }}
                             placeholder="https://example.com"
                             required={index > 0}
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <Label htmlFor={`link-label-${index}`}>Label</Label>
+                          <Input
+                            id={`link-label-${index}`}
+                            value={link.label || ""}
+                            onChange={(e) => {
+                              const newLinks = [...(formData.links || [])];
+                              newLinks[index] = {
+                                url: newLinks[index]?.url || "",
+                                label: e.target.value,
+                              };
+                              updateField("links", newLinks);
+                            }}
+                            placeholder="Link name (optional)"
                           />
                         </div>
                         {(formData.links || []).length > 1 && (
