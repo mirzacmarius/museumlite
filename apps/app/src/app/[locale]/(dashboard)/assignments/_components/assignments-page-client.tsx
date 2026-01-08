@@ -47,7 +47,7 @@ interface CatalogedItem {
   accessionNumber: string;
   catalogedAt: number;
   thumbnailUrl?: string;
-  status: "active" | "loaned" | "deaccessioned";
+  status: "active" | "loaned" | "deaccessioned" | "archived" | "deleted";
 }
 
 interface AssignmentsData {
@@ -314,7 +314,9 @@ function PendingApprovalCard({ item }: { item: PendingApproval }) {
             {formatDistanceToNow(item.createdAt, { addSuffix: true })}
           </span>
           {item.workflowStep !== undefined && (
-            <span className="text-muted-foreground">Step {item.workflowStep}</span>
+            <span className="text-muted-foreground">
+              Step {item.workflowStep}
+            </span>
           )}
         </div>
       </div>
@@ -329,12 +331,14 @@ function CollectionCard({
 }: {
   item: RecentlyModified;
   subtitle?: string;
-  status?: "active" | "loaned" | "deaccessioned";
+  status?: "active" | "loaned" | "deaccessioned" | "archived" | "deleted";
 }) {
-  const statusColors = {
+  const statusColors: Record<string, string> = {
     active: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
     loaned: "bg-purple-500/10 text-purple-400 border-purple-500/30",
     deaccessioned: "bg-muted text-muted-foreground border-border",
+    archived: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+    deleted: "bg-red-500/10 text-red-400 border-red-500/30",
   };
 
   return (

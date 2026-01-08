@@ -331,6 +331,8 @@ export const get = query({
         v.literal("active"),
         v.literal("loaned"),
         v.literal("deaccessioned"),
+        v.literal("archived"),
+        v.literal("deleted"),
       ),
       catalogedBy: v.id("users"),
       catalogedAt: v.number(),
@@ -372,6 +374,8 @@ export const getWithModuleDetails = query({
           v.literal("active"),
           v.literal("loaned"),
           v.literal("deaccessioned"),
+          v.literal("archived"),
+          v.literal("deleted"),
         ),
         _creationTime: v.number(),
       }),
@@ -655,6 +659,8 @@ export const list = query({
         v.literal("active"),
         v.literal("loaned"),
         v.literal("deaccessioned"),
+        v.literal("archived"),
+        v.literal("deleted"),
       ),
     ),
     locationId: v.optional(v.id("locations")),
@@ -681,6 +687,8 @@ export const list = query({
           v.literal("active"),
           v.literal("loaned"),
           v.literal("deaccessioned"),
+          v.literal("archived"),
+          v.literal("deleted"),
         ),
         _creationTime: v.number(),
       }),
@@ -699,7 +707,7 @@ export const list = query({
       collectionGroupId?: Id<"collectionGroups">;
       objectType?: string;
       currentLocationId?: Id<"locations">;
-      status: "active" | "loaned" | "deaccessioned";
+      status: "active" | "loaned" | "deaccessioned" | "archived" | "deleted";
       culture?: string;
       period?: string;
       materials?: string;
@@ -936,6 +944,8 @@ export const search = query({
         v.literal("active"),
         v.literal("loaned"),
         v.literal("deaccessioned"),
+        v.literal("archived"),
+        v.literal("deleted"),
       ),
     ),
     limit: v.optional(v.number()),
@@ -952,6 +962,8 @@ export const search = query({
           v.literal("active"),
           v.literal("loaned"),
           v.literal("deaccessioned"),
+          v.literal("archived"),
+          v.literal("deleted"),
         ),
         _creationTime: v.number(),
       }),
@@ -1282,6 +1294,167 @@ export const deleteCollection = mutation({
 });
 
 /**
+ * Archive collection - hides from normal views but preserves all data
+ */
+export const archiveCollection = mutation({
+  args: {
+    collectionId: v.id("collections"),
+    reason: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      throw new Error("Collection not found");
+    }
+
+    await requirePermission(
+      ctx,
+      collection.organizationId,
+      "collections.delete",
+    );
+
+    if (collection.status === "loaned") {
+      throw new Error("Cannot archive an object that is currently on loan");
+    }
+
+    await ctx.db.patch(args.collectionId, {
+      status: "archived",
+      archivedAt: Date.now(),
+      archivedBy: userId,
+      archivedReason: args.reason,
+      lastModifiedBy: userId,
+      lastModifiedAt: Date.now(),
+    });
+
+    await ctx.db.insert("auditLog", {
+      organizationId: collection.organizationId,
+      userId,
+      action: "archived",
+      entityType: "collection",
+      entityId: args.collectionId,
+      changes: { reason: args.reason },
+      timestamp: Date.now(),
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Soft delete collection - moves to trash, can be permanently deleted later
+ */
+export const softDeleteCollection = mutation({
+  args: {
+    collectionId: v.id("collections"),
+    reason: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      throw new Error("Collection not found");
+    }
+
+    await requirePermission(
+      ctx,
+      collection.organizationId,
+      "collections.delete",
+    );
+
+    if (collection.status === "loaned") {
+      throw new Error("Cannot delete an object that is currently on loan");
+    }
+
+    await ctx.db.patch(args.collectionId, {
+      status: "deleted",
+      deletedAt: Date.now(),
+      deletedBy: userId,
+      deletedReason: args.reason,
+      lastModifiedBy: userId,
+      lastModifiedAt: Date.now(),
+    });
+
+    await ctx.db.insert("auditLog", {
+      organizationId: collection.organizationId,
+      userId,
+      action: "deleted",
+      entityType: "collection",
+      entityId: args.collectionId,
+      changes: { reason: args.reason },
+      timestamp: Date.now(),
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Restore collection from archived or deleted status
+ */
+export const restoreCollection = mutation({
+  args: {
+    collectionId: v.id("collections"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      throw new Error("Collection not found");
+    }
+
+    await requirePermission(
+      ctx,
+      collection.organizationId,
+      "collections.write",
+    );
+
+    if (collection.status !== "archived" && collection.status !== "deleted") {
+      throw new Error("Can only restore archived or deleted objects");
+    }
+
+    await ctx.db.patch(args.collectionId, {
+      status: "active",
+      archivedAt: undefined,
+      archivedBy: undefined,
+      archivedReason: undefined,
+      deletedAt: undefined,
+      deletedBy: undefined,
+      deletedReason: undefined,
+      lastModifiedBy: userId,
+      lastModifiedAt: Date.now(),
+    });
+
+    await ctx.db.insert("auditLog", {
+      organizationId: collection.organizationId,
+      userId,
+      action: "restored",
+      entityType: "collection",
+      entityId: args.collectionId,
+      changes: { previousStatus: collection.status },
+      timestamp: Date.now(),
+    });
+
+    return null;
+  },
+});
+
+/**
  * Find collection by accession number
  */
 export const getByAccessionNumber = query({
@@ -1298,6 +1471,8 @@ export const getByAccessionNumber = query({
         v.literal("active"),
         v.literal("loaned"),
         v.literal("deaccessioned"),
+        v.literal("archived"),
+        v.literal("deleted"),
       ),
     }),
     v.null(),
@@ -1511,6 +1686,8 @@ export const getChildObjects = query({
         v.literal("active"),
         v.literal("loaned"),
         v.literal("deaccessioned"),
+        v.literal("archived"),
+        v.literal("deleted"),
       ),
       thumbnailUrl: v.union(v.string(), v.null()),
     }),

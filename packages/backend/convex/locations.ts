@@ -702,6 +702,8 @@ export const getObjectsAtLocation = query({
         v.literal("active"),
         v.literal("loaned"),
         v.literal("deaccessioned"),
+        v.literal("archived"),
+        v.literal("deleted"),
       ),
     }),
   ),

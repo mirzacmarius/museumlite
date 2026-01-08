@@ -42,7 +42,7 @@ export function CollectionMultiSelectCombobox({
       _id: Id<"collections">;
       title: string;
       accessionNumber: string;
-      status: "active" | "loaned" | "deaccessioned";
+      status: "active" | "loaned" | "deaccessioned" | "archived" | "deleted";
     }>
   >([]);
   const [isLoadingMore, setIsLoadingMore] = React.useState(false);

@@ -230,7 +230,15 @@ export default defineSchema({
       v.literal("active"),
       v.literal("loaned"),
       v.literal("deaccessioned"),
+      v.literal("archived"),
+      v.literal("deleted"),
     ),
+    archivedAt: v.optional(v.number()),
+    archivedBy: v.optional(v.id("users")),
+    archivedReason: v.optional(v.string()),
+    deletedAt: v.optional(v.number()),
+    deletedBy: v.optional(v.id("users")),
+    deletedReason: v.optional(v.string()),
     displayStatus: v.optional(v.string()),
     collectionType: v.optional(
       v.union(

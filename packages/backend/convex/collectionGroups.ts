@@ -332,6 +332,8 @@ export const listItems = query({
         v.literal("active"),
         v.literal("loaned"),
         v.literal("deaccessioned"),
+        v.literal("archived"),
+        v.literal("deleted"),
       ),
       addedAt: v.number(),
     }),
@@ -358,7 +360,7 @@ export const listItems = query({
       title: string;
       description?: string;
       currentLocationId?: Id<"locations">;
-      status: "active" | "loaned" | "deaccessioned";
+      status: "active" | "loaned" | "deaccessioned" | "archived" | "deleted";
       addedAt: number;
     }> = [];
 
