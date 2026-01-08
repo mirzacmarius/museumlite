@@ -5,6 +5,7 @@ import { ConditionCombobox } from "@/components/condition-combobox";
 import { DonorCombobox } from "@/components/donor-combobox";
 import { LocationSelector } from "@/components/location-selector";
 import { MaterialsCombobox } from "@/components/materials-combobox";
+import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
 import { ObjectCombobox } from "@/components/object-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
@@ -64,6 +65,7 @@ interface CollectionFormData {
   links?: Array<{ url: string; label?: string }>;
   parentObjectId?: string;
   currentLocationId?: string;
+  collectionGroupId?: string;
   alternateAccessionNumbers?: string[];
 }
 
@@ -336,6 +338,7 @@ export default function CollectionEditPage() {
         parentObjectId: (collection.parentObjectId as string) || "",
         currentLocationId:
           (collection.currentLocationId as string) || "__none__",
+        collectionGroupId: (collection.collectionGroupId as string) || "",
         alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
       });
     }
@@ -484,6 +487,9 @@ export default function CollectionEditPage() {
           formData.currentLocationId !== "__none__"
             ? (formData.currentLocationId as Id<"locations">)
             : undefined,
+        collectionGroupId: formData.collectionGroupId
+          ? (formData.collectionGroupId as Id<"collectionGroups">)
+          : undefined,
         alternateAccessionNumbers: formData.alternateAccessionNumbers,
       });
       router.push(`/objects/${collectionId}`);
@@ -762,6 +768,20 @@ export default function CollectionEditPage() {
                         updateField("parentObjectId", value)
                       }
                       placeholder="Select parent object (optional)"
+                    />
+                  </div>
+                  <div className="mt-4">
+                    <Label htmlFor="collectionGroupId">Collection</Label>
+                    <p className="mb-2 text-xs text-muted-foreground">
+                      Add this object to a collection group
+                    </p>
+                    <CollectionGroupCombobox
+                      organizationId={collection.organizationId}
+                      value={formData.collectionGroupId}
+                      onValueChange={(value) =>
+                        updateField("collectionGroupId", value)
+                      }
+                      placeholder="Select collection (optional)"
                     />
                   </div>
                 </div>

@@ -17,6 +17,7 @@ import { ConditionCombobox } from "@/components/condition-combobox";
 import { DonorCombobox } from "@/components/donor-combobox";
 import { LocationSelector } from "@/components/location-selector";
 import { MaterialsCombobox } from "@/components/materials-combobox";
+import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
 import { ObjectCombobox } from "@/components/object-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { RepeatableTextField } from "@/components/repeatable-text-field";
@@ -665,6 +666,20 @@ export default function CollectionFormPage() {
                         updateField("parentObjectId", value)
                       }
                       placeholder="Select parent object (optional)"
+                    />
+                  </div>
+                  <div className="mt-4">
+                    <Label htmlFor="collectionGroupId">Collection</Label>
+                    <p className="mb-2 text-xs text-muted-foreground">
+                      Add this object to a collection group
+                    </p>
+                    <CollectionGroupCombobox
+                      organizationId={currentOrganizationId}
+                      value={formData.collectionGroupId}
+                      onValueChange={(value) =>
+                        updateField("collectionGroupId", value)
+                      }
+                      placeholder="Select collection (optional)"
                     />
                   </div>
                 </div>
