@@ -4,12 +4,23 @@ import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -20,10 +31,12 @@ export default function EditCollectionPage() {
   const groupId = params.id as Id<"collectionGroups">;
   const { currentOrganizationId } = useOrganization();
   const updateGroup = useMutation(api.collectionGroups.update);
+  const deleteGroup = useMutation(api.collectionGroups.deleteGroup);
 
   const group = useQuery(api.collectionGroups.get, { groupId });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -64,6 +77,17 @@ export default function EditCollectionPage() {
       </div>
     );
   }
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteGroup({ groupId });
+      router.push("/collections");
+    } catch (err) {
+      console.error("Failed to delete collection:", err);
+      setIsDeleting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,6 +178,55 @@ export default function EditCollectionPage() {
                     {isSubmitting ? "Updating..." : "Update Collection"}
                   </Button>
                 </PermissionGate>
+              </div>
+
+              <div className="mt-12 border-t border-border pt-8">
+                <h3 className="text-lg font-medium text-destructive mb-4">
+                  Danger Zone
+                </h3>
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Delete this collection</p>
+                      <p className="text-sm text-muted-foreground">
+                        Objects in this collection will be unlinked but not
+                        deleted.
+                      </p>
+                    </div>
+                    <PermissionGate permission="collections.delete">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" disabled={isDeleting}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Delete Collection
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete "{group.name}"?
+                              Objects in this collection will be unlinked but
+                              not deleted.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={handleDelete}
+                              disabled={isDeleting}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              {isDeleting ? "Deleting..." : "Delete Collection"}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </PermissionGate>
+                  </div>
+                </div>
               </div>
             </div>
           </form>

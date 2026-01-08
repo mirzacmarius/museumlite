@@ -4,6 +4,7 @@ import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,7 +51,6 @@ export default function CollectionGroupDetailPage() {
   const rawId = params.id as string;
   const { currentOrganizationId } = useOrganization();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const collection = useQuery(api.collections.get, {
     collectionId: rawId as Id<"collections">,
@@ -60,8 +60,6 @@ export default function CollectionGroupDetailPage() {
     api.collectionGroups.get,
     collection === null ? { groupId: rawId as Id<"collectionGroups"> } : "skip",
   );
-  const deleteGroup = useMutation(api.collectionGroups.deleteGroup);
-
   useEffect(() => {
     if (collection?._id) {
       router.replace(`/objects/${collection._id}`);
@@ -77,17 +75,6 @@ export default function CollectionGroupDetailPage() {
       </div>
     );
   }
-
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      await deleteGroup({ groupId });
-      router.push("/collections");
-    } catch (error) {
-      console.error("Failed to delete collection:", error);
-      setIsDeleting(false);
-    }
-  };
 
   if (!currentOrganizationId) {
     return (
@@ -161,35 +148,6 @@ export default function CollectionGroupDetailPage() {
                     New Object
                   </Link>
                 </Button>
-              </PermissionGate>
-              <PermissionGate permission="collections.delete">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Collection</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete "{group.name}"? Objects
-                        in this collection will be unlinked but not deleted.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        {isDeleting ? "Deleting..." : "Delete Collection"}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
               </PermissionGate>
             </div>
           </div>

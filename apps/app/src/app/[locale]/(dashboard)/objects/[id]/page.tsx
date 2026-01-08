@@ -102,10 +102,10 @@ type TabId =
 
 const baseTabs: { id: TabId; label: string }[] = [
   { id: "general", label: "General" },
+  { id: "provenance", label: "Provenance" },
   { id: "physical", label: "Physical Description" },
   { id: "media", label: "Media" },
   { id: "digital", label: "Digital Assets" },
-  { id: "provenance", label: "Provenance" },
   { id: "conservation", label: "Conservation" },
   { id: "exhibitions", label: "Exhibitions" },
   { id: "logs", label: "Logs" },
