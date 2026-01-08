@@ -79,6 +79,11 @@ import { useMemo, useState } from "react";
 import { ImageLightbox, type LightboxImage } from "@v1/ui/image-lightbox";
 import { MediaGallery } from "./_components/media-gallery";
 import { RecordContextSidebar } from "./_components/record-context-sidebar";
+import { FineArtDetailsTab } from "./_components/fine-art-details-tab";
+import { WineDetailsTab } from "./_components/wine-details-tab";
+import { VehicleDetailsTab } from "./_components/vehicle-details-tab";
+import { NaturalHistoryDetailsTab } from "./_components/natural-history-details-tab";
+import { ArchiveDetailsTab } from "./_components/archive-details-tab";
 
 type TabId =
   | "general"
@@ -88,9 +93,14 @@ type TabId =
   | "provenance"
   | "conservation"
   | "exhibitions"
-  | "logs";
+  | "logs"
+  | "fine_art"
+  | "wine"
+  | "automotive"
+  | "natural_history"
+  | "archive";
 
-const tabs: { id: TabId; label: string }[] = [
+const baseTabs: { id: TabId; label: string }[] = [
   { id: "general", label: "General" },
   { id: "physical", label: "Physical Description" },
   { id: "media", label: "Media" },
@@ -100,6 +110,14 @@ const tabs: { id: TabId; label: string }[] = [
   { id: "exhibitions", label: "Exhibitions" },
   { id: "logs", label: "Logs" },
 ];
+
+const moduleTabMap: Record<string, { id: TabId; label: string }> = {
+  fine_art: { id: "fine_art", label: "Fine Art Details" },
+  wine: { id: "wine", label: "Wine & Spirits" },
+  automotive: { id: "automotive", label: "Vehicle Details" },
+  natural_history: { id: "natural_history", label: "Natural History" },
+  archive: { id: "archive", label: "Archive Details" },
+};
 
 export default function ObjectDetailPage() {
   const params = useParams();
@@ -147,6 +165,18 @@ export default function ObjectDetailPage() {
       ? { collectionId: collection._id as Id<"collections"> }
       : "skip",
   );
+
+  const tabs = useMemo(() => {
+    const collectionType = collection?.collectionType;
+    if (!collectionType || collectionType === "general") {
+      return baseTabs;
+    }
+    const moduleTab = moduleTabMap[collectionType];
+    if (!moduleTab) {
+      return baseTabs;
+    }
+    return [...baseTabs.slice(0, 1), moduleTab, ...baseTabs.slice(1)];
+  }, [collection?.collectionType]);
 
   // Get primary image
   const primaryImage = media?.find(
@@ -761,6 +791,36 @@ export default function ObjectDetailPage() {
               )}
               {activeTab === "logs" && (
                 <LogsTab
+                  collectionId={collectionId}
+                  organizationId={currentOrganizationId}
+                />
+              )}
+              {activeTab === "fine_art" && (
+                <FineArtDetailsTab
+                  collectionId={collectionId}
+                  organizationId={currentOrganizationId}
+                />
+              )}
+              {activeTab === "wine" && (
+                <WineDetailsTab
+                  collectionId={collectionId}
+                  organizationId={currentOrganizationId}
+                />
+              )}
+              {activeTab === "automotive" && (
+                <VehicleDetailsTab
+                  collectionId={collectionId}
+                  organizationId={currentOrganizationId}
+                />
+              )}
+              {activeTab === "natural_history" && (
+                <NaturalHistoryDetailsTab
+                  collectionId={collectionId}
+                  organizationId={currentOrganizationId}
+                />
+              )}
+              {activeTab === "archive" && (
+                <ArchiveDetailsTab
                   collectionId={collectionId}
                   organizationId={currentOrganizationId}
                 />

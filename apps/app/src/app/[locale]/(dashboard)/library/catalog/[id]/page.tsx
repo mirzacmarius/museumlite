@@ -196,10 +196,10 @@ export default function CatalogItemDetailPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
+    <div className="flex h-full w-full bg-background px-6">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 py-6">
         {/* Header */}
-        <div className="flex items-center justify-between rounded-lg border border-border bg-card p-6 dark:bg-black">
+        <div className="flex items-center justify-between rounded-lg border border-border bg-card p-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/library/catalog">
@@ -285,7 +285,7 @@ export default function CatalogItemDetailPage() {
           {/* Main Info */}
           <div className="space-y-6 lg:col-span-2">
             {/* Basic Details */}
-            <div className="rounded-lg border border-border bg-card dark:bg-black">
+            <div className="rounded-lg border border-border bg-card">
               <div className="border-b border-border p-6">
                 <h2 className="text-lg font-medium">Details</h2>
               </div>
@@ -360,7 +360,7 @@ export default function CatalogItemDetailPage() {
 
             {/* Description */}
             {item.description && (
-              <div className="rounded-lg border border-border bg-card dark:bg-black">
+              <div className="rounded-lg border border-border bg-card">
                 <div className="border-b border-border p-6">
                   <h2 className="text-lg font-medium">Description</h2>
                 </div>
@@ -374,7 +374,7 @@ export default function CatalogItemDetailPage() {
 
             {/* Subjects */}
             {(item.subjects?.length ?? 0) > 0 && (
-              <div className="rounded-lg border border-border bg-card dark:bg-black">
+              <div className="rounded-lg border border-border bg-card">
                 <div className="border-b border-border p-6">
                   <h2 className="text-lg font-medium">Subjects</h2>
                 </div>
@@ -389,7 +389,7 @@ export default function CatalogItemDetailPage() {
             )}
 
             {/* Copies */}
-            <div className="rounded-lg border border-border bg-card dark:bg-black">
+            <div className="rounded-lg border border-border bg-card">
               <div className="flex items-center justify-between border-b border-border p-6">
                 <div>
                   <h2 className="text-lg font-medium">Copies</h2>
@@ -492,7 +492,7 @@ export default function CatalogItemDetailPage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Cover Image */}
-            <div className="rounded-lg border border-border bg-card dark:bg-black">
+            <div className="rounded-lg border border-border bg-card">
               <div className="p-6">
                 {item.coverImageUrl ? (
                   <img
@@ -509,7 +509,7 @@ export default function CatalogItemDetailPage() {
             </div>
 
             {/* Circulation Info */}
-            <div className="rounded-lg border border-border bg-card dark:bg-black">
+            <div className="rounded-lg border border-border bg-card">
               <div className="border-b border-border p-6">
                 <h2 className="text-lg font-medium">Circulation</h2>
               </div>
@@ -539,7 +539,7 @@ export default function CatalogItemDetailPage() {
 
             {/* Notes */}
             {(item.notes || item.internalNotes) && (
-              <div className="rounded-lg border border-border bg-card dark:bg-black">
+              <div className="rounded-lg border border-border bg-card">
                 <div className="border-b border-border p-6">
                   <h2 className="text-lg font-medium">Notes</h2>
                 </div>

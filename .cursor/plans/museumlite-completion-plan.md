@@ -1,375 +1,397 @@
-# MuseumLite Completion & Polish Plan
+# MuseumLite App Completion Plan
 
-**Generated:** 2025-12-30
+**Generated:** 2026-01-09
+**Updated from:** 2025-12-30 plan + comprehensive codebase analysis
 **Project:** Museum/Library Collection Management SaaS
-**Stack:** Turborepo, Next.js 16 App Router, Convex, Bun, Biome, Tailwind v4, shadcn/ui
+**Stack:** Turborepo, Next.js 15 App Router, Convex, Bun, Biome, Tailwind v4, shadcn/ui
 
 ---
 
 ## Executive Summary
 
-MuseumLite is a mature, feature-rich collection management platform with strong foundations. The core museum functionality (Collections, Objects, Loans, Accessions, Locations) is 80-90% complete. The Library integration module is functional but less polished. The codebase follows consistent patterns but has gaps in form validation standardization, i18n coverage, and test infrastructure.
+MuseumLite is a Museum/Library Collection Management SaaS at ~80% completion. The backend schema (50+ tables) is mature, frontend has 58 pages with strong CRUD coverage. 
 
-**Key Findings:**
-- **52 dashboard pages** implemented across all major modules
-- **1391-line schema** with 50+ tables and comprehensive indexes
-- **Library module** exists but stats are placeholders, some features incomplete
-- **i18n coverage** is minimal (only covers settings/activity in 3 locales)
-- **Testing** is stubbed but minimal actual tests exist
-- **Design reference** (museumlite.aura.build) could not be fetched - appears to be a client-rendered SPA
+**Key Metrics:**
+- **58 dashboard pages** implemented
+- **50+ database tables** with comprehensive indexes
+- **~180 backend functions** across 40+ files
+- **Sidebar:** ~90% functional
 
----
-
-## Part 1: Current State Audit
-
-### 1.1 Feature Implementation Status
-
-| Domain | Status | Details |
-|--------|--------|---------|
-| **Auth + Onboarding** | Complete | Google OAuth, username onboarding, user profile |
-| **Organizations** | Complete | Multi-tenant, org switcher, create org flow |
-| **Roles/Permissions** | Complete | RBAC with system roles, permission gates |
-| **Dashboard** | Complete | Analytics, quick actions, recent activity |
-| **Collections (Groups)** | Complete | List, detail, create, edit, delete |
-| **Objects** | Complete | Full CRUD, filters, media upload, deaccession |
-| **Locations** | Complete | Hierarchical tree, object movement |
-| **Loans** | Complete | Full workflow (pending→approved→dispatched→returned) |
-| **Accessions** | Complete | Workflow with approval |
-| **Deaccessions** | Complete | Workflow with approval |
-| **Accounts (CRM)** | Complete | Lenders/borrowers management |
-| **Library Dashboard** | Partial | Stats are hardcoded placeholders (0) |
-| **Library Catalog** | Complete | List, detail, create, edit, ISBN lookup |
-| **Library Patrons** | Complete | Full CRUD with edit page |
-| **Library Circulation** | Complete | Checkout/checkin/renew workflows |
-| **Library Fines** | Partial | Backend exists, UI basic |
-| **Library Acquisitions** | Partial | Backend exists, UI basic |
-| **Settings/Users** | Complete | User management, role assignment |
-| **Settings/Roles** | Complete | Role management |
-| **Settings/Billing** | Complete | Polar.sh integration |
-| **Settings/Integrations** | Complete | Toggle library integration |
-| **Activity Log** | Complete | Global activity feed |
-| **Exhibitions** | Partial | Backend exists, no dedicated UI (only object-level) |
-| **Conservation** | Partial | Backend exists, no dedicated UI |
-| **Import/Export** | Missing | Schema exists (importJobs), no UI |
-| **Workflow Config** | Missing | Schema exists (workflowConfigs), no UI |
-
-### 1.2 Frontend Architecture Observations
-
-**Patterns in Use:**
-- RSC layout with client-side data fetching via `useQuery`/`useMutation`
-- Organization context via `organization-provider.tsx`
-- Permission-based rendering via `PermissionGate` component
-- Cursor-based pagination with local filter state
-- Manual form state management with `useState`
-
-**Technical Debt:**
-| Issue | Severity | Fix Effort |
-|-------|----------|------------|
-| Inconsistent form validation (manual vs React Hook Form/Zod) | Medium | M |
-| Filters not URL-persisted (should use nuqs) | Low | S-M |
-| Loading states are text-only ("Loading...") | Low | S |
-| No skeleton loading components used | Low | S |
-| Empty states lack visual design | Medium | M |
-| Many pages are client-side only (could leverage RSC more) | Low | L |
-
-### 1.3 Backend Architecture Observations
-
-**Strengths:**
-- Comprehensive schema with proper indexes
-- Atomic accession number generation with scope support
-- Centralized RBAC in `utils/permissions.ts`
-- Complete library integration (11 domain files)
-- Proper Zod validation on email sending
-
-**Gaps:**
-| Issue | Severity | Fix Effort |
-|-------|----------|------------|
-| Missing `returns` validators in `library/*.ts` functions | Medium | S |
-| No cron jobs implemented (overdue fine calculation, etc.) | Medium | M |
-| `inviteUser` mutation TODO: email invitation not implemented | High | M |
-| Dashboard analytics uses `.filter()` in memory (performance) | Medium | M |
-| Some queries collect all docs then filter (should use indexes) | Medium | M |
-
-### 1.4 i18n Coverage
-
-**Current State:** Only 3 locales (en, fr, es) with ~60 keys each covering:
-- Dashboard header/description
-- Settings (avatar, delete account)
-- Activity (filters, entity types)
-
-**Missing Coverage:**
-- All module names (Collections, Loans, etc.)
-- Form labels and validation messages
-- Button text across the app
-- Error messages
-- Success toasts
-- Empty states
-- Library module strings
-
-### 1.5 Testing Infrastructure
-
-**Current State:**
-- Vitest + edge-runtime configured
-- `convex-test` installed
-- One example test file (`loans.test.ts`) exists
-- Testing strategy documented but not executed
-
-**Gaps:**
-- No tests for permission logic
-- No tests for workflow state transitions
-- No frontend component tests
-- No E2E tests
+**Key Gaps:**
+- Orphaned schema tables (webhooks, apiKeys, importJobs, serials)
+- Incomplete library module UI (holds, vendors, circulation detail)
+- Broken sidebar filters and redundancies
+- Missing industry-standard features (insurance tracking, condition reports UI, rights management)
 
 ---
 
-## Part 2: Redesign Plan
+## Part 1: Current State Analysis
 
-### 2.1 Design System Derivation
+### 1.1 Linear Issues Status (as of 2026-01-09)
 
-Since the reference design (museumlite.aura.build) could not be fetched, derive design tokens from the existing codebase and refine based on these principles:
+#### In Review (4) - Need Verification
+| Issue | Title | Priority |
+|-------|-------|----------|
+| MUS-118 | Patrons and Accounts merge | priority-1 |
+| MUS-95 | Objects: Add delete functionality | priority-1 |
+| MUS-108 | Error Accession Number auto-generate | High |
+| MUS-94 | Loans: Verify workflow completeness | priority-1 |
 
-**Current Design System (from codebase):**
-```
-Colors:
-- Background: bg-secondary (light), bg-black (dark)
-- Cards: bg-card (light), bg-black (dark)
-- Borders: border-border, border-white/10 (dark)
-- Text: text-primary, text-primary/60, text-muted-foreground
+#### In Progress (1)
+| Issue | Title |
+|-------|-------|
+| MUS-91 | Weblink field order swap |
 
-Typography:
-- Headings: text-xl font-medium (page titles), text-lg font-semibold (card titles)
-- Body: text-sm, text-base
-- Muted: text-xs, text-sm text-muted-foreground
+#### Todo (10)
+| Issue | Title | Priority |
+|-------|-------|----------|
+| MUS-119 | Theme switching not working | **URGENT** |
+| MUS-121 | Collections: move delete to Settings | - |
+| MUS-117 | UI/UX: Status Badges Components | priority-2 |
+| MUS-114 | UI/UX: Dashboard Cards Redesign | priority-1 |
+| MUS-113 | UI/UX: Sidebar Redesign | priority-1 |
+| MUS-111 | Backup/Export feature | Feature |
+| MUS-110 | Deaccession workflow (sold/archived/deleted) | - |
+| MUS-109 | Add object to collections field | Medium |
+| MUS-107 | Swap Physical Description/Provenance tabs | - |
+| MUS-88 | Library reference info | Urgent |
 
-Spacing:
-- Page padding: px-6 py-8
-- Card padding: p-6
-- Gap: gap-4, gap-6
-- Max width: max-w-screen-xl
+#### Backlog (5)
+| Issue | Title |
+|-------|-------|
+| MUS-116 | UI/UX: Object Detail Right Panel |
+| MUS-104 | Bulk actions on list pages |
+| MUS-103 | Media gallery enhancements |
+| MUS-102 | Import/Export tools |
+| MUS-67 | Loan items return |
 
-Components:
-- Cards: rounded-lg border border-border bg-card
-- Buttons: shadcn/ui Button with variants
-- Forms: shadcn/ui Input, Select, Textarea
-- Tables: Custom list components (not shadcn Table)
-```
+### 1.2 Backend Schema Status
 
-### 2.2 Component Standardization
+#### Core Tables (Complete)
+- `organizations`, `users`, `userOrganizations`, `roles`, `permissions`, `rolePermissions`
+- `auditLog`, `notifications`
 
-**Shared Components Needed (packages/ui):**
-| Component | Purpose | Priority |
-|-----------|---------|----------|
-| `DataTable` | Standardized table with sorting/filtering/pagination | High |
-| `EmptyState` | Consistent empty state with icon, title, description, action | High |
-| `LoadingSkeleton` | Skeleton loading for cards, tables, forms | Medium |
-| `StatusBadge` | Consistent status display (pending/active/etc.) | Medium |
-| `PageHeader` | Title, description, actions container | Medium |
-| `FilterBar` | URL-persisted filters using nuqs | Medium |
-| `FormSection` | Grouped form fields with title/description | Low |
+#### Museum Tables (Complete Backend)
+- `collections`, `collectionGroups`, `collectionGroupItems`
+- `locations`, `locationHistory`
+- `mediaFiles`
+- `accessions`, `deaccessions`
+- `loans`, `loanItems`, `loanDocuments`, `conditionReports`
+- `exhibitions`, `conservationTreatments`
 
-### 2.3 Page-by-Page Redesign Checklist
+#### Module Details (Backend Complete, UI Read-Only)
+- `fineArtDetails` - appraisedValue, insuranceCarrier, provenanceChain, shippingLogs
+- `wineDetails` - vintage, peakWindow, binNumber, fillLevel, varietal
+- `vehicleDetails` - vin, make, model, serviceLog, eventHistory
+- `naturalHistoryDetails` - taxonomy, collectionDate, preservationMethod
+- `archiveDetails` - documentType, retentionExpiresAt, confidentialityLevel
 
-| Page | Current Issues | Acceptance Criteria |
-|------|----------------|---------------------|
-| Dashboard | Good | - |
-| Objects List | Good layout, filters not URL-persisted | Filters use nuqs, skeleton loading |
-| Object Detail | Good | Add print stylesheet |
-| Object Form | Long form, no sections collapsed by default | Collapsible sections, better UX |
-| Collections List | Good | - |
-| Loans List | Good | - |
-| Loan Detail | Good | - |
-| Accessions List | Good | - |
-| Deaccessions List | Good | - |
-| Locations | Tree is functional but plain | Better visual hierarchy |
-| Library Dashboard | Stats hardcoded | Real stats from queries |
-| Library Circulation | Good | - |
-| Settings Pages | Functional | Better organization |
+#### Library Tables (Mostly Complete)
+- `libraryItems`, `itemCopies`
+- `accounts` (unified patrons + museum accounts)
+- `circulations`, `libraryHolds`, `libraryFines`, `libraryPayments`
+- `libraryAcquisitionRequests`, `libraryVendors`
+- `membershipTypes`
 
----
+#### Orphaned Tables (Schema Only, No Logic)
+| Table | Purpose | Status |
+|-------|---------|--------|
+| `webhooks` | External integrations | No CRUD |
+| `apiKeys` | API access | No CRUD |
+| `importJobs` | CSV/Media imports | No processing |
+| `serialSubscriptions` | Magazine tracking | No logic |
+| `serialIssues` | Serial issues | No logic |
 
-## Part 3: Completion Backlog
+### 1.3 Frontend Page Status
 
-### Milestone 1: Critical Fixes (Priority 1)
+| Module | List | Detail | Create | Edit | Delete | Notes |
+|--------|:----:|:------:|:------:|:----:|:------:|-------|
+| Objects | ✅ | ✅ | ✅ | ✅ | ✅ | Full CRUD |
+| Collections | ✅ | ✅ | ✅ | ✅ | ✅ | Full CRUD |
+| Loans | ✅ | ✅ | ✅ | ✅ | ⚠️ | Missing individual delete |
+| Exhibitions | ✅ | ✅ | ✅ | ✅ | ✅ | Full CRUD |
+| Conservation | ✅ | ✅ | ✅ | ✅ | ✅ | Full CRUD |
+| Accessions | ✅ | ✅ | ✅ | ✅ | ❌ | Workflow, no delete |
+| Deaccessions | ✅ | ✅ | ✅ | ✅ | ❌ | Workflow, no delete |
+| Locations | ✅ | ✅ | ✅ | ✅ | ✅ | Full CRUD |
+| Accounts | ✅ | ✅ | ✅ | ✅ | ✅ | Full CRUD |
+| Library Catalog | ✅ | ✅ | ✅ | ✅ | ✅ | Full CRUD |
+| Library Circulation | ✅ | ❌ | ❌ | ❌ | ❌ | List + dialogs only |
+| Library Fines | ✅ | ❌ | ❌ | ❌ | ❌ | List + payment dialog |
+| Library Acquisitions | ✅ | ❌ | ✅ | ❌ | ❌ | List + create only |
+| Library Holds | ❌ | ❌ | ❌ | ❌ | ❌ | **MISSING** |
+| Library Vendors | ❌ | ❌ | ❌ | ❌ | ❌ | **MISSING** |
 
-| ID | Title | Scope | Estimate | Acceptance Criteria |
-|----|-------|-------|----------|---------------------|
-| M1-1 | Library dashboard real stats | Backend | S | `getLibraryStats` query returns real counts |
-| M1-2 | Invitation email implementation | Backend/Email | M | `inviteUser` sends email via Resend |
-| M1-3 | Add `returns` validators to library functions | Backend | S | All queries/mutations in `library/*.ts` have `returns` |
-| M1-4 | Fix dashboard analytics performance | Backend | M | Use indexes instead of `.filter()` in memory |
+### 1.4 Sidebar Navigation Issues
 
-### Milestone 2: Missing Modules (Priority 2)
-
-| ID | Title | Scope | Estimate | Acceptance Criteria |
-|----|-------|-------|----------|---------------------|
-| M2-1 | Exhibitions module UI | Frontend/Backend | L | List, detail, create, edit pages; linked to objects |
-| M2-2 | Conservation tracking UI | Frontend/Backend | L | Treatment list, detail, scheduling |
-| M2-3 | Donors management UI | Frontend/Backend | M | Donor list, detail, link to objects |
-| M2-4 | Workflow configuration UI | Frontend | M | Settings page to configure approval workflows |
-
-### Milestone 3: Polish & UX (Priority 2)
-
-| ID | Title | Scope | Estimate | Acceptance Criteria |
-|----|-------|-------|----------|---------------------|
-| M3-1 | URL-persisted filters (nuqs) | Frontend | M | Objects, Loans, Accessions pages use nuqs |
-| M3-2 | Empty state components | Frontend/UI | S | Consistent EmptyState component used everywhere |
-| M3-3 | Skeleton loading states | Frontend/UI | S | LoadingSkeleton replaces "Loading..." text |
-| M3-4 | Form validation standardization | Frontend | L | All forms use React Hook Form + Zod |
-| M3-5 | Print stylesheets | Frontend | S | Object detail page prints cleanly |
-
-### Milestone 4: i18n Expansion (Priority 3)
-
-| ID | Title | Scope | Estimate | Acceptance Criteria |
-|----|-------|-------|----------|---------------------|
-| M4-1 | Extract all hardcoded strings | Frontend | L | All UI text goes through i18n |
-| M4-2 | Translate to French | i18n | M | 100% French coverage |
-| M4-3 | Translate to Spanish | i18n | M | 100% Spanish coverage |
-| M4-4 | Add Norwegian locale | i18n | M | Full Norwegian translation |
-
-### Milestone 5: Infrastructure (Priority 3)
-
-| ID | Title | Scope | Estimate | Acceptance Criteria |
-|----|-------|-------|----------|---------------------|
-| M5-1 | Backend tests for workflows | Testing | M | Loan, accession, deaccession workflows tested |
-| M5-2 | Backend tests for permissions | Testing | S | Permission checks tested |
-| M5-3 | Overdue fine cron job | Backend | M | Daily job calculates/updates fines |
-| M5-4 | Import/Export tools | Full-stack | L | CSV import wizard, export options |
-
-### Milestone 6: Advanced Features (Priority 4)
-
-| ID | Title | Scope | Estimate | Acceptance Criteria |
-|----|-------|-------|----------|---------------------|
-| M6-1 | Bulk actions on lists | Frontend | M | Multi-select, bulk status change |
-| M6-2 | Media gallery enhancements | Frontend | M | PDF preview, document section |
-| M6-3 | Advanced search | Full-stack | L | Boolean operators, saved searches |
-| M6-4 | Public object view | Full-stack | L | Shareable public links for objects |
+| Item | URL | Status | Issue |
+|------|-----|--------|-------|
+| Insurance & Audit | `/settings/activity` | ❌ | Misleading - redirects to Activity Log |
+| Search Input | N/A | ❌ | Placeholder only, no functionality |
+| Accessions | Listed twice | ⚠️ | Redundant (Workspace + Management) |
+| Condition Reports | `/conservation?type=reports` | ⚠️ | Generic filter, no dedicated UI |
 
 ---
 
-## Part 4: Workflow & Approval System
+## Part 2: Phased Completion Plan
 
-### 4.1 Development Cycle
+### PHASE 0: Bug Fixes & Critical Issues (1-2 days)
+**Effort:** ~12 hours
 
-```
-1. SPEC (Define)
-   └── Create Linear issue with requirements
-   └── If UI change: Create Figma mockup or reference
+#### 0.1 Verify In-Review Issues
+| Issue | Files to Check | Effort |
+|-------|----------------|--------|
+| MUS-118 | `packages/backend/convex/accounts.ts`, `apps/app/.../accounts/` | 2h |
+| MUS-95 | `apps/app/.../objects/[id]/page.tsx` | 1h |
+| MUS-108 | `packages/backend/convex/utils/accessionCounter.ts` | 2h |
+| MUS-94 | `packages/backend/convex/loans.ts`, `apps/app/.../loans/` | 2h |
 
-2. IMPLEMENT (Build)
-   └── Create feature branch: `mirzacmarius/mus-XXX-description`
-   └── Implement with tests where applicable
-   └── Self-review: lsp_diagnostics clean, build passes
+#### 0.2 Fix Theme Switching (MUS-119 - URGENT)
+**Files:**
+- `apps/app/src/app/[locale]/(dashboard)/_components/theme-switcher.tsx`
+- `packages/ui/src/components/*.tsx` - check hardcoded dark classes
+- `apps/app/tailwind.config.ts`
 
-3. REVIEW (Verify)
-   └── Move issue to "In Review"
-   └── Manual testing against checklist
-   └── Code review (if team > 1)
+**Effort:** 4-6 hours
 
-4. APPROVE (Gate)
-   └── Verify all acceptance criteria met
-   └── Verify no regressions
-   └── Merge and deploy
-```
-
-### 4.2 Approval Checkpoints
-
-| Checkpoint | When | Criteria |
-|------------|------|----------|
-| **Design Approval** | Before implementation of any visual change | Mockup/design approved |
-| **Schema Approval** | Before adding/modifying tables | Schema changes reviewed for indexes, performance |
-| **API Approval** | Before adding public endpoints | Return validators, permissions checked |
-| **Release Candidate** | Before each milestone completion | All issues in milestone pass QA |
-
-### 4.3 QA Checklist Template
-
-```markdown
-## Pre-Release Checklist for [Feature/Milestone]
-
-### Functionality
-- [ ] All acceptance criteria verified
-- [ ] Happy path works
-- [ ] Error cases handled gracefully
-- [ ] Permission checks enforced
-
-### UI/UX
-- [ ] Responsive (mobile, tablet, desktop)
-- [ ] Dark mode works
-- [ ] Loading states present
-- [ ] Empty states present
-- [ ] Error states present
-- [ ] Accessibility (keyboard nav, screen reader)
-
-### Performance
-- [ ] No unnecessary re-renders
-- [ ] Large lists paginated
-- [ ] Images optimized
-
-### Code Quality
-- [ ] TypeScript strict mode passes
-- [ ] No linting errors
-- [ ] No `any` types
-- [ ] Return validators on all functions
-```
+#### 0.3 Complete MUS-91 Weblink Field Order
+**Files:** `apps/app/.../objects/new/page.tsx`, `objects/[id]/edit/page.tsx`
+**Effort:** 1 hour
 
 ---
 
-## Part 5: Linear Project Setup
+### PHASE 1: Core Functionality Gaps (1 week)
+**Effort:** ~32 hours
 
-### 5.1 Project Structure
+#### 1.1 Fix Sidebar Filter Issues (4h)
+| Page | Fix |
+|------|-----|
+| `/objects/page.tsx` | Add `useSearchParams`, pass `collectionGroup` to query |
+| `/exhibitions/page.tsx` | Filter by `status` param |
+| `/conservation/page.tsx` | Filter by `type` param |
 
-**Existing Project:** "Museumlite Development" (already created)
+#### 1.2 Sidebar Cleanup (1h)
+- Remove duplicate "New Arrivals"
+- Rename "Insurance & Audit" → "Activity Log"
+- Update `apps/app/src/components/app-sidebar.tsx`
 
-**Recommended Labels:**
-| Label | Purpose |
+#### 1.3 Library Module UI Completion (16h)
+| Task | Files to Create | Effort |
+|------|-----------------|--------|
+| Circulation detail | `library/circulation/[id]/page.tsx` | 4h |
+| Fines detail | `library/fines/[id]/page.tsx` | 3h |
+| Acquisitions detail/edit | `library/acquisitions/[id]/page.tsx`, `[id]/edit/page.tsx` | 6h |
+| Library dashboard stats | `packages/backend/convex/library/dashboard.ts` | 3h |
+
+#### 1.4 Missing Delete Operations (6h)
+| Module | Files | Effort |
+|--------|-------|--------|
+| Loans individual | `loans/[id]/page.tsx` | 2h |
+| Accessions | `accessions/[id]/page.tsx` | 2h |
+| Deaccessions | `deaccessions/[id]/page.tsx` | 2h |
+
+#### 1.5 Quick UI Fixes (3h)
+| Issue | Task | Files | Effort |
+|-------|------|-------|--------|
+| MUS-107 | Swap tabs | `objects/[id]/page.tsx` | 30m |
+| MUS-109 | Add collection field | `objects/new/page.tsx`, `objects/[id]/edit/page.tsx` | 2h |
+| MUS-121 | Move delete to Settings | `collections/[id]/page.tsx` | 30m |
+
+---
+
+### PHASE 2: Museum Module Completion (2 weeks)
+**Effort:** ~76 hours
+
+#### 2.1 Specialized Module Editing UI (20h)
+Backend exists but UI is read-only. Create editable tabs:
+
+| Module | Files to Create | Effort |
+|--------|-----------------|--------|
+| Fine Art | `objects/[id]/_components/fine-art-details-tab.tsx` | 4h |
+| Wine | `objects/[id]/_components/wine-details-tab.tsx` | 4h |
+| Vehicle | `objects/[id]/_components/vehicle-details-tab.tsx` | 4h |
+| Natural History | `objects/[id]/_components/natural-history-details-tab.tsx` | 4h |
+| Archive | `objects/[id]/_components/archive-details-tab.tsx` | 4h |
+
+#### 2.2 Insurance & Valuation Tracking (8h)
+Fields exist in `fineArtDetails`. Create:
+- `objects/[id]/_components/insurance-panel.tsx`
+- Insurance tab or side panel
+- Reappraisal scheduling
+
+#### 2.3 Standalone Condition Reports UI (16h)
+| Files to Create | Purpose |
+|-----------------|---------|
+| `conservation/reports/page.tsx` | List all reports |
+| `conservation/reports/[id]/page.tsx` | Report detail |
+| `conservation/reports/new/page.tsx` | Create for any object |
+| `packages/backend/convex/conditionReports.ts` | Object-centric (not loan-only) |
+
+#### 2.4 Deaccession Workflow Enhancement - MUS-110 (8h)
+Add disposal states: sold, archived, deleted
+
+| Files | Changes |
 |-------|---------|
-| `priority-1` | Critical (blocking) |
-| `priority-2` | High (next sprint) |
-| `priority-3` | Medium (backlog) |
-| `frontend` | Frontend work |
-| `backend` | Backend work |
-| `workflow` | Workflow/state machine work |
-| `i18n` | Translation work |
-| `testing` | Test infrastructure |
-| `enhancement` | Polish/improvement |
-| `bug` | Bug fix |
+| `packages/backend/convex/deaccessions.ts` | Add disposal methods |
+| `deaccessions/[id]/page.tsx` | Disposal workflow UI |
 
-### 5.2 Milestones/Cycles
+#### 2.5 Import/Export Tools - MUS-102 (24h)
+| Files to Create | Purpose |
+|-----------------|---------|
+| `apps/app/.../import/page.tsx` | CSV import wizard |
+| `apps/app/.../export/page.tsx` | Export options |
+| `packages/backend/convex/import.ts` | Import action |
+| `packages/backend/convex/export.ts` | Export queries |
 
-| Cycle | Duration | Focus |
+---
+
+### PHASE 3: Library Module Completion (1 week)
+**Effort:** ~50 hours
+
+#### 3.1 Holds Management UI (8h)
+| Files to Create |
+|-----------------|
+| `library/holds/page.tsx` |
+| `library/holds/[id]/page.tsx` |
+
+#### 3.2 Vendors Management UI (12h)
+| Files to Create |
+|-----------------|
+| `library/vendors/page.tsx` |
+| `library/vendors/[id]/page.tsx` |
+| `library/vendors/new/page.tsx` |
+| `library/vendors/[id]/edit/page.tsx` |
+| `packages/backend/convex/library/vendors.ts` |
+
+#### 3.3 Serials Management (16h)
+Implement orphaned `serialSubscriptions`, `serialIssues` tables:
+
+| Files to Create |
+|-----------------|
+| `packages/backend/convex/library/serials.ts` |
+| `library/serials/page.tsx` |
+| `library/serials/[id]/page.tsx` |
+
+#### 3.4 Payment History UI (6h)
+| Files to Create |
+|-----------------|
+| `library/payments/page.tsx` |
+| Add tab to patron account detail |
+
+#### 3.5 Patron Detail Enhancement (8h)
+Enhance `accounts/[id]/page.tsx` for patron type:
+- Checkout history
+- Fine balance
+- Hold queue
+- Payment history
+
+---
+
+### PHASE 4: UI/UX Polish (1 week)
+**Effort:** ~34 hours
+
+#### 4.1 Status Badges Components - MUS-117 (4h)
+Create: `packages/ui/src/components/status-badge.tsx`
+
+Variants:
+- Amber: Permanent collection
+- Rose: On Display
+- Cyan: In Transit
+- Purple: Conservation
+
+#### 4.2 Dashboard Cards Redesign - MUS-114 (8h)
+- Collection cards with image backgrounds
+- Gradient overlays
+- Status badges integration
+- Hover effects
+
+#### 4.3 Sidebar Redesign - MUS-113 (8h)
+- Global search with ⌘K functionality
+- Better visual hierarchy
+- Section improvements
+
+#### 4.4 Object Detail Right Panel - MUS-116 (12h)
+Create: `objects/[id]/_components/record-context-sidebar.tsx`
+- Quick stats grid
+- Provenance section
+- Movement history timeline
+- Tags display
+
+#### 4.5 Move Delete to Settings - MUS-121 (2h)
+Move delete button in `collections/[id]/page.tsx`
+
+---
+
+### PHASE 5: Advanced Features (2 weeks)
+**Effort:** ~76 hours
+
+#### 5.1 Bulk Actions - MUS-104 (16h)
+- Multi-select checkboxes on all list pages
+- Create `packages/ui/src/components/bulk-actions-bar.tsx`
+- Bulk status change, delete, export
+
+#### 5.2 Media Gallery Enhancements - MUS-103 (12h)
+- PDF preview
+- 3D viewer (Sketchfab embeds)
+- Document section separation
+
+#### 5.3 Global Search Implementation (16h)
+- Create command palette (⌘K)
+- `apps/app/src/components/global-search.tsx`
+- `packages/backend/convex/search.ts`
+
+#### 5.4 API Keys & Webhooks UI (20h)
+Implement orphaned tables:
+| Files to Create |
+|-----------------|
+| `packages/backend/convex/apiKeys.ts` |
+| `packages/backend/convex/webhooks.ts` |
+| `settings/developer/api-keys/page.tsx` |
+| `settings/developer/webhooks/page.tsx` |
+
+#### 5.5 Backup/Export - MUS-111 (12h)
+- Normal account backup
+- Export to Excel/XML/CSV
+- Download backup files
+
+---
+
+## Part 3: Summary
+
+### Effort Estimates
+
+| Phase | Duration | Hours |
 |-------|----------|-------|
-| **Sprint 1** | 2 weeks | Milestone 1 (Critical Fixes) |
-| **Sprint 2** | 2 weeks | Milestone 2 (Missing Modules - part 1) |
-| **Sprint 3** | 2 weeks | Milestone 2 (Missing Modules - part 2) |
-| **Sprint 4** | 2 weeks | Milestone 3 (Polish & UX) |
-| **Sprint 5** | 2 weeks | Milestone 4 + 5 (i18n + Infrastructure) |
-| **Sprint 6** | 2 weeks | Milestone 6 (Advanced Features) + Buffer |
+| Phase 0: Bug Fixes | 1-2 days | ~12h |
+| Phase 1: Core Gaps | 1 week | ~32h |
+| Phase 2: Museum Completion | 2 weeks | ~76h |
+| Phase 3: Library Completion | 1 week | ~50h |
+| Phase 4: UI/UX Polish | 1 week | ~34h |
+| Phase 5: Advanced Features | 2 weeks | ~76h |
+| **TOTAL** | **~8 weeks** | **~280h** |
 
-### 5.3 Existing Issues Status
+### Priority Order
 
-From the current Linear project:
-- **Done:** MUS-93, MUS-97, MUS-98 (Collections edit, Accounts CRM, Collection Groups)
-- **In Review:** MUS-92, MUS-94, MUS-95, MUS-96 (Patrons edit, Loans workflow, Object/Collection delete)
-- **Backlog:** MUS-99 through MUS-104 (Exhibitions, Conservation, Workflow config, Import/Export, etc.)
+**Week 1-2: Critical Path**
+1. Phase 0 (all bug fixes)
+2. Phase 1.1-1.2 (sidebar fixes)
+3. MUS-109, MUS-107, MUS-121 (quick wins)
 
----
+**Week 3-4: Library Focus**
+1. Phase 1.3 (library UI completion)
+2. Phase 3.1-3.2 (holds, vendors)
 
-## Part 6: Recommended Immediate Actions
+**Week 5-6: Museum Depth**
+1. Phase 2.1 (module editing)
+2. Phase 2.2-2.3 (insurance, condition reports)
 
-### This Week (Quick Wins)
-
-1. **Close In-Review Issues** - Merge MUS-92, MUS-94, MUS-95, MUS-96 after final verification
-2. **Library Stats Fix (M1-1)** - Create and wire up `getLibraryStats` query (2-3 hours)
-3. **Add Return Validators (M1-3)** - Audit and add to `library/*.ts` (1-2 hours)
-
-### Next Sprint
-
-1. **Invitation Emails (M1-2)** - Implement email flow for user invitations
-2. **Exhibitions Module (M2-1)** - Start with list and detail pages
-3. **Empty State Components (M3-2)** - Create reusable component, apply across app
+**Week 7-8: Polish & Advanced**
+1. Phase 4 (UI/UX)
+2. Phase 5 (selectively based on priority)
 
 ---
 
-## Appendix A: File Locations Quick Reference
+## Appendix: File Locations
 
 | Area | Location |
 |------|----------|
@@ -380,17 +402,4 @@ From the current Linear project:
 | Library integration | `packages/backend/convex/library/` |
 | Schema | `packages/backend/convex/schema.ts` |
 | Locales | `apps/app/src/locales/` |
-| Email templates | `packages/backend/convex/email/templates/` |
 | Tests | `packages/backend/convex/*.test.ts` |
-
-## Appendix B: Key Dependencies
-
-| Package | Purpose |
-|---------|---------|
-| `@convex-dev/auth` | Authentication |
-| `@convex-dev/polar` | Billing integration |
-| `@tanstack/react-form` | Form state management |
-| `nuqs` | URL state (should be used more) |
-| `lucide-react` | Icons |
-| `convex-test` | Backend testing |
-| `react-email` | Email templates |

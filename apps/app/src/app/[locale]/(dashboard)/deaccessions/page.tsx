@@ -18,21 +18,21 @@ export default function DeaccessionsPage() {
   if (isLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-zinc-500">Loading...</p>
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
 
   if (!organizations || organizations.length === 0) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-zinc-950 px-6 py-8">
-        <div className="flex flex-col items-center gap-4 rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-8">
-          <Building2 className="h-12 w-12 text-zinc-500" />
+      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+        <div className="flex flex-col items-center gap-4 rounded-xl border border-border bg-card p-8">
+          <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-zinc-200">
+            <h3 className="text-lg font-semibold text-foreground">
               No Organization Found
             </h3>
-            <p className="mt-2 text-sm text-zinc-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               You need to create an organization to manage deaccessions.
             </p>
           </div>
@@ -49,14 +49,14 @@ export default function DeaccessionsPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-zinc-950 px-6 py-8">
-        <div className="flex flex-col items-center gap-4 rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-8">
-          <Archive className="h-12 w-12 text-zinc-500" />
+      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+        <div className="flex flex-col items-center gap-4 rounded-xl border border-border bg-card p-8">
+          <Archive className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-zinc-200">
+            <h3 className="text-lg font-semibold text-foreground">
               Select an Organization
             </h3>
-            <p className="mt-2 text-sm text-zinc-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               Please select an organization from the dropdown above to view
               deaccessions.
             </p>
@@ -67,7 +67,7 @@ export default function DeaccessionsPage() {
   }
 
   return (
-    <div className="flex h-full w-full flex-col bg-zinc-950">
+    <div className="flex h-full w-full flex-col bg-background">
       <DeaccessionTable organizationId={currentOrganizationId} />
     </div>
   );
@@ -86,14 +86,9 @@ function DeaccessionTable({
   const prevFiltersRef = useRef({ status, search });
 
   useEffect(() => {
-    if (
-      prevFiltersRef.current.status !== status ||
-      prevFiltersRef.current.search !== search
-    ) {
-      prevFiltersRef.current = { status, search };
-      setCursor(null);
-    }
-  }, [status, search]);
+    setCursor(null);
+    prevFiltersRef.current = { status, search };
+  }, [organizationId, status, search]);
 
   const deaccessions = useQuery(api.deaccessions.list, {
     organizationId,
@@ -111,17 +106,17 @@ function DeaccessionTable({
     <div className="flex h-full flex-col p-6">
       <div className="mb-6 flex items-end justify-between">
         <div>
-          <h3 className="text-sm font-medium text-zinc-200">
+          <h3 className="text-sm font-medium text-foreground">
             Deaccession Records
           </h3>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-muted-foreground">
             Items permanently removed from collection.
           </p>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex gap-6">
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Pending
               </span>
               <span className="text-xl font-semibold tracking-tight text-white">
@@ -129,7 +124,7 @@ function DeaccessionTable({
               </span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Approved
               </span>
               <span className="text-xl font-semibold tracking-tight text-white">
@@ -139,7 +134,7 @@ function DeaccessionTable({
           </div>
           <button
             type="button"
-            className="flex items-center gap-1 text-xs text-zinc-400 transition-colors hover:text-white"
+            className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-white"
           >
             <Download className="h-3 w-3" />
             Export Report
@@ -149,15 +144,15 @@ function DeaccessionTable({
 
       <div className="mb-4 flex items-center gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search deaccessions..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full border-zinc-800 bg-zinc-900/50 pl-9 text-sm placeholder:text-zinc-600"
+            className="w-full border-border bg-muted/50 pl-9 text-sm placeholder:text-muted-foreground"
           />
         </div>
-        <div className="flex gap-1 rounded-lg border border-zinc-800 bg-zinc-900/30 p-1">
+        <div className="flex gap-1 rounded-lg border border-border bg-muted/30 p-1">
           {(["all", "pending", "approved", "rejected"] as const).map((s) => (
             <button
               key={s}
@@ -165,8 +160,8 @@ function DeaccessionTable({
               onClick={() => setStatus(s)}
               className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
                 status === s
-                  ? "bg-zinc-800 text-white"
-                  : "text-zinc-400 hover:text-zinc-200"
+                  ? "bg-muted text-white"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -175,10 +170,10 @@ function DeaccessionTable({
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/20">
+      <div className="flex-1 overflow-hidden rounded-lg border border-border bg-muted/20">
         <ScrollArea className="h-full">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-zinc-800 bg-zinc-900/50 font-medium text-zinc-500">
+            <thead className="border-b border-border bg-muted/50 font-medium text-muted-foreground">
               <tr>
                 <th className="px-4 py-3">Object</th>
                 <th className="px-4 py-3">Disposal Date</th>
@@ -187,11 +182,11 @@ function DeaccessionTable({
                 <th className="px-4 py-3 text-right">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/50">
+            <tbody className="divide-y divide-border">
               {deaccessions === undefined && (
                 <tr>
                   <td colSpan={5} className="px-4 py-16 text-center">
-                    <p className="text-zinc-500">Loading deaccessions...</p>
+                    <p className="text-muted-foreground">Loading deaccessions...</p>
                   </td>
                 </tr>
               )}
@@ -200,8 +195,8 @@ function DeaccessionTable({
                 <tr>
                   <td colSpan={5} className="px-4 py-16 text-center">
                     <div className="flex flex-col items-center gap-2">
-                      <Archive className="h-8 w-8 text-zinc-600" />
-                      <p className="text-zinc-500">No deaccessions found</p>
+                      <Archive className="h-8 w-8 text-muted-foreground" />
+                      <p className="text-muted-foreground">No deaccessions found</p>
                     </div>
                   </td>
                 </tr>
@@ -221,7 +216,7 @@ function DeaccessionTable({
             variant="outline"
             size="sm"
             onClick={() => setCursor(deaccessions.continueCursor)}
-            className="border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+            className="border-border text-muted-foreground hover:bg-accent hover:text-white"
           >
             Load More
           </Button>
@@ -285,7 +280,7 @@ function DeaccessionRow({
       );
     }
     return (
-      <span className="text-zinc-400">
+      <span className="text-muted-foreground">
         {reason.length > 40 ? `${reason.substring(0, 40)}...` : reason}
       </span>
     );
@@ -317,21 +312,21 @@ function DeaccessionRow({
   };
 
   return (
-    <tr className="cursor-pointer transition-colors hover:bg-zinc-900/40">
+    <tr className="cursor-pointer transition-colors hover:bg-card">
       <td className="px-4 py-3">
         <Link href={`/deaccessions/${item._id}`} className="block">
-          <div className="font-medium text-zinc-300">
+          <div className="font-medium text-foreground/80">
             {collection?.title || item.deaccessionNumber}
           </div>
-          <div className="text-[10px] text-zinc-500">
+          <div className="text-[10px] text-muted-foreground">
             {collection?.accessionNumber || "Loading..."}
           </div>
         </Link>
       </td>
-      <td className="px-4 py-3 text-zinc-400">
+      <td className="px-4 py-3 text-muted-foreground">
         {format(new Date(item.dateDeaccessioned), "MMM d, yyyy")}
       </td>
-      <td className="px-4 py-3 text-zinc-400">
+      <td className="px-4 py-3 text-muted-foreground">
         {getMethodDisplay(item.method)}
       </td>
       <td className="px-4 py-3">{getReasonBadge(item.reason, item.method)}</td>

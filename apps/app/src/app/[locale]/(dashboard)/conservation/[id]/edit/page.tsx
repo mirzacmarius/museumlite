@@ -104,16 +104,16 @@ export default function EditTreatmentPage({
 
   if (treatment === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-zinc-950">
-        <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+      <div className="flex h-full w-full items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (treatment === null) {
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-zinc-950">
-        <p className="text-zinc-500">Treatment record not found</p>
+      <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-background">
+        <p className="text-muted-foreground">Treatment record not found</p>
         <Button asChild variant="outline">
           <Link href="/conservation">Back to List</Link>
         </Button>
@@ -122,24 +122,24 @@ export default function EditTreatmentPage({
   }
 
   return (
-    <div className="flex h-full w-full bg-zinc-950 px-6 py-8">
+    <div className="flex h-full w-full bg-background px-6 py-8">
       <div className="mx-auto w-full max-w-2xl">
         <div className="mb-8 flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
             asChild
-            className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+            className="text-muted-foreground hover:text-foreground hover:bg-accent"
           >
             <Link href={`/conservation/${id}`}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-semibold text-zinc-100">
+            <h1 className="text-2xl font-semibold text-foreground">
               Edit Treatment Record
             </h1>
-            <p className="text-sm text-zinc-400">
+            <p className="text-sm text-muted-foreground">
               Update details for {treatment.title}
             </p>
           </div>
@@ -147,19 +147,19 @@ export default function EditTreatmentPage({
 
         <form
           onSubmit={handleSubmit}
-          className="space-y-8 rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-6"
+          className="space-y-8 rounded-xl border border-border bg-card p-6"
         >
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-zinc-300">Collection Object</Label>
-              <div className="rounded-md border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-sm text-zinc-400">
+              <Label className="text-foreground/80">Collection Object</Label>
+              <div className="rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
                 {treatment.collectionTitle || "Unknown Object"}
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label className="text-zinc-300">
+                <Label className="text-foreground/80">
                   Treatment Type <span className="text-red-500">*</span>
                 </Label>
                 <Select
@@ -168,7 +168,7 @@ export default function EditTreatmentPage({
                     setFormData({ ...formData, treatmentType: value })
                   }
                 >
-                  <SelectTrigger className="bg-zinc-900/50 border-zinc-800 text-zinc-300">
+                  <SelectTrigger className="bg-muted/50 border-border text-foreground/80">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -182,7 +182,7 @@ export default function EditTreatmentPage({
               </div>
 
               <div className="space-y-2">
-                <Label className="text-zinc-300">
+                <Label className="text-foreground/80">
                   Date Performed <span className="text-red-500">*</span>
                 </Label>
                 <DatePicker
@@ -190,13 +190,13 @@ export default function EditTreatmentPage({
                   onSelect={(date) =>
                     date && setFormData({ ...formData, performedAt: date })
                   }
-                  className="w-full bg-zinc-900/50 border-zinc-800 text-zinc-300"
+                  className="w-full bg-muted/50 border-border text-foreground/80"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-zinc-300">
+              <Label className="text-foreground/80">
                 Title <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -205,13 +205,13 @@ export default function EditTreatmentPage({
                 onChange={(e) =>
                   setFormData({ ...formData, title: e.target.value })
                 }
-                className="bg-zinc-900/50 border-zinc-800 text-zinc-300 placeholder:text-zinc-600"
+                className="bg-muted/50 border-border text-foreground/80 placeholder:text-muted-foreground"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-zinc-300">
+              <Label className="text-foreground/80">
                 Description <span className="text-red-500">*</span>
               </Label>
               <Textarea
@@ -220,30 +220,30 @@ export default function EditTreatmentPage({
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                className="min-h-[120px] bg-zinc-900/50 border-zinc-800 text-zinc-300 placeholder:text-zinc-600"
+                className="min-h-[120px] bg-muted/50 border-border text-foreground/80 placeholder:text-muted-foreground"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-zinc-300">Additional Notes</Label>
+              <Label className="text-foreground/80">Additional Notes</Label>
               <Textarea
                 placeholder="Any observations, materials used, or recommendations..."
                 value={formData.notes}
                 onChange={(e) =>
                   setFormData({ ...formData, notes: e.target.value })
                 }
-                className="min-h-[100px] bg-zinc-900/50 border-zinc-800 text-zinc-300 placeholder:text-zinc-600"
+                className="min-h-[100px] bg-muted/50 border-border text-foreground/80 placeholder:text-muted-foreground"
               />
             </div>
           </div>
 
-          <div className="flex justify-end gap-4 pt-4 border-t border-zinc-800/50">
+          <div className="flex justify-end gap-4 pt-4 border-t border-border/50">
             <Button
               type="button"
               variant="ghost"
               asChild
-              className="text-zinc-400 hover:text-zinc-100"
+              className="text-muted-foreground hover:text-foreground"
             >
               <Link href={`/conservation/${id}`}>Cancel</Link>
             </Button>

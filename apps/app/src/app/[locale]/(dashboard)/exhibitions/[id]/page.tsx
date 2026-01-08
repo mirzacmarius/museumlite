@@ -43,8 +43,8 @@ export default function ExhibitionDetailPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-zinc-950">
-        <p className="text-zinc-500">
+      <div className="flex h-full w-full items-center justify-center bg-background">
+        <p className="text-muted-foreground">
           Please select an organization to view exhibitions.
         </p>
       </div>
@@ -53,16 +53,16 @@ export default function ExhibitionDetailPage() {
 
   if (exhibition === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-zinc-950">
-        <p className="text-zinc-500">Loading...</p>
+      <div className="flex h-full w-full items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
 
   if (exhibition === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-zinc-950">
-        <p className="text-zinc-500">Exhibition not found</p>
+      <div className="flex h-full w-full items-center justify-center bg-background">
+        <p className="text-muted-foreground">Exhibition not found</p>
       </div>
     );
   }
@@ -85,7 +85,7 @@ export default function ExhibitionDetailPage() {
   let statusText = "Current";
 
   if (isPast) {
-    statusColor = "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
+    statusColor = "bg-muted text-muted-foreground border-border";
     statusText = "Past";
   } else if (isUpcoming) {
     statusColor = "bg-blue-500/10 text-blue-400 border-blue-500/20";
@@ -93,17 +93,17 @@ export default function ExhibitionDetailPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-zinc-950 pb-20">
-      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-zinc-800/60 bg-zinc-950/80 px-6 backdrop-blur-xl">
+    <div className="min-h-screen w-full bg-background pb-20">
+      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-xl">
         <div className="flex items-center gap-2 text-xs">
           <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
             <Link href="/exhibitions">
-              <ArrowLeft className="h-4 w-4 text-zinc-400" />
+              <ArrowLeft className="h-4 w-4 text-muted-foreground" />
             </Link>
           </Button>
-          <span className="text-zinc-400">Exhibitions</span>
-          <span className="text-zinc-600">/</span>
-          <span className="font-medium text-zinc-100 truncate max-w-[200px]">
+          <span className="text-muted-foreground">Exhibitions</span>
+          <span className="text-muted-foreground">/</span>
+          <span className="font-medium text-foreground truncate max-w-[200px]">
             {exhibition.title}
           </span>
         </div>
@@ -114,7 +114,7 @@ export default function ExhibitionDetailPage() {
               variant="outline"
               size="sm"
               asChild
-              className="border-zinc-800 text-zinc-300 hover:bg-zinc-900 hover:text-white"
+              className="border-border text-foreground/80 hover:bg-muted hover:text-white"
             >
               <Link href={`/exhibitions/${exhibitionId}/edit`}>
                 <Pencil className="mr-2 h-3.5 w-3.5" />
@@ -135,12 +135,12 @@ export default function ExhibitionDetailPage() {
                   Delete
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-zinc-950 border-zinc-800 sm:max-w-[425px]">
+              <DialogContent className="bg-background border-border sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle className="text-zinc-100">
+                  <DialogTitle className="text-foreground">
                     Delete Exhibition
                   </DialogTitle>
-                  <DialogDescription className="text-zinc-400">
+                  <DialogDescription className="text-muted-foreground">
                     Are you sure you want to delete this exhibition record? This
                     action cannot be undone.
                   </DialogDescription>
@@ -148,7 +148,7 @@ export default function ExhibitionDetailPage() {
                 <DialogFooter>
                   <Button
                     variant="outline"
-                    className="border-zinc-800 text-zinc-300 hover:bg-zinc-900"
+                    className="border-border text-foreground/80 hover:bg-muted"
                     disabled={isDeleting}
                   >
                     Cancel
@@ -183,7 +183,7 @@ export default function ExhibitionDetailPage() {
                 </span>
               )}
             </div>
-            <h1 className="text-3xl font-bold text-zinc-100">
+            <h1 className="text-3xl font-bold text-foreground">
               {exhibition.title}
             </h1>
           </div>
@@ -191,28 +191,28 @@ export default function ExhibitionDetailPage() {
 
         <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
           <div className="md:col-span-2 space-y-6">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/20 p-6">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-500 mb-6 flex items-center gap-2">
+            <div className="rounded-xl border border-border bg-muted/20 p-6">
+              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
                 <GalleryVerticalEnd className="h-4 w-4" />
                 Overview
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
                 <div>
-                  <label className="text-[10px] uppercase text-zinc-500 font-semibold tracking-wide">
+                  <label className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
                     Location
                   </label>
-                  <p className="text-sm text-zinc-200 mt-1 flex items-center gap-2">
-                    <MapPin className="h-3.5 w-3.5 text-zinc-600" />
+                  <p className="text-sm text-foreground mt-1 flex items-center gap-2">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
                     {exhibition.location || "—"}
                   </p>
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase text-zinc-500 font-semibold tracking-wide">
+                  <label className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
                     Date Range
                   </label>
-                  <p className="text-sm text-zinc-200 mt-1 flex items-center gap-2">
-                    <Calendar className="h-3.5 w-3.5 text-zinc-600" />
+                  <p className="text-sm text-foreground mt-1 flex items-center gap-2">
+                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                     {new Date(exhibition.startDate).toLocaleDateString()}
                     {exhibition.endDate
                       ? ` — ${new Date(exhibition.endDate).toLocaleDateString()}`
@@ -222,10 +222,10 @@ export default function ExhibitionDetailPage() {
 
                 {exhibition.isLoan && (
                   <div className="md:col-span-2">
-                    <label className="text-[10px] uppercase text-zinc-500 font-semibold tracking-wide">
+                    <label className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
                       Loan Venue
                     </label>
-                    <p className="text-sm text-zinc-200 mt-1">
+                    <p className="text-sm text-foreground mt-1">
                       {exhibition.loanVenue || "—"}
                     </p>
                   </div>
@@ -233,34 +233,34 @@ export default function ExhibitionDetailPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/20 p-6">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-500 mb-6 flex items-center gap-2">
+            <div className="rounded-xl border border-border bg-muted/20 p-6">
+              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
                 <Info className="h-4 w-4" />
                 Notes
               </h2>
-              <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
+              <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
                 {exhibition.notes || "No notes available."}
               </p>
             </div>
           </div>
 
           <div className="space-y-6">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/20 p-6">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-500 mb-6 flex items-center gap-2">
+            <div className="rounded-xl border border-border bg-muted/20 p-6">
+              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
                 <Box className="h-4 w-4" />
                 Related Object
               </h2>
 
               {exhibition.collectionId && (
-                <div className="group relative rounded-lg border border-zinc-800 bg-zinc-950/50 p-4 transition-all hover:border-zinc-700 hover:bg-zinc-900/50">
+                <div className="group relative rounded-lg border border-border bg-background/50 p-4 transition-all hover:border-border hover:bg-muted/50">
                   <Link
                     href={`/collections/${exhibition.collectionId}`}
                     className="absolute inset-0 z-10"
                   />
-                  <h3 className="font-medium text-zinc-200 group-hover:text-white truncate">
+                  <h3 className="font-medium text-foreground group-hover:text-white truncate">
                     {exhibition.collectionTitle || "Unknown Object"}
                   </h3>
-                  <div className="mt-2 flex items-center text-xs text-zinc-500 group-hover:text-zinc-400">
+                  <div className="mt-2 flex items-center text-xs text-muted-foreground group-hover:text-muted-foreground">
                     View object details{" "}
                     <ArrowLeft className="ml-1 h-3 w-3 rotate-180" />
                   </div>

@@ -90,10 +90,10 @@ export default function AccountDetailPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
+    <div className="flex h-full w-full bg-background px-6">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 py-6">
         {/* Header */}
-        <div className="flex items-center justify-between rounded-lg border border-border bg-card p-6 dark:bg-black">
+        <div className="flex items-center justify-between rounded-lg border border-border bg-card p-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/accounts">
@@ -167,7 +167,7 @@ export default function AccountDetailPage() {
         )}
 
         {/* Account Details */}
-        <div className="rounded-lg border border-border bg-card p-6 dark:bg-black">
+        <div className="rounded-lg border border-border bg-card p-6">
           <h2 className="mb-6 text-lg font-medium">Account Information</h2>
           <div className="grid gap-6 md:grid-cols-2">
             {/* Business Information */}

@@ -383,7 +383,7 @@ export default function LoanDetailPage() {
 
       {/* Print Modal */}
       <Dialog open={isPrintModalOpen} onOpenChange={setIsPrintModalOpen}>
-        <DialogContent className="max-w-[210mm] w-full h-[90vh] p-0 gap-0 overflow-hidden bg-zinc-50 dark:bg-zinc-950 flex flex-col">
+        <DialogContent className="max-w-[210mm] w-full h-[90vh] p-0 gap-0 overflow-hidden bg-zinc-50 dark:bg-background flex flex-col">
           <DialogHeader className="px-6 py-4 border-b border-border bg-background flex-shrink-0 flex-row items-center justify-between space-y-0">
             <DialogTitle>Print Dispatch Manifest</DialogTitle>
             <div className="flex items-center gap-3">
@@ -394,14 +394,14 @@ export default function LoanDetailPage() {
             </div>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-8 flex justify-center bg-zinc-100/50 dark:bg-zinc-900/50">
+          <div className="flex-1 overflow-y-auto p-8 flex justify-center bg-zinc-100/50 dark:bg-muted/50">
             <div
               id="print-paper"
               className="bg-white text-zinc-900 w-[210mm] min-h-[297mm] shadow-xl p-[15mm] space-y-8 relative mx-auto box-border"
             >
               <div className="border-b border-zinc-200 pb-6 flex justify-between items-start">
                 <div>
-                  <div className="flex items-center gap-2 text-zinc-400 mb-2">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-2">
                     <div className="w-6 h-6 bg-cyan-600 rounded flex items-center justify-center text-white font-bold text-xs">
                       NM
                     </div>
@@ -412,11 +412,11 @@ export default function LoanDetailPage() {
                   <h1 className="text-2xl font-serif text-zinc-900 font-bold tracking-tight leading-none">
                     Outgoing Loan Manifest
                   </h1>
-                  <p className="text-zinc-500 mt-2 font-mono text-sm">
+                  <p className="text-muted-foreground mt-2 font-mono text-sm">
                     Ref: {loan.loanNumber}
                   </p>
                 </div>
-                <div className="text-right text-xs text-zinc-400">
+                <div className="text-right text-xs text-muted-foreground">
                   <p>Date: {new Date().toLocaleDateString()}</p>
                   <p>Page 1 of 4</p>
                 </div>
@@ -435,7 +435,7 @@ export default function LoanDetailPage() {
                   </h4>
                   <p>{loan.lenderBorrowerName}</p>
                   {loan.lenderBorrowerContact && (
-                    <p className="text-zinc-500 text-xs">
+                    <p className="text-muted-foreground text-xs">
                       {loan.lenderBorrowerContact}
                     </p>
                   )}
@@ -473,13 +473,13 @@ export default function LoanDetailPage() {
               <div className="absolute bottom-12 left-12 right-12 border-t border-zinc-200 pt-8 flex justify-between items-end">
                 <div>
                   <div className="h-12 w-48 border-b border-zinc-300 mb-1" />
-                  <div className="text-[10px] text-zinc-400 uppercase tracking-widest">
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-widest">
                     Released By (Registrar)
                   </div>
                 </div>
                 <div>
                   <div className="h-12 w-48 border-b border-zinc-300 mb-1" />
-                  <div className="text-[10px] text-zinc-400 uppercase tracking-widest">
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-widest">
                     Received By (Shipper)
                   </div>
                 </div>
@@ -498,7 +498,11 @@ function OverviewTab({ loan }: { loan: Loan }) {
       {/* Left: Approval Pipeline */}
       <div className="col-span-2 space-y-6">
         {/* Loan Workflow Actions */}
-        <LoanApprovalWorkflow loanId={loan._id} loanStatus={loan.status} />
+        <LoanApprovalWorkflow
+          key={loan._id}
+          loanId={loan._id}
+          loanStatus={loan.status}
+        />
         {/* Status Flow */}
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
           <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-6">

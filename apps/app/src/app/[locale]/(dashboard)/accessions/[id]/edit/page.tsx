@@ -88,9 +88,9 @@ export default function EditAccessionPage() {
 
   if (accession.status !== "pending") {
     return (
-      <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
+      <div className="flex h-full w-full bg-background px-6">
         <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-          <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
+          <div className="flex w-full flex-col rounded-lg border border-border bg-card">
             <div className="flex h-64 items-center justify-center">
               <div className="text-center">
                 <p className="text-muted-foreground">
@@ -139,9 +139,9 @@ export default function EditAccessionPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
+    <div className="flex h-full w-full bg-background px-6">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-        <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
+        <div className="flex w-full flex-col rounded-lg border border-border bg-card">
           <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
             <Button variant="ghost" size="sm" asChild>
               <Link href={`/accessions/${accessionId}`}>

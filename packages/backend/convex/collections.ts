@@ -135,6 +135,16 @@ export const create = mutation({
     isPubliclyVisible: v.optional(v.boolean()),
     isHighResDownloadable: v.optional(v.boolean()),
     displayStatus: v.optional(v.string()),
+    collectionType: v.optional(
+      v.union(
+        v.literal("fine_art"),
+        v.literal("wine"),
+        v.literal("automotive"),
+        v.literal("natural_history"),
+        v.literal("archive"),
+        v.literal("general"),
+      ),
+    ),
   },
   returns: v.id("collections"),
   handler: async (ctx, args) => {
@@ -212,6 +222,7 @@ export const create = mutation({
       isPubliclyVisible: args.isPubliclyVisible,
       isHighResDownloadable: args.isHighResDownloadable,
       displayStatus: args.displayStatus,
+      collectionType: args.collectionType,
       status: "active",
       catalogedBy: userId,
       catalogedAt: Date.now(),
@@ -332,6 +343,302 @@ export const get = query({
   handler: async (ctx, args) => {
     const collection = await ctx.db.get(args.collectionId);
     return collection;
+  },
+});
+
+export const getWithModuleDetails = query({
+  args: {
+    collectionId: v.id("collections"),
+  },
+  returns: v.union(
+    v.object({
+      collection: v.object({
+        _id: v.id("collections"),
+        organizationId: v.id("organizations"),
+        accessionNumber: v.string(),
+        title: v.string(),
+        collectionType: v.optional(
+          v.union(
+            v.literal("fine_art"),
+            v.literal("wine"),
+            v.literal("automotive"),
+            v.literal("natural_history"),
+            v.literal("archive"),
+            v.literal("general"),
+          ),
+        ),
+        customFields: v.optional(v.any()),
+        status: v.union(
+          v.literal("active"),
+          v.literal("loaned"),
+          v.literal("deaccessioned"),
+        ),
+        _creationTime: v.number(),
+      }),
+      moduleDetails: v.union(
+        v.object({
+          type: v.literal("fine_art"),
+          data: v.object({
+            _id: v.id("fineArtDetails"),
+            appraisedValue: v.optional(v.number()),
+            replacementValue: v.optional(v.number()),
+            insurancePolicyNumber: v.optional(v.string()),
+            reappraisalDate: v.optional(v.number()),
+            displayStatus: v.optional(v.string()),
+            provenanceChain: v.optional(v.any()),
+            shippingLogs: v.optional(v.any()),
+          }),
+        }),
+        v.object({
+          type: v.literal("wine"),
+          data: v.object({
+            _id: v.id("wineDetails"),
+            vintage: v.optional(v.number()),
+            peakWindowStart: v.optional(v.number()),
+            peakWindowEnd: v.optional(v.number()),
+            binNumber: v.optional(v.string()),
+            producer: v.optional(v.string()),
+            fillLevel: v.optional(v.string()),
+          }),
+        }),
+        v.object({
+          type: v.literal("automotive"),
+          data: v.object({
+            _id: v.id("vehicleDetails"),
+            vin: v.optional(v.string()),
+            make: v.optional(v.string()),
+            model: v.optional(v.string()),
+            year: v.optional(v.number()),
+            odometer: v.optional(v.number()),
+          }),
+        }),
+        v.object({
+          type: v.literal("natural_history"),
+          data: v.object({
+            _id: v.id("naturalHistoryDetails"),
+            scientificName: v.optional(v.string()),
+            commonName: v.optional(v.string()),
+            kingdom: v.optional(v.string()),
+            genus: v.optional(v.string()),
+            species: v.optional(v.string()),
+            latitude: v.optional(v.number()),
+            longitude: v.optional(v.number()),
+          }),
+        }),
+        v.object({
+          type: v.literal("archive"),
+          data: v.object({
+            _id: v.id("archiveDetails"),
+            documentType: v.optional(v.string()),
+            retentionExpiresAt: v.optional(v.number()),
+            flaggedForDestruction: v.optional(v.boolean()),
+            legalHold: v.optional(v.boolean()),
+            confidentialityLevel: v.optional(v.string()),
+          }),
+        }),
+        v.null(),
+      ),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      return null;
+    }
+
+    await requirePermission(ctx, collection.organizationId, "collections.view");
+
+    const collectionType = collection.collectionType;
+    type ModuleDetails =
+      | {
+          type: "fine_art";
+          data: {
+            _id: Id<"fineArtDetails">;
+            displayStatus?: string;
+            appraisedValue?: number;
+            replacementValue?: number;
+            insurancePolicyNumber?: string;
+            reappraisalDate?: number;
+            provenanceChain?: unknown;
+            shippingLogs?: unknown;
+          };
+        }
+      | {
+          type: "wine";
+          data: {
+            _id: Id<"wineDetails">;
+            vintage?: number;
+            peakWindowStart?: number;
+            peakWindowEnd?: number;
+            binNumber?: string;
+            producer?: string;
+            fillLevel?: string;
+          };
+        }
+      | {
+          type: "automotive";
+          data: {
+            _id: Id<"vehicleDetails">;
+            vin?: string;
+            make?: string;
+            model?: string;
+            year?: number;
+            odometer?: number;
+          };
+        }
+      | {
+          type: "natural_history";
+          data: {
+            _id: Id<"naturalHistoryDetails">;
+            scientificName?: string;
+            commonName?: string;
+            kingdom?: string;
+            genus?: string;
+            species?: string;
+            latitude?: number;
+            longitude?: number;
+          };
+        }
+      | {
+          type: "archive";
+          data: {
+            _id: Id<"archiveDetails">;
+            documentType?: string;
+            retentionExpiresAt?: number;
+            flaggedForDestruction?: boolean;
+            legalHold?: boolean;
+            confidentialityLevel?: string;
+          };
+        }
+      | null;
+    let moduleDetails: ModuleDetails = null;
+
+    if (collectionType === "fine_art") {
+      const details = await ctx.db
+        .query("fineArtDetails")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .unique();
+      if (details) {
+        moduleDetails = {
+          type: "fine_art",
+          data: {
+            _id: details._id,
+            appraisedValue: details.appraisedValue,
+            replacementValue: details.replacementValue,
+            insurancePolicyNumber: details.insurancePolicyNumber,
+            reappraisalDate: details.reappraisalDate,
+            displayStatus: details.displayStatus,
+            provenanceChain: details.provenanceChain,
+            shippingLogs: details.shippingLogs,
+          },
+        };
+      }
+    } else if (collectionType === "wine") {
+      const details = await ctx.db
+        .query("wineDetails")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .unique();
+      if (details) {
+        moduleDetails = {
+          type: "wine",
+          data: {
+            _id: details._id,
+            vintage: details.vintage,
+            peakWindowStart: details.peakWindowStart,
+            peakWindowEnd: details.peakWindowEnd,
+            binNumber: details.binNumber,
+            producer: details.producer,
+            fillLevel: details.fillLevel,
+          },
+        };
+      }
+    } else if (collectionType === "automotive") {
+      const details = await ctx.db
+        .query("vehicleDetails")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .unique();
+      if (details) {
+        moduleDetails = {
+          type: "automotive",
+          data: {
+            _id: details._id,
+            vin: details.vin,
+            make: details.make,
+            model: details.model,
+            year: details.year,
+            odometer: details.odometer,
+          },
+        };
+      }
+    } else if (collectionType === "natural_history") {
+      const details = await ctx.db
+        .query("naturalHistoryDetails")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .unique();
+      if (details) {
+        moduleDetails = {
+          type: "natural_history",
+          data: {
+            _id: details._id,
+            scientificName: details.scientificName,
+            commonName: details.commonName,
+            kingdom: details.kingdom,
+            genus: details.genus,
+            species: details.species,
+            latitude: details.latitude,
+            longitude: details.longitude,
+          },
+        };
+      }
+    } else if (collectionType === "archive") {
+      const details = await ctx.db
+        .query("archiveDetails")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .unique();
+      if (details) {
+        moduleDetails = {
+          type: "archive",
+          data: {
+            _id: details._id,
+            documentType: details.documentType,
+            retentionExpiresAt: details.retentionExpiresAt,
+            flaggedForDestruction: details.flaggedForDestruction,
+            legalHold: details.legalHold,
+            confidentialityLevel: details.confidentialityLevel,
+          },
+        };
+      }
+    }
+
+    return {
+      collection: {
+        _id: collection._id,
+        organizationId: collection.organizationId,
+        accessionNumber: collection.accessionNumber,
+        title: collection.title,
+        collectionType: collection.collectionType,
+        customFields: collection.customFields,
+        status: collection.status,
+        _creationTime: collection._creationTime,
+      },
+      moduleDetails,
+    };
   },
 });
 

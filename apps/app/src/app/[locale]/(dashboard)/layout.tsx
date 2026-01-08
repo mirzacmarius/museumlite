@@ -37,8 +37,8 @@ export default async function Layout({
           preloadedUser={preloadedUser}
           preloadedProducts={preloadedProducts}
         />
-        <main className="flex min-h-screen w-full flex-col bg-zinc-950">
-          <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-zinc-800/60 bg-zinc-950/80 px-6 backdrop-blur-xl">
+        <main className="flex min-h-screen w-full flex-col bg-background">
+          <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-xl">
             <SidebarTrigger className="-ml-1" />
             <NotificationBell />
           </header>

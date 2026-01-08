@@ -68,13 +68,13 @@ export function ActivityList({
     },
   ) ?? { activities: [], isDone: true, continueCursor: undefined };
 
-  // Reset activities when filters change
+  // Reset activities when filters or organization changes
   useEffect(() => {
     setAllActivities([]);
     setCursor(undefined);
     lastProcessedCursor.current = undefined;
     lastProcessedActivityIds.current = new Set();
-  }, [entityType, startDate, endDate]);
+  }, [organizationId, entityType, startDate, endDate]);
 
   // Update activities when query results change
   useEffect(() => {

@@ -138,8 +138,8 @@ export default function LibraryFinesPage() {
 
   if (!organizations || organizations.length === 0) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
-        <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8 dark:bg-black">
+      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">No Organization Found</h3>
@@ -157,8 +157,8 @@ export default function LibraryFinesPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
-        <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8 dark:bg-black">
+      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Library className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">Select an Organization</h3>
@@ -173,8 +173,8 @@ export default function LibraryFinesPage() {
 
   if (isLibraryEnabled === false) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-secondary px-6 py-8 dark:bg-black">
-        <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8 dark:bg-black">
+      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Library className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">Library Not Enabled</h3>
@@ -246,7 +246,7 @@ export default function LibraryFinesPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
+    <div className="flex h-full w-full bg-background px-6">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 py-6">
         {/* Statistics */}
         {statistics && (
@@ -263,7 +263,7 @@ export default function LibraryFinesPage() {
                 {statistics.outstandingCount} fines
               </p>
             </div>
-            <div className="rounded-lg border border-border bg-card p-4 dark:bg-black">
+            <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-green-500">
                 <CheckCircle className="h-4 w-4" />
                 <span className="text-sm">Collected</span>
@@ -275,7 +275,7 @@ export default function LibraryFinesPage() {
                 {statistics.paidCount} paid
               </p>
             </div>
-            <div className="rounded-lg border border-border bg-card p-4 dark:bg-black">
+            <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <X className="h-4 w-4" />
                 <span className="text-sm">Waived</span>
@@ -287,7 +287,7 @@ export default function LibraryFinesPage() {
                 {statistics.waivedCount} waived
               </p>
             </div>
-            <div className="rounded-lg border border-border bg-card p-4 dark:bg-black">
+            <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <CreditCard className="h-4 w-4" />
                 <span className="text-sm">Today</span>
@@ -302,7 +302,7 @@ export default function LibraryFinesPage() {
           </div>
         )}
 
-        <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
+        <div className="flex w-full flex-col rounded-lg border border-border bg-card">
           {/* Header */}
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex flex-col gap-2">

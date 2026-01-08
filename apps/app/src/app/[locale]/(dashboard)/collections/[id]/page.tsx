@@ -42,18 +42,41 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function CollectionGroupDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const groupId = params.id as Id<"collectionGroups">;
+  const rawId = params.id as string;
   const { currentOrganizationId } = useOrganization();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const group = useQuery(api.collectionGroups.get, { groupId });
+  const collection = useQuery(api.collections.get, {
+    collectionId: rawId as Id<"collections">,
+  });
+
+  const group = useQuery(
+    api.collectionGroups.get,
+    collection === null ? { groupId: rawId as Id<"collectionGroups"> } : "skip",
+  );
   const deleteGroup = useMutation(api.collectionGroups.deleteGroup);
+
+  useEffect(() => {
+    if (collection?._id) {
+      router.replace(`/objects/${collection._id}`);
+    }
+  }, [collection, router]);
+
+  const groupId = rawId as Id<"collectionGroups">;
+
+  if (collection?._id) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <p className="text-muted-foreground">Redirecting...</p>
+      </div>
+    );
+  }
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -93,9 +116,9 @@ export default function CollectionGroupDetailPage() {
   }
 
   return (
-    <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
+    <div className="flex h-full w-full bg-background px-6">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-        <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
+        <div className="flex w-full flex-col rounded-lg border border-border bg-card">
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="sm" asChild>

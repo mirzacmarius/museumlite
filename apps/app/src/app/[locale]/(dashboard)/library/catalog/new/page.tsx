@@ -262,10 +262,10 @@ export default function NewCatalogItemPage() {
   }
 
   return (
-    <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
+    <div className="flex h-full w-full bg-background px-6">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 py-6">
         {/* Header */}
-        <div className="flex items-center justify-between rounded-lg border border-border bg-card p-6 dark:bg-black">
+        <div className="flex items-center justify-between rounded-lg border border-border bg-card p-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/library/catalog">
@@ -303,7 +303,7 @@ export default function NewCatalogItemPage() {
           />
 
           {/* Basic Information */}
-          <div className="rounded-lg border border-border bg-card dark:bg-black">
+          <div className="rounded-lg border border-border bg-card">
             <div className="border-b border-border p-6">
               <h2 className="text-lg font-medium">Basic Information</h2>
             </div>
@@ -409,7 +409,7 @@ export default function NewCatalogItemPage() {
           </div>
 
           {/* Identifiers */}
-          <div className="rounded-lg border border-border bg-card dark:bg-black">
+          <div className="rounded-lg border border-border bg-card">
             <div className="border-b border-border p-6">
               <h2 className="text-lg font-medium">Identifiers</h2>
             </div>
@@ -493,7 +493,7 @@ export default function NewCatalogItemPage() {
           </div>
 
           {/* Publication Details */}
-          <div className="rounded-lg border border-border bg-card dark:bg-black">
+          <div className="rounded-lg border border-border bg-card">
             <div className="border-b border-border p-6">
               <h2 className="text-lg font-medium">Publication Details</h2>
             </div>
@@ -582,7 +582,7 @@ export default function NewCatalogItemPage() {
           </div>
 
           {/* Classification */}
-          <div className="rounded-lg border border-border bg-card dark:bg-black">
+          <div className="rounded-lg border border-border bg-card">
             <div className="border-b border-border p-6">
               <h2 className="text-lg font-medium">Classification</h2>
             </div>
@@ -689,7 +689,7 @@ export default function NewCatalogItemPage() {
           </div>
 
           {/* Description */}
-          <div className="rounded-lg border border-border bg-card dark:bg-black">
+          <div className="rounded-lg border border-border bg-card">
             <div className="border-b border-border p-6">
               <h2 className="text-lg font-medium">Description</h2>
             </div>
@@ -739,7 +739,7 @@ export default function NewCatalogItemPage() {
           </div>
 
           {/* Notes */}
-          <div className="rounded-lg border border-border bg-card dark:bg-black">
+          <div className="rounded-lg border border-border bg-card">
             <div className="border-b border-border p-6">
               <h2 className="text-lg font-medium">Notes</h2>
             </div>

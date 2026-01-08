@@ -12,7 +12,7 @@ import { format } from "date-fns";
 import { ArrowLeft, CheckCircle, Clock, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function DeaccessionDetailPage() {
   const params = useParams();
@@ -43,6 +43,12 @@ export default function DeaccessionDetailPage() {
   const [isRejecting, setIsRejecting] = useState(false);
   const approve = useMutation(api.deaccessions.approve);
   const reject = useMutation(api.deaccessions.reject);
+
+  useEffect(() => {
+    setComment("");
+    setIsApproving(false);
+    setIsRejecting(false);
+  }, [deaccessionId]);
 
   if (!currentOrganizationId) {
     return (
@@ -129,7 +135,7 @@ export default function DeaccessionDetailPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
+    <div className="flex h-full w-full bg-background px-6">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col gap-6">
           {/* Back button */}

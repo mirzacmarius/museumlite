@@ -11,6 +11,7 @@
 import type * as accessionTemplates from "../accessionTemplates.js";
 import type * as accessions from "../accessions.js";
 import type * as accounts from "../accounts.js";
+import type * as archiveDetails from "../archiveDetails.js";
 import type * as audit from "../audit.js";
 import type * as auditLog from "../auditLog.js";
 import type * as auth from "../auth.js";
@@ -25,6 +26,7 @@ import type * as email_index from "../email/index.js";
 import type * as email_templates_subscriptionEmail from "../email/templates/subscriptionEmail.js";
 import type * as env from "../env.js";
 import type * as exhibitions from "../exhibitions.js";
+import type * as fineArtDetails from "../fineArtDetails.js";
 import type * as http from "../http.js";
 import type * as init from "../init.js";
 import type * as integrations from "../integrations.js";
@@ -44,6 +46,7 @@ import type * as materialOptions from "../materialOptions.js";
 import type * as media from "../media.js";
 import type * as mediaThumbnails from "../mediaThumbnails.js";
 import type * as migrations from "../migrations.js";
+import type * as naturalHistoryDetails from "../naturalHistoryDetails.js";
 import type * as organizations from "../organizations.js";
 import type * as roles from "../roles.js";
 import type * as seed from "../seed.js";
@@ -56,7 +59,9 @@ import type * as utils_accessionCounter from "../utils/accessionCounter.js";
 import type * as utils_accessionNumberParser from "../utils/accessionNumberParser.js";
 import type * as utils_permissions from "../utils/permissions.js";
 import type * as utils_validators from "../utils/validators.js";
+import type * as vehicleDetails from "../vehicleDetails.js";
 import type * as web from "../web.js";
+import type * as wineDetails from "../wineDetails.js";
 import type * as workflows from "../workflows.js";
 
 import type {
@@ -76,6 +81,7 @@ declare const fullApi: ApiFromModules<{
   accessionTemplates: typeof accessionTemplates;
   accessions: typeof accessions;
   accounts: typeof accounts;
+  archiveDetails: typeof archiveDetails;
   audit: typeof audit;
   auditLog: typeof auditLog;
   auth: typeof auth;
@@ -90,6 +96,7 @@ declare const fullApi: ApiFromModules<{
   "email/templates/subscriptionEmail": typeof email_templates_subscriptionEmail;
   env: typeof env;
   exhibitions: typeof exhibitions;
+  fineArtDetails: typeof fineArtDetails;
   http: typeof http;
   init: typeof init;
   integrations: typeof integrations;
@@ -109,6 +116,7 @@ declare const fullApi: ApiFromModules<{
   media: typeof media;
   mediaThumbnails: typeof mediaThumbnails;
   migrations: typeof migrations;
+  naturalHistoryDetails: typeof naturalHistoryDetails;
   organizations: typeof organizations;
   roles: typeof roles;
   seed: typeof seed;
@@ -121,7 +129,9 @@ declare const fullApi: ApiFromModules<{
   "utils/accessionNumberParser": typeof utils_accessionNumberParser;
   "utils/permissions": typeof utils_permissions;
   "utils/validators": typeof utils_validators;
+  vehicleDetails: typeof vehicleDetails;
   web: typeof web;
+  wineDetails: typeof wineDetails;
   workflows: typeof workflows;
 }>;
 declare const fullApiWithMounts: typeof fullApi;

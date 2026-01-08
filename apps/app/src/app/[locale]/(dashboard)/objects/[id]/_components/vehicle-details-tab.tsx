@@ -1,0 +1,312 @@
+"use client";
+
+import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Button } from "@v1/ui/button";
+import { cn } from "@v1/ui/utils";
+import { useQuery } from "convex/react";
+import {
+  Award,
+  Calendar,
+  Car,
+  DollarSign,
+  Gauge,
+  Plus,
+  Settings,
+  Trophy,
+  Wrench,
+} from "lucide-react";
+import { format } from "date-fns";
+
+interface VehicleDetailsTabProps {
+  collectionId: string;
+  organizationId: Id<"organizations">;
+}
+
+export function VehicleDetailsTab({
+  collectionId,
+  organizationId,
+}: VehicleDetailsTabProps) {
+  const details = useQuery(api.vehicleDetails.get, {
+    collectionId: collectionId as Id<"collections">,
+  });
+
+  if (details === undefined) {
+    return (
+      <div className="flex h-32 items-center justify-center">
+        <p className="text-sm text-muted-foreground">
+          Loading vehicle details...
+        </p>
+      </div>
+    );
+  }
+
+  if (details === null) {
+    return (
+      <div className="space-y-6">
+        <div className="flex h-32 flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-border">
+          <p className="text-sm text-muted-foreground">
+            No vehicle details recorded yet
+          </p>
+          <Button variant="outline" size="sm">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Vehicle Details
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <Car className="h-4 w-4 text-blue-500" />
+            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              Vehicle
+            </span>
+          </div>
+          <span className="text-lg font-medium text-foreground">
+            {details.year} {details.make}
+          </span>
+          <p className="text-sm text-muted-foreground">{details.model}</p>
+        </div>
+
+        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <Settings className="h-4 w-4 text-muted-foreground" />
+            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              VIN
+            </span>
+          </div>
+          <span className="font-mono text-sm text-foreground">
+            {details.vin || "Not recorded"}
+          </span>
+        </div>
+
+        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <Gauge className="h-4 w-4 text-amber-500" />
+            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              Odometer
+            </span>
+          </div>
+          <span className="text-2xl font-light text-foreground">
+            {details.odometer?.toLocaleString() || "—"}
+          </span>
+          <span className="ml-1 text-sm text-muted-foreground">
+            {details.odometerUnit || "miles"}
+          </span>
+        </div>
+
+        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-emerald-500" />
+            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              Insurance Value
+            </span>
+          </div>
+          <span className="text-2xl font-light text-foreground">
+            {details.insuranceValue
+              ? `$${details.insuranceValue.toLocaleString()}`
+              : "—"}
+          </span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+          <h4 className="mb-4 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            Specifications
+          </h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <span className="text-[10px] text-muted-foreground">
+                Body Style
+              </span>
+              <p className="text-sm text-foreground">
+                {details.bodyStyle || "—"}
+              </p>
+            </div>
+            <div>
+              <span className="text-[10px] text-muted-foreground">
+                Fuel Type
+              </span>
+              <p className="text-sm text-foreground">
+                {details.fuelType || "—"}
+              </p>
+            </div>
+            <div>
+              <span className="text-[10px] text-muted-foreground">
+                Transmission
+              </span>
+              <p className="text-sm text-foreground">
+                {details.transmissionType || "—"}
+              </p>
+            </div>
+            <div>
+              <span className="text-[10px] text-muted-foreground">
+                Engine #
+              </span>
+              <p className="font-mono text-sm text-foreground">
+                {details.engineNumber || "—"}
+              </p>
+            </div>
+            <div>
+              <span className="text-[10px] text-muted-foreground">
+                Exterior
+              </span>
+              <p className="text-sm text-foreground">
+                {details.exteriorColor || "—"}
+              </p>
+            </div>
+            <div>
+              <span className="text-[10px] text-muted-foreground">
+                Interior
+              </span>
+              <p className="text-sm text-foreground">
+                {details.interiorColor || "—"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+          <h4 className="mb-4 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            Registration
+          </h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <span className="text-[10px] text-muted-foreground">Plate #</span>
+              <p className="font-mono text-sm text-foreground">
+                {details.registrationNumber || "—"}
+              </p>
+            </div>
+            <div>
+              <span className="text-[10px] text-muted-foreground">State</span>
+              <p className="text-sm text-foreground">
+                {details.registrationState || "—"}
+              </p>
+            </div>
+            <div className="col-span-2">
+              <span className="text-[10px] text-muted-foreground">Title #</span>
+              <p className="font-mono text-sm text-foreground">
+                {details.titleNumber || "—"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
+          <Wrench className="h-4 w-4 text-blue-500" />
+          Service History
+        </h3>
+
+        {details.serviceLog && details.serviceLog.length > 0 ? (
+          <div className="space-y-3">
+            {details.serviceLog.map((entry, index) => (
+              <div
+                key={`${entry.serviceDate}-${index}`}
+                className="rounded-lg border border-border/60 bg-secondary/20 p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium uppercase text-blue-500">
+                      {entry.serviceType}
+                    </span>
+                    <span className="text-sm font-medium text-foreground">
+                      {entry.description}
+                    </span>
+                  </div>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {format(new Date(entry.serviceDate), "MMM d, yyyy")}
+                  </span>
+                </div>
+                <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                  {entry.mileage && (
+                    <span>{entry.mileage.toLocaleString()} miles</span>
+                  )}
+                  {entry.provider && <span>{entry.provider}</span>}
+                  {entry.cost && <span>${entry.cost.toLocaleString()}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-border">
+            <p className="text-sm text-muted-foreground">No service records</p>
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
+          <Trophy className="h-4 w-4 text-amber-500" />
+          Event History
+        </h3>
+
+        {details.eventHistory && details.eventHistory.length > 0 ? (
+          <div className="space-y-3">
+            {details.eventHistory.map((event, index) => (
+              <div
+                key={`${event.eventDate}-${index}`}
+                className="rounded-lg border border-border/60 bg-secondary/20 p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "rounded px-2 py-0.5 text-[10px] font-medium uppercase",
+                        event.eventType === "concours"
+                          ? "bg-amber-500/10 text-amber-500"
+                          : event.eventType === "race"
+                            ? "bg-rose-500/10 text-rose-500"
+                            : "bg-secondary text-muted-foreground",
+                      )}
+                    >
+                      {event.eventType}
+                    </span>
+                    <span className="text-sm font-medium text-foreground">
+                      {event.eventName}
+                    </span>
+                  </div>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {format(new Date(event.eventDate), "MMM d, yyyy")}
+                  </span>
+                </div>
+                {event.location && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {event.location}
+                  </p>
+                )}
+                {event.result && (
+                  <p className="mt-1 text-sm text-foreground">{event.result}</p>
+                )}
+                {event.awards && event.awards.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {event.awards.map((award) => (
+                      <span
+                        key={award}
+                        className="flex items-center gap-1 rounded bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-500"
+                      >
+                        <Award className="h-3 w-3" />
+                        {award}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-border">
+            <p className="text-sm text-muted-foreground">No event history</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -24,22 +24,22 @@ export default function ExhibitionsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-zinc-950">
-        <p className="text-zinc-500">Loading...</p>
+      <div className="flex h-full w-full items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-zinc-950 px-6 py-8">
-        <div className="flex flex-col items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-900/50 p-8">
-          <GalleryVerticalEnd className="h-12 w-12 text-zinc-500" />
+      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-muted/50 p-8">
+          <GalleryVerticalEnd className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-zinc-200">
+            <h3 className="text-lg font-semibold text-foreground">
               No Organization Found
             </h3>
-            <p className="mt-2 text-sm text-zinc-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               You need to create an organization to manage exhibitions.
             </p>
           </div>
@@ -49,13 +49,13 @@ export default function ExhibitionsPage() {
   }
 
   return (
-    <div className="flex h-full w-full bg-zinc-950 px-6">
+    <div className="flex h-full w-full bg-background px-6">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-        <div className="flex w-full flex-col rounded-lg border border-zinc-800 bg-zinc-900/20">
+        <div className="flex w-full flex-col rounded-lg border border-border bg-muted/20">
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex flex-col gap-2">
-              <h2 className="text-xl font-medium text-zinc-100">Exhibitions</h2>
-              <p className="text-sm font-normal text-zinc-500">
+              <h2 className="text-xl font-medium text-foreground">Exhibitions</h2>
+              <p className="text-sm font-normal text-muted-foreground">
                 Manage your exhibition history and planning
               </p>
             </div>
@@ -72,17 +72,17 @@ export default function ExhibitionsPage() {
             </PermissionGate>
           </div>
           <div className="flex w-full px-6">
-            <div className="w-full border-b border-zinc-800" />
+            <div className="w-full border-b border-border" />
           </div>
 
-          <div className="border-b border-zinc-800 px-6 py-4">
+          <div className="border-b border-border px-6 py-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search by title, location, or notes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-zinc-900/50 border-zinc-800 text-zinc-300 placeholder:text-zinc-600 focus-visible:ring-zinc-700"
+                className="pl-9 bg-muted/50 border-border text-foreground/80 placeholder:text-muted-foreground focus-visible:ring-ring"
               />
             </div>
           </div>
@@ -111,7 +111,7 @@ function ExhibitionList({
   if (exhibitions === undefined) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <p className="text-zinc-500">Loading exhibitions...</p>
+        <p className="text-muted-foreground">Loading exhibitions...</p>
       </div>
     );
   }
@@ -129,10 +129,10 @@ function ExhibitionList({
   if (filteredExhibitions.length === 0) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-4">
-        <GalleryVerticalEnd className="h-12 w-12 text-zinc-700" />
+        <GalleryVerticalEnd className="h-12 w-12 text-muted-foreground" />
         <div className="text-center">
-          <p className="text-zinc-400">No exhibitions found</p>
-          <p className="mt-2 text-sm text-zinc-600">
+          <p className="text-muted-foreground">No exhibitions found</p>
+          <p className="mt-2 text-sm text-muted-foreground">
             {searchQuery
               ? "Try adjusting your search query"
               : "Create your first exhibition record to get started"}
@@ -170,7 +170,7 @@ function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
   let statusText = "Current";
 
   if (isPast) {
-    statusColor = "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
+    statusColor = "bg-muted text-muted-foreground border-border";
     statusText = "Past";
   } else if (isUpcoming) {
     statusColor = "bg-blue-500/10 text-blue-400 border-blue-500/20";
@@ -180,7 +180,7 @@ function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
   return (
     <Link
       href={`/exhibitions/${exhibition._id}`}
-      className="group flex flex-col justify-between rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-5 transition-all hover:bg-zinc-900/80 hover:border-zinc-700 hover:shadow-lg hover:shadow-zinc-950/50"
+      className="group flex flex-col justify-between rounded-xl border border-border bg-card p-5 transition-all hover:bg-muted/80 hover:border-border hover:shadow-lg hover:shadow-black/30"
     >
       <div className="space-y-4">
         <div className="flex items-start justify-between">
@@ -197,20 +197,20 @@ function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
         </div>
 
         <div>
-          <h3 className="font-semibold text-zinc-100 group-hover:text-white line-clamp-2">
+          <h3 className="font-semibold text-foreground group-hover:text-white line-clamp-2">
             {exhibition.title}
           </h3>
           {exhibition.location && (
-            <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500">
+            <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
               <MapPin className="h-3 w-3" />
               {exhibition.location}
             </p>
           )}
         </div>
 
-        <div className="flex items-center gap-3 border-t border-zinc-800/50 pt-4 text-xs text-zinc-400">
+        <div className="flex items-center gap-3 border-t border-border/50 pt-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <Calendar className="h-3.5 w-3.5 text-zinc-600" />
+            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
             <span>
               {new Date(exhibition.startDate).toLocaleDateString()}
               {exhibition.endDate
@@ -222,7 +222,7 @@ function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
       </div>
 
       {exhibition.collectionTitle && (
-        <div className="mt-4 flex items-center gap-2 rounded-lg bg-zinc-950/50 px-3 py-2 text-xs text-zinc-500 group-hover:text-zinc-400 transition-colors">
+        <div className="mt-4 flex items-center gap-2 rounded-lg bg-background/50 px-3 py-2 text-xs text-muted-foreground group-hover:text-muted-foreground transition-colors">
           <Box className="h-3.5 w-3.5" />
           <span className="truncate">{exhibition.collectionTitle}</span>
         </div>

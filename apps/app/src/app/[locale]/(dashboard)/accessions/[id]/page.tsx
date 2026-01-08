@@ -83,9 +83,9 @@ export default function AccessionDetailPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-secondary px-6 dark:bg-black">
+    <div className="flex h-full w-full bg-background px-6">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-        <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
+        <div className="flex w-full flex-col rounded-lg border border-border bg-card">
           {/* Header */}
           <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
             <div className="flex items-center gap-4">
@@ -206,7 +206,7 @@ export default function AccessionDetailPage() {
             {/* Approval Workflow */}
             {accession.status === "pending" && (
               <div className="mt-8 border-t border-border pt-6">
-                <ApprovalWorkflow accessionId={accessionId} />
+                <ApprovalWorkflow key={accessionId} accessionId={accessionId} />
               </div>
             )}
 

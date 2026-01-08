@@ -21,6 +21,10 @@ import { ObjectCombobox } from "@/components/object-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { TypeCombobox } from "@/components/type-combobox";
+import {
+  CollectionTypeSelector,
+  type CollectionType,
+} from "@/components/collection-type-selector";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { NaturalLanguageDatePicker } from "@v1/ui/natural-language-date-picker";
 import { useMutation } from "convex/react";
@@ -35,12 +39,12 @@ interface CollectionFormData {
   accessionNumber?: string;
   title: string;
   creator?: string;
-  objectType?: string | string[]; // Can be string or array depending on state
+  objectType?: string | string[];
   objectName?: string;
   culture?: string;
   period?: string;
   dateCreated?: string;
-  materials?: string | string[]; // Can be string or array depending on state
+  materials?: string | string[];
   dimensions?: string;
   description?: string;
   condition?: string;
@@ -55,6 +59,7 @@ interface CollectionFormData {
   currentLocationId?: string;
   collectionGroupId?: string;
   alternateAccessionNumbers?: string[];
+  collectionType?: CollectionType;
 }
 
 export default function CollectionFormPage() {
@@ -109,6 +114,7 @@ export default function CollectionFormPage() {
     currentLocationId: "",
     collectionGroupId: collectionGroupId || "",
     alternateAccessionNumbers: [],
+    collectionType: "general",
   });
 
   // Cleanup blob URLs on unmount
@@ -265,6 +271,7 @@ export default function CollectionFormPage() {
         collectionGroupId: formData.collectionGroupId
           ? (formData.collectionGroupId as Id<"collectionGroups">)
           : undefined,
+        collectionType: formData.collectionType,
       });
 
       // Step 2: Upload all selected image files
@@ -408,9 +415,9 @@ export default function CollectionFormPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-secondary px-6 py-8 dark:bg-black">
+    <div className="flex h-full w-full bg-background px-6 py-8">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-        <div className="flex w-full flex-col rounded-lg border border-border bg-card dark:bg-black">
+        <div className="flex w-full flex-col rounded-lg border border-border bg-card">
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="sm" asChild>
@@ -455,6 +462,13 @@ export default function CollectionFormPage() {
                         required
                       />
                     </div>
+
+                    <CollectionTypeSelector
+                      value={formData.collectionType}
+                      onValueChange={(value) =>
+                        updateField("collectionType", value)
+                      }
+                    />
 
                     <div>
                       <Label htmlFor="accessionNumber">Accession Number</Label>

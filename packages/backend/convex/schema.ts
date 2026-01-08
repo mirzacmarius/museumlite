@@ -43,8 +43,29 @@ export default defineSchema({
         autoGenerateAccessionNumbers: v.optional(v.boolean()),
         locationTypes: v.optional(v.array(v.string())),
         enableDetailedConditionReports: v.optional(v.boolean()),
-        // Integrations
-        enabledIntegrations: v.optional(v.array(v.string())), // ["library", etc.]
+        enabledIntegrations: v.optional(v.array(v.string())),
+        enabledModules: v.optional(
+          v.array(
+            v.union(
+              v.literal("fine_art"),
+              v.literal("wine"),
+              v.literal("automotive"),
+              v.literal("natural_history"),
+              v.literal("archive"),
+              v.literal("library"),
+            ),
+          ),
+        ),
+        defaultCollectionType: v.optional(
+          v.union(
+            v.literal("fine_art"),
+            v.literal("wine"),
+            v.literal("automotive"),
+            v.literal("natural_history"),
+            v.literal("archive"),
+            v.literal("general"),
+          ),
+        ),
       }),
     ),
     subscriptionTier: v.optional(
@@ -210,7 +231,18 @@ export default defineSchema({
       v.literal("loaned"),
       v.literal("deaccessioned"),
     ),
-    displayStatus: v.optional(v.string()), // "On Display", "In Storage", etc.
+    displayStatus: v.optional(v.string()),
+    collectionType: v.optional(
+      v.union(
+        v.literal("fine_art"),
+        v.literal("wine"),
+        v.literal("automotive"),
+        v.literal("natural_history"),
+        v.literal("archive"),
+        v.literal("general"),
+      ),
+    ),
+    customFields: v.optional(v.record(v.string(), v.any())),
     catalogedBy: v.id("users"),
     catalogedAt: v.number(),
     lastModifiedBy: v.optional(v.id("users")),
@@ -227,9 +259,10 @@ export default defineSchema({
     .index("by_currentLocation", ["currentLocationId"])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_organization_and_type", ["organizationId", "collectionType"])
     .searchIndex("search_index", {
       searchField: "title",
-      filterFields: ["organizationId", "status"],
+      filterFields: ["organizationId", "status", "collectionType"],
     }),
 
   // Accession number counter tracking
@@ -343,6 +376,296 @@ export default defineSchema({
     .index("by_organization", ["organizationId"])
     .index("by_uploadStatus", ["uploadStatus"])
     .index("by_collection_and_category", ["collectionId", "mediaCategory"]),
+
+  // Fine Art module details (provenance, insurance, valuation)
+  fineArtDetails: defineTable({
+    collectionId: v.id("collections"),
+    organizationId: v.id("organizations"),
+    appraisedValue: v.optional(v.number()),
+    replacementValue: v.optional(v.number()),
+    insurancePolicyNumber: v.optional(v.string()),
+    insuranceCarrier: v.optional(v.string()),
+    insuranceExpiresAt: v.optional(v.number()),
+    reappraisalDate: v.optional(v.number()),
+    lastAppraisalDate: v.optional(v.number()),
+    appraiser: v.optional(v.string()),
+    displayStatus: v.optional(
+      v.union(
+        v.literal("on_display"),
+        v.literal("in_storage"),
+        v.literal("loaned_out"),
+        v.literal("in_transit"),
+        v.literal("conservation"),
+      ),
+    ),
+    provenanceChain: v.optional(
+      v.array(
+        v.object({
+          eventType: v.union(
+            v.literal("sale"),
+            v.literal("auction"),
+            v.literal("inheritance"),
+            v.literal("gift"),
+            v.literal("commission"),
+            v.literal("acquisition"),
+            v.literal("other"),
+          ),
+          owner: v.string(),
+          startYear: v.optional(v.string()),
+          endYear: v.optional(v.string()),
+          location: v.optional(v.string()),
+          salePrice: v.optional(v.number()),
+          currency: v.optional(v.string()),
+          auctionHouse: v.optional(v.string()),
+          documentIds: v.optional(v.array(v.id("_storage"))),
+          notes: v.optional(v.string()),
+          verified: v.optional(v.boolean()),
+        }),
+      ),
+    ),
+    shippingLogs: v.optional(
+      v.array(
+        v.object({
+          fromLocation: v.string(),
+          toLocation: v.string(),
+          carrier: v.optional(v.string()),
+          trackingNumber: v.optional(v.string()),
+          departedAt: v.optional(v.number()),
+          arrivedAt: v.optional(v.number()),
+          conditionBefore: v.optional(v.string()),
+          conditionAfter: v.optional(v.string()),
+          notes: v.optional(v.string()),
+        }),
+      ),
+    ),
+    createdAt: v.number(),
+    lastModifiedAt: v.optional(v.number()),
+  })
+    .index("by_collection", ["collectionId"])
+    .index("by_organization", ["organizationId"])
+    .index("by_reappraisal_date", ["reappraisalDate"]),
+
+  // Wine & Spirits module details
+  wineDetails: defineTable({
+    collectionId: v.id("collections"),
+    organizationId: v.id("organizations"),
+    vintage: v.optional(v.number()),
+    peakWindowStart: v.optional(v.number()),
+    peakWindowEnd: v.optional(v.number()),
+    binNumber: v.optional(v.string()),
+    rackNumber: v.optional(v.string()),
+    rowNumber: v.optional(v.string()),
+    bottleSize: v.optional(v.string()),
+    quantity: v.optional(v.number()),
+    fillLevel: v.optional(
+      v.union(
+        v.literal("into_neck"),
+        v.literal("top_shoulder"),
+        v.literal("high_shoulder"),
+        v.literal("mid_shoulder"),
+        v.literal("low_shoulder"),
+        v.literal("below_shoulder"),
+      ),
+    ),
+    closureType: v.optional(
+      v.union(
+        v.literal("cork"),
+        v.literal("screwcap"),
+        v.literal("synthetic"),
+        v.literal("glass"),
+        v.literal("crown"),
+      ),
+    ),
+    labelCondition: v.optional(v.string()),
+    capsuleCondition: v.optional(v.string()),
+    producer: v.optional(v.string()),
+    region: v.optional(v.string()),
+    appellation: v.optional(v.string()),
+    varietal: v.optional(v.string()),
+    alcoholContent: v.optional(v.number()),
+    purchasePrice: v.optional(v.number()),
+    currentValue: v.optional(v.number()),
+    drinkingNotes: v.optional(v.string()),
+    createdAt: v.number(),
+    lastModifiedAt: v.optional(v.number()),
+  })
+    .index("by_collection", ["collectionId"])
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_bin", ["organizationId", "binNumber"])
+    .index("by_organization_and_vintage", ["organizationId", "vintage"]),
+
+  // Automotive & Machinery module details
+  vehicleDetails: defineTable({
+    collectionId: v.id("collections"),
+    organizationId: v.id("organizations"),
+    vin: v.optional(v.string()),
+    make: v.optional(v.string()),
+    model: v.optional(v.string()),
+    year: v.optional(v.number()),
+    bodyStyle: v.optional(v.string()),
+    engineNumber: v.optional(v.string()),
+    transmissionType: v.optional(v.string()),
+    exteriorColor: v.optional(v.string()),
+    interiorColor: v.optional(v.string()),
+    odometer: v.optional(v.number()),
+    odometerUnit: v.optional(v.union(v.literal("miles"), v.literal("km"))),
+    fuelType: v.optional(v.string()),
+    registrationNumber: v.optional(v.string()),
+    registrationState: v.optional(v.string()),
+    titleNumber: v.optional(v.string()),
+    insuranceValue: v.optional(v.number()),
+    serviceLog: v.optional(
+      v.array(
+        v.object({
+          serviceDate: v.number(),
+          serviceType: v.string(),
+          description: v.string(),
+          mileage: v.optional(v.number()),
+          provider: v.optional(v.string()),
+          cost: v.optional(v.number()),
+          documentIds: v.optional(v.array(v.id("_storage"))),
+        }),
+      ),
+    ),
+    partsLifing: v.optional(
+      v.array(
+        v.object({
+          partName: v.string(),
+          installDate: v.optional(v.number()),
+          installMileage: v.optional(v.number()),
+          expectedLifeMiles: v.optional(v.number()),
+          notes: v.optional(v.string()),
+        }),
+      ),
+    ),
+    eventHistory: v.optional(
+      v.array(
+        v.object({
+          eventDate: v.number(),
+          eventType: v.union(
+            v.literal("concours"),
+            v.literal("show"),
+            v.literal("race"),
+            v.literal("rally"),
+            v.literal("auction"),
+            v.literal("other"),
+          ),
+          eventName: v.string(),
+          location: v.optional(v.string()),
+          result: v.optional(v.string()),
+          awards: v.optional(v.array(v.string())),
+          notes: v.optional(v.string()),
+        }),
+      ),
+    ),
+    createdAt: v.number(),
+    lastModifiedAt: v.optional(v.number()),
+  })
+    .index("by_collection", ["collectionId"])
+    .index("by_organization", ["organizationId"])
+    .index("by_vin", ["vin"])
+    .index("by_organization_and_make", ["organizationId", "make"]),
+
+  // Natural History & Science module details
+  naturalHistoryDetails: defineTable({
+    collectionId: v.id("collections"),
+    organizationId: v.id("organizations"),
+    kingdom: v.optional(v.string()),
+    phylum: v.optional(v.string()),
+    taxonomyClass: v.optional(v.string()),
+    order: v.optional(v.string()),
+    family: v.optional(v.string()),
+    genus: v.optional(v.string()),
+    species: v.optional(v.string()),
+    subspecies: v.optional(v.string()),
+    commonName: v.optional(v.string()),
+    scientificName: v.optional(v.string()),
+    collectionDate: v.optional(v.number()),
+    collectorName: v.optional(v.string()),
+    collectionMethod: v.optional(v.string()),
+    latitude: v.optional(v.number()),
+    longitude: v.optional(v.number()),
+    altitude: v.optional(v.number()),
+    locality: v.optional(v.string()),
+    habitat: v.optional(v.string()),
+    geologicalPeriod: v.optional(v.string()),
+    formation: v.optional(v.string()),
+    preservationMethod: v.optional(
+      v.union(
+        v.literal("dry"),
+        v.literal("wet"),
+        v.literal("frozen"),
+        v.literal("pinned"),
+        v.literal("pressed"),
+        v.literal("mounted"),
+        v.literal("cast"),
+        v.literal("fossil"),
+        v.literal("other"),
+      ),
+    ),
+    storageMedium: v.optional(v.string()),
+    containerType: v.optional(v.string()),
+    sex: v.optional(
+      v.union(v.literal("male"), v.literal("female"), v.literal("unknown")),
+    ),
+    lifeStage: v.optional(v.string()),
+    specimenType: v.optional(v.string()),
+    dnaAvailable: v.optional(v.boolean()),
+    tissueAvailable: v.optional(v.boolean()),
+    createdAt: v.number(),
+    lastModifiedAt: v.optional(v.number()),
+  })
+    .index("by_collection", ["collectionId"])
+    .index("by_organization", ["organizationId"])
+    .index("by_taxonomy", ["kingdom", "phylum", "genus", "species"])
+    .index("by_organization_and_species", ["organizationId", "species"]),
+
+  // Corporate Archive module details
+  archiveDetails: defineTable({
+    collectionId: v.id("collections"),
+    organizationId: v.id("organizations"),
+    documentType: v.optional(v.string()),
+    retentionCategory: v.optional(v.string()),
+    retentionYears: v.optional(v.number()),
+    retentionStartDate: v.optional(v.number()),
+    retentionExpiresAt: v.optional(v.number()),
+    flaggedForDestruction: v.optional(v.boolean()),
+    destructionDate: v.optional(v.number()),
+    destructionMethod: v.optional(v.string()),
+    destructionWitnessedBy: v.optional(v.string()),
+    legalHold: v.optional(v.boolean()),
+    legalHoldReason: v.optional(v.string()),
+    confidentialityLevel: v.optional(
+      v.union(
+        v.literal("public"),
+        v.literal("internal"),
+        v.literal("confidential"),
+        v.literal("restricted"),
+        v.literal("top_secret"),
+      ),
+    ),
+    accessRestrictions: v.optional(v.array(v.string())),
+    originatingDepartment: v.optional(v.string()),
+    recordSeries: v.optional(v.string()),
+    boxNumber: v.optional(v.string()),
+    folderNumber: v.optional(v.string()),
+    digitalAssetUrl: v.optional(v.string()),
+    digitalAssetStorageId: v.optional(v.id("_storage")),
+    fileFormat: v.optional(v.string()),
+    fileSize: v.optional(v.number()),
+    pageCount: v.optional(v.number()),
+    ocrProcessed: v.optional(v.boolean()),
+    keywords: v.optional(v.array(v.string())),
+    createdAt: v.number(),
+    lastModifiedAt: v.optional(v.number()),
+  })
+    .index("by_collection", ["collectionId"])
+    .index("by_organization", ["organizationId"])
+    .index("by_retention_expiry", ["retentionExpiresAt"])
+    .index("by_organization_and_destruction_flag", [
+      "organizationId",
+      "flaggedForDestruction",
+    ]),
 
   // Accession workflow records
   accessions: defineTable({

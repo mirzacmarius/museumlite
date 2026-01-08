@@ -38,8 +38,8 @@ export default function NewExhibitionPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-zinc-950">
-        <p className="text-zinc-500">
+      <div className="flex h-full w-full items-center justify-center bg-background">
+        <p className="text-muted-foreground">
           Please select an organization to create exhibitions.
         </p>
       </div>
@@ -81,26 +81,26 @@ export default function NewExhibitionPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-zinc-950 pb-20">
-      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-zinc-800/60 bg-zinc-950/80 px-6 backdrop-blur-xl">
+    <div className="min-h-screen w-full bg-background pb-20">
+      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-xl">
         <div className="flex items-center gap-2 text-xs">
           <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
             <Link href="/exhibitions">
-              <ArrowLeft className="h-4 w-4 text-zinc-400" />
+              <ArrowLeft className="h-4 w-4 text-muted-foreground" />
             </Link>
           </Button>
-          <span className="text-zinc-400">Exhibitions</span>
-          <span className="text-zinc-600">/</span>
-          <span className="font-medium text-zinc-100">New Exhibition</span>
+          <span className="text-muted-foreground">Exhibitions</span>
+          <span className="text-muted-foreground">/</span>
+          <span className="font-medium text-foreground">New Exhibition</span>
         </div>
       </header>
 
       <div className="mx-auto max-w-3xl px-6 py-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             Create Exhibition Record
           </h1>
-          <p className="text-sm text-zinc-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Record a new exhibition history for an object.
           </p>
         </div>
@@ -113,14 +113,14 @@ export default function NewExhibitionPage() {
             </div>
           )}
 
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/20 p-6 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-500 mb-6">
+          <div className="rounded-xl border border-border bg-muted/20 p-6 shadow-sm">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6">
               Exhibition Details
             </h2>
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-zinc-400">
+                <Label htmlFor="title" className="text-muted-foreground">
                   Exhibition Title <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -130,7 +130,7 @@ export default function NewExhibitionPage() {
                     setFormData({ ...formData, title: e.target.value })
                   }
                   placeholder="e.g. Impressionism: A New Light"
-                  className="bg-zinc-900/50 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-zinc-700"
+                  className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                 />
               </div>
 
@@ -148,7 +148,7 @@ export default function NewExhibitionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="location" className="text-zinc-400">
+                  <Label htmlFor="location" className="text-muted-foreground">
                     Location / Gallery
                   </Label>
                   <Input
@@ -158,14 +158,14 @@ export default function NewExhibitionPage() {
                       setFormData({ ...formData, location: e.target.value })
                     }
                     placeholder="e.g. Gallery 4, Wing B"
-                    className="bg-zinc-900/50 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-zinc-700"
+                    className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-zinc-400">
+                  <Label className="text-muted-foreground">
                     Start Date <span className="text-red-500">*</span>
                   </Label>
                   <DatePicker
@@ -179,7 +179,7 @@ export default function NewExhibitionPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-zinc-400">End Date</Label>
+                  <Label className="text-muted-foreground">End Date</Label>
                   <DatePicker
                     date={formData.endDate}
                     onSelect={(date) =>
@@ -189,7 +189,7 @@ export default function NewExhibitionPage() {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
+              <div className="flex items-center space-x-2 rounded-lg border border-border bg-muted/50 p-4">
                 <Checkbox
                   id="isCurrent"
                   checked={formData.isCurrent}
@@ -200,11 +200,11 @@ export default function NewExhibitionPage() {
                 <div className="grid gap-1.5 leading-none">
                   <Label
                     htmlFor="isCurrent"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-zinc-200"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground"
                   >
                     Currently on Display?
                   </Label>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-muted-foreground">
                     Marking this as current will update the object's display
                     status.
                   </p>
@@ -213,8 +213,8 @@ export default function NewExhibitionPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/20 p-6 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-500 mb-6">
+          <div className="rounded-xl border border-border bg-muted/20 p-6 shadow-sm">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6">
               Loan Information
             </h2>
 
@@ -227,14 +227,14 @@ export default function NewExhibitionPage() {
                     setFormData({ ...formData, isLoan: checked as boolean })
                   }
                 />
-                <Label htmlFor="isLoan" className="text-zinc-200">
+                <Label htmlFor="isLoan" className="text-foreground">
                   Is this a loan exhibition?
                 </Label>
               </div>
 
               {formData.isLoan && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                  <Label htmlFor="loanVenue" className="text-zinc-400">
+                  <Label htmlFor="loanVenue" className="text-muted-foreground">
                     Loan Venue
                   </Label>
                   <Input
@@ -244,15 +244,15 @@ export default function NewExhibitionPage() {
                       setFormData({ ...formData, loanVenue: e.target.value })
                     }
                     placeholder="e.g. The British Museum"
-                    className="bg-zinc-900/50 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-zinc-700"
+                    className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                   />
                 </div>
               )}
             </div>
           </div>
 
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/20 p-6 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-500 mb-6">
+          <div className="rounded-xl border border-border bg-muted/20 p-6 shadow-sm">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6">
               Notes
             </h2>
             <div className="space-y-2">
@@ -262,7 +262,7 @@ export default function NewExhibitionPage() {
                   setFormData({ ...formData, notes: e.target.value })
                 }
                 placeholder="Curatorial notes, installation details..."
-                className="min-h-[100px] bg-zinc-900/50 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-zinc-700 resize-none"
+                className="min-h-[100px] bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring resize-none"
               />
             </div>
           </div>
@@ -272,7 +272,7 @@ export default function NewExhibitionPage() {
               type="button"
               variant="outline"
               onClick={() => router.back()}
-              className="border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
+              className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               Cancel
             </Button>

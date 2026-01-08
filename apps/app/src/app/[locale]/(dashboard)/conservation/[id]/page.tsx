@@ -32,13 +32,13 @@ import {
 } from "@v1/ui/alert-dialog";
 
 const TREATMENT_TYPE_STYLES: Record<string, string> = {
-  routine: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
+  routine: "bg-muted text-muted-foreground border-border",
   stabilization: "bg-amber-500/10 text-amber-400 border-amber-500/20",
   restoration: "bg-purple-500/10 text-purple-400 border-purple-500/20",
   cleaning: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
   repair: "bg-rose-500/10 text-rose-400 border-rose-500/20",
   assessment: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  other: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
+  other: "bg-muted text-muted-foreground border-border",
 };
 
 export default function TreatmentDetailPage({
@@ -55,16 +55,16 @@ export default function TreatmentDetailPage({
 
   if (treatment === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-zinc-950">
-        <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+      <div className="flex h-full w-full items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (treatment === null) {
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-zinc-950">
-        <p className="text-zinc-500">Treatment record not found</p>
+      <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-background">
+        <p className="text-muted-foreground">Treatment record not found</p>
         <Button asChild variant="outline">
           <Link href="/conservation">Back to List</Link>
         </Button>
@@ -88,7 +88,7 @@ export default function TreatmentDetailPage({
     TREATMENT_TYPE_STYLES.other;
 
   return (
-    <div className="flex h-full w-full bg-zinc-950 px-6 py-8">
+    <div className="flex h-full w-full bg-background px-6 py-8">
       <div className="mx-auto w-full max-w-4xl space-y-8">
         <div className="flex items-start justify-between">
           <div className="space-y-4">
@@ -96,7 +96,7 @@ export default function TreatmentDetailPage({
               variant="ghost"
               size="sm"
               asChild
-              className="-ml-3 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+              className="-ml-3 text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <Link href="/conservation">
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -111,12 +111,12 @@ export default function TreatmentDetailPage({
                 >
                   {treatment.treatmentType}
                 </span>
-                <span className="text-sm text-zinc-500">
+                <span className="text-sm text-muted-foreground">
                   Created{" "}
                   {new Date(treatment._creationTime).toLocaleDateString()}
                 </span>
               </div>
-              <h1 className="text-3xl font-semibold text-zinc-100">
+              <h1 className="text-3xl font-semibold text-foreground">
                 {treatment.title}
               </h1>
             </div>
@@ -127,7 +127,7 @@ export default function TreatmentDetailPage({
               <Button
                 variant="outline"
                 asChild
-                className="border-zinc-800 bg-zinc-900/50 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+                className="border-border bg-muted/50 text-foreground/80 hover:bg-accent hover:text-foreground"
               >
                 <Link href={`/conservation/${id}/edit`}>
                   <Pencil className="mr-2 h-4 w-4" />
@@ -170,17 +170,17 @@ export default function TreatmentDetailPage({
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
-            <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-6 space-y-4">
-              <h3 className="text-lg font-medium text-zinc-200">Description</h3>
-              <div className="prose prose-invert max-w-none text-zinc-400 whitespace-pre-wrap">
+            <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+              <h3 className="text-lg font-medium text-foreground">Description</h3>
+              <div className="prose prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
                 {treatment.description}
               </div>
             </div>
 
             {treatment.notes && (
-              <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-6 space-y-4">
-                <h3 className="text-lg font-medium text-zinc-200">Notes</h3>
-                <div className="prose prose-invert max-w-none text-zinc-400 whitespace-pre-wrap">
+              <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+                <h3 className="text-lg font-medium text-foreground">Notes</h3>
+                <div className="prose prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
                   {treatment.notes}
                 </div>
               </div>
@@ -188,16 +188,16 @@ export default function TreatmentDetailPage({
           </div>
 
           <div className="space-y-6">
-            <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-6 space-y-6">
-              <h3 className="text-sm font-medium uppercase tracking-wider text-zinc-500">
+            <div className="rounded-xl border border-border bg-card p-6 space-y-6">
+              <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
                 Details
               </h3>
 
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <Box className="mt-0.5 h-4 w-4 text-zinc-500" />
+                  <Box className="mt-0.5 h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-xs text-zinc-500">Collection Object</p>
+                    <p className="text-xs text-muted-foreground">Collection Object</p>
                     <Link
                       href={`/collections/${treatment.collectionId}`}
                       className="text-sm text-blue-400 hover:text-blue-300 hover:underline"
@@ -208,20 +208,20 @@ export default function TreatmentDetailPage({
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <Calendar className="mt-0.5 h-4 w-4 text-zinc-500" />
+                  <Calendar className="mt-0.5 h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-xs text-zinc-500">Date Performed</p>
-                    <p className="text-sm text-zinc-300">
+                    <p className="text-xs text-muted-foreground">Date Performed</p>
+                    <p className="text-sm text-foreground/80">
                       {new Date(treatment.performedAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <User className="mt-0.5 h-4 w-4 text-zinc-500" />
+                  <User className="mt-0.5 h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-xs text-zinc-500">Performed By</p>
-                    <p className="text-sm text-zinc-300">
+                    <p className="text-xs text-muted-foreground">Performed By</p>
+                    <p className="text-sm text-foreground/80">
                       {treatment.performedByName || "Unknown"}
                     </p>
                   </div>

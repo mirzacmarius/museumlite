@@ -223,11 +223,11 @@ export default function WorkflowsSettingsPage() {
     const initiatorCount = config?.canInitiateRoles.length || 0;
 
     return (
-      <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-6">
+      <div className="rounded-xl border border-border bg-card p-6">
         <div className="mb-6 flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-medium text-zinc-100">{title}</h3>
-            <p className="mt-1 text-sm text-zinc-400">
+            <h3 className="text-lg font-medium text-foreground">{title}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
               Configure approval steps and initiation permissions.
             </p>
           </div>
@@ -236,7 +236,7 @@ export default function WorkflowsSettingsPage() {
               variant="outline"
               size="sm"
               onClick={() => handleEditClick(type)}
-              className="border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+              className="border-border bg-muted text-foreground/80 hover:bg-accent hover:text-white"
             >
               <Edit className="mr-2 h-4 w-4" />
               Edit Workflow
@@ -246,11 +246,11 @@ export default function WorkflowsSettingsPage() {
 
         <div className="space-y-6">
           <div>
-            <h4 className="mb-3 text-sm font-medium text-zinc-300">
+            <h4 className="mb-3 text-sm font-medium text-foreground/80">
               Approval Steps
             </h4>
             {stepCount === 0 ? (
-              <div className="rounded-lg border border-dashed border-zinc-800 bg-zinc-900/20 p-4 text-center text-sm text-zinc-500">
+              <div className="rounded-lg border border-dashed border-border bg-muted/20 p-4 text-center text-sm text-muted-foreground">
                 No approval steps configured. Workflow completes automatically.
               </div>
             ) : (
@@ -260,16 +260,16 @@ export default function WorkflowsSettingsPage() {
                   return (
                     <div
                       key={`${step.stepNumber}-${step.roleId}`}
-                      className="flex items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-950/50 p-3"
+                      className="flex items-center gap-4 rounded-lg border border-border bg-background/50 p-3"
                     >
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-800 text-xs font-medium text-zinc-400">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
                         {index + 1}
                       </div>
                       <div className="flex-1">
-                        <div className="text-sm font-medium text-zinc-200">
+                        <div className="text-sm font-medium text-foreground">
                           {step.name}
                         </div>
-                        <div className="text-xs text-zinc-500">
+                        <div className="text-xs text-muted-foreground">
                           Role: {role?.name || "Unknown Role"}
                         </div>
                       </div>
@@ -281,11 +281,11 @@ export default function WorkflowsSettingsPage() {
           </div>
 
           <div>
-            <h4 className="mb-3 text-sm font-medium text-zinc-300">
+            <h4 className="mb-3 text-sm font-medium text-foreground/80">
               Can Initiate
             </h4>
             {initiatorCount === 0 ? (
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-muted-foreground">
                 No specific roles assigned (admins only).
               </p>
             ) : (
@@ -295,7 +295,7 @@ export default function WorkflowsSettingsPage() {
                   return (
                     <span
                       key={roleId}
-                      className="rounded-md border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-xs text-zinc-400"
+                      className="rounded-md border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground"
                     >
                       {role?.name || "Unknown Role"}
                     </span>
@@ -310,12 +310,12 @@ export default function WorkflowsSettingsPage() {
   };
 
   return (
-    <div className="flex w-full flex-col gap-8 bg-zinc-950">
+    <div className="flex w-full flex-col gap-8 bg-background">
       <div className="flex flex-col gap-2">
-        <h2 className="text-xl font-medium text-zinc-100">
+        <h2 className="text-xl font-medium text-foreground">
           Workflow Configuration
         </h2>
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-muted-foreground">
           Manage approval workflows for critical system actions.
         </p>
       </div>
@@ -330,12 +330,12 @@ export default function WorkflowsSettingsPage() {
       </div>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto bg-zinc-950 border-zinc-800">
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto bg-background border-border">
           <DialogHeader>
-            <DialogTitle className="text-zinc-100">
+            <DialogTitle className="text-foreground">
               Edit {getWorkflowTitle(editingWorkflow)} Workflow
             </DialogTitle>
-            <DialogDescription className="text-zinc-400">
+            <DialogDescription className="text-muted-foreground">
               Configure the approval steps and initiation permissions for this
               workflow.
             </DialogDescription>
@@ -344,13 +344,13 @@ export default function WorkflowsSettingsPage() {
           <form onSubmit={handleSave} className="space-y-6 py-4">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label className="text-zinc-200">Approval Steps</Label>
+                <Label className="text-foreground">Approval Steps</Label>
                 <Button
                   type="button"
                   onClick={addStep}
                   variant="outline"
                   size="sm"
-                  className="h-8 border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                  className="h-8 border-border bg-muted text-foreground/80 hover:bg-accent hover:text-white"
                 >
                   <Plus className="mr-2 h-3.5 w-3.5" />
                   Add Step
@@ -358,7 +358,7 @@ export default function WorkflowsSettingsPage() {
               </div>
 
               {formData.steps.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-zinc-800 bg-zinc-900/20 p-8 text-center text-sm text-zinc-500">
+                <div className="rounded-lg border border-dashed border-border bg-muted/20 p-8 text-center text-sm text-muted-foreground">
                   No steps defined. Click "Add Step" to create an approval
                   process.
                 </div>
@@ -367,15 +367,15 @@ export default function WorkflowsSettingsPage() {
                   {formData.steps.map((step, index) => (
                     <div
                       key={`form-step-${index}-${step.roleId}`}
-                      className="flex items-start gap-3 rounded-lg border border-zinc-800 bg-zinc-900/30 p-4"
+                      className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-4"
                     >
-                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs font-medium text-zinc-400 mt-2.5">
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground mt-2.5">
                         {index + 1}
                       </div>
 
                       <div className="flex-1 space-y-3">
                         <div>
-                          <Label className="text-xs text-zinc-500">
+                          <Label className="text-xs text-muted-foreground">
                             Step Name
                           </Label>
                           <Input
@@ -383,13 +383,13 @@ export default function WorkflowsSettingsPage() {
                             onChange={(e) =>
                               updateStep(index, "name", e.target.value)
                             }
-                            className="mt-1 border-zinc-800 bg-zinc-950 text-zinc-200 placeholder:text-zinc-600 focus-visible:ring-zinc-700"
+                            className="mt-1 border-border bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                             placeholder="e.g. Curator Approval"
                           />
                         </div>
 
                         <div>
-                          <Label className="text-xs text-zinc-500">
+                          <Label className="text-xs text-muted-foreground">
                             Assign Role
                           </Label>
                           <Select
@@ -398,15 +398,15 @@ export default function WorkflowsSettingsPage() {
                               updateStep(index, "roleId", value as Id<"roles">)
                             }
                           >
-                            <SelectTrigger className="mt-1 border-zinc-800 bg-zinc-950 text-zinc-200 focus:ring-zinc-700">
+                            <SelectTrigger className="mt-1 border-border bg-background text-foreground focus:ring-ring">
                               <SelectValue placeholder="Select a role" />
                             </SelectTrigger>
-                            <SelectContent className="border-zinc-800 bg-zinc-950 text-zinc-200">
+                            <SelectContent className="border-border bg-background text-foreground">
                               {roles?.map((role) => (
                                 <SelectItem
                                   key={role._id}
                                   value={role._id}
-                                  className="focus:bg-zinc-900 focus:text-zinc-100"
+                                  className="focus:bg-muted focus:text-foreground"
                                 >
                                   {role.name}
                                 </SelectItem>
@@ -421,7 +421,7 @@ export default function WorkflowsSettingsPage() {
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800"
+                          className="h-6 w-6 text-muted-foreground hover:text-foreground/80 hover:bg-accent"
                           onClick={() => moveStep(index, "up")}
                           disabled={index === 0}
                         >
@@ -431,7 +431,7 @@ export default function WorkflowsSettingsPage() {
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800"
+                          className="h-6 w-6 text-muted-foreground hover:text-foreground/80 hover:bg-accent"
                           onClick={() => moveStep(index, "down")}
                           disabled={index === formData.steps.length - 1}
                         >
@@ -441,7 +441,7 @@ export default function WorkflowsSettingsPage() {
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 text-zinc-500 hover:text-red-400 hover:bg-red-950/30"
+                          className="h-6 w-6 text-muted-foreground hover:text-red-400 hover:bg-red-950/30"
                           onClick={() => removeStep(index)}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -454,8 +454,8 @@ export default function WorkflowsSettingsPage() {
             </div>
 
             <div className="space-y-3 pt-2">
-              <Label className="text-zinc-200">Can Initiate Workflow</Label>
-              <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
+              <Label className="text-foreground">Can Initiate Workflow</Label>
+              <div className="rounded-lg border border-border bg-muted/30 p-4">
                 <div className="grid grid-cols-2 gap-3">
                   {roles?.map((role) => (
                     <div key={role._id} className="flex items-center space-x-2">
@@ -463,11 +463,11 @@ export default function WorkflowsSettingsPage() {
                         id={`role-${role._id}`}
                         checked={formData.canInitiateRoles.includes(role._id)}
                         onCheckedChange={() => toggleInitiatorRole(role._id)}
-                        className="border-zinc-700 data-[state=checked]:bg-zinc-200 data-[state=checked]:text-zinc-900"
+                        className="border-border data-[state=checked]:bg-zinc-200 data-[state=checked]:text-zinc-900"
                       />
                       <Label
                         htmlFor={`role-${role._id}`}
-                        className="text-sm font-normal text-zinc-300 cursor-pointer"
+                        className="text-sm font-normal text-foreground/80 cursor-pointer"
                       >
                         {role.name}
                       </Label>
@@ -482,7 +482,7 @@ export default function WorkflowsSettingsPage() {
                 type="button"
                 variant="outline"
                 onClick={() => setEditDialogOpen(false)}
-                className="border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                className="border-border bg-muted text-foreground/80 hover:bg-accent hover:text-white"
               >
                 Cancel
               </Button>
