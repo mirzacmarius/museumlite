@@ -5,35 +5,21 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import {
+  RecentActivityLog,
+  type RecentActivityItem,
+} from "@/components/recent-activity-log";
+import {
   ArrowLeftRight,
   Building2,
   Eye,
-  FileCheck,
   FileClock,
-  FileX,
-  Handshake,
   Package,
   Presentation,
   ScanBarcode,
   Server,
   Settings,
-  TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
-
-function formatRelativeTime(timestamp: number): string {
-  const now = Date.now();
-  const diff = now - timestamp;
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  if (days > 0) return `${days}d ago`;
-  if (hours > 0) return `${hours}h ago`;
-  if (minutes > 0) return `${minutes}m ago`;
-  return "Just now";
-}
 
 export default function DashboardPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
@@ -436,137 +422,9 @@ export default function DashboardPage() {
         </div>
 
         <div className="mt-8">
-          <h3 className="text-xs font-semibold text-muted-foreground mb-4 uppercase tracking-wider">
-            Recent Activity Log
-          </h3>
-          <div className="rounded-xl border border-border overflow-hidden bg-card">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-muted/50 text-muted-foreground font-medium">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Object / Collection</th>
-                  <th className="px-4 py-3 font-medium">Action</th>
-                  <th className="px-4 py-3 font-medium">User</th>
-                  <th className="px-4 py-3 font-medium text-right">Time</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {analytics.recentActivity.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={4}
-                      className="px-4 py-8 text-center text-muted-foreground"
-                    >
-                      No recent activity
-                    </td>
-                  </tr>
-                ) : (
-                  analytics.recentActivity.map((activity) => {
-                    const getActivityIcon = () => {
-                      switch (activity.type) {
-                        case "collection":
-                          return <FileCheck className="w-4 h-4" />;
-                        case "loan":
-                          return <Handshake className="w-4 h-4" />;
-                        case "accession":
-                          return <TrendingUp className="w-4 h-4" />;
-                        case "deaccession":
-                          return <FileX className="w-4 h-4" />;
-                        default:
-                          return <FileCheck className="w-4 h-4" />;
-                      }
-                    };
-
-                    const getActivityBadgeColor = () => {
-                      switch (activity.type) {
-                        case "collection":
-                          return "bg-indigo-500/10 text-indigo-400 border-indigo-500/20";
-                        case "loan":
-                          return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-                        case "accession":
-                          return "bg-amber-500/10 text-amber-400 border-amber-500/20";
-                        case "deaccession":
-                          return "bg-red-500/10 text-red-400 border-red-500/20";
-                        default:
-                          return "bg-muted text-muted-foreground border-border";
-                      }
-                    };
-
-                    const getActivityLink = () => {
-                      switch (activity.type) {
-                        case "collection":
-                          return `/collections/${activity.id}`;
-                        case "loan":
-                          return `/loans/${activity.id}`;
-                        case "accession":
-                          return `/accessions/${activity.id}`;
-                        case "deaccession":
-                          return `/deaccessions/${activity.id}`;
-                        default:
-                          return "#";
-                      }
-                    };
-
-                    const getInitials = () => {
-                      switch (activity.type) {
-                        case "collection":
-                          return "OB";
-                        case "loan":
-                          return "LN";
-                        case "accession":
-                          return "AC";
-                        case "deaccession":
-                          return "DA";
-                        default:
-                          return "??";
-                      }
-                    };
-
-                    const handleNavigate = () => {
-                      window.location.href = getActivityLink();
-                    };
-
-                    return (
-                      <tr
-                        key={`${activity.type}-${activity.id}`}
-                        className="hover:bg-muted/40 transition-colors cursor-pointer"
-                        onClick={handleNavigate}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleNavigate();
-                          }
-                        }}
-                        tabIndex={0}
-                        role="button"
-                      >
-                        <td className="px-4 py-3 text-foreground/80">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded bg-muted flex items-center justify-center text-[10px] text-muted-foreground">
-                              {getInitials()}
-                            </div>
-                            {activity.title}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] border ${getActivityBadgeColor()}`}
-                          >
-                            {activity.subtitle || activity.type}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          System
-                        </td>
-                        <td className="px-4 py-3 text-right text-muted-foreground font-mono text-[10px]">
-                          {formatRelativeTime(activity.timestamp)}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+          <RecentActivityLog
+            activities={analytics.recentActivity as RecentActivityItem[]}
+          />
         </div>
       </div>
     </div>

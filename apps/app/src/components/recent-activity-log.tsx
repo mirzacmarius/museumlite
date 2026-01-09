@@ -1,0 +1,162 @@
+"use client";
+
+import { FileCheck, FileX, Handshake, TrendingUp } from "lucide-react";
+
+export type RecentActivityItem = {
+  type: "collection" | "loan" | "accession" | "deaccession";
+  id: string;
+  title: string;
+  subtitle?: string;
+  timestamp: number;
+  status?: string;
+};
+
+function formatRelativeTime(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp;
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) return `${days}d ago`;
+  if (hours > 0) return `${hours}h ago`;
+  if (minutes > 0) return `${minutes}m ago`;
+  return "Just now";
+}
+
+function getActivityBadgeColor(type: RecentActivityItem["type"]): string {
+  switch (type) {
+    case "collection":
+      return "bg-indigo-500/10 text-indigo-400 border-indigo-500/20";
+    case "loan":
+      return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+    case "accession":
+      return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+    case "deaccession":
+      return "bg-red-500/10 text-red-400 border-red-500/20";
+    default:
+      return "bg-muted text-muted-foreground border-border";
+  }
+}
+
+function getActivityLink(type: RecentActivityItem["type"], id: string): string {
+  switch (type) {
+    case "collection":
+      return `/collections/${id}`;
+    case "loan":
+      return `/loans/${id}`;
+    case "accession":
+      return `/accessions/${id}`;
+    case "deaccession":
+      return `/deaccessions/${id}`;
+    default:
+      return "#";
+  }
+}
+
+function getInitials(type: RecentActivityItem["type"]): string {
+  switch (type) {
+    case "collection":
+      return "OB";
+    case "loan":
+      return "LN";
+    case "accession":
+      return "AC";
+    case "deaccession":
+      return "DA";
+    default:
+      return "??";
+  }
+}
+
+interface RecentActivityLogProps {
+  activities: RecentActivityItem[];
+  title?: string;
+  showHeader?: boolean;
+}
+
+export function RecentActivityLog({
+  activities,
+  title = "Recent Activity Log",
+  showHeader = true,
+}: RecentActivityLogProps) {
+  return (
+    <div className="mt-8">
+      {showHeader && (
+        <h3 className="text-xs font-semibold text-muted-foreground mb-4 uppercase tracking-wider">
+          {title}
+        </h3>
+      )}
+      <div className="rounded-xl border border-border overflow-hidden bg-card">
+        <table className="w-full text-left text-xs">
+          <thead className="bg-muted/50 text-muted-foreground font-medium">
+            <tr>
+              <th className="px-4 py-3 font-medium">Object / Collection</th>
+              <th className="px-4 py-3 font-medium">Action</th>
+              <th className="px-4 py-3 font-medium">User</th>
+              <th className="px-4 py-3 font-medium text-right">Time</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {activities.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="px-4 py-8 text-center text-muted-foreground"
+                >
+                  No recent activity
+                </td>
+              </tr>
+            ) : (
+              activities.map((activity) => {
+                const handleNavigate = () => {
+                  window.location.href = getActivityLink(
+                    activity.type,
+                    activity.id,
+                  );
+                };
+
+                return (
+                  <tr
+                    key={`${activity.type}-${activity.id}`}
+                    className="hover:bg-muted/40 transition-colors cursor-pointer"
+                    onClick={handleNavigate}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleNavigate();
+                      }
+                    }}
+                    tabIndex={0}
+                    role="button"
+                  >
+                    <td className="px-4 py-3 text-foreground/80">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded bg-muted flex items-center justify-center text-[10px] text-muted-foreground">
+                          {getInitials(activity.type)}
+                        </div>
+                        {activity.title}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] border ${getActivityBadgeColor(activity.type)}`}
+                      >
+                        {activity.subtitle || activity.type}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">System</td>
+                    <td className="px-4 py-3 text-right text-muted-foreground font-mono text-[10px]">
+                      {formatRelativeTime(activity.timestamp)}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

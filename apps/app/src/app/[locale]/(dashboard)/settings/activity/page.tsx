@@ -1,17 +1,22 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
-import { useState } from "react";
-import { ActivityFilters } from "../../activity/_components/activity-filters";
-import { ActivityList } from "../../activity/_components/activity-list";
+import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { useQuery } from "convex/react";
+import {
+  RecentActivityLog,
+  type RecentActivityItem,
+} from "@/components/recent-activity-log";
 
 export default function ActivityPage() {
   const { currentOrganizationId, isLoading } = useOrganization();
-  const [selectedEntityType, setSelectedEntityType] = useState<
-    string | undefined
-  >();
-  const [dateRange, setDateRange] = useState<{ start?: number; end?: number }>(
-    {},
+
+  const analytics = useQuery(
+    api.dashboard.getAnalytics,
+    currentOrganizationId
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
   );
 
   if (isLoading) {
@@ -38,27 +43,20 @@ export default function ActivityPage() {
     );
   }
 
+  if (analytics === undefined) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <p className="text-muted-foreground">Loading activity...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full w-full flex-col">
-      {/* Filters at the top */}
-      <div className="mb-6">
-        <ActivityFilters
-          selectedEntityType={selectedEntityType}
-          onEntityTypeChange={setSelectedEntityType}
-          dateRange={dateRange}
-          onDateRangeChange={setDateRange}
-        />
-      </div>
-
-      {/* Activity List below filters */}
-      <div className="flex flex-1 flex-col">
-        <ActivityList
-          organizationId={currentOrganizationId}
-          entityType={selectedEntityType}
-          startDate={dateRange.start}
-          endDate={dateRange.end}
-        />
-      </div>
+      <RecentActivityLog
+        activities={analytics.recentActivity as RecentActivityItem[]}
+        title="Recent Activity"
+      />
     </div>
   );
 }
