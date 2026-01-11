@@ -171,7 +171,9 @@ export default function TreatmentDetailPage({
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
             <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-              <h3 className="text-lg font-medium text-foreground">Description</h3>
+              <h3 className="text-lg font-medium text-foreground">
+                Description
+              </h3>
               <div className="prose prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
                 {treatment.description}
               </div>
@@ -197,7 +199,9 @@ export default function TreatmentDetailPage({
                 <div className="flex items-start gap-3">
                   <Box className="mt-0.5 h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Collection Object</p>
+                    <p className="text-xs text-muted-foreground">
+                      Collection Object
+                    </p>
                     <Link
                       href={`/collections/${treatment.collectionId}`}
                       className="text-sm text-blue-400 hover:text-blue-300 hover:underline"
@@ -210,7 +214,9 @@ export default function TreatmentDetailPage({
                 <div className="flex items-start gap-3">
                   <Calendar className="mt-0.5 h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Date Performed</p>
+                    <p className="text-xs text-muted-foreground">
+                      Date Performed
+                    </p>
                     <p className="text-sm text-foreground/80">
                       {new Date(treatment.performedAt).toLocaleDateString()}
                     </p>
@@ -220,7 +226,9 @@ export default function TreatmentDetailPage({
                 <div className="flex items-start gap-3">
                   <User className="mt-0.5 h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Performed By</p>
+                    <p className="text-xs text-muted-foreground">
+                      Performed By
+                    </p>
                     <p className="text-sm text-foreground/80">
                       {treatment.performedByName || "Unknown"}
                     </p>

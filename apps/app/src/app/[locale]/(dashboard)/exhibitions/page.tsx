@@ -54,7 +54,9 @@ export default function ExhibitionsPage() {
         <div className="flex w-full flex-col rounded-lg border border-border bg-muted/20">
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex flex-col gap-2">
-              <h2 className="text-xl font-medium text-foreground">Exhibitions</h2>
+              <h2 className="text-xl font-medium text-foreground">
+                Exhibitions
+              </h2>
               <p className="text-sm font-normal text-muted-foreground">
                 Manage your exhibition history and planning
               </p>

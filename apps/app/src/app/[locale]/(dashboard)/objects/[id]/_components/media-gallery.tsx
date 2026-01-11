@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  DropzoneUploader,
+  type UploadFile,
+} from "@/components/dropzone-uploader";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -40,12 +44,9 @@ import {
   Image as ImageIcon,
   Maximize2,
   Star,
-  StarOff,
   Trash2,
-  Upload,
-  X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface MediaGalleryProps {
   collectionId: string;
@@ -74,10 +75,21 @@ export function MediaGallery({
     null,
   );
   const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Store files in a ref so they're accessible in the generateUploadUrl callback
+  const [uploadingFiles, setUploadingFiles] = useState<UploadFile[]>([]);
   const filesRef = useRef<File[]>([]);
+  const uploadIdMapRef = useRef<Map<string, string>>(new Map());
+
+  const updateUploadStatus = useCallback(
+    (fileName: string, updates: Partial<Omit<UploadFile, "id" | "file">>) => {
+      const uploadId = uploadIdMapRef.current.get(fileName);
+      if (!uploadId) return;
+
+      setUploadingFiles((prev) =>
+        prev.map((f) => (f.id === uploadId ? { ...f, ...updates } : f)),
+      );
+    },
+    [],
+  );
 
   const { startUpload } = useUploadFiles(
     async () => {
@@ -85,13 +97,13 @@ export function MediaGallery({
         throw new Error("Organization missing");
       }
 
-      // Get the current file from the ref
-      // useUploadFiles calls this function once per file, so we process files sequentially
       const file = filesRef.current.shift();
 
       if (!file) {
         throw new Error("No file available for upload");
       }
+
+      updateUploadStatus(file.name, { status: "uploading", progress: 10 });
 
       const result = await generateUploadUrl({
         organizationId: currentOrganizationId as Id<"organizations">,
@@ -102,15 +114,20 @@ export function MediaGallery({
       });
 
       if (!result.uploadUrl) {
+        updateUploadStatus(file.name, {
+          status: "error",
+          error: "Failed to generate upload URL",
+        });
         throw new Error(`Failed to generate upload URL for ${file.name}`);
       }
+
+      updateUploadStatus(file.name, { progress: 30 });
 
       return result.uploadUrl;
     },
     {
       onUploadComplete: async (uploaded) => {
         try {
-          // Check if uploaded is valid array
           if (!uploaded || !Array.isArray(uploaded) || uploaded.length === 0) {
             setError("Upload completed but no files were returned");
             return;
@@ -121,31 +138,30 @@ export function MediaGallery({
             return;
           }
 
-          // Determine if this is the first media (for setting primary)
           const isFirstMedia =
             !media || (Array.isArray(media) && media.length === 0);
 
-          // Process all uploaded files
           await Promise.all(
             uploaded.map(async (file, index) => {
               if (!file) {
                 throw new Error("Upload completed but file data is missing");
               }
 
-              // Extract storageId from uploadstuff response
-              // According to Convex docs and uploadstuff, the response is wrapped in file.response
-              // Convex returns { storageId: Id<"_storage"> } in the JSON response
+              updateUploadStatus(file.name, { progress: 95 });
+
               const storageId = (file.response as { storageId: Id<"_storage"> })
                 ?.storageId;
 
               if (!storageId) {
+                updateUploadStatus(file.name, {
+                  status: "error",
+                  error: "No storage ID returned",
+                });
                 throw new Error(
                   `Upload completed but no storage ID returned for ${file.name}`,
                 );
               }
 
-              // Set the first uploaded file as primary if this is the first media
-              // For documents tab, set mediaCategory to "document"
               await createMedia({
                 organizationId: currentOrganizationId as Id<"organizations">,
                 collectionId: collectionId as Id<"collections">,
@@ -154,11 +170,22 @@ export function MediaGallery({
                 fileSize: file.size || 0,
                 mimeType: file.type || "application/octet-stream",
                 isPrimary:
-                  isFirstMedia && index === 0 && mediaType === "images", // Only set primary for images
+                  isFirstMedia && index === 0 && mediaType === "images",
                 mediaCategory: mediaType === "documents" ? "document" : "image",
+              });
+
+              updateUploadStatus(file.name, {
+                status: "complete",
+                progress: 100,
               });
             }),
           );
+
+          setTimeout(() => {
+            setUploadingFiles((prev) =>
+              prev.filter((f) => f.status !== "complete"),
+            );
+          }, 2000);
         } catch (err) {
           setError(
             err instanceof Error
@@ -167,45 +194,46 @@ export function MediaGallery({
           );
         }
       },
-      onUploadError: (error) => {
+      onUploadError: (uploadError) => {
         setError(
-          error && typeof error === "object" && "message" in error
-            ? String(error.message)
+          uploadError &&
+            typeof uploadError === "object" &&
+            "message" in uploadError
+            ? String(uploadError.message)
             : "Upload failed",
+        );
+        setUploadingFiles((prev) =>
+          prev.map((f) =>
+            f.status === "uploading"
+              ? { ...f, status: "error", error: "Upload failed" }
+              : f,
+          ),
         );
       },
     },
   );
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setError(null);
-    try {
-      const filesList = event.target?.files;
-      if (!filesList || filesList.length === 0) {
-        return;
-      }
-      const files = Array.from(filesList);
-      if (!files || files.length === 0) {
-        return;
-      }
+  const handleFilesSelected = useCallback(
+    (files: File[]) => {
+      setError(null);
 
-      // Store files in ref for use by generateUploadUrl callback
-      // Make a copy so we don't modify the original array
+      const newUploads: UploadFile[] = files.map((file) => {
+        const id = `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        uploadIdMapRef.current.set(file.name, id);
+        return {
+          id,
+          file,
+          progress: 0,
+          status: "pending" as const,
+        };
+      });
+
+      setUploadingFiles((prev) => [...prev, ...newUploads]);
       filesRef.current = [...files];
-
-      // Upload all selected files
       startUpload(files);
-
-      // Reset the input so the same files can be selected again if needed
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to process file selection",
-      );
-    }
-  };
+    },
+    [startUpload],
+  );
 
   const handleSetPrimary = async (mediaId: string) => {
     setError(null);
@@ -236,14 +264,11 @@ export function MediaGallery({
     );
   }
 
-  // Ensure media is an array
   const mediaArray = Array.isArray(media) ? media : [];
 
-  // Separate images/videos from documents
   const images = mediaArray.filter((m) => {
     const category = (m as { mediaCategory?: "image" | "document" })
       .mediaCategory;
-    // Images: explicitly marked as "image" OR (no category AND fileType is image/video)
     return (
       category === "image" ||
       (!category && (m.fileType === "image" || m.fileType === "video"))
@@ -252,15 +277,12 @@ export function MediaGallery({
   const documents = mediaArray.filter((m) => {
     const category = (m as { mediaCategory?: "image" | "document" })
       .mediaCategory;
-    // Documents: explicitly marked as "document" OR (no category AND fileType is document/pdf)
     return category === "document" || (!category && m.fileType === "document");
   });
 
-  // Determine what to show based on mediaType prop
   const showImages = mediaType === "images";
   const showDocuments = mediaType === "documents";
 
-  // Prepare lightbox images
   const lightboxImages: LightboxImage[] = useMemo(
     () =>
       images
@@ -291,36 +313,26 @@ export function MediaGallery({
       )}
 
       <PermissionGate permission="media.upload">
-        <div className="flex items-center justify-between">
+        <div className="space-y-4">
           <h3 className="text-lg font-medium">
             {showImages ? "Images & Videos" : "Documents"}
           </h3>
-          <div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={
-                showImages
-                  ? "image/*,video/*"
-                  : ".pdf,image/jpeg,image/jpg,image/png,image/tiff"
-              }
-              onChange={handleFileSelect}
-              className="hidden"
-              multiple
-            />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              {showImages ? "Upload Images" : "Upload Documents"}
-            </Button>
-          </div>
+          <DropzoneUploader
+            accept={
+              showImages
+                ? "image/*,video/*"
+                : ".pdf,image/jpeg,image/jpg,image/png,image/tiff"
+            }
+            onFilesSelected={handleFilesSelected}
+            uploadingFiles={uploadingFiles}
+            label={
+              showImages ? "Drop images or videos here" : "Drop documents here"
+            }
+            sublabel="or click to browse"
+          />
         </div>
       </PermissionGate>
 
-      {/* Images & Videos Section */}
       {showImages && (
         <div className="space-y-3">
           {images.length === 0 ? (
@@ -333,8 +345,7 @@ export function MediaGallery({
           ) : (
             <>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                {images.map((file, index) => {
-                  // Find the index in lightboxImages for this file
+                {images.map((file) => {
                   const lightboxIdx = lightboxImages.findIndex(
                     (img) => img.id === file._id,
                   );
@@ -381,7 +392,6 @@ export function MediaGallery({
                             </div>
                           )}
 
-                          {/* File name overlay - visible by default, hidden on hover */}
                           <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-6 text-xs text-white transition-opacity group-hover:opacity-0">
                             <p className="truncate font-medium">
                               {file.fileName}
@@ -393,12 +403,10 @@ export function MediaGallery({
                             )}
                           </div>
 
-                          {/* Hover Overlay with expand icon */}
                           <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                             <Maximize2 className="h-6 w-6 text-white" />
                           </div>
 
-                          {/* Action buttons on hover */}
                           <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                             <PermissionGate permission="media.upload">
                               {!file.isPrimary && (
@@ -482,7 +490,6 @@ export function MediaGallery({
                             </PermissionGate>
                           </div>
 
-                          {/* Primary badge */}
                           {file.isPrimary && (
                             <div className="absolute left-2 top-2 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">
                               Primary
@@ -495,7 +502,6 @@ export function MediaGallery({
                 })}
               </div>
 
-              {/* Image Lightbox - only render when not using external lightbox */}
               {!onOpenLightbox && (
                 <ImageLightbox
                   images={lightboxImages}
@@ -509,7 +515,6 @@ export function MediaGallery({
         </div>
       )}
 
-      {/* Documents Section */}
       {showDocuments && (
         <div className="space-y-3">
           {documents.length === 0 ? (
@@ -647,7 +652,6 @@ function MediaEditDialog({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Sync formData when media prop changes (e.g., when editing different items)
   useEffect(() => {
     setFormData({
       caption: media.caption || "",

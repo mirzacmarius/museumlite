@@ -447,7 +447,9 @@ function LoanList({
                           tabIndex={0}
                           role="button"
                         >
-                          <td className="px-6 py-4">{getTypeIcon(loan.type)}</td>
+                          <td className="px-6 py-4">
+                            {getTypeIcon(loan.type)}
+                          </td>
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
                               <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
