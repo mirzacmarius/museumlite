@@ -69,10 +69,19 @@ type LoanStatus =
   | "cancelled";
 
 type LoanItem = {
+  _id: Id<"loanItems">;
   accessionNumber: string;
   title: string;
   conditionOut?: string;
   conditionIn?: string;
+};
+
+type WorkflowHistoryEntry = {
+  step: number;
+  approvedBy: Id<"users">;
+  approvedByName?: string;
+  approvedAt: number;
+  comment?: string;
 };
 
 type Loan = {
@@ -85,6 +94,8 @@ type Loan = {
   endDate?: number;
   insuranceValue?: number;
   status: LoanStatus;
+  workflowStep?: number;
+  workflowHistory: WorkflowHistoryEntry[];
   items: LoanItem[];
 };
 
@@ -100,6 +111,11 @@ export default function LoanDetailPage() {
     api.loans.get,
     loanId ? { loanId: loanId as Id<"loans"> } : "skip",
   ) as Loan | null | undefined;
+
+  const documents = useQuery(
+    api.loans.listLoanDocuments,
+    loanId ? { loanId: loanId as Id<"loans"> } : "skip",
+  );
 
   const organization = useQuery(
     api.organizations.get,
@@ -347,7 +363,7 @@ export default function LoanDetailPage() {
                   value="overview"
                   className="space-y-8 mt-0 focus-visible:ring-0"
                 >
-                  <OverviewTab loan={loan} />
+                  <OverviewTab loan={loan} documents={documents ?? []} />
                 </TabsContent>
                 <TabsContent
                   value="objects"
@@ -371,7 +387,7 @@ export default function LoanDetailPage() {
                   value="activity"
                   className="mt-0 focus-visible:ring-0"
                 >
-                  <ActivityTab />
+                  <ActivityTab workflowHistory={loan.workflowHistory} />
                 </TabsContent>
               </div>
             </Tabs>
@@ -492,7 +508,24 @@ export default function LoanDetailPage() {
   );
 }
 
-function OverviewTab({ loan }: { loan: Loan }) {
+type LoanDocument = {
+  _id: Id<"loanDocuments">;
+  storageId: Id<"_storage">;
+  documentType: "agreement" | "insurance" | "other";
+  fileName: string;
+  url: string | null;
+  uploadedBy: Id<"users">;
+  uploadedAt: number;
+  uploaderName?: string;
+};
+
+function OverviewTab({
+  loan,
+  documents,
+}: {
+  loan: Loan;
+  documents: LoanDocument[];
+}) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* Left: Approval Pipeline */}
@@ -652,41 +685,52 @@ function OverviewTab({ loan }: { loan: Loan }) {
       <div className="space-y-6">
         <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
           <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">
-            Required Documents
+            Documents ({documents.length})
           </h3>
           <div className="space-y-2">
-            <button
-              type="button"
-              className="flex w-full items-center gap-3 rounded p-2 text-left hover:bg-secondary transition-colors group"
-            >
-              <div className="w-8 h-8 rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
-                <FileText className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-foreground truncate">
-                  Loan_Agreement_Final.pdf
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  Signed • 12MB
-                </p>
-              </div>
-            </button>
-            <button
-              type="button"
-              className="flex w-full items-center gap-3 rounded p-2 text-left hover:bg-secondary transition-colors group"
-            >
-              <div className="w-8 h-8 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                <Shield className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-foreground truncate">
-                  MoMA_Insurance_Cert.pdf
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  Valid until Dec 2024
-                </p>
-              </div>
-            </button>
+            {documents.map((doc) => {
+              const iconClass =
+                doc.documentType === "agreement"
+                  ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                  : doc.documentType === "insurance"
+                    ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400";
+              const Icon = doc.documentType === "insurance" ? Shield : FileText;
+
+              return (
+                <a
+                  key={doc._id}
+                  href={doc.url ?? "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex w-full items-center gap-3 rounded p-2 text-left hover:bg-secondary transition-colors group"
+                >
+                  <div
+                    className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${iconClass}`}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-foreground truncate">
+                      {doc.fileName}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {doc.documentType.charAt(0).toUpperCase() +
+                        doc.documentType.slice(1)}{" "}
+                      •{" "}
+                      {doc.uploaderName
+                        ? `Uploaded by ${doc.uploaderName}`
+                        : new Date(doc.uploadedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </a>
+              );
+            })}
+            {documents.length === 0 && (
+              <p className="text-xs text-muted-foreground italic py-2">
+                No documents uploaded yet.
+              </p>
+            )}
             <button
               type="button"
               className="flex w-full items-center gap-3 rounded p-2 text-left hover:bg-secondary transition-colors group opacity-60"
@@ -1029,28 +1073,74 @@ function LogisticsTab() {
   );
 }
 
-function ActivityTab() {
+function ActivityTab({
+  workflowHistory,
+}: {
+  workflowHistory: WorkflowHistoryEntry[];
+}) {
+  const getStepLabel = (step: number, comment?: string) => {
+    if (comment) return comment;
+    switch (step) {
+      case 0:
+        return "Loan created";
+      case 1:
+        return "Submitted for approval";
+      case 2:
+        return "Curatorial review completed";
+      case 3:
+        return "Facilities review completed";
+      case 4:
+        return "Conservation review completed";
+      case 5:
+        return "Ready for dispatch";
+      default:
+        return `Step ${step} completed`;
+    }
+  };
+
+  const sortedHistory = [...workflowHistory].sort(
+    (a, b) => b.approvedAt - a.approvedAt,
+  );
+
+  if (sortedHistory.length === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground text-sm">
+        No activity recorded yet.
+      </div>
+    );
+  }
+
   return (
     <div className="relative pl-6 border-l border-border space-y-8">
-      <div className="relative">
-        <div className="absolute -left-[29px] top-0 w-3 h-3 bg-secondary rounded-full border-2 border-background" />
-        <p className="text-xs text-muted-foreground mb-1">Oct 24, 09:30</p>
-        <p className="text-sm text-foreground">
-          Facility Report uploaded by MoMA (Version 2)
-        </p>
-      </div>
-      <div className="relative">
-        <div className="absolute -left-[29px] top-0 w-3 h-3 bg-secondary rounded-full border-2 border-background" />
-        <p className="text-xs text-muted-foreground mb-1">Oct 20, 14:15</p>
-        <p className="text-sm text-foreground">Loan Agreement countersigned</p>
-      </div>
-      <div className="relative">
-        <div className="absolute -left-[29px] top-0 w-3 h-3 bg-cyan-500 rounded-full border-2 border-background" />
-        <p className="text-xs text-muted-foreground mb-1">Oct 12, 10:00</p>
-        <p className="text-sm text-foreground">
-          Outgoing Loan record created by E. Fisher
-        </p>
-      </div>
+      {sortedHistory.map((entry, index) => (
+        <div key={`${entry.step}-${entry.approvedAt}`} className="relative">
+          <div
+            className={`absolute -left-[29px] top-0 w-3 h-3 rounded-full border-2 border-background ${
+              index === 0 ? "bg-cyan-500" : "bg-secondary"
+            }`}
+          />
+          <p className="text-xs text-muted-foreground mb-1">
+            {new Date(entry.approvedAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}{" "}
+            {new Date(entry.approvedAt).toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </p>
+          <p className="text-sm text-foreground">
+            {getStepLabel(entry.step, entry.comment)}
+            {entry.approvedByName && (
+              <span className="text-muted-foreground">
+                {" "}
+                by {entry.approvedByName}
+              </span>
+            )}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }
