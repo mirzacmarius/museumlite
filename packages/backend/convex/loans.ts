@@ -200,11 +200,16 @@ export const create = mutation({
           }
         }
 
-        // Create loan item with per-item condition
         await ctx.db.insert("loanItems", {
           loanId,
           collectionId: item.collectionId,
           conditionOut: item.conditionOut,
+        });
+
+        await ctx.db.patch(item.collectionId, {
+          status: "loaned",
+          lastModifiedBy: userId,
+          lastModifiedAt: Date.now(),
         });
       }
     }
@@ -1235,7 +1240,20 @@ export const dispatch = mutation({
       throw new Error("Loan must be active to dispatch");
     }
 
-    // Update loan status
+    const loanItems = await ctx.db
+      .query("loanItems")
+      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+      .collect();
+
+    for (const item of loanItems) {
+      await ctx.db.patch(item.collectionId, {
+        status: "loaned",
+        currentLocationId: undefined,
+        lastModifiedBy: userId,
+        lastModifiedAt: Date.now(),
+      });
+    }
+
     await ctx.db.patch(args.loanId, {
       status: "dispatched",
     });
