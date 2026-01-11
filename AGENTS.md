@@ -1,4 +1,4 @@
-# AGENTS.md - Coding Agent Guidelines
+# `AGENTS.md - Coding Agent Guidelines
 
 Museum/Library collection management SaaS. Turborepo monorepo: Convex backend, Next.js 15 App Router, Bun, Biome.
 
@@ -39,6 +39,7 @@ packages/email/            # React Email templates
 ## Code Style
 
 ### TypeScript
+
 - `strict: true` + `noUncheckedIndexedAccess: true` enabled
 - **Never** cast to `any` or use `@ts-ignore`
 - Use `Id<'tableName'>` for Convex IDs, not `string`
@@ -46,11 +47,13 @@ packages/email/            # React Email templates
 - Don't wrap in unnecessary `try/catch`
 
 ### Naming
+
 - Directories: lowercase with dashes (`components/auth-wizard`)
 - Variables: descriptive with auxiliaries (`isLoading`, `hasError`)
 - Named exports only (no default exports except pages)
 
 ### Imports (Biome auto-organizes)
+
 ```typescript
 // External packages first, then internal
 import { query } from "./_generated/server";
@@ -59,12 +62,14 @@ import { internal } from "./_generated/api";
 ```
 
 ### React/Next.js
+
 - RSC-first: minimize `"use client"`, `useEffect`, `useState`
 - Compose smaller components; avoid massive JSX blocks
 - URL state via `nuqs` for search params
 - Wrap client components in `Suspense` with fallback
 
 ### Styling
+
 - Tailwind v4 + shadcn/ui dark theme
 - Use `border-white/10` for subtle borders
 - Timestamps: right-aligned, `text-white/60`, relative format
@@ -72,6 +77,7 @@ import { internal } from "./_generated/api";
 ## Convex Functions (CRITICAL)
 
 **Always use this syntax:**
+
 ```typescript
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
@@ -87,6 +93,7 @@ export const myFunction = query({
 ```
 
 ### Convex Rules
+
 - **Always** include `args` and `returns` validators
 - Return `null` with `returns: v.null()` when no return value
 - Use `.withIndex()` not `.filter()` for queries (performance)
@@ -95,22 +102,27 @@ export const myFunction = query({
 - Query `_storage` system table, not `ctx.storage.getMetadata` (deprecated)
 
 ### Function Types
-| Type | Usage | Reference |
-|------|-------|-----------|
-| `query`/`mutation`/`action` | Public API | `api.file.function` |
-| `internalQuery`/`internalMutation`/`internalAction` | Private | `internal.file.function` |
+
+
+| Type                                                | Usage      | Reference                |
+| --------------------------------------------------- | ---------- | ------------------------ |
+| `query`/`mutation`/`action`                         | Public API | `api.file.function`      |
+| `internalQuery`/`internalMutation`/`internalAction` | Private    | `internal.file.function` |
+
 
 ## Anti-Patterns
 
-| Don't | Do Instead |
-|-------|------------|
-| `.filter()` in queries | `.withIndex()` with schema index |
-| `ctx.db` in actions | `ctx.runQuery`/`ctx.runMutation` |
-| `v.bigint()` | `v.int64()` |
-| `as any`, `@ts-ignore` | Proper typing |
-| `useEffect` for data fetching | Fetch in RSC |
-| `crons.hourly()` | `crons.interval({ hours: 1 })` |
-| Missing return validator | `returns: v.null()` minimum |
+
+| Don't                         | Do Instead                       |
+| ----------------------------- | -------------------------------- |
+| `.filter()` in queries        | `.withIndex()` with schema index |
+| `ctx.db` in actions           | `ctx.runQuery`/`ctx.runMutation` |
+| `v.bigint()`                  | `v.int64()`                      |
+| `as any`, `@ts-ignore`        | Proper typing                    |
+| `useEffect` for data fetching | Fetch in RSC                     |
+| `crons.hourly()`              | `crons.interval({ hours: 1 })`   |
+| Missing return validator      | `returns: v.null()` minimum      |
+
 
 ## Testing
 
@@ -132,18 +144,21 @@ test("should create and retrieve item", async () => {
 
 ## File Locations
 
-| Task | Location |
-|------|----------|
-| Add Convex function | `packages/backend/convex/` |
-| Add UI component | `packages/ui/src/components/` |
-| Add dashboard page | `apps/app/src/app/[locale]/(dashboard)/` |
-| Add HTTP endpoint | `packages/backend/convex/http.ts` |
-| Add locale | `apps/app/src/locales/` (en, fr, es) |
+
+| Task                | Location                                 |
+| ------------------- | ---------------------------------------- |
+| Add Convex function | `packages/backend/convex/`               |
+| Add UI component    | `packages/ui/src/components/`            |
+| Add dashboard page  | `apps/app/src/app/[locale]/(dashboard)/` |
+| Add HTTP endpoint   | `packages/backend/convex/http.ts`        |
+| Add locale          | `apps/app/src/locales/` (en, fr, es)     |
+
 
 ## Schema Conventions
 
 - Index names include all fields: `by_organization_and_status`
 - Use discriminated unions with `v.literal()`:
+
 ```typescript
 status: v.union(v.literal("pending"), v.literal("active"))
 ```
