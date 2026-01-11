@@ -1,0 +1,287 @@
+"use client";
+
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+  CommandShortcut,
+} from "@v1/ui/command";
+import { Button } from "@v1/ui/button";
+import {
+  Archive,
+  Box,
+  Building2,
+  CreditCard,
+  FilePlus,
+  LayoutDashboard,
+  Library,
+  MapPin,
+  Plus,
+  Search,
+  Settings,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import * as React from "react";
+import { useQuery } from "convex/react";
+import { api } from "@v1/backend/convex/_generated/api";
+import { useOrganization } from "./organization-provider";
+import { useCommandPalette } from "./command-palette-provider";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+
+function CommandObjectItem({
+  obj,
+  runCommand,
+}: {
+  obj: {
+    _id: Id<"collections">;
+    title: string;
+    accessionNumber: string;
+  };
+  runCommand: (command: () => unknown) => void;
+}) {
+  const router = useRouter();
+  const imageUrl = useQuery(api.media.getPrimaryImageUrl, {
+    collectionId: obj._id,
+  });
+
+  return (
+    <CommandItem
+      value={`${obj.title} ${obj.accessionNumber}`}
+      onSelect={() => runCommand(() => router.push(`/objects/${obj._id}`))}
+      className="flex items-center gap-2"
+    >
+      {imageUrl ? (
+        <div className="relative h-7 w-7 overflow-hidden rounded-[4px] border border-border/50 shrink-0 bg-muted/20">
+          <img
+            src={imageUrl}
+            alt={obj.title}
+            className="h-full w-full object-cover"
+          />
+        </div>
+      ) : (
+        <div className="flex h-7 w-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
+          <Box className="h-3.5 w-3.5 text-muted-foreground" />
+        </div>
+      )}
+      <div className="flex flex-col overflow-hidden gap-0.5">
+        <span className="truncate leading-none">{obj.title}</span>
+        <span className="text-[10px] text-muted-foreground truncate font-mono leading-none opacity-70">
+          {obj.accessionNumber}
+        </span>
+      </div>
+    </CommandItem>
+  );
+}
+
+export function CommandPalette() {
+  const { open, setOpen } = useCommandPalette();
+  const [search, setSearch] = React.useState("");
+  const router = useRouter();
+  const { currentOrganizationId } = useOrganization();
+
+  const normalizedSearch = search.trim();
+  const hasSearch = normalizedSearch.length > 1;
+
+  const objects = useQuery(
+    api.collections.search,
+    currentOrganizationId && hasSearch
+      ? {
+          organizationId: currentOrganizationId,
+          searchQuery: normalizedSearch,
+          limit: 5,
+        }
+      : "skip",
+  );
+
+  const collectionGroups = useQuery(
+    api.collectionGroups.list,
+    currentOrganizationId && hasSearch
+      ? { organizationId: currentOrganizationId, search: normalizedSearch }
+      : "skip",
+  );
+
+  React.useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setOpen(!open);
+      }
+    };
+
+    const openPalette = () => {
+      setOpen(true);
+    };
+
+    document.addEventListener("keydown", down);
+    window.addEventListener("command-palette:open", openPalette);
+    return () => {
+      document.removeEventListener("keydown", down);
+      window.removeEventListener("command-palette:open", openPalette);
+    };
+  }, [open, setOpen]);
+
+  const runCommand = React.useCallback(
+    (command: () => unknown) => {
+      setOpen(false);
+      setSearch("");
+      command();
+    },
+    [setOpen],
+  );
+
+  return (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        aria-label="Open command palette"
+        aria-keyshortcuts="Meta+K Ctrl+K"
+        className="relative h-9 w-full justify-start rounded-[0.5rem] bg-background text-sm font-normal text-muted-foreground shadow-none sm:pr-12 md:w-40 lg:w-64"
+        onClick={() => setOpen(true)}
+      >
+        <Search className="mr-2 h-4 w-4" />
+        <span className="hidden lg:inline-flex">Search objects...</span>
+        <span className="inline-flex lg:hidden">Search...</span>
+        <kbd className="pointer-events-none absolute right-[0.3rem] top-[0.3rem] hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+          <span className="text-xs">⌘</span>K
+        </kbd>
+      </Button>
+      <CommandDialog
+        open={open}
+        onOpenChange={(open) => {
+          setOpen(open);
+          if (!open) setSearch("");
+        }}
+      >
+        <CommandInput
+          placeholder="Type a command or search..."
+          value={search}
+          onValueChange={setSearch}
+        />
+        <CommandList>
+          <CommandEmpty>No matches. Try objects or collections.</CommandEmpty>
+
+          {hasSearch && (
+            <>
+              {objects && objects.results.length > 0 && (
+                <CommandGroup heading="Objects">
+                  {objects.results.map((obj) => (
+                    <CommandObjectItem
+                      key={obj._id}
+                      obj={obj}
+                      runCommand={runCommand}
+                    />
+                  ))}
+                </CommandGroup>
+              )}
+
+              {collectionGroups && collectionGroups.length > 0 && (
+                <CommandGroup heading="Collections">
+                  {collectionGroups.slice(0, 5).map((group) => (
+                    <CommandItem
+                      key={group._id}
+                      value={group.name}
+                      onSelect={() =>
+                        runCommand(() =>
+                          router.push(`/collections/${group._id}`),
+                        )
+                      }
+                    >
+                      <div className="mr-2 flex h-7 w-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
+                        <Archive className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      <span>{group.name}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              <CommandSeparator />
+            </>
+          )}
+
+          <CommandGroup heading="Create">
+            <CommandItem
+              onSelect={() => runCommand(() => router.push("/objects/new"))}
+            >
+              <FilePlus className="mr-2 h-4 w-4" />
+              <span>New Object</span>
+              <CommandShortcut>⌘N</CommandShortcut>
+            </CommandItem>
+            <CommandItem
+              onSelect={() => runCommand(() => router.push("/accessions/new"))}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              <span>New Accession</span>
+            </CommandItem>
+            <CommandItem
+              onSelect={() => runCommand(() => router.push("/loans/new"))}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              <span>New Loan</span>
+            </CommandItem>
+            <CommandItem
+              onSelect={() => runCommand(() => router.push("/collections/new"))}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              <span>New Collection</span>
+            </CommandItem>
+          </CommandGroup>
+          <CommandSeparator />
+          <CommandGroup heading="Navigation">
+            <CommandItem onSelect={() => runCommand(() => router.push("/"))}>
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              <span>Dashboard</span>
+            </CommandItem>
+            <CommandItem
+              onSelect={() => runCommand(() => router.push("/objects"))}
+            >
+              <Box className="mr-2 h-4 w-4" />
+              <span>Objects</span>
+            </CommandItem>
+            <CommandItem
+              onSelect={() => runCommand(() => router.push("/collections"))}
+            >
+              <Archive className="mr-2 h-4 w-4" />
+              <span>Collections</span>
+            </CommandItem>
+            <CommandItem
+              onSelect={() => runCommand(() => router.push("/accessions"))}
+            >
+              <Building2 className="mr-2 h-4 w-4" />
+              <span>Accessions</span>
+            </CommandItem>
+            <CommandItem
+              onSelect={() => runCommand(() => router.push("/loans"))}
+            >
+              <CreditCard className="mr-2 h-4 w-4" />
+              <span>Loans</span>
+            </CommandItem>
+            <CommandItem
+              onSelect={() => runCommand(() => router.push("/locations"))}
+            >
+              <MapPin className="mr-2 h-4 w-4" />
+              <span>Locations</span>
+            </CommandItem>
+            <CommandItem
+              onSelect={() => runCommand(() => router.push("/library"))}
+            >
+              <Library className="mr-2 h-4 w-4" />
+              <span>Library</span>
+            </CommandItem>
+            <CommandItem
+              onSelect={() => runCommand(() => router.push("/settings"))}
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Settings</span>
+            </CommandItem>
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
+    </>
+  );
+}
