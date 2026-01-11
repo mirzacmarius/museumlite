@@ -750,6 +750,11 @@ export default defineSchema({
         }),
       ),
     ),
+    proceedsAmount: v.optional(v.number()),
+    proceedsCurrency: v.optional(v.string()),
+    proceedsRecipient: v.optional(v.string()),
+    proceedsDate: v.optional(v.number()),
+    proceedsNotes: v.optional(v.string()),
   })
     .index("by_organization", ["organizationId"])
     .index("by_collection", ["collectionId"])

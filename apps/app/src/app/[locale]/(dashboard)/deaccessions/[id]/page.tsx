@@ -5,11 +5,25 @@ import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@v1/ui/dialog";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { format } from "date-fns";
-import { ArrowLeft, CheckCircle, Clock, Loader2, XCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle,
+  Clock,
+  DollarSign,
+  Loader2,
+  Printer,
+  XCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -41,8 +55,16 @@ export default function DeaccessionDetailPage() {
   const [comment, setComment] = useState("");
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const approve = useMutation(api.deaccessions.approve);
   const reject = useMutation(api.deaccessions.reject);
+
+  const exportData = useQuery(
+    api.deaccessions.getExportData,
+    deaccessionId && isPrintModalOpen
+      ? { deaccessionId: deaccessionId as Id<"deaccessions"> }
+      : "skip",
+  );
 
   useEffect(() => {
     setComment("");
@@ -160,7 +182,17 @@ export default function DeaccessionDetailPage() {
                   )}
                 </p>
               </div>
-              {getStatusBadge(deaccession.status)}
+              <div className="flex items-center gap-3">
+                {getStatusBadge(deaccession.status)}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsPrintModalOpen(true)}
+                >
+                  <Printer className="mr-2 h-4 w-4" />
+                  Board Report
+                </Button>
+              </div>
             </div>
 
             <div className="grid gap-4">
@@ -305,6 +337,295 @@ export default function DeaccessionDetailPage() {
           )}
         </div>
       </div>
+
+      <Dialog open={isPrintModalOpen} onOpenChange={setIsPrintModalOpen}>
+        <DialogContent className="flex flex-col max-w-[210mm] w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0">
+          <DialogHeader className="flex-shrink-0 print:hidden border-b border-gray-200 p-6 pb-4">
+            <DialogTitle className="text-black">
+              Deaccession Board Report
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto">
+            {exportData ? (
+              <div className="space-y-5 bg-white text-black p-6 print:p-[15mm] print:space-y-4 print:break-inside-avoid-page">
+                <div className="flex items-start gap-4 border-b border-gray-200 pb-4 print:gap-3 print:pb-3">
+                  {exportData.collection?.primaryImageUrl && (
+                    <img
+                      src={exportData.collection.primaryImageUrl}
+                      alt={exportData.collection.title}
+                      className="h-24 w-24 flex-shrink-0 rounded border border-gray-300 object-cover print:h-20 print:w-20"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500 print:text-[10px]">
+                      {exportData.organization.name}
+                    </p>
+                    <h1 className="text-xl font-bold text-black print:text-lg">
+                      Deaccession Report
+                    </h1>
+                    <p className="text-sm text-gray-600 print:text-xs">
+                      {exportData.deaccession.deaccessionNumber}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span
+                      className={`inline-block rounded px-2 py-1 text-xs font-medium ${
+                        exportData.deaccession.status === "approved"
+                          ? "bg-green-100 text-green-800"
+                          : exportData.deaccession.status === "rejected"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-amber-100 text-amber-800"
+                      }`}
+                    >
+                      {exportData.deaccession.status.charAt(0).toUpperCase() +
+                        exportData.deaccession.status.slice(1)}
+                    </span>
+                  </div>
+                </div>
+
+                {exportData.collection && (
+                  <div className="print:break-inside-avoid">
+                    <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                      Object Information
+                    </h2>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                          Title
+                        </p>
+                        <p className="text-black">
+                          {exportData.collection.title}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                          Accession Number
+                        </p>
+                        <p className="text-black">
+                          {exportData.collection.accessionNumber || "—"}
+                        </p>
+                      </div>
+                      {exportData.collection.description && (
+                        <div className="col-span-2">
+                          <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                            Description
+                          </p>
+                          <p className="text-black">
+                            {exportData.collection.description}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="print:break-inside-avoid">
+                  <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                    Deaccession Details
+                  </h2>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                        Date Deaccessioned
+                      </p>
+                      <p className="text-black">
+                        {format(
+                          new Date(exportData.deaccession.dateDeaccessioned),
+                          "MMMM d, yyyy",
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                        Method
+                      </p>
+                      <p className="text-black capitalize">
+                        {exportData.deaccession.method}
+                      </p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                        Reason
+                      </p>
+                      <p className="text-black whitespace-pre-wrap">
+                        {exportData.deaccession.reason}
+                      </p>
+                    </div>
+                    {exportData.deaccession.disposition && (
+                      <div className="col-span-2">
+                        <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                          Disposition
+                        </p>
+                        <p className="text-black whitespace-pre-wrap">
+                          {exportData.deaccession.disposition}
+                        </p>
+                      </div>
+                    )}
+                    {exportData.deaccession.notes && (
+                      <div className="col-span-2">
+                        <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                          Notes
+                        </p>
+                        <p className="text-black whitespace-pre-wrap">
+                          {exportData.deaccession.notes}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {(exportData.deaccession.proceedsAmount ||
+                  exportData.deaccession.proceedsRecipient) && (
+                  <div className="print:break-inside-avoid">
+                    <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                      <DollarSign className="inline h-3 w-3 mr-1" />
+                      Proceeds Information
+                    </h2>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
+                      {exportData.deaccession.proceedsAmount !== undefined && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                            Amount
+                          </p>
+                          <p className="text-black font-semibold">
+                            {new Intl.NumberFormat("en-US", {
+                              style: "currency",
+                              currency:
+                                exportData.deaccession.proceedsCurrency ||
+                                "USD",
+                            }).format(exportData.deaccession.proceedsAmount)}
+                          </p>
+                        </div>
+                      )}
+                      {exportData.deaccession.proceedsRecipient && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                            Recipient
+                          </p>
+                          <p className="text-black">
+                            {exportData.deaccession.proceedsRecipient}
+                          </p>
+                        </div>
+                      )}
+                      {exportData.deaccession.proceedsDate && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                            Date Received
+                          </p>
+                          <p className="text-black">
+                            {format(
+                              new Date(exportData.deaccession.proceedsDate),
+                              "MMMM d, yyyy",
+                            )}
+                          </p>
+                        </div>
+                      )}
+                      {exportData.deaccession.proceedsNotes && (
+                        <div className="col-span-2">
+                          <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                            Proceeds Notes
+                          </p>
+                          <p className="text-black whitespace-pre-wrap">
+                            {exportData.deaccession.proceedsNotes}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {exportData.workflowHistory.length > 0 && (
+                  <div className="print:break-inside-avoid">
+                    <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                      Approval History
+                    </h2>
+                    <div className="space-y-2">
+                      {exportData.workflowHistory.map((entry, index) => (
+                        <div
+                          key={`${entry.step}-${entry.approvedAt}`}
+                          className="flex items-start gap-3 text-sm print:text-xs"
+                        >
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-xs font-medium flex-shrink-0">
+                            {entry.step}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-black">
+                              {entry.step === 0
+                                ? "Created"
+                                : `Step ${entry.step} Approved`}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {entry.approverName} •{" "}
+                              {format(
+                                new Date(entry.approvedAt),
+                                "MMM d, yyyy 'at' h:mm a",
+                              )}
+                            </p>
+                            {entry.comment && (
+                              <p className="mt-1 text-xs italic text-gray-600">
+                                "{entry.comment}"
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {exportData.deaccession.approvedAt &&
+                  exportData.approverName && (
+                    <div className="print:break-inside-avoid border-t border-gray-200 pt-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                            Final Approval
+                          </p>
+                          <p className="text-sm font-medium text-black">
+                            {exportData.approverName}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {format(
+                              new Date(exportData.deaccession.approvedAt),
+                              "MMMM d, yyyy 'at' h:mm a",
+                            )}
+                          </p>
+                        </div>
+                        <CheckCircle className="h-8 w-8 text-green-600" />
+                      </div>
+                    </div>
+                  )}
+
+                <div className="border-t border-gray-200 pt-3 text-[10px] text-gray-400 print:pt-2 print:text-[9px]">
+                  <p>
+                    Generated on{" "}
+                    {format(new Date(), "MMMM d, yyyy 'at' h:mm a")} •{" "}
+                    {exportData.organization.name}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              </div>
+            )}
+          </div>
+
+          <div className="flex-shrink-0 flex justify-end gap-2 p-6 pt-4 border-t border-gray-200 bg-white print:hidden">
+            <Button
+              variant="outline"
+              onClick={() => setIsPrintModalOpen(false)}
+            >
+              Close
+            </Button>
+            <Button onClick={() => window.print()}>
+              <Printer className="mr-2 h-4 w-4" />
+              Print
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

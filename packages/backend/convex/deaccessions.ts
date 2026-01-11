@@ -59,6 +59,11 @@ export const create = mutation({
     ),
     disposition: v.optional(v.string()),
     notes: v.optional(v.string()),
+    proceedsAmount: v.optional(v.number()),
+    proceedsCurrency: v.optional(v.string()),
+    proceedsRecipient: v.optional(v.string()),
+    proceedsDate: v.optional(v.number()),
+    proceedsNotes: v.optional(v.string()),
   },
   returns: v.id("deaccessions"),
   handler: async (ctx, args) => {
@@ -131,9 +136,14 @@ export const create = mutation({
       method: args.method,
       disposition: args.disposition,
       notes: args.notes,
-      status: workflowConfig ? "pending" : "approved", // Auto-approve if no workflow
+      status: workflowConfig ? "pending" : "approved",
       workflowStep: workflowConfig ? 1 : undefined,
       workflowHistory,
+      proceedsAmount: args.proceedsAmount,
+      proceedsCurrency: args.proceedsCurrency,
+      proceedsRecipient: args.proceedsRecipient,
+      proceedsDate: args.proceedsDate,
+      proceedsNotes: args.proceedsNotes,
     });
 
     // Log audit action
@@ -352,6 +362,11 @@ export const get = query({
           }),
         ),
       ),
+      proceedsAmount: v.optional(v.number()),
+      proceedsCurrency: v.optional(v.string()),
+      proceedsRecipient: v.optional(v.string()),
+      proceedsDate: v.optional(v.number()),
+      proceedsNotes: v.optional(v.string()),
     }),
     v.null(),
   ),
@@ -392,6 +407,11 @@ export const update = mutation({
     ),
     disposition: v.optional(v.string()),
     notes: v.optional(v.string()),
+    proceedsAmount: v.optional(v.number()),
+    proceedsCurrency: v.optional(v.string()),
+    proceedsRecipient: v.optional(v.string()),
+    proceedsDate: v.optional(v.number()),
+    proceedsNotes: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -422,12 +442,27 @@ export const update = mutation({
       method?: "sale" | "donation" | "destruction" | "transfer";
       disposition?: string;
       notes?: string;
+      proceedsAmount?: number;
+      proceedsCurrency?: string;
+      proceedsRecipient?: string;
+      proceedsDate?: number;
+      proceedsNotes?: string;
     } = {};
 
     if (args.reason !== undefined) updates.reason = args.reason;
     if (args.method !== undefined) updates.method = args.method;
     if (args.disposition !== undefined) updates.disposition = args.disposition;
     if (args.notes !== undefined) updates.notes = args.notes;
+    if (args.proceedsAmount !== undefined)
+      updates.proceedsAmount = args.proceedsAmount;
+    if (args.proceedsCurrency !== undefined)
+      updates.proceedsCurrency = args.proceedsCurrency;
+    if (args.proceedsRecipient !== undefined)
+      updates.proceedsRecipient = args.proceedsRecipient;
+    if (args.proceedsDate !== undefined)
+      updates.proceedsDate = args.proceedsDate;
+    if (args.proceedsNotes !== undefined)
+      updates.proceedsNotes = args.proceedsNotes;
 
     await ctx.db.patch(args.deaccessionId, updates);
 
@@ -783,5 +818,263 @@ export const getWorkflowHistory = query({
     );
 
     return enrichedHistory;
+  },
+});
+
+export const getExportData = query({
+  args: {
+    deaccessionId: v.id("deaccessions"),
+  },
+  returns: v.union(
+    v.object({
+      deaccession: v.object({
+        _id: v.id("deaccessions"),
+        deaccessionNumber: v.string(),
+        dateDeaccessioned: v.number(),
+        reason: v.string(),
+        method: v.string(),
+        disposition: v.optional(v.string()),
+        status: v.string(),
+        notes: v.optional(v.string()),
+        proceedsAmount: v.optional(v.number()),
+        proceedsCurrency: v.optional(v.string()),
+        proceedsRecipient: v.optional(v.string()),
+        proceedsDate: v.optional(v.number()),
+        proceedsNotes: v.optional(v.string()),
+        approvedAt: v.optional(v.number()),
+      }),
+      collection: v.union(
+        v.object({
+          _id: v.id("collections"),
+          title: v.string(),
+          accessionNumber: v.optional(v.string()),
+          description: v.optional(v.string()),
+          primaryImageUrl: v.optional(v.string()),
+        }),
+        v.null(),
+      ),
+      organization: v.object({
+        name: v.string(),
+        slug: v.string(),
+      }),
+      workflowHistory: v.array(
+        v.object({
+          step: v.number(),
+          approverName: v.string(),
+          approvedAt: v.number(),
+          comment: v.optional(v.string()),
+        }),
+      ),
+      approverName: v.optional(v.string()),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const deaccession = await ctx.db.get(args.deaccessionId);
+    if (!deaccession) {
+      return null;
+    }
+
+    await requirePermission(
+      ctx,
+      deaccession.organizationId,
+      "collections.read",
+    );
+
+    const collection = await ctx.db.get(deaccession.collectionId);
+    const organization = await ctx.db.get(deaccession.organizationId);
+
+    if (!organization) {
+      return null;
+    }
+
+    const history = deaccession.workflowHistory ?? [];
+    const enrichedHistory = await Promise.all(
+      history.map(async (item) => {
+        const approver = await ctx.db.get(item.approvedBy);
+        return {
+          step: item.step,
+          approverName: approver?.name || approver?.username || "Unknown",
+          approvedAt: item.approvedAt,
+          comment: item.comment,
+        };
+      }),
+    );
+
+    let approverName: string | undefined;
+    if (deaccession.approvedBy) {
+      const approver = await ctx.db.get(deaccession.approvedBy);
+      approverName = approver?.name || approver?.username || undefined;
+    }
+
+    let primaryImageUrl: string | undefined;
+    if (collection) {
+      const primaryMedia = await ctx.db
+        .query("mediaFiles")
+        .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
+        .filter((q) => q.eq(q.field("isPrimary"), true))
+        .first();
+      if (primaryMedia?.storageId) {
+        primaryImageUrl =
+          (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined;
+      }
+    }
+
+    return {
+      deaccession: {
+        _id: deaccession._id,
+        deaccessionNumber: deaccession.deaccessionNumber,
+        dateDeaccessioned: deaccession.dateDeaccessioned,
+        reason: deaccession.reason,
+        method: deaccession.method,
+        disposition: deaccession.disposition,
+        status: deaccession.status,
+        notes: deaccession.notes,
+        proceedsAmount: deaccession.proceedsAmount,
+        proceedsCurrency: deaccession.proceedsCurrency,
+        proceedsRecipient: deaccession.proceedsRecipient,
+        proceedsDate: deaccession.proceedsDate,
+        proceedsNotes: deaccession.proceedsNotes,
+        approvedAt: deaccession.approvedAt,
+      },
+      collection: collection
+        ? {
+            _id: collection._id,
+            title: collection.title,
+            accessionNumber: collection.accessionNumber,
+            description: collection.description,
+            primaryImageUrl,
+          }
+        : null,
+      organization: {
+        name: organization.name,
+        slug: organization.slug,
+      },
+      workflowHistory: enrichedHistory,
+      approverName,
+    };
+  },
+});
+
+export const listForExport = query({
+  args: {
+    organizationId: v.id("organizations"),
+    status: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("approved"),
+        v.literal("rejected"),
+      ),
+    ),
+    dateFrom: v.optional(v.number()),
+    dateTo: v.optional(v.number()),
+  },
+  returns: v.object({
+    items: v.array(
+      v.object({
+        deaccessionNumber: v.string(),
+        dateDeaccessioned: v.number(),
+        reason: v.string(),
+        method: v.string(),
+        disposition: v.optional(v.string()),
+        status: v.string(),
+        collectionTitle: v.string(),
+        accessionNumber: v.optional(v.string()),
+        proceedsAmount: v.optional(v.number()),
+        proceedsCurrency: v.optional(v.string()),
+        proceedsRecipient: v.optional(v.string()),
+        proceedsDate: v.optional(v.number()),
+        approverName: v.optional(v.string()),
+        approvedAt: v.optional(v.number()),
+      }),
+    ),
+    totals: v.object({
+      count: v.number(),
+      pendingCount: v.number(),
+      approvedCount: v.number(),
+      rejectedCount: v.number(),
+      totalProceeds: v.number(),
+    }),
+    organization: v.object({
+      name: v.string(),
+      slug: v.string(),
+    }),
+  }),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
+    const organization = await ctx.db.get(args.organizationId);
+    if (!organization) {
+      throw new Error("Organization not found");
+    }
+
+    let results = await ctx.db
+      .query("deaccessions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    if (args.status) {
+      results = results.filter((d) => d.status === args.status);
+    }
+    if (args.dateFrom) {
+      results = results.filter((d) => d.dateDeaccessioned >= args.dateFrom!);
+    }
+    if (args.dateTo) {
+      results = results.filter((d) => d.dateDeaccessioned <= args.dateTo!);
+    }
+
+    results.sort((a, b) => b.dateDeaccessioned - a.dateDeaccessioned);
+
+    const items = await Promise.all(
+      results.map(async (d) => {
+        const collection = await ctx.db.get(d.collectionId);
+        let approverName: string | undefined;
+        if (d.approvedBy) {
+          const approver = await ctx.db.get(d.approvedBy);
+          approverName = approver?.name || approver?.username || undefined;
+        }
+        return {
+          deaccessionNumber: d.deaccessionNumber,
+          dateDeaccessioned: d.dateDeaccessioned,
+          reason: d.reason,
+          method: d.method,
+          disposition: d.disposition,
+          status: d.status,
+          collectionTitle: collection?.title || "Unknown",
+          accessionNumber: collection?.accessionNumber,
+          proceedsAmount: d.proceedsAmount,
+          proceedsCurrency: d.proceedsCurrency,
+          proceedsRecipient: d.proceedsRecipient,
+          proceedsDate: d.proceedsDate,
+          approverName,
+          approvedAt: d.approvedAt,
+        };
+      }),
+    );
+
+    const pendingCount = results.filter((d) => d.status === "pending").length;
+    const approvedCount = results.filter((d) => d.status === "approved").length;
+    const rejectedCount = results.filter((d) => d.status === "rejected").length;
+    const totalProceeds = results.reduce(
+      (sum, d) => sum + (d.proceedsAmount || 0),
+      0,
+    );
+
+    return {
+      items,
+      totals: {
+        count: results.length,
+        pendingCount,
+        approvedCount,
+        rejectedCount,
+        totalProceeds,
+      },
+      organization: {
+        name: organization.name,
+        slug: organization.slug,
+      },
+    };
   },
 });

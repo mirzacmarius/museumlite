@@ -4,11 +4,25 @@ import { useOrganization } from "@/components/organization-provider";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@v1/ui/dialog";
 import { Input } from "@v1/ui/input";
 import { ScrollArea } from "@v1/ui/scroll-area";
 import { useQuery } from "convex/react";
 import { format } from "date-fns";
-import { Archive, Building2, Download, Plus, Search } from "lucide-react";
+import {
+  Archive,
+  Building2,
+  Download,
+  Loader2,
+  Plus,
+  Printer,
+  Search,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -83,6 +97,7 @@ function DeaccessionTable({
   >("all");
   const [search, setSearch] = useState("");
   const [cursor, setCursor] = useState<string | null>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const prevFiltersRef = useRef({ status, search });
 
   useEffect(() => {
@@ -96,6 +111,16 @@ function DeaccessionTable({
     status: status !== "all" ? status : undefined,
     search: search || undefined,
   });
+
+  const exportData = useQuery(
+    api.deaccessions.listForExport,
+    isExportModalOpen
+      ? {
+          organizationId,
+          status: status !== "all" ? status : undefined,
+        }
+      : "skip",
+  );
 
   const pendingCount =
     deaccessions?.page.filter((d) => d.status === "pending").length ?? 0;
@@ -134,6 +159,7 @@ function DeaccessionTable({
           </div>
           <button
             type="button"
+            onClick={() => setIsExportModalOpen(true)}
             className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-white"
           >
             <Download className="h-3 w-3" />
@@ -186,7 +212,9 @@ function DeaccessionTable({
               {deaccessions === undefined && (
                 <tr>
                   <td colSpan={5} className="px-4 py-16 text-center">
-                    <p className="text-muted-foreground">Loading deaccessions...</p>
+                    <p className="text-muted-foreground">
+                      Loading deaccessions...
+                    </p>
                   </td>
                 </tr>
               )}
@@ -196,7 +224,9 @@ function DeaccessionTable({
                   <td colSpan={5} className="px-4 py-16 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <Archive className="h-8 w-8 text-muted-foreground" />
-                      <p className="text-muted-foreground">No deaccessions found</p>
+                      <p className="text-muted-foreground">
+                        No deaccessions found
+                      </p>
                     </div>
                   </td>
                 </tr>
@@ -222,6 +252,164 @@ function DeaccessionTable({
           </Button>
         </div>
       )}
+
+      <Dialog open={isExportModalOpen} onOpenChange={setIsExportModalOpen}>
+        <DialogContent className="flex flex-col max-w-[210mm] w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0">
+          <DialogHeader className="flex-shrink-0 print:hidden border-b border-gray-200 p-6 pb-4">
+            <DialogTitle className="text-black">
+              Deaccessions Summary Report
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto">
+            {exportData ? (
+              <div className="space-y-5 bg-white text-black p-6 print:p-[15mm] print:space-y-4">
+                <div className="border-b border-gray-200 pb-4">
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    {exportData.organization.name}
+                  </p>
+                  <h1 className="text-xl font-bold text-black">
+                    Deaccessions Report
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    {status !== "all"
+                      ? `${status.charAt(0).toUpperCase() + status.slice(1)} deaccessions`
+                      : "All deaccessions"}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-4 gap-4 print:gap-2">
+                  <div className="rounded border border-gray-200 p-3 text-center">
+                    <p className="text-2xl font-bold text-black">
+                      {exportData.totals.count}
+                    </p>
+                    <p className="text-xs text-gray-500">Total</p>
+                  </div>
+                  <div className="rounded border border-gray-200 p-3 text-center">
+                    <p className="text-2xl font-bold text-amber-600">
+                      {exportData.totals.pendingCount}
+                    </p>
+                    <p className="text-xs text-gray-500">Pending</p>
+                  </div>
+                  <div className="rounded border border-gray-200 p-3 text-center">
+                    <p className="text-2xl font-bold text-green-600">
+                      {exportData.totals.approvedCount}
+                    </p>
+                    <p className="text-xs text-gray-500">Approved</p>
+                  </div>
+                  <div className="rounded border border-gray-200 p-3 text-center">
+                    <p className="text-2xl font-bold text-black">
+                      {new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                        maximumFractionDigits: 0,
+                      }).format(exportData.totals.totalProceeds)}
+                    </p>
+                    <p className="text-xs text-gray-500">Total Proceeds</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+                    Deaccession Records
+                  </h2>
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="py-2 text-left font-medium text-gray-500">
+                          Object
+                        </th>
+                        <th className="py-2 text-left font-medium text-gray-500">
+                          Date
+                        </th>
+                        <th className="py-2 text-left font-medium text-gray-500">
+                          Method
+                        </th>
+                        <th className="py-2 text-right font-medium text-gray-500">
+                          Proceeds
+                        </th>
+                        <th className="py-2 text-right font-medium text-gray-500">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {exportData.items.map((item) => (
+                        <tr key={item.deaccessionNumber}>
+                          <td className="py-2">
+                            <p className="font-medium text-black">
+                              {item.collectionTitle}
+                            </p>
+                            <p className="text-gray-500">
+                              {item.accessionNumber || item.deaccessionNumber}
+                            </p>
+                          </td>
+                          <td className="py-2 text-gray-600">
+                            {format(
+                              new Date(item.dateDeaccessioned),
+                              "MMM d, yyyy",
+                            )}
+                          </td>
+                          <td className="py-2 capitalize text-gray-600">
+                            {item.method}
+                          </td>
+                          <td className="py-2 text-right text-gray-600">
+                            {item.proceedsAmount
+                              ? new Intl.NumberFormat("en-US", {
+                                  style: "currency",
+                                  currency: item.proceedsCurrency || "USD",
+                                }).format(item.proceedsAmount)
+                              : "—"}
+                          </td>
+                          <td className="py-2 text-right">
+                            <span
+                              className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                                item.status === "approved"
+                                  ? "bg-green-100 text-green-700"
+                                  : item.status === "rejected"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-amber-100 text-amber-700"
+                              }`}
+                            >
+                              {item.status.charAt(0).toUpperCase() +
+                                item.status.slice(1)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="border-t border-gray-200 pt-3 text-[10px] text-gray-400">
+                  <p>
+                    Generated on{" "}
+                    {format(new Date(), "MMMM d, yyyy 'at' h:mm a")} •{" "}
+                    {exportData.organization.name}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              </div>
+            )}
+          </div>
+
+          <div className="flex-shrink-0 flex justify-end gap-2 p-6 pt-4 border-t border-gray-200 bg-white print:hidden">
+            <Button
+              variant="outline"
+              onClick={() => setIsExportModalOpen(false)}
+            >
+              Close
+            </Button>
+            <Button onClick={() => window.print()}>
+              <Printer className="mr-2 h-4 w-4" />
+              Print
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

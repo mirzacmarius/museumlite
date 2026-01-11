@@ -44,6 +44,11 @@ export default function EditDeaccessionPage() {
     method: "sale" as DeaccessionMethod,
     disposition: "",
     notes: "",
+    proceedsAmount: "",
+    proceedsCurrency: "USD",
+    proceedsRecipient: "",
+    proceedsDate: "",
+    proceedsNotes: "",
   });
 
   useEffect(() => {
@@ -53,6 +58,13 @@ export default function EditDeaccessionPage() {
         method: deaccession.method,
         disposition: deaccession.disposition || "",
         notes: deaccession.notes || "",
+        proceedsAmount: deaccession.proceedsAmount?.toString() || "",
+        proceedsCurrency: deaccession.proceedsCurrency || "USD",
+        proceedsRecipient: deaccession.proceedsRecipient || "",
+        proceedsDate: deaccession.proceedsDate
+          ? new Date(deaccession.proceedsDate).toISOString().slice(0, 10)
+          : "",
+        proceedsNotes: deaccession.proceedsNotes || "",
       });
     }
   }, [deaccession]);
@@ -122,6 +134,15 @@ export default function EditDeaccessionPage() {
         method: formData.method,
         disposition: formData.disposition || undefined,
         notes: formData.notes || undefined,
+        proceedsAmount: formData.proceedsAmount
+          ? Number.parseFloat(formData.proceedsAmount)
+          : undefined,
+        proceedsCurrency: formData.proceedsCurrency || undefined,
+        proceedsRecipient: formData.proceedsRecipient || undefined,
+        proceedsDate: formData.proceedsDate
+          ? new Date(formData.proceedsDate).getTime()
+          : undefined,
+        proceedsNotes: formData.proceedsNotes || undefined,
       });
       router.push(`/deaccessions/${deaccessionId}`);
     } catch (err) {
@@ -244,6 +265,106 @@ export default function EditDeaccessionPage() {
                   rows={4}
                 />
               </div>
+
+              {formData.method === "sale" && (
+                <div className="border-t border-border pt-6 mt-6">
+                  <h3 className="text-sm font-medium text-foreground mb-4">
+                    Proceeds Information
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="proceedsAmount">Amount</Label>
+                        <Input
+                          id="proceedsAmount"
+                          type="number"
+                          step="0.01"
+                          value={formData.proceedsAmount}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              proceedsAmount: e.target.value,
+                            })
+                          }
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="proceedsCurrency">Currency</Label>
+                        <Select
+                          value={formData.proceedsCurrency}
+                          onValueChange={(value) =>
+                            setFormData({
+                              ...formData,
+                              proceedsCurrency: value,
+                            })
+                          }
+                        >
+                          <SelectTrigger id="proceedsCurrency">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="USD">USD</SelectItem>
+                            <SelectItem value="EUR">EUR</SelectItem>
+                            <SelectItem value="GBP">GBP</SelectItem>
+                            <SelectItem value="CHF">CHF</SelectItem>
+                            <SelectItem value="NOK">NOK</SelectItem>
+                            <SelectItem value="SEK">SEK</SelectItem>
+                            <SelectItem value="DKK">DKK</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="proceedsRecipient">Recipient</Label>
+                        <Input
+                          id="proceedsRecipient"
+                          value={formData.proceedsRecipient}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              proceedsRecipient: e.target.value,
+                            })
+                          }
+                          placeholder="e.g., General acquisitions fund"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="proceedsDate">Date Received</Label>
+                        <Input
+                          id="proceedsDate"
+                          type="date"
+                          value={formData.proceedsDate}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              proceedsDate: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="proceedsNotes">Proceeds Notes</Label>
+                      <Textarea
+                        id="proceedsNotes"
+                        value={formData.proceedsNotes}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            proceedsNotes: e.target.value,
+                          })
+                        }
+                        placeholder="Additional notes about the proceeds..."
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end gap-4">
                 <Button
