@@ -30,10 +30,11 @@ import {
   Truck,
   Users,
 } from "lucide-react";
-import type * as React from "react";
+import * as React from "react";
 
 import { LanguageSwitcher } from "@/app/[locale]/(dashboard)/_components/language-switcher";
 import { ThemeSwitcher } from "@/app/[locale]/(dashboard)/_components/theme-switcher";
+import { useCommandPalette } from "@/components/command-palette-provider";
 import { useOrganization } from "@/components/organization-provider";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { CheckoutLink } from "@convex-dev/polar/react";
@@ -192,11 +193,19 @@ export function AppSidebar({
 }) {
   const { organizations, currentOrganizationId, setCurrentOrganizationId } =
     useOrganization();
+  const { setOpen } = useCommandPalette();
   const user = usePreloadedQuery(preloadedUser);
   const products = usePreloadedQuery(preloadedProducts);
   const { signOut } = useAuthActions();
   const pathname = usePathname();
   const router = useRouter();
+
+  const openCommandPalette = React.useCallback(() => {
+    setOpen(true);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("command-palette:open"));
+    }
+  }, [setOpen]);
 
   const monthlyProProduct = products?.find(
     (product) => product.recurringInterval === "month",
@@ -371,7 +380,10 @@ export function AppSidebar({
             <input
               type="text"
               placeholder="Search objects, loans..."
-              className="w-full bg-muted/40 border border-border rounded-md text-xs py-1.5 pl-8 pr-3 text-foreground/80 placeholder-muted-foreground/60 focus:outline-none focus:bg-muted focus:border-input transition-all"
+              className="w-full bg-muted/40 border border-border rounded-md text-xs py-1.5 pl-8 pr-3 text-foreground/80 placeholder-muted-foreground/60 focus:outline-none focus:bg-muted focus:border-input transition-all cursor-pointer"
+              readOnly
+              onClick={openCommandPalette}
+              onFocus={openCommandPalette}
             />
             <div className="absolute right-2 top-1.5 flex gap-1">
               <span className="text-[10px] bg-muted text-muted-foreground px-1 rounded border border-input">
