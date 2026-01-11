@@ -610,6 +610,16 @@ export const get = query({
       approvedAt: v.optional(v.number()),
       notes: v.optional(v.string()),
       useDetailedConditionReports: v.optional(v.boolean()),
+      workflowStep: v.optional(v.number()),
+      workflowHistory: v.array(
+        v.object({
+          step: v.number(),
+          approvedBy: v.id("users"),
+          approvedByName: v.optional(v.string()),
+          approvedAt: v.number(),
+          comment: v.optional(v.string()),
+        }),
+      ),
       items: v.array(
         v.object({
           _id: v.id("loanItems"),
@@ -695,6 +705,20 @@ export const get = query({
       }),
     );
 
+    const rawHistory = loan.workflowHistory ?? [];
+    const workflowHistoryWithNames = await Promise.all(
+      rawHistory.map(async (entry) => {
+        const user = await ctx.db.get(entry.approvedBy);
+        return {
+          step: entry.step,
+          approvedBy: entry.approvedBy,
+          approvedByName: user?.name || user?.username || undefined,
+          approvedAt: entry.approvedAt,
+          comment: entry.comment,
+        };
+      }),
+    );
+
     return {
       _id: loan._id,
       organizationId: loan.organizationId,
@@ -713,6 +737,8 @@ export const get = query({
       approvedAt: loan.approvedAt,
       notes: loan.notes,
       useDetailedConditionReports: loan.useDetailedConditionReports,
+      workflowStep: loan.workflowStep,
+      workflowHistory: workflowHistoryWithNames,
       items,
     };
   },

@@ -12,6 +12,7 @@ import type * as accessionTemplates from "../accessionTemplates.js";
 import type * as accessions from "../accessions.js";
 import type * as accounts from "../accounts.js";
 import type * as archiveDetails from "../archiveDetails.js";
+import type * as assignments from "../assignments.js";
 import type * as audit from "../audit.js";
 import type * as auditLog from "../auditLog.js";
 import type * as auth from "../auth.js";
@@ -82,6 +83,7 @@ declare const fullApi: ApiFromModules<{
   accessions: typeof accessions;
   accounts: typeof accounts;
   archiveDetails: typeof archiveDetails;
+  assignments: typeof assignments;
   audit: typeof audit;
   auditLog: typeof auditLog;
   auth: typeof auth;
