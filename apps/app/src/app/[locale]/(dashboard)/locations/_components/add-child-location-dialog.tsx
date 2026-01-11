@@ -60,6 +60,7 @@ export function AddChildLocationDialog({
   const [type, setType] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [capacity, setCapacity] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,13 +105,14 @@ export function AddChildLocationDialog({
           : undefined,
         address: address.trim() || undefined,
         notes: notes.trim() || undefined,
+        capacity: capacity ? Number.parseInt(capacity, 10) : undefined,
       });
 
-      // Reset form
       setName("");
       setType("");
       setAddress("");
       setNotes("");
+      setCapacity("");
       onOpenChange(false);
       onSuccess?.();
     } catch (err) {
@@ -179,6 +181,17 @@ export function AddChildLocationDialog({
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="Physical address (optional)"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="capacity">Capacity</Label>
+              <Input
+                id="capacity"
+                type="number"
+                min="0"
+                value={capacity}
+                onChange={(e) => setCapacity(e.target.value)}
+                placeholder="Max objects (optional)"
               />
             </div>
             <div className="space-y-2">

@@ -772,6 +772,8 @@ export default defineSchema({
     ),
     notes: v.optional(v.string()),
     isActive: v.boolean(),
+    // Capacity tracking for storage locations
+    capacity: v.optional(v.number()), // Max number of objects this location can hold
     customFields: v.optional(v.record(v.string(), v.any())),
   })
     .index("by_organization", ["organizationId"])

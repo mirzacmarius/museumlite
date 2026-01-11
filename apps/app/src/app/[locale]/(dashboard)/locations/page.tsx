@@ -4,6 +4,7 @@ import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { LocationSidebar } from "@/components/locations/location-sidebar";
 import { LocationStats } from "@/components/locations/location-stats";
+import { OccupancyDisplay } from "@/components/locations/occupancy-display";
 import { VitrinesGrid } from "@/components/locations/vitrines-grid";
 import { WallDisplay } from "@/components/locations/wall-display";
 import { SecureDrawers } from "@/components/locations/secure-drawers";
@@ -101,6 +102,11 @@ function LocationLayout({
 
   const objectsAtLocation = useQuery(
     api.locations.getObjectsAtLocation,
+    selectedLocationId ? { locationId: selectedLocationId } : "skip",
+  );
+
+  const occupancy = useQuery(
+    api.locations.getOccupancy,
     selectedLocationId ? { locationId: selectedLocationId } : "skip",
   );
 
@@ -260,11 +266,25 @@ function LocationLayout({
                   </span>
                 </h2>
               </div>
-              <LocationStats
-                temperature={4.0}
-                humidity={35}
-                status="Restricted"
-              />
+              <div className="flex flex-col gap-2">
+                {occupancy && (
+                  <OccupancyDisplay
+                    objectCount={occupancy.objectCount}
+                    capacity={occupancy.capacity}
+                    occupancyPercent={occupancy.occupancyPercent}
+                    isOverCapacity={occupancy.isOverCapacity}
+                  />
+                )}
+                <LocationStats
+                  temperature={
+                    (selectedLocation.customFields?.temperature as number) ?? 21
+                  }
+                  humidity={
+                    (selectedLocation.customFields?.humidity as number) ?? 45
+                  }
+                  status="Active"
+                />
+              </div>
             </div>
 
             {/* Exhibition View - Vitrines Grid */}

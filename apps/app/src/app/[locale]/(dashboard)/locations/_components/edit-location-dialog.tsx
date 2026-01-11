@@ -51,6 +51,9 @@ export function EditLocationDialog({
   const [type, setType] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [capacity, setCapacity] = useState<string>("");
+  const [temperature, setTemperature] = useState<string>("");
+  const [humidity, setHumidity] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch the location details
@@ -61,13 +64,19 @@ export function EditLocationDialog({
 
   const updateLocation = useMutation(api.locations.update);
 
-  // Load location data when it arrives
   useEffect(() => {
     if (location) {
       setName(location.name);
       setType(location.type);
       setAddress(location.address || "");
       setNotes(location.notes || "");
+      setCapacity(location.capacity?.toString() || "");
+      setTemperature(
+        (location.customFields?.temperature as number)?.toString() || "",
+      );
+      setHumidity(
+        (location.customFields?.humidity as number)?.toString() || "",
+      );
     }
   }, [location]);
 
@@ -77,12 +86,24 @@ export function EditLocationDialog({
 
     setIsSubmitting(true);
     try {
+      const customFields: Record<string, unknown> = {
+        ...(location.customFields || {}),
+      };
+      if (temperature) {
+        customFields.temperature = Number.parseFloat(temperature);
+      }
+      if (humidity) {
+        customFields.humidity = Number.parseFloat(humidity);
+      }
+
       await updateLocation({
         locationId: locationId as Id<"locations">,
         name,
         type,
         address: address || undefined,
         notes: notes || undefined,
+        capacity: capacity ? Number.parseInt(capacity, 10) : undefined,
+        customFields,
       });
       onOpenChange(false);
     } catch (error) {
@@ -144,6 +165,44 @@ export function EditLocationDialog({
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="Enter address (optional)"
                 />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="capacity">Capacity</Label>
+                <Input
+                  id="capacity"
+                  type="number"
+                  min="0"
+                  value={capacity}
+                  onChange={(e) => setCapacity(e.target.value)}
+                  placeholder="Max objects (optional)"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="temperature">Temperature (°C)</Label>
+                  <Input
+                    id="temperature"
+                    type="number"
+                    step="0.1"
+                    value={temperature}
+                    onChange={(e) => setTemperature(e.target.value)}
+                    placeholder="e.g., 21.0"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="humidity">Humidity (%)</Label>
+                  <Input
+                    id="humidity"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={humidity}
+                    onChange={(e) => setHumidity(e.target.value)}
+                    placeholder="e.g., 45"
+                  />
+                </div>
               </div>
 
               <div className="grid gap-2">

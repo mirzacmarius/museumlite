@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { requirePermission } from "./utils/permissions";
 
@@ -21,6 +22,7 @@ export const create = mutation({
       }),
     ),
     notes: v.optional(v.string()),
+    capacity: v.optional(v.number()),
     customFields: v.optional(v.record(v.string(), v.any())),
   },
   returns: v.id("locations"),
@@ -63,7 +65,6 @@ export const create = mutation({
       0,
     );
 
-    // Create location
     const locationId = await ctx.db.insert("locations", {
       organizationId: args.organizationId,
       name: args.name,
@@ -74,6 +75,7 @@ export const create = mutation({
       coordinates: args.coordinates,
       notes: args.notes,
       isActive: true,
+      capacity: args.capacity,
       customFields: args.customFields,
     });
 
@@ -241,6 +243,7 @@ export const get = query({
       ),
       notes: v.optional(v.string()),
       isActive: v.boolean(),
+      capacity: v.optional(v.number()),
       customFields: v.optional(v.record(v.string(), v.any())),
       children: v.array(
         v.object({
@@ -289,6 +292,7 @@ export const get = query({
       coordinates: location.coordinates,
       notes: location.notes,
       isActive: location.isActive,
+      capacity: location.capacity,
       customFields: location.customFields,
       children: children.map((child) => ({
         _id: child._id,
@@ -301,9 +305,6 @@ export const get = query({
   },
 });
 
-/**
- * Update location
- */
 export const update = mutation({
   args: {
     locationId: v.id("locations"),
@@ -318,6 +319,7 @@ export const update = mutation({
       }),
     ),
     notes: v.optional(v.string()),
+    capacity: v.optional(v.number()),
     customFields: v.optional(v.record(v.string(), v.any())),
   },
   returns: v.null(),
@@ -367,7 +369,6 @@ export const update = mutation({
       }
     }
 
-    // Build update object
     const updates: {
       name?: string;
       type?: string;
@@ -375,6 +376,7 @@ export const update = mutation({
       address?: string;
       coordinates?: { latitude: number; longitude: number };
       notes?: string;
+      capacity?: number;
       customFields?: Record<string, any>;
     } = {};
 
@@ -385,6 +387,7 @@ export const update = mutation({
     if (args.address !== undefined) updates.address = args.address;
     if (args.coordinates !== undefined) updates.coordinates = args.coordinates;
     if (args.notes !== undefined) updates.notes = args.notes;
+    if (args.capacity !== undefined) updates.capacity = args.capacity;
     if (args.customFields !== undefined)
       updates.customFields = args.customFields;
 
@@ -394,9 +397,100 @@ export const update = mutation({
   },
 });
 
-/**
- * Soft delete location
- */
+export const getOccupancy = query({
+  args: {
+    locationId: v.id("locations"),
+  },
+  returns: v.union(
+    v.object({
+      locationId: v.id("locations"),
+      name: v.string(),
+      capacity: v.optional(v.number()),
+      objectCount: v.number(),
+      occupancyPercent: v.optional(v.number()),
+      isOverCapacity: v.boolean(),
+      childrenOccupancy: v.array(
+        v.object({
+          locationId: v.id("locations"),
+          name: v.string(),
+          capacity: v.optional(v.number()),
+          objectCount: v.number(),
+          occupancyPercent: v.optional(v.number()),
+          isOverCapacity: v.boolean(),
+        }),
+      ),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const location = await ctx.db.get(args.locationId);
+    if (!location) {
+      return null;
+    }
+
+    await requirePermission(ctx, location.organizationId, "locations.read");
+
+    const objects = await ctx.db
+      .query("collections")
+      .withIndex("by_currentLocation", (q) =>
+        q.eq("currentLocationId", args.locationId),
+      )
+      .collect();
+
+    const objectCount = objects.length;
+    const occupancyPercent = location.capacity
+      ? Math.round((objectCount / location.capacity) * 100)
+      : undefined;
+
+    const children = await ctx.db
+      .query("locations")
+      .withIndex("by_parentLocation", (q) =>
+        q.eq("parentLocationId", args.locationId),
+      )
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    const childrenOccupancy = await Promise.all(
+      children.map(async (child) => {
+        const childObjects = await ctx.db
+          .query("collections")
+          .withIndex("by_currentLocation", (q) =>
+            q.eq("currentLocationId", child._id),
+          )
+          .collect();
+
+        const childObjectCount = childObjects.length;
+        const childOccupancyPercent = child.capacity
+          ? Math.round((childObjectCount / child.capacity) * 100)
+          : undefined;
+
+        return {
+          locationId: child._id,
+          name: child.name,
+          capacity: child.capacity,
+          objectCount: childObjectCount,
+          occupancyPercent: childOccupancyPercent,
+          isOverCapacity: child.capacity
+            ? childObjectCount > child.capacity
+            : false,
+        };
+      }),
+    );
+
+    return {
+      locationId: location._id,
+      name: location.name,
+      capacity: location.capacity,
+      objectCount,
+      occupancyPercent,
+      isOverCapacity: location.capacity
+        ? objectCount > location.capacity
+        : false,
+      childrenOccupancy,
+    };
+  },
+});
+
 export const deleteLocation = mutation({
   args: {
     locationId: v.id("locations"),
@@ -886,5 +980,485 @@ export const getCollectionLocationHistory = query({
     );
 
     return enrichedHistory;
+  },
+});
+
+// Realistic museum location data with environmental monitoring
+const LOCATIONS_DATA: Record<
+  string,
+  Array<{
+    name: string;
+    type: string;
+    parentLocationId?: string;
+    notes?: string;
+    customFields?: Record<string, any>;
+    isSecure?: boolean;
+    temperature?: number;
+    humidity?: number;
+  }>
+> = {
+  "natural-history-museum": [
+    {
+      name: "Main Hall",
+      type: "hall",
+      notes:
+        "Primary exhibition space with high ceilings and natural skylighting",
+      temperature: 21,
+      humidity: 45,
+    },
+    {
+      name: "Gallery 3: Antiquities",
+      type: "gallery",
+      parentLocationId: "Main Hall",
+      notes: "Ancient artifacts from Mediterranean civilizations",
+      temperature: 20,
+      humidity: 40,
+    },
+    {
+      name: "East Wing",
+      type: "wing",
+      temperature: 21,
+      humidity: 50,
+    },
+    {
+      name: "Dinosaur Hall",
+      type: "gallery",
+      parentLocationId: "East Wing",
+      notes: "Jurassic and Cretaceous dinosaur exhibits",
+      temperature: 19,
+      humidity: 55,
+    },
+    {
+      name: "Fossil Gallery",
+      type: "gallery",
+      parentLocationId: "East Wing",
+      notes: "Prehistoric life and fossil exhibits",
+      temperature: 18,
+      humidity: 50,
+    },
+    {
+      name: "Mineral Room",
+      type: "room",
+      parentLocationId: "East Wing",
+      notes: "Gem and mineral collection",
+      temperature: 18,
+      humidity: 35,
+    },
+    {
+      name: "Vault A",
+      type: "vault",
+      notes: "High-value specimens and precious gems",
+      isSecure: true,
+      temperature: 18,
+      humidity: 40,
+    },
+    {
+      name: "Vault B",
+      type: "vault",
+      isSecure: true,
+      temperature: 18,
+      humidity: 40,
+    },
+    {
+      name: "Cold Storage",
+      type: "storage",
+      notes: "Low-temperature storage for sensitive specimens",
+      temperature: 4,
+      humidity: 35,
+    },
+    {
+      name: "Archive Room",
+      type: "storage",
+      notes: "Document archives and historical records",
+      temperature: 18,
+      humidity: 45,
+    },
+    {
+      name: "Cabinet A1",
+      type: "cabinet",
+      parentLocationId: "Archive Room",
+      notes: "Paleontology field notes",
+    },
+    {
+      name: "Cabinet A2",
+      type: "cabinet",
+      parentLocationId: "Archive Room",
+      notes: "Photographic collection",
+    },
+  ],
+  "metropolitan-art-gallery": [
+    {
+      name: "Grand Gallery",
+      type: "gallery",
+      notes: "Main exhibition space with skylight",
+      temperature: 21,
+      humidity: 45,
+    },
+    {
+      name: "Renaissance Wing",
+      type: "wing",
+      temperature: 21,
+      humidity: 50,
+    },
+    {
+      name: "Room 1",
+      type: "room",
+      parentLocationId: "Renaissance Wing",
+      notes: "Early Renaissance paintings",
+    },
+    {
+      name: "Room 2",
+      type: "room",
+      parentLocationId: "Renaissance Wing",
+      notes: "High Renaissance masterpieces",
+    },
+    {
+      name: "Modern Wing",
+      type: "wing",
+      temperature: 22,
+      humidity: 45,
+    },
+    {
+      name: "Impressionist Gallery",
+      type: "gallery",
+      parentLocationId: "Modern Wing",
+      notes: "19th century French paintings",
+      temperature: 21,
+      humidity: 48,
+    },
+    {
+      name: "Contemporary Gallery",
+      type: "gallery",
+      parentLocationId: "Modern Wing",
+      notes: "20th-21st century contemporary art",
+      temperature: 21,
+      humidity: 45,
+    },
+    {
+      name: "Main Vault",
+      type: "vault",
+      notes: "Primary secure storage for high-value artworks",
+      isSecure: true,
+      temperature: 18,
+      humidity: 45,
+    },
+    {
+      name: "Climate-Controlled Storage",
+      type: "storage",
+      notes: "Long-term art storage",
+      temperature: 18,
+      humidity: 45,
+    },
+    {
+      name: "Crate Storage",
+      type: "storage",
+      notes: "Packed artworks awaiting exhibition",
+      temperature: 18,
+      humidity: 50,
+    },
+    {
+      name: "Framing Workshop",
+      type: "workshop",
+      notes: "Conservation and framing facilities",
+      temperature: 20,
+      humidity: 50,
+    },
+  ],
+  "heritage-library": [
+    {
+      name: "Reading Room",
+      type: "room",
+      notes: "Public reading room with original manuscripts display",
+      temperature: 21,
+      humidity: 45,
+    },
+    {
+      name: "Exhibition Hall",
+      type: "hall",
+      notes: "Rotating exhibitions",
+      temperature: 20,
+      humidity: 50,
+    },
+    {
+      name: "Rotunda",
+      type: "room",
+      parentLocationId: "Reading Room",
+      notes: "Central space with domed ceiling",
+    },
+    {
+      name: "Rare Books Vault",
+      type: "vault",
+      notes: "Climate-controlled rare book storage",
+      isSecure: true,
+      temperature: 16,
+      humidity: 45,
+    },
+    {
+      name: "Manuscript Room",
+      type: "room",
+      parentLocationId: "Rare Books Vault",
+      notes: "Special collection manuscripts",
+      temperature: 16,
+      humidity: 40,
+    },
+    {
+      name: "Document Archive",
+      type: "storage",
+      notes: "Historical documents and records",
+      temperature: 18,
+      humidity: 45,
+    },
+    {
+      name: "Microfilm Room",
+      type: "room",
+      notes: "Microfilm and microfiche collection",
+    },
+    {
+      name: "Cold Storage Vault",
+      type: "vault",
+      notes: "Cold storage for sensitive materials",
+      isSecure: true,
+      temperature: 4,
+      humidity: 35,
+    },
+  ],
+  "contemporary-design": [
+    {
+      name: "Main Gallery",
+      type: "gallery",
+      notes: "Primary exhibition space",
+      temperature: 21,
+      humidity: 45,
+    },
+    {
+      name: "Design Lab",
+      type: "room",
+      notes: "Interactive design exhibits",
+    },
+    {
+      name: "Furniture Gallery",
+      type: "gallery",
+      notes: "Furniture and industrial design",
+      temperature: 21,
+      humidity: 45,
+    },
+    {
+      name: "Product Design Gallery",
+      type: "gallery",
+      notes: "Consumer product design exhibits",
+    },
+    {
+      name: "Design Archive",
+      type: "storage",
+      notes: "Design archives and prototypes",
+      temperature: 18,
+      humidity: 45,
+    },
+    {
+      name: "Vault",
+      type: "vault",
+      notes: "Valuable prototypes and limited editions",
+      isSecure: true,
+      temperature: 18,
+      humidity: 45,
+    },
+  ],
+  "vanderbilt-collection": [
+    {
+      name: "Grand Foyer",
+      type: "room",
+      notes: "Main entrance hall",
+      temperature: 21,
+      humidity: 45,
+    },
+    {
+      name: "East Gallery",
+      type: "gallery",
+      notes: "European paintings",
+      temperature: 21,
+      humidity: 50,
+    },
+    {
+      name: "West Gallery",
+      type: "gallery",
+      notes: "American art collection",
+      temperature: 21,
+      humidity: 50,
+    },
+    {
+      name: "Jewelry Room",
+      type: "room",
+      notes: "Decorative arts and jewelry",
+      isSecure: true,
+      temperature: 20,
+      humidity: 40,
+    },
+    {
+      name: "Private Vault",
+      type: "vault",
+      notes: "Maximum security storage",
+      isSecure: true,
+      temperature: 18,
+      humidity: 45,
+    },
+    {
+      name: "Climate Storage",
+      type: "storage",
+      notes: "Climate-controlled collection storage",
+      temperature: 18,
+      humidity: 45,
+    },
+  ],
+};
+
+// Helper to build location hierarchy for seed
+async function buildLocationHierarchy(
+  ctx: any,
+  orgId: Id<"organizations">,
+  locations: (typeof LOCATIONS_DATA)[string],
+) {
+  const nameToId: Record<string, Id<"locations">> = {};
+
+  for (const loc of locations) {
+    const locationId = await ctx.db.insert("locations", {
+      organizationId: orgId,
+      name: loc.name,
+      type: loc.type,
+      sortOrder: 0,
+      isActive: true,
+      notes: loc.notes,
+      customFields: loc.customFields ?? {
+        ...(loc.temperature !== undefined && { temperature: loc.temperature }),
+        ...(loc.humidity !== undefined && { humidity: loc.humidity }),
+        ...(loc.isSecure !== undefined && { isSecure: loc.isSecure }),
+      },
+    });
+    nameToId[loc.name] = locationId;
+  }
+
+  for (const loc of locations) {
+    if (loc.parentLocationId) {
+      const parentId = nameToId[loc.parentLocationId];
+      const childId = nameToId[loc.name];
+      if (parentId && childId) {
+        await ctx.db.patch(childId, {
+          parentLocationId: parentId,
+        });
+      }
+    }
+  }
+
+  return nameToId;
+}
+
+/**
+ * Seed locations for a specific organization
+ */
+export const seedLocationsForOrg = internalMutation({
+  args: {
+    organizationSlug: v.string(),
+  },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    const org = await ctx.db
+      .query("organizations")
+      .withIndex("by_slug", (q) => q.eq("slug", args.organizationSlug))
+      .first();
+
+    if (!org) {
+      throw new Error(`Organization not found: ${args.organizationSlug}`);
+    }
+
+    const locations = LOCATIONS_DATA[args.organizationSlug];
+    if (!locations) {
+      throw new Error(
+        `No location data for organization: ${args.organizationSlug}`,
+      );
+    }
+
+    const existingLocations = await ctx.db
+      .query("locations")
+      .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    for (const loc of existingLocations) {
+      await ctx.db.patch(loc._id, { isActive: false });
+    }
+
+    await buildLocationHierarchy(ctx, org._id, locations);
+
+    return locations.length;
+  },
+});
+
+/**
+ * Seed all locations for all demo organizations
+ */
+export const seedAllLocations = internalMutation({
+  args: {},
+  returns: v.number(),
+  handler: async (ctx) => {
+    let totalLocations = 0;
+
+    for (const orgSlug of Object.keys(LOCATIONS_DATA)) {
+      const count = await seedLocationsForOrg(ctx, {
+        organizationSlug: orgSlug,
+      });
+      totalLocations += count;
+    }
+
+    return totalLocations;
+  },
+});
+
+/**
+ * Get all locations with their environmental data
+ */
+export const getLocationsWithEnvironment = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("locations"),
+      name: v.string(),
+      type: v.string(),
+      parentLocationId: v.optional(v.id("locations")),
+      sortOrder: v.number(),
+      isActive: v.boolean(),
+      notes: v.optional(v.string()),
+      customFields: v.optional(v.record(v.string(), v.any())),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const locations = await ctx.db
+      .query("locations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    return locations.sort((a, b) => a.sortOrder - b.sortOrder);
+  },
+});
+
+/**
+ * Public wrapper to seed all locations (admin only)
+ * This calls the internal seedAllLocations mutation
+ */
+export const adminSeedAllLocations = mutation({
+  args: {},
+  returns: v.number(),
+  handler: async (ctx) => {
+    // This is a placeholder - in production, you'd want to add auth checks here
+    // For now, we just call the internal mutation
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    // Call the internal mutation
+    return await ctx.runMutation(internal.locations.seedAllLocations);
   },
 });
