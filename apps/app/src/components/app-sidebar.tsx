@@ -14,6 +14,7 @@ import {
   FileHeart,
   FileX,
   History,
+  Image,
   Inbox,
   LayoutGrid,
   Library,
@@ -273,6 +274,7 @@ export function AppSidebar({
     { title: "Donors & Sources", url: "/accounts", icon: Users },
     { title: "Loans & Transport", url: "/loans", icon: Truck },
     { title: "Locations", url: "/locations", icon: MapPin },
+    { title: "Media Library", url: "/media", icon: Image },
     { title: "Accessions", url: "/accessions", icon: FileCheck },
     { title: "Deaccessions", url: "/deaccessions", icon: FileX },
     {

@@ -545,9 +545,193 @@ export const getUploadProgress = query({
   },
 });
 
-/**
- * Validate file type query
- */
+export const listByOrganization = query({
+  args: {
+    organizationId: v.id("organizations"),
+    fileType: v.optional(v.string()),
+    uploaderId: v.optional(v.id("users")),
+    dateFrom: v.optional(v.number()),
+    dateTo: v.optional(v.number()),
+    search: v.optional(v.string()),
+    collectionId: v.optional(v.id("collections")),
+    paginationOpts: v.object({
+      numItems: v.number(),
+      cursor: v.union(v.string(), v.null()),
+    }),
+  },
+  returns: v.object({
+    page: v.array(
+      v.object({
+        _id: v.id("mediaFiles"),
+        _creationTime: v.number(),
+        collectionId: v.id("collections"),
+        collectionTitle: v.string(),
+        accessionNumber: v.optional(v.string()),
+        storageId: v.id("_storage"),
+        thumbnailStorageId: v.optional(v.id("_storage")),
+        fileName: v.string(),
+        fileType: v.string(),
+        fileSize: v.number(),
+        mimeType: v.string(),
+        mediaCategory: v.optional(
+          v.union(v.literal("image"), v.literal("document")),
+        ),
+        isPrimary: v.boolean(),
+        caption: v.optional(v.string()),
+        photographer: v.optional(v.string()),
+        copyright: v.optional(v.string()),
+        url: v.union(v.string(), v.null()),
+        thumbnailUrl: v.union(v.string(), v.null()),
+        uploadedAt: v.number(),
+        uploaderName: v.optional(v.string()),
+      }),
+    ),
+    continueCursor: v.union(v.string(), v.null()),
+    isDone: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "media.read");
+
+    let results = await ctx.db
+      .query("mediaFiles")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    if (args.fileType) {
+      results = results.filter((m) => m.fileType === args.fileType);
+    }
+    if (args.uploaderId) {
+      results = results.filter((m) => m.uploadedBy === args.uploaderId);
+    }
+    if (args.dateFrom) {
+      results = results.filter((m) => m.uploadedAt >= args.dateFrom!);
+    }
+    if (args.dateTo) {
+      results = results.filter((m) => m.uploadedAt <= args.dateTo!);
+    }
+    if (args.collectionId) {
+      results = results.filter((m) => m.collectionId === args.collectionId);
+    }
+    if (args.search) {
+      const searchLower = args.search.toLowerCase();
+      results = results.filter(
+        (m) =>
+          m.fileName.toLowerCase().includes(searchLower) ||
+          m.caption?.toLowerCase().includes(searchLower) ||
+          m.photographer?.toLowerCase().includes(searchLower),
+      );
+    }
+
+    results.sort((a, b) => b.uploadedAt - a.uploadedAt);
+
+    const startIndex = args.paginationOpts.cursor
+      ? results.findIndex((m) => m._id === args.paginationOpts.cursor) + 1
+      : 0;
+    const pageResults = results.slice(
+      startIndex,
+      startIndex + args.paginationOpts.numItems,
+    );
+    const hasMore = startIndex + args.paginationOpts.numItems < results.length;
+
+    const enriched = await Promise.all(
+      pageResults.map(async (media) => {
+        const collection = await ctx.db.get(media.collectionId);
+        const uploader = await ctx.db.get(media.uploadedBy);
+        const url = await ctx.storage.getUrl(media.storageId);
+        const thumbnailUrl = media.thumbnailStorageId
+          ? await ctx.storage.getUrl(media.thumbnailStorageId)
+          : null;
+
+        return {
+          _id: media._id,
+          _creationTime: media._creationTime,
+          collectionId: media.collectionId,
+          collectionTitle: collection?.title || "Unknown",
+          accessionNumber: collection?.accessionNumber,
+          storageId: media.storageId,
+          thumbnailStorageId: media.thumbnailStorageId,
+          fileName: media.fileName,
+          fileType: media.fileType,
+          fileSize: media.fileSize,
+          mimeType: media.mimeType,
+          mediaCategory: media.mediaCategory,
+          isPrimary: media.isPrimary,
+          caption: media.caption,
+          photographer: media.photographer,
+          copyright: media.copyright,
+          url,
+          thumbnailUrl,
+          uploadedAt: media.uploadedAt,
+          uploaderName: uploader?.name || uploader?.username,
+        };
+      }),
+    );
+
+    return {
+      page: enriched,
+      continueCursor: hasMore
+        ? pageResults[pageResults.length - 1]?._id ?? null
+        : null,
+      isDone: !hasMore,
+    };
+  },
+});
+
+export const getStorageStats = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    totalFiles: v.number(),
+    totalSize: v.number(),
+    byType: v.array(
+      v.object({
+        type: v.string(),
+        count: v.number(),
+        size: v.number(),
+      }),
+    ),
+    recentUploads: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "media.read");
+
+    const allMedia = await ctx.db
+      .query("mediaFiles")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const totalFiles = allMedia.length;
+    const totalSize = allMedia.reduce((sum, m) => sum + m.fileSize, 0);
+
+    const typeMap = new Map<string, { count: number; size: number }>();
+    for (const m of allMedia) {
+      const existing = typeMap.get(m.fileType) || { count: 0, size: 0 };
+      typeMap.set(m.fileType, {
+        count: existing.count + 1,
+        size: existing.size + m.fileSize,
+      });
+    }
+
+    const byType = Array.from(typeMap.entries()).map(([type, stats]) => ({
+      type,
+      count: stats.count,
+      size: stats.size,
+    }));
+
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const recentUploads = allMedia.filter(
+      (m) => m.uploadedAt >= sevenDaysAgo,
+    ).length;
+
+    return { totalFiles, totalSize, byType, recentUploads };
+  },
+});
+
 export const checkFileType = query({
   args: {
     mimeType: v.string(),
