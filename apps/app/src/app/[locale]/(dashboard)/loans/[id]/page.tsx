@@ -26,6 +26,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@v1/ui/tabs";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
+import { LoanAgreement } from "./_components/loan-agreement";
 import { LoanApprovalWorkflow } from "./_components/loan-approval-workflow";
 import {
   AlertCircle,
@@ -190,6 +191,23 @@ export default function LoanDetailPage() {
                 Pending Facility Report Approval
               </div>
               <div className="h-4 w-px bg-border" />
+              <LoanAgreement
+                loan={{
+                  loanNumber: loan.loanNumber,
+                  type: loan.type,
+                  lenderBorrowerName: loan.lenderBorrowerName,
+                  lenderBorrowerContact: loan.lenderBorrowerContact,
+                  startDate: loan.startDate,
+                  endDate: loan.endDate,
+                  insuranceValue: loan.insuranceValue,
+                }}
+                items={loan.items.map((item) => ({
+                  accessionNumber: item.accessionNumber,
+                  title: item.title,
+                  conditionOut: item.conditionOut,
+                }))}
+                organizationName={organization?.name ?? "Museum"}
+              />
               <Button
                 variant="ghost"
                 size="icon"
