@@ -25,6 +25,7 @@ import {
   TagsInputLabel,
   TagsInputList,
 } from "@v1/ui/tags-input";
+import { Switch } from "@v1/ui/switch";
 import { Textarea } from "@v1/ui/textarea";
 import { useUploadFiles } from "@xixixao/uploadstuff/react";
 import { useMutation, useQuery } from "convex/react";
@@ -67,6 +68,9 @@ interface CollectionFormData {
   currentLocationId?: string;
   collectionGroupId?: string;
   alternateAccessionNumbers?: string[];
+  // Visibility controls
+  isPubliclyVisible?: boolean;
+  isHighResDownloadable?: boolean;
 }
 
 export default function CollectionEditPage() {
@@ -340,6 +344,8 @@ export default function CollectionEditPage() {
           (collection.currentLocationId as string) || "__none__",
         collectionGroupId: (collection.collectionGroupId as string) || "",
         alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
+        isPubliclyVisible: collection.isPubliclyVisible ?? false,
+        isHighResDownloadable: collection.isHighResDownloadable ?? false,
       });
     }
   }, [collection]);
@@ -509,6 +515,7 @@ export default function CollectionEditPage() {
     value:
       | string
       | string[]
+      | boolean
       | Array<{ url: string; label?: string }>
       | undefined,
   ) => {
@@ -994,6 +1001,48 @@ export default function CollectionEditPage() {
                       <Plus className="mr-2 h-4 w-4" />
                       Add Link
                     </Button>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <h3 className="mb-4 text-sm font-semibold">
+                    Visibility Settings
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="isPubliclyVisible">
+                          Public Visibility
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Allow this object to appear in public catalogs
+                        </p>
+                      </div>
+                      <Switch
+                        id="isPubliclyVisible"
+                        checked={formData.isPubliclyVisible ?? false}
+                        onCheckedChange={(checked) =>
+                          updateField("isPubliclyVisible", checked)
+                        }
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="isHighResDownloadable">
+                          High-Resolution Downloads
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Allow public users to download high-resolution images
+                        </p>
+                      </div>
+                      <Switch
+                        id="isHighResDownloadable"
+                        checked={formData.isHighResDownloadable ?? false}
+                        onCheckedChange={(checked) =>
+                          updateField("isHighResDownloadable", checked)
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
 
