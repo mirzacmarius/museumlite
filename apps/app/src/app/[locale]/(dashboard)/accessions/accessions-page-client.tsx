@@ -13,7 +13,7 @@ import { AccessionsStats } from "./accessions-stats";
 import { AccessionKanban } from "./accession-kanban";
 import { SelectOrganization } from "./select-organization";
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { FileUp, Plus, Search } from "lucide-react";
 
 type AccessionsPageClientProps = {
   organizations: Array<{
@@ -105,6 +105,14 @@ export function AccessionsPageClient({
               className="w-64 border-border bg-muted/50 pl-9 text-sm placeholder:text-muted-foreground"
             />
           </div>
+          <PermissionGate permission="collections.create">
+            <Button asChild variant="outline">
+              <Link href="/accessions/import">
+                <FileUp className="mr-2 h-4 w-4" />
+                Import CSV
+              </Link>
+            </Button>
+          </PermissionGate>
           <PermissionGate permission="collections.create">
             <Button
               asChild

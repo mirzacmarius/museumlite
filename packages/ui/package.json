@@ -39,6 +39,7 @@
     "./status-badge": "./src/components/status-badge.tsx",
     "./hooks/use-mobile": "./src/hooks/use-mobile.tsx",
     "./switch": "./src/components/switch.tsx",
+    "./table": "./src/components/table.tsx",
     "./tabs": "./src/components/tabs.tsx",
     "./tag-chip": "./src/components/tag-chip.tsx",
     "./tags-input": "./src/components/tags-input.tsx",

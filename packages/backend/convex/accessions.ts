@@ -70,6 +70,8 @@ export const create = mutation({
     accessionNumber: v.optional(v.string()),
     dateReceived: v.number(),
     source: v.string(),
+    donorAccountId: v.optional(v.id("accounts")),
+    documents: v.optional(v.array(v.id("_storage"))),
     method: v.union(
       v.literal("purchase"),
       v.literal("gift"),
@@ -134,6 +136,8 @@ export const create = mutation({
       accessionNumber,
       dateReceived: args.dateReceived,
       source: args.source,
+      donorAccountId: args.donorAccountId,
+      documents: args.documents,
       method: args.method,
       cost: args.cost,
       notes: args.notes,
@@ -230,6 +234,8 @@ export const list = query({
           v.literal("rejected"),
         ),
         workflowStep: v.optional(v.number()),
+        assignedTo: v.optional(v.id("users")),
+        assigneeName: v.optional(v.string()),
       }),
     ),
     isDone: v.boolean(),
@@ -295,16 +301,29 @@ export const list = query({
     );
     const page = allResults.slice(startIndex, endIndex);
 
+    const pageWithAssignees = await Promise.all(
+      page.map(async (item) => {
+        let assigneeName: string | undefined;
+        if (item.assignedTo) {
+          const user = await ctx.db.get(item.assignedTo);
+          assigneeName = user?.name || user?.email || undefined;
+        }
+        return {
+          _id: item._id,
+          accessionNumber: item.accessionNumber,
+          dateReceived: item.dateReceived,
+          source: item.source,
+          method: item.method,
+          status: item.status,
+          workflowStep: item.workflowStep,
+          assignedTo: item.assignedTo,
+          assigneeName,
+        };
+      }),
+    );
+
     return {
-      page: page.map((item) => ({
-        _id: item._id,
-        accessionNumber: item.accessionNumber,
-        dateReceived: item.dateReceived,
-        source: item.source,
-        method: item.method,
-        status: item.status,
-        workflowStep: item.workflowStep,
-      })),
+      page: pageWithAssignees,
       isDone: endIndex >= allResults.length,
       continueCursor: endIndex.toString(),
     };
@@ -382,6 +401,8 @@ export const update = mutation({
   args: {
     accessionId: v.id("accessions"),
     source: v.optional(v.string()),
+    donorAccountId: v.optional(v.id("accounts")),
+    documents: v.optional(v.array(v.id("_storage"))),
     method: v.optional(
       v.union(
         v.literal("purchase"),
@@ -422,6 +443,8 @@ export const update = mutation({
 
     const updates: {
       source?: string;
+      donorAccountId?: Id<"accounts">;
+      documents?: Id<"_storage">[];
       method?:
         | "purchase"
         | "gift"
@@ -435,6 +458,9 @@ export const update = mutation({
     } = {};
 
     if (args.source !== undefined) updates.source = args.source;
+    if (args.donorAccountId !== undefined)
+      updates.donorAccountId = args.donorAccountId;
+    if (args.documents !== undefined) updates.documents = args.documents;
     if (args.method !== undefined) updates.method = args.method;
     if (args.cost !== undefined) updates.cost = args.cost;
     if (args.notes !== undefined) updates.notes = args.notes;
@@ -876,5 +902,195 @@ export const createCollectionFromAccession = internalMutation({
     });
 
     return collectionId;
+  },
+});
+
+/**
+ * Get workflow steps for accessions kanban
+ */
+export const getWorkflowSteps = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    hasWorkflow: v.boolean(),
+    steps: v.array(
+      v.object({
+        stepNumber: v.number(),
+        name: v.string(),
+        roleName: v.optional(v.string()),
+      }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
+    const workflowConfig = await ctx.db
+      .query("workflowConfigs")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => q.eq(q.field("workflowType"), "accession"))
+      .first();
+
+    if (!workflowConfig) {
+      return {
+        hasWorkflow: false,
+        steps: [
+          { stepNumber: 0, name: "Draft" },
+          { stepNumber: -1, name: "Approved" },
+        ],
+      };
+    }
+
+    const stepsWithRoles = await Promise.all(
+      workflowConfig.steps.map(async (step) => {
+        const role = await ctx.db.get(step.roleId);
+        return {
+          stepNumber: step.stepNumber,
+          name: step.name,
+          roleName: role?.name,
+        };
+      }),
+    );
+
+    return {
+      hasWorkflow: true,
+      steps: [
+        { stepNumber: 0, name: "Draft" },
+        ...stepsWithRoles,
+        { stepNumber: -1, name: "Approved" },
+      ],
+    };
+  },
+});
+
+/**
+ * Assign accession to a user
+ */
+export const assign = mutation({
+  args: {
+    accessionId: v.id("accessions"),
+    userId: v.id("users"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const currentUserId = await getAuthUserId(ctx);
+    if (!currentUserId) {
+      throw new Error("Not authenticated");
+    }
+
+    const accession = await ctx.db.get(args.accessionId);
+    if (!accession) {
+      throw new Error("Accession not found");
+    }
+
+    await requirePermission(
+      ctx,
+      accession.organizationId,
+      "collections.update",
+    );
+
+    await ctx.db.patch(args.accessionId, {
+      assignedTo: args.userId,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: accession.organizationId,
+      userId: currentUserId,
+      action: "updated",
+      entityType: "accession",
+      entityId: args.accessionId,
+      changes: { assignedTo: args.userId },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Unassign accession
+ */
+export const unassign = mutation({
+  args: {
+    accessionId: v.id("accessions"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const currentUserId = await getAuthUserId(ctx);
+    if (!currentUserId) {
+      throw new Error("Not authenticated");
+    }
+
+    const accession = await ctx.db.get(args.accessionId);
+    if (!accession) {
+      throw new Error("Accession not found");
+    }
+
+    await requirePermission(
+      ctx,
+      accession.organizationId,
+      "collections.update",
+    );
+
+    await ctx.db.patch(args.accessionId, {
+      assignedTo: undefined,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: accession.organizationId,
+      userId: currentUserId,
+      action: "updated",
+      entityType: "accession",
+      entityId: args.accessionId,
+      changes: { assignedTo: null },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Get accessions assigned to current user
+ */
+export const listMyAssigned = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("accessions"),
+      accessionNumber: v.string(),
+      source: v.string(),
+      status: v.union(
+        v.literal("pending"),
+        v.literal("approved"),
+        v.literal("rejected"),
+      ),
+      workflowStep: v.optional(v.number()),
+      dateReceived: v.number(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return [];
+    }
+
+    const accessions = await ctx.db
+      .query("accessions")
+      .withIndex("by_assigned_to", (q) => q.eq("assignedTo", userId))
+      .collect();
+
+    return accessions
+      .filter((a) => a.organizationId === args.organizationId)
+      .map((a) => ({
+        _id: a._id,
+        accessionNumber: a.accessionNumber,
+        source: a.source,
+        status: a.status,
+        workflowStep: a.workflowStep,
+        dateReceived: a.dateReceived,
+      }));
   },
 });

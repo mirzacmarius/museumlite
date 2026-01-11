@@ -35,6 +35,20 @@ export const listMyAssignments = query({
         ),
       }),
     ),
+    myAssignedAccessions: v.array(
+      v.object({
+        _id: v.id("accessions"),
+        accessionNumber: v.string(),
+        source: v.string(),
+        status: v.union(
+          v.literal("pending"),
+          v.literal("approved"),
+          v.literal("rejected"),
+        ),
+        workflowStep: v.optional(v.number()),
+        dateReceived: v.number(),
+      }),
+    ),
     recentlyModified: v.array(
       v.object({
         _id: v.id("collections"),
@@ -62,6 +76,7 @@ export const listMyAssignments = query({
     ),
     stats: v.object({
       totalPendingApprovals: v.number(),
+      totalAssignedAccessions: v.number(),
       totalCatalogedItems: v.number(),
       itemsModifiedThisWeek: v.number(),
     }),
@@ -253,6 +268,27 @@ export const listMyAssignments = query({
       return a.createdAt - b.createdAt;
     });
 
+    // Get accessions directly assigned to the user
+    const assignedAccessions = await ctx.db
+      .query("accessions")
+      .withIndex("by_assigned_to", (q) => q.eq("assignedTo", userId))
+      .collect();
+
+    const myAssignedAccessions = assignedAccessions
+      .filter(
+        (a) =>
+          a.organizationId === args.organizationId && a.status === "pending",
+      )
+      .slice(0, limit)
+      .map((a) => ({
+        _id: a._id,
+        accessionNumber: a.accessionNumber,
+        source: a.source,
+        status: a.status,
+        workflowStep: a.workflowStep,
+        dateReceived: a.dateReceived,
+      }));
+
     // Get items recently modified by the user
     const allCollections = await ctx.db
       .query("collections")
@@ -341,10 +377,12 @@ export const listMyAssignments = query({
 
     return {
       pendingApprovals: pendingApprovals.slice(0, limit),
+      myAssignedAccessions,
       recentlyModified,
       myCatalogedItems,
       stats: {
         totalPendingApprovals: pendingApprovals.length,
+        totalAssignedAccessions: myAssignedAccessions.length,
         totalCatalogedItems,
         itemsModifiedThisWeek,
       },
@@ -361,19 +399,19 @@ export const getAssignmentCounts = query({
   },
   returns: v.object({
     pendingApprovals: v.number(),
+    assignedAccessions: v.number(),
     urgentItems: v.number(),
   }),
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      return { pendingApprovals: 0, urgentItems: 0 };
+      return { pendingApprovals: 0, assignedAccessions: 0, urgentItems: 0 };
     }
 
     let pendingCount = 0;
     let urgentCount = 0;
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
-    // Count pending accessions user can approve
     const pendingAccessions = await ctx.db
       .query("accessions")
       .withIndex("by_organization_and_status", (q) =>
@@ -398,7 +436,6 @@ export const getAssignmentCounts = query({
       }
     }
 
-    // Count pending loans user can approve
     const pendingLoans = await ctx.db
       .query("loans")
       .withIndex("by_organization_and_status", (q) =>
@@ -423,8 +460,18 @@ export const getAssignmentCounts = query({
       }
     }
 
+    const assignedAccessions = await ctx.db
+      .query("accessions")
+      .withIndex("by_assigned_to", (q) => q.eq("assignedTo", userId))
+      .collect();
+
+    const assignedCount = assignedAccessions.filter(
+      (a) => a.organizationId === args.organizationId && a.status === "pending",
+    ).length;
+
     return {
       pendingApprovals: pendingCount,
+      assignedAccessions: assignedCount,
       urgentItems: urgentCount,
     };
   },

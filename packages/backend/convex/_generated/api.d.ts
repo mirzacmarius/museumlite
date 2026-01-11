@@ -29,6 +29,7 @@ import type * as env from "../env.js";
 import type * as exhibitions from "../exhibitions.js";
 import type * as fineArtDetails from "../fineArtDetails.js";
 import type * as http from "../http.js";
+import type * as imports from "../imports.js";
 import type * as init from "../init.js";
 import type * as integrations from "../integrations.js";
 import type * as library_acquisitions from "../library/acquisitions.js";
@@ -100,6 +101,7 @@ declare const fullApi: ApiFromModules<{
   exhibitions: typeof exhibitions;
   fineArtDetails: typeof fineArtDetails;
   http: typeof http;
+  imports: typeof imports;
   init: typeof init;
   integrations: typeof integrations;
   "library/acquisitions": typeof library_acquisitions;

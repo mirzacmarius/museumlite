@@ -8,10 +8,7 @@ export function AccessionsPageSkeleton() {
 
       <div className="mb-6 grid grid-cols-4 gap-4">
         {["stat-1", "stat-2", "stat-3", "stat-4"].map((id) => (
-          <div
-            key={id}
-            className="rounded-xl border border-border bg-card p-4"
-          >
+          <div key={id} className="rounded-xl border border-border bg-card p-4">
             <div className="mb-2 h-4 w-24 animate-pulse rounded bg-muted/60" />
             <div className="h-8 w-16 animate-pulse rounded bg-muted/60" />
           </div>

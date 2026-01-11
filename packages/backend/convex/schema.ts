@@ -682,6 +682,8 @@ export default defineSchema({
     accessionNumber: v.string(),
     dateReceived: v.number(),
     source: v.string(),
+    donorAccountId: v.optional(v.id("accounts")),
+    documents: v.optional(v.array(v.id("_storage"))),
     method: v.union(
       v.literal("purchase"),
       v.literal("gift"),
@@ -700,6 +702,7 @@ export default defineSchema({
       v.literal("rejected"),
     ),
     notes: v.optional(v.string()),
+    assignedTo: v.optional(v.id("users")),
     workflowStep: v.optional(v.number()),
     workflowHistory: v.optional(
       v.array(
@@ -715,7 +718,9 @@ export default defineSchema({
     .index("by_organization", ["organizationId"])
     .index("by_collection", ["collectionId"])
     .index("by_status", ["status"])
-    .index("by_organization_and_status", ["organizationId", "status"]),
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_donor_account", ["donorAccountId"])
+    .index("by_assigned_to", ["assignedTo"]),
 
   // Deaccession workflow records
   deaccessions: defineTable({

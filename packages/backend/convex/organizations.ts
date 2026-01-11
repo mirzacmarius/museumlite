@@ -82,18 +82,20 @@ export const create = mutation({
     });
 
     // Add creator as admin
-    const adminRole = await ctx.db
+    const roles = await ctx.db
       .query("roles")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", organizationId),
       )
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("name"), "admin"),
-          q.eq(q.field("isSystemRole"), true),
-        ),
-      )
-      .first();
+      .collect();
+
+    const adminRole = roles.find((r) => r.name === "admin" && r.isSystemRole);
+    const registrarRole = roles.find(
+      (r) => r.name === "registrar" && r.isSystemRole,
+    );
+    const curatorRole = roles.find(
+      (r) => r.name === "curator" && r.isSystemRole,
+    );
 
     if (adminRole) {
       await ctx.db.insert("userOrganizations", {
@@ -103,29 +105,117 @@ export const create = mutation({
         joinedAt: Date.now(),
       });
 
-      const workflowTypes = [
-        "accession",
-        "deaccession",
-        "loan",
-        "acquisition",
-        "exhibition",
-        "conservation",
-      ] as const;
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "accession",
+        steps: [
+          {
+            stepNumber: 1,
+            roleId: registrarRole?._id ?? adminRole._id,
+            name: "Registrar Review",
+          },
+          {
+            stepNumber: 2,
+            roleId: curatorRole?._id ?? adminRole._id,
+            name: "Curator Approval",
+          },
+        ],
+        canInitiateRoles: [
+          adminRole._id,
+          ...(registrarRole ? [registrarRole._id] : []),
+        ],
+      });
 
-      for (const workflowType of workflowTypes) {
-        await ctx.db.insert("workflowConfigs", {
-          organizationId,
-          workflowType,
-          steps: [
-            {
-              stepNumber: 1,
-              roleId: adminRole._id,
-              name: "Administrator Approval",
-            },
-          ],
-          canInitiateRoles: [adminRole._id],
-        });
-      }
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "deaccession",
+        steps: [
+          {
+            stepNumber: 1,
+            roleId: curatorRole?._id ?? adminRole._id,
+            name: "Curator Review",
+          },
+          {
+            stepNumber: 2,
+            roleId: adminRole._id,
+            name: "Director Approval",
+          },
+        ],
+        canInitiateRoles: [
+          adminRole._id,
+          ...(curatorRole ? [curatorRole._id] : []),
+        ],
+      });
+
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "loan",
+        steps: [
+          {
+            stepNumber: 1,
+            roleId: registrarRole?._id ?? adminRole._id,
+            name: "Registrar Review",
+          },
+          {
+            stepNumber: 2,
+            roleId: curatorRole?._id ?? adminRole._id,
+            name: "Curator Approval",
+          },
+        ],
+        canInitiateRoles: [
+          adminRole._id,
+          ...(registrarRole ? [registrarRole._id] : []),
+        ],
+      });
+
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "acquisition",
+        steps: [
+          {
+            stepNumber: 1,
+            roleId: adminRole._id,
+            name: "Director Approval",
+          },
+        ],
+        canInitiateRoles: [
+          adminRole._id,
+          ...(curatorRole ? [curatorRole._id] : []),
+        ],
+      });
+
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "exhibition",
+        steps: [
+          {
+            stepNumber: 1,
+            roleId: adminRole._id,
+            name: "Director Approval",
+          },
+        ],
+        canInitiateRoles: [
+          adminRole._id,
+          ...(curatorRole ? [curatorRole._id] : []),
+        ],
+      });
+
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "conservation",
+        steps: [
+          {
+            stepNumber: 1,
+            roleId: curatorRole?._id ?? adminRole._id,
+            name: "Curator Approval",
+          },
+        ],
+        canInitiateRoles: [
+          adminRole._id,
+          ...(registrarRole ? [registrarRole._id] : []),
+          ...(curatorRole ? [curatorRole._id] : []),
+        ],
+      });
     }
 
     return organizationId;
