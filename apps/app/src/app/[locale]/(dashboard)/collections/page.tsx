@@ -9,6 +9,7 @@ import { Input } from "@v1/ui/input";
 import { useQuery } from "convex/react";
 import {
   Building2,
+  FileUp,
   Folder,
   FolderPlus,
   Plus,
@@ -17,10 +18,16 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { ExportCSVButton } from "@/components/export-csv-button";
 
 export default function CollectionsPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const [search, setSearch] = useState("");
+
+  const exportData = useQuery(
+    api.imports.exportObjects,
+    currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
+  );
 
   if (isLoading) {
     return (
@@ -79,14 +86,27 @@ export default function CollectionsPage() {
                 Manage your object collections
               </p>
             </div>
-            <PermissionGate permission="collections.create">
-              <Button asChild>
-                <Link href="/collections/new">
-                  <FolderPlus className="mr-2 h-4 w-4" />
-                  New Collection
-                </Link>
-              </Button>
-            </PermissionGate>
+            <div className="flex items-center gap-2">
+              <PermissionGate permission="collections.read">
+                <ExportCSVButton data={exportData} filename="objects" />
+              </PermissionGate>
+              <PermissionGate permission="collections.create">
+                <Button asChild variant="outline">
+                  <Link href="/collections/import">
+                    <FileUp className="mr-2 h-4 w-4" />
+                    Import CSV
+                  </Link>
+                </Button>
+              </PermissionGate>
+              <PermissionGate permission="collections.create">
+                <Button asChild>
+                  <Link href="/collections/new">
+                    <FolderPlus className="mr-2 h-4 w-4" />
+                    New Collection
+                  </Link>
+                </Button>
+              </PermissionGate>
+            </div>
           </div>
           <div className="flex w-full px-6">
             <div className="w-full border-b border-border" />

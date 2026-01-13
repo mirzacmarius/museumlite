@@ -475,6 +475,104 @@ export const exportAccounts = query({
   },
 });
 
+export const exportObjects = query({
+  args: {
+    organizationId: v.id("organizations"),
+    status: v.optional(
+      v.union(
+        v.literal("active"),
+        v.literal("loaned"),
+        v.literal("deaccessioned"),
+        v.literal("in_conservation"),
+      ),
+    ),
+  },
+  returns: v.array(
+    v.object({
+      accessionNumber: v.string(),
+      title: v.string(),
+      alternativeTitle: v.optional(v.string()),
+      creator: v.optional(v.string()),
+      objectType: v.optional(v.string()),
+      objectName: v.optional(v.string()),
+      culture: v.optional(v.string()),
+      period: v.optional(v.string()),
+      dateCreated: v.optional(v.string()),
+      materials: v.optional(v.string()),
+      technique: v.optional(v.string()),
+      dimensions: v.optional(v.string()),
+      description: v.optional(v.string()),
+      condition: v.optional(v.string()),
+      provenance: v.optional(v.string()),
+      location: v.optional(v.string()),
+      collectionGroup: v.optional(v.string()),
+      status: v.optional(v.string()),
+      createdAt: v.number(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
+    const objects = await ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const filtered = args.status
+      ? objects.filter((o) => o.status === args.status)
+      : objects;
+
+    const locations = await ctx.db
+      .query("locations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+    const locationMap = new Map(locations.map((l) => [l._id, l.name]));
+
+    const groups = await ctx.db
+      .query("collectionGroups")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+    const groupMap = new Map(groups.map((g) => [g._id, g.name]));
+
+    return filtered.map((o) => ({
+      accessionNumber: o.accessionNumber,
+      title: o.title,
+      alternativeTitle: o.alternativeTitle,
+      creator: o.creator,
+      objectType: o.objectType,
+      objectName: o.objectName,
+      culture: o.culture,
+      period: o.period,
+      dateCreated: o.dateCreated,
+      materials: o.materials,
+      technique: o.technique,
+      dimensions: o.dimensions,
+      description: o.description,
+      condition: o.condition,
+      provenance: o.provenance,
+      location: o.currentLocationId
+        ? locationMap.get(o.currentLocationId)
+        : undefined,
+      collectionGroup: o.collectionGroupId
+        ? groupMap.get(o.collectionGroupId)
+        : undefined,
+      status: o.status,
+      createdAt: o._creationTime,
+    }));
+  },
+});
+
 export const importLocationsBatch = mutation({
   args: {
     organizationId: v.id("organizations"),
