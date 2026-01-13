@@ -116,6 +116,15 @@ export function NotificationBell() {
             )}
           </div>
 
+          <div className="border-b px-4 py-2">
+            <Link
+              href="/notifications"
+              className="text-xs text-primary hover:underline"
+            >
+              View all notifications
+            </Link>
+          </div>
+
           {/* Notifications List */}
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 ? (
