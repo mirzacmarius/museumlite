@@ -2415,7 +2415,7 @@ export const listPublicForSitemap = query({
   returns: v.array(
     v.object({
       organizationSlug: v.string(),
-      accessionNumber: v.string(),
+      urlSlug: v.string(),
       title: v.string(),
       lastModifiedAt: v.optional(v.number()),
     }),
@@ -2425,7 +2425,7 @@ export const listPublicForSitemap = query({
 
     const results: {
       organizationSlug: string;
-      accessionNumber: string;
+      urlSlug: string;
       title: string;
       lastModifiedAt?: number;
     }[] = [];
@@ -2443,7 +2443,7 @@ export const listPublicForSitemap = query({
       for (const c of publicCollections) {
         results.push({
           organizationSlug: org.slug,
-          accessionNumber: c.accessionNumber,
+          urlSlug: c.publicSlug || c.accessionNumber,
           title: c.title,
           lastModifiedAt: c.lastModifiedAt,
         });

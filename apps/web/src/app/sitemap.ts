@@ -18,7 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const collections = await fetchQuery(api.collections.listPublicForSitemap);
 
     const collectionRoutes: MetadataRoute.Sitemap = collections.map((item) => ({
-      url: `${BASE_URL}/collections/${item.organizationSlug}/${encodeURIComponent(item.accessionNumber)}`,
+      url: `${BASE_URL}/collections/${item.organizationSlug}/${encodeURIComponent(item.urlSlug)}`,
       lastModified: item.lastModifiedAt
         ? new Date(item.lastModifiedAt)
         : new Date(),
