@@ -11,6 +11,7 @@
     "./badge": "./src/components/badge.tsx",
     "./bento-gallery": "./src/components/bento-gallery.tsx",
     "./button": "./src/components/button.tsx",
+    "./card": "./src/components/card.tsx",
     "./calendar": "./src/components/calendar.tsx",
     "./checkbox": "./src/components/checkbox.tsx",
     "./collapsible": "./src/components/collapsible.tsx",
