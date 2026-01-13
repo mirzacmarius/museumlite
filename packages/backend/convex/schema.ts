@@ -1222,6 +1222,29 @@ export default defineSchema({
     .index("by_organization", ["organizationId"])
     .index("by_status", ["status"]),
 
+  mediaImportJobData: defineTable({
+    jobId: v.id("importJobs"),
+    mappingType: v.union(v.literal("csv"), v.literal("filename")),
+    mappingData: v.array(
+      v.object({
+        filename: v.string(),
+        accessionNumber: v.string(),
+      }),
+    ),
+    uploadedFiles: v.array(
+      v.object({
+        fileName: v.string(),
+        storageId: v.id("_storage"),
+        fileSize: v.number(),
+        mimeType: v.string(),
+        mapped: v.boolean(),
+        collectionId: v.optional(v.id("collections")),
+        mediaFileId: v.optional(v.id("mediaFiles")),
+        error: v.optional(v.string()),
+      }),
+    ),
+  }).index("by_job", ["jobId"]),
+
   // ============================================
   // LIBRARY INTEGRATION TABLES
   // ============================================

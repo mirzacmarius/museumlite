@@ -46,6 +46,7 @@ import type * as loans from "../loans.js";
 import type * as locations from "../locations.js";
 import type * as materialOptions from "../materialOptions.js";
 import type * as media from "../media.js";
+import type * as mediaImports from "../mediaImports.js";
 import type * as mediaThumbnails from "../mediaThumbnails.js";
 import type * as migrations from "../migrations.js";
 import type * as naturalHistoryDetails from "../naturalHistoryDetails.js";
@@ -120,6 +121,7 @@ declare const fullApi: ApiFromModules<{
   locations: typeof locations;
   materialOptions: typeof materialOptions;
   media: typeof media;
+  mediaImports: typeof mediaImports;
   mediaThumbnails: typeof mediaThumbnails;
   migrations: typeof migrations;
   naturalHistoryDetails: typeof naturalHistoryDetails;
