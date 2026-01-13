@@ -12,6 +12,7 @@ import { ExhibitionPipelineCard } from "./_components/exhibition-pipeline-card";
 import { InventoryValuationCard } from "./_components/inventory-valuation-card";
 import { LoanCalendarCard } from "./_components/loan-calendar-card";
 import { LocationUtilizationCard } from "./_components/location-utilization-card";
+import { ReportExportsCard } from "./_components/report-exports-card";
 
 export default function AnalyticsPage() {
   const { currentOrganizationId } = useOrganization();
@@ -104,6 +105,12 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <LocationUtilizationCard data={locationUtilization} />
       </div>
+
+      <ReportExportsCard
+        kpis={kpis}
+        compliance={compliance}
+        locationUtilization={locationUtilization}
+      />
     </div>
   );
 }
