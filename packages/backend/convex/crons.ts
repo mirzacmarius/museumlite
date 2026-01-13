@@ -15,4 +15,16 @@ crons.interval(
   internal.insurance.checkMissingCoverageInternal,
 );
 
+crons.interval(
+  "check-upcoming-deliveries",
+  { hours: 24 },
+  internal.transit.checkUpcomingDeliveriesInternal,
+);
+
+crons.interval(
+  "check-delayed-transits",
+  { hours: 12 },
+  internal.transit.checkDelayedTransitsInternal,
+);
+
 export default crons;

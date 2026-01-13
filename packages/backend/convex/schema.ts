@@ -2078,4 +2078,202 @@ export default defineSchema({
     currentValue: v.number(),
     lastGeneratedAt: v.number(),
   }).index("by_organization_and_year", ["organizationId", "year"]),
+
+  // ============================================
+  // TRANSIT LOG MODULE
+  // ============================================
+
+  // Transit Records - Shipment tracking for objects, loans, exhibitions
+  transitRecords: defineTable({
+    organizationId: v.id("organizations"),
+    transitNumber: v.string(), // TRN-YYYY-XXXX format
+
+    // What is being shipped (one or more of these)
+    collectionIds: v.optional(v.array(v.id("collections"))), // Individual objects
+    loanId: v.optional(v.id("loans")), // Associated loan
+    exhibitionId: v.optional(v.id("exhibitions")), // Associated exhibition
+
+    // Transit type
+    transitType: v.union(
+      v.literal("outgoing"), // Shipping out from organization
+      v.literal("incoming"), // Receiving shipment
+      v.literal("internal"), // Internal transfer between locations
+      v.literal("return"), // Return shipment
+    ),
+
+    // Route information
+    originName: v.string(),
+    originAddress: v.optional(v.string()),
+    originLocationId: v.optional(v.id("locations")), // If internal location
+    originContact: v.optional(v.string()),
+    originPhone: v.optional(v.string()),
+
+    destinationName: v.string(),
+    destinationAddress: v.optional(v.string()),
+    destinationLocationId: v.optional(v.id("locations")), // If internal location
+    destinationContact: v.optional(v.string()),
+    destinationPhone: v.optional(v.string()),
+
+    // Carrier information
+    carrier: v.string(),
+    carrierContact: v.optional(v.string()),
+    carrierPhone: v.optional(v.string()),
+    carrierEmail: v.optional(v.string()),
+    carrierType: v.optional(
+      v.union(
+        v.literal("art_handler"), // Specialized art transport
+        v.literal("courier"), // Hand-carried
+        v.literal("freight"), // Commercial freight
+        v.literal("postal"), // Standard postal service
+        v.literal("internal"), // Own transport
+        v.literal("other"),
+      ),
+    ),
+
+    // Tracking
+    trackingNumber: v.optional(v.string()),
+    trackingUrl: v.optional(v.string()),
+    waybillNumber: v.optional(v.string()),
+
+    // Dates and times
+    scheduledPickupDate: v.optional(v.number()),
+    actualPickupDate: v.optional(v.number()),
+    estimatedDeliveryDate: v.optional(v.number()),
+    actualDeliveryDate: v.optional(v.number()),
+
+    // Status
+    status: v.union(
+      v.literal("draft"), // Not yet scheduled
+      v.literal("scheduled"), // Pickup scheduled
+      v.literal("in_transit"), // Currently being transported
+      v.literal("out_for_delivery"), // Final delivery stage
+      v.literal("delivered"), // Successfully delivered
+      v.literal("delayed"), // Encountered delay
+      v.literal("held"), // Held at customs/checkpoint
+      v.literal("returned"), // Returned to sender
+      v.literal("cancelled"), // Shipment cancelled
+    ),
+
+    // Shipping details
+    packageCount: v.optional(v.number()),
+    totalWeight: v.optional(v.number()),
+    weightUnit: v.optional(v.union(v.literal("kg"), v.literal("lb"))),
+    dimensions: v.optional(v.string()), // Free-text for multiple packages
+    packingMethod: v.optional(v.string()), // e.g., "Museum crate", "Soft pack"
+    specialHandling: v.optional(v.array(v.string())), // e.g., ["Climate controlled", "Fragile", "This side up"]
+
+    // Insurance for transit
+    insurancePolicyId: v.optional(v.id("insurancePolicies")),
+    insuranceValue: v.optional(v.number()),
+    insuranceReference: v.optional(v.string()),
+
+    // Cost
+    shippingCost: v.optional(v.number()),
+    currency: v.optional(v.string()), // Default USD
+
+    // Condition reports
+    conditionAtPickup: v.optional(v.string()),
+    conditionAtDelivery: v.optional(v.string()),
+    conditionReportIds: v.optional(v.array(v.id("conditionReports"))),
+
+    // Documents
+    documentIds: v.optional(v.array(v.id("_storage"))), // Bills of lading, customs docs, etc.
+
+    // Notes
+    notes: v.optional(v.string()),
+    internalNotes: v.optional(v.string()),
+
+    // Audit
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    lastModifiedBy: v.optional(v.id("users")),
+    lastModifiedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_transitNumber", ["transitNumber"])
+    .index("by_organization_and_transitNumber", [
+      "organizationId",
+      "transitNumber",
+    ])
+    .index("by_status", ["status"])
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_loan", ["loanId"])
+    .index("by_exhibition", ["exhibitionId"])
+    .index("by_carrier", ["carrier"])
+    .index("by_organization_and_carrier", ["organizationId", "carrier"])
+    .index("by_scheduledPickupDate", ["scheduledPickupDate"])
+    .index("by_estimatedDeliveryDate", ["estimatedDeliveryDate"]),
+
+  // Transit Items - Individual objects in a transit record
+  transitItems: defineTable({
+    transitRecordId: v.id("transitRecords"),
+    collectionId: v.id("collections"),
+
+    // Item-specific details
+    conditionAtPickup: v.optional(v.string()),
+    conditionAtDelivery: v.optional(v.string()),
+    packingNotes: v.optional(v.string()),
+    specialHandling: v.optional(v.array(v.string())),
+
+    // Status for partial deliveries
+    status: v.union(
+      v.literal("pending"), // Not yet picked up
+      v.literal("in_transit"), // Being transported
+      v.literal("delivered"), // Successfully delivered
+      v.literal("damaged"), // Damaged during transit
+      v.literal("missing"), // Missing/lost
+    ),
+
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_transitRecord", ["transitRecordId"])
+    .index("by_collection", ["collectionId"])
+    .index("by_status", ["status"]),
+
+  // Transit Status Updates - Tracking history/checkpoints
+  transitStatusUpdates: defineTable({
+    transitRecordId: v.id("transitRecords"),
+
+    // Update details
+    status: v.union(
+      v.literal("draft"),
+      v.literal("scheduled"),
+      v.literal("in_transit"),
+      v.literal("out_for_delivery"),
+      v.literal("delivered"),
+      v.literal("delayed"),
+      v.literal("held"),
+      v.literal("returned"),
+      v.literal("cancelled"),
+    ),
+    location: v.optional(v.string()), // Current location during transit
+    description: v.string(), // What happened
+
+    // Environmental conditions (for sensitive items)
+    temperature: v.optional(v.number()),
+    humidity: v.optional(v.number()),
+
+    // Who reported
+    reportedBy: v.optional(v.id("users")), // Internal user
+    reportedByName: v.optional(v.string()), // External reporter (carrier)
+    reportedAt: v.number(),
+
+    // Evidence
+    photoIds: v.optional(v.array(v.id("_storage"))),
+    documentIds: v.optional(v.array(v.id("_storage"))),
+
+    notes: v.optional(v.string()),
+  })
+    .index("by_transitRecord", ["transitRecordId"])
+    .index("by_status", ["status"])
+    .index("by_reportedAt", ["reportedAt"]),
+
+  // Transit number counter tracking
+  transitCounters: defineTable({
+    organizationId: v.id("organizations"),
+    year: v.number(),
+    currentValue: v.number(),
+    lastGeneratedAt: v.number(),
+  }).index("by_organization_and_year", ["organizationId", "year"]),
 });

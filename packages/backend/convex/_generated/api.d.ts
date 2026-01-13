@@ -60,6 +60,7 @@ import type * as seed from "../seed.js";
 import type * as seedFresh from "../seedFresh.js";
 import type * as seedFreshAction from "../seedFreshAction.js";
 import type * as subscriptions from "../subscriptions.js";
+import type * as transit from "../transit.js";
 import type * as typeOptions from "../typeOptions.js";
 import type * as userPreferences from "../userPreferences.js";
 import type * as users from "../users.js";
@@ -139,6 +140,7 @@ declare const fullApi: ApiFromModules<{
   seedFresh: typeof seedFresh;
   seedFreshAction: typeof seedFreshAction;
   subscriptions: typeof subscriptions;
+  transit: typeof transit;
   typeOptions: typeof typeOptions;
   userPreferences: typeof userPreferences;
   users: typeof users;
