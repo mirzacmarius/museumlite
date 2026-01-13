@@ -1,11 +1,11 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import { requirePermission } from "./utils/permissions";
-import { accessionParser } from "./utils/accessionNumberParser";
+import { mutation, query } from "./_generated/server";
 import { getNextCounterValue } from "./utils/accessionCounter";
+import { accessionParser } from "./utils/accessionNumberParser";
+import { requirePermission } from "./utils/permissions";
 
 /**
  * Generate accession number based on organization format template
@@ -721,7 +721,7 @@ export const list = query({
     // Use searchIndex when search term is provided for better performance
     if (args.search && args.search.trim().length > 0) {
       // Use searchIndex for efficient full-text search on title
-      let searchQuery = ctx.db
+      const searchQuery = ctx.db
         .query("collections")
         .withSearchIndex("search_index", (q) => {
           let filter = q
@@ -906,7 +906,7 @@ export const list = query({
 
     // Handle pagination manually
     const cursor = args.paginationOpts.cursor
-      ? parseInt(args.paginationOpts.cursor, 10)
+      ? Number.parseInt(args.paginationOpts.cursor, 10)
       : 0;
     const startIndex = cursor;
     const endIndex = Math.min(
@@ -976,7 +976,7 @@ export const search = query({
     const limit = args.limit ?? 50;
 
     // Use searchIndex for efficient full-text search on title
-    let searchQuery = ctx.db
+    const searchQuery = ctx.db
       .query("collections")
       .withSearchIndex("search_index", (q) => {
         let filter = q
@@ -2066,5 +2066,282 @@ export const bulkExport = query({
     }
 
     return results;
+  },
+});
+
+export const listPublic = query({
+  args: {
+    organizationSlug: v.string(),
+    search: v.optional(v.string()),
+    objectType: v.optional(v.string()),
+    culture: v.optional(v.string()),
+    period: v.optional(v.string()),
+    limit: v.optional(v.number()),
+    cursor: v.optional(v.string()),
+  },
+  returns: v.object({
+    items: v.array(
+      v.object({
+        _id: v.id("collections"),
+        accessionNumber: v.string(),
+        title: v.string(),
+        creator: v.optional(v.string()),
+        objectType: v.optional(v.string()),
+        culture: v.optional(v.string()),
+        period: v.optional(v.string()),
+        dateCreated: v.optional(v.string()),
+        materials: v.optional(v.string()),
+        dimensions: v.optional(v.string()),
+        description: v.optional(v.string()),
+        creditLine: v.optional(v.string()),
+        primaryImageUrl: v.optional(v.string()),
+      }),
+    ),
+    nextCursor: v.optional(v.string()),
+    hasMore: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const organization = await ctx.db
+      .query("organizations")
+      .withIndex("by_slug", (q) => q.eq("slug", args.organizationSlug))
+      .unique();
+
+    if (!organization) {
+      return { items: [], nextCursor: undefined, hasMore: false };
+    }
+
+    const pageSize = args.limit ?? 24;
+    const query = ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organization._id),
+      );
+
+    const allCollections = await query.collect();
+
+    let filtered = allCollections.filter(
+      (c) => c.isPubliclyVisible === true && c.status === "active",
+    );
+
+    if (args.search) {
+      const searchLower = args.search.toLowerCase();
+      filtered = filtered.filter(
+        (c) =>
+          c.title.toLowerCase().includes(searchLower) ||
+          c.creator?.toLowerCase().includes(searchLower) ||
+          c.accessionNumber.toLowerCase().includes(searchLower),
+      );
+    }
+
+    if (args.objectType) {
+      filtered = filtered.filter((c) => c.objectType === args.objectType);
+    }
+    if (args.culture) {
+      filtered = filtered.filter((c) => c.culture === args.culture);
+    }
+    if (args.period) {
+      filtered = filtered.filter((c) => c.period === args.period);
+    }
+
+    const startIndex = args.cursor ? Number.parseInt(args.cursor, 10) : 0;
+    const paged = filtered.slice(startIndex, startIndex + pageSize);
+    const hasMore = startIndex + pageSize < filtered.length;
+
+    const items = await Promise.all(
+      paged.map(async (c) => {
+        const primaryMedia = await ctx.db
+          .query("mediaFiles")
+          .withIndex("by_collection", (q) => q.eq("collectionId", c._id))
+          .filter((q) => q.eq(q.field("isPrimary"), true))
+          .first();
+
+        let primaryImageUrl: string | undefined;
+        if (primaryMedia?.storageId) {
+          primaryImageUrl =
+            (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined;
+        }
+
+        return {
+          _id: c._id,
+          accessionNumber: c.accessionNumber,
+          title: c.title,
+          creator: c.creator,
+          objectType: c.objectType,
+          culture: c.culture,
+          period: c.period,
+          dateCreated: c.dateCreated,
+          materials: c.materials,
+          dimensions: c.dimensions,
+          description: c.description,
+          creditLine: c.creditLine,
+          primaryImageUrl,
+        };
+      }),
+    );
+
+    return {
+      items,
+      nextCursor: hasMore ? String(startIndex + pageSize) : undefined,
+      hasMore,
+    };
+  },
+});
+
+export const getPublic = query({
+  args: {
+    organizationSlug: v.string(),
+    accessionNumber: v.string(),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id("collections"),
+      accessionNumber: v.string(),
+      title: v.string(),
+      alternativeTitle: v.optional(v.string()),
+      creator: v.optional(v.string()),
+      objectType: v.optional(v.string()),
+      objectName: v.optional(v.string()),
+      culture: v.optional(v.string()),
+      period: v.optional(v.string()),
+      dateCreated: v.optional(v.string()),
+      materials: v.optional(v.string()),
+      technique: v.optional(v.string()),
+      dimensions: v.optional(v.string()),
+      description: v.optional(v.string()),
+      inscriptions: v.optional(v.string()),
+      provenance: v.optional(v.string()),
+      exhibitionHistory: v.optional(v.string()),
+      creditLine: v.optional(v.string()),
+      tags: v.optional(v.array(v.string())),
+      isHighResDownloadable: v.optional(v.boolean()),
+      images: v.array(
+        v.object({
+          _id: v.id("mediaFiles"),
+          url: v.string(),
+          isPrimary: v.boolean(),
+          caption: v.optional(v.string()),
+        }),
+      ),
+      organizationName: v.string(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const organization = await ctx.db
+      .query("organizations")
+      .withIndex("by_slug", (q) => q.eq("slug", args.organizationSlug))
+      .unique();
+
+    if (!organization) {
+      return null;
+    }
+
+    const collection = await ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organization._id),
+      )
+      .filter((q) => q.eq(q.field("accessionNumber"), args.accessionNumber))
+      .unique();
+
+    if (
+      !collection ||
+      !collection.isPubliclyVisible ||
+      collection.status !== "active"
+    ) {
+      return null;
+    }
+
+    const mediaFiles = await ctx.db
+      .query("mediaFiles")
+      .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
+      .collect();
+
+    const images = await Promise.all(
+      mediaFiles.map(async (m) => {
+        const url = m.storageId ? await ctx.storage.getUrl(m.storageId) : null;
+        return url
+          ? {
+              _id: m._id,
+              url,
+              isPrimary: m.isPrimary ?? false,
+              caption: m.caption,
+            }
+          : null;
+      }),
+    );
+
+    return {
+      _id: collection._id,
+      accessionNumber: collection.accessionNumber,
+      title: collection.title,
+      alternativeTitle: collection.alternativeTitle,
+      creator: collection.creator,
+      objectType: collection.objectType,
+      objectName: collection.objectName,
+      culture: collection.culture,
+      period: collection.period,
+      dateCreated: collection.dateCreated,
+      materials: collection.materials,
+      technique: collection.technique,
+      dimensions: collection.dimensions,
+      description: collection.description,
+      inscriptions: collection.inscriptions,
+      provenance: collection.provenance,
+      exhibitionHistory: collection.exhibitionHistory,
+      creditLine: collection.creditLine,
+      tags: collection.tags,
+      isHighResDownloadable: collection.isHighResDownloadable,
+      images: images.filter((i): i is NonNullable<typeof i> => i !== null),
+      organizationName: organization.name,
+    };
+  },
+});
+
+export const getPublicFilters = query({
+  args: {
+    organizationSlug: v.string(),
+  },
+  returns: v.object({
+    objectTypes: v.array(v.string()),
+    cultures: v.array(v.string()),
+    periods: v.array(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const organization = await ctx.db
+      .query("organizations")
+      .withIndex("by_slug", (q) => q.eq("slug", args.organizationSlug))
+      .unique();
+
+    if (!organization) {
+      return { objectTypes: [], cultures: [], periods: [] };
+    }
+
+    const collections = await ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organization._id),
+      )
+      .collect();
+
+    const publicCollections = collections.filter(
+      (c) => c.isPubliclyVisible === true && c.status === "active",
+    );
+
+    const objectTypes = [
+      ...new Set(publicCollections.map((c) => c.objectType).filter(Boolean)),
+    ] as string[];
+    const cultures = [
+      ...new Set(publicCollections.map((c) => c.culture).filter(Boolean)),
+    ] as string[];
+    const periods = [
+      ...new Set(publicCollections.map((c) => c.period).filter(Boolean)),
+    ] as string[];
+
+    return {
+      objectTypes: objectTypes.sort(),
+      cultures: cultures.sort(),
+      periods: periods.sort(),
+    };
   },
 });
