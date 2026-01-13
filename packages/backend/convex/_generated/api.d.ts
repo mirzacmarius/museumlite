@@ -11,6 +11,7 @@
 import type * as accessionTemplates from "../accessionTemplates.js";
 import type * as accessions from "../accessions.js";
 import type * as accounts from "../accounts.js";
+import type * as apiKeys from "../apiKeys.js";
 import type * as archiveDetails from "../archiveDetails.js";
 import type * as assignments from "../assignments.js";
 import type * as audit from "../audit.js";
@@ -66,6 +67,7 @@ import type * as utils_permissions from "../utils/permissions.js";
 import type * as utils_validators from "../utils/validators.js";
 import type * as vehicleDetails from "../vehicleDetails.js";
 import type * as web from "../web.js";
+import type * as webhooks from "../webhooks.js";
 import type * as wineDetails from "../wineDetails.js";
 import type * as workflows from "../workflows.js";
 
@@ -86,6 +88,7 @@ declare const fullApi: ApiFromModules<{
   accessionTemplates: typeof accessionTemplates;
   accessions: typeof accessions;
   accounts: typeof accounts;
+  apiKeys: typeof apiKeys;
   archiveDetails: typeof archiveDetails;
   assignments: typeof assignments;
   audit: typeof audit;
@@ -141,6 +144,7 @@ declare const fullApi: ApiFromModules<{
   "utils/validators": typeof utils_validators;
   vehicleDetails: typeof vehicleDetails;
   web: typeof web;
+  webhooks: typeof webhooks;
   wineDetails: typeof wineDetails;
   workflows: typeof workflows;
 }>;
