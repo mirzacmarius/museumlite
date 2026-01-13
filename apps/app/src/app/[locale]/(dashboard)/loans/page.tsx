@@ -1,5 +1,6 @@
 "use client";
 
+import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -45,6 +46,13 @@ export default function LoansPage() {
   const [statusFilter, setStatusFilter] = useState<LoanStatus>("all");
   const [typeFilter, setTypeFilter] = useState<LoanType>("all");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const exportData = useQuery(
+    api.imports.exportLoans,
+    currentOrganizationId
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
+  );
 
   if (isLoading) {
     return (
@@ -105,14 +113,19 @@ export default function LoansPage() {
               Manage incoming and outgoing loan agreements
             </p>
           </div>
-          <PermissionGate permission="loans.create">
-            <Button asChild>
-              <Link href="/loans/new">
-                <Plus className="h-3.5 w-3.5" />
-                <span>New Loan</span>
-              </Link>
-            </Button>
-          </PermissionGate>
+          <div className="flex items-center gap-2">
+            <PermissionGate permission="loans.read">
+              <ExportCSVButton data={exportData} filename="loans" />
+            </PermissionGate>
+            <PermissionGate permission="loans.create">
+              <Button asChild>
+                <Link href="/loans/new">
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>New Loan</span>
+                </Link>
+              </Button>
+            </PermissionGate>
+          </div>
         </div>
 
         <LoanList

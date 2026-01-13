@@ -1,8 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
 const accessionMethodValidator = v.union(
@@ -333,7 +333,7 @@ export const exportAccessions = query({
 
     await requirePermission(ctx, args.organizationId, "collections.read");
 
-    let accessionsQuery = ctx.db
+    const accessionsQuery = ctx.db
       .query("accessions")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
@@ -804,6 +804,87 @@ export const importAccountsBatch = mutation({
     });
 
     return { processed, errors };
+  },
+});
+
+export const exportLoans = query({
+  args: {
+    organizationId: v.id("organizations"),
+    status: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("active"),
+        v.literal("dispatched"),
+        v.literal("returned"),
+        v.literal("cancelled"),
+      ),
+    ),
+    type: v.optional(v.union(v.literal("incoming"), v.literal("outgoing"))),
+  },
+  returns: v.array(
+    v.object({
+      loanNumber: v.string(),
+      type: v.string(),
+      status: v.string(),
+      lenderBorrowerName: v.string(),
+      lenderBorrowerContact: v.optional(v.string()),
+      startDate: v.number(),
+      endDate: v.optional(v.number()),
+      terms: v.optional(v.string()),
+      insuranceValue: v.optional(v.number()),
+      itemCount: v.number(),
+      notes: v.optional(v.string()),
+      createdAt: v.number(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(ctx, args.organizationId, "loans.read");
+
+    const loans = await ctx.db
+      .query("loans")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    let filtered = loans;
+    if (args.status) {
+      filtered = filtered.filter((l) => l.status === args.status);
+    }
+    if (args.type) {
+      filtered = filtered.filter((l) => l.type === args.type);
+    }
+
+    const loansWithCounts = await Promise.all(
+      filtered.map(async (loan) => {
+        const items = await ctx.db
+          .query("loanItems")
+          .withIndex("by_loan", (q) => q.eq("loanId", loan._id))
+          .collect();
+
+        return {
+          loanNumber: loan.loanNumber,
+          type: loan.type,
+          status: loan.status,
+          lenderBorrowerName: loan.lenderBorrowerName,
+          lenderBorrowerContact: loan.lenderBorrowerContact,
+          startDate: loan.startDate,
+          endDate: loan.endDate,
+          terms: loan.terms,
+          insuranceValue: loan.insuranceValue,
+          itemCount: items.length,
+          notes: loan.notes,
+          createdAt: loan._creationTime,
+        };
+      }),
+    );
+
+    return loansWithCounts;
   },
 });
 
