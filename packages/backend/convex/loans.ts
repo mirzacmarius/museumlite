@@ -5,10 +5,10 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, query } from "./_generated/server";
 import {
-  requirePermission,
-  canInitiateWorkflow,
   canApproveAtStep,
+  canInitiateWorkflow,
   getUsersToNotifyForWorkflowStep,
+  requirePermission,
 } from "./utils/permissions";
 
 /**
@@ -2056,5 +2056,224 @@ export const getWorkflowHistory = query({
     );
 
     return enrichedHistory;
+  },
+});
+
+/**
+ * Bulk approve multiple pending loans
+ */
+export const bulkApprove = mutation({
+  args: {
+    loanIds: v.array(v.id("loans")),
+  },
+  returns: v.object({
+    approved: v.number(),
+    skipped: v.number(),
+    errors: v.array(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    if (args.loanIds.length === 0) {
+      return { approved: 0, skipped: 0, errors: [] };
+    }
+
+    let approved = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+
+    for (const loanId of args.loanIds) {
+      const loan = await ctx.db.get(loanId);
+      if (!loan) {
+        errors.push(`Loan ${loanId} not found`);
+        skipped++;
+        continue;
+      }
+
+      // Check permission for each loan's organization
+      try {
+        await requirePermission(ctx, loan.organizationId, "loans.approve");
+      } catch {
+        errors.push(`No permission to approve loan ${loan.loanNumber}`);
+        skipped++;
+        continue;
+      }
+
+      // Only approve pending loans
+      if (loan.status !== "pending") {
+        errors.push(
+          `Loan ${loan.loanNumber} is not pending (status: ${loan.status})`,
+        );
+        skipped++;
+        continue;
+      }
+
+      // Check workflow config
+      const workflowConfig = await ctx.db
+        .query("workflowConfigs")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", loan.organizationId),
+        )
+        .filter((q) => q.eq(q.field("workflowType"), "loan"))
+        .first();
+
+      if (workflowConfig) {
+        const currentStep = loan.workflowStep ?? 1;
+        const canApprove = await canApproveAtStep(
+          ctx,
+          loan.organizationId,
+          "loan",
+          currentStep,
+        );
+
+        if (!canApprove) {
+          errors.push(
+            `Cannot approve loan ${loan.loanNumber} at current workflow step`,
+          );
+          skipped++;
+          continue;
+        }
+
+        const history = loan.workflowHistory ?? [];
+        history.push({
+          step: currentStep,
+          approvedBy: userId,
+          approvedAt: Date.now(),
+          comment: "Bulk approved",
+        });
+
+        const isLastStep = currentStep >= workflowConfig.steps.length;
+
+        if (isLastStep) {
+          await ctx.db.patch(loanId, {
+            status: "active",
+            approvedBy: userId,
+            approvedAt: Date.now(),
+            workflowHistory: history,
+          });
+        } else {
+          await ctx.db.patch(loanId, {
+            workflowStep: currentStep + 1,
+            workflowHistory: history,
+          });
+        }
+      } else {
+        // No workflow, direct approval
+        await ctx.db.patch(loanId, {
+          status: "active",
+          approvedBy: userId,
+          approvedAt: Date.now(),
+        });
+      }
+
+      // Log audit action
+      await ctx.runMutation(internal.audit.logAction, {
+        organizationId: loan.organizationId,
+        userId,
+        action: "approved",
+        entityType: "loan",
+        entityId: loanId,
+        changes: { status: "active", bulkAction: true },
+      });
+
+      approved++;
+    }
+
+    return { approved, skipped, errors };
+  },
+});
+
+/**
+ * Bulk cancel multiple loans
+ */
+export const bulkCancel = mutation({
+  args: {
+    loanIds: v.array(v.id("loans")),
+  },
+  returns: v.object({
+    cancelled: v.number(),
+    skipped: v.number(),
+    errors: v.array(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    if (args.loanIds.length === 0) {
+      return { cancelled: 0, skipped: 0, errors: [] };
+    }
+
+    let cancelled = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+
+    for (const loanId of args.loanIds) {
+      const loan = await ctx.db.get(loanId);
+      if (!loan) {
+        errors.push(`Loan ${loanId} not found`);
+        skipped++;
+        continue;
+      }
+
+      // Check permission
+      try {
+        await requirePermission(ctx, loan.organizationId, "loans.update");
+      } catch {
+        errors.push(`No permission to cancel loan ${loan.loanNumber}`);
+        skipped++;
+        continue;
+      }
+
+      // Only cancel pending, active, or dispatched loans
+      if (
+        loan.status !== "pending" &&
+        loan.status !== "active" &&
+        loan.status !== "dispatched"
+      ) {
+        errors.push(
+          `Loan ${loan.loanNumber} cannot be cancelled (status: ${loan.status})`,
+        );
+        skipped++;
+        continue;
+      }
+
+      // Update loan status
+      await ctx.db.patch(loanId, {
+        status: "cancelled",
+      });
+
+      // Update collection statuses back to active
+      const loanItems = await ctx.db
+        .query("loanItems")
+        .withIndex("by_loan", (q) => q.eq("loanId", loanId))
+        .collect();
+
+      for (const item of loanItems) {
+        await ctx.db.patch(item.collectionId, {
+          status: "active",
+          lastModifiedBy: userId,
+          lastModifiedAt: Date.now(),
+        });
+      }
+
+      // Log audit action
+      await ctx.runMutation(internal.audit.logAction, {
+        organizationId: loan.organizationId,
+        userId,
+        action: "cancelled",
+        entityType: "loan",
+        entityId: loanId,
+        changes: { status: "cancelled", bulkAction: true },
+      });
+
+      cancelled++;
+    }
+
+    return { cancelled, skipped, errors };
   },
 });

@@ -5,9 +5,11 @@ import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { Checkbox } from "@v1/ui/checkbox";
 import { Input } from "@v1/ui/input";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
+  AlertCircle,
   ArrowDownLeft,
   ArrowDownRight,
   ArrowRightLeft,
@@ -23,10 +25,11 @@ import {
   ShieldCheck,
   Truck,
   XCircle,
-  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { toast } from "sonner";
+import { LoansBulkActionsBar } from "./_components/loans-bulk-actions-bar";
 
 type LoanStatus =
   | "pending"
@@ -143,6 +146,10 @@ function LoanList({
   onTypeFilterChange: (type: LoanType) => void;
   onSearchQueryChange: (query: string) => void;
 }) {
+  const [selectedIds, setSelectedIds] = useState<Set<Id<"loans">>>(new Set());
+  const bulkApprove = useMutation(api.loans.bulkApprove);
+  const bulkCancel = useMutation(api.loans.bulkCancel);
+
   const loans = useQuery(
     api.loans.list,
     organizationId
@@ -246,6 +253,117 @@ function LoanList({
 
   const getInitial = (name: string) => {
     return name.charAt(0).toUpperCase();
+  };
+
+  const toggleSelection = (loanId: Id<"loans">) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(loanId)) {
+        next.delete(loanId);
+      } else {
+        next.add(loanId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === loansPage.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(loansPage.map((loan) => loan._id as Id<"loans">)));
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    const loanIds = Array.from(selectedIds);
+    try {
+      const result = await bulkApprove({ loanIds });
+      if (result.approved > 0) {
+        toast.success(
+          `Approved ${result.approved} loan${result.approved !== 1 ? "s" : ""}`,
+        );
+      }
+      if (result.skipped > 0) {
+        toast.warning(
+          `Skipped ${result.skipped} loan${result.skipped !== 1 ? "s" : ""}`,
+        );
+      }
+      if (result.errors.length > 0) {
+        for (const error of result.errors.slice(0, 3)) {
+          toast.error(error);
+        }
+      }
+      setSelectedIds(new Set());
+    } catch (error) {
+      toast.error("Failed to approve loans");
+    }
+  };
+
+  const handleBulkCancel = async () => {
+    const loanIds = Array.from(selectedIds);
+    try {
+      const result = await bulkCancel({ loanIds });
+      if (result.cancelled > 0) {
+        toast.success(
+          `Cancelled ${result.cancelled} loan${result.cancelled !== 1 ? "s" : ""}`,
+        );
+      }
+      if (result.skipped > 0) {
+        toast.warning(
+          `Skipped ${result.skipped} loan${result.skipped !== 1 ? "s" : ""}`,
+        );
+      }
+      if (result.errors.length > 0) {
+        for (const error of result.errors.slice(0, 3)) {
+          toast.error(error);
+        }
+      }
+      setSelectedIds(new Set());
+    } catch (error) {
+      toast.error("Failed to cancel loans");
+    }
+  };
+
+  const handleExport = () => {
+    const selectedLoans = loansPage.filter((loan) =>
+      selectedIds.has(loan._id as Id<"loans">),
+    );
+    const csvContent = [
+      [
+        "Loan Number",
+        "Type",
+        "Partner",
+        "Start Date",
+        "End Date",
+        "Status",
+        "Items",
+      ].join(","),
+      ...selectedLoans.map((loan) =>
+        [
+          loan.loanNumber,
+          loan.type,
+          `"${loan.lenderBorrowerName}"`,
+          new Date(loan.startDate).toISOString().split("T")[0],
+          loan.endDate
+            ? new Date(loan.endDate).toISOString().split("T")[0]
+            : "",
+          loan.status,
+          loan.itemCount,
+        ].join(","),
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `loans-export-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(
+      `Exported ${selectedLoans.length} loan${selectedLoans.length !== 1 ? "s" : ""}`,
+    );
   };
 
   return (
@@ -414,6 +532,23 @@ function LoanList({
               <table className="w-full border-collapse text-left">
                 <thead>
                   <tr className="border-b border-zinc-200 bg-zinc-50/50 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
+                    <th className="w-12 px-4 py-3">
+                      <Checkbox
+                        checked={
+                          loansPage.length > 0 &&
+                          selectedIds.size === loansPage.length
+                        }
+                        onCheckedChange={toggleSelectAll}
+                        aria-label="Select all loans"
+                        className="data-[state=indeterminate]:bg-primary"
+                        data-state={
+                          selectedIds.size > 0 &&
+                          selectedIds.size < loansPage.length
+                            ? "indeterminate"
+                            : undefined
+                        }
+                      />
+                    </th>
                     <th className="w-12 px-6 py-3">Type</th>
                     <th className="px-6 py-3">Loan ID & Title</th>
                     <th className="px-6 py-3">Partner Institution</th>
@@ -434,14 +569,23 @@ function LoanList({
                       endDate?: number;
                       status: string;
                     }) => {
+                      const loanId = loan._id as Id<"loans">;
+                      const isSelected = selectedIds.has(loanId);
+
                       const handleNavigate = () => {
                         window.location.href = `/loans/${loan._id}`;
+                      };
+
+                      const handleCheckboxClick = (e: React.MouseEvent) => {
+                        e.stopPropagation();
                       };
 
                       return (
                         <tr
                           key={loan._id}
-                          className="group cursor-pointer transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                          className={`group cursor-pointer transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${
+                            isSelected ? "bg-zinc-50 dark:bg-zinc-800/30" : ""
+                          }`}
                           onClick={handleNavigate}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" || e.key === " ") {
@@ -452,6 +596,17 @@ function LoanList({
                           tabIndex={0}
                           role="button"
                         >
+                          <td
+                            className="px-4 py-4"
+                            onClick={handleCheckboxClick}
+                            onKeyDown={(e) => e.stopPropagation()}
+                          >
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => toggleSelection(loanId)}
+                              aria-label={`Select loan ${loan.loanNumber}`}
+                            />
+                          </td>
                           <td className="px-6 py-4">
                             {getTypeIcon(loan.type)}
                           </td>
@@ -516,6 +671,14 @@ function LoanList({
                 </button>
               </div>
             </div>
+
+            <LoansBulkActionsBar
+              selectedCount={selectedIds.size}
+              onClearSelection={() => setSelectedIds(new Set())}
+              onBulkApprove={handleBulkApprove}
+              onBulkCancel={handleBulkCancel}
+              onExport={handleExport}
+            />
           </>
         )}
       </div>
