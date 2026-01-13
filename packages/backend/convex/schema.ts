@@ -276,6 +276,7 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_organization_and_type", ["organizationId", "collectionType"])
+    .index("by_organization_and_publicSlug", ["organizationId", "publicSlug"])
     .searchIndex("search_index", {
       searchField: "title",
       filterFields: ["organizationId", "status", "collectionType"],

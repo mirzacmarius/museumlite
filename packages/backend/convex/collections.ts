@@ -2262,13 +2262,25 @@ export const getPublic = query({
       return null;
     }
 
-    const collection = await ctx.db
+    let collection = await ctx.db
       .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organization._id),
+      .withIndex("by_organization_and_accessionNumber", (q) =>
+        q
+          .eq("organizationId", organization._id)
+          .eq("accessionNumber", args.accessionNumber),
       )
-      .filter((q) => q.eq(q.field("accessionNumber"), args.accessionNumber))
       .unique();
+
+    if (!collection) {
+      collection = await ctx.db
+        .query("collections")
+        .withIndex("by_organization_and_publicSlug", (q) =>
+          q
+            .eq("organizationId", organization._id)
+            .eq("publicSlug", args.accessionNumber),
+        )
+        .unique();
+    }
 
     if (
       !collection ||
