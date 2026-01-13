@@ -350,14 +350,26 @@ export default function OrganizationSettingsPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Organization Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
+              <PermissionGate
+                permission="organization.manage_settings"
+                fallback={
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    disabled
+                    className="bg-muted"
+                  />
                 }
-                required
-              />
+              >
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  required
+                />
+              </PermissionGate>
             </div>
             <div className="space-y-2">
               <Label>Organization Type</Label>
