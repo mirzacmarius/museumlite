@@ -51,6 +51,7 @@ import type * as migrations from "../migrations.js";
 import type * as naturalHistoryDetails from "../naturalHistoryDetails.js";
 import type * as organizations from "../organizations.js";
 import type * as roles from "../roles.js";
+import type * as search from "../search.js";
 import type * as seed from "../seed.js";
 import type * as seedFresh from "../seedFresh.js";
 import type * as seedFreshAction from "../seedFreshAction.js";
@@ -124,6 +125,7 @@ declare const fullApi: ApiFromModules<{
   naturalHistoryDetails: typeof naturalHistoryDetails;
   organizations: typeof organizations;
   roles: typeof roles;
+  search: typeof search;
   seed: typeof seed;
   seedFresh: typeof seedFresh;
   seedFreshAction: typeof seedFreshAction;

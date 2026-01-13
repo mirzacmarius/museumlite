@@ -94,9 +94,14 @@ export default function LoansPage() {
     <div className="flex h-full w-full flex-col overflow-y-auto bg-zinc-50/50 dark:bg-black">
       <div className="mx-auto w-full max-w-7xl space-y-8 p-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white">
-            Dashboard
-          </h1>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white">
+              Loans
+            </h1>
+            <p className="mt-1 text-sm text-zinc-500">
+              Manage incoming and outgoing loan agreements
+            </p>
+          </div>
           <PermissionGate permission="loans.create">
             <Button asChild>
               <Link href="/loans/new">
