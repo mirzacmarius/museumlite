@@ -372,6 +372,7 @@ export default defineSchema({
       ),
     ), // Defaults to "image" for backwards compatibility
     isPrimary: v.boolean(),
+    displayOrder: v.optional(v.number()),
     caption: v.optional(v.string()),
     photographer: v.optional(v.string()),
     copyright: v.optional(v.string()),

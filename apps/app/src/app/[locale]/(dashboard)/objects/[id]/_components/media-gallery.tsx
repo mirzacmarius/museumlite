@@ -31,22 +31,25 @@ import {
 } from "@v1/ui/dialog";
 import {
   ImageLightbox,
-  useLightbox,
   type LightboxImage,
+  useLightbox,
 } from "@v1/ui/image-lightbox";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
+import { cn } from "@v1/ui/utils";
 import { useUploadFiles } from "@xixixao/uploadstuff/react";
 import { useMutation, useQuery } from "convex/react";
 import {
   Edit,
+  GripVertical,
   Image as ImageIcon,
   Maximize2,
   Star,
   Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 interface MediaGalleryProps {
   collectionId: string;
@@ -69,6 +72,7 @@ export function MediaGallery({
   const updateMedia = useMutation(api.media.update);
   const deleteMedia = useMutation(api.media.deleteMedia);
   const setPrimary = useMutation(api.media.setPrimary);
+  const updateOrder = useMutation(api.media.updateOrder);
 
   const [editingMedia, setEditingMedia] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState<string | null>(
@@ -78,6 +82,8 @@ export function MediaGallery({
   const [uploadingFiles, setUploadingFiles] = useState<UploadFile[]>([]);
   const filesRef = useRef<File[]>([]);
   const uploadIdMapRef = useRef<Map<string, string>>(new Map());
+  const [draggedId, setDraggedId] = useState<Id<"mediaFiles"> | null>(null);
+  const [dragOverId, setDragOverId] = useState<Id<"mediaFiles"> | null>(null);
 
   const updateUploadStatus = useCallback(
     (fileName: string, updates: Partial<Omit<UploadFile, "id" | "file">>) => {
@@ -256,6 +262,61 @@ export function MediaGallery({
     }
   };
 
+  const handleDragStart = (e: React.DragEvent, mediaId: Id<"mediaFiles">) => {
+    setDraggedId(mediaId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent, mediaId: Id<"mediaFiles">) => {
+    e.preventDefault();
+    if (draggedId && draggedId !== mediaId) {
+      setDragOverId(mediaId);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverId(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetId: Id<"mediaFiles">) => {
+    e.preventDefault();
+    setDragOverId(null);
+
+    if (!draggedId || draggedId === targetId) {
+      setDraggedId(null);
+      return;
+    }
+
+    const currentOrder = images.map((img) => img._id);
+    const draggedIndex = currentOrder.findIndex((id) => id === draggedId);
+    const targetIndex = currentOrder.findIndex((id) => id === targetId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedId(null);
+      return;
+    }
+
+    const newOrder = [...currentOrder];
+    newOrder.splice(draggedIndex, 1);
+    newOrder.splice(targetIndex, 0, draggedId);
+
+    try {
+      await updateOrder({
+        mediaIds: newOrder,
+      });
+      toast.success("Image order updated");
+    } catch (err) {
+      toast.error("Failed to update image order");
+    }
+
+    setDraggedId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
   if (media === undefined) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -346,13 +407,28 @@ export function MediaGallery({
             <>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 {images.map((file) => {
+                  const mediaId = file._id as Id<"mediaFiles">;
                   const lightboxIdx = lightboxImages.findIndex(
                     (img) => img.id === file._id,
                   );
+                  const isDragging = draggedId === mediaId;
+                  const isDragOver = dragOverId === mediaId;
                   return (
                     <div
                       key={file._id}
-                      className="group relative aspect-square cursor-pointer overflow-hidden rounded-lg border border-border bg-secondary"
+                      draggable={!file.isPrimary}
+                      onDragStart={(e) => handleDragStart(e, mediaId)}
+                      onDragOver={(e) => handleDragOver(e, mediaId)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, mediaId)}
+                      onDragEnd={handleDragEnd}
+                      className={cn(
+                        "group relative aspect-square cursor-pointer overflow-hidden rounded-lg border bg-secondary transition-all",
+                        isDragging && "opacity-50 scale-95",
+                        isDragOver &&
+                          "border-primary border-2 ring-2 ring-primary/20",
+                        !isDragging && !isDragOver && "border-border",
+                      )}
                     >
                       {file.url && (
                         <>
@@ -406,6 +482,14 @@ export function MediaGallery({
                           <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                             <Maximize2 className="h-6 w-6 text-white" />
                           </div>
+
+                          {!file.isPrimary && (
+                            <div className="absolute left-2 top-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                              <div className="flex h-7 w-7 items-center justify-center rounded bg-black/50 cursor-grab active:cursor-grabbing">
+                                <GripVertical className="h-3.5 w-3.5 text-white" />
+                              </div>
+                            </div>
+                          )}
 
                           <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                             <PermissionGate permission="media.upload">

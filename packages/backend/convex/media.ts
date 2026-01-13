@@ -1,8 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
 const MAX_SMALL_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -224,6 +224,7 @@ export const list = query({
         v.union(v.literal("image"), v.literal("document")),
       ),
       isPrimary: v.boolean(),
+      displayOrder: v.optional(v.number()),
       caption: v.optional(v.string()),
       photographer: v.optional(v.string()),
       copyright: v.optional(v.string()),
@@ -269,6 +270,7 @@ export const list = query({
           mimeType: media.mimeType,
           mediaCategory: media.mediaCategory,
           isPrimary: media.isPrimary,
+          displayOrder: media.displayOrder,
           caption: media.caption,
           photographer: media.photographer,
           copyright: media.copyright,
@@ -278,6 +280,14 @@ export const list = query({
         };
       }),
     );
+
+    mediaWithUrls.sort((a, b) => {
+      if (a.isPrimary) return -1;
+      if (b.isPrimary) return 1;
+      const orderA = a.displayOrder ?? Number.MAX_SAFE_INTEGER;
+      const orderB = b.displayOrder ?? Number.MAX_SAFE_INTEGER;
+      return orderA - orderB;
+    });
 
     return mediaWithUrls;
   },
@@ -739,6 +749,39 @@ export const checkFileType = query({
   returns: v.boolean(),
   handler: async (ctx, args) => {
     return validateFileType(args.mimeType);
+  },
+});
+
+export const updateOrder = mutation({
+  args: {
+    mediaIds: v.array(v.id("mediaFiles")),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    if (args.mediaIds.length === 0) {
+      return null;
+    }
+
+    const firstMedia = await ctx.db.get(args.mediaIds[0] as Id<"mediaFiles">);
+    if (!firstMedia) {
+      throw new Error("Media not found");
+    }
+
+    await requirePermission(ctx, firstMedia.organizationId, "media.upload");
+
+    for (let i = 0; i < args.mediaIds.length; i++) {
+      const mediaId = args.mediaIds[i];
+      if (mediaId) {
+        await ctx.db.patch(mediaId, { displayOrder: i });
+      }
+    }
+
+    return null;
   },
 });
 
