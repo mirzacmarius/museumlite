@@ -146,8 +146,11 @@ export function RecordContextSidebar({
             <SidebarGroupContent>
               {ownershipHistory && ownershipHistory.length > 0 ? (
                 <div className="space-y-2">
-                  {ownershipHistory.slice(0, 4).map((entry, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-xs">
+                  {ownershipHistory.slice(0, 4).map((entry) => (
+                    <div
+                      key={`${entry.owner}-${entry.startYear}`}
+                      className="flex items-start gap-2 text-xs"
+                    >
                       <div
                         className={cn(
                           "mt-1.5 h-1.5 w-1.5 rounded-full shrink-0",
