@@ -1,12 +1,12 @@
-import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import { mutation, query } from "./_generated/server";
 import {
-  requirePermission,
-  canInitiateWorkflow,
   canApproveAtStep,
+  canInitiateWorkflow,
   getUsersToNotifyForWorkflowStep,
+  requirePermission,
 } from "./utils/permissions";
 
 export const listByOrganization = query({
@@ -83,6 +83,22 @@ export const get = query({
       collectionId: v.id("collections"),
       organizationId: v.id("organizations"),
       collectionTitle: v.optional(v.string()),
+      status: v.optional(
+        v.union(
+          v.literal("proposed"),
+          v.literal("approved"),
+          v.literal("active"),
+          v.literal("closed"),
+          v.literal("rejected"),
+        ),
+      ),
+      workflowStep: v.optional(v.number()),
+      totalWorkflowSteps: v.optional(v.number()),
+      approvedBy: v.optional(v.id("users")),
+      approvedAt: v.optional(v.number()),
+      approverName: v.optional(v.string()),
+      createdBy: v.optional(v.id("users")),
+      creatorName: v.optional(v.string()),
     }),
     v.null(),
   ),
@@ -95,6 +111,21 @@ export const get = query({
     await requirePermission(ctx, exhibition.organizationId, "collections.read");
 
     const collection = await ctx.db.get(exhibition.collectionId);
+
+    const workflowConfig = await ctx.db
+      .query("workflowConfigs")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", exhibition.organizationId),
+      )
+      .filter((q) => q.eq(q.field("workflowType"), "exhibition"))
+      .first();
+
+    const approver = exhibition.approvedBy
+      ? await ctx.db.get(exhibition.approvedBy)
+      : null;
+    const creator = exhibition.createdBy
+      ? await ctx.db.get(exhibition.createdBy)
+      : null;
 
     return {
       _id: exhibition._id,
@@ -110,6 +141,14 @@ export const get = query({
       collectionId: exhibition.collectionId,
       organizationId: exhibition.organizationId,
       collectionTitle: collection?.title,
+      status: exhibition.status,
+      workflowStep: exhibition.workflowStep,
+      totalWorkflowSteps: workflowConfig?.steps.length,
+      approvedBy: exhibition.approvedBy,
+      approvedAt: exhibition.approvedAt,
+      approverName: approver?.name ?? approver?.username ?? undefined,
+      createdBy: exhibition.createdBy,
+      creatorName: creator?.name ?? creator?.username ?? undefined,
     };
   },
 });
