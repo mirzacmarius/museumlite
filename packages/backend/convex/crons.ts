@@ -27,4 +27,16 @@ crons.interval(
   internal.transit.checkDelayedTransitsInternal,
 );
 
+crons.interval(
+  "check-overdue-treatments",
+  { hours: 24 },
+  internal.conservationTreatments.checkOverdueTreatmentsInternal,
+);
+
+crons.interval(
+  "check-assessments-due",
+  { hours: 24 },
+  internal.conservationTreatments.checkAssessmentsDueInternal,
+);
+
 export default crons;

@@ -1090,6 +1090,139 @@ export default defineSchema({
     .index("by_performedAt", ["performedAt"])
     .index("by_organization_and_status", ["organizationId", "status"]),
 
+  // Conservation treatment attachments (before/after photos, reports)
+  conservationAttachments: defineTable({
+    organizationId: v.id("organizations"),
+    treatmentId: v.id("conservationTreatments"),
+    storageId: v.id("_storage"),
+
+    fileName: v.string(),
+    fileType: v.string(), // mime type
+    fileSize: v.number(),
+
+    attachmentType: v.union(
+      v.literal("before_photo"),
+      v.literal("after_photo"),
+      v.literal("during_photo"),
+      v.literal("report"),
+      v.literal("lab_notes"),
+      v.literal("x_ray"),
+      v.literal("uv_photo"),
+      v.literal("microscopy"),
+      v.literal("other"),
+    ),
+
+    caption: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    takenAt: v.optional(v.number()), // when photo was taken
+
+    uploadedBy: v.id("users"),
+    uploadedAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_treatment", ["treatmentId"])
+    .index("by_type", ["attachmentType"])
+    .index("by_treatment_and_type", ["treatmentId", "attachmentType"]),
+
+  // Conservation alert rules (critical attention alerts)
+  conservationAlertRules: defineTable({
+    organizationId: v.id("organizations"),
+
+    name: v.string(),
+    description: v.optional(v.string()),
+
+    // Trigger conditions
+    triggerType: v.union(
+      v.literal("condition_threshold"), // Object condition drops below threshold
+      v.literal("treatment_overdue"), // Scheduled treatment is overdue
+      v.literal("assessment_due"), // Periodic assessment due
+      v.literal("urgent_treatment"), // Treatment marked as urgent
+      v.literal("environmental"), // Environmental condition alert
+    ),
+
+    // Condition-specific settings
+    conditionThreshold: v.optional(v.string()), // e.g., "poor", "critical"
+    daysOverdue: v.optional(v.number()), // Days before treatment considered overdue
+    assessmentIntervalDays: v.optional(v.number()), // Days between required assessments
+
+    // Alert settings
+    priority: v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high"),
+      v.literal("critical"),
+    ),
+
+    // Notification settings
+    notifyRoles: v.optional(v.array(v.id("roles"))), // Roles to notify
+    notifyUsers: v.optional(v.array(v.id("users"))), // Specific users to notify
+    emailNotification: v.boolean(),
+    inAppNotification: v.boolean(),
+
+    isActive: v.boolean(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    lastModifiedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_active", ["organizationId", "isActive"])
+    .index("by_triggerType", ["triggerType"]),
+
+  // Conservation alerts (triggered alerts)
+  conservationAlerts: defineTable({
+    organizationId: v.id("organizations"),
+    ruleId: v.optional(v.id("conservationAlertRules")), // Rule that triggered (if any)
+
+    // What triggered the alert
+    collectionId: v.optional(v.id("collections")), // Related object
+    treatmentId: v.optional(v.id("conservationTreatments")), // Related treatment
+
+    // Alert details
+    alertType: v.union(
+      v.literal("condition_degraded"),
+      v.literal("treatment_overdue"),
+      v.literal("assessment_due"),
+      v.literal("urgent_treatment"),
+      v.literal("environmental_alert"),
+      v.literal("manual"), // Manually created alert
+    ),
+
+    title: v.string(),
+    description: v.string(),
+    priority: v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high"),
+      v.literal("critical"),
+    ),
+
+    // Status
+    status: v.union(
+      v.literal("active"),
+      v.literal("acknowledged"),
+      v.literal("resolved"),
+      v.literal("dismissed"),
+    ),
+
+    // Resolution
+    acknowledgedBy: v.optional(v.id("users")),
+    acknowledgedAt: v.optional(v.number()),
+    resolvedBy: v.optional(v.id("users")),
+    resolvedAt: v.optional(v.number()),
+    resolutionNotes: v.optional(v.string()),
+
+    // Metadata
+    createdBy: v.optional(v.id("users")), // null if system-generated
+    createdAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_status", ["status"])
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_collection", ["collectionId"])
+    .index("by_treatment", ["treatmentId"])
+    .index("by_priority", ["priority"])
+    .index("by_organization_and_priority", ["organizationId", "priority"]),
+
   // Exhibition records for objects
   exhibitions: defineTable({
     collectionId: v.id("collections"),
