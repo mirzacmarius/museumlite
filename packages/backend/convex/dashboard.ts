@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
@@ -308,6 +309,317 @@ export const getAnalytics = query({
       recentCollectionGroups,
       recentObjects,
       recentActivity,
+    };
+  },
+});
+
+export const getComplianceReport = query({
+  args: {
+    organizationId: v.id("organizations"),
+    dateRangeStart: v.optional(v.number()),
+    dateRangeEnd: v.optional(v.number()),
+  },
+  returns: v.object({
+    accessions: v.object({
+      total: v.number(),
+      pending: v.number(),
+      approved: v.number(),
+      rejected: v.number(),
+      pendingApprovals: v.array(
+        v.object({
+          id: v.string(),
+          accessionNumber: v.string(),
+          source: v.string(),
+          dateReceived: v.number(),
+          method: v.string(),
+          assignedToName: v.optional(v.string()),
+          workflowStep: v.optional(v.number()),
+        }),
+      ),
+      recentApprovals: v.array(
+        v.object({
+          id: v.string(),
+          accessionNumber: v.string(),
+          source: v.string(),
+          approvedAt: v.number(),
+          approvedByName: v.string(),
+          status: v.string(),
+        }),
+      ),
+    }),
+    deaccessions: v.object({
+      total: v.number(),
+      pending: v.number(),
+      approved: v.number(),
+      rejected: v.number(),
+      pendingApprovals: v.array(
+        v.object({
+          id: v.string(),
+          deaccessionNumber: v.string(),
+          reason: v.string(),
+          method: v.string(),
+          dateDeaccessioned: v.number(),
+          workflowStep: v.optional(v.number()),
+        }),
+      ),
+      recentApprovals: v.array(
+        v.object({
+          id: v.string(),
+          deaccessionNumber: v.string(),
+          reason: v.string(),
+          approvedAt: v.number(),
+          approvedByName: v.string(),
+          status: v.string(),
+          proceedsAmount: v.optional(v.number()),
+        }),
+      ),
+    }),
+    auditTrail: v.object({
+      totalEvents: v.number(),
+      recentEvents: v.array(
+        v.object({
+          id: v.string(),
+          action: v.string(),
+          entityType: v.string(),
+          entityId: v.string(),
+          userName: v.string(),
+          timestamp: v.number(),
+        }),
+      ),
+      eventsByType: v.array(
+        v.object({
+          entityType: v.string(),
+          count: v.number(),
+        }),
+      ),
+      eventsByUser: v.array(
+        v.object({
+          userId: v.string(),
+          userName: v.string(),
+          count: v.number(),
+        }),
+      ),
+    }),
+    generatedAt: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
+    const now = Date.now();
+    const rangeStart = args.dateRangeStart ?? now - 30 * 24 * 60 * 60 * 1000;
+    const rangeEnd = args.dateRangeEnd ?? now;
+
+    const allAccessions = await ctx.db
+      .query("accessions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const accessionsByStatus = {
+      total: allAccessions.length,
+      pending: allAccessions.filter((a) => a.status === "pending").length,
+      approved: allAccessions.filter((a) => a.status === "approved").length,
+      rejected: allAccessions.filter((a) => a.status === "rejected").length,
+    };
+
+    const pendingAccessions = allAccessions
+      .filter((a) => a.status === "pending")
+      .sort((a, b) => b.dateReceived - a.dateReceived)
+      .slice(0, 10);
+
+    const pendingAccessionDetails = await Promise.all(
+      pendingAccessions.map(async (accession) => {
+        let assignedToName: string | undefined;
+        if (accession.assignedTo) {
+          const user = await ctx.db.get(accession.assignedTo);
+          assignedToName = user?.name ?? user?.email ?? undefined;
+        }
+        return {
+          id: accession._id,
+          accessionNumber: accession.accessionNumber,
+          source: accession.source,
+          dateReceived: accession.dateReceived,
+          method: accession.method,
+          assignedToName,
+          workflowStep: accession.workflowStep,
+        };
+      }),
+    );
+
+    const recentAccessionApprovals = allAccessions
+      .filter(
+        (a) =>
+          (a.status === "approved" || a.status === "rejected") &&
+          a.approvedAt &&
+          a.approvedAt >= rangeStart &&
+          a.approvedAt <= rangeEnd,
+      )
+      .sort((a, b) => (b.approvedAt ?? 0) - (a.approvedAt ?? 0))
+      .slice(0, 10);
+
+    const recentAccessionApprovalDetails = await Promise.all(
+      recentAccessionApprovals.map(async (accession) => {
+        let approvedByName = "Unknown";
+        if (accession.approvedBy) {
+          const user = await ctx.db.get(accession.approvedBy);
+          approvedByName = user?.name ?? user?.email ?? "Unknown";
+        }
+        return {
+          id: accession._id,
+          accessionNumber: accession.accessionNumber,
+          source: accession.source,
+          approvedAt: accession.approvedAt as number,
+          approvedByName,
+          status: accession.status,
+        };
+      }),
+    );
+
+    const allDeaccessions = await ctx.db
+      .query("deaccessions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const deaccessionsByStatus = {
+      total: allDeaccessions.length,
+      pending: allDeaccessions.filter((d) => d.status === "pending").length,
+      approved: allDeaccessions.filter((d) => d.status === "approved").length,
+      rejected: allDeaccessions.filter((d) => d.status === "rejected").length,
+    };
+
+    const pendingDeaccessions = allDeaccessions
+      .filter((d) => d.status === "pending")
+      .sort((a, b) => b.dateDeaccessioned - a.dateDeaccessioned)
+      .slice(0, 10);
+
+    const pendingDeaccessionDetails = pendingDeaccessions.map(
+      (deaccession) => ({
+        id: deaccession._id,
+        deaccessionNumber: deaccession.deaccessionNumber,
+        reason: deaccession.reason,
+        method: deaccession.method,
+        dateDeaccessioned: deaccession.dateDeaccessioned,
+        workflowStep: deaccession.workflowStep,
+      }),
+    );
+
+    const recentDeaccessionApprovals = allDeaccessions
+      .filter(
+        (d) =>
+          (d.status === "approved" || d.status === "rejected") &&
+          d.approvedAt &&
+          d.approvedAt >= rangeStart &&
+          d.approvedAt <= rangeEnd,
+      )
+      .sort((a, b) => (b.approvedAt ?? 0) - (a.approvedAt ?? 0))
+      .slice(0, 10);
+
+    const recentDeaccessionApprovalDetails = await Promise.all(
+      recentDeaccessionApprovals.map(async (deaccession) => {
+        let approvedByName = "Unknown";
+        if (deaccession.approvedBy) {
+          const user = await ctx.db.get(deaccession.approvedBy);
+          approvedByName = user?.name ?? user?.email ?? "Unknown";
+        }
+        return {
+          id: deaccession._id,
+          deaccessionNumber: deaccession.deaccessionNumber,
+          reason: deaccession.reason,
+          approvedAt: deaccession.approvedAt as number,
+          approvedByName,
+          status: deaccession.status,
+          proceedsAmount: deaccession.proceedsAmount,
+        };
+      }),
+    );
+
+    const auditEvents = await ctx.db
+      .query("auditLog")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const filteredEvents = auditEvents.filter(
+      (e) => e.timestamp >= rangeStart && e.timestamp <= rangeEnd,
+    );
+
+    const recentEvents = filteredEvents
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 20);
+
+    const recentEventDetails = await Promise.all(
+      recentEvents.map(async (event) => {
+        const user = await ctx.db.get(event.userId);
+        return {
+          id: event._id,
+          action: event.action,
+          entityType: event.entityType,
+          entityId: event.entityId,
+          userName: user?.name ?? user?.email ?? "Unknown",
+          timestamp: event.timestamp,
+        };
+      }),
+    );
+
+    const eventsByTypeMap = new Map<string, number>();
+    for (const event of filteredEvents) {
+      const count = eventsByTypeMap.get(event.entityType) ?? 0;
+      eventsByTypeMap.set(event.entityType, count + 1);
+    }
+    const eventsByType = Array.from(eventsByTypeMap.entries())
+      .map(([entityType, count]) => ({ entityType, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    const eventsByUserMap = new Map<
+      string,
+      { userId: string; count: number }
+    >();
+    for (const event of filteredEvents) {
+      const existing = eventsByUserMap.get(event.userId);
+      if (existing) {
+        existing.count++;
+      } else {
+        eventsByUserMap.set(event.userId, { userId: event.userId, count: 1 });
+      }
+    }
+
+    const eventsByUserWithNames = await Promise.all(
+      Array.from(eventsByUserMap.values())
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10)
+        .map(async ({ userId, count }) => {
+          const user = await ctx.db.get(userId as Id<"users">);
+          return {
+            userId,
+            userName: user?.name ?? user?.email ?? "Unknown",
+            count,
+          };
+        }),
+    );
+
+    return {
+      accessions: {
+        ...accessionsByStatus,
+        pendingApprovals: pendingAccessionDetails,
+        recentApprovals: recentAccessionApprovalDetails,
+      },
+      deaccessions: {
+        ...deaccessionsByStatus,
+        pendingApprovals: pendingDeaccessionDetails,
+        recentApprovals: recentDeaccessionApprovalDetails,
+      },
+      auditTrail: {
+        totalEvents: filteredEvents.length,
+        recentEvents: recentEventDetails,
+        eventsByType,
+        eventsByUser: eventsByUserWithNames,
+      },
+      generatedAt: now,
     };
   },
 });
