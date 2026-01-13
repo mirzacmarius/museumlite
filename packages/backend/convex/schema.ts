@@ -2276,4 +2276,134 @@ export default defineSchema({
     currentValue: v.number(),
     lastGeneratedAt: v.number(),
   }).index("by_organization_and_year", ["organizationId", "year"]),
+
+  // ============================================
+  // INSTALLATION PLANNING MODULE
+  // ============================================
+
+  // Installation Tasks - Tasks for exhibition setup
+  installationTasks: defineTable({
+    organizationId: v.id("organizations"),
+    exhibitionId: v.id("exhibitions"),
+
+    // Task details
+    title: v.string(),
+    description: v.optional(v.string()),
+    taskType: v.union(
+      v.literal("lighting"),
+      v.literal("signage"),
+      v.literal("mounts"),
+      v.literal("conservation"),
+      v.literal("labeling"),
+      v.literal("security"),
+      v.literal("av"),
+      v.literal("other"),
+    ),
+    status: v.union(
+      v.literal("todo"),
+      v.literal("in_progress"),
+      v.literal("completed"),
+      v.literal("blocked"),
+    ),
+    priority: v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high"),
+      v.literal("urgent"),
+    ),
+
+    // Assignment
+    assigneeId: v.optional(v.id("users")), // Internal user
+    assigneeName: v.optional(v.string()), // External contractor name
+
+    // Timeline
+    dueDate: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+    completedBy: v.optional(v.id("users")),
+
+    // Time tracking
+    estimatedHours: v.optional(v.number()),
+    actualHours: v.optional(v.number()),
+
+    // Dependencies
+    dependsOnTaskIds: v.optional(v.array(v.id("installationTasks"))),
+    blockedReason: v.optional(v.string()), // Reason when status is blocked
+
+    // Notes
+    notes: v.optional(v.string()),
+
+    // Audit
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    lastModifiedBy: v.optional(v.id("users")),
+    lastModifiedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_exhibition", ["exhibitionId"])
+    .index("by_assignee", ["assigneeId"])
+    .index("by_status", ["status"])
+    .index("by_organization_and_exhibition", ["organizationId", "exhibitionId"])
+    .index("by_exhibition_and_status", ["exhibitionId", "status"])
+    .index("by_dueDate", ["dueDate"]),
+
+  // Installation Task Templates - Reusable task templates
+  installationTaskTemplates: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    taskType: v.union(
+      v.literal("lighting"),
+      v.literal("signage"),
+      v.literal("mounts"),
+      v.literal("conservation"),
+      v.literal("labeling"),
+      v.literal("security"),
+      v.literal("av"),
+      v.literal("other"),
+    ),
+    defaultPriority: v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high"),
+      v.literal("urgent"),
+    ),
+    defaultEstimatedHours: v.optional(v.number()),
+    checklist: v.optional(
+      v.array(
+        v.object({
+          item: v.string(),
+          required: v.boolean(),
+        }),
+      ),
+    ),
+    isActive: v.boolean(),
+
+    // Audit
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_active", ["organizationId", "isActive"])
+    .index("by_taskType", ["taskType"]),
+
+  // Installation Task Comments - Comments on tasks
+  installationTaskComments: defineTable({
+    taskId: v.id("installationTasks"),
+    authorId: v.id("users"),
+    content: v.string(),
+    attachmentIds: v.optional(v.array(v.id("_storage"))),
+    createdAt: v.number(),
+  })
+    .index("by_task", ["taskId"])
+    .index("by_createdAt", ["createdAt"]),
+
+  // Installation Task Checklists - Checklist items for a task
+  installationTaskChecklists: defineTable({
+    taskId: v.id("installationTasks"),
+    item: v.string(),
+    completed: v.boolean(),
+    completedBy: v.optional(v.id("users")),
+    completedAt: v.optional(v.number()),
+    sortOrder: v.number(),
+  }).index("by_task", ["taskId"]),
 });
