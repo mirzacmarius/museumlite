@@ -1,13 +1,13 @@
 "use client";
 
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { Archive, Download, MapPin, X } from "lucide-react";
+import { Archive, Download, FolderPlus, MapPin, X } from "lucide-react";
 
 interface BulkActionsBarProps {
   selectedCount: number;
   onClearSelection: () => void;
   onMoveLocation: () => void;
+  onAddToGroup: () => void;
   onExport: () => void;
   onDeaccession: () => void;
 }
@@ -16,6 +16,7 @@ export function BulkActionsBar({
   selectedCount,
   onClearSelection,
   onMoveLocation,
+  onAddToGroup,
   onExport,
   onDeaccession,
 }: BulkActionsBarProps) {
@@ -39,6 +40,11 @@ export function BulkActionsBar({
         </div>
 
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={onAddToGroup}>
+            <FolderPlus className="mr-2 h-4 w-4" />
+            Add to Group
+          </Button>
+
           <Button variant="outline" size="sm" onClick={onMoveLocation}>
             <MapPin className="mr-2 h-4 w-4" />
             Move Location

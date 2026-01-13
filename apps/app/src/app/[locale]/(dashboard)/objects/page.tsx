@@ -42,6 +42,7 @@ import { ObjectGridView } from "./_components/object-grid-view";
 import { BulkActionsBar } from "./_components/bulk-actions-bar";
 import { BulkMoveLocationDialog } from "./_components/bulk-move-location-dialog";
 import { BulkDeaccessionDialog } from "./_components/bulk-deaccession-dialog";
+import { BulkAddToGroupDialog } from "./_components/bulk-add-to-group-dialog";
 import {
   ColumnConfigDropdown,
   DEFAULT_COLUMNS,
@@ -173,6 +174,7 @@ function CollectionFiltersAndList({
   const [showMoveLocationDialog, setShowMoveLocationDialog] = useState(false);
   const [showBulkDeaccessionDialog, setShowBulkDeaccessionDialog] =
     useState(false);
+  const [showAddToGroupDialog, setShowAddToGroupDialog] = useState(false);
 
   const bulkExport = useQuery(
     api.collections.bulkExport,
@@ -641,6 +643,7 @@ function CollectionFiltersAndList({
       <BulkActionsBar
         selectedCount={selectedIds.size}
         onClearSelection={handleClearSelection}
+        onAddToGroup={() => setShowAddToGroupDialog(true)}
         onMoveLocation={() => setShowMoveLocationDialog(true)}
         onExport={handleExport}
         onDeaccession={() => setShowBulkDeaccessionDialog(true)}
@@ -658,6 +661,14 @@ function CollectionFiltersAndList({
         open={showBulkDeaccessionDialog}
         onOpenChange={setShowBulkDeaccessionDialog}
         selectedIds={Array.from(selectedIds)}
+        onSuccess={handleBulkSuccess}
+      />
+
+      <BulkAddToGroupDialog
+        open={showAddToGroupDialog}
+        onOpenChange={setShowAddToGroupDialog}
+        selectedIds={Array.from(selectedIds)}
+        organizationId={organizationId}
         onSuccess={handleBulkSuccess}
       />
     </div>

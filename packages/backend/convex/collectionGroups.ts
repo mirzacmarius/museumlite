@@ -9,6 +9,8 @@ export const create = mutation({
     organizationId: v.id("organizations"),
     name: v.string(),
     description: v.optional(v.string()),
+    curatorId: v.optional(v.id("users")),
+    imageId: v.optional(v.id("_storage")),
   },
   returns: v.id("collectionGroups"),
   handler: async (ctx, args) => {
@@ -23,6 +25,8 @@ export const create = mutation({
       organizationId: args.organizationId,
       name: args.name,
       description: args.description,
+      curatorId: args.curatorId,
+      imageId: args.imageId,
       createdAt: Date.now(),
       createdBy: userId,
       itemsCount: 0,
@@ -42,6 +46,9 @@ export const list = query({
       _id: v.id("collectionGroups"),
       name: v.string(),
       description: v.optional(v.string()),
+      curatorId: v.optional(v.id("users")),
+      curatorName: v.optional(v.string()),
+      imageUrl: v.optional(v.string()),
       itemsCount: v.optional(v.number()),
       createdAt: v.number(),
       _creationTime: v.number(),
@@ -70,14 +77,32 @@ export const list = query({
         .collect();
     }
 
-    return groups.map((g) => ({
-      _id: g._id,
-      name: g.name,
-      description: g.description,
-      itemsCount: g.itemsCount,
-      createdAt: g.createdAt,
-      _creationTime: g._creationTime,
-    }));
+    return await Promise.all(
+      groups.map(async (g) => {
+        let curatorName: string | undefined;
+        if (g.curatorId) {
+          const curator = await ctx.db.get(g.curatorId);
+          curatorName = curator?.name ?? curator?.email ?? undefined;
+        }
+
+        let imageUrl: string | undefined;
+        if (g.imageId) {
+          imageUrl = (await ctx.storage.getUrl(g.imageId)) ?? undefined;
+        }
+
+        return {
+          _id: g._id,
+          name: g.name,
+          description: g.description,
+          curatorId: g.curatorId,
+          curatorName,
+          imageUrl,
+          itemsCount: g.itemsCount,
+          createdAt: g.createdAt,
+          _creationTime: g._creationTime,
+        };
+      }),
+    );
   },
 });
 
@@ -91,6 +116,10 @@ export const get = query({
       organizationId: v.id("organizations"),
       name: v.string(),
       description: v.optional(v.string()),
+      curatorId: v.optional(v.id("users")),
+      curatorName: v.optional(v.string()),
+      imageId: v.optional(v.id("_storage")),
+      imageUrl: v.optional(v.string()),
       itemsCount: v.optional(v.number()),
       createdAt: v.number(),
       createdBy: v.id("users"),
@@ -102,7 +131,24 @@ export const get = query({
   ),
   handler: async (ctx, args) => {
     const group = await ctx.db.get(args.groupId);
-    return group;
+    if (!group) return null;
+
+    let curatorName: string | undefined;
+    if (group.curatorId) {
+      const curator = await ctx.db.get(group.curatorId);
+      curatorName = curator?.name ?? curator?.email ?? undefined;
+    }
+
+    let imageUrl: string | undefined;
+    if (group.imageId) {
+      imageUrl = (await ctx.storage.getUrl(group.imageId)) ?? undefined;
+    }
+
+    return {
+      ...group,
+      curatorName,
+      imageUrl,
+    };
   },
 });
 
@@ -111,6 +157,8 @@ export const update = mutation({
     groupId: v.id("collectionGroups"),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
+    curatorId: v.optional(v.union(v.id("users"), v.null())),
+    imageId: v.optional(v.union(v.id("_storage"), v.null())),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -131,12 +179,17 @@ export const update = mutation({
       lastModifiedBy: Id<"users">;
       name?: string;
       description?: string;
+      curatorId?: Id<"users"> | undefined;
+      imageId?: Id<"_storage"> | undefined;
     } = {
       lastModifiedAt: Date.now(),
       lastModifiedBy: userId,
     };
     if (args.name !== undefined) updates.name = args.name;
     if (args.description !== undefined) updates.description = args.description;
+    if (args.curatorId !== undefined)
+      updates.curatorId = args.curatorId ?? undefined;
+    if (args.imageId !== undefined) updates.imageId = args.imageId ?? undefined;
 
     await ctx.db.patch(args.groupId, updates);
 
@@ -437,5 +490,63 @@ export const getGroupsForCollection = query({
     }
 
     return groups;
+  },
+});
+
+export const getStats = query({
+  args: {
+    groupId: v.id("collectionGroups"),
+  },
+  returns: v.union(
+    v.object({
+      total: v.number(),
+      active: v.number(),
+      loaned: v.number(),
+      deaccessioned: v.number(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const group = await ctx.db.get(args.groupId);
+    if (!group) {
+      return null;
+    }
+
+    await requirePermission(ctx, group.organizationId, "collections.read");
+
+    const groupItems = await ctx.db
+      .query("collectionGroupItems")
+      .withIndex("by_collectionGroup", (q) =>
+        q.eq("collectionGroupId", args.groupId),
+      )
+      .collect();
+
+    let active = 0;
+    let loaned = 0;
+    let deaccessioned = 0;
+
+    for (const groupItem of groupItems) {
+      const collection = await ctx.db.get(groupItem.collectionId);
+      if (collection) {
+        switch (collection.status) {
+          case "active":
+            active++;
+            break;
+          case "loaned":
+            loaned++;
+            break;
+          case "deaccessioned":
+            deaccessioned++;
+            break;
+        }
+      }
+    }
+
+    return {
+      total: groupItems.length,
+      active,
+      loaned,
+      deaccessioned,
+    };
   },
 });

@@ -1,0 +1,146 @@
+"use client";
+
+import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Button } from "@v1/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@v1/ui/dialog";
+import { Label } from "@v1/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
+import { useMutation, useQuery } from "convex/react";
+import { FolderPlus } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+
+interface BulkAddToGroupDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  selectedIds: Id<"collections">[];
+  organizationId: Id<"organizations">;
+  onSuccess: () => void;
+}
+
+export function BulkAddToGroupDialog({
+  open,
+  onOpenChange,
+  selectedIds,
+  organizationId,
+  onSuccess,
+}: BulkAddToGroupDialogProps) {
+  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const collectionGroups = useQuery(
+    api.collectionGroups.list,
+    open ? { organizationId } : "skip",
+  );
+  const addItems = useMutation(api.collectionGroups.addItems);
+
+  const handleSubmit = async () => {
+    if (!selectedGroupId) {
+      toast.error("Please select a collection group");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await addItems({
+        groupId: selectedGroupId as Id<"collectionGroups">,
+        collectionIds: selectedIds,
+      });
+      toast.success(
+        `Added ${selectedIds.length} object${selectedIds.length !== 1 ? "s" : ""} to collection`,
+      );
+      onSuccess();
+      onOpenChange(false);
+      setSelectedGroupId("");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to add to collection",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      setSelectedGroupId("");
+    }
+    onOpenChange(newOpen);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FolderPlus className="h-5 w-5" />
+            Add to Collection Group
+          </DialogTitle>
+          <DialogDescription>
+            Add {selectedIds.length} selected object
+            {selectedIds.length !== 1 ? "s" : ""} to a collection group.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="group">Collection Group</Label>
+            <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+              <SelectTrigger id="group">
+                <SelectValue placeholder="Select a collection group..." />
+              </SelectTrigger>
+              <SelectContent>
+                {collectionGroups === undefined ? (
+                  <SelectItem value="loading" disabled>
+                    Loading...
+                  </SelectItem>
+                ) : collectionGroups.length === 0 ? (
+                  <SelectItem value="none" disabled>
+                    No collection groups available
+                  </SelectItem>
+                ) : (
+                  collectionGroups.map((group) => (
+                    <SelectItem key={group._id} value={group._id}>
+                      {group.name}
+                      {group.itemsCount !== undefined && (
+                        <span className="ml-2 text-muted-foreground">
+                          ({group.itemsCount} items)
+                        </span>
+                      )}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={!selectedGroupId || isSubmitting}
+          >
+            {isSubmitting ? "Adding..." : "Add to Group"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

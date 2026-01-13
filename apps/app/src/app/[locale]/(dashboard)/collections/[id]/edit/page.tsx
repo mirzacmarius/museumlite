@@ -18,6 +18,13 @@ import {
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
@@ -35,12 +42,18 @@ export default function EditCollectionPage() {
 
   const group = useQuery(api.collectionGroups.get, { groupId });
 
+  const members = useQuery(
+    api.organizations.listOrganizationUsers,
+    currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
+  );
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    curatorId: "" as string | Id<"users">,
   });
 
   useEffect(() => {
@@ -48,6 +61,7 @@ export default function EditCollectionPage() {
       setFormData({
         name: group.name || "",
         description: group.description || "",
+        curatorId: group.curatorId || "",
       });
     }
   }, [group]);
@@ -103,6 +117,9 @@ export default function EditCollectionPage() {
         groupId,
         name: formData.name,
         description: formData.description || undefined,
+        curatorId: formData.curatorId
+          ? (formData.curatorId as Id<"users">)
+          : null,
       });
       router.push(`/collections/${groupId}`);
     } catch (err) {
@@ -162,6 +179,31 @@ export default function EditCollectionPage() {
                   placeholder="Describe this collection..."
                   rows={4}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="curator">Curator</Label>
+                <Select
+                  value={formData.curatorId}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      curatorId: value === "none" ? "" : value,
+                    })
+                  }
+                >
+                  <SelectTrigger id="curator">
+                    <SelectValue placeholder="Select a curator (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No curator</SelectItem>
+                    {members?.map((member) => (
+                      <SelectItem key={member._id} value={member._id}>
+                        {member.name || member.email || "Unknown"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex justify-end gap-4">

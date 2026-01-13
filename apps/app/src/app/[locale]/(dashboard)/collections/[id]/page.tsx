@@ -32,13 +32,17 @@ import type { FunctionReturnType } from "convex/server";
 import {
   Archive,
   ArrowLeft,
+  ArrowLeftRight,
   Building2,
   ExternalLink,
+  Eye,
   FolderInput,
+  Package,
   PlusCircle,
   Search,
   Settings,
   Trash2,
+  User,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -118,9 +122,15 @@ export default function CollectionGroupDetailPage() {
                 <h2 className="text-xl font-medium text-primary">
                   {group.name}
                 </h2>
-                <p className="text-sm font-normal text-primary/60">
-                  {group.itemsCount || 0} items
-                </p>
+                <div className="flex items-center gap-3 text-sm font-normal text-primary/60">
+                  <span>{group.itemsCount || 0} items</span>
+                  {group.curatorName && (
+                    <span className="flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      {group.curatorName}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex gap-2">
@@ -155,12 +165,99 @@ export default function CollectionGroupDetailPage() {
             <div className="w-full border-b border-border" />
           </div>
 
+          <CollectionGroupKPIs groupId={group._id} />
+
           <CollectionObjectsList
             organizationId={currentOrganizationId}
             groupId={group._id}
             isAddDialogOpen={isAddDialogOpen}
             onAddDialogOpenChange={setIsAddDialogOpen}
           />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
+  const stats = useQuery(api.collectionGroups.getStats, { groupId });
+
+  if (stats === undefined) {
+    return (
+      <div className="p-6 border-b border-border">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="bg-muted/30 border border-border rounded-lg p-3 animate-pulse h-16"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (stats === null) {
+    return null;
+  }
+
+  return (
+    <div className="p-6 border-b border-border">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-muted/30 border border-border rounded-lg p-3 flex items-center gap-3">
+          <div className="p-2 bg-indigo-500/10 rounded-md border border-indigo-500/20">
+            <Package className="w-4 h-4 text-indigo-400" />
+          </div>
+          <div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+              Total Objects
+            </div>
+            <div className="text-lg font-semibold text-foreground">
+              {stats.total.toLocaleString()}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-muted/30 border border-border rounded-lg p-3 flex items-center gap-3">
+          <div className="p-2 bg-emerald-500/10 rounded-md border border-emerald-500/20">
+            <Eye className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+              Active
+            </div>
+            <div className="text-lg font-semibold text-foreground">
+              {stats.active.toLocaleString()}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-muted/30 border border-border rounded-lg p-3 flex items-center gap-3">
+          <div className="p-2 bg-blue-500/10 rounded-md border border-blue-500/20">
+            <ArrowLeftRight className="w-4 h-4 text-blue-400" />
+          </div>
+          <div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+              On Loan
+            </div>
+            <div className="text-lg font-semibold text-foreground">
+              {stats.loaned.toLocaleString()}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-muted/30 border border-border rounded-lg p-3 flex items-center gap-3">
+          <div className="p-2 bg-amber-500/10 rounded-md border border-amber-500/20">
+            <Archive className="w-4 h-4 text-amber-400" />
+          </div>
+          <div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+              Deaccessioned
+            </div>
+            <div className="text-lg font-semibold text-foreground">
+              {stats.deaccessioned.toLocaleString()}
+            </div>
+          </div>
         </div>
       </div>
     </div>

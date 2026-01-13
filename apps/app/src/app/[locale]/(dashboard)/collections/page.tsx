@@ -7,7 +7,14 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { useQuery } from "convex/react";
-import { Building2, Folder, FolderPlus, Plus, Search } from "lucide-react";
+import {
+  Building2,
+  Folder,
+  FolderPlus,
+  Plus,
+  Search,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -163,12 +170,20 @@ function CollectionGroupsList({
             </span>
           </div>
           {group.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2 mb-4 flex-1">
+            <p className="text-sm text-muted-foreground line-clamp-2 mb-2 flex-1">
               {group.description}
             </p>
           )}
-          <div className="mt-auto text-xs text-muted-foreground">
-            Created {new Date(group.createdAt).toLocaleDateString()}
+          <div className="mt-auto flex items-center justify-between text-xs text-muted-foreground">
+            <span>
+              Created {new Date(group.createdAt).toLocaleDateString()}
+            </span>
+            {group.curatorName && (
+              <span className="flex items-center gap-1">
+                <User className="h-3 w-3" />
+                {group.curatorName}
+              </span>
+            )}
           </div>
         </Link>
       ))}

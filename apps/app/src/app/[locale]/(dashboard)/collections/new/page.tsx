@@ -2,11 +2,19 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,7 +30,13 @@ export default function NewCollectionPage() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    curatorId: "" as string | Id<"users">,
   });
+
+  const members = useQuery(
+    api.organizations.listOrganizationUsers,
+    currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
+  );
 
   if (!currentOrganizationId) {
     return (
@@ -48,6 +62,9 @@ export default function NewCollectionPage() {
         organizationId: currentOrganizationId,
         name: formData.name,
         description: formData.description,
+        curatorId: formData.curatorId
+          ? (formData.curatorId as Id<"users">)
+          : undefined,
       });
       router.push("/collections");
     } catch (err) {
@@ -116,6 +133,27 @@ export default function NewCollectionPage() {
                 placeholder="Describe this collection..."
                 rows={4}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="curator">Curator</Label>
+              <Select
+                value={formData.curatorId}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, curatorId: value })
+                }
+              >
+                <SelectTrigger id="curator">
+                  <SelectValue placeholder="Select a curator (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {members?.map((member) => (
+                    <SelectItem key={member._id} value={member._id}>
+                      {member.name || member.email || "Unknown"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex justify-end gap-4 pt-4">
