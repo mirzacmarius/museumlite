@@ -3,24 +3,68 @@
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
-import { useQuery } from "convex/react";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
+import { useMutation, useQuery } from "convex/react";
+import {
+  Box,
   Calendar,
+  Filter,
   GalleryVerticalEnd,
   MapPin,
   Plus,
   Search,
-  Box,
+  X,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { useEffect, useState } from "react";
+import { ExhibitionTimeline } from "./_components/exhibition-timeline";
+import {
+  type ExhibitionViewMode,
+  ExhibitionViewToggle,
+} from "./_components/view-toggle";
+
+type ExhibitionStatus = "all" | "current" | "upcoming" | "past";
 
 export default function ExhibitionsPage() {
   const { currentOrganizationId, isLoading } = useOrganization();
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<ExhibitionStatus>("all");
+  const [showFilters, setShowFilters] = useState(false);
+
+  const savedViewMode = useQuery(
+    api.userPreferences.get,
+    currentOrganizationId
+      ? { key: "exhibitions.viewMode", organizationId: currentOrganizationId }
+      : "skip",
+  );
+  const setViewPreference = useMutation(api.userPreferences.set);
+  const [viewMode, setViewMode] = useState<ExhibitionViewMode>("gallery");
+
+  useEffect(() => {
+    if (savedViewMode) {
+      setViewMode(savedViewMode as ExhibitionViewMode);
+    }
+  }, [savedViewMode]);
+
+  const handleViewModeChange = (mode: ExhibitionViewMode) => {
+    setViewMode(mode);
+    if (currentOrganizationId) {
+      setViewPreference({
+        key: "exhibitions.viewMode",
+        value: mode,
+        organizationId: currentOrganizationId,
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -47,6 +91,13 @@ export default function ExhibitionsPage() {
       </div>
     );
   }
+
+  const hasActiveFilters = searchQuery || statusFilter !== "all";
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("all");
+  };
 
   return (
     <div className="flex h-full w-full bg-background px-6">
@@ -78,20 +129,66 @@ export default function ExhibitionsPage() {
           </div>
 
           <div className="border-b border-border px-6 py-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search by title, location, or notes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-muted/50 border-border text-foreground/80 placeholder:text-muted-foreground focus-visible:ring-ring"
-              />
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by title, location, or notes..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 bg-muted/50 border-border text-foreground/80 placeholder:text-muted-foreground focus-visible:ring-ring"
+                  />
+                </div>
+                <ExhibitionViewToggle
+                  value={viewMode}
+                  onChange={handleViewModeChange}
+                />
+                <Button
+                  variant={showFilters ? "default" : "outline"}
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  <Filter className="mr-2 h-4 w-4" />
+                  Filters
+                </Button>
+                {hasActiveFilters && (
+                  <Button variant="ghost" onClick={clearFilters}>
+                    <X className="mr-2 h-4 w-4" />
+                    Clear
+                  </Button>
+                )}
+              </div>
+
+              {showFilters && (
+                <div className="flex items-center gap-4 border-t border-border pt-4">
+                  <div className="w-48">
+                    <Select
+                      value={statusFilter}
+                      onValueChange={(value) =>
+                        setStatusFilter(value as ExhibitionStatus)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All statuses" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Exhibitions</SelectItem>
+                        <SelectItem value="current">Current</SelectItem>
+                        <SelectItem value="upcoming">Upcoming</SelectItem>
+                        <SelectItem value="past">Past</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           <ExhibitionList
             organizationId={currentOrganizationId}
             searchQuery={searchQuery}
+            statusFilter={statusFilter}
+            viewMode={viewMode}
           />
         </div>
       </div>
@@ -102,9 +199,13 @@ export default function ExhibitionsPage() {
 function ExhibitionList({
   organizationId,
   searchQuery,
+  statusFilter,
+  viewMode,
 }: {
   organizationId: string;
   searchQuery: string;
+  statusFilter: ExhibitionStatus;
+  viewMode: ExhibitionViewMode;
 }) {
   const exhibitions = useQuery(api.exhibitions.listByOrganization, {
     organizationId: organizationId as Id<"organizations">,
@@ -120,12 +221,25 @@ function ExhibitionList({
 
   const filteredExhibitions = exhibitions.filter((ex) => {
     const query = searchQuery.toLowerCase();
-    return (
+    const matchesSearch =
       ex.title.toLowerCase().includes(query) ||
       ex.location?.toLowerCase().includes(query) ||
       ex.notes?.toLowerCase().includes(query) ||
-      ex.collectionTitle?.toLowerCase().includes(query)
-    );
+      ex.collectionTitle?.toLowerCase().includes(query);
+
+    if (!matchesSearch) return false;
+
+    if (statusFilter === "all") return true;
+
+    const now = Date.now();
+    const isPast = ex.endDate && ex.endDate < now;
+    const isUpcoming = ex.startDate > now;
+
+    if (statusFilter === "past") return isPast;
+    if (statusFilter === "upcoming") return isUpcoming;
+    if (statusFilter === "current") return !isPast && !isUpcoming;
+
+    return true;
   });
 
   if (filteredExhibitions.length === 0) {
@@ -135,11 +249,19 @@ function ExhibitionList({
         <div className="text-center">
           <p className="text-muted-foreground">No exhibitions found</p>
           <p className="mt-2 text-sm text-muted-foreground">
-            {searchQuery
-              ? "Try adjusting your search query"
+            {searchQuery || statusFilter !== "all"
+              ? "Try adjusting your filters"
               : "Create your first exhibition record to get started"}
           </p>
         </div>
+      </div>
+    );
+  }
+
+  if (viewMode === "timeline") {
+    return (
+      <div className="p-6">
+        <ExhibitionTimeline exhibitions={filteredExhibitions} />
       </div>
     );
   }
