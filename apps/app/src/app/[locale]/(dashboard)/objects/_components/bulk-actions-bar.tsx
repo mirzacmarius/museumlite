@@ -1,5 +1,6 @@
 "use client";
 
+import { PermissionGate } from "@/components/permission-gate";
 import { Button } from "@v1/ui/button";
 import { Archive, Download, FolderPlus, MapPin, X } from "lucide-react";
 
@@ -40,30 +41,38 @@ export function BulkActionsBar({
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={onAddToGroup}>
-            <FolderPlus className="mr-2 h-4 w-4" />
-            Add to Group
-          </Button>
+          <PermissionGate permission="collections.update">
+            <Button variant="outline" size="sm" onClick={onAddToGroup}>
+              <FolderPlus className="mr-2 h-4 w-4" />
+              Add to Group
+            </Button>
+          </PermissionGate>
 
-          <Button variant="outline" size="sm" onClick={onMoveLocation}>
-            <MapPin className="mr-2 h-4 w-4" />
-            Move Location
-          </Button>
+          <PermissionGate permission="locations.update">
+            <Button variant="outline" size="sm" onClick={onMoveLocation}>
+              <MapPin className="mr-2 h-4 w-4" />
+              Move Location
+            </Button>
+          </PermissionGate>
 
-          <Button variant="outline" size="sm" onClick={onExport}>
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
+          <PermissionGate permission="collections.read">
+            <Button variant="outline" size="sm" onClick={onExport}>
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
+          </PermissionGate>
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-red-600 hover:bg-red-50 hover:text-red-700"
-            onClick={onDeaccession}
-          >
-            <Archive className="mr-2 h-4 w-4" />
-            Deaccession
-          </Button>
+          <PermissionGate permission="collections.approve_deaccession">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-red-600 hover:bg-red-50 hover:text-red-700"
+              onClick={onDeaccession}
+            >
+              <Archive className="mr-2 h-4 w-4" />
+              Deaccession
+            </Button>
+          </PermissionGate>
         </div>
       </div>
     </div>

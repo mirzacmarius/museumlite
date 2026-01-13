@@ -275,26 +275,38 @@ export default function UsersSettingsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <UserCog className="h-4 w-4 text-muted-foreground" />
-                    <Select
-                      value={user.role._id}
-                      onValueChange={(roleId) =>
-                        handleUpdateRole(user._id, roleId)
-                      }
-                    >
-                      <SelectTrigger className="w-40">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {roles?.map((role) => (
-                          <SelectItem key={role._id} value={role._id}>
-                            {role.name}
-                          </SelectItem>
-                        )) ?? []}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <PermissionGate
+                    permission="users.manage_roles"
+                    fallback={
+                      <div className="flex items-center gap-2">
+                        <UserCog className="h-4 w-4 text-muted-foreground" />
+                        <span className="w-40 text-sm text-muted-foreground">
+                          {user.role.name}
+                        </span>
+                      </div>
+                    }
+                  >
+                    <div className="flex items-center gap-2">
+                      <UserCog className="h-4 w-4 text-muted-foreground" />
+                      <Select
+                        value={user.role._id}
+                        onValueChange={(roleId) =>
+                          handleUpdateRole(user._id, roleId)
+                        }
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {roles?.map((role) => (
+                            <SelectItem key={role._id} value={role._id}>
+                              {role.name}
+                            </SelectItem>
+                          )) ?? []}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </PermissionGate>
                   <PermissionGate permission="users.remove">
                     <Button
                       variant="ghost"
