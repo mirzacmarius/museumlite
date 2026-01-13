@@ -1,10 +1,20 @@
 "use client";
 
+import { DeaccessionDialog } from "@/components/deaccession-dialog";
+import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { Checkbox } from "@v1/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@v1/ui/dropdown-menu";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
@@ -29,30 +39,28 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DeaccessionDialog } from "@/components/deaccession-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@v1/ui/dropdown-menu";
-import { ViewToggle, type ViewMode } from "./_components/view-toggle";
-import { ObjectGridView } from "./_components/object-grid-view";
+import { toast } from "sonner";
 import { BulkActionsBar } from "./_components/bulk-actions-bar";
-import { BulkMoveLocationDialog } from "./_components/bulk-move-location-dialog";
-import { BulkDeaccessionDialog } from "./_components/bulk-deaccession-dialog";
 import { BulkAddToGroupDialog } from "./_components/bulk-add-to-group-dialog";
+import { BulkDeaccessionDialog } from "./_components/bulk-deaccession-dialog";
+import { BulkMoveLocationDialog } from "./_components/bulk-move-location-dialog";
 import {
+  type ColumnConfig,
   ColumnConfigDropdown,
   DEFAULT_COLUMNS,
-  type ColumnConfig,
 } from "./_components/column-config";
-import { Checkbox } from "@v1/ui/checkbox";
-import { toast } from "sonner";
+import { ObjectGridView } from "./_components/object-grid-view";
+import { type ViewMode, ViewToggle } from "./_components/view-toggle";
 
 export default function CollectionsPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
+
+  const exportData = useQuery(
+    api.imports.exportObjects,
+    currentOrganizationId
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
+  );
 
   if (isLoading) {
     return (
@@ -114,14 +122,19 @@ export default function CollectionsPage() {
                 Browse and manage your objects
               </p>
             </div>
-            <PermissionGate permission="collections.create">
-              <Button asChild>
-                <Link href="/objects/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Object
-                </Link>
-              </Button>
-            </PermissionGate>
+            <div className="flex items-center gap-2">
+              <PermissionGate permission="collections.read">
+                <ExportCSVButton data={exportData} filename="objects" />
+              </PermissionGate>
+              <PermissionGate permission="collections.create">
+                <Button asChild>
+                  <Link href="/objects/new">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Object
+                  </Link>
+                </Button>
+              </PermissionGate>
+            </div>
           </div>
           <div className="flex w-full px-6">
             <div className="w-full border-b border-border" />
