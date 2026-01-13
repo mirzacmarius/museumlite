@@ -1,14 +1,14 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
-import { useMutation, usePreloadedQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useState } from "react";
 
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
-import { ScrollArea } from "@v1/ui/scroll-area";
 import { PermissionGate } from "@/components/permission-gate";
+import { ExportCSVButton } from "@/components/export-csv-button";
 import { AccessionsStats } from "./accessions-stats";
 import { AccessionKanban } from "./accession-kanban";
 import { SelectOrganization } from "./select-organization";
@@ -44,6 +44,11 @@ export function AccessionsPageClient({
   const organizationId = selectedOrgId
     ? (selectedOrgId as Id<"organizations">)
     : undefined;
+
+  const exportData = useQuery(
+    api.imports.exportAccessions,
+    organizationId ? { organizationId } : "skip",
+  );
 
   if (!organizationId) {
     return (
@@ -105,6 +110,9 @@ export function AccessionsPageClient({
               className="w-64 border-border bg-muted/50 pl-9 text-sm placeholder:text-muted-foreground"
             />
           </div>
+          <PermissionGate permission="collections.read">
+            <ExportCSVButton data={exportData} filename="accessions" />
+          </PermissionGate>
           <PermissionGate permission="collections.create">
             <Button asChild variant="outline">
               <Link href="/accessions/import">

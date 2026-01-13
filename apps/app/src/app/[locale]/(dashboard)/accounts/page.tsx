@@ -15,10 +15,19 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { useQuery } from "convex/react";
-import { Building2, Plus, Search, User, Users } from "lucide-react";
+import {
+  Building2,
+  Download,
+  FileUp,
+  Plus,
+  Search,
+  User,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { ExportCSVButton } from "@/components/export-csv-button";
 
 type AccountType = "lender" | "borrower" | "both" | "institution" | "patron";
 
@@ -32,6 +41,11 @@ export default function AccountsPage() {
   >(typeParam ?? "all");
 
   const isPatronView = typeParam === "patron";
+
+  const exportData = useQuery(
+    api.imports.exportAccounts,
+    currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
+  );
 
   if (isLoading) {
     return (
@@ -95,14 +109,27 @@ export default function AccountsPage() {
                   : "Manage lenders, borrowers, institutions, and contacts"}
               </p>
             </div>
-            <PermissionGate permission="loans.create">
-              <Button asChild>
-                <Link href="/accounts/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Account
-                </Link>
-              </Button>
-            </PermissionGate>
+            <div className="flex items-center gap-2">
+              <PermissionGate permission="accounts.read">
+                <ExportCSVButton data={exportData} filename="accounts" />
+              </PermissionGate>
+              <PermissionGate permission="accounts.create">
+                <Button asChild variant="outline">
+                  <Link href="/accounts/import">
+                    <FileUp className="mr-2 h-4 w-4" />
+                    Import CSV
+                  </Link>
+                </Button>
+              </PermissionGate>
+              <PermissionGate permission="accounts.create">
+                <Button asChild>
+                  <Link href="/accounts/new">
+                    <Plus className="mr-2 h-4 w-4" />
+                    New Account
+                  </Link>
+                </Button>
+              </PermissionGate>
+            </div>
           </div>
           <div className="flex w-full px-6">
             <div className="w-full border-b border-border" />

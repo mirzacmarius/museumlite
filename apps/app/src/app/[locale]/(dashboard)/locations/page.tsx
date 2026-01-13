@@ -13,10 +13,72 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
-import { Building2, ChevronRight, MapPin, Package, Plus } from "lucide-react";
+import {
+  Building2,
+  ChevronRight,
+  Download,
+  FileUp,
+  MapPin,
+  Package,
+  Plus,
+} from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { AddChildLocationDialog } from "./_components/add-child-location-dialog";
+
+function ExportLocationsButton({
+  data,
+}: {
+  data: Array<Record<string, unknown>> | undefined;
+}) {
+  const handleExport = useCallback(() => {
+    if (!data || data.length === 0) return;
+
+    const headers = Object.keys(data[0] ?? {});
+    const csvRows: string[] = [headers.join(",")];
+
+    for (const row of data) {
+      const values = headers.map((header) => {
+        const value = row[header];
+        if (value === null || value === undefined) return "";
+        const stringValue = String(value);
+        if (
+          stringValue.includes(",") ||
+          stringValue.includes('"') ||
+          stringValue.includes("\n")
+        ) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      });
+      csvRows.push(values.join(","));
+    }
+
+    const csv = csvRows.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `locations-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [data]);
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="w-full border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+      onClick={handleExport}
+      disabled={!data || data.length === 0}
+    >
+      <Download className="mr-2 h-3 w-3" />
+      Export CSV
+    </Button>
+  );
+}
 
 export default function LocationsPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
@@ -92,6 +154,10 @@ function LocationLayout({
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   const allLocations = useQuery(api.locations.listAll, {
+    organizationId,
+  });
+
+  const exportData = useQuery(api.imports.exportLocations, {
     organizationId,
   });
 
@@ -396,9 +462,25 @@ function LocationLayout({
           </>
         )}
 
-        {/* Add Location Button */}
-        <PermissionGate permission="locations.create">
-          <div className="mt-6 border-t border-zinc-800 pt-4">
+        {/* Location Actions */}
+        <div className="mt-6 border-t border-zinc-800 pt-4 space-y-2">
+          <PermissionGate permission="locations.read">
+            <ExportLocationsButton data={exportData} />
+          </PermissionGate>
+          <PermissionGate permission="locations.create">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+              asChild
+            >
+              <Link href="/locations/import">
+                <FileUp className="mr-2 h-3 w-3" />
+                Import CSV
+              </Link>
+            </Button>
+          </PermissionGate>
+          <PermissionGate permission="locations.create">
             <Button
               variant="outline"
               size="sm"
@@ -408,8 +490,8 @@ function LocationLayout({
               <Plus className="mr-2 h-3 w-3" />
               Add Location
             </Button>
-          </div>
-        </PermissionGate>
+          </PermissionGate>
+        </div>
       </div>
     </div>
   );
