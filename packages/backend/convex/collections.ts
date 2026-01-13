@@ -136,6 +136,7 @@ export const create = mutation({
     isHighResDownloadable: v.optional(v.boolean()),
     isSearchable: v.optional(v.boolean()),
     isValuationVisible: v.optional(v.boolean()),
+    publicSlug: v.optional(v.string()),
     displayStatus: v.optional(v.string()),
     collectionType: v.optional(
       v.union(
@@ -225,6 +226,7 @@ export const create = mutation({
       isHighResDownloadable: args.isHighResDownloadable,
       isSearchable: args.isSearchable,
       isValuationVisible: args.isValuationVisible,
+      publicSlug: args.publicSlug,
       displayStatus: args.displayStatus,
       collectionType: args.collectionType,
       status: "active",
@@ -332,6 +334,7 @@ export const get = query({
       isHighResDownloadable: v.optional(v.boolean()),
       isSearchable: v.optional(v.boolean()),
       isValuationVisible: v.optional(v.boolean()),
+      publicSlug: v.optional(v.string()),
       displayStatus: v.optional(v.string()),
       status: v.union(
         v.literal("active"),
@@ -1142,6 +1145,7 @@ export const update = mutation({
     isHighResDownloadable: v.optional(v.boolean()),
     isSearchable: v.optional(v.boolean()),
     isValuationVisible: v.optional(v.boolean()),
+    publicSlug: v.optional(v.string()),
     displayStatus: v.optional(v.string()),
   },
   returns: v.null(),
@@ -1230,6 +1234,7 @@ export const update = mutation({
       updates.isSearchable = args.isSearchable;
     if (args.isValuationVisible !== undefined)
       updates.isValuationVisible = args.isValuationVisible;
+    if (args.publicSlug !== undefined) updates.publicSlug = args.publicSlug;
     if (args.displayStatus !== undefined)
       updates.displayStatus = args.displayStatus;
 

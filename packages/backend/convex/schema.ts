@@ -233,6 +233,7 @@ export default defineSchema({
     isHighResDownloadable: v.optional(v.boolean()), // For high-res download permission
     isSearchable: v.optional(v.boolean()), // Whether object appears in public search results
     isValuationVisible: v.optional(v.boolean()), // Whether valuation info is shown publicly
+    publicSlug: v.optional(v.string()), // Custom URL slug for public access
     status: v.union(
       v.literal("active"),
       v.literal("loaned"),

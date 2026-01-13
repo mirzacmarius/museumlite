@@ -85,6 +85,7 @@ interface CollectionFormData {
   isHighResDownloadable?: boolean;
   isSearchable?: boolean;
   isValuationVisible?: boolean;
+  publicSlug?: string;
 }
 
 export default function CollectionEditPage() {
@@ -363,6 +364,7 @@ export default function CollectionEditPage() {
         isHighResDownloadable: collection.isHighResDownloadable ?? false,
         isSearchable: collection.isSearchable ?? true,
         isValuationVisible: collection.isValuationVisible ?? false,
+        publicSlug: collection.publicSlug ?? "",
       });
     }
   }, [collection]);
@@ -1284,6 +1286,21 @@ export default function CollectionEditPage() {
                           updateField("isValuationVisible", checked)
                         }
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="publicSlug">Public URL Slug</Label>
+                      <Input
+                        id="publicSlug"
+                        value={formData.publicSlug ?? ""}
+                        onChange={(e) =>
+                          updateField("publicSlug", e.target.value)
+                        }
+                        placeholder="custom-url-slug"
+                        className="font-mono text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Custom URL path for public access (optional)
+                      </p>
                     </div>
                   </div>
                 </div>
