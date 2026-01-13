@@ -1184,23 +1184,31 @@ export default defineSchema({
   // Webhook endpoints for external integrations
   webhooks: defineTable({
     organizationId: v.id("organizations"),
+    name: v.string(),
     url: v.string(),
     secret: v.string(),
     events: v.array(v.string()),
     isActive: v.boolean(),
     lastTriggeredAt: v.optional(v.number()),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
   }).index("by_organization", ["organizationId"]),
 
   // API keys for external integrations
   apiKeys: defineTable({
     organizationId: v.id("organizations"),
-    keyHash: v.string(),
     name: v.string(),
+    prefix: v.string(),
+    keyHash: v.string(),
     permissions: v.array(v.string()),
     expiresAt: v.optional(v.number()),
     lastUsedAt: v.optional(v.number()),
+    isRevoked: v.boolean(),
     createdBy: v.id("users"),
-  }).index("by_organization", ["organizationId"]),
+    createdAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_prefix", ["prefix"]),
 
   // Background import jobs
   importJobs: defineTable({
