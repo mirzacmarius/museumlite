@@ -442,7 +442,7 @@ export const exportAccounts = query({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "accounts.read");
+    await requirePermission(ctx, args.organizationId, "loans.read");
 
     const accounts = await ctx.db
       .query("accounts")
@@ -727,7 +727,7 @@ export const importAccountsBatch = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "accounts.create");
+    await requirePermission(ctx, args.organizationId, "loans.create");
 
     const job = await ctx.db.get(args.jobId);
     if (!job || job.organizationId !== args.organizationId) {

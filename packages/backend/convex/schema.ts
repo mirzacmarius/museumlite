@@ -1857,4 +1857,225 @@ export default defineSchema({
     .index("by_user_and_key", ["userId", "key"])
     .index("by_user_and_organization", ["userId", "organizationId"])
     .index("by_user_organization_key", ["userId", "organizationId", "key"]),
+
+  // ============================================
+  // INSURANCE & CLAIMS MODULE
+  // ============================================
+
+  // Insurance Policies - Organization-level insurance policies
+  insurancePolicies: defineTable({
+    organizationId: v.id("organizations"),
+    policyNumber: v.string(),
+
+    // Carrier info
+    carrier: v.string(),
+    carrierContact: v.optional(v.string()),
+    carrierPhone: v.optional(v.string()),
+    carrierEmail: v.optional(v.string()),
+
+    // Policy details
+    policyType: v.union(
+      v.literal("blanket"), // Covers all objects
+      v.literal("scheduled"), // Covers specific scheduled items
+      v.literal("exhibition"), // Exhibition-specific coverage
+      v.literal("transit"), // Transit/shipping coverage
+      v.literal("loan"), // Loan-specific coverage
+    ),
+
+    // Coverage amounts
+    coverageAmount: v.number(), // Total coverage limit
+    deductible: v.optional(v.number()),
+    perItemLimit: v.optional(v.number()), // Max coverage per item
+
+    // Premium info
+    premiumAmount: v.optional(v.number()),
+    premiumFrequency: v.optional(
+      v.union(
+        v.literal("monthly"),
+        v.literal("quarterly"),
+        v.literal("semi_annual"),
+        v.literal("annual"),
+      ),
+    ),
+    nextPremiumDue: v.optional(v.number()),
+
+    // Policy dates
+    effectiveDate: v.number(),
+    expirationDate: v.number(),
+    renewalDate: v.optional(v.number()),
+    autoRenew: v.optional(v.boolean()),
+
+    // Status
+    status: v.union(
+      v.literal("active"),
+      v.literal("pending"),
+      v.literal("expired"),
+      v.literal("cancelled"),
+      v.literal("suspended"),
+    ),
+
+    // Coverage territory
+    territory: v.optional(v.string()), // e.g., "Worldwide", "North America"
+    exclusions: v.optional(v.array(v.string())), // Coverage exclusions
+
+    // Documents
+    documentIds: v.optional(v.array(v.id("_storage"))),
+
+    // Notes and metadata
+    notes: v.optional(v.string()),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    lastModifiedBy: v.optional(v.id("users")),
+    lastModifiedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_policyNumber", ["policyNumber"])
+    .index("by_organization_and_policyNumber", [
+      "organizationId",
+      "policyNumber",
+    ])
+    .index("by_expirationDate", ["expirationDate"])
+    .index("by_organization_and_expirationDate", [
+      "organizationId",
+      "expirationDate",
+    ]),
+
+  // Insurance Policy Coverages - Links policies to objects/exhibitions/loans
+  insuranceCoverages: defineTable({
+    organizationId: v.id("organizations"),
+    policyId: v.id("insurancePolicies"),
+
+    // What is covered (one of these)
+    collectionId: v.optional(v.id("collections")), // Individual object
+    exhibitionId: v.optional(v.id("exhibitions")), // Exhibition
+    loanId: v.optional(v.id("loans")), // Loan
+
+    // Coverage details
+    coveredValue: v.number(), // Insured value for this item
+    effectiveDate: v.optional(v.number()), // Override policy dates if needed
+    expirationDate: v.optional(v.number()),
+
+    // Status
+    status: v.union(
+      v.literal("active"),
+      v.literal("pending"),
+      v.literal("expired"),
+      v.literal("removed"),
+    ),
+
+    // Verification
+    verified: v.optional(v.boolean()),
+    verifiedBy: v.optional(v.id("users")),
+    verifiedAt: v.optional(v.number()),
+
+    notes: v.optional(v.string()),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_policy", ["policyId"])
+    .index("by_collection", ["collectionId"])
+    .index("by_exhibition", ["exhibitionId"])
+    .index("by_loan", ["loanId"])
+    .index("by_policy_and_status", ["policyId", "status"])
+    .index("by_organization_and_status", ["organizationId", "status"]),
+
+  // Insurance Claims - Track incidents and claims
+  insuranceClaims: defineTable({
+    organizationId: v.id("organizations"),
+    policyId: v.id("insurancePolicies"),
+    claimNumber: v.string(),
+
+    // Related entities (can be one or more)
+    collectionIds: v.optional(v.array(v.id("collections"))),
+    exhibitionId: v.optional(v.id("exhibitions")),
+    loanId: v.optional(v.id("loans")),
+
+    // Incident details
+    incidentDate: v.number(),
+    incidentLocation: v.optional(v.string()),
+    incidentType: v.union(
+      v.literal("damage"),
+      v.literal("theft"),
+      v.literal("loss"),
+      v.literal("fire"),
+      v.literal("water"),
+      v.literal("vandalism"),
+      v.literal("natural_disaster"),
+      v.literal("transit"),
+      v.literal("other"),
+    ),
+    incidentDescription: v.string(),
+
+    // Claim amounts
+    claimedAmount: v.number(),
+    assessedAmount: v.optional(v.number()),
+    settledAmount: v.optional(v.number()),
+    deductibleApplied: v.optional(v.number()),
+
+    // Status tracking
+    status: v.union(
+      v.literal("draft"),
+      v.literal("submitted"),
+      v.literal("under_review"),
+      v.literal("approved"),
+      v.literal("denied"),
+      v.literal("settled"),
+      v.literal("closed"),
+      v.literal("appealed"),
+    ),
+
+    // Dates
+    reportedDate: v.number(),
+    submittedDate: v.optional(v.number()),
+    reviewStartDate: v.optional(v.number()),
+    decisionDate: v.optional(v.number()),
+    settlementDate: v.optional(v.number()),
+
+    // Adjuster info
+    adjusterName: v.optional(v.string()),
+    adjusterPhone: v.optional(v.string()),
+    adjusterEmail: v.optional(v.string()),
+    adjusterNotes: v.optional(v.string()),
+
+    // Documents and evidence
+    documentIds: v.optional(v.array(v.id("_storage"))),
+    photoIds: v.optional(v.array(v.id("_storage"))),
+
+    // Resolution
+    denialReason: v.optional(v.string()),
+    payoutMethod: v.optional(
+      v.union(
+        v.literal("check"),
+        v.literal("wire"),
+        v.literal("repair_reimbursement"),
+        v.literal("replacement"),
+      ),
+    ),
+    payoutDate: v.optional(v.number()),
+    payoutReference: v.optional(v.string()),
+
+    // Notes and audit
+    internalNotes: v.optional(v.string()),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    lastModifiedBy: v.optional(v.id("users")),
+    lastModifiedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_policy", ["policyId"])
+    .index("by_claimNumber", ["claimNumber"])
+    .index("by_organization_and_claimNumber", ["organizationId", "claimNumber"])
+    .index("by_status", ["status"])
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_incidentDate", ["incidentDate"]),
+
+  // Claim number counter tracking
+  claimCounters: defineTable({
+    organizationId: v.id("organizations"),
+    year: v.number(),
+    currentValue: v.number(),
+    lastGeneratedAt: v.number(),
+  }).index("by_organization_and_year", ["organizationId", "year"]),
 });
