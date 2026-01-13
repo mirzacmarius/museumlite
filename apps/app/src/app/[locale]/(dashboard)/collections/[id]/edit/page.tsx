@@ -47,6 +47,11 @@ export default function EditCollectionPage() {
     currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
   );
 
+  const roles = useQuery(
+    api.roles.listRoles,
+    currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
+  );
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +59,7 @@ export default function EditCollectionPage() {
     name: "",
     description: "",
     curatorId: "" as string | Id<"users">,
+    managedByRoleId: "" as string | Id<"roles">,
   });
 
   useEffect(() => {
@@ -62,6 +68,7 @@ export default function EditCollectionPage() {
         name: group.name || "",
         description: group.description || "",
         curatorId: group.curatorId || "",
+        managedByRoleId: group.managedByRoleId || "",
       });
     }
   }, [group]);
@@ -119,6 +126,9 @@ export default function EditCollectionPage() {
         description: formData.description || undefined,
         curatorId: formData.curatorId
           ? (formData.curatorId as Id<"users">)
+          : null,
+        managedByRoleId: formData.managedByRoleId
+          ? (formData.managedByRoleId as Id<"roles">)
           : null,
       });
       router.push(`/collections/${groupId}`);
@@ -204,6 +214,35 @@ export default function EditCollectionPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="managedByRole">Managed By Role</Label>
+                <Select
+                  value={formData.managedByRoleId}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      managedByRoleId: value === "none" ? "" : value,
+                    })
+                  }
+                >
+                  <SelectTrigger id="managedByRole">
+                    <SelectValue placeholder="Any role can manage (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Any role can manage</SelectItem>
+                    {roles?.map((role) => (
+                      <SelectItem key={role._id} value={role._id}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Restrict who can edit this collection to users with a specific
+                  role
+                </p>
               </div>
 
               <div className="flex justify-end gap-4">

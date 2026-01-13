@@ -1,8 +1,35 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import { requirePermission } from "./utils/permissions";
+import { getUserRole, requirePermission } from "./utils/permissions";
+
+async function checkGroupAccessControl(
+  ctx: MutationCtx,
+  group: Doc<"collectionGroups">,
+  userId: Id<"users">,
+): Promise<void> {
+  if (!group.managedByRoleId) {
+    return;
+  }
+
+  const userRole = await getUserRole(ctx, group.organizationId);
+  if (!userRole) {
+    throw new Error("You do not have access to manage this collection group");
+  }
+
+  if (userRole.name === "admin" || userRole.isSystemRole) {
+    const isAdmin = userRole.name === "admin";
+    if (isAdmin) return;
+  }
+
+  if (userRole._id !== group.managedByRoleId) {
+    throw new Error(
+      "You do not have the required role to manage this collection group",
+    );
+  }
+}
 
 export const create = mutation({
   args: {
@@ -11,6 +38,7 @@ export const create = mutation({
     description: v.optional(v.string()),
     curatorId: v.optional(v.id("users")),
     imageId: v.optional(v.id("_storage")),
+    managedByRoleId: v.optional(v.id("roles")),
   },
   returns: v.id("collectionGroups"),
   handler: async (ctx, args) => {
@@ -27,6 +55,7 @@ export const create = mutation({
       description: args.description,
       curatorId: args.curatorId,
       imageId: args.imageId,
+      managedByRoleId: args.managedByRoleId,
       createdAt: Date.now(),
       createdBy: userId,
       itemsCount: 0,
@@ -48,6 +77,8 @@ export const list = query({
       description: v.optional(v.string()),
       curatorId: v.optional(v.id("users")),
       curatorName: v.optional(v.string()),
+      managedByRoleId: v.optional(v.id("roles")),
+      managedByRoleName: v.optional(v.string()),
       imageUrl: v.optional(v.string()),
       itemsCount: v.optional(v.number()),
       createdAt: v.number(),
@@ -85,6 +116,12 @@ export const list = query({
           curatorName = curator?.name ?? curator?.email ?? undefined;
         }
 
+        let managedByRoleName: string | undefined;
+        if (g.managedByRoleId) {
+          const role = await ctx.db.get(g.managedByRoleId);
+          managedByRoleName = role?.name;
+        }
+
         let imageUrl: string | undefined;
         if (g.imageId) {
           imageUrl = (await ctx.storage.getUrl(g.imageId)) ?? undefined;
@@ -96,6 +133,8 @@ export const list = query({
           description: g.description,
           curatorId: g.curatorId,
           curatorName,
+          managedByRoleId: g.managedByRoleId,
+          managedByRoleName,
           imageUrl,
           itemsCount: g.itemsCount,
           createdAt: g.createdAt,
@@ -118,6 +157,8 @@ export const get = query({
       description: v.optional(v.string()),
       curatorId: v.optional(v.id("users")),
       curatorName: v.optional(v.string()),
+      managedByRoleId: v.optional(v.id("roles")),
+      managedByRoleName: v.optional(v.string()),
       imageId: v.optional(v.id("_storage")),
       imageUrl: v.optional(v.string()),
       itemsCount: v.optional(v.number()),
@@ -139,6 +180,12 @@ export const get = query({
       curatorName = curator?.name ?? curator?.email ?? undefined;
     }
 
+    let managedByRoleName: string | undefined;
+    if (group.managedByRoleId) {
+      const role = await ctx.db.get(group.managedByRoleId);
+      managedByRoleName = role?.name;
+    }
+
     let imageUrl: string | undefined;
     if (group.imageId) {
       imageUrl = (await ctx.storage.getUrl(group.imageId)) ?? undefined;
@@ -147,6 +194,7 @@ export const get = query({
     return {
       ...group,
       curatorName,
+      managedByRoleName,
       imageUrl,
     };
   },
@@ -159,6 +207,7 @@ export const update = mutation({
     description: v.optional(v.string()),
     curatorId: v.optional(v.union(v.id("users"), v.null())),
     imageId: v.optional(v.union(v.id("_storage"), v.null())),
+    managedByRoleId: v.optional(v.union(v.id("roles"), v.null())),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -173,6 +222,7 @@ export const update = mutation({
     }
 
     await requirePermission(ctx, group.organizationId, "collections.update");
+    await checkGroupAccessControl(ctx, group, userId);
 
     const updates: {
       lastModifiedAt: number;
@@ -181,6 +231,7 @@ export const update = mutation({
       description?: string;
       curatorId?: Id<"users"> | undefined;
       imageId?: Id<"_storage"> | undefined;
+      managedByRoleId?: Id<"roles"> | undefined;
     } = {
       lastModifiedAt: Date.now(),
       lastModifiedBy: userId,
@@ -190,6 +241,8 @@ export const update = mutation({
     if (args.curatorId !== undefined)
       updates.curatorId = args.curatorId ?? undefined;
     if (args.imageId !== undefined) updates.imageId = args.imageId ?? undefined;
+    if (args.managedByRoleId !== undefined)
+      updates.managedByRoleId = args.managedByRoleId ?? undefined;
 
     await ctx.db.patch(args.groupId, updates);
 
@@ -214,6 +267,7 @@ export const deleteGroup = mutation({
     }
 
     await requirePermission(ctx, group.organizationId, "collections.delete");
+    await checkGroupAccessControl(ctx, group, userId);
 
     // Remove all collection group items (many-to-many relationships)
     const groupItems = await ctx.db
@@ -245,9 +299,6 @@ export const deleteGroup = mutation({
   },
 });
 
-/**
- * Add existing objects to a collection group (many-to-many)
- */
 export const addItems = mutation({
   args: {
     groupId: v.id("collectionGroups"),
@@ -266,6 +317,7 @@ export const addItems = mutation({
     }
 
     await requirePermission(ctx, group.organizationId, "collections.update");
+    await checkGroupAccessControl(ctx, group, userId);
 
     let addedCount = 0;
 
@@ -313,9 +365,6 @@ export const addItems = mutation({
   },
 });
 
-/**
- * Remove objects from a collection group (many-to-many)
- */
 export const removeItems = mutation({
   args: {
     groupId: v.id("collectionGroups"),
@@ -334,6 +383,7 @@ export const removeItems = mutation({
     }
 
     await requirePermission(ctx, group.organizationId, "collections.update");
+    await checkGroupAccessControl(ctx, group, userId);
 
     let removedCount = 0;
 

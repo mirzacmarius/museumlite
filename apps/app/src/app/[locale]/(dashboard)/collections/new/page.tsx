@@ -31,10 +31,16 @@ export default function NewCollectionPage() {
     name: "",
     description: "",
     curatorId: "" as string | Id<"users">,
+    managedByRoleId: "" as string | Id<"roles">,
   });
 
   const members = useQuery(
     api.organizations.listOrganizationUsers,
+    currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
+  );
+
+  const roles = useQuery(
+    api.roles.listRoles,
     currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
   );
 
@@ -64,6 +70,9 @@ export default function NewCollectionPage() {
         description: formData.description,
         curatorId: formData.curatorId
           ? (formData.curatorId as Id<"users">)
+          : undefined,
+        managedByRoleId: formData.managedByRoleId
+          ? (formData.managedByRoleId as Id<"roles">)
           : undefined,
       });
       router.push("/collections");
@@ -154,6 +163,31 @@ export default function NewCollectionPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="managedByRole">Managed By Role</Label>
+              <Select
+                value={formData.managedByRoleId}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, managedByRoleId: value })
+                }
+              >
+                <SelectTrigger id="managedByRole">
+                  <SelectValue placeholder="Any role can manage (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles?.map((role) => (
+                    <SelectItem key={role._id} value={role._id}>
+                      {role.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Restrict who can edit this collection to users with a specific
+                role
+              </p>
             </div>
 
             <div className="flex justify-end gap-4 pt-4">

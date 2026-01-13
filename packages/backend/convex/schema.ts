@@ -122,6 +122,7 @@ export default defineSchema({
     description: v.optional(v.string()),
     curatorId: v.optional(v.id("users")),
     imageId: v.optional(v.id("_storage")),
+    managedByRoleId: v.optional(v.id("roles")),
     itemsCount: v.optional(v.number()),
     createdAt: v.number(),
     createdBy: v.id("users"),
@@ -130,6 +131,7 @@ export default defineSchema({
   })
     .index("by_organization", ["organizationId"])
     .index("by_curator", ["curatorId"])
+    .index("by_managedByRole", ["managedByRoleId"])
     .searchIndex("search_index", {
       searchField: "name",
       filterFields: ["organizationId"],
