@@ -2128,17 +2128,14 @@ export const listPublic = query({
     }
 
     const pageSize = args.limit ?? 24;
-    const query = ctx.db
+    const allCollections = await ctx.db
       .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organization._id),
-      );
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", organization._id).eq("status", "active"),
+      )
+      .collect();
 
-    const allCollections = await query.collect();
-
-    let filtered = allCollections.filter(
-      (c) => c.isPubliclyVisible === true && c.status === "active",
-    );
+    let filtered = allCollections.filter((c) => c.isPubliclyVisible === true);
 
     if (args.search) {
       const searchLower = args.search.toLowerCase();
