@@ -1,7 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
+import { mutation, query } from "./_generated/server";
+import { requirePermission } from "./utils/permissions";
 
 // Available integrations in the system
 export const AVAILABLE_INTEGRATIONS = [
@@ -99,6 +100,13 @@ export const enable = mutation({
       throw new Error("Not authenticated");
     }
 
+    // Check permission - only org admins can manage integrations
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
+
     // Validate integration exists
     const validIntegration = AVAILABLE_INTEGRATIONS.find(
       (i) => i.id === args.integrationId,
@@ -151,6 +159,12 @@ export const disable = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
+
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     const org = await ctx.db.get(args.organizationId);
     if (!org) {

@@ -1,8 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { internalMutation, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -1445,18 +1445,12 @@ export const getLocationsWithEnvironment = query({
 });
 
 /**
- * Public wrapper to seed all locations (admin only)
- * Directly implements the seeding logic with auth check
+ * Seed all locations - internal only, triggered via dashboard or CLI
  */
-export const adminSeedAllLocations = mutation({
+export const adminSeedAllLocations = internalMutation({
   args: {},
   returns: v.number(),
   handler: async (ctx): Promise<number> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-
     let totalLocations = 0;
     for (const orgSlug of Object.keys(LOCATIONS_DATA)) {
       const count = await seedLocationsForOrg(ctx, {

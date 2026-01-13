@@ -1,8 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query, internalMutation } from "./_generated/server";
-import { requirePermission } from "./utils/permissions";
 import type { Id } from "./_generated/dataModel";
+import { internalMutation, mutation, query } from "./_generated/server";
+import { requirePermission } from "./utils/permissions";
 
 /**
  * Get organization activity logs with pagination and filters
@@ -178,11 +178,12 @@ export const createNotificationInternal = internalMutation({
 
 /**
  * Create a user notification (public API)
+ * Users can only create notifications for themselves.
+ * For cross-user notifications, use createNotificationInternal from server-side code.
  */
 export const createNotification = mutation({
   args: {
     organizationId: v.id("organizations"),
-    userId: v.id("users"),
     type: v.string(),
     title: v.string(),
     message: v.string(),
@@ -196,13 +197,9 @@ export const createNotification = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Users can create notifications for themselves or admins can create for others
-    // For now, allow any authenticated user to create notifications
-    // In production, you might want to add permission checks here
-
     const notificationId = await ctx.db.insert("notifications", {
       organizationId: args.organizationId,
-      userId: args.userId,
+      userId: currentUserId,
       type: args.type,
       title: args.title,
       message: args.message,
