@@ -1128,6 +1128,21 @@ export default defineSchema({
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_organization_and_startDate", ["organizationId", "startDate"]),
 
+  exhibitionDocuments: defineTable({
+    exhibitionId: v.id("exhibitions"),
+    storageId: v.id("_storage"),
+    documentType: v.union(
+      v.literal("floor_plan"),
+      v.literal("label"),
+      v.literal("press_release"),
+      v.literal("checklist"),
+      v.literal("other"),
+    ),
+    fileName: v.string(),
+    uploadedBy: v.id("users"),
+    uploadedAt: v.number(),
+  }).index("by_exhibition", ["exhibitionId"]),
+
   // Activity tracking
   auditLog: defineTable({
     organizationId: v.id("organizations"),

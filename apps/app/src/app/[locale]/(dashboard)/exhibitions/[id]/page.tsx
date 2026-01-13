@@ -14,6 +14,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@v1/ui/dialog";
+import { Input } from "@v1/ui/input";
+import { Label } from "@v1/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
 import { useMutation, useQuery } from "convex/react";
 import {
   AlertCircle,
@@ -23,11 +32,15 @@ import {
   CheckCircle2,
   CircleDot,
   Clock,
+  Download,
+  FileText,
   GalleryVerticalEnd,
   Info,
   MapPin,
   Pencil,
+  Plus,
   Trash2,
+  Upload,
   User,
   XCircle,
 } from "lucide-react";
@@ -53,6 +66,64 @@ export default function ExhibitionDetailPage() {
       ? { exhibitionId: exhibitionId as Id<"exhibitions"> }
       : "skip",
   );
+
+  const documents = useQuery(api.exhibitions.listDocuments, {
+    exhibitionId: exhibitionId as Id<"exhibitions">,
+  });
+
+  const generateUploadUrl = useMutation(api.exhibitions.generateUploadUrl);
+  const uploadDocument = useMutation(api.exhibitions.uploadDocument);
+  const deleteDocument = useMutation(api.exhibitions.deleteDocument);
+
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadDocType, setUploadDocType] = useState<string>("other");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const handleFileUpload = async () => {
+    if (!selectedFile) return;
+
+    setIsUploading(true);
+    try {
+      const uploadUrl = await generateUploadUrl();
+      const result = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": selectedFile.type },
+        body: selectedFile,
+      });
+      const { storageId } = await result.json();
+
+      await uploadDocument({
+        exhibitionId: exhibitionId as Id<"exhibitions">,
+        storageId,
+        documentType: uploadDocType as
+          | "floor_plan"
+          | "label"
+          | "press_release"
+          | "checklist"
+          | "other",
+        fileName: selectedFile.name,
+      });
+
+      setIsUploadDialogOpen(false);
+      setSelectedFile(null);
+      setUploadDocType("other");
+    } catch (error) {
+      console.error("Upload failed:", error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeleteDocument = async (
+    documentId: Id<"exhibitionDocuments">,
+  ) => {
+    try {
+      await deleteDocument({ documentId });
+    } catch (error) {
+      console.error("Delete failed:", error);
+    }
+  };
 
   if (!currentOrganizationId) {
     return (
@@ -393,6 +464,150 @@ export default function ExhibitionDetailPage() {
               <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
                 {exhibition.notes || "No notes available."}
               </p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-muted/20 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Documents
+                </h2>
+                <PermissionGate permission="collections.update">
+                  <Dialog
+                    open={isUploadDialogOpen}
+                    onOpenChange={setIsUploadDialogOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Plus className="mr-1 h-3.5 w-3.5" />
+                        Add
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-background border-border">
+                      <DialogHeader>
+                        <DialogTitle className="text-foreground">
+                          Upload Document
+                        </DialogTitle>
+                        <DialogDescription className="text-muted-foreground">
+                          Add floor plans, labels, or other exhibition materials
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label className="text-muted-foreground">
+                            Document Type
+                          </Label>
+                          <Select
+                            value={uploadDocType}
+                            onValueChange={setUploadDocType}
+                          >
+                            <SelectTrigger className="bg-muted/50 border-border">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="floor_plan">
+                                Floor Plan
+                              </SelectItem>
+                              <SelectItem value="label">Label</SelectItem>
+                              <SelectItem value="press_release">
+                                Press Release
+                              </SelectItem>
+                              <SelectItem value="checklist">
+                                Checklist
+                              </SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-muted-foreground">File</Label>
+                          <Input
+                            type="file"
+                            onChange={(e) =>
+                              setSelectedFile(e.target.files?.[0] ?? null)
+                            }
+                            className="bg-muted/50 border-border"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsUploadDialogOpen(false)}
+                          className="border-border"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={handleFileUpload}
+                          disabled={!selectedFile || isUploading}
+                          className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          {isUploading ? "Uploading..." : "Upload"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </PermissionGate>
+              </div>
+
+              {documents && documents.length > 0 ? (
+                <div className="space-y-3">
+                  {documents.map((doc) => (
+                    <div
+                      key={doc._id}
+                      className="flex items-center justify-between rounded-lg border border-border bg-background/50 p-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {doc.fileName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {doc.documentType.replace("_", " ")} •{" "}
+                            {new Date(doc.uploadedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {doc.url && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            asChild
+                          >
+                            <a
+                              href={doc.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download={doc.fileName}
+                            >
+                              <Download className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        )}
+                        <PermissionGate permission="collections.delete">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-950/50"
+                            onClick={() => handleDeleteDocument(doc._id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </PermissionGate>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No documents attached
+                </p>
+              )}
             </div>
           </div>
 

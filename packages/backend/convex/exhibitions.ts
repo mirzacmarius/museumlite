@@ -903,3 +903,169 @@ export const getWorkflowHistory = query({
     return enrichedHistory;
   },
 });
+
+export const listDocuments = query({
+  args: {
+    exhibitionId: v.id("exhibitions"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("exhibitionDocuments"),
+      storageId: v.id("_storage"),
+      documentType: v.union(
+        v.literal("floor_plan"),
+        v.literal("label"),
+        v.literal("press_release"),
+        v.literal("checklist"),
+        v.literal("other"),
+      ),
+      fileName: v.string(),
+      uploadedBy: v.id("users"),
+      uploadedAt: v.number(),
+      uploaderName: v.optional(v.string()),
+      url: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const exhibition = await ctx.db.get(args.exhibitionId);
+    if (!exhibition) {
+      return [];
+    }
+
+    await requirePermission(ctx, exhibition.organizationId, "collections.read");
+
+    const documents = await ctx.db
+      .query("exhibitionDocuments")
+      .withIndex("by_exhibition", (q) =>
+        q.eq("exhibitionId", args.exhibitionId),
+      )
+      .collect();
+
+    const enrichedDocs = await Promise.all(
+      documents.map(async (doc) => {
+        const uploader = await ctx.db.get(doc.uploadedBy);
+        const url = await ctx.storage.getUrl(doc.storageId);
+        return {
+          _id: doc._id,
+          storageId: doc.storageId,
+          documentType: doc.documentType,
+          fileName: doc.fileName,
+          uploadedBy: doc.uploadedBy,
+          uploadedAt: doc.uploadedAt,
+          uploaderName: uploader?.name ?? uploader?.username ?? undefined,
+          url: url ?? undefined,
+        };
+      }),
+    );
+
+    return enrichedDocs;
+  },
+});
+
+export const uploadDocument = mutation({
+  args: {
+    exhibitionId: v.id("exhibitions"),
+    storageId: v.id("_storage"),
+    documentType: v.union(
+      v.literal("floor_plan"),
+      v.literal("label"),
+      v.literal("press_release"),
+      v.literal("checklist"),
+      v.literal("other"),
+    ),
+    fileName: v.string(),
+  },
+  returns: v.id("exhibitionDocuments"),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const exhibition = await ctx.db.get(args.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
+
+    const documentId = await ctx.db.insert("exhibitionDocuments", {
+      exhibitionId: args.exhibitionId,
+      storageId: args.storageId,
+      documentType: args.documentType,
+      fileName: args.fileName,
+      uploadedBy: userId,
+      uploadedAt: Date.now(),
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "uploaded_document",
+      entityType: "exhibition",
+      entityId: args.exhibitionId,
+      changes: { fileName: args.fileName, documentType: args.documentType },
+    });
+
+    return documentId;
+  },
+});
+
+export const deleteDocument = mutation({
+  args: {
+    documentId: v.id("exhibitionDocuments"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const document = await ctx.db.get(args.documentId);
+    if (!document) {
+      throw new Error("Document not found");
+    }
+
+    const exhibition = await ctx.db.get(document.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.delete",
+    );
+
+    await ctx.storage.delete(document.storageId);
+    await ctx.db.delete(args.documentId);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "deleted_document",
+      entityType: "exhibition",
+      entityId: document.exhibitionId,
+      changes: { fileName: document.fileName },
+    });
+
+    return null;
+  },
+});
+
+export const generateUploadUrl = mutation({
+  args: {},
+  returns: v.string(),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    return await ctx.storage.generateUploadUrl();
+  },
+});
