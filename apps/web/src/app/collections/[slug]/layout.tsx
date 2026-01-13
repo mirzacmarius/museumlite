@@ -1,3 +1,5 @@
+import { api } from "@v1/backend/convex/_generated/api";
+import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
 
 interface Props {
@@ -8,15 +10,29 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
 
-  return {
-    title: `${slug} Collection | MuseumLite`,
-    description: `Explore the public collection from ${slug}. Browse artworks, artifacts, and cultural objects.`,
-    openGraph: {
-      title: `${slug} Collection`,
-      description: `Explore the public collection from ${slug}`,
-      type: "website",
-    },
-  };
+  try {
+    const organization = await fetchQuery(api.organizations.getBySlug, {
+      slug,
+    });
+
+    const name = organization?.name || slug;
+
+    return {
+      title: `${name} Collection | MuseumLite`,
+      description: `Explore the public collection from ${name}. Browse artworks, artifacts, and cultural objects.`,
+      openGraph: {
+        title: `${name} Collection`,
+        description: `Explore the public collection from ${name}`,
+        type: "website",
+      },
+    };
+  } catch {
+    return {
+      title: `${slug} Collection | MuseumLite`,
+      description:
+        "Explore the public collection. Browse artworks, artifacts, and cultural objects.",
+    };
+  }
 }
 
 export default function CollectionLayout({ children }: Props) {
