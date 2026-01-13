@@ -1786,4 +1786,17 @@ export default defineSchema({
     createdAt: v.number(),
     lastModifiedAt: v.optional(v.number()),
   }).index("by_organization", ["organizationId"]),
+
+  // User Preferences - Per-user settings and view preferences
+  userPreferences: defineTable({
+    userId: v.id("users"),
+    organizationId: v.optional(v.id("organizations")), // Optional for org-specific prefs
+    key: v.string(), // Preference key (e.g., "objects.viewMode", "objects.columns")
+    value: v.string(), // JSON-encoded value
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_key", ["userId", "key"])
+    .index("by_user_and_organization", ["userId", "organizationId"])
+    .index("by_user_organization_key", ["userId", "organizationId", "key"]),
 });

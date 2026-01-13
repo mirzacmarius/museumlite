@@ -56,6 +56,7 @@ import type * as seedFresh from "../seedFresh.js";
 import type * as seedFreshAction from "../seedFreshAction.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as typeOptions from "../typeOptions.js";
+import type * as userPreferences from "../userPreferences.js";
 import type * as users from "../users.js";
 import type * as utils_accessionCounter from "../utils/accessionCounter.js";
 import type * as utils_accessionNumberParser from "../utils/accessionNumberParser.js";
@@ -128,6 +129,7 @@ declare const fullApi: ApiFromModules<{
   seedFreshAction: typeof seedFreshAction;
   subscriptions: typeof subscriptions;
   typeOptions: typeof typeOptions;
+  userPreferences: typeof userPreferences;
   users: typeof users;
   "utils/accessionCounter": typeof utils_accessionCounter;
   "utils/accessionNumberParser": typeof utils_accessionNumberParser;

@@ -1,7 +1,5 @@
 "use client";
 
-import { FileCheck, FileX, Handshake, TrendingUp } from "lucide-react";
-
 export type RecentActivityItem = {
   type: "collection" | "loan" | "accession" | "deaccession";
   id: string;
@@ -10,6 +8,33 @@ export type RecentActivityItem = {
   timestamp: number;
   status?: string;
 };
+
+function getActionText(
+  type: RecentActivityItem["type"],
+  status?: string,
+): string {
+  switch (type) {
+    case "collection":
+      if (status === "loaned") return "Loaned Out";
+      if (status === "deaccessioned") return "Deaccessioned";
+      return "Added to Catalog";
+    case "loan":
+      if (status === "active") return "Loan Active";
+      if (status === "returned") return "Loan Returned";
+      if (status === "pending") return "Loan Requested";
+      return "Loan Updated";
+    case "accession":
+      if (status === "approved") return "Accession Approved";
+      if (status === "rejected") return "Accession Rejected";
+      return "Accession Received";
+    case "deaccession":
+      if (status === "approved") return "Deaccession Approved";
+      if (status === "rejected") return "Deaccession Rejected";
+      return "Deaccession Proposed";
+    default:
+      return "Activity";
+  }
+}
 
 function formatRelativeTime(timestamp: number): string {
   const now = Date.now();
@@ -43,7 +68,7 @@ function getActivityBadgeColor(type: RecentActivityItem["type"]): string {
 function getActivityLink(type: RecentActivityItem["type"], id: string): string {
   switch (type) {
     case "collection":
-      return `/collections/${id}`;
+      return `/objects/${id}`;
     case "loan":
       return `/loans/${id}`;
     case "accession":
@@ -143,7 +168,7 @@ export function RecentActivityLog({
                       <span
                         className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] border ${getActivityBadgeColor(activity.type)}`}
                       >
-                        {activity.subtitle || activity.type}
+                        {getActionText(activity.type, activity.status)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">System</td>

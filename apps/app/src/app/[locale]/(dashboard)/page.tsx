@@ -152,138 +152,115 @@ export default function DashboardPage() {
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+          {analytics.recentCollectionGroups.map((group, index) => (
+            <Link
+              key={group.id}
+              href={`/collections?group=${group.id}`}
+              className="block"
+            >
+              <div
+                className="hover-trigger group relative bg-card border border-border rounded-xl overflow-hidden hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/30 transition-all duration-300 flex flex-col cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-indigo-900/10 animate-enter"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className="relative aspect-[4/3] bg-muted overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-80 z-10" />
+                  {group.imageUrl ? (
+                    <img
+                      src={group.imageUrl}
+                      alt={group.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out will-change-transform opacity-90 group-hover:opacity-100"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Package className="w-10 h-10 text-muted-foreground/40" />
+                    </div>
+                  )}
+
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30 pointer-events-none">
+                    <span className="bg-background/60 backdrop-blur-md text-foreground text-[11px] font-medium px-3 py-1.5 rounded-full border border-border shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                      View Collection
+                    </span>
+                  </div>
+
+                  <div className="absolute top-2 left-2 z-20">
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-background/90 backdrop-blur-md rounded-md border border-border shadow-sm">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span className="text-[10px] font-medium text-foreground/80">
+                        {group.itemsCount} Items
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="absolute bottom-3 left-3 right-3 z-20">
+                    <h3 className="text-sm font-semibold text-foreground tracking-tight leading-snug drop-shadow-md line-clamp-1">
+                      {group.name}
+                    </h3>
+                    {group.description && (
+                      <p className="text-[11px] text-foreground/70 truncate opacity-90">
+                        {group.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-3 bg-muted/20">
+                  <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-[10px]">
+                    <div className="group/item">
+                      <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
+                        Items
+                      </span>
+                      <span className="text-foreground/80 font-medium group-hover/item:text-indigo-400 transition-colors flex items-center gap-1">
+                        {group.itemsCount.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
+                        Status
+                      </span>
+                      <span className="font-mono bg-emerald-900/10 text-emerald-500 px-1 py-0.5 rounded border border-emerald-900/30">
+                        Active
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+
           <Link href="/collections" className="block">
             <div
-              className="hover-trigger group relative bg-card border border-border rounded-xl overflow-hidden hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/30 transition-all duration-300 flex flex-col cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-indigo-900/10 animate-enter"
-              style={{ animationDelay: "0ms" }}
-            >
-              <div className="relative aspect-[4/3] bg-muted overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-80 z-10" />
-                <img
-                  src="https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?q=80&w=600&auto=format&fit=crop"
-                  alt="Collections"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out will-change-transform opacity-90 group-hover:opacity-100"
-                />
-
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30 pointer-events-none">
-                  <span className="bg-background/60 backdrop-blur-md text-foreground text-[11px] font-medium px-3 py-1.5 rounded-full border border-border shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                    View Details
-                  </span>
-                </div>
-
-                <div className="absolute top-2 right-2 z-20 flex flex-col gap-2 hover-target">
-                  <button
-                    type="button"
-                    onClick={(e) => e.preventDefault()}
-                    className="w-8 h-8 bg-background/80 backdrop-blur-md rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground border border-border hover:border-input transition-all shadow-lg"
-                  >
-                    <Settings className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="absolute top-2 left-2 z-20">
-                  <div className="flex items-center gap-1.5 px-2 py-1 bg-background/90 backdrop-blur-md rounded-md border border-border shadow-sm">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <span className="text-[10px] font-medium text-foreground/80">
-                      Active Dept
-                    </span>
-                  </div>
-                </div>
-
-                <div className="absolute bottom-3 left-3 right-3 z-20">
-                  <h3 className="text-sm font-semibold text-foreground tracking-tight leading-snug drop-shadow-md">
-                    Collection Groups
-                  </h3>
-                  <p className="text-[11px] text-foreground/70 truncate opacity-90">
-                    {analytics.collections.total} Groups Available
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3 bg-muted/20">
-                <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-[10px]">
-                  <div className="group/item">
-                    <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
-                      Cataloged Items
-                    </span>
-                    <span className="text-foreground/80 font-medium group-hover/item:text-indigo-400 transition-colors flex items-center gap-1">
-                      {analytics.objects.total.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
-                      Pending Accessions
-                    </span>
-                    <span className="font-mono text-muted-foreground">
-                      {analytics.accessions.pending} Items
-                    </span>
-                  </div>
-                  <div>
-                    <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
-                      Storage
-                    </span>
-                    <span className="text-muted-foreground flex items-center gap-1 truncate">
-                      <Server className="w-3 h-3 text-muted-foreground/60" />
-                      All Zones
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
-                      Active
-                    </span>
-                    <span className="text-foreground/80">
-                      {analytics.objects.active}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Link>
-
-          <Link href="/objects" className="block">
-            <div
               className="hover-trigger group relative bg-card border border-border rounded-xl overflow-hidden hover:border-blue-500/30 hover:ring-1 hover:ring-blue-500/30 transition-all duration-300 flex flex-col cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-blue-900/10 animate-enter"
-              style={{ animationDelay: "100ms" }}
+              style={{
+                animationDelay: `${analytics.recentCollectionGroups.length * 100}ms`,
+              }}
             >
               <div className="relative aspect-[4/3] bg-muted overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-80 z-10" />
-                <img
-                  src="https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?q=80&w=600&auto=format&fit=crop"
-                  alt="Objects"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out will-change-transform opacity-90 group-hover:opacity-100"
-                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Package className="w-10 h-10 text-muted-foreground/40" />
+                </div>
 
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30 pointer-events-none">
                   <span className="bg-background/60 backdrop-blur-md text-foreground text-[11px] font-medium px-3 py-1.5 rounded-full border border-border shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                    View Details
+                    View All
                   </span>
-                </div>
-
-                <div className="absolute top-2 right-2 z-20 flex flex-col gap-2 hover-target">
-                  <button
-                    type="button"
-                    onClick={(e) => e.preventDefault()}
-                    className="w-8 h-8 bg-background/80 backdrop-blur-md rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground border border-border hover:border-input transition-all shadow-lg"
-                  >
-                    <Settings className="w-4 h-4" />
-                  </button>
                 </div>
 
                 <div className="absolute top-2 left-2 z-20">
                   <div className="flex items-center gap-1.5 px-2 py-1 bg-background/90 backdrop-blur-md rounded-md border border-blue-500/30 shadow-sm">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                     <span className="text-[10px] font-medium text-blue-400 dark:text-blue-300">
-                      {analytics.objects.loaned} Loaned
+                      {analytics.collections.total} Groups
                     </span>
                   </div>
                 </div>
 
                 <div className="absolute bottom-3 left-3 right-3 z-20">
                   <h3 className="text-sm font-semibold text-foreground tracking-tight leading-snug drop-shadow-md">
-                    Object Catalog
+                    All Collection Groups
                   </h3>
                   <p className="text-[11px] text-foreground/70 truncate opacity-90">
-                    {analytics.objects.active} Active Items
+                    {analytics.objects.total.toLocaleString()} Total Objects
                   </p>
                 </div>
               </div>
@@ -292,35 +269,18 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-[10px]">
                   <div className="group/item">
                     <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
-                      Cataloged Items
+                      Active
                     </span>
                     <span className="text-foreground/80 font-medium group-hover/item:text-blue-400 transition-colors flex items-center gap-1">
-                      {analytics.objects.total.toLocaleString()}
+                      {analytics.objects.active.toLocaleString()}
                     </span>
                   </div>
                   <div className="text-right">
                     <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
-                      Loans Out
+                      Loaned
                     </span>
                     <span className="font-mono text-muted-foreground">
-                      {analytics.objects.loaned} Items
-                    </span>
-                  </div>
-                  <div>
-                    <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
-                      Storage
-                    </span>
-                    <span className="text-muted-foreground flex items-center gap-1 truncate">
-                      <Server className="w-3 h-3 text-muted-foreground/60" />
-                      All Zones
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
-                      Deaccessioned
-                    </span>
-                    <span className="text-foreground/80">
-                      {analytics.objects.deaccessioned}
+                      {analytics.objects.loaned}
                     </span>
                   </div>
                 </div>
@@ -328,34 +288,40 @@ export default function DashboardPage() {
             </div>
           </Link>
 
-          <div
-            className="hover-trigger group relative bg-card border border-dashed border-border rounded-xl overflow-hidden hover:border-input transition-all duration-300 flex flex-col cursor-pointer hover:bg-muted/40 animate-enter"
-            style={{ animationDelay: "200ms" }}
-          >
-            <div className="relative aspect-[4/3] flex items-center justify-center flex-col gap-3">
-              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center group-hover:bg-muted/80 transition-colors">
-                <Presentation className="w-6 h-6 text-muted-foreground group-hover:text-foreground" />
+          <Link href="/objects/new" className="block">
+            <div
+              className="hover-trigger group relative bg-card border border-dashed border-border rounded-xl overflow-hidden hover:border-input transition-all duration-300 flex flex-col cursor-pointer hover:bg-muted/40 animate-enter"
+              style={{
+                animationDelay: `${(analytics.recentCollectionGroups.length + 1) * 100}ms`,
+              }}
+            >
+              <div className="relative aspect-[4/3] flex items-center justify-center flex-col gap-3">
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center group-hover:bg-muted/80 transition-colors">
+                  <Presentation className="w-6 h-6 text-muted-foreground group-hover:text-foreground" />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-sm font-medium text-foreground/80">
+                    Add New Object
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    Create catalog entry
+                  </p>
+                </div>
               </div>
-              <div className="text-center">
-                <h3 className="text-sm font-medium text-foreground/80">
-                  New Exhibition
-                </h3>
-                <p className="text-[11px] text-muted-foreground">
-                  Draft a proposal
-                </p>
+              <div className="p-3 border-t border-border bg-muted/10">
+                <div className="text-[10px] text-center text-muted-foreground">
+                  Quick Action
+                </div>
               </div>
             </div>
-            <div className="p-3 border-t border-border bg-muted/10">
-              <div className="text-[10px] text-center text-muted-foreground">
-                Curatorial Team
-              </div>
-            </div>
-          </div>
+          </Link>
 
           <Link href="/accessions" className="block">
             <div
               className="hover-trigger group relative bg-card border border-border rounded-xl overflow-hidden hover:border-amber-500/30 hover:ring-1 hover:ring-amber-500/30 transition-all duration-300 flex flex-col cursor-pointer shadow-lg animate-enter"
-              style={{ animationDelay: "300ms" }}
+              style={{
+                animationDelay: `${(analytics.recentCollectionGroups.length + 2) * 100}ms`,
+              }}
             >
               <div className="relative aspect-[4/3] bg-background overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-80 z-10" />

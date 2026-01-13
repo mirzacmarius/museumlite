@@ -1446,19 +1446,24 @@ export const getLocationsWithEnvironment = query({
 
 /**
  * Public wrapper to seed all locations (admin only)
- * This calls the internal seedAllLocations mutation
+ * Directly implements the seeding logic with auth check
  */
 export const adminSeedAllLocations = mutation({
   args: {},
   returns: v.number(),
-  handler: async (ctx) => {
-    // This is a placeholder - in production, you'd want to add auth checks here
-    // For now, we just call the internal mutation
+  handler: async (ctx): Promise<number> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    // Call the internal mutation
-    return await ctx.runMutation(internal.locations.seedAllLocations);
+
+    let totalLocations = 0;
+    for (const orgSlug of Object.keys(LOCATIONS_DATA)) {
+      const count = await seedLocationsForOrg(ctx, {
+        organizationSlug: orgSlug,
+      });
+      totalLocations += count;
+    }
+    return totalLocations;
   },
 });

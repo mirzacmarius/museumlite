@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
   Archive,
@@ -37,6 +37,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
+import { ViewToggle, type ViewMode } from "./_components/view-toggle";
+import { ObjectGridView } from "./_components/object-grid-view";
+import { BulkActionsBar } from "./_components/bulk-actions-bar";
+import { BulkMoveLocationDialog } from "./_components/bulk-move-location-dialog";
+import { BulkDeaccessionDialog } from "./_components/bulk-deaccession-dialog";
+import {
+  ColumnConfigDropdown,
+  DEFAULT_COLUMNS,
+  type ColumnConfig,
+} from "./_components/column-config";
+import { Checkbox } from "@v1/ui/checkbox";
+import { toast } from "sonner";
 
 export default function CollectionsPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
@@ -127,6 +139,10 @@ interface CollectionFilters {
   culture: string;
   period: string;
   materials: string;
+  collectionGroupId: string;
+  locationId: string;
+  catalogedFrom: string;
+  catalogedTo: string;
 }
 
 function CollectionFiltersAndList({
@@ -142,10 +158,92 @@ function CollectionFiltersAndList({
     culture: "",
     period: "",
     materials: "",
+    collectionGroupId: "",
+    locationId: "",
+    catalogedFrom: "",
+    catalogedTo: "",
   });
 
   const [cursor, setCursor] = useState<string | null>(null);
   const prevFiltersRef = useRef(filters);
+
+  const [selectedIds, setSelectedIds] = useState<Set<Id<"collections">>>(
+    new Set(),
+  );
+  const [showMoveLocationDialog, setShowMoveLocationDialog] = useState(false);
+  const [showBulkDeaccessionDialog, setShowBulkDeaccessionDialog] =
+    useState(false);
+
+  const bulkExport = useQuery(
+    api.collections.bulkExport,
+    selectedIds.size > 0 ? { collectionIds: Array.from(selectedIds) } : "skip",
+  );
+
+  const savedViewMode = useQuery(api.userPreferences.get, {
+    key: "objects.viewMode",
+    organizationId,
+  });
+  const savedColumns = useQuery(api.userPreferences.get, {
+    key: "objects.columns",
+    organizationId,
+  });
+  const setViewPreference = useMutation(api.userPreferences.set);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [columns, setColumns] = useState<ColumnConfig[]>(DEFAULT_COLUMNS);
+
+  const collectionGroups = useQuery(api.collectionGroups.list, {
+    organizationId,
+  });
+  const locations = useQuery(api.locations.listAllWithPaths, {
+    organizationId,
+  });
+
+  useEffect(() => {
+    if (savedViewMode) {
+      setViewMode(savedViewMode as ViewMode);
+    }
+  }, [savedViewMode]);
+
+  useEffect(() => {
+    if (savedColumns) {
+      try {
+        const parsed = JSON.parse(savedColumns) as Record<string, boolean>;
+        setColumns((prev) =>
+          prev.map((col) => ({
+            ...col,
+            visible: parsed[col.id] ?? col.visible,
+          })),
+        );
+      } catch {
+        // Invalid JSON in preferences - use default columns
+      }
+    }
+  }, [savedColumns]);
+
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    setViewPreference({
+      key: "objects.viewMode",
+      value: mode,
+      organizationId,
+    });
+  };
+
+  const handleColumnToggle = (columnId: string, visible: boolean) => {
+    const newColumns = columns.map((col) =>
+      col.id === columnId ? { ...col, visible } : col,
+    );
+    setColumns(newColumns);
+
+    const columnVisibility = Object.fromEntries(
+      newColumns.map((col) => [col.id, col.visible]),
+    );
+    setViewPreference({
+      key: "objects.columns",
+      value: JSON.stringify(columnVisibility),
+      organizationId,
+    });
+  };
 
   // Reset cursor when filters change
   useEffect(() => {
@@ -170,6 +268,18 @@ function CollectionFiltersAndList({
           culture: filters.culture || undefined,
           period: filters.period || undefined,
           materials: filters.materials || undefined,
+          collectionGroupId: filters.collectionGroupId
+            ? (filters.collectionGroupId as Id<"collectionGroups">)
+            : undefined,
+          locationId: filters.locationId
+            ? (filters.locationId as Id<"locations">)
+            : undefined,
+          catalogedFrom: filters.catalogedFrom
+            ? new Date(filters.catalogedFrom).getTime()
+            : undefined,
+          catalogedTo: filters.catalogedTo
+            ? new Date(filters.catalogedTo).setHours(23, 59, 59, 999)
+            : undefined,
         }
       : "skip",
   );
@@ -189,7 +299,11 @@ function CollectionFiltersAndList({
     filters.objectType ||
     filters.culture ||
     filters.period ||
-    filters.materials;
+    filters.materials ||
+    filters.collectionGroupId ||
+    filters.locationId ||
+    filters.catalogedFrom ||
+    filters.catalogedTo;
 
   const clearFilters = () => {
     setFilters({
@@ -199,7 +313,109 @@ function CollectionFiltersAndList({
       culture: "",
       period: "",
       materials: "",
+      collectionGroupId: "",
+      locationId: "",
+      catalogedFrom: "",
+      catalogedTo: "",
     });
+  };
+
+  const handleSelectItem = (id: Id<"collections">, selected: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (selected) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = (selected: boolean) => {
+    if (selected && collections?.page) {
+      setSelectedIds(new Set(collections.page.map((item) => item._id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleExport = () => {
+    if (!bulkExport || bulkExport.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+
+    const headers = [
+      "Accession Number",
+      "Title",
+      "Alternative Title",
+      "Creator",
+      "Object Type",
+      "Object Name",
+      "Culture",
+      "Period",
+      "Date Created",
+      "Materials",
+      "Technique",
+      "Dimensions",
+      "Description",
+      "Condition",
+      "Provenance",
+      "Status",
+      "Location",
+      "Collection Group",
+      "Cataloged Date",
+    ];
+
+    const rows = bulkExport.map((item) => [
+      item.accessionNumber,
+      item.title,
+      item.alternativeTitle ?? "",
+      item.creator ?? "",
+      item.objectType ?? "",
+      item.objectName ?? "",
+      item.culture ?? "",
+      item.period ?? "",
+      item.dateCreated ?? "",
+      item.materials ?? "",
+      item.technique ?? "",
+      item.dimensions ?? "",
+      item.description?.replace(/[\n\r]/g, " ") ?? "",
+      item.condition ?? "",
+      item.provenance?.replace(/[\n\r]/g, " ") ?? "",
+      item.status,
+      item.locationPath ?? "",
+      item.collectionGroup ?? "",
+      new Date(item.catalogedAt).toISOString().split("T")[0] ?? "",
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) =>
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `collection-export-${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    toast.success(
+      `Exported ${bulkExport.length} item${bulkExport.length !== 1 ? "s" : ""}`,
+    );
+  };
+
+  const handleBulkSuccess = () => {
+    setSelectedIds(new Set());
   };
 
   return (
@@ -219,6 +435,13 @@ function CollectionFiltersAndList({
                 className="pl-9"
               />
             </div>
+            <ViewToggle value={viewMode} onChange={handleViewModeChange} />
+            {viewMode === "list" && (
+              <ColumnConfigDropdown
+                columns={columns}
+                onColumnToggle={handleColumnToggle}
+              />
+            )}
             <Button
               variant={showFilters ? "default" : "outline"}
               onClick={() => setShowFilters(!showFilters)}
@@ -318,21 +541,124 @@ function CollectionFiltersAndList({
                   }
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="collectionGroup">Collection Group</Label>
+                <Select
+                  value={filters.collectionGroupId || "all"}
+                  onValueChange={(value) =>
+                    setFilters({
+                      ...filters,
+                      collectionGroupId: value === "all" ? "" : value,
+                    })
+                  }
+                >
+                  <SelectTrigger id="collectionGroup">
+                    <SelectValue placeholder="All groups" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Groups</SelectItem>
+                    {collectionGroups?.map((group) => (
+                      <SelectItem key={group._id} value={group._id}>
+                        {group.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Select
+                  value={filters.locationId || "all"}
+                  onValueChange={(value) =>
+                    setFilters({
+                      ...filters,
+                      locationId: value === "all" ? "" : value,
+                    })
+                  }
+                >
+                  <SelectTrigger id="location">
+                    <SelectValue placeholder="All locations" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Locations</SelectItem>
+                    {locations?.map((location) => (
+                      <SelectItem key={location._id} value={location._id}>
+                        {location.path.map((p) => p.name).join(" > ")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="catalogedFrom">Date Acquired From</Label>
+                <Input
+                  id="catalogedFrom"
+                  type="date"
+                  value={filters.catalogedFrom}
+                  onChange={(e) =>
+                    setFilters({ ...filters, catalogedFrom: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="catalogedTo">Date Acquired To</Label>
+                <Input
+                  id="catalogedTo"
+                  type="date"
+                  value={filters.catalogedTo}
+                  onChange={(e) =>
+                    setFilters({ ...filters, catalogedTo: e.target.value })
+                  }
+                />
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Collection List */}
+      {/* Collection List/Grid */}
       <CollectionList
         organizationId={organizationId}
         collections={collections}
+        viewMode={viewMode}
+        columns={columns}
+        selectedIds={selectedIds}
+        onSelectItem={handleSelectItem}
+        onSelectAll={handleSelectAll}
         onLoadMore={() => {
           if (collections && !collections.isDone) {
             setCursor(collections.continueCursor);
           }
         }}
         onReset={() => setCursor(null)}
+      />
+
+      {/* Bulk Actions */}
+      <BulkActionsBar
+        selectedCount={selectedIds.size}
+        onClearSelection={handleClearSelection}
+        onMoveLocation={() => setShowMoveLocationDialog(true)}
+        onExport={handleExport}
+        onDeaccession={() => setShowBulkDeaccessionDialog(true)}
+      />
+
+      <BulkMoveLocationDialog
+        open={showMoveLocationDialog}
+        onOpenChange={setShowMoveLocationDialog}
+        selectedIds={Array.from(selectedIds)}
+        organizationId={organizationId}
+        onSuccess={handleBulkSuccess}
+      />
+
+      <BulkDeaccessionDialog
+        open={showBulkDeaccessionDialog}
+        onOpenChange={setShowBulkDeaccessionDialog}
+        selectedIds={Array.from(selectedIds)}
+        onSuccess={handleBulkSuccess}
       />
     </div>
   );
@@ -341,6 +667,11 @@ function CollectionFiltersAndList({
 function CollectionList({
   organizationId,
   collections,
+  viewMode,
+  columns,
+  selectedIds,
+  onSelectItem,
+  onSelectAll,
   onLoadMore,
   onReset,
 }: {
@@ -360,6 +691,11 @@ function CollectionList({
         continueCursor: string;
       }
     | undefined;
+  viewMode: ViewMode;
+  columns: ColumnConfig[];
+  selectedIds: Set<Id<"collections">>;
+  onSelectItem: (id: Id<"collections">, selected: boolean) => void;
+  onSelectAll: (selected: boolean) => void;
   onLoadMore: () => void;
   onReset: () => void;
 }) {
@@ -387,17 +723,63 @@ function CollectionList({
     );
   }
 
+  const allSelected =
+    collections.page.length > 0 &&
+    collections.page.every((item) =>
+      selectedIds.has(item._id as Id<"collections">),
+    );
+  const someSelected =
+    collections.page.some((item) =>
+      selectedIds.has(item._id as Id<"collections">),
+    ) && !allSelected;
+
   return (
     <div className="p-6">
-      <div className="space-y-4">
-        {collections.page.map((item) => (
-          <CollectionListItem
-            key={item._id}
-            item={item as CollectionListItem}
-            organizationId={organizationId}
+      {collections.page.length > 0 && (
+        <div className="mb-4 flex items-center gap-2">
+          <Checkbox
+            checked={allSelected || (someSelected ? "indeterminate" : false)}
+            onCheckedChange={(checked) => onSelectAll(checked === true)}
+            aria-label="Select all items"
           />
-        ))}
-      </div>
+          <span className="text-sm text-muted-foreground">
+            {allSelected
+              ? "All selected"
+              : someSelected
+                ? `${selectedIds.size} selected`
+                : "Select all"}
+          </span>
+        </div>
+      )}
+      {viewMode === "grid" ? (
+        <ObjectGridView
+          items={collections.page.map((item) => ({
+            _id: item._id as Id<"collections">,
+            accessionNumber: item.accessionNumber,
+            title: item.title,
+            objectType: item.objectType,
+            status: item.status,
+          }))}
+          organizationId={organizationId}
+          selectedIds={selectedIds}
+          onSelectItem={onSelectItem}
+        />
+      ) : (
+        <div className="space-y-4">
+          {collections.page.map((item) => (
+            <CollectionListItem
+              key={item._id}
+              item={item as CollectionListItem}
+              organizationId={organizationId}
+              columns={columns}
+              isSelected={selectedIds.has(item._id as Id<"collections">)}
+              onSelect={(selected: boolean) =>
+                onSelectItem(item._id as Id<"collections">, selected)
+              }
+            />
+          ))}
+        </div>
+      )}
       {!collections.isDone && (
         <div className="mt-6 flex justify-center">
           <Button variant="outline" onClick={onLoadMore}>
@@ -422,10 +804,18 @@ type CollectionListItem = FunctionReturnType<
 function CollectionListItem({
   item,
   organizationId,
+  columns,
+  isSelected,
+  onSelect,
 }: {
   item: CollectionListItem;
   organizationId: Id<"organizations">;
+  columns: ColumnConfig[];
+  isSelected: boolean;
+  onSelect: (selected: boolean) => void;
 }) {
+  const isColumnVisible = (columnId: string) =>
+    columns.find((c) => c.id === columnId)?.visible ?? true;
   const [isDeaccessionDialogOpen, setIsDeaccessionDialogOpen] = useState(false);
 
   const locationPath = useQuery(
@@ -443,78 +833,106 @@ function CollectionListItem({
 
   return (
     <>
-      <div className="group relative flex items-center gap-4 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent">
+      <div
+        className={`group relative flex items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-accent ${
+          isSelected ? "border-primary ring-2 ring-primary/20" : "border-border"
+        }`}
+      >
+        {isColumnVisible("checkbox") && (
+          <div className="flex-shrink-0">
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(checked) => onSelect(!!checked)}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
         <Link
           href={`/objects/${item._id}`}
           className="flex flex-1 items-center gap-4 min-w-0 pr-2"
         >
-          {/* Primary Image Thumbnail */}
-          <div className="relative flex h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-            {primaryImageUrl ? (
-              <Image
-                src={primaryImageUrl}
-                alt={item.title}
-                fill
-                sizes="64px"
-                className="object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center">
-                <Building2 className="h-6 w-6 text-muted-foreground" />
-              </div>
-            )}
-          </div>
+          {isColumnVisible("image") && (
+            <div className="relative flex h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+              {primaryImageUrl ? (
+                <Image
+                  src={primaryImageUrl}
+                  alt={item.title}
+                  fill
+                  sizes="64px"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                  <Building2 className="h-6 w-6 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+          )}
 
-          {/* Content */}
           <div className="flex flex-1 items-center justify-between min-w-0">
             <div className="flex-1 min-w-0">
               <h3 className="font-medium truncate">{item.title}</h3>
               <div className="mt-1 flex items-center gap-4 text-sm text-muted-foreground">
-                <span>{item.accessionNumber}</span>
-                {locationPath && locationPath.length > 0 && (
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    {locationPath.map((loc) => loc.name).join(" → ")}
-                  </span>
+                {isColumnVisible("accessionNumber") && (
+                  <span>{item.accessionNumber}</span>
                 )}
+                {isColumnVisible("location") &&
+                  locationPath &&
+                  locationPath.length > 0 && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {locationPath
+                        .map(
+                          (loc: {
+                            _id: Id<"locations">;
+                            name: string;
+                            type: string;
+                          }) => loc.name,
+                        )
+                        .join(" → ")}
+                    </span>
+                  )}
               </div>
             </div>
             <div className="text-right flex-shrink-0 ml-4">
-              <div className="flex flex-wrap justify-end gap-1 mb-1">
-                {(() => {
-                  try {
-                    const types = item.objectType
-                      ? JSON.parse(item.objectType)
-                      : [];
-                    return Array.isArray(types) && types.length > 0 ? (
-                      types.map((type: string) => (
-                        <span
-                          key={type}
-                          className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-medium"
-                        >
-                          {type}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-sm text-muted-foreground">—</span>
-                    );
-                  } catch {
-                    return (
-                      <span className="text-sm text-muted-foreground">—</span>
-                    );
-                  }
-                })()}
-              </div>
-              {item.status === "deaccessioned" ? (
-                <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-600">
-                  <Archive className="mr-1 h-3 w-3" />
-                  Deaccessioned
-                </span>
-              ) : (
-                <p className="text-xs text-muted-foreground capitalize">
-                  {item.status}
-                </p>
+              {isColumnVisible("objectType") && (
+                <div className="flex flex-wrap justify-end gap-1 mb-1">
+                  {(() => {
+                    try {
+                      const types = item.objectType
+                        ? JSON.parse(item.objectType)
+                        : [];
+                      return Array.isArray(types) && types.length > 0 ? (
+                        types.map((type: string) => (
+                          <span
+                            key={type}
+                            className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-medium"
+                          >
+                            {type}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      );
+                    } catch {
+                      return (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      );
+                    }
+                  })()}
+                </div>
               )}
+              {isColumnVisible("status") &&
+                (item.status === "deaccessioned" ? (
+                  <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-600">
+                    <Archive className="mr-1 h-3 w-3" />
+                    Deaccessioned
+                  </span>
+                ) : (
+                  <p className="text-xs text-muted-foreground capitalize">
+                    {item.status}
+                  </p>
+                ))}
             </div>
           </div>
         </Link>

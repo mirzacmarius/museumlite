@@ -2,7 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { requirePermission } from "./utils/permissions";
 import { accessionParser } from "./utils/accessionNumberParser";
 import { getNextCounterValue } from "./utils/accessionCounter";
@@ -1834,5 +1834,237 @@ export const getParentObjectWithThumbnail = query({
       accessionNumber: parent.accessionNumber,
       thumbnailUrl,
     };
+  },
+});
+
+export const bulkUpdateLocation = mutation({
+  args: {
+    collectionIds: v.array(v.id("collections")),
+    locationId: v.id("locations"),
+  },
+  returns: v.object({
+    updated: v.number(),
+    failed: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    let updated = 0;
+    let failed = 0;
+
+    for (const collectionId of args.collectionIds) {
+      const collection = await ctx.db.get(collectionId);
+      if (!collection) {
+        failed++;
+        continue;
+      }
+
+      try {
+        await requirePermission(
+          ctx,
+          collection.organizationId,
+          "collections.update",
+        );
+
+        await ctx.db.patch(collectionId, {
+          currentLocationId: args.locationId,
+          lastModifiedBy: userId,
+          lastModifiedAt: Date.now(),
+        });
+        updated++;
+      } catch {
+        failed++;
+      }
+    }
+
+    return { updated, failed };
+  },
+});
+
+export const bulkDeaccession = mutation({
+  args: {
+    collectionIds: v.array(v.id("collections")),
+    reason: v.string(),
+  },
+  returns: v.object({
+    deaccessioned: v.number(),
+    failed: v.number(),
+    skipped: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    let deaccessioned = 0;
+    let failed = 0;
+    let skipped = 0;
+
+    for (const collectionId of args.collectionIds) {
+      const collection = await ctx.db.get(collectionId);
+      if (!collection) {
+        failed++;
+        continue;
+      }
+
+      if (collection.status === "deaccessioned") {
+        skipped++;
+        continue;
+      }
+
+      if (collection.status === "loaned") {
+        failed++;
+        continue;
+      }
+
+      try {
+        await requirePermission(
+          ctx,
+          collection.organizationId,
+          "collections.delete",
+        );
+
+        await ctx.db.patch(collectionId, {
+          status: "deaccessioned",
+          lastModifiedBy: userId,
+          lastModifiedAt: Date.now(),
+        });
+
+        await ctx.db.insert("auditLog", {
+          organizationId: collection.organizationId,
+          userId,
+          action: "deaccessioned",
+          entityType: "collection",
+          entityId: collectionId,
+          changes: { reason: args.reason, bulk: true },
+          timestamp: Date.now(),
+        });
+
+        deaccessioned++;
+      } catch {
+        failed++;
+      }
+    }
+
+    return { deaccessioned, failed, skipped };
+  },
+});
+
+export const bulkExport = query({
+  args: {
+    collectionIds: v.array(v.id("collections")),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("collections"),
+      accessionNumber: v.string(),
+      title: v.string(),
+      alternativeTitle: v.optional(v.string()),
+      creator: v.optional(v.string()),
+      objectType: v.optional(v.string()),
+      objectName: v.optional(v.string()),
+      culture: v.optional(v.string()),
+      period: v.optional(v.string()),
+      dateCreated: v.optional(v.string()),
+      materials: v.optional(v.string()),
+      technique: v.optional(v.string()),
+      dimensions: v.optional(v.string()),
+      description: v.optional(v.string()),
+      condition: v.optional(v.string()),
+      provenance: v.optional(v.string()),
+      status: v.string(),
+      locationPath: v.optional(v.string()),
+      collectionGroup: v.optional(v.string()),
+      catalogedAt: v.number(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const results: Array<{
+      _id: Id<"collections">;
+      accessionNumber: string;
+      title: string;
+      alternativeTitle?: string;
+      creator?: string;
+      objectType?: string;
+      objectName?: string;
+      culture?: string;
+      period?: string;
+      dateCreated?: string;
+      materials?: string;
+      technique?: string;
+      dimensions?: string;
+      description?: string;
+      condition?: string;
+      provenance?: string;
+      status: string;
+      locationPath?: string;
+      collectionGroup?: string;
+      catalogedAt: number;
+    }> = [];
+
+    for (const collectionId of args.collectionIds) {
+      const collection = await ctx.db.get(collectionId);
+      if (!collection) continue;
+
+      await requirePermission(
+        ctx,
+        collection.organizationId,
+        "collections.read",
+      );
+
+      let locationPath: string | undefined;
+      if (collection.currentLocationId) {
+        const locationNames: Array<string> = [];
+        let currentId: Id<"locations"> | undefined =
+          collection.currentLocationId;
+        while (currentId) {
+          const loc: Doc<"locations"> | null = await ctx.db.get(currentId);
+          if (!loc) break;
+          locationNames.unshift(loc.name);
+          currentId = loc.parentLocationId;
+        }
+        locationPath = locationNames.join(" > ");
+      }
+
+      let collectionGroup: string | undefined;
+      if (collection.collectionGroupId) {
+        const group = await ctx.db.get(collection.collectionGroupId);
+        collectionGroup = group?.name;
+      }
+
+      results.push({
+        _id: collection._id,
+        accessionNumber: collection.accessionNumber,
+        title: collection.title,
+        alternativeTitle: collection.alternativeTitle,
+        creator: collection.creator,
+        objectType: collection.objectType,
+        objectName: collection.objectName,
+        culture: collection.culture,
+        period: collection.period,
+        dateCreated: collection.dateCreated,
+        materials: collection.materials,
+        technique: collection.technique,
+        dimensions: collection.dimensions,
+        description: collection.description,
+        condition: collection.condition,
+        provenance: collection.provenance,
+        status: collection.status,
+        locationPath,
+        collectionGroup,
+        catalogedAt: collection.catalogedAt,
+      });
+    }
+
+    return results;
   },
 });
