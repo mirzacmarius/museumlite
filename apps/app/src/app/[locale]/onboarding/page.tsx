@@ -29,8 +29,6 @@ export default function OnboardingUsername() {
     },
   });
 
-  console.log("user", user);
-
   useEffect(() => {
     if (!user) {
       return;
