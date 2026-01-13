@@ -754,6 +754,119 @@ export const close = mutation({
   },
 });
 
+export const checkScheduleConflicts = query({
+  args: {
+    collectionId: v.id("collections"),
+    startDate: v.number(),
+    endDate: v.optional(v.number()),
+    excludeExhibitionId: v.optional(v.id("exhibitions")),
+  },
+  returns: v.object({
+    hasConflicts: v.boolean(),
+    conflicts: v.array(
+      v.object({
+        type: v.union(v.literal("exhibition"), v.literal("loan")),
+        id: v.string(),
+        title: v.string(),
+        startDate: v.number(),
+        endDate: v.optional(v.number()),
+        status: v.string(),
+      }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      return { hasConflicts: false, conflicts: [] };
+    }
+
+    await requirePermission(ctx, collection.organizationId, "collections.read");
+
+    const conflicts: Array<{
+      type: "exhibition" | "loan";
+      id: string;
+      title: string;
+      startDate: number;
+      endDate?: number;
+      status: string;
+    }> = [];
+
+    const proposedStart = args.startDate;
+    const proposedEnd = args.endDate ?? Number.MAX_SAFE_INTEGER;
+
+    const dateRangesOverlap = (
+      start1: number,
+      end1: number,
+      start2: number,
+      end2: number,
+    ) => start1 < end2 && start2 < end1;
+
+    const exhibitions = await ctx.db
+      .query("exhibitions")
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", args.collectionId),
+      )
+      .collect();
+
+    for (const ex of exhibitions) {
+      if (args.excludeExhibitionId && ex._id === args.excludeExhibitionId) {
+        continue;
+      }
+
+      if (ex.status === "rejected" || ex.status === "closed") {
+        continue;
+      }
+
+      const exEnd = ex.endDate ?? Number.MAX_SAFE_INTEGER;
+      if (dateRangesOverlap(proposedStart, proposedEnd, ex.startDate, exEnd)) {
+        conflicts.push({
+          type: "exhibition",
+          id: ex._id,
+          title: ex.title,
+          startDate: ex.startDate,
+          endDate: ex.endDate,
+          status: ex.status ?? "active",
+        });
+      }
+    }
+
+    const loanItems = await ctx.db
+      .query("loanItems")
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", args.collectionId),
+      )
+      .collect();
+
+    for (const item of loanItems) {
+      const loan = await ctx.db.get(item.loanId);
+      if (!loan) continue;
+
+      if (loan.status === "cancelled" || loan.status === "returned") {
+        continue;
+      }
+
+      const loanEnd = loan.endDate ?? Number.MAX_SAFE_INTEGER;
+      if (
+        dateRangesOverlap(proposedStart, proposedEnd, loan.startDate, loanEnd)
+      ) {
+        conflicts.push({
+          type: "loan",
+          id: loan._id,
+          title: `${loan.type === "incoming" ? "Incoming" : "Outgoing"} Loan: ${loan.loanNumber}`,
+          startDate: loan.startDate,
+          endDate: loan.endDate,
+          status: loan.status,
+        });
+      }
+    }
+
+    return {
+      hasConflicts: conflicts.length > 0,
+      conflicts,
+    };
+  },
+});
+
 export const getWorkflowHistory = query({
   args: {
     exhibitionId: v.id("exhibitions"),
