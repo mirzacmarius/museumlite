@@ -26,41 +26,41 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@v1/ui/tabs";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
-import { LoanAgreement } from "./_components/loan-agreement";
-import { LoanApprovalWorkflow } from "./_components/loan-approval-workflow";
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowDownToLine,
   ArrowLeft,
   ArrowUpFromLine,
   Banknote,
+  Box,
   CalendarRange,
+  Check,
   ChevronRight,
   ChevronsUpDown,
   Circle,
   Clock,
   Copy,
   FileText,
-  LayoutGrid,
+  History,
   Layers,
+  LayoutGrid,
+  MapPin,
   Moon,
   PackageCheck,
   Printer,
+  Search,
   Shield,
   Sun,
+  Truck,
   Upload,
   User,
-  Check,
-  Search,
-  Box,
-  MapPin,
-  Truck,
-  History,
-  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { LoanAgreement } from "./_components/loan-agreement";
+import { LoanApprovalWorkflow } from "./_components/loan-approval-workflow";
 
 type LoanStatus =
   | "pending"
@@ -785,15 +785,16 @@ function ObjectsTab({ loan }: { loan: Loan }) {
             />
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="default" size="sm" className="h-8 text-xs">
-            Add Object
-          </Button>
-        </div>
+        <PermissionGate permission="loans.update">
+          <div className="flex gap-2">
+            <Button variant="default" size="sm" className="h-8 text-xs">
+              Add Object
+            </Button>
+          </div>
+        </PermissionGate>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Mock Cards - Replace with real iteration when images are available */}
         {loan.items.length > 0 ? (
           loan.items.map((item) => (
             <div
