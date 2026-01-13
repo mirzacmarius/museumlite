@@ -4,8 +4,6 @@ import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
-import { Button } from "@v1/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +15,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@v1/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
+import { Button } from "@v1/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -30,14 +30,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
+import { ImageLightbox, type LightboxImage } from "@v1/ui/image-lightbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
+import { SidebarProvider } from "@v1/ui/sidebar";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@v1/ui/tooltip";
-import { SidebarProvider } from "@v1/ui/sidebar";
 import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
@@ -57,8 +58,8 @@ import {
   History,
   Image as ImageIcon,
   Info,
-  Link as LinkIcon,
   Link2,
+  Link as LinkIcon,
   MapPin,
   Maximize2,
   Pencil,
@@ -76,14 +77,13 @@ import {
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { ImageLightbox, type LightboxImage } from "@v1/ui/image-lightbox";
-import { MediaGallery } from "./_components/media-gallery";
-import { RecordContextSidebar } from "./_components/record-context-sidebar";
-import { FineArtDetailsTab } from "./_components/fine-art-details-tab";
-import { WineDetailsTab } from "./_components/wine-details-tab";
-import { VehicleDetailsTab } from "./_components/vehicle-details-tab";
-import { NaturalHistoryDetailsTab } from "./_components/natural-history-details-tab";
 import { ArchiveDetailsTab } from "./_components/archive-details-tab";
+import { FineArtDetailsTab } from "./_components/fine-art-details-tab";
+import { MediaGallery } from "./_components/media-gallery";
+import { NaturalHistoryDetailsTab } from "./_components/natural-history-details-tab";
+import { RecordContextSidebar } from "./_components/record-context-sidebar";
+import { VehicleDetailsTab } from "./_components/vehicle-details-tab";
+import { WineDetailsTab } from "./_components/wine-details-tab";
 
 type TabId =
   | "general"
@@ -849,6 +849,10 @@ export default function ObjectDetailPage() {
           collectionId={collectionId}
           tags={collection.tags}
           organizationId={currentOrganizationId}
+          heroImageUrl={heroImage?.url}
+          condition={collection.condition}
+          provenance={collection.provenance}
+          ownershipHistory={collection.ownershipHistory}
         />
       </SidebarProvider>
 

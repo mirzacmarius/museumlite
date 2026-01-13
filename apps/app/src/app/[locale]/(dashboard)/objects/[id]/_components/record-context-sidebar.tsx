@@ -3,6 +3,7 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
+import { Button } from "@v1/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -15,19 +16,34 @@ import {
 } from "@v1/ui/sidebar";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
-import { ImageOff, ShieldCheck } from "lucide-react";
+import { ImageOff, Pencil, Share2, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 interface RecordContextSidebarProps {
   collectionId: string;
   tags?: string[];
   organizationId: Id<"organizations">;
+  heroImageUrl?: string | null;
+  condition?: string | null;
+  valuation?: number | null;
+  provenance?: string | null;
+  ownershipHistory?: Array<{
+    owner: string;
+    startYear?: string;
+    endYear?: string;
+    verified?: boolean;
+  }>;
 }
 
 export function RecordContextSidebar({
   collectionId,
   tags,
   organizationId,
+  heroImageUrl,
+  condition,
+  valuation,
+  provenance,
+  ownershipHistory,
 }: RecordContextSidebarProps) {
   // Query for related objects (same collection group or parent/child)
   const collection = useQuery(
@@ -80,7 +96,7 @@ export function RecordContextSidebar({
       side="right"
       variant="sidebar"
       collapsible="none"
-      className="hidden w-80 shrink-0 border-l border-border/60 bg-background 2xl:flex"
+      className="hidden w-96 shrink-0 border-l border-border/60 bg-background 2xl:flex"
     >
       <SidebarHeader className="border-b border-border/60 p-4">
         <h3 className="text-xs font-medium text-foreground">Record Context</h3>
@@ -89,7 +105,80 @@ export function RecordContextSidebar({
         </p>
       </SidebarHeader>
 
+      {heroImageUrl && (
+        <div className="relative aspect-[4/3] w-full overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent z-10" />
+          <img
+            src={heroImageUrl}
+            alt="Object"
+            className="h-full w-full object-cover"
+          />
+        </div>
+      )}
+
       <SidebarContent className="p-4">
+        <SidebarGroup className="p-0 mb-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1">
+                Condition
+              </p>
+              <p className="text-xs font-medium text-foreground">
+                {condition || "Not assessed"}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1">
+                Valuation
+              </p>
+              <p className="text-xs font-medium text-foreground">
+                {valuation ? `$${valuation.toLocaleString()}` : "—"}
+              </p>
+            </div>
+          </div>
+        </SidebarGroup>
+
+        {(provenance || (ownershipHistory && ownershipHistory.length > 0)) && (
+          <SidebarGroup className="p-0">
+            <SidebarGroupLabel className="mb-3 h-auto p-0 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              Provenance
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              {ownershipHistory && ownershipHistory.length > 0 ? (
+                <div className="space-y-2">
+                  {ownershipHistory.slice(0, 4).map((entry, idx) => (
+                    <div key={idx} className="flex items-start gap-2 text-xs">
+                      <div
+                        className={cn(
+                          "mt-1.5 h-1.5 w-1.5 rounded-full shrink-0",
+                          entry.verified
+                            ? "bg-emerald-500"
+                            : "bg-muted-foreground/50",
+                        )}
+                      />
+                      <div>
+                        <p className="text-foreground">{entry.owner}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {entry.startYear}
+                          {entry.endYear ? `–${entry.endYear}` : "–present"}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground line-clamp-3">
+                  {provenance}
+                </p>
+              )}
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {(provenance || (ownershipHistory && ownershipHistory.length > 0)) && (
+          <SidebarSeparator className="my-4" />
+        )}
+
         {/* Tags Section */}
         {tags && tags.length > 0 && (
           <SidebarGroup className="p-0">
@@ -196,14 +285,22 @@ export function RecordContextSidebar({
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border/60 p-3">
-        <div className="flex items-center gap-3 rounded-lg border border-accent/20 bg-accent/10 p-2">
-          <ShieldCheck className="h-4 w-4 text-accent" />
-          <div className="flex-1">
-            <p className="text-[10px] font-medium text-accent">
-              Record Verified
-            </p>
-            <p className="text-[9px] text-accent/60">Approved by Curator</p>
-          </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 text-xs"
+            asChild
+          >
+            <Link href={`/objects/${collectionId}/edit`}>
+              <Pencil className="mr-1.5 h-3 w-3" />
+              Edit
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" className="flex-1 text-xs">
+            <Share2 className="mr-1.5 h-3 w-3" />
+            Share
+          </Button>
         </div>
       </SidebarFooter>
     </Sidebar>
