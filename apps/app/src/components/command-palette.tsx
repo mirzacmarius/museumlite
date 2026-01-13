@@ -1,5 +1,8 @@
 "use client";
 
+import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Button } from "@v1/ui/button";
 import {
   CommandDialog,
   CommandEmpty,
@@ -10,7 +13,7 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@v1/ui/command";
-import { Button } from "@v1/ui/button";
+import { useQuery } from "convex/react";
 import {
   Archive,
   Box,
@@ -26,11 +29,8 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
-import { useQuery } from "convex/react";
-import { api } from "@v1/backend/convex/_generated/api";
-import { useOrganization } from "./organization-provider";
 import { useCommandPalette } from "./command-palette-provider";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { useOrganization } from "./organization-provider";
 
 function CommandObjectItem({
   obj,
@@ -86,21 +86,14 @@ export function CommandPalette() {
   const normalizedSearch = search.trim();
   const hasSearch = normalizedSearch.length > 1;
 
-  const objects = useQuery(
-    api.collections.search,
+  const searchResults = useQuery(
+    api.search.globalSearch,
     currentOrganizationId && hasSearch
       ? {
           organizationId: currentOrganizationId,
-          searchQuery: normalizedSearch,
+          query: normalizedSearch,
           limit: 5,
         }
-      : "skip",
-  );
-
-  const collectionGroups = useQuery(
-    api.collectionGroups.list,
-    currentOrganizationId && hasSearch
-      ? { organizationId: currentOrganizationId, search: normalizedSearch }
       : "skip",
   );
 
@@ -165,11 +158,11 @@ export function CommandPalette() {
         <CommandList>
           <CommandEmpty>No matches. Try objects or collections.</CommandEmpty>
 
-          {hasSearch && (
+          {hasSearch && searchResults && (
             <>
-              {objects && objects.results.length > 0 && (
+              {searchResults.objects.length > 0 && (
                 <CommandGroup heading="Objects">
-                  {objects.results.map((obj) => (
+                  {searchResults.objects.map((obj) => (
                     <CommandObjectItem
                       key={obj._id}
                       obj={obj}
@@ -179,9 +172,9 @@ export function CommandPalette() {
                 </CommandGroup>
               )}
 
-              {collectionGroups && collectionGroups.length > 0 && (
+              {searchResults.collectionGroups.length > 0 && (
                 <CommandGroup heading="Collections">
-                  {collectionGroups.slice(0, 5).map((group) => (
+                  {searchResults.collectionGroups.map((group) => (
                     <CommandItem
                       key={group._id}
                       value={group.name}
@@ -195,6 +188,77 @@ export function CommandPalette() {
                         <Archive className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                       <span>{group.name}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {searchResults.loans.length > 0 && (
+                <CommandGroup heading="Loans">
+                  {searchResults.loans.map((loan) => (
+                    <CommandItem
+                      key={loan._id}
+                      value={`${loan.loanNumber} ${loan.lenderBorrowerName}`}
+                      onSelect={() =>
+                        runCommand(() => router.push(`/loans/${loan._id}`))
+                      }
+                    >
+                      <div className="mr-2 flex h-7 w-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
+                        <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      <div className="flex flex-col overflow-hidden gap-0.5">
+                        <span className="truncate leading-none">
+                          {loan.loanNumber}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground truncate leading-none opacity-70">
+                          {loan.lenderBorrowerName}
+                        </span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {searchResults.accessions.length > 0 && (
+                <CommandGroup heading="Accessions">
+                  {searchResults.accessions.map((acc) => (
+                    <CommandItem
+                      key={acc._id}
+                      value={acc.accessionNumber}
+                      onSelect={() =>
+                        runCommand(() => router.push(`/accessions/${acc._id}`))
+                      }
+                    >
+                      <div className="mr-2 flex h-7 w-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
+                        <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      <div className="flex flex-col overflow-hidden gap-0.5">
+                        <span className="truncate leading-none">
+                          {acc.accessionNumber}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground truncate leading-none opacity-70">
+                          {acc.method} - {acc.status}
+                        </span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {searchResults.locations.length > 0 && (
+                <CommandGroup heading="Locations">
+                  {searchResults.locations.map((loc) => (
+                    <CommandItem
+                      key={loc._id}
+                      value={loc.name}
+                      onSelect={() =>
+                        runCommand(() => router.push(`/locations/${loc._id}`))
+                      }
+                    >
+                      <div className="mr-2 flex h-7 w-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
+                        <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      <span>{loc.name}</span>
                     </CommandItem>
                   ))}
                 </CommandGroup>
