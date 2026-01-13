@@ -624,6 +624,219 @@ export const getComplianceReport = query({
   },
 });
 
+export const getLocationUtilization = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    summary: v.object({
+      totalLocations: v.number(),
+      locationsWithCapacity: v.number(),
+      totalCapacity: v.number(),
+      totalOccupied: v.number(),
+      utilizationPercentage: v.number(),
+    }),
+    byType: v.array(
+      v.object({
+        type: v.string(),
+        count: v.number(),
+        withCapacity: v.number(),
+        totalCapacity: v.number(),
+        totalOccupied: v.number(),
+        utilizationPercentage: v.number(),
+      }),
+    ),
+    topUtilized: v.array(
+      v.object({
+        id: v.string(),
+        name: v.string(),
+        type: v.string(),
+        capacity: v.number(),
+        occupied: v.number(),
+        utilizationPercentage: v.number(),
+        path: v.string(),
+      }),
+    ),
+    underutilized: v.array(
+      v.object({
+        id: v.string(),
+        name: v.string(),
+        type: v.string(),
+        capacity: v.number(),
+        occupied: v.number(),
+        utilizationPercentage: v.number(),
+        path: v.string(),
+      }),
+    ),
+    atCapacity: v.array(
+      v.object({
+        id: v.string(),
+        name: v.string(),
+        type: v.string(),
+        capacity: v.number(),
+        occupied: v.number(),
+        path: v.string(),
+      }),
+    ),
+    generatedAt: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "locations.read");
+
+    const now = Date.now();
+
+    const allLocations = await ctx.db
+      .query("locations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    const allCollections = await ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) =>
+        q.and(
+          q.neq(q.field("currentLocationId"), undefined),
+          q.neq(q.field("status"), "deaccessioned"),
+        ),
+      )
+      .collect();
+
+    const occupancyMap = new Map<string, number>();
+    for (const collection of allCollections) {
+      if (collection.currentLocationId) {
+        const locationId = collection.currentLocationId;
+        occupancyMap.set(locationId, (occupancyMap.get(locationId) ?? 0) + 1);
+      }
+    }
+
+    const locationMap = new Map(allLocations.map((loc) => [loc._id, loc]));
+
+    function getLocationPath(locationId: Id<"locations">): string {
+      const parts: string[] = [];
+      let currentId: Id<"locations"> | undefined = locationId;
+
+      while (currentId) {
+        const location = locationMap.get(currentId);
+        if (!location) break;
+        parts.unshift(location.name);
+        currentId = location.parentLocationId;
+      }
+
+      return parts.join(" > ");
+    }
+
+    const locationsWithCapacity = allLocations.filter(
+      (loc) => loc.capacity != null && loc.capacity > 0,
+    );
+
+    const totalCapacity = locationsWithCapacity.reduce(
+      (sum, loc) => sum + (loc.capacity ?? 0),
+      0,
+    );
+
+    const totalOccupied = locationsWithCapacity.reduce(
+      (sum, loc) => sum + (occupancyMap.get(loc._id) ?? 0),
+      0,
+    );
+
+    const utilizationPercentage =
+      totalCapacity > 0 ? Math.round((totalOccupied / totalCapacity) * 100) : 0;
+
+    const byTypeMap = new Map<
+      string,
+      {
+        count: number;
+        withCapacity: number;
+        totalCapacity: number;
+        totalOccupied: number;
+      }
+    >();
+
+    for (const loc of allLocations) {
+      const existing = byTypeMap.get(loc.type) ?? {
+        count: 0,
+        withCapacity: 0,
+        totalCapacity: 0,
+        totalOccupied: 0,
+      };
+      existing.count++;
+      if (loc.capacity != null && loc.capacity > 0) {
+        existing.withCapacity++;
+        existing.totalCapacity += loc.capacity;
+        existing.totalOccupied += occupancyMap.get(loc._id) ?? 0;
+      }
+      byTypeMap.set(loc.type, existing);
+    }
+
+    const byType = Array.from(byTypeMap.entries())
+      .map(([type, stats]) => ({
+        type,
+        ...stats,
+        utilizationPercentage:
+          stats.totalCapacity > 0
+            ? Math.round((stats.totalOccupied / stats.totalCapacity) * 100)
+            : 0,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    const locationStats = locationsWithCapacity.map((loc) => {
+      const occupied = occupancyMap.get(loc._id) ?? 0;
+      const capacity = loc.capacity ?? 1;
+      return {
+        id: loc._id,
+        name: loc.name,
+        type: loc.type,
+        capacity,
+        occupied,
+        utilizationPercentage: Math.round((occupied / capacity) * 100),
+        path: getLocationPath(loc._id),
+      };
+    });
+
+    const topUtilized = [...locationStats]
+      .filter((loc) => loc.utilizationPercentage < 100)
+      .sort((a, b) => b.utilizationPercentage - a.utilizationPercentage)
+      .slice(0, 10);
+
+    const underutilized = [...locationStats]
+      .filter((loc) => loc.utilizationPercentage < 50 && loc.capacity >= 5)
+      .sort((a, b) => a.utilizationPercentage - b.utilizationPercentage)
+      .slice(0, 10);
+
+    const atCapacity = locationStats
+      .filter((loc) => loc.occupied >= loc.capacity)
+      .slice(0, 10)
+      .map((loc) => ({
+        id: loc.id,
+        name: loc.name,
+        type: loc.type,
+        capacity: loc.capacity,
+        occupied: loc.occupied,
+        path: loc.path,
+      }));
+
+    return {
+      summary: {
+        totalLocations: allLocations.length,
+        locationsWithCapacity: locationsWithCapacity.length,
+        totalCapacity,
+        totalOccupied,
+        utilizationPercentage,
+      },
+      byType,
+      topUtilized,
+      underutilized,
+      atCapacity,
+      generatedAt: now,
+    };
+  },
+});
+
 export const getOperationalKpis = query({
   args: {
     organizationId: v.id("organizations"),

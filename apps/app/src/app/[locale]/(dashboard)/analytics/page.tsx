@@ -11,6 +11,7 @@ import { ComplianceReportCard } from "./_components/compliance-report-card";
 import { ExhibitionPipelineCard } from "./_components/exhibition-pipeline-card";
 import { InventoryValuationCard } from "./_components/inventory-valuation-card";
 import { LoanCalendarCard } from "./_components/loan-calendar-card";
+import { LocationUtilizationCard } from "./_components/location-utilization-card";
 
 export default function AnalyticsPage() {
   const { currentOrganizationId } = useOrganization();
@@ -29,9 +30,16 @@ export default function AnalyticsPage() {
       : "skip",
   );
 
+  const locationUtilization = useQuery(
+    api.dashboard.getLocationUtilization,
+    currentOrganizationId
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
+  );
+
   if (!currentOrganizationId) return null;
 
-  const isLoading = !kpis || !compliance;
+  const isLoading = !kpis || !compliance || !locationUtilization;
 
   if (isLoading) {
     return (
@@ -48,9 +56,12 @@ export default function AnalyticsPage() {
           <Skeleton className="h-[400px] w-full rounded-xl bg-muted/20" />
           <Skeleton className="h-[400px] w-full rounded-xl bg-muted/20" />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Skeleton className="h-[400px] w-full rounded-xl bg-muted/20" />
           <Skeleton className="h-[400px] w-full rounded-xl bg-muted/20" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-[350px] w-full lg:col-span-2 rounded-xl bg-muted/20" />
         </div>
       </div>
     );
@@ -65,8 +76,8 @@ export default function AnalyticsPage() {
             Analytics & Compliance
           </h2>
           <p className="text-sm text-muted-foreground">
-            Real-time insights into collection assets, loans, exhibitions, and
-            compliance.
+            Real-time insights into collection assets, loans, exhibitions,
+            storage, and compliance.
           </p>
         </div>
         <div className="text-xs text-muted-foreground font-mono bg-muted/30 px-2 py-1 rounded border border-border">
@@ -88,6 +99,10 @@ export default function AnalyticsPage() {
           }}
         />
         <AuditTrailCard data={compliance.auditTrail} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <LocationUtilizationCard data={locationUtilization} />
       </div>
     </div>
   );
