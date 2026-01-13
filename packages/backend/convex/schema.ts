@@ -989,7 +989,8 @@ export default defineSchema({
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_type", ["type"])
     .index("by_organization_and_type", ["organizationId", "type"])
-    .index("by_account", ["accountId"]),
+    .index("by_account", ["accountId"])
+    .index("by_organization_and_endDate", ["organizationId", "endDate"]),
 
   // Items included in loans
   loanItems: defineTable({
@@ -1124,7 +1125,8 @@ export default defineSchema({
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
     .index("by_startDate", ["startDate"])
-    .index("by_organization_and_status", ["organizationId", "status"]),
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_organization_and_startDate", ["organizationId", "startDate"]),
 
   // Activity tracking
   auditLog: defineTable({

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BarChart3,
   BookCopy,
   BookUser,
   Building2,
@@ -271,6 +272,7 @@ export function AppSidebar({
   ];
 
   const navManagement = [
+    { title: "Analytics", url: "/analytics", icon: BarChart3 },
     { title: "Donors & Sources", url: "/accounts", icon: Users },
     { title: "Loans & Transport", url: "/loans", icon: Truck },
     { title: "Locations", url: "/locations", icon: MapPin },
