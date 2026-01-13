@@ -87,6 +87,7 @@ export default function PublicObjectPage() {
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {sortedImages.map((img, index) => (
                   <button
+                    type="button"
                     key={img._id}
                     onClick={() => setSelectedImageIndex(index)}
                     className={`relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-colors ${
@@ -251,6 +252,56 @@ export default function PublicObjectPage() {
                 <p className="text-white/80 leading-relaxed whitespace-pre-wrap">
                   {object.exhibitionHistory}
                 </p>
+              </div>
+            )}
+
+            {object.valuation && (
+              <div className="rounded-lg bg-white/5 border border-white/10 p-4">
+                <h2 className="text-xs uppercase tracking-wider text-white/40 mb-3">
+                  Valuation
+                </h2>
+                <div className="grid grid-cols-2 gap-4">
+                  {object.valuation.appraisedValue && (
+                    <div>
+                      <dt className="text-xs text-white/40 mb-1">
+                        Appraised Value
+                      </dt>
+                      <dd className="text-white font-medium">
+                        ${object.valuation.appraisedValue.toLocaleString()}
+                      </dd>
+                    </div>
+                  )}
+                  {object.valuation.replacementValue && (
+                    <div>
+                      <dt className="text-xs text-white/40 mb-1">
+                        Replacement Value
+                      </dt>
+                      <dd className="text-white font-medium">
+                        ${object.valuation.replacementValue.toLocaleString()}
+                      </dd>
+                    </div>
+                  )}
+                  {object.valuation.appraiser && (
+                    <div>
+                      <dt className="text-xs text-white/40 mb-1">Appraiser</dt>
+                      <dd className="text-white">
+                        {object.valuation.appraiser}
+                      </dd>
+                    </div>
+                  )}
+                  {object.valuation.lastAppraisalDate && (
+                    <div>
+                      <dt className="text-xs text-white/40 mb-1">
+                        Last Appraisal
+                      </dt>
+                      <dd className="text-white">
+                        {new Date(
+                          object.valuation.lastAppraisalDate,
+                        ).toLocaleDateString()}
+                      </dd>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

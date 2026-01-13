@@ -1,11 +1,11 @@
 "use client";
 
-import { DeaccessionDialog } from "@/components/deaccession-dialog";
+import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
 import { ConditionCombobox } from "@/components/condition-combobox";
+import { DeaccessionDialog } from "@/components/deaccession-dialog";
 import { DonorCombobox } from "@/components/donor-combobox";
 import { LocationSelector } from "@/components/location-selector";
 import { MaterialsCombobox } from "@/components/materials-combobox";
-import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
 import { ObjectCombobox } from "@/components/object-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
@@ -14,10 +14,12 @@ import { TypeCombobox } from "@/components/type-combobox";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { Checkbox } from "@v1/ui/checkbox";
 import { DatePicker } from "@v1/ui/date-picker";
-import { NaturalLanguageDatePicker } from "@v1/ui/natural-language-date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
+import { NaturalLanguageDatePicker } from "@v1/ui/natural-language-date-picker";
+import { Switch } from "@v1/ui/switch";
 import {
   TagsInput,
   TagsInputInput,
@@ -25,9 +27,7 @@ import {
   TagsInputLabel,
   TagsInputList,
 } from "@v1/ui/tags-input";
-import { Switch } from "@v1/ui/switch";
 import { Textarea } from "@v1/ui/textarea";
-import { Checkbox } from "@v1/ui/checkbox";
 import { useUploadFiles } from "@xixixao/uploadstuff/react";
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -83,6 +83,8 @@ interface CollectionFormData {
   ownershipHistory?: OwnershipEntry[];
   isPubliclyVisible?: boolean;
   isHighResDownloadable?: boolean;
+  isSearchable?: boolean;
+  isValuationVisible?: boolean;
 }
 
 export default function CollectionEditPage() {
@@ -359,6 +361,8 @@ export default function CollectionEditPage() {
         ownershipHistory: collection.ownershipHistory || [],
         isPubliclyVisible: collection.isPubliclyVisible ?? false,
         isHighResDownloadable: collection.isHighResDownloadable ?? false,
+        isSearchable: collection.isSearchable ?? true,
+        isValuationVisible: collection.isValuationVisible ?? false,
       });
     }
   }, [collection]);
@@ -1246,6 +1250,38 @@ export default function CollectionEditPage() {
                         checked={formData.isHighResDownloadable ?? false}
                         onCheckedChange={(checked) =>
                           updateField("isHighResDownloadable", checked)
+                        }
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="isSearchable">Searchable</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Include in public search results
+                        </p>
+                      </div>
+                      <Switch
+                        id="isSearchable"
+                        checked={formData.isSearchable ?? true}
+                        onCheckedChange={(checked) =>
+                          updateField("isSearchable", checked)
+                        }
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="isValuationVisible">
+                          Valuation Visibility
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Show valuation information on public page
+                        </p>
+                      </div>
+                      <Switch
+                        id="isValuationVisible"
+                        checked={formData.isValuationVisible ?? false}
+                        onCheckedChange={(checked) =>
+                          updateField("isValuationVisible", checked)
                         }
                       />
                     </div>

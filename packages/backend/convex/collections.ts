@@ -134,6 +134,8 @@ export const create = mutation({
     legalRestrictions: v.optional(v.boolean()),
     isPubliclyVisible: v.optional(v.boolean()),
     isHighResDownloadable: v.optional(v.boolean()),
+    isSearchable: v.optional(v.boolean()),
+    isValuationVisible: v.optional(v.boolean()),
     displayStatus: v.optional(v.string()),
     collectionType: v.optional(
       v.union(
@@ -221,6 +223,8 @@ export const create = mutation({
       legalRestrictions: args.legalRestrictions,
       isPubliclyVisible: args.isPubliclyVisible,
       isHighResDownloadable: args.isHighResDownloadable,
+      isSearchable: args.isSearchable,
+      isValuationVisible: args.isValuationVisible,
       displayStatus: args.displayStatus,
       collectionType: args.collectionType,
       status: "active",
@@ -326,6 +330,8 @@ export const get = query({
       legalRestrictions: v.optional(v.boolean()),
       isPubliclyVisible: v.optional(v.boolean()),
       isHighResDownloadable: v.optional(v.boolean()),
+      isSearchable: v.optional(v.boolean()),
+      isValuationVisible: v.optional(v.boolean()),
       displayStatus: v.optional(v.string()),
       status: v.union(
         v.literal("active"),
@@ -1134,6 +1140,8 @@ export const update = mutation({
     legalRestrictions: v.optional(v.boolean()),
     isPubliclyVisible: v.optional(v.boolean()),
     isHighResDownloadable: v.optional(v.boolean()),
+    isSearchable: v.optional(v.boolean()),
+    isValuationVisible: v.optional(v.boolean()),
     displayStatus: v.optional(v.string()),
   },
   returns: v.null(),
@@ -1218,6 +1226,10 @@ export const update = mutation({
       updates.isPubliclyVisible = args.isPubliclyVisible;
     if (args.isHighResDownloadable !== undefined)
       updates.isHighResDownloadable = args.isHighResDownloadable;
+    if (args.isSearchable !== undefined)
+      updates.isSearchable = args.isSearchable;
+    if (args.isValuationVisible !== undefined)
+      updates.isValuationVisible = args.isValuationVisible;
     if (args.displayStatus !== undefined)
       updates.displayStatus = args.displayStatus;
 
@@ -2127,9 +2139,10 @@ export const listPublic = query({
       const searchLower = args.search.toLowerCase();
       filtered = filtered.filter(
         (c) =>
-          c.title.toLowerCase().includes(searchLower) ||
-          c.creator?.toLowerCase().includes(searchLower) ||
-          c.accessionNumber.toLowerCase().includes(searchLower),
+          c.isSearchable !== false &&
+          (c.title.toLowerCase().includes(searchLower) ||
+            c.creator?.toLowerCase().includes(searchLower) ||
+            c.accessionNumber.toLowerCase().includes(searchLower)),
       );
     }
 
@@ -2214,6 +2227,14 @@ export const getPublic = query({
       creditLine: v.optional(v.string()),
       tags: v.optional(v.array(v.string())),
       isHighResDownloadable: v.optional(v.boolean()),
+      valuation: v.optional(
+        v.object({
+          appraisedValue: v.optional(v.number()),
+          replacementValue: v.optional(v.number()),
+          lastAppraisalDate: v.optional(v.number()),
+          appraiser: v.optional(v.string()),
+        }),
+      ),
       images: v.array(
         v.object({
           _id: v.id("mediaFiles"),
@@ -2271,6 +2292,31 @@ export const getPublic = query({
       }),
     );
 
+    let valuation:
+      | {
+          appraisedValue?: number;
+          replacementValue?: number;
+          lastAppraisalDate?: number;
+          appraiser?: string;
+        }
+      | undefined;
+
+    if (collection.isValuationVisible) {
+      const fineArtDetails = await ctx.db
+        .query("fineArtDetails")
+        .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
+        .unique();
+
+      if (fineArtDetails) {
+        valuation = {
+          appraisedValue: fineArtDetails.appraisedValue,
+          replacementValue: fineArtDetails.replacementValue,
+          lastAppraisalDate: fineArtDetails.lastAppraisalDate,
+          appraiser: fineArtDetails.appraiser,
+        };
+      }
+    }
+
     return {
       _id: collection._id,
       accessionNumber: collection.accessionNumber,
@@ -2292,6 +2338,7 @@ export const getPublic = query({
       creditLine: collection.creditLine,
       tags: collection.tags,
       isHighResDownloadable: collection.isHighResDownloadable,
+      valuation,
       images: images.filter((i): i is NonNullable<typeof i> => i !== null),
       organizationName: organization.name,
     };
@@ -2343,5 +2390,49 @@ export const getPublicFilters = query({
       cultures: cultures.sort(),
       periods: periods.sort(),
     };
+  },
+});
+
+export const listPublicForSitemap = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      organizationSlug: v.string(),
+      accessionNumber: v.string(),
+      title: v.string(),
+      lastModifiedAt: v.optional(v.number()),
+    }),
+  ),
+  handler: async (ctx) => {
+    const organizations = await ctx.db.query("organizations").collect();
+
+    const results: {
+      organizationSlug: string;
+      accessionNumber: string;
+      title: string;
+      lastModifiedAt?: number;
+    }[] = [];
+
+    for (const org of organizations) {
+      const collections = await ctx.db
+        .query("collections")
+        .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+        .collect();
+
+      const publicCollections = collections.filter(
+        (c) => c.isPubliclyVisible === true && c.status === "active",
+      );
+
+      for (const c of publicCollections) {
+        results.push({
+          organizationSlug: org.slug,
+          accessionNumber: c.accessionNumber,
+          title: c.title,
+          lastModifiedAt: c.lastModifiedAt,
+        });
+      }
+    }
+
+    return results;
   },
 });

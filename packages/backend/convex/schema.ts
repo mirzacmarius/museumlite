@@ -231,6 +231,8 @@ export default defineSchema({
     legalRestrictions: v.optional(v.boolean()),
     isPubliclyVisible: v.optional(v.boolean()), // For "Public View: Active" status
     isHighResDownloadable: v.optional(v.boolean()), // For high-res download permission
+    isSearchable: v.optional(v.boolean()), // Whether object appears in public search results
+    isValuationVisible: v.optional(v.boolean()), // Whether valuation info is shown publicly
     status: v.union(
       v.literal("active"),
       v.literal("loaned"),
