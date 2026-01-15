@@ -14,30 +14,35 @@ const I18nMiddleware = createI18nMiddleware({
 
 const isSignInPage = createRouteMatcher(["/login"]);
 
-export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
-  const isAuthenticated = await convexAuth.isAuthenticated();
-  const isSignIn = isSignInPage(request);
-  if (isSignIn && isAuthenticated) {
-    console.log("redirecting to /", {
+export default convexAuthNextjsMiddleware(
+  async (request, { convexAuth }) => {
+    const isAuthenticated = await convexAuth.isAuthenticated();
+    const isSignIn = isSignInPage(request);
+    if (isSignIn && isAuthenticated) {
+      console.log("redirecting to /", {
+        isSignIn,
+        isAuthenticated,
+      });
+      return nextjsMiddlewareRedirect(request, "/");
+    }
+    if (!isSignIn && !isAuthenticated) {
+      console.log("redirecting to /login", {
+        isSignIn,
+        isAuthenticated,
+      });
+      return nextjsMiddlewareRedirect(request, "/login");
+    }
+    console.log("no redirect", {
       isSignIn,
       isAuthenticated,
     });
-    return nextjsMiddlewareRedirect(request, "/");
-  }
-  if (!isSignIn && !isAuthenticated) {
-    console.log("redirecting to /login", {
-      isSignIn,
-      isAuthenticated,
-    });
-    return nextjsMiddlewareRedirect(request, "/login");
-  }
-  console.log("no redirect", {
-    isSignIn,
-    isAuthenticated,
-  });
 
-  return I18nMiddleware(request);
-});
+    return I18nMiddleware(request);
+  },
+  {
+    convexUrl: process.env.NEXT_PUBLIC_CONVEX_URL,
+  },
+);
 
 export const config = {
   matcher: [
