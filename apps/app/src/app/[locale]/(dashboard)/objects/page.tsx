@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { BulkActionsBar } from "./_components/bulk-actions-bar";
 import { BulkAddToGroupDialog } from "./_components/bulk-add-to-group-dialog";
@@ -55,12 +55,12 @@ import { type ViewMode, ViewToggle } from "./_components/view-toggle";
 export default function CollectionsPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
 
-  const exportData = useQuery(
-    api.imports.exportObjects,
-    currentOrganizationId
-      ? { organizationId: currentOrganizationId as Id<"organizations"> }
-      : "skip",
-  );
+  const exportObjects = useMutation(api.imports.exportObjects);
+
+  const handleExport = useCallback(async () => {
+    if (!currentOrganizationId) return [];
+    return exportObjects({ organizationId: currentOrganizationId });
+  }, [currentOrganizationId, exportObjects]);
 
   if (isLoading) {
     return (
@@ -124,7 +124,7 @@ export default function CollectionsPage() {
             </div>
             <div className="flex items-center gap-2">
               <PermissionGate permission="collections.read">
-                <ExportCSVButton data={exportData} filename="objects" />
+                <ExportCSVButton onExport={handleExport} filename="objects" />
               </PermissionGate>
               <PermissionGate permission="collections.create">
                 <Button asChild>

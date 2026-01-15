@@ -1,8 +1,10 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Skeleton } from "@v1/ui/skeleton";
 import { useQuery } from "convex/react";
 import { BarChart3 } from "lucide-react";
@@ -16,31 +18,47 @@ import { ReportExportsCard } from "./_components/report-exports-card";
 
 export default function AnalyticsPage() {
   const { currentOrganizationId } = useOrganization();
+  const { hasFeature } = useFeatureAccess();
+  const hasReporting = hasFeature("reporting");
+  const hasCompliance = hasFeature("compliance");
 
   const kpis = useQuery(
     api.dashboard.getOperationalKpis,
-    currentOrganizationId
+    currentOrganizationId && hasReporting
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
 
   const compliance = useQuery(
     api.dashboard.getComplianceReport,
-    currentOrganizationId
+    currentOrganizationId && hasCompliance
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
 
   const locationUtilization = useQuery(
     api.dashboard.getLocationUtilization,
-    currentOrganizationId
+    currentOrganizationId && hasReporting
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
 
   if (!currentOrganizationId) return null;
 
-  const isLoading = !kpis || !compliance || !locationUtilization;
+  if (!hasReporting) {
+    return (
+      <FeatureGuard
+        featureName="Analytics & Reporting"
+        isLocked={true}
+        tierNeeded="pro"
+      >
+        <div className="p-6" />
+      </FeatureGuard>
+    );
+  }
+
+  const isLoading =
+    !kpis || !locationUtilization || (hasCompliance && !compliance);
 
   if (isLoading) {
     return (
@@ -68,49 +86,63 @@ export default function AnalyticsPage() {
     );
   }
 
+  if (!kpis || !locationUtilization) {
+    return null;
+  }
+
+  const complianceData = hasCompliance ? compliance : undefined;
+
   return (
-    <div className="flex flex-col h-full space-y-6 p-6 overflow-y-auto">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-indigo-400" />
-            Analytics & Compliance
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Real-time insights into collection assets, loans, exhibitions,
-            storage, and compliance.
-          </p>
+    <FeatureGuard
+      featureName="Analytics & Reporting"
+      isLocked={!hasFeature("reporting")}
+      tierNeeded="pro"
+    >
+      <div className="flex flex-col h-full space-y-6 p-6 overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+              <BarChart3 className="w-6 h-6 text-indigo-400" />
+              Analytics & Compliance
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Real-time insights into collection assets, loans, exhibitions,
+              storage, and compliance.
+            </p>
+          </div>
+          <div className="text-xs text-muted-foreground font-mono bg-muted/30 px-2 py-1 rounded border border-border">
+            Updated: {new Date(kpis.generatedAt).toLocaleTimeString()}
+          </div>
         </div>
-        <div className="text-xs text-muted-foreground font-mono bg-muted/30 px-2 py-1 rounded border border-border">
-          Updated: {new Date(kpis.generatedAt).toLocaleTimeString()}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          <InventoryValuationCard data={kpis.inventory} />
+          <LoanCalendarCard data={kpis.loans} />
+          <ExhibitionPipelineCard data={kpis.exhibitions} />
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        <InventoryValuationCard data={kpis.inventory} />
-        <LoanCalendarCard data={kpis.loans} />
-        <ExhibitionPipelineCard data={kpis.exhibitions} />
-      </div>
+        {complianceData && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ComplianceReportCard
+              data={{
+                accessions: complianceData.accessions,
+                deaccessions: complianceData.deaccessions,
+              }}
+            />
+            <AuditTrailCard data={complianceData.auditTrail} />
+          </div>
+        )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ComplianceReportCard
-          data={{
-            accessions: compliance.accessions,
-            deaccessions: compliance.deaccessions,
-          }}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <LocationUtilizationCard data={locationUtilization} />
+        </div>
+
+        <ReportExportsCard
+          kpis={kpis}
+          compliance={complianceData}
+          locationUtilization={locationUtilization}
         />
-        <AuditTrailCard data={compliance.auditTrail} />
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <LocationUtilizationCard data={locationUtilization} />
-      </div>
-
-      <ReportExportsCard
-        kpis={kpis}
-        compliance={compliance}
-        locationUtilization={locationUtilization}
-      />
-    </div>
+    </FeatureGuard>
   );
 }

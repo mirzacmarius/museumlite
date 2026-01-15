@@ -1385,6 +1385,12 @@ export default defineSchema({
     .index("by_organization", ["organizationId"])
     .index("by_status", ["status"]),
 
+  exportUsage: defineTable({
+    organizationId: v.id("organizations"),
+    periodStart: v.number(),
+    count: v.number(),
+  }).index("by_organization_and_period", ["organizationId", "periodStart"]),
+
   mediaImportJobData: defineTable({
     jobId: v.id("importJobs"),
     mappingType: v.union(v.literal("csv"), v.literal("filename")),
@@ -2539,4 +2545,44 @@ export default defineSchema({
     completedAt: v.optional(v.number()),
     sortOrder: v.number(),
   }).index("by_task", ["taskId"]),
+
+  // ============================================
+  // INTEGRATION SUBSCRIPTIONS
+  // ============================================
+
+  // Integration Subscriptions - Tracks paid integration subscriptions per organization
+  integrationSubscriptions: defineTable({
+    organizationId: v.id("organizations"),
+    integrationId: v.string(), // e.g., "library"
+
+    // Polar subscription details
+    productId: v.string(), // Polar product ID
+    subscriptionId: v.string(), // Polar subscription ID
+    customerId: v.string(), // Polar customer ID
+
+    // Subscription status
+    status: v.union(
+      v.literal("active"),
+      v.literal("canceled"),
+      v.literal("past_due"),
+      v.literal("unpaid"),
+      v.literal("incomplete"),
+    ),
+    cancelAtPeriodEnd: v.boolean(),
+    currentPeriodEnd: v.number(), // Unix timestamp
+
+    // Metadata from checkout
+    metadata: v.optional(v.any()),
+
+    // Audit
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_integration", [
+      "organizationId",
+      "integrationId",
+    ])
+    .index("by_subscription", ["subscriptionId"])
+    .index("by_status", ["status"]),
 });

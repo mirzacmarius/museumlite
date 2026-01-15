@@ -1,7 +1,9 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+import { mutation, query } from "./_generated/server";
+import { requireModuleEnabled } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
 const preservationMethodValidator = v.union(
@@ -21,6 +23,13 @@ const sexValidator = v.union(
   v.literal("female"),
   v.literal("unknown"),
 );
+
+async function requireNaturalHistoryModule(
+  ctx: any,
+  organizationId: Id<"organizations">,
+) {
+  await requireModuleEnabled(ctx, organizationId, "natural_history");
+}
 
 export const get = query({
   args: {
@@ -75,6 +84,7 @@ export const get = query({
       return null;
     }
 
+    await requireNaturalHistoryModule(ctx, collection.organizationId);
     await requirePermission(ctx, collection.organizationId, "collections.view");
 
     const details = await ctx.db
@@ -201,6 +211,7 @@ export const remove = mutation({
       throw new Error("Natural history details not found");
     }
 
+    await requireNaturalHistoryModule(ctx, details.organizationId);
     await requirePermission(ctx, details.organizationId, "collections.delete");
 
     await ctx.db.delete(args.naturalHistoryDetailsId);
@@ -245,7 +256,7 @@ export const searchByTaxonomy = query({
 
     await requirePermission(ctx, args.organizationId, "collections.view");
 
-    let query = ctx.db
+    const query = ctx.db
       .query("naturalHistoryDetails")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),

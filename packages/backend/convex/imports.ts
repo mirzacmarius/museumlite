@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
+import { enforceExportQuota, recordExportUsage } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
 const accessionMethodValidator = v.union(
@@ -301,7 +302,7 @@ export const cancelImportJob = mutation({
   },
 });
 
-export const exportAccessions = query({
+export const exportAccessions = mutation({
   args: {
     organizationId: v.id("organizations"),
     status: v.optional(
@@ -333,6 +334,8 @@ export const exportAccessions = query({
 
     await requirePermission(ctx, args.organizationId, "collections.read");
 
+    await enforceExportQuota(ctx, args.organizationId);
+
     const accessionsQuery = ctx.db
       .query("accessions")
       .withIndex("by_organization", (q) =>
@@ -345,7 +348,7 @@ export const exportAccessions = query({
       ? accessions.filter((a) => a.status === args.status)
       : accessions;
 
-    return filtered.map((a) => ({
+    const exportRows = filtered.map((a) => ({
       accessionNumber: a.accessionNumber,
       dateReceived: a.dateReceived,
       source: a.source,
@@ -355,10 +358,14 @@ export const exportAccessions = query({
       status: a.status,
       createdAt: a._creationTime,
     }));
+
+    await recordExportUsage(ctx, args.organizationId);
+
+    return exportRows;
   },
 });
 
-export const exportLocations = query({
+export const exportLocations = mutation({
   args: {
     organizationId: v.id("organizations"),
   },
@@ -381,6 +388,8 @@ export const exportLocations = query({
 
     await requirePermission(ctx, args.organizationId, "locations.read");
 
+    await enforceExportQuota(ctx, args.organizationId);
+
     const locations = await ctx.db
       .query("locations")
       .withIndex("by_organization", (q) =>
@@ -390,7 +399,7 @@ export const exportLocations = query({
 
     const locationMap = new Map(locations.map((l) => [l._id, l.name]));
 
-    return locations.map((l) => ({
+    const exportRows = locations.map((l) => ({
       name: l.name,
       type: l.type,
       parentLocation: l.parentLocationId
@@ -401,10 +410,14 @@ export const exportLocations = query({
       isActive: l.isActive,
       notes: l.notes,
     }));
+
+    await recordExportUsage(ctx, args.organizationId);
+
+    return exportRows;
   },
 });
 
-export const exportAccounts = query({
+export const exportAccounts = mutation({
   args: {
     organizationId: v.id("organizations"),
     accountType: v.optional(
@@ -444,6 +457,8 @@ export const exportAccounts = query({
 
     await requirePermission(ctx, args.organizationId, "loans.read");
 
+    await enforceExportQuota(ctx, args.organizationId);
+
     const accounts = await ctx.db
       .query("accounts")
       .withIndex("by_organization", (q) =>
@@ -455,7 +470,7 @@ export const exportAccounts = query({
       ? accounts.filter((a) => a.accountType === args.accountType)
       : accounts;
 
-    return filtered.map((a) => ({
+    const exportRows = filtered.map((a) => ({
       accountNumber: a.accountNumber,
       accountType: a.accountType,
       businessName: a.businessName,
@@ -472,10 +487,14 @@ export const exportAccounts = query({
       notes: a.notes,
       createdAt: a._creationTime,
     }));
+
+    await recordExportUsage(ctx, args.organizationId);
+
+    return exportRows;
   },
 });
 
-export const exportObjects = query({
+export const exportObjects = mutation({
   args: {
     organizationId: v.id("organizations"),
     status: v.optional(
@@ -518,6 +537,8 @@ export const exportObjects = query({
 
     await requirePermission(ctx, args.organizationId, "collections.read");
 
+    await enforceExportQuota(ctx, args.organizationId);
+
     const objects = await ctx.db
       .query("collections")
       .withIndex("by_organization", (q) =>
@@ -545,7 +566,7 @@ export const exportObjects = query({
       .collect();
     const groupMap = new Map(groups.map((g) => [g._id, g.name]));
 
-    return filtered.map((o) => ({
+    const exportRows = filtered.map((o) => ({
       accessionNumber: o.accessionNumber,
       title: o.title,
       alternativeTitle: o.alternativeTitle,
@@ -570,6 +591,10 @@ export const exportObjects = query({
       status: o.status,
       createdAt: o._creationTime,
     }));
+
+    await recordExportUsage(ctx, args.organizationId);
+
+    return exportRows;
   },
 });
 
@@ -807,7 +832,7 @@ export const importAccountsBatch = mutation({
   },
 });
 
-export const exportLoans = query({
+export const exportLoans = mutation({
   args: {
     organizationId: v.id("organizations"),
     status: v.optional(
@@ -844,6 +869,8 @@ export const exportLoans = query({
     }
 
     await requirePermission(ctx, args.organizationId, "loans.read");
+
+    await enforceExportQuota(ctx, args.organizationId);
 
     const loans = await ctx.db
       .query("loans")
@@ -883,6 +910,8 @@ export const exportLoans = query({
         };
       }),
     );
+
+    await recordExportUsage(ctx, args.organizationId);
 
     return loansWithCounts;
   },

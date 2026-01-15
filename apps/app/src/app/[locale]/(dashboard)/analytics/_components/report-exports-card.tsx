@@ -61,7 +61,7 @@ interface ReportExportsCardProps {
     };
     generatedAt: number;
   };
-  compliance: {
+  compliance?: {
     accessions: {
       total: number;
       pending: number;
@@ -181,6 +181,7 @@ export function ReportExportsCard({
   locationUtilization,
 }: ReportExportsCardProps) {
   const [exporting, setExporting] = useState<string | null>(null);
+  const hasCompliance = Boolean(compliance);
 
   const exportInventoryValuation = useCallback(() => {
     setExporting("inventory");
@@ -265,6 +266,8 @@ export function ReportExportsCard({
   }, [kpis]);
 
   const exportComplianceReport = useCallback(() => {
+    if (!compliance) return;
+
     setExporting("compliance");
     try {
       const rows = [
@@ -417,6 +420,17 @@ export function ReportExportsCard({
   const exportBoardReport = useCallback(() => {
     setExporting("board");
     try {
+      const complianceRows = compliance
+        ? [
+            ["ACCESSION/DEACCESSION ACTIVITY"],
+            ["Total Accessions", compliance.accessions.total],
+            ["Pending Approval", compliance.accessions.pending],
+            ["Total Deaccessions", compliance.deaccessions.total],
+            ["Pending Approval", compliance.deaccessions.pending],
+            [],
+          ]
+        : [["ACCESSION/DEACCESSION ACTIVITY"], ["Upgrade to Enterprise"], []];
+
       const rows = [
         ["Board Summary Report"],
         [`Generated: ${formatDate(kpis.generatedAt)}`],
@@ -452,12 +466,7 @@ export function ReportExportsCard({
         ["Active", kpis.exhibitions.active],
         ["Closed", kpis.exhibitions.closed],
         [],
-        ["ACCESSION/DEACCESSION ACTIVITY"],
-        ["Total Accessions", compliance.accessions.total],
-        ["Pending Approval", compliance.accessions.pending],
-        ["Total Deaccessions", compliance.deaccessions.total],
-        ["Pending Approval", compliance.deaccessions.pending],
-        [],
+        ...complianceRows,
         ["STORAGE UTILIZATION"],
         ["Total Capacity", locationUtilization.summary.totalCapacity],
         ["Currently Occupied", locationUtilization.summary.totalOccupied],

@@ -2,9 +2,11 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Input } from "@v1/ui/input";
 import {
   Select,
@@ -36,6 +38,7 @@ type ExhibitionStatus = "all" | "current" | "upcoming" | "past";
 
 export default function ExhibitionsPage() {
   const { currentOrganizationId, isLoading } = useOrganization();
+  const { hasFeature } = useFeatureAccess();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ExhibitionStatus>("all");
   const [showFilters, setShowFilters] = useState(false);
@@ -100,99 +103,105 @@ export default function ExhibitionsPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-        <div className="flex w-full flex-col rounded-lg border border-border bg-muted/20">
-          <div className="flex w-full items-center justify-between rounded-lg p-6">
-            <div className="flex flex-col gap-2">
-              <h2 className="text-xl font-medium text-foreground">
-                Exhibitions
-              </h2>
-              <p className="text-sm font-normal text-muted-foreground">
-                Manage your exhibition history and planning
-              </p>
-            </div>
-            <PermissionGate permission="collections.update">
-              <Button
-                asChild
-                className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-100 dark:text-zinc-900"
-              >
-                <Link href="/exhibitions/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Exhibition
-                </Link>
-              </Button>
-            </PermissionGate>
-          </div>
-          <div className="flex w-full px-6">
-            <div className="w-full border-b border-border" />
-          </div>
-
-          <div className="border-b border-border px-6 py-4">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by title, location, or notes..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 bg-muted/50 border-border text-foreground/80 placeholder:text-muted-foreground focus-visible:ring-ring"
-                  />
-                </div>
-                <ExhibitionViewToggle
-                  value={viewMode}
-                  onChange={handleViewModeChange}
-                />
+    <FeatureGuard
+      featureName="Exhibitions"
+      isLocked={!hasFeature("exhibitions")}
+      tierNeeded="pro"
+    >
+      <div className="flex h-full w-full bg-background px-6">
+        <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+          <div className="flex w-full flex-col rounded-lg border border-border bg-muted/20">
+            <div className="flex w-full items-center justify-between rounded-lg p-6">
+              <div className="flex flex-col gap-2">
+                <h2 className="text-xl font-medium text-foreground">
+                  Exhibitions
+                </h2>
+                <p className="text-sm font-normal text-muted-foreground">
+                  Manage your exhibition history and planning
+                </p>
+              </div>
+              <PermissionGate permission="collections.update">
                 <Button
-                  variant={showFilters ? "default" : "outline"}
-                  onClick={() => setShowFilters(!showFilters)}
+                  asChild
+                  className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-100 dark:text-zinc-900"
                 >
-                  <Filter className="mr-2 h-4 w-4" />
-                  Filters
+                  <Link href="/exhibitions/new">
+                    <Plus className="mr-2 h-4 w-4" />
+                    New Exhibition
+                  </Link>
                 </Button>
-                {hasActiveFilters && (
-                  <Button variant="ghost" onClick={clearFilters}>
-                    <X className="mr-2 h-4 w-4" />
-                    Clear
+              </PermissionGate>
+            </div>
+            <div className="flex w-full px-6">
+              <div className="w-full border-b border-border" />
+            </div>
+
+            <div className="border-b border-border px-6 py-4">
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by title, location, or notes..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9 bg-muted/50 border-border text-foreground/80 placeholder:text-muted-foreground focus-visible:ring-ring"
+                    />
+                  </div>
+                  <ExhibitionViewToggle
+                    value={viewMode}
+                    onChange={handleViewModeChange}
+                  />
+                  <Button
+                    variant={showFilters ? "default" : "outline"}
+                    onClick={() => setShowFilters(!showFilters)}
+                  >
+                    <Filter className="mr-2 h-4 w-4" />
+                    Filters
                   </Button>
+                  {hasActiveFilters && (
+                    <Button variant="ghost" onClick={clearFilters}>
+                      <X className="mr-2 h-4 w-4" />
+                      Clear
+                    </Button>
+                  )}
+                </div>
+
+                {showFilters && (
+                  <div className="flex items-center gap-4 border-t border-border pt-4">
+                    <div className="w-48">
+                      <Select
+                        value={statusFilter}
+                        onValueChange={(value) =>
+                          setStatusFilter(value as ExhibitionStatus)
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="All statuses" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Exhibitions</SelectItem>
+                          <SelectItem value="current">Current</SelectItem>
+                          <SelectItem value="upcoming">Upcoming</SelectItem>
+                          <SelectItem value="past">Past</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 )}
               </div>
-
-              {showFilters && (
-                <div className="flex items-center gap-4 border-t border-border pt-4">
-                  <div className="w-48">
-                    <Select
-                      value={statusFilter}
-                      onValueChange={(value) =>
-                        setStatusFilter(value as ExhibitionStatus)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="All statuses" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Exhibitions</SelectItem>
-                        <SelectItem value="current">Current</SelectItem>
-                        <SelectItem value="upcoming">Upcoming</SelectItem>
-                        <SelectItem value="past">Past</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              )}
             </div>
-          </div>
 
-          <ExhibitionList
-            organizationId={currentOrganizationId}
-            searchQuery={searchQuery}
-            statusFilter={statusFilter}
-            viewMode={viewMode}
-          />
+            <ExhibitionList
+              organizationId={currentOrganizationId}
+              searchQuery={searchQuery}
+              statusFilter={statusFilter}
+              viewMode={viewMode}
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </FeatureGuard>
   );
 }
 

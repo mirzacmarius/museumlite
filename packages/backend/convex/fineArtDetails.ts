@@ -1,7 +1,9 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+import { mutation, query } from "./_generated/server";
+import { requireModuleEnabled } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
 const provenanceEntryValidator = v.object({
@@ -46,6 +48,13 @@ const displayStatusValidator = v.union(
   v.literal("conservation"),
 );
 
+async function requireFineArtModule(
+  ctx: any,
+  organizationId: Id<"organizations">,
+) {
+  await requireModuleEnabled(ctx, organizationId, "fine_art");
+}
+
 export const get = query({
   args: {
     collectionId: v.id("collections"),
@@ -82,6 +91,7 @@ export const get = query({
       return null;
     }
 
+    await requireFineArtModule(ctx, collection.organizationId);
     await requirePermission(ctx, collection.organizationId, "collections.view");
 
     const details = await ctx.db
@@ -122,6 +132,7 @@ export const upsert = mutation({
       throw new Error("Collection not found");
     }
 
+    await requireFineArtModule(ctx, collection.organizationId);
     await requirePermission(
       ctx,
       collection.organizationId,
@@ -191,6 +202,7 @@ export const remove = mutation({
       throw new Error("Fine art details not found");
     }
 
+    await requireFineArtModule(ctx, details.organizationId);
     await requirePermission(ctx, details.organizationId, "collections.delete");
 
     await ctx.db.delete(args.fineArtDetailsId);
@@ -224,6 +236,7 @@ export const addProvenanceEntry = mutation({
       throw new Error("Collection not found");
     }
 
+    await requireFineArtModule(ctx, collection.organizationId);
     await requirePermission(
       ctx,
       collection.organizationId,
@@ -293,6 +306,7 @@ export const addShippingLog = mutation({
       throw new Error("Collection not found");
     }
 
+    await requireFineArtModule(ctx, collection.organizationId);
     await requirePermission(
       ctx,
       collection.organizationId,

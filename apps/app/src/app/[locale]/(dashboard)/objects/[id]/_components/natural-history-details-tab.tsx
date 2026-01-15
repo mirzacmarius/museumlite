@@ -1,12 +1,14 @@
 "use client";
 
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { FeatureGuard } from "@v1/ui/feature-guard";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
-import { MapPin, Calendar, User, TreePine, Plus } from "lucide-react";
 import { format } from "date-fns";
+import { Calendar, MapPin, Plus, TreePine, User } from "lucide-react";
 
 interface NaturalHistoryDetailsTabProps {
   collectionId: string;
@@ -17,9 +19,27 @@ export function NaturalHistoryDetailsTab({
   collectionId,
   organizationId,
 }: NaturalHistoryDetailsTabProps) {
-  const details = useQuery(api.naturalHistoryDetails.get, {
-    collectionId: collectionId as Id<"collections">,
-  });
+  const { hasModule } = useFeatureAccess();
+  const hasModuleAccess = hasModule("natural_history");
+  const details = useQuery(
+    api.naturalHistoryDetails.get,
+    hasModuleAccess
+      ? { collectionId: collectionId as Id<"collections"> }
+      : "skip",
+  );
+
+  if (!hasModuleAccess) {
+    return (
+      <FeatureGuard
+        featureName="Natural History Module"
+        isLocked={true}
+        description="Enable the Natural History module to track taxonomy, geolocation, and more."
+        showUpgrade={false}
+      >
+        <div />
+      </FeatureGuard>
+    );
+  }
 
   if (details === undefined) {
     return (

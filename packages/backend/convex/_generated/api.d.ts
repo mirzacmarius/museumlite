@@ -33,6 +33,7 @@ import type * as fineArtDetails from "../fineArtDetails.js";
 import type * as http from "../http.js";
 import type * as imports from "../imports.js";
 import type * as init from "../init.js";
+import type * as installations from "../installations.js";
 import type * as insurance from "../insurance.js";
 import type * as integrations from "../integrations.js";
 import type * as library_acquisitions from "../library/acquisitions.js";
@@ -66,6 +67,7 @@ import type * as userPreferences from "../userPreferences.js";
 import type * as users from "../users.js";
 import type * as utils_accessionCounter from "../utils/accessionCounter.js";
 import type * as utils_accessionNumberParser from "../utils/accessionNumberParser.js";
+import type * as utils_featureGates from "../utils/featureGates.js";
 import type * as utils_permissions from "../utils/permissions.js";
 import type * as utils_validators from "../utils/validators.js";
 import type * as vehicleDetails from "../vehicleDetails.js";
@@ -79,14 +81,7 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
-/**
- * A utility for referencing Convex functions in your app's API.
- *
- * Usage:
- * ```js
- * const myFunctionReference = api.myModule.myFunction;
- * ```
- */
+
 declare const fullApi: ApiFromModules<{
   accessionTemplates: typeof accessionTemplates;
   accessions: typeof accessions;
@@ -113,6 +108,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   imports: typeof imports;
   init: typeof init;
+  installations: typeof installations;
   insurance: typeof insurance;
   integrations: typeof integrations;
   "library/acquisitions": typeof library_acquisitions;
@@ -146,6 +142,7 @@ declare const fullApi: ApiFromModules<{
   users: typeof users;
   "utils/accessionCounter": typeof utils_accessionCounter;
   "utils/accessionNumberParser": typeof utils_accessionNumberParser;
+  "utils/featureGates": typeof utils_featureGates;
   "utils/permissions": typeof utils_permissions;
   "utils/validators": typeof utils_validators;
   vehicleDetails: typeof vehicleDetails;
@@ -154,14 +151,30 @@ declare const fullApi: ApiFromModules<{
   wineDetails: typeof wineDetails;
   workflows: typeof workflows;
 }>;
-declare const fullApiWithMounts: typeof fullApi;
 
+/**
+ * A utility for referencing Convex functions in your app's public API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = api.myModule.myFunction;
+ * ```
+ */
 export declare const api: FilterApi<
-  typeof fullApiWithMounts,
+  typeof fullApi,
   FunctionReference<any, "public">
 >;
+
+/**
+ * A utility for referencing Convex functions in your app's internal API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = internal.myModule.myFunction;
+ * ```
+ */
 export declare const internal: FilterApi<
-  typeof fullApiWithMounts,
+  typeof fullApi,
   FunctionReference<any, "internal">
 >;
 

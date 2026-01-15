@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
+import { enforceMediaQuota } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
 const MAX_SMALL_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -72,6 +73,8 @@ export const generateUploadUrl = mutation({
     // Check permission
     await requirePermission(ctx, args.organizationId, "media.upload");
 
+    await enforceMediaQuota(ctx, args.organizationId, args.fileSize);
+
     // Validate file type
     if (!validateFileType(args.mimeType)) {
       throw new Error(`Unsupported file type: ${args.mimeType}`);
@@ -132,6 +135,8 @@ export const create = mutation({
 
     // Check permission
     await requirePermission(ctx, args.organizationId, "media.upload");
+
+    await enforceMediaQuota(ctx, args.organizationId, args.fileSize);
 
     const fileCategory = getFileCategory(args.mimeType);
     // Use explicit mediaCategory if provided, otherwise default to "image" for images, "document" for others

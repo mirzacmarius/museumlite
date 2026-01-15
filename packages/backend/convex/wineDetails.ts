@@ -1,7 +1,9 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+import { mutation, query } from "./_generated/server";
+import { requireModuleEnabled } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
 const fillLevelValidator = v.union(
@@ -20,6 +22,13 @@ const closureTypeValidator = v.union(
   v.literal("glass"),
   v.literal("crown"),
 );
+
+async function requireWineModule(
+  ctx: any,
+  organizationId: Id<"organizations">,
+) {
+  await requireModuleEnabled(ctx, organizationId, "wine");
+}
 
 export const get = query({
   args: {
@@ -66,6 +75,7 @@ export const get = query({
       return null;
     }
 
+    await requireWineModule(ctx, collection.organizationId);
     await requirePermission(ctx, collection.organizationId, "collections.view");
 
     const details = await ctx.db
@@ -115,6 +125,7 @@ export const upsert = mutation({
       throw new Error("Collection not found");
     }
 
+    await requireWineModule(ctx, collection.organizationId);
     await requirePermission(
       ctx,
       collection.organizationId,
@@ -184,6 +195,7 @@ export const remove = mutation({
       throw new Error("Wine details not found");
     }
 
+    await requireWineModule(ctx, details.organizationId);
     await requirePermission(ctx, details.organizationId, "collections.delete");
 
     await ctx.db.delete(args.wineDetailsId);
@@ -222,6 +234,7 @@ export const listByBin = query({
       throw new Error("Not authenticated");
     }
 
+    await requireWineModule(ctx, args.organizationId);
     await requirePermission(ctx, args.organizationId, "collections.view");
 
     const wines = await ctx.db
@@ -266,6 +279,7 @@ export const listDrinkingWindows = query({
       throw new Error("Not authenticated");
     }
 
+    await requireWineModule(ctx, args.organizationId);
     await requirePermission(ctx, args.organizationId, "collections.view");
 
     const currentYear = new Date().getFullYear();

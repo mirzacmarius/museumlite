@@ -1,5 +1,6 @@
 "use client";
 
+import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -14,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
   Building2,
   Download,
@@ -26,8 +27,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState, useCallback } from "react";
-import { ExportCSVButton } from "@/components/export-csv-button";
+import { useCallback, useState } from "react";
 
 type AccountType = "lender" | "borrower" | "both" | "institution" | "patron";
 
@@ -42,10 +42,12 @@ export default function AccountsPage() {
 
   const isPatronView = typeParam === "patron";
 
-  const exportData = useQuery(
-    api.imports.exportAccounts,
-    currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
-  );
+  const exportAccounts = useMutation(api.imports.exportAccounts);
+
+  const handleExport = useCallback(async () => {
+    if (!currentOrganizationId) return [];
+    return exportAccounts({ organizationId: currentOrganizationId });
+  }, [currentOrganizationId, exportAccounts]);
 
   if (isLoading) {
     return (
@@ -111,7 +113,7 @@ export default function AccountsPage() {
             </div>
             <div className="flex items-center gap-2">
               <PermissionGate permission="accounts.read">
-                <ExportCSVButton data={exportData} filename="accounts" />
+                <ExportCSVButton onExport={handleExport} filename="accounts" />
               </PermissionGate>
               <PermissionGate permission="accounts.create">
                 <Button asChild variant="outline">

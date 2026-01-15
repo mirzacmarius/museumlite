@@ -1,14 +1,40 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
-import { requirePermission } from "./utils/permissions";
+import type { Doc, Id } from "./_generated/dataModel";
 import {
-  accessionParser,
-  AccessionNumberParser,
-} from "./utils/accessionNumberParser";
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+} from "./_generated/server";
 import { getNextCounterPreview } from "./utils/accessionCounter";
+import {
+  AccessionNumberParser,
+  accessionParser,
+} from "./utils/accessionNumberParser";
+import { enforceUserQuota } from "./utils/featureGates";
+import { requirePermission } from "./utils/permissions";
+
+type EnabledModule =
+  | "library"
+  | "fine_art"
+  | "wine"
+  | "automotive"
+  | "natural_history"
+  | "archive";
+
+type OrganizationSettings = Doc<"organizations">["settings"];
+type PermissionCategory = Doc<"permissions">["category"];
+
+const enabledModuleValidator = v.union(
+  v.literal("library"),
+  v.literal("fine_art"),
+  v.literal("wine"),
+  v.literal("automotive"),
+  v.literal("natural_history"),
+  v.literal("archive"),
+);
 
 /**
  * Create new organization
@@ -255,6 +281,7 @@ export const get = query({
           locationTypes: v.optional(v.array(v.string())),
           enableDetailedConditionReports: v.optional(v.boolean()),
           enabledIntegrations: v.optional(v.array(v.string())),
+          enabledModules: v.optional(v.array(enabledModuleValidator)),
         }),
       ),
       subscriptionTier: v.optional(
@@ -303,6 +330,7 @@ export const getBySlug = query({
           locationTypes: v.optional(v.array(v.string())),
           enableDetailedConditionReports: v.optional(v.boolean()),
           enabledIntegrations: v.optional(v.array(v.string())),
+          enabledModules: v.optional(v.array(enabledModuleValidator)),
         }),
       ),
       subscriptionTier: v.optional(
@@ -342,6 +370,8 @@ export const update = mutation({
         autoGenerateAccessionNumbers: v.optional(v.boolean()),
         locationTypes: v.optional(v.array(v.string())),
         enableDetailedConditionReports: v.optional(v.boolean()),
+        enabledIntegrations: v.optional(v.array(v.string())),
+        enabledModules: v.optional(v.array(enabledModuleValidator)),
       }),
     ),
     subscriptionTier: v.optional(
@@ -362,6 +392,11 @@ export const update = mutation({
       "organization.manage_settings",
     );
 
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) {
+      throw new Error("Organization not found");
+    }
+
     const updates: {
       name?: string;
       settings?: {
@@ -371,6 +406,7 @@ export const update = mutation({
         locationTypes?: string[];
         enableDetailedConditionReports?: boolean;
         enabledIntegrations?: string[];
+        enabledModules?: EnabledModule[];
       };
       subscriptionTier?: "free" | "pro" | "enterprise";
     } = {};
@@ -379,7 +415,11 @@ export const update = mutation({
       updates.name = args.name;
     }
     if (args.settings !== undefined) {
-      updates.settings = args.settings;
+      const mergedSettings: OrganizationSettings = {
+        ...(org.settings ?? {}),
+        ...args.settings,
+      };
+      updates.settings = mergedSettings;
     }
     if (args.subscriptionTier !== undefined) {
       updates.subscriptionTier = args.subscriptionTier;
@@ -583,6 +623,15 @@ export const listUserOrganizations = query({
         description: v.optional(v.string()),
         isSystemRole: v.boolean(),
       }),
+      settings: v.optional(
+        v.object({
+          enabledIntegrations: v.optional(v.array(v.string())),
+          enabledModules: v.optional(v.array(enabledModuleValidator)),
+        }),
+      ),
+      subscriptionTier: v.optional(
+        v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
+      ),
       _creationTime: v.number(),
     }),
   ),
@@ -615,6 +664,13 @@ export const listUserOrganizations = query({
             description: role.description,
             isSystemRole: role.isSystemRole,
           },
+          settings: org.settings
+            ? {
+                enabledIntegrations: org.settings.enabledIntegrations,
+                enabledModules: org.settings.enabledModules,
+              }
+            : undefined,
+          subscriptionTier: org.subscriptionTier,
           _creationTime: org._creationTime,
         };
       }),
@@ -667,6 +723,8 @@ export const inviteUser = mutation({
     if (existing) {
       throw new Error("User is already in this organization");
     }
+
+    await enforceUserQuota(ctx, args.organizationId);
 
     // Add user to organization
     await ctx.db.insert("userOrganizations", {
@@ -816,6 +874,39 @@ export const listOrganizationUsers = query({
   },
 });
 
+export const listOrganizationsForBackfill = internalQuery({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("organizations"),
+      enabledIntegrations: v.array(v.string()),
+    }),
+  ),
+  handler: async (ctx) => {
+    const organizations = await ctx.db.query("organizations").collect();
+    return organizations.map((org) => ({
+      _id: org._id,
+      enabledIntegrations: org.settings?.enabledIntegrations ?? [],
+    }));
+  },
+});
+
+export const listOrganizationUserIds = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.array(v.id("users")),
+  handler: async (ctx, args) => {
+    const userOrganizations = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+    return userOrganizations.map((uo) => uo.userId);
+  },
+});
+
 /**
  * Internal: Create default roles for a new organization
  */
@@ -899,9 +990,10 @@ export const createDefaultRoles = internalMutation({
 
     for (const permName of permissionNames) {
       const [category, name] = permName.split(".");
+      const permissionCategory = category as PermissionCategory;
       const existing = await ctx.db
         .query("permissions")
-        .withIndex("by_category", (q) => q.eq("category", category as any))
+        .withIndex("by_category", (q) => q.eq("category", permissionCategory))
         .filter((q) => q.eq(q.field("name"), permName))
         .first();
 
@@ -912,7 +1004,7 @@ export const createDefaultRoles = internalMutation({
         permId = await ctx.db.insert("permissions", {
           name: permName,
           description: `Permission: ${permName}`,
-          category: category as any,
+          category: permissionCategory,
         });
       }
       permissionMap.set(permName, permId);

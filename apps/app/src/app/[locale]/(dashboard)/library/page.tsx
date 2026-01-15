@@ -32,16 +32,28 @@ export default function LibraryDashboardPage() {
       : "skip",
   );
 
+  const librarySubscription = useQuery(
+    api.integrations.getSubscription,
+    currentOrganizationId
+      ? {
+          organizationId: currentOrganizationId as Id<"organizations">,
+          integrationId: "library",
+        }
+      : "skip",
+  );
+
+  const isEntitled = librarySubscription?.isEntitled ?? false;
+
   const librarySettings = useQuery(
     api.library.settings.get,
-    currentOrganizationId && isLibraryEnabled
+    currentOrganizationId && isLibraryEnabled && isEntitled
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
 
   const libraryStats = useQuery(
     api.library.settings.getLibraryStats,
-    currentOrganizationId && isLibraryEnabled
+    currentOrganizationId && isLibraryEnabled && isEntitled
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
@@ -108,10 +120,30 @@ export default function LibraryDashboardPage() {
     );
   }
 
-  if (isLibraryEnabled === undefined) {
+  if (isLibraryEnabled === undefined || librarySubscription === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!isEntitled) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
+          <Library className="h-12 w-12 text-muted-foreground" />
+          <div className="text-center">
+            <h3 className="text-lg font-semibold">Subscription Required</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Your organization needs an active subscription to access the
+              Library integration.
+            </p>
+          </div>
+          <Button asChild>
+            <Link href="/settings/integrations">Manage Subscription</Link>
+          </Button>
+        </div>
       </div>
     );
   }

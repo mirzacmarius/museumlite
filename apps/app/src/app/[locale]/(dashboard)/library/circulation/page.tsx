@@ -88,16 +88,28 @@ export default function LibraryCirculationPage() {
       : "skip",
   );
 
+  const librarySubscription = useQuery(
+    api.integrations.getSubscription,
+    currentOrganizationId
+      ? {
+          organizationId: currentOrganizationId as Id<"organizations">,
+          integrationId: "library",
+        }
+      : "skip",
+  );
+
+  const isEntitled = librarySubscription?.isEntitled ?? false;
+
   const statistics = useQuery(
     api.library.circulation.getStatistics,
-    currentOrganizationId && isLibraryEnabled
+    currentOrganizationId && isLibraryEnabled && isEntitled
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
 
   const overdueItems = useQuery(
     api.library.circulation.listOverdue,
-    currentOrganizationId && isLibraryEnabled
+    currentOrganizationId && isLibraryEnabled && isEntitled
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
           paginationOpts: { numItems: 10, cursor: null },
@@ -107,7 +119,7 @@ export default function LibraryCirculationPage() {
 
   const activeCheckouts = useQuery(
     api.library.circulation.listActive,
-    currentOrganizationId && isLibraryEnabled
+    currentOrganizationId && isLibraryEnabled && isEntitled
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
           paginationOpts: { numItems: 20, cursor: null },
@@ -117,7 +129,10 @@ export default function LibraryCirculationPage() {
 
   const copyLookup = useQuery(
     api.library.circulation.getByBarcode,
-    currentOrganizationId && searchQuery.trim()
+    currentOrganizationId &&
+      searchQuery.trim() &&
+      isLibraryEnabled &&
+      isEntitled
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
           barcode: searchQuery.trim(),
@@ -127,7 +142,10 @@ export default function LibraryCirculationPage() {
 
   const patronLookup = useQuery(
     api.accounts.getByCardNumber,
-    currentOrganizationId && searchQuery.trim()
+    currentOrganizationId &&
+      searchQuery.trim() &&
+      isLibraryEnabled &&
+      isEntitled
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
           cardNumber: searchQuery.trim(),
@@ -272,10 +290,30 @@ export default function LibraryCirculationPage() {
     );
   }
 
-  if (isLibraryEnabled === undefined) {
+  if (isLibraryEnabled === undefined || librarySubscription === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!isEntitled) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
+          <Library className="h-12 w-12 text-muted-foreground" />
+          <div className="text-center">
+            <h3 className="text-lg font-semibold">Subscription Required</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Your organization needs an active subscription to access the
+              Library integration.
+            </p>
+          </div>
+          <Button asChild>
+            <Link href="/settings/integrations">Manage Subscription</Link>
+          </Button>
+        </div>
       </div>
     );
   }

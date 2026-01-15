@@ -19,6 +19,7 @@ import {
   Inbox,
   LayoutGrid,
   Library,
+  Lock,
   LogOut,
   MapPin,
   Microscope,
@@ -38,6 +39,7 @@ import { LanguageSwitcher } from "@/app/[locale]/(dashboard)/_components/languag
 import { ThemeSwitcher } from "@/app/[locale]/(dashboard)/_components/theme-switcher";
 import { useCommandPalette } from "@/components/command-palette-provider";
 import { useOrganization } from "@/components/organization-provider";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { CheckoutLink } from "@convex-dev/polar/react";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -130,6 +132,7 @@ function NavItem({
   badge,
   indicator,
   colorIndicator,
+  locked,
 }: {
   href: string;
   icon?: React.ComponentType<{ className?: string }>;
@@ -138,6 +141,7 @@ function NavItem({
   badge?: string | number;
   indicator?: boolean;
   colorIndicator?: string;
+  locked?: boolean;
 }) {
   return (
     <SidebarMenuItem>
@@ -145,14 +149,19 @@ function NavItem({
         asChild
         isActive={isActive}
         tooltip={title}
+        disabled={locked}
         className={cn(
           "flex items-center gap-2.5 px-3 py-1.5 text-xs rounded-md transition-all group h-auto",
           isActive
             ? "text-foreground bg-muted/40 border border-border shadow-sm hover:bg-muted/40 hover:text-foreground"
             : "text-muted-foreground hover:bg-muted/30 hover:text-foreground bg-transparent border border-transparent",
+          locked && "opacity-70 pointer-events-none",
         )}
       >
-        <Link href={href}>
+        <Link
+          href={href}
+          onClick={locked ? (e) => e.preventDefault() : undefined}
+        >
           {colorIndicator ? (
             <div
               className="w-1 h-4 rounded-full border"
@@ -172,13 +181,19 @@ function NavItem({
             />
           ) : null}
           <span className="font-medium flex-1">{title}</span>
-          {badge !== undefined && (
-            <span className="ml-auto text-[9px] bg-muted text-muted-foreground px-1 rounded">
-              {badge}
-            </span>
-          )}
-          {indicator && (
-            <span className="ml-auto w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+          {locked ? (
+            <Lock className="ml-auto size-3 text-muted-foreground/60" />
+          ) : (
+            <>
+              {badge !== undefined && (
+                <span className="ml-auto text-[9px] bg-muted text-muted-foreground px-1 rounded">
+                  {badge}
+                </span>
+              )}
+              {indicator && (
+                <span className="ml-auto w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+              )}
+            </>
           )}
         </Link>
       </SidebarMenuButton>
@@ -195,6 +210,7 @@ export function AppSidebar({
 }) {
   const { organizations, currentOrganizationId, setCurrentOrganizationId } =
     useOrganization();
+  const { hasFeature } = useFeatureAccess();
   const { setOpen } = useCommandPalette();
   const user = usePreloadedQuery(preloadedUser);
   const products = usePreloadedQuery(preloadedProducts);
@@ -220,6 +236,16 @@ export function AppSidebar({
     (org) => org._id === currentOrganizationId,
   );
 
+  const librarySubscription = useQuery(
+    api.integrations.getSubscription,
+    currentOrganizationId
+      ? {
+          organizationId: currentOrganizationId as Id<"organizations">,
+          integrationId: "library",
+        }
+      : "skip",
+  );
+
   const isLibraryEnabled = useQuery(
     api.integrations.isEnabled,
     currentOrganizationId
@@ -229,6 +255,9 @@ export function AppSidebar({
         }
       : "skip",
   );
+
+  const showLibrarySection =
+    isLibraryEnabled && librarySubscription?.isEntitled;
 
   const collectionGroups = useQuery(
     api.collectionGroups.list,
@@ -249,11 +278,17 @@ export function AppSidebar({
   ];
 
   const navExhibitions = [
-    { title: "Active Rotations", url: "/exhibitions", icon: Presentation },
+    {
+      title: "Active Rotations",
+      url: "/exhibitions",
+      icon: Presentation,
+      locked: !hasFeature("exhibitions"),
+    },
     {
       title: "Planning Queue",
       url: "/exhibitions?status=planning",
       icon: CalendarRange,
+      locked: !hasFeature("exhibitions"),
     },
   ];
 
@@ -263,18 +298,30 @@ export function AppSidebar({
       url: "/conservation",
       icon: Microscope,
       badge: "2",
+      locked: !hasFeature("conservation"),
     },
     {
       title: "Condition Reports",
       url: "/conservation?type=reports",
       icon: FileHeart,
+      locked: !hasFeature("conservation"),
     },
   ];
 
   const navManagement = [
-    { title: "Analytics", url: "/analytics", icon: BarChart3 },
+    {
+      title: "Analytics",
+      url: "/analytics",
+      icon: BarChart3,
+      locked: !hasFeature("reporting"),
+    },
     { title: "Donors & Sources", url: "/accounts", icon: Users },
-    { title: "Loans & Transport", url: "/loans", icon: Truck },
+    {
+      title: "Loans & Transport",
+      url: "/loans",
+      icon: Truck,
+      locked: !hasFeature("loans"),
+    },
     { title: "Locations", url: "/locations", icon: MapPin },
     { title: "Media Library", url: "/media", icon: Image },
     { title: "Accessions", url: "/accessions", icon: FileCheck },
@@ -283,6 +330,7 @@ export function AppSidebar({
       title: "Insurance & Audit",
       url: "/settings/activity",
       icon: ShieldCheck,
+      locked: !hasFeature("compliance"),
     },
     { title: "Settings", url: "/settings", icon: Settings2 },
   ];
@@ -460,6 +508,7 @@ export function AppSidebar({
                 icon={item.icon}
                 title={item.title}
                 isActive={isPathActive(item.url)}
+                locked={item.locked}
               />
             ))}
           </SidebarMenu>
@@ -478,6 +527,7 @@ export function AppSidebar({
                 title={item.title}
                 isActive={isPathActive(item.url)}
                 badge={item.badge}
+                locked={item.locked}
               />
             ))}
           </SidebarMenu>
@@ -495,12 +545,13 @@ export function AppSidebar({
                 icon={item.icon}
                 title={item.title}
                 isActive={isPathActive(item.url)}
+                locked={item.locked}
               />
             ))}
           </SidebarMenu>
         </NavSection>
 
-        {isLibraryEnabled && (
+        {showLibrarySection && (
           <NavSection
             title="Library"
             forceOpen={navLibrary.some((item) => isPathActive(item.url))}

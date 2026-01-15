@@ -1,19 +1,19 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
-import { useQuery } from "convex/react";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { useState } from "react";
+import { useMutation } from "convex/react";
+import { useCallback, useState } from "react";
 
+import { ExportCSVButton } from "@/components/export-csv-button";
+import { PermissionGate } from "@/components/permission-gate";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
-import { PermissionGate } from "@/components/permission-gate";
-import { ExportCSVButton } from "@/components/export-csv-button";
-import { AccessionsStats } from "./accessions-stats";
-import { AccessionKanban } from "./accession-kanban";
-import { SelectOrganization } from "./select-organization";
-import Link from "next/link";
 import { FileUp, Plus, Search } from "lucide-react";
+import Link from "next/link";
+import { AccessionKanban } from "./accession-kanban";
+import { AccessionsStats } from "./accessions-stats";
+import { SelectOrganization } from "./select-organization";
 
 type AccessionsPageClientProps = {
   organizations: Array<{
@@ -45,10 +45,12 @@ export function AccessionsPageClient({
     ? (selectedOrgId as Id<"organizations">)
     : undefined;
 
-  const exportData = useQuery(
-    api.imports.exportAccessions,
-    organizationId ? { organizationId } : "skip",
-  );
+  const exportAccessions = useMutation(api.imports.exportAccessions);
+
+  const handleExport = useCallback(async () => {
+    if (!organizationId) return [];
+    return exportAccessions({ organizationId });
+  }, [exportAccessions, organizationId]);
 
   if (!organizationId) {
     return (
@@ -111,7 +113,7 @@ export function AccessionsPageClient({
             />
           </div>
           <PermissionGate permission="collections.read">
-            <ExportCSVButton data={exportData} filename="accessions" />
+            <ExportCSVButton onExport={handleExport} filename="accessions" />
           </PermissionGate>
           <PermissionGate permission="collections.create">
             <Button asChild variant="outline">

@@ -66,6 +66,18 @@ export default function EditCatalogItemPage() {
       : "skip",
   );
 
+  const librarySubscription = useQuery(
+    api.integrations.getSubscription,
+    currentOrganizationId
+      ? {
+          organizationId: currentOrganizationId as Id<"organizations">,
+          integrationId: "library",
+        }
+      : "skip",
+  );
+
+  const isEntitled = librarySubscription?.isEntitled ?? false;
+
   const item = useQuery(api.library.items.get, { itemId });
   const updateItem = useMutation(api.library.items.update);
 
@@ -303,10 +315,30 @@ export default function EditCatalogItemPage() {
     );
   }
 
-  if (isLibraryEnabled === undefined || item === undefined) {
+  if (
+    isLibraryEnabled === undefined ||
+    librarySubscription === undefined ||
+    item === undefined
+  ) {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!isEntitled) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">
+            An active subscription is required to access the Library
+            integration.
+          </p>
+          <Button asChild className="mt-4">
+            <Link href="/settings/integrations">Manage Subscription</Link>
+          </Button>
+        </div>
       </div>
     );
   }

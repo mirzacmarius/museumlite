@@ -26,6 +26,18 @@ interface OrganizationContextType {
       description?: string;
       isSystemRole: boolean;
     };
+    settings?: {
+      enabledIntegrations?: string[];
+      enabledModules?: Array<
+        | "library"
+        | "fine_art"
+        | "wine"
+        | "automotive"
+        | "natural_history"
+        | "archive"
+      >;
+    };
+    subscriptionTier?: "free" | "pro" | "enterprise";
     _creationTime: number;
   }>;
   currentOrganization: {
@@ -39,6 +51,18 @@ interface OrganizationContextType {
       description?: string;
       isSystemRole: boolean;
     };
+    settings?: {
+      enabledIntegrations?: string[];
+      enabledModules?: Array<
+        | "library"
+        | "fine_art"
+        | "wine"
+        | "automotive"
+        | "natural_history"
+        | "archive"
+      >;
+    };
+    subscriptionTier?: "free" | "pro" | "enterprise";
   } | null;
   isLoading: boolean;
 }

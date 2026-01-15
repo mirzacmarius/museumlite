@@ -1,21 +1,23 @@
 "use client";
 
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { FeatureGuard } from "@v1/ui/feature-guard";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
-import {
-  FileText,
-  Calendar,
-  Shield,
-  AlertTriangle,
-  Trash2,
-  Lock,
-  Clock,
-  Plus,
-} from "lucide-react";
 import { format } from "date-fns";
+import {
+  AlertTriangle,
+  Calendar,
+  Clock,
+  FileText,
+  Lock,
+  Plus,
+  Shield,
+  Trash2,
+} from "lucide-react";
 
 interface ArchiveDetailsTabProps {
   collectionId: string;
@@ -26,9 +28,27 @@ export function ArchiveDetailsTab({
   collectionId,
   organizationId,
 }: ArchiveDetailsTabProps) {
-  const details = useQuery(api.archiveDetails.get, {
-    collectionId: collectionId as Id<"collections">,
-  });
+  const { hasModule } = useFeatureAccess();
+  const hasModuleAccess = hasModule("archive");
+  const details = useQuery(
+    api.archiveDetails.get,
+    hasModuleAccess
+      ? { collectionId: collectionId as Id<"collections"> }
+      : "skip",
+  );
+
+  if (!hasModuleAccess) {
+    return (
+      <FeatureGuard
+        featureName="Archive Module"
+        isLocked={true}
+        description="Enable the Archive module to track document types, retention schedules, and classification."
+        showUpgrade={false}
+      >
+        <div />
+      </FeatureGuard>
+    );
+  }
 
   if (details === undefined) {
     return (

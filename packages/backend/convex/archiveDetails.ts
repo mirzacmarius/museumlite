@@ -1,7 +1,9 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+import { mutation, query } from "./_generated/server";
+import { requireModuleEnabled } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
 const confidentialityLevelValidator = v.union(
@@ -11,6 +13,13 @@ const confidentialityLevelValidator = v.union(
   v.literal("restricted"),
   v.literal("top_secret"),
 );
+
+async function requireArchiveModule(
+  ctx: any,
+  organizationId: Id<"organizations">,
+) {
+  await requireModuleEnabled(ctx, organizationId, "archive");
+}
 
 export const get = query({
   args: {
@@ -61,6 +70,7 @@ export const get = query({
       return null;
     }
 
+    await requireArchiveModule(ctx, collection.organizationId);
     await requirePermission(ctx, collection.organizationId, "collections.view");
 
     const details = await ctx.db
@@ -114,6 +124,7 @@ export const upsert = mutation({
       throw new Error("Collection not found");
     }
 
+    await requireArchiveModule(ctx, collection.organizationId);
     await requirePermission(
       ctx,
       collection.organizationId,
@@ -183,6 +194,7 @@ export const remove = mutation({
       throw new Error("Archive details not found");
     }
 
+    await requireArchiveModule(ctx, details.organizationId);
     await requirePermission(ctx, details.organizationId, "collections.delete");
 
     await ctx.db.delete(args.archiveDetailsId);
@@ -219,6 +231,7 @@ export const listExpiredRetention = query({
       throw new Error("Not authenticated");
     }
 
+    await requireArchiveModule(ctx, args.organizationId);
     await requirePermission(ctx, args.organizationId, "collections.view");
 
     const now = Date.now();
@@ -267,6 +280,7 @@ export const listFlaggedForDestruction = query({
       throw new Error("Not authenticated");
     }
 
+    await requireArchiveModule(ctx, args.organizationId);
     await requirePermission(ctx, args.organizationId, "collections.view");
 
     const archives = await ctx.db
@@ -308,6 +322,7 @@ export const setLegalHold = mutation({
       throw new Error("Archive details not found");
     }
 
+    await requireArchiveModule(ctx, details.organizationId);
     await requirePermission(ctx, details.organizationId, "collections.update");
 
     await ctx.db.patch(args.archiveDetailsId, {
@@ -356,6 +371,7 @@ export const flagForDestruction = mutation({
       throw new Error("Cannot flag for destruction: document is on legal hold");
     }
 
+    await requireArchiveModule(ctx, details.organizationId);
     await requirePermission(ctx, details.organizationId, "collections.update");
 
     await ctx.db.patch(args.archiveDetailsId, {
@@ -399,6 +415,7 @@ export const recordDestruction = mutation({
       throw new Error("Cannot destroy: document is on legal hold");
     }
 
+    await requireArchiveModule(ctx, details.organizationId);
     await requirePermission(ctx, details.organizationId, "collections.delete");
 
     await ctx.db.patch(args.archiveDetailsId, {

@@ -1,7 +1,9 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+import { mutation, query } from "./_generated/server";
+import { requireModuleEnabled } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
 const odometerUnitValidator = v.union(v.literal("miles"), v.literal("km"));
@@ -40,6 +42,13 @@ const eventHistoryEntryValidator = v.object({
   awards: v.optional(v.array(v.string())),
   notes: v.optional(v.string()),
 });
+
+async function requireAutomotiveModule(
+  ctx: any,
+  organizationId: Id<"organizations">,
+) {
+  await requireModuleEnabled(ctx, organizationId, "automotive");
+}
 
 export const get = query({
   args: {
@@ -85,6 +94,7 @@ export const get = query({
       return null;
     }
 
+    await requireAutomotiveModule(ctx, collection.organizationId);
     await requirePermission(ctx, collection.organizationId, "collections.view");
 
     const details = await ctx.db
@@ -129,6 +139,7 @@ export const getByVin = query({
       return null;
     }
 
+    await requireAutomotiveModule(ctx, details.organizationId);
     await requirePermission(ctx, details.organizationId, "collections.view");
 
     return {
@@ -178,6 +189,7 @@ export const upsert = mutation({
       throw new Error("Collection not found");
     }
 
+    await requireAutomotiveModule(ctx, collection.organizationId);
     await requirePermission(
       ctx,
       collection.organizationId,
@@ -247,6 +259,7 @@ export const remove = mutation({
       throw new Error("Vehicle details not found");
     }
 
+    await requireAutomotiveModule(ctx, details.organizationId);
     await requirePermission(ctx, details.organizationId, "collections.delete");
 
     await ctx.db.delete(args.vehicleDetailsId);
@@ -280,6 +293,7 @@ export const addServiceLogEntry = mutation({
       throw new Error("Collection not found");
     }
 
+    await requireAutomotiveModule(ctx, collection.organizationId);
     await requirePermission(
       ctx,
       collection.organizationId,
@@ -349,6 +363,7 @@ export const addEventHistoryEntry = mutation({
       throw new Error("Collection not found");
     }
 
+    await requireAutomotiveModule(ctx, collection.organizationId);
     await requirePermission(
       ctx,
       collection.organizationId,

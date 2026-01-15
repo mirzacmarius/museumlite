@@ -3,10 +3,12 @@
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
+import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Input } from "@v1/ui/input";
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -28,7 +30,7 @@ import {
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { LoansBulkActionsBar } from "./_components/loans-bulk-actions-bar";
 
@@ -43,16 +45,17 @@ type LoanType = "incoming" | "outgoing" | "all";
 
 export default function LoansPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
+  const { hasFeature } = useFeatureAccess();
   const [statusFilter, setStatusFilter] = useState<LoanStatus>("all");
   const [typeFilter, setTypeFilter] = useState<LoanType>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const exportData = useQuery(
-    api.imports.exportLoans,
-    currentOrganizationId
-      ? { organizationId: currentOrganizationId as Id<"organizations"> }
-      : "skip",
-  );
+  const exportLoans = useMutation(api.imports.exportLoans);
+
+  const handleExport = useCallback(async () => {
+    if (!currentOrganizationId) return [];
+    return exportLoans({ organizationId: currentOrganizationId });
+  }, [currentOrganizationId, exportLoans]);
 
   if (isLoading) {
     return (
@@ -102,43 +105,49 @@ export default function LoansPage() {
   }
 
   return (
-    <div className="flex h-full w-full flex-col overflow-y-auto bg-zinc-50/50 dark:bg-black">
-      <div className="mx-auto w-full max-w-7xl space-y-8 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white">
-              Loans
-            </h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              Manage incoming and outgoing loan agreements
-            </p>
+    <FeatureGuard
+      featureName="Loans"
+      isLocked={!hasFeature("loans")}
+      tierNeeded="pro"
+    >
+      <div className="flex h-full w-full flex-col overflow-y-auto bg-zinc-50/50 dark:bg-black">
+        <div className="mx-auto w-full max-w-7xl space-y-8 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white">
+                Loans
+              </h1>
+              <p className="mt-1 text-sm text-zinc-500">
+                Manage incoming and outgoing loan agreements
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <PermissionGate permission="loans.read">
+                <ExportCSVButton onExport={handleExport} filename="loans" />
+              </PermissionGate>
+              <PermissionGate permission="loans.create">
+                <Button asChild>
+                  <Link href="/loans/new">
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>New Loan</span>
+                  </Link>
+                </Button>
+              </PermissionGate>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <PermissionGate permission="loans.read">
-              <ExportCSVButton data={exportData} filename="loans" />
-            </PermissionGate>
-            <PermissionGate permission="loans.create">
-              <Button asChild>
-                <Link href="/loans/new">
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>New Loan</span>
-                </Link>
-              </Button>
-            </PermissionGate>
-          </div>
-        </div>
 
-        <LoanList
-          organizationId={currentOrganizationId}
-          statusFilter={statusFilter}
-          typeFilter={typeFilter}
-          searchQuery={searchQuery}
-          onStatusFilterChange={setStatusFilter}
-          onTypeFilterChange={setTypeFilter}
-          onSearchQueryChange={setSearchQuery}
-        />
+          <LoanList
+            organizationId={currentOrganizationId}
+            statusFilter={statusFilter}
+            typeFilter={typeFilter}
+            searchQuery={searchQuery}
+            onStatusFilterChange={setStatusFilter}
+            onTypeFilterChange={setTypeFilter}
+            onSearchQueryChange={setSearchQuery}
+          />
+        </div>
       </div>
-    </div>
+    </FeatureGuard>
   );
 }
 

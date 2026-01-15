@@ -1,7 +1,9 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
+import { requireFeatureAccess } from "./utils/featureGates";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
@@ -18,6 +20,13 @@ const treatmentTypeValidator = v.union(
   v.literal("assessment"),
   v.literal("other"),
 );
+
+async function requireConservationAccess(
+  ctx: any,
+  organizationId: Id<"organizations">,
+) {
+  await requireFeatureAccess(ctx, organizationId, "conservation");
+}
 
 export const listByOrganization = query({
   args: {
@@ -38,6 +47,7 @@ export const listByOrganization = query({
     }),
   ),
   handler: async (ctx, args) => {
+    await requireConservationAccess(ctx, args.organizationId);
     await requirePermission(ctx, args.organizationId, "collections.read");
 
     const treatments = await ctx.db
@@ -99,6 +109,7 @@ export const get = query({
       return null;
     }
 
+    await requireConservationAccess(ctx, treatment.organizationId);
     await requirePermission(ctx, treatment.organizationId, "collections.read");
 
     const collection = await ctx.db.get(treatment.collectionId);
@@ -244,6 +255,7 @@ export const list = query({
       return [];
     }
 
+    await requireConservationAccess(ctx, collection.organizationId);
     await requirePermission(ctx, collection.organizationId, "collections.read");
 
     const treatments = await ctx.db
@@ -738,6 +750,7 @@ export const getWorkflowHistory = query({
       throw new Error("Conservation treatment not found");
     }
 
+    await requireConservationAccess(ctx, treatment.organizationId);
     await requirePermission(ctx, treatment.organizationId, "collections.read");
 
     const history = treatment.workflowHistory ?? [];
@@ -895,6 +908,7 @@ export const listAttachments = query({
       return [];
     }
 
+    await requireConservationAccess(ctx, treatment.organizationId);
     await requirePermission(ctx, treatment.organizationId, "collections.read");
 
     const attachments = await ctx.db
@@ -947,6 +961,7 @@ export const getAttachmentsByType = query({
       return [];
     }
 
+    await requireConservationAccess(ctx, treatment.organizationId);
     await requirePermission(ctx, treatment.organizationId, "collections.read");
 
     const attachments = await ctx.db
@@ -1015,6 +1030,7 @@ export const createAlertRule = mutation({
       throw new Error("Not authenticated");
     }
 
+    await requireConservationAccess(ctx, args.organizationId);
     await requirePermission(ctx, args.organizationId, "organization.manage");
 
     const ruleId = await ctx.db.insert("conservationAlertRules", {
@@ -1076,6 +1092,7 @@ export const updateAlertRule = mutation({
       throw new Error("Alert rule not found");
     }
 
+    await requireConservationAccess(ctx, rule.organizationId);
     await requirePermission(ctx, rule.organizationId, "organization.manage");
 
     const { ruleId, ...updates } = args;
@@ -1117,6 +1134,7 @@ export const deleteAlertRule = mutation({
       throw new Error("Alert rule not found");
     }
 
+    await requireConservationAccess(ctx, rule.organizationId);
     await requirePermission(ctx, rule.organizationId, "organization.manage");
 
     await ctx.db.patch(args.ruleId, { isActive: false });
@@ -1156,6 +1174,7 @@ export const listAlertRules = query({
     }),
   ),
   handler: async (ctx, args) => {
+    await requireConservationAccess(ctx, args.organizationId);
     await requirePermission(ctx, args.organizationId, "collections.read");
 
     if (args.activeOnly) {
@@ -1213,6 +1232,7 @@ export const createAlert = mutation({
       throw new Error("Not authenticated");
     }
 
+    await requireConservationAccess(ctx, args.organizationId);
     await requirePermission(ctx, args.organizationId, "collections.update");
 
     const alertId = await ctx.db.insert("conservationAlerts", {
@@ -1261,6 +1281,7 @@ export const acknowledgeAlert = mutation({
       throw new Error("Alert is not active");
     }
 
+    await requireConservationAccess(ctx, alert.organizationId);
     await requirePermission(ctx, alert.organizationId, "collections.update");
 
     await ctx.db.patch(args.alertId, {
@@ -1303,6 +1324,7 @@ export const resolveAlert = mutation({
       throw new Error("Alert is already closed");
     }
 
+    await requireConservationAccess(ctx, alert.organizationId);
     await requirePermission(ctx, alert.organizationId, "collections.update");
 
     await ctx.db.patch(args.alertId, {
@@ -1346,6 +1368,7 @@ export const dismissAlert = mutation({
       throw new Error("Alert is already closed");
     }
 
+    await requireConservationAccess(ctx, alert.organizationId);
     await requirePermission(ctx, alert.organizationId, "collections.update");
 
     await ctx.db.patch(args.alertId, {
@@ -1394,6 +1417,7 @@ export const listAlerts = query({
     }),
   ),
   handler: async (ctx, args) => {
+    await requireConservationAccess(ctx, args.organizationId);
     await requirePermission(ctx, args.organizationId, "collections.read");
 
     const limit = args.limit ?? 100;
@@ -1465,6 +1489,7 @@ export const getActiveAlerts = query({
     }),
   ),
   handler: async (ctx, args) => {
+    await requireConservationAccess(ctx, args.organizationId);
     await requirePermission(ctx, args.organizationId, "collections.read");
 
     let alertsQuery = ctx.db
@@ -1510,6 +1535,7 @@ export const getAlertsByPriority = query({
     total: v.number(),
   }),
   handler: async (ctx, args) => {
+    await requireConservationAccess(ctx, args.organizationId);
     await requirePermission(ctx, args.organizationId, "collections.read");
 
     const activeAlerts = await ctx.db

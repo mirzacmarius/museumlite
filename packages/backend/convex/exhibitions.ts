@@ -1,13 +1,22 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
+import { requireFeatureAccess } from "./utils/featureGates";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
   getUsersToNotifyForWorkflowStep,
   requirePermission,
 } from "./utils/permissions";
+
+async function requireExhibitionAccess(
+  ctx: any,
+  organizationId: Id<"organizations">,
+) {
+  await requireFeatureAccess(ctx, organizationId, "exhibitions");
+}
 
 export const listByOrganization = query({
   args: {
@@ -30,6 +39,7 @@ export const listByOrganization = query({
     }),
   ),
   handler: async (ctx, args) => {
+    await requireExhibitionAccess(ctx, args.organizationId);
     await requirePermission(ctx, args.organizationId, "collections.read");
 
     const exhibitions = await ctx.db
@@ -108,6 +118,8 @@ export const get = query({
       return null;
     }
 
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+
     await requirePermission(ctx, exhibition.organizationId, "collections.read");
 
     const collection = await ctx.db.get(exhibition.collectionId);
@@ -177,6 +189,8 @@ export const update = mutation({
       throw new Error("Exhibition not found");
     }
 
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+
     await requirePermission(
       ctx,
       exhibition.organizationId,
@@ -239,6 +253,8 @@ export const remove = mutation({
       throw new Error("Exhibition not found");
     }
 
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+
     await requirePermission(
       ctx,
       exhibition.organizationId,
@@ -288,6 +304,8 @@ export const list = query({
     if (!collection) {
       return [];
     }
+
+    await requireExhibitionAccess(ctx, collection.organizationId);
 
     await requirePermission(ctx, collection.organizationId, "collections.read");
 
@@ -339,6 +357,8 @@ export const create = mutation({
     if (!collection) {
       throw new Error("Collection not found");
     }
+
+    await requireExhibitionAccess(ctx, collection.organizationId);
 
     const canInitiate = await canInitiateWorkflow(
       ctx,
@@ -459,6 +479,8 @@ export const approve = mutation({
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
 
     if (exhibition.status !== "proposed") {
       throw new Error("Exhibition is not pending approval");
@@ -605,6 +627,8 @@ export const reject = mutation({
       throw new Error("Exhibition not found");
     }
 
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+
     if (exhibition.status !== "proposed") {
       throw new Error("Exhibition is not pending approval");
     }
@@ -681,6 +705,8 @@ export const activate = mutation({
       throw new Error("Exhibition not found");
     }
 
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+
     if (exhibition.status !== "approved") {
       throw new Error("Exhibition must be approved before activation");
     }
@@ -724,6 +750,8 @@ export const close = mutation({
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
 
     if (exhibition.status !== "active") {
       throw new Error("Exhibition must be active to close");
@@ -779,6 +807,8 @@ export const checkScheduleConflicts = query({
     if (!collection) {
       return { hasConflicts: false, conflicts: [] };
     }
+
+    await requireExhibitionAccess(ctx, collection.organizationId);
 
     await requirePermission(ctx, collection.organizationId, "collections.read");
 
@@ -886,6 +916,8 @@ export const getWorkflowHistory = query({
       throw new Error("Exhibition not found");
     }
 
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+
     await requirePermission(ctx, exhibition.organizationId, "collections.read");
 
     const history = exhibition.workflowHistory ?? [];
@@ -931,6 +963,8 @@ export const listDocuments = query({
     if (!exhibition) {
       return [];
     }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
 
     await requirePermission(ctx, exhibition.organizationId, "collections.read");
 
@@ -987,6 +1021,8 @@ export const uploadDocument = mutation({
       throw new Error("Exhibition not found");
     }
 
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+
     await requirePermission(
       ctx,
       exhibition.organizationId,
@@ -1035,6 +1071,8 @@ export const deleteDocument = mutation({
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
 
     await requirePermission(
       ctx,

@@ -1,10 +1,13 @@
 "use client";
 
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { FeatureGuard } from "@v1/ui/feature-guard";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
+import { format } from "date-fns";
 import {
   Award,
   Calendar,
@@ -16,7 +19,6 @@ import {
   Trophy,
   Wrench,
 } from "lucide-react";
-import { format } from "date-fns";
 
 interface VehicleDetailsTabProps {
   collectionId: string;
@@ -27,9 +29,27 @@ export function VehicleDetailsTab({
   collectionId,
   organizationId,
 }: VehicleDetailsTabProps) {
-  const details = useQuery(api.vehicleDetails.get, {
-    collectionId: collectionId as Id<"collections">,
-  });
+  const { hasModule } = useFeatureAccess();
+  const hasModuleAccess = hasModule("automotive");
+  const details = useQuery(
+    api.vehicleDetails.get,
+    hasModuleAccess
+      ? { collectionId: collectionId as Id<"collections"> }
+      : "skip",
+  );
+
+  if (!hasModuleAccess) {
+    return (
+      <FeatureGuard
+        featureName="Automotive Module"
+        isLocked={true}
+        description="Enable the Automotive module to track VIN, service history, and events."
+        showUpgrade={false}
+      >
+        <div />
+      </FeatureGuard>
+    );
+  }
 
   if (details === undefined) {
     return (

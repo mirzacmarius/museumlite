@@ -15,11 +15,27 @@ import {
 } from "@v1/ui/alert-dialog";
 import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@v1/ui/dialog";
 import { Switch } from "@v1/ui/switch";
-import { useMutation, useQuery } from "convex/react";
-import { BookOpen, Check, ChevronRight, Loader2, Settings } from "lucide-react";
+import { useAction, useMutation, useQuery } from "convex/react";
+import {
+  BookOpen,
+  Check,
+  ChevronRight,
+  ExternalLink,
+  Loader2,
+  Settings,
+} from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 const INTEGRATION_ICONS: Record<string, React.ReactNode> = {
   library: <BookOpen className="h-6 w-6" />,
@@ -27,11 +43,18 @@ const INTEGRATION_ICONS: Record<string, React.ReactNode> = {
 
 export default function IntegrationsSettingsPage() {
   const { currentOrganizationId } = useOrganization();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [disableDialogOpen, setDisableDialogOpen] = useState(false);
+  const [subscribeDialogOpen, setSubscribeDialogOpen] = useState(false);
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(
     null,
   );
   const [isToggling, setIsToggling] = useState<string | null>(null);
+  const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
+  const [pendingEnableIntegration, setPendingEnableIntegration] = useState<
+    string | null
+  >(null);
 
   const availableIntegrations = useQuery(api.integrations.listAvailable);
   const enabledIntegrations = useQuery(
@@ -41,8 +64,76 @@ export default function IntegrationsSettingsPage() {
       : "skip",
   );
 
+  const librarySubscription = useQuery(
+    api.integrations.getSubscription,
+    currentOrganizationId
+      ? {
+          organizationId: currentOrganizationId as Id<"organizations">,
+          integrationId: "library",
+        }
+      : "skip",
+  );
+
   const enableIntegration = useMutation(api.integrations.enable);
   const disableIntegration = useMutation(api.integrations.disable);
+  const createCheckoutLink = useAction(api.integrations.createCheckoutLink);
+
+  useEffect(() => {
+    const subscribedIntegrationId = searchParams?.get("subscribed");
+    if (
+      subscribedIntegrationId &&
+      currentOrganizationId &&
+      availableIntegrations
+    ) {
+      const newParams = new URLSearchParams(searchParams.toString());
+      newParams.delete("subscribed");
+      router.replace(`?${newParams.toString()}`);
+      setPendingEnableIntegration(subscribedIntegrationId);
+      toast.info("Waiting for subscription confirmation...");
+    }
+  }, [searchParams, currentOrganizationId, availableIntegrations, router]);
+
+  useEffect(() => {
+    const tryEnablePendingIntegration = async () => {
+      if (!pendingEnableIntegration || !currentOrganizationId) {
+        return;
+      }
+
+      if (pendingEnableIntegration === "library") {
+        if (!librarySubscription?.isEntitled) {
+          return;
+        }
+      }
+
+      try {
+        const result = await enableIntegration({
+          organizationId: currentOrganizationId as Id<"organizations">,
+          integrationId: pendingEnableIntegration,
+        });
+
+        if (result.ok) {
+          toast.success("Integration enabled successfully");
+        } else if (result.reason === "already_enabled") {
+          toast.info("Integration is already enabled");
+        } else if (result.reason === "subscription_required") {
+          toast.error("Subscription not active yet. Please try again shortly.");
+          return;
+        }
+
+        setPendingEnableIntegration(null);
+      } catch (error) {
+        console.error("Failed to auto-enable integration:", error);
+        toast.error("Failed to enable integration");
+      }
+    };
+
+    tryEnablePendingIntegration();
+  }, [
+    pendingEnableIntegration,
+    currentOrganizationId,
+    enableIntegration,
+    librarySubscription,
+  ]);
 
   const handleToggle = async (
     integrationId: string,
@@ -51,20 +142,40 @@ export default function IntegrationsSettingsPage() {
     if (!currentOrganizationId) return;
 
     if (currentlyEnabled) {
-      // Show confirmation dialog before disabling
       setSelectedIntegration(integrationId);
       setDisableDialogOpen(true);
     } else {
-      // Enable directly
       setIsToggling(integrationId);
       try {
-        await enableIntegration({
+        const result = await enableIntegration({
           organizationId: currentOrganizationId as Id<"organizations">,
           integrationId,
         });
+
+        if (!result.ok && result.reason === "subscription_required") {
+          setSelectedIntegration(integrationId);
+          setSubscribeDialogOpen(true);
+        }
       } finally {
         setIsToggling(null);
       }
+    }
+  };
+
+  const handleSubscribe = async () => {
+    if (!currentOrganizationId || !selectedIntegration) return;
+
+    setIsCreatingCheckout(true);
+    try {
+      const { url } = await createCheckoutLink({
+        organizationId: currentOrganizationId as Id<"organizations">,
+        integrationId: selectedIntegration,
+        successUrl: `${window.location.origin}/settings/integrations?subscribed=${selectedIntegration}`,
+      });
+      window.location.href = url;
+    } catch (error) {
+      console.error("Failed to create checkout:", error);
+      setIsCreatingCheckout(false);
     }
   };
 
@@ -127,6 +238,10 @@ export default function IntegrationsSettingsPage() {
         {availableIntegrations.map((integration) => {
           const isEnabled = enabledIntegrations.includes(integration.id);
           const isLoading = isToggling === integration.id;
+          const subscription =
+            integration.id === "library" ? librarySubscription : null;
+          const isEntitled = subscription?.isEntitled ?? false;
+          const requiresSubscription = integration.requiresSubscription;
 
           return (
             <div
@@ -151,10 +266,33 @@ export default function IntegrationsSettingsPage() {
                           Enabled
                         </Badge>
                       )}
+                      {subscription?.status === "active" &&
+                        subscription.cancelAtPeriodEnd && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs text-amber-500 border-amber-500/50"
+                          >
+                            Canceling
+                          </Badge>
+                        )}
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {integration.description}
                     </p>
+                    {requiresSubscription && !isEntitled && (
+                      <p className="mt-1 text-xs font-medium text-amber-500">
+                        Subscription required to enable this integration.
+                      </p>
+                    )}
+                    {subscription?.cancelAtPeriodEnd &&
+                      subscription.currentPeriodEnd && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Access until{" "}
+                          {new Date(
+                            subscription.currentPeriodEnd,
+                          ).toLocaleDateString()}
+                        </p>
+                      )}
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -227,6 +365,46 @@ export default function IntegrationsSettingsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Subscribe Dialog */}
+      <Dialog open={subscribeDialogOpen} onOpenChange={setSubscribeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Subscribe to Enable</DialogTitle>
+            <DialogDescription>
+              This integration requires an active subscription. Subscribe now to
+              unlock all features.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              You&apos;ll be redirected to our secure checkout page to complete
+              your subscription.
+            </p>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setSubscribeDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSubscribe} disabled={isCreatingCheckout}>
+              {isCreatingCheckout ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Redirecting...
+                </>
+              ) : (
+                <>
+                  Subscribe
+                  <ExternalLink className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

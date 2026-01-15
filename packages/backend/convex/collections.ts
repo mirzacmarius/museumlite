@@ -5,6 +5,12 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
+import {
+  enforceObjectQuota,
+  hasFeatureAccess,
+  requireFeatureAccess,
+  requireModuleEnabled,
+} from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -158,6 +164,12 @@ export const create = mutation({
 
     // Check permission
     await requirePermission(ctx, args.organizationId, "collections.create");
+
+    await enforceObjectQuota(ctx, args.organizationId);
+
+    if (args.collectionType && args.collectionType !== "general") {
+      await requireModuleEnabled(ctx, args.organizationId, args.collectionType);
+    }
 
     // Generate or validate accession number
     let accessionNumber: string;
@@ -533,6 +545,7 @@ export const getWithModuleDetails = query({
     let moduleDetails: ModuleDetails = null;
 
     if (collectionType === "fine_art") {
+      await requireModuleEnabled(ctx, collection.organizationId, "fine_art");
       const details = await ctx.db
         .query("fineArtDetails")
         .withIndex("by_collection", (q) =>
@@ -555,6 +568,7 @@ export const getWithModuleDetails = query({
         };
       }
     } else if (collectionType === "wine") {
+      await requireModuleEnabled(ctx, collection.organizationId, "wine");
       const details = await ctx.db
         .query("wineDetails")
         .withIndex("by_collection", (q) =>
@@ -576,6 +590,7 @@ export const getWithModuleDetails = query({
         };
       }
     } else if (collectionType === "automotive") {
+      await requireModuleEnabled(ctx, collection.organizationId, "automotive");
       const details = await ctx.db
         .query("vehicleDetails")
         .withIndex("by_collection", (q) =>
@@ -596,6 +611,11 @@ export const getWithModuleDetails = query({
         };
       }
     } else if (collectionType === "natural_history") {
+      await requireModuleEnabled(
+        ctx,
+        collection.organizationId,
+        "natural_history",
+      );
       const details = await ctx.db
         .query("naturalHistoryDetails")
         .withIndex("by_collection", (q) =>
@@ -618,6 +638,7 @@ export const getWithModuleDetails = query({
         };
       }
     } else if (collectionType === "archive") {
+      await requireModuleEnabled(ctx, collection.organizationId, "archive");
       const details = await ctx.db
         .query("archiveDetails")
         .withIndex("by_collection", (q) =>
@@ -2127,6 +2148,8 @@ export const listPublic = query({
       return { items: [], nextCursor: undefined, hasMore: false };
     }
 
+    await requireFeatureAccess(ctx, organization._id, "public_portal");
+
     const pageSize = args.limit ?? 24;
     const allCollections = await ctx.db
       .query("collections")
@@ -2259,6 +2282,8 @@ export const getPublic = query({
       return null;
     }
 
+    await requireFeatureAccess(ctx, organization._id, "public_portal");
+
     let collection = await ctx.db
       .query("collections")
       .withIndex("by_organization_and_accessionNumber", (q) =>
@@ -2378,6 +2403,8 @@ export const getPublicFilters = query({
       return { objectTypes: [], cultures: [], periods: [] };
     }
 
+    await requireFeatureAccess(ctx, organization._id, "public_portal");
+
     const collections = await ctx.db
       .query("collections")
       .withIndex("by_organization", (q) =>
@@ -2428,6 +2455,11 @@ export const listPublicForSitemap = query({
     }[] = [];
 
     for (const org of organizations) {
+      const hasPortal = await hasFeatureAccess(ctx, org._id, "public_portal");
+      if (!hasPortal) {
+        continue;
+      }
+
       const collections = await ctx.db
         .query("collections")
         .withIndex("by_organization", (q) => q.eq("organizationId", org._id))

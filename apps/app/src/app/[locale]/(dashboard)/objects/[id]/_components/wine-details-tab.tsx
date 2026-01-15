@@ -1,8 +1,10 @@
 "use client";
 
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { FeatureGuard } from "@v1/ui/feature-guard";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import {
@@ -25,9 +27,27 @@ export function WineDetailsTab({
   collectionId,
   organizationId,
 }: WineDetailsTabProps) {
-  const details = useQuery(api.wineDetails.get, {
-    collectionId: collectionId as Id<"collections">,
-  });
+  const { hasModule } = useFeatureAccess();
+  const hasModuleAccess = hasModule("wine");
+  const details = useQuery(
+    api.wineDetails.get,
+    hasModuleAccess
+      ? { collectionId: collectionId as Id<"collections"> }
+      : "skip",
+  );
+
+  if (!hasModuleAccess) {
+    return (
+      <FeatureGuard
+        featureName="Wine Module"
+        isLocked={true}
+        description="Enable the Wine module to track vintage, varietal, and cellar location."
+        showUpgrade={false}
+      >
+        <div />
+      </FeatureGuard>
+    );
+  }
 
   if (details === undefined) {
     return (

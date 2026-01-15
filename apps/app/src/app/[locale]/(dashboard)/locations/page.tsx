@@ -1,18 +1,19 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
+import { convertToCSV } from "@/components/export-csv-button";
 import { LocationSidebar } from "@/components/locations/location-sidebar";
 import { LocationStats } from "@/components/locations/location-stats";
 import { OccupancyDisplay } from "@/components/locations/occupancy-display";
-import { VitrinesGrid } from "@/components/locations/vitrines-grid";
-import { WallDisplay } from "@/components/locations/wall-display";
 import { SecureDrawers } from "@/components/locations/secure-drawers";
 import { StorageUnitsTable } from "@/components/locations/storage-units-table";
+import { VitrinesGrid } from "@/components/locations/vitrines-grid";
+import { WallDisplay } from "@/components/locations/wall-display";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
   Building2,
   ChevronRight,
@@ -23,48 +24,39 @@ import {
   Plus,
 } from "lucide-react";
 import Link from "next/link";
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import { AddChildLocationDialog } from "./_components/add-child-location-dialog";
 
 function ExportLocationsButton({
-  data,
+  onExport,
 }: {
-  data: Array<Record<string, unknown>> | undefined;
+  onExport: () => Promise<Array<Record<string, unknown>> | undefined>;
 }) {
-  const handleExport = useCallback(() => {
-    if (!data || data.length === 0) return;
+  const [isExporting, setIsExporting] = useState(false);
 
-    const headers = Object.keys(data[0] ?? {});
-    const csvRows: string[] = [headers.join(",")];
+  const handleExport = useCallback(async () => {
+    if (isExporting) return;
 
-    for (const row of data) {
-      const values = headers.map((header) => {
-        const value = row[header];
-        if (value === null || value === undefined) return "";
-        const stringValue = String(value);
-        if (
-          stringValue.includes(",") ||
-          stringValue.includes('"') ||
-          stringValue.includes("\n")
-        ) {
-          return `"${stringValue.replace(/"/g, '""')}"`;
-        }
-        return stringValue;
-      });
-      csvRows.push(values.join(","));
+    setIsExporting(true);
+
+    try {
+      const data = await onExport();
+      if (!data || data.length === 0) return;
+
+      const csv = convertToCSV(data);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `locations-${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsExporting(false);
     }
-
-    const csv = csvRows.join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `locations-${new Date().toISOString().split("T")[0]}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }, [data]);
+  }, [isExporting, onExport]);
 
   return (
     <Button
@@ -72,7 +64,7 @@ function ExportLocationsButton({
       size="sm"
       className="w-full border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
       onClick={handleExport}
-      disabled={!data || data.length === 0}
+      disabled={isExporting}
     >
       <Download className="mr-2 h-3 w-3" />
       Export CSV
@@ -157,9 +149,11 @@ function LocationLayout({
     organizationId,
   });
 
-  const exportData = useQuery(api.imports.exportLocations, {
-    organizationId,
-  });
+  const exportLocations = useMutation(api.imports.exportLocations);
+
+  const handleExport = useCallback(async () => {
+    return exportLocations({ organizationId });
+  }, [exportLocations, organizationId]);
 
   const selectedLocation = useQuery(
     api.locations.get,
@@ -465,7 +459,7 @@ function LocationLayout({
         {/* Location Actions */}
         <div className="mt-6 border-t border-zinc-800 pt-4 space-y-2">
           <PermissionGate permission="locations.read">
-            <ExportLocationsButton data={exportData} />
+            <ExportLocationsButton onExport={handleExport} />
           </PermissionGate>
           <PermissionGate permission="locations.create">
             <Button

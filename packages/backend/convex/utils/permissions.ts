@@ -1,7 +1,25 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import type { QueryCtx, MutationCtx } from "../_generated/server";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
+import {
+  type FeatureId,
+  hasFeatureAccess,
+  requireFeatureAccess,
+} from "./featureGates";
+
+function getFeatureForPermission(permissionName: string): FeatureId | null {
+  if (permissionName.startsWith("loans.")) {
+    return "loans";
+  }
+  if (permissionName === "collections.approve_exhibition") {
+    return "exhibitions";
+  }
+  if (permissionName === "collections.approve_conservation") {
+    return "conservation";
+  }
+  return null;
+}
 
 /**
  * Get the current user's organization context
@@ -79,6 +97,13 @@ export async function hasPermission(
   organizationId: Id<"organizations">,
   permissionName: string,
 ): Promise<boolean> {
+  const feature = getFeatureForPermission(permissionName);
+  if (feature) {
+    const allowed = await hasFeatureAccess(ctx, organizationId, feature);
+    if (!allowed) {
+      return false;
+    }
+  }
   const permissions = await getUserPermissions(ctx, organizationId);
   return permissions.includes(permissionName);
 }
@@ -91,6 +116,10 @@ export async function requirePermission(
   organizationId: Id<"organizations">,
   permissionName: string,
 ): Promise<void> {
+  const feature = getFeatureForPermission(permissionName);
+  if (feature) {
+    await requireFeatureAccess(ctx, organizationId, feature);
+  }
   const has = await hasPermission(ctx, organizationId, permissionName);
   if (!has) {
     throw new Error(`Permission denied: ${permissionName}`);

@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
+import { requireFeatureAccess } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
 function startOfDay(date: Date): number {
@@ -86,225 +87,199 @@ export const getAnalytics = query({
     ),
   }),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "collections.read");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.view_analytics",
+    );
 
-    // Get collection groups count (these are the "Collections")
-    const allCollectionGroups = await ctx.db
+    const collectionGroups = await ctx.db
       .query("collectionGroups")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
       .collect();
 
-    const collectionsStats = {
-      total: allCollectionGroups.length,
-    };
-
-    // Get objects counts by status (these are the actual collection objects)
-    const allObjects = await ctx.db
+    const collections = await ctx.db
       .query("collections")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
       .collect();
 
-    const objectsStats = {
-      total: allObjects.length,
-      active: allObjects.filter((c) => c.status === "active").length,
-      loaned: allObjects.filter((c) => c.status === "loaned").length,
-      deaccessioned: allObjects.filter((c) => c.status === "deaccessioned")
-        .length,
-    };
-
-    // Get loans counts
-    const allLoans = await ctx.db
+    const loans = await ctx.db
       .query("loans")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
       .collect();
 
-    const loansStats = {
-      total: allLoans.length,
-      pending: allLoans.filter((l) => l.status === "pending").length,
-      active: allLoans.filter((l) => l.status === "active").length,
-      returned: allLoans.filter((l) => l.status === "returned").length,
-      incoming: allLoans.filter((l) => l.type === "incoming").length,
-      outgoing: allLoans.filter((l) => l.type === "outgoing").length,
-    };
-
-    // Get accessions counts
-    const allAccessions = await ctx.db
+    const accessions = await ctx.db
       .query("accessions")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
       .collect();
 
-    const accessionsStats = {
-      pending: allAccessions.filter((a) => a.status === "pending").length,
-      approved: allAccessions.filter((a) => a.status === "approved").length,
-      rejected: allAccessions.filter((a) => a.status === "rejected").length,
-    };
-
-    // Get deaccessions counts
-    const allDeaccessions = await ctx.db
+    const deaccessions = await ctx.db
       .query("deaccessions")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
       .collect();
 
-    const deaccessionsStats = {
-      pending: allDeaccessions.filter((d) => d.status === "pending").length,
-      approved: allDeaccessions.filter((d) => d.status === "approved").length,
-      rejected: allDeaccessions.filter((d) => d.status === "rejected").length,
-    };
-
-    // Get locations count
-    const allLocations = await ctx.db
+    const locations = await ctx.db
       .query("locations")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
-      .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
 
-    // Get recent activity (last 10 items)
-    const recentCollections = allObjects
-      .sort((a, b) => b._creationTime - a._creationTime)
-      .slice(0, 3)
-      .map((c) => ({
-        type: "collection" as const,
-        id: c._id,
-        title: c.title,
-        subtitle: c.accessionNumber,
-        timestamp: c._creationTime,
-        status: c.status,
-      }));
-
-    const recentLoans = allLoans
-      .sort((a, b) => b._creationTime - a._creationTime)
-      .slice(0, 3)
-      .map((l) => ({
-        type: "loan" as const,
-        id: l._id,
-        title: l.loanNumber,
-        subtitle: l.lenderBorrowerName,
-        timestamp: l._creationTime,
-        status: l.status,
-      }));
-
-    const recentAccessions = allAccessions
-      .sort((a, b) => b.dateReceived - a.dateReceived)
-      .slice(0, 2)
-      .map((a) => ({
-        type: "accession" as const,
-        id: a._id,
-        title: a.accessionNumber,
-        subtitle: a.source,
-        timestamp: a.dateReceived,
-        status: a.status,
-      }));
-
-    const recentDeaccessions = allDeaccessions
-      .sort((a, b) => b.dateDeaccessioned - a.dateDeaccessioned)
-      .slice(0, 2)
-      .map((d) => ({
-        type: "deaccession" as const,
-        id: d._id,
-        title: d.deaccessionNumber,
-        subtitle: d.reason,
-        timestamp: d.dateDeaccessioned,
-        status: d.status,
-      }));
-
-    // Combine and sort by timestamp
-    const recentActivity = [
-      ...recentCollections,
-      ...recentLoans,
-      ...recentAccessions,
-      ...recentDeaccessions,
-    ]
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, 5);
-
-    const recentGroups = allCollectionGroups
-      .sort((a, b) => b._creationTime - a._creationTime)
-      .slice(0, 4);
-
     const recentCollectionGroups = await Promise.all(
-      recentGroups.map(async (group) => {
-        const groupItem = await ctx.db
-          .query("collectionGroupItems")
-          .withIndex("by_collectionGroup", (q) =>
-            q.eq("collectionGroupId", group._id),
-          )
-          .first();
+      [...collectionGroups]
+        .sort((a, b) => b._creationTime - a._creationTime)
+        .slice(0, 4)
+        .map(async (group) => {
+          const imageUrl = group.imageId
+            ? (await ctx.storage.getUrl(group.imageId)) ?? undefined
+            : undefined;
+          return {
+            id: group._id,
+            name: group.name,
+            description: group.description,
+            itemsCount: group.itemsCount ?? 0,
+            imageUrl,
+          };
+        }),
+    );
 
-        let imageUrl: string | undefined;
-        if (groupItem) {
+    const recentObjects = await Promise.all(
+      [...collections]
+        .sort((a, b) => b._creationTime - a._creationTime)
+        .slice(0, 6)
+        .map(async (collection) => {
           const primaryMedia = await ctx.db
             .query("mediaFiles")
             .withIndex("by_collection", (q) =>
-              q.eq("collectionId", groupItem.collectionId),
+              q.eq("collectionId", collection._id),
             )
             .filter((q) => q.eq(q.field("isPrimary"), true))
             .first();
 
-          if (primaryMedia?.storageId) {
-            const url = await ctx.storage.getUrl(primaryMedia.storageId);
-            imageUrl = url ?? undefined;
-          }
-        }
+          const imageUrl = primaryMedia?.storageId
+            ? (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined
+            : undefined;
 
-        return {
-          id: group._id,
-          name: group.name,
-          description: group.description,
-          itemsCount: group.itemsCount ?? 0,
-          imageUrl,
-        };
-      }),
+          return {
+            id: collection._id,
+            title: collection.title,
+            accessionNumber: collection.accessionNumber,
+            objectType: collection.objectType,
+            status: collection.status,
+            imageUrl,
+          };
+        }),
     );
 
-    const recentObjectsList = allObjects
-      .sort((a, b) => b._creationTime - a._creationTime)
-      .slice(0, 4);
+    const recentActivity = await Promise.all(
+      [
+        ...(await ctx.db
+          .query("auditLog")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .collect()),
+      ]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 12)
+        .map(async (event) => {
+          let type: "collection" | "loan" | "accession" | "deaccession" =
+            "collection";
 
-    const recentObjects = await Promise.all(
-      recentObjectsList.map(async (obj) => {
-        const primaryMedia = await ctx.db
-          .query("mediaFiles")
-          .withIndex("by_collection", (q) => q.eq("collectionId", obj._id))
-          .filter((q) => q.eq(q.field("isPrimary"), true))
-          .first();
+          if (event.entityType.includes("loan")) {
+            type = "loan";
+          } else if (event.entityType.includes("accession")) {
+            type = "accession";
+          } else if (event.entityType.includes("deaccession")) {
+            type = "deaccession";
+          } else if (event.entityType.includes("collection")) {
+            type = "collection";
+          }
 
-        let imageUrl: string | undefined;
-        if (primaryMedia?.storageId) {
-          const url = await ctx.storage.getUrl(primaryMedia.storageId);
-          imageUrl = url ?? undefined;
-        }
+          let title = event.entityType;
+          let subtitle: string | undefined = event.action;
+          let status: string | undefined;
 
-        return {
-          id: obj._id,
-          title: obj.title,
-          accessionNumber: obj.accessionNumber,
-          objectType: obj.objectType,
-          status: obj.status,
-          imageUrl,
-        };
-      }),
+          if (type === "collection") {
+            const collection = await ctx.db.get(
+              event.entityId as Id<"collections">,
+            );
+            title = collection?.title ?? event.entityType;
+            subtitle = collection?.accessionNumber ?? event.action;
+            status = collection?.status;
+          } else if (type === "loan") {
+            const loan = await ctx.db.get(event.entityId as Id<"loans">);
+            title = loan?.loanNumber ?? event.entityType;
+            subtitle = loan?.lenderBorrowerName ?? event.action;
+            status = loan?.status;
+          } else if (type === "accession") {
+            const accession = await ctx.db.get(
+              event.entityId as Id<"accessions">,
+            );
+            title = accession?.accessionNumber ?? event.entityType;
+            subtitle = accession?.source ?? event.action;
+            status = accession?.status;
+          } else if (type === "deaccession") {
+            const deaccession = await ctx.db.get(
+              event.entityId as Id<"deaccessions">,
+            );
+            title = deaccession?.deaccessionNumber ?? event.entityType;
+            subtitle = deaccession?.reason ?? event.action;
+            status = deaccession?.status;
+          }
+
+          return {
+            type,
+            id: event.entityId,
+            title,
+            subtitle,
+            timestamp: event.timestamp,
+            status,
+          };
+        }),
     );
 
     return {
-      collections: collectionsStats,
-      objects: objectsStats,
-      loans: loansStats,
-      accessions: accessionsStats,
-      deaccessions: deaccessionsStats,
+      collections: {
+        total: collectionGroups.length,
+      },
+      objects: {
+        total: collections.length,
+        active: collections.filter((c) => c.status === "active").length,
+        loaned: collections.filter((c) => c.status === "loaned").length,
+        deaccessioned: collections.filter((c) => c.status === "deaccessioned")
+          .length,
+      },
+      loans: {
+        total: loans.length,
+        pending: loans.filter((l) => l.status === "pending").length,
+        active: loans.filter((l) => l.status === "active").length,
+        returned: loans.filter((l) => l.status === "returned").length,
+        incoming: loans.filter((l) => l.type === "incoming").length,
+        outgoing: loans.filter((l) => l.type === "outgoing").length,
+      },
+      accessions: {
+        pending: accessions.filter((a) => a.status === "pending").length,
+        approved: accessions.filter((a) => a.status === "approved").length,
+        rejected: accessions.filter((a) => a.status === "rejected").length,
+      },
+      deaccessions: {
+        pending: deaccessions.filter((d) => d.status === "pending").length,
+        approved: deaccessions.filter((d) => d.status === "approved").length,
+        rejected: deaccessions.filter((d) => d.status === "rejected").length,
+      },
       locations: {
-        total: allLocations.length,
+        total: locations.length,
       },
       recentCollectionGroups,
       recentObjects,
@@ -403,6 +378,7 @@ export const getComplianceReport = query({
     generatedAt: v.number(),
   }),
   handler: async (ctx, args) => {
+    await requireFeatureAccess(ctx, args.organizationId, "compliance");
     await requirePermission(ctx, args.organizationId, "collections.read");
 
     const now = Date.now();
@@ -681,6 +657,7 @@ export const getLocationUtilization = query({
     generatedAt: v.number(),
   }),
   handler: async (ctx, args) => {
+    await requireFeatureAccess(ctx, args.organizationId, "reporting");
     await requirePermission(ctx, args.organizationId, "locations.read");
 
     const now = Date.now();
@@ -907,6 +884,7 @@ export const getOperationalKpis = query({
     generatedAt: v.number(),
   }),
   handler: async (ctx, args) => {
+    await requireFeatureAccess(ctx, args.organizationId, "reporting");
     await requirePermission(ctx, args.organizationId, "collections.read");
 
     const now = Date.now();
