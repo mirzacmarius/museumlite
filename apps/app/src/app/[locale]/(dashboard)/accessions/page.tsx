@@ -1,11 +1,11 @@
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
+import { api } from "@v1/backend/convex/_generated/api";
 import { fetchQuery, preloadQuery } from "convex/nextjs";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { api } from "@v1/backend/convex/_generated/api";
+import { AccessionsError } from "./accessions-error";
 import { AccessionsPageClient } from "./accessions-page-client";
 import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
-import { AccessionsError } from "./accessions-error";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +57,7 @@ export default async function AccessionsPage() {
 function NoOrganizationState() {
   return (
     <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
-      <div className="flex flex-col items-center gap-4 rounded-xl border border-border bg-card p-8">
+      <div className="flex flex-col items-center gap-4 rounded-xl border border-border/60 bg-card p-8">
         <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
           <svg
             xmlns="http://www.w3.org/2000/svg"

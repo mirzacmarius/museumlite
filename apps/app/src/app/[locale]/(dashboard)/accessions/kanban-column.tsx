@@ -1,9 +1,9 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { ScrollArea } from "@v1/ui/scroll-area";
+import { useQuery } from "convex/react";
 import {
   CheckCircle,
   Clock,
@@ -111,7 +111,7 @@ export function KanbanColumn({
         </span>
       </div>
 
-      <div className="flex-1 rounded-xl border border-border bg-card">
+      <div className="flex-1 rounded-xl border border-border/60 bg-card">
         <ScrollArea className="h-full max-h-[calc(100vh-280px)]">
           <div className="flex flex-col gap-2 p-2">
             {filteredAccessions.length === 0 ? (
@@ -126,7 +126,7 @@ export function KanbanColumn({
                 <Link
                   key={accession._id}
                   href={`/accessions/${accession._id}`}
-                  className="group rounded-lg border border-border bg-muted p-3 transition-all hover:border-border hover:bg-accent/50"
+                  className="group rounded-lg border border-border/60 bg-muted p-3 transition-all hover:border-border/60 hover:bg-accent/50"
                 >
                   <div className="mb-1 flex items-center justify-between">
                     <span className="text-xs font-medium text-muted-foreground">

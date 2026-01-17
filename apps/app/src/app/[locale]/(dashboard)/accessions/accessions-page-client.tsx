@@ -55,7 +55,7 @@ export function AccessionsPageClient({
   if (!organizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
-        <div className="flex flex-col items-center gap-4 rounded-xl border border-border bg-card p-8">
+        <div className="flex flex-col items-center gap-4 rounded-xl border border-border/60 bg-card p-8">
           <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -109,7 +109,7 @@ export function AccessionsPageClient({
               placeholder="Search accessions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-64 border-border bg-muted/50 pl-9 text-sm placeholder:text-muted-foreground"
+              className="w-64 border-border/60 bg-muted/50 pl-9 text-sm placeholder:text-muted-foreground"
             />
           </div>
           <PermissionGate permission="collections.read">
