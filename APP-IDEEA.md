@@ -59,16 +59,38 @@ Missing from routes but present in design:
 - Create Design → Implementation matrix for every sidebar module.
 - Finalize naming conventions in UI (Objects vs Collections vs Collection Groups).
 - Standardize page metadata: title, primary actions, breadcrumbs.
-- Set Linear labels: `phase/*`, `module/*`, `frontend`, `backend`, `design`, `workflow`, `priority-*`.
+
+### Label Taxonomy (Required)
+
+* `module/*` (exactly one per issue, multi-module allowed for cross-cutting work)
+* `phase/*` (exactly one): core | advanced | operations
+* Type (exactly one): `Feature` | `Bug` | `Chore` | `Docs` | `Improvement`
+* Surface (as needed): `frontend` | `backend` | `design` | `workflow`
+* Priority (optional): `priority-1` | `priority-2` | `priority-3`
+
+#### Canonical Rules
+* Use one type label only.
+* Do not use `enhancement` (use `Improvement` instead).
+* Add surface labels only if they help routing work.
+
+#### Examples
+* `module/collections` + `phase/core` + `Feature` + `backend`
+* `module/security` + `phase/core` + `Bug` + `backend`
+* `module/accounts` + `phase/advanced` + `Improvement` + `frontend`
 
 ### Definition of Done (Template)
-- UI matches design reference for the screen(s) touched.
-- Data is wired to Convex endpoints (no mock data left behind).
+- UI matches design reference for touched screens.
+- Data wired to Convex endpoints (no mock data).
 - Permissions checked on all mutations/queries.
 - Activity + audit log entries generated where relevant.
 - Empty/loading/error states handled.
 - Tests or coverage notes added when applicable.
 - No TypeScript errors; lint passes on touched files.
+
+#### Commands (when applicable)
+* `bun run lint`
+* `bun run typecheck`
+* `bun test` / targeted test
 
 ## Epic 1 — App Shell, Navigation, Global UX
 - Global command palette (search + create actions).
