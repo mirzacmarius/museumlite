@@ -1,6 +1,7 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 
 test("should require authentication for listMyAssignments", async () => {
@@ -8,7 +9,7 @@ test("should require authentication for listMyAssignments", async () => {
 
   await expect(
     t.query(api.assignments.listMyAssignments, {
-      organizationId: "test-org-id" as any,
+      organizationId: "test-org-id" as Id<"organizations">,
     }),
   ).rejects.toThrow("Not authenticated");
 });

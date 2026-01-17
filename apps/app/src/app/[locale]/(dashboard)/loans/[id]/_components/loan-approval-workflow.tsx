@@ -1,6 +1,7 @@
 "use client";
 
 import { PermissionGate } from "@/components/permission-gate";
+import { pluralize } from "@/lib/utils/pluralize";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -15,6 +16,7 @@ import {
   AlertDialogTrigger,
 } from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
+import { Checkbox } from "@v1/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -23,13 +25,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
-import { Checkbox } from "@v1/ui/checkbox";
 import { Label } from "@v1/ui/label";
 import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
-import { CheckCircle, XCircle, Truck, Info } from "lucide-react";
+import { CheckCircle, Info, Truck, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { pluralize } from "@/lib/utils/pluralize";
 
 interface LoanApprovalWorkflowProps {
   loanId: string;
@@ -63,14 +63,6 @@ export function LoanApprovalWorkflow({
 
   const loanItems = loan?.items || [];
   const hasMultipleItems = loanItems.length > 1;
-
-  // Debug: Log loan items to verify conditionIn is present
-  // Remove this after debugging
-  // console.log("Loan items:", loanItems.map(item => ({
-  //   id: item._id,
-  //   accessionNumber: item.accessionNumber,
-  //   conditionIn: item.conditionIn
-  // })));
 
   // Reset selected items when both dialogs are closed
   useEffect(() => {
@@ -372,11 +364,6 @@ export function LoanApprovalWorkflow({
                                 item.conditionIn != null &&
                                 String(item.conditionIn).trim().length > 0;
                               const isReturned = hasConditionIn;
-
-                              // Debug: Uncomment to verify conditionIn values
-                              // if (isReturnDialogOpen) {
-                              //   console.log(`Item ${item.accessionNumber}: conditionIn="${item.conditionIn}", isReturned=${isReturned}`);
-                              // }
 
                               return (
                                 <div

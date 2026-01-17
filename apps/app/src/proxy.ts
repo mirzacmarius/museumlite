@@ -19,23 +19,11 @@ export default convexAuthNextjsMiddleware(
     const isAuthenticated = await convexAuth.isAuthenticated();
     const isSignIn = isSignInPage(request);
     if (isSignIn && isAuthenticated) {
-      console.log("redirecting to /", {
-        isSignIn,
-        isAuthenticated,
-      });
       return nextjsMiddlewareRedirect(request, "/");
     }
     if (!isSignIn && !isAuthenticated) {
-      console.log("redirecting to /login", {
-        isSignIn,
-        isAuthenticated,
-      });
       return nextjsMiddlewareRedirect(request, "/login");
     }
-    console.log("no redirect", {
-      isSignIn,
-      isAuthenticated,
-    });
 
     return I18nMiddleware(request);
   },

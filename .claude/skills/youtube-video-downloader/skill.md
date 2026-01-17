@@ -1,0 +1,3 @@
+# YouTube Video Downloader
+
+Downloads videos from YouTube and other platforms for offline viewing, editing, or archival. Handles various formats and quality options.
