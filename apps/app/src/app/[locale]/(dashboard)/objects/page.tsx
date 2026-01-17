@@ -73,7 +73,7 @@ export default function CollectionsPage() {
   if (!organizations || organizations.length === 0) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
-        <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">No Organization Found</h3>
@@ -95,7 +95,7 @@ export default function CollectionsPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
-        <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">Select an Organization</h3>
@@ -112,7 +112,7 @@ export default function CollectionsPage() {
   return (
     <div className="flex h-full w-full bg-background px-6">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-        <div className="flex w-full flex-col rounded-lg border border-border bg-card">
+        <div className="flex w-full flex-col rounded-lg border border-border/60 bg-card">
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex flex-col gap-2">
               <h2 className="text-xl font-medium text-primary">
@@ -137,7 +137,7 @@ export default function CollectionsPage() {
             </div>
           </div>
           <div className="flex w-full px-6">
-            <div className="w-full border-b border-border" />
+            <div className="w-full border-b border-border/60" />
           </div>
           <CollectionFiltersAndList organizationId={currentOrganizationId} />
         </div>
@@ -436,7 +436,7 @@ function CollectionFiltersAndList({
   return (
     <div className="flex flex-col">
       {/* Search and Filter Bar */}
-      <div className="border-b border-border p-6">
+      <div className="border-b border-border/60 p-6">
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
@@ -474,7 +474,7 @@ function CollectionFiltersAndList({
 
           {/* Advanced Filters */}
           {showFilters && (
-            <div className="grid grid-cols-1 gap-4 border-t border-border pt-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 border-t border-border/60 pt-4 md:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
                 <Select
@@ -859,7 +859,9 @@ function CollectionListItem({
     <>
       <div
         className={`group relative flex items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-accent ${
-          isSelected ? "border-primary ring-2 ring-primary/20" : "border-border"
+          isSelected
+            ? "border-primary ring-2 ring-primary/20"
+            : "border-border/60"
         }`}
       >
         {isColumnVisible("checkbox") && (
