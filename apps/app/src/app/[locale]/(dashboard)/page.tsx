@@ -1,13 +1,14 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import {
+  type RecentActivityItem,
+  RecentActivityLog,
+} from "@/components/recent-activity-log";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { KpiCard } from "@v1/ui/kpi-card";
 import { useQuery } from "convex/react";
-import {
-  RecentActivityLog,
-  type RecentActivityItem,
-} from "@/components/recent-activity-log";
 import {
   ArrowLeftRight,
   Building2,
@@ -78,8 +79,15 @@ export default function DashboardPage() {
 
   if (analytics === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6">
-        <p className="text-muted-foreground">Loading analytics...</p>
+      <div className="flex h-full w-full flex-col bg-background">
+        <div className="px-6 py-4 border-b border-border bg-background/50 backdrop-blur-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <KpiCard title="" value="" loading />
+            <KpiCard title="" value="" loading />
+            <KpiCard title="" value="" loading />
+            <KpiCard title="" value="" loading />
+          </div>
+        </div>
       </div>
     );
   }
@@ -87,62 +95,27 @@ export default function DashboardPage() {
   return (
     <div className="flex h-full w-full flex-col bg-background">
       <div className="px-6 py-4 border-b border-border bg-background/50 backdrop-blur-sm">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-muted/30 border border-border rounded-lg p-3 flex items-center gap-3">
-            <div className="p-2 bg-indigo-500/10 rounded-md border border-indigo-500/20">
-              <Package className="w-4 h-4 text-indigo-400" />
-            </div>
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-                Total Objects
-              </div>
-              <div className="text-lg font-semibold text-foreground">
-                {analytics.objects.total.toLocaleString()}
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-muted/30 border border-border rounded-lg p-3 flex items-center gap-3">
-            <div className="p-2 bg-emerald-500/10 rounded-md border border-emerald-500/20">
-              <Eye className="w-4 h-4 text-emerald-400" />
-            </div>
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-                Items on Display
-              </div>
-              <div className="text-lg font-semibold text-foreground">
-                {analytics.objects.active.toLocaleString()}
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-muted/30 border border-border rounded-lg p-3 flex items-center gap-3">
-            <div className="p-2 bg-amber-500/10 rounded-md border border-amber-500/20">
-              <FileClock className="w-4 h-4 text-amber-400" />
-            </div>
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-                Pending Accessions
-              </div>
-              <div className="text-lg font-semibold text-foreground">
-                {analytics.accessions.pending}
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-muted/30 border border-border rounded-lg p-3 flex items-center gap-3">
-            <div className="p-2 bg-blue-500/10 rounded-md border border-blue-500/20">
-              <ArrowLeftRight className="w-4 h-4 text-blue-400" />
-            </div>
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-                Active Loans
-              </div>
-              <div className="text-lg font-semibold text-foreground">
-                {analytics.loans.active}
-              </div>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <KpiCard
+            title="Total Objects"
+            value={analytics.objects.total.toLocaleString()}
+            icon={Package}
+          />
+          <KpiCard
+            title="Objects on Loan"
+            value={analytics.objects.loaned.toLocaleString()}
+            icon={ArrowLeftRight}
+          />
+          <KpiCard
+            title="Active Loans"
+            value={analytics.loans.active.toLocaleString()}
+            icon={ArrowLeftRight}
+          />
+          <KpiCard
+            title="Pending Accessions"
+            value={analytics.accessions.pending.toLocaleString()}
+            icon={FileClock}
+          />
         </div>
       </div>
 
