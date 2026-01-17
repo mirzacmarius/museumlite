@@ -62,7 +62,7 @@ function ExportLocationsButton({
     <Button
       variant="outline"
       size="sm"
-      className="w-full border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+      className="w-full"
       onClick={handleExport}
       disabled={isExporting}
     >
@@ -433,9 +433,9 @@ function LocationLayout({
                   ))}
                 </div>
               ) : (
-                <div className="flex h-48 flex-col items-center justify-center rounded-xl border border-dashed border-zinc-800 bg-zinc-900/20">
-                  <Package className="h-8 w-8 text-zinc-600" />
-                  <p className="mt-2 text-xs text-zinc-500">
+                <div className="flex h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/20">
+                  <Package className="h-8 w-8 text-muted-foreground" />
+                  <p className="mt-2 text-xs text-muted-foreground">
                     No objects at this location
                   </p>
                 </div>
@@ -444,11 +444,11 @@ function LocationLayout({
 
             {/* Notes */}
             {selectedLocation.notes && (
-              <div className="mt-8 p-4 bg-zinc-900/30 border border-zinc-800 rounded-lg">
-                <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide mb-2">
+              <div className="mt-8 p-4 bg-card/30 border border-border/60 rounded-lg">
+                <h3 className="text-sm font-semibold text-foreground/80 uppercase tracking-wide mb-2">
                   Notes
                 </h3>
-                <p className="text-sm text-zinc-400">
+                <p className="text-sm text-muted-foreground">
                   {selectedLocation.notes}
                 </p>
               </div>
@@ -457,17 +457,12 @@ function LocationLayout({
         )}
 
         {/* Location Actions */}
-        <div className="mt-6 border-t border-zinc-800 pt-4 space-y-2">
+        <div className="mt-6 border-t border-border/60 pt-4 space-y-2">
           <PermissionGate permission="locations.read">
             <ExportLocationsButton onExport={handleExport} />
           </PermissionGate>
           <PermissionGate permission="locations.create">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
-              asChild
-            >
+            <Button variant="outline" size="sm" className="w-full" asChild>
               <Link href="/locations/import">
                 <FileUp className="mr-2 h-3 w-3" />
                 Import CSV
@@ -478,7 +473,7 @@ function LocationLayout({
             <Button
               variant="outline"
               size="sm"
-              className="w-full border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+              className="w-full"
               onClick={() => setAddDialogOpen(true)}
             >
               <Plus className="mr-2 h-3 w-3" />
