@@ -24,6 +24,7 @@ import {
 import Link from "next/link";
 import { Suspense } from "react";
 import { AssignmentsQueue } from "./_components/assignments-queue";
+import { NewArrivalsFeed } from "./_components/new-arrivals-feed";
 
 export default function DashboardPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
@@ -125,6 +126,12 @@ export default function DashboardPage() {
       <div className="px-6 pt-6">
         <Suspense fallback={<SkeletonCard className="h-96" />}>
           <AssignmentsQueue />
+        </Suspense>
+      </div>
+
+      <div className="px-6 pt-6">
+        <Suspense fallback={<SkeletonCard className="h-64" />}>
+          <NewArrivalsFeed />
         </Suspense>
       </div>
 
