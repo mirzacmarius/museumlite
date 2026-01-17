@@ -3,6 +3,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, query } from "./_generated/server";
+import { requireModuleEnabled } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -53,8 +54,14 @@ export const list = query({
     search: v.optional(v.string()),
     accountType: v.optional(accountTypeValidator),
   },
+  returns: v.object({
+    accounts: v.array(v.any()),
+    isDone: v.boolean(),
+    continueCursor: v.optional(v.string()),
+  }),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "loans.read");
+    await requireModuleEnabled(ctx, args.organizationId, "accounts");
+    await requirePermission(ctx, args.organizationId, "accounts.read");
 
     let results = await ctx.db
       .query("accounts")
@@ -133,13 +140,15 @@ export const get = query({
   args: {
     accountId: v.id("accounts"),
   },
+  returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
     const account = await ctx.db.get(args.accountId);
     if (!account) {
       return null;
     }
 
-    await requirePermission(ctx, account.organizationId, "loans.read");
+    await requireModuleEnabled(ctx, account.organizationId, "accounts");
+    await requirePermission(ctx, account.organizationId, "accounts.read");
 
     // Get associated roles
     const accountRoles = await ctx.db
@@ -231,7 +240,8 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "loans.create");
+    await requireModuleEnabled(ctx, args.organizationId, "accounts");
+    await requirePermission(ctx, args.organizationId, "accounts.write");
 
     // Validation based on account type
     if (args.accountType === "patron") {
@@ -361,7 +371,8 @@ export const update = mutation({
       throw new Error("Account not found");
     }
 
-    await requirePermission(ctx, account.organizationId, "loans.update");
+    await requireModuleEnabled(ctx, account.organizationId, "accounts");
+    await requirePermission(ctx, account.organizationId, "accounts.write");
 
     const updates: Record<string, unknown> = {
       lastModifiedBy: userId,
@@ -466,7 +477,8 @@ export const remove = mutation({
       throw new Error("Account not found");
     }
 
-    await requirePermission(ctx, account.organizationId, "loans.update");
+    await requireModuleEnabled(ctx, account.organizationId, "accounts");
+    await requirePermission(ctx, account.organizationId, "accounts.delete");
 
     // Check if account is used in any loans
     const loansUsingAccount = await ctx.db
@@ -504,8 +516,10 @@ export const getByCardNumber = query({
     organizationId: v.id("organizations"),
     cardNumber: v.string(),
   },
+  returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "loans.read");
+    await requireModuleEnabled(ctx, args.organizationId, "accounts");
+    await requirePermission(ctx, args.organizationId, "accounts.read");
 
     const account = await ctx.db
       .query("accounts")
@@ -552,5 +566,164 @@ export const checkUsage = query({
       loanCount: loans.length,
       loanNumbers: loans.map((l) => l.loanNumber),
     };
+  },
+});
+
+/**
+ * Get account by name (businessName or lastName)
+ */
+export const getByName = query({
+  args: {
+    organizationId: v.id("organizations"),
+    name: v.string(),
+  },
+  returns: v.union(v.any(), v.null()),
+  handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "accounts");
+    await requirePermission(ctx, args.organizationId, "accounts.read");
+
+    const accounts = await ctx.db
+      .query("accounts")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const nameLower = args.name.toLowerCase();
+    const account = accounts.find(
+      (a) =>
+        a.businessName?.toLowerCase() === nameLower ||
+        a.lastName?.toLowerCase() === nameLower,
+    );
+
+    return account ?? null;
+  },
+});
+
+/**
+ * Archive account (soft delete)
+ */
+export const archive = mutation({
+  args: {
+    accountId: v.id("accounts"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const account = await ctx.db.get(args.accountId);
+    if (!account) {
+      throw new Error("Account not found");
+    }
+
+    await requireModuleEnabled(ctx, account.organizationId, "accounts");
+    await requirePermission(ctx, account.organizationId, "accounts.delete");
+
+    await ctx.db.patch(args.accountId, {
+      status: "archived",
+      lastModifiedBy: userId,
+      lastModifiedAt: Date.now(),
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Restore archived account
+ */
+export const restore = mutation({
+  args: {
+    accountId: v.id("accounts"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const account = await ctx.db.get(args.accountId);
+    if (!account) {
+      throw new Error("Account not found");
+    }
+
+    await requireModuleEnabled(ctx, account.organizationId, "accounts");
+    await requirePermission(ctx, account.organizationId, "accounts.manage");
+
+    if (account.status !== "archived") {
+      throw new Error("Can only restore archived accounts");
+    }
+
+    await ctx.db.patch(args.accountId, {
+      status: "active",
+      lastModifiedBy: userId,
+      lastModifiedAt: Date.now(),
+    });
+
+    return null;
+  },
+});
+
+export const updateStatus = mutation({
+  args: {
+    accountId: v.id("accounts"),
+    status: statusValidator,
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const account = await ctx.db.get(args.accountId);
+    if (!account) {
+      throw new Error("Account not found");
+    }
+
+    await requireModuleEnabled(ctx, account.organizationId, "accounts");
+    await requirePermission(ctx, account.organizationId, "accounts.manage");
+
+    await ctx.db.patch(args.accountId, {
+      status: args.status,
+      lastModifiedBy: userId,
+      lastModifiedAt: Date.now(),
+    });
+
+    return null;
+  },
+});
+
+export const updateNotes = mutation({
+  args: {
+    accountId: v.id("accounts"),
+    notes: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const account = await ctx.db.get(args.accountId);
+    if (!account) {
+      throw new Error("Account not found");
+    }
+
+    await requireModuleEnabled(ctx, account.organizationId, "accounts");
+    await requirePermission(ctx, account.organizationId, "accounts.write");
+
+    await ctx.db.patch(args.accountId, {
+      notes: args.notes.trim() || undefined,
+      lastModifiedBy: userId,
+      lastModifiedAt: Date.now(),
+    });
+
+    return null;
   },
 });

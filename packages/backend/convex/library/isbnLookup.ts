@@ -1,5 +1,7 @@
 import { v } from "convex/values";
-import { action } from "../_generated/server";
+import { api } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
+import { type ActionCtx, action } from "../_generated/server";
 
 /**
  * ISBN lookup result type
@@ -25,11 +27,27 @@ interface IsbnLookupResult {
   lcClassification?: string;
 }
 
+async function requireLibraryModule(
+  ctx: ActionCtx,
+  organizationId: Id<"organizations">,
+) {
+  const org = await ctx.runQuery(api.organizations.get, { organizationId });
+  if (!org) {
+    throw new Error("Organization not found");
+  }
+
+  const enabledModules = org.settings?.enabledModules ?? [];
+  if (!enabledModules.includes("library")) {
+    throw new Error("Module not enabled: library");
+  }
+}
+
 /**
  * Look up book information by ISBN using Open Library API
  */
 export const lookupIsbn = action({
   args: {
+    organizationId: v.id("organizations"),
     isbn: v.string(),
   },
   returns: v.object({
@@ -53,7 +71,8 @@ export const lookupIsbn = action({
     lcClassification: v.optional(v.string()),
   }),
   handler: async (ctx, args): Promise<IsbnLookupResult> => {
-    // Clean the ISBN (remove dashes and spaces)
+    await requireLibraryModule(ctx, args.organizationId);
+
     const cleanIsbn = args.isbn.replace(/[-\s]/g, "");
 
     // Validate ISBN format
@@ -134,22 +153,24 @@ async function lookupOpenLibrary(isbn: string): Promise<IsbnLookupResult> {
 
     // Try to get author info
     if (editionData.authors && editionData.authors.length > 0) {
-      const authorPromises = editionData.authors.map(async (author: any) => {
-        if (author.key) {
-          try {
-            const authorResponse = await fetch(
-              `https://openlibrary.org${author.key}.json`,
-            );
-            if (authorResponse.ok) {
-              const authorData = await authorResponse.json();
-              return authorData.name || authorData.personal_name;
+      const authorPromises = editionData.authors.map(
+        async (author: { key?: string }) => {
+          if (author.key) {
+            try {
+              const authorResponse = await fetch(
+                `https://openlibrary.org${author.key}.json`,
+              );
+              if (authorResponse.ok) {
+                const authorData = await authorResponse.json();
+                return authorData.name || authorData.personal_name;
+              }
+            } catch {
+              // Ignore author fetch errors
             }
-          } catch {
-            // Ignore author fetch errors
           }
-        }
-        return null;
-      });
+          return null;
+        },
+      );
 
       const authorNames = await Promise.all(authorPromises);
       result.authors = authorNames.filter((name): name is string => !!name);
@@ -182,11 +203,12 @@ async function lookupOpenLibrary(isbn: string): Promise<IsbnLookupResult> {
           if (!result.authors || result.authors.length === 0) {
             if (workData.authors && workData.authors.length > 0) {
               const authorPromises = workData.authors.map(
-                async (author: any) => {
-                  if (author.author && author.author.key) {
+                async (author: { author?: { key?: string } }) => {
+                  const authorKey = author.author?.key;
+                  if (authorKey) {
                     try {
                       const authorResponse = await fetch(
-                        `https://openlibrary.org${author.author.key}.json`,
+                        `https://openlibrary.org${authorKey}.json`,
                       );
                       if (authorResponse.ok) {
                         const authorData = await authorResponse.json();
@@ -230,6 +252,19 @@ async function lookupOpenLibrary(isbn: string): Promise<IsbnLookupResult> {
 /**
  * Fallback: Look up using Open Library bibkeys API
  */
+type BibkeysBookData = {
+  title?: string;
+  subtitle?: string;
+  authors?: Array<{ name?: string }>;
+  publishers?: Array<{ name?: string }>;
+  publish_date?: string;
+  publish_places?: Array<{ name?: string }>;
+  number_of_pages?: number;
+  subjects?: Array<{ name?: string }>;
+  cover?: { large?: string; medium?: string };
+  identifiers?: { isbn_10?: string[]; isbn_13?: string[] };
+};
+
 async function lookupOpenLibraryBibkeys(
   isbn: string,
 ): Promise<IsbnLookupResult> {
@@ -241,25 +276,36 @@ async function lookupOpenLibraryBibkeys(
       return { found: false };
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as Record<string, BibkeysBookData>;
     const bookData = data[`ISBN:${isbn}`];
 
     if (!bookData) {
       return { found: false };
     }
 
+    const authorNames =
+      bookData.authors
+        ?.map((author: { name?: string }) => author.name)
+        .filter((name): name is string => Boolean(name)) ?? [];
+
+    const subjectNames =
+      bookData.subjects
+        ?.slice(0, 10)
+        .map((subject: { name?: string }) => subject.name)
+        .filter((name): name is string => Boolean(name)) ?? [];
+
     const result: IsbnLookupResult = {
       found: true,
       title: bookData.title,
       subtitle: bookData.subtitle,
-      authors: bookData.authors?.map((a: any) => a.name) || [],
+      authors: authorNames,
       publisher: bookData.publishers?.[0]?.name,
       publicationYear: bookData.publish_date
         ? extractYear(bookData.publish_date)
         : undefined,
       publicationPlace: bookData.publish_places?.[0]?.name,
       pages: bookData.number_of_pages,
-      subjects: bookData.subjects?.slice(0, 10).map((s: any) => s.name) || [],
+      subjects: subjectNames,
     };
 
     // Get cover
@@ -291,7 +337,7 @@ function extractYear(dateStr: string): number | undefined {
   // Try to find a 4-digit year in the string
   const match = dateStr.match(/\b(19|20)\d{2}\b/);
   if (match) {
-    return parseInt(match[0], 10);
+    return Number.parseInt(match[0], 10);
   }
   return undefined;
 }
@@ -342,6 +388,7 @@ function mapLanguageCode(code: string | undefined): string | undefined {
  */
 export const validateIsbn = action({
   args: {
+    organizationId: v.id("organizations"),
     isbn: v.string(),
   },
   returns: v.object({
@@ -350,6 +397,8 @@ export const validateIsbn = action({
     normalized: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
+    await requireLibraryModule(ctx, args.organizationId);
+
     const cleanIsbn = args.isbn.replace(/[-\s]/g, "");
 
     if (cleanIsbn.length === 10) {
@@ -383,42 +432,36 @@ function validateIsbn10(isbn: string): boolean {
   let sum = 0;
   for (let i = 0; i < 9; i++) {
     const char = isbn.charAt(i);
-    const digit = parseInt(char, 10);
-    if (isNaN(digit)) return false;
+    const digit = Number.parseInt(char, 10);
+    if (Number.isNaN(digit)) return false;
     sum += digit * (10 - i);
   }
 
-  // Last character can be 'X' for 10
   const lastChar = isbn.charAt(9).toUpperCase();
-  const lastDigit = lastChar === "X" ? 10 : parseInt(lastChar, 10);
-  if (isNaN(lastDigit)) return false;
+  const lastDigit = lastChar === "X" ? 10 : Number.parseInt(lastChar, 10);
+  if (Number.isNaN(lastDigit)) return false;
 
   sum += lastDigit;
   return sum % 11 === 0;
 }
 
-/**
- * Validate ISBN-13 checksum
- */
 function validateIsbn13(isbn: string): boolean {
   if (isbn.length !== 13) return false;
 
   let sum = 0;
   for (let i = 0; i < 13; i++) {
     const char = isbn.charAt(i);
-    const digit = parseInt(char, 10);
-    if (isNaN(digit)) return false;
+    const digit = Number.parseInt(char, 10);
+    if (Number.isNaN(digit)) return false;
     sum += digit * (i % 2 === 0 ? 1 : 3);
   }
 
   return sum % 10 === 0;
 }
 
-/**
- * Convert ISBN-10 to ISBN-13
- */
 export const convertIsbn10To13 = action({
   args: {
+    organizationId: v.id("organizations"),
     isbn10: v.string(),
   },
   returns: v.object({
@@ -426,6 +469,8 @@ export const convertIsbn10To13 = action({
     isbn13: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
+    await requireLibraryModule(ctx, args.organizationId);
+
     const cleanIsbn = args.isbn10.replace(/[-\s]/g, "");
 
     if (cleanIsbn.length !== 10) {
@@ -433,13 +478,13 @@ export const convertIsbn10To13 = action({
     }
 
     // Remove check digit and add 978 prefix
-    const base = "978" + cleanIsbn.slice(0, 9);
+    const base = `978${cleanIsbn.slice(0, 9)}`;
 
     // Calculate ISBN-13 check digit
     let sum = 0;
     for (let i = 0; i < 12; i++) {
       const char = base.charAt(i);
-      const digit = parseInt(char, 10);
+      const digit = Number.parseInt(char, 10);
       sum += digit * (i % 2 === 0 ? 1 : 3);
     }
 
@@ -447,7 +492,7 @@ export const convertIsbn10To13 = action({
 
     return {
       success: true,
-      isbn13: base + checkDigit.toString(),
+      isbn13: `${base}${checkDigit}`,
     };
   },
 });

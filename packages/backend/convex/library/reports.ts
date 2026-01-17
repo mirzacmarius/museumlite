@@ -1,6 +1,7 @@
 import { v } from "convex/values";
-import { query } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import { query } from "../_generated/server";
+import { requireModuleEnabled } from "../utils/featureGates";
 
 /**
  * Get comprehensive library dashboard statistics
@@ -10,6 +11,7 @@ export const getDashboardStats = query({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     const now = Date.now();
     const today = new Date(now);
     today.setHours(0, 0, 0, 0);
@@ -149,6 +151,7 @@ export const getCirculationReport = query({
     endDate: v.number(),
   },
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     const circulations = await ctx.db
       .query("circulations")
       .withIndex("by_organization", (q) =>
@@ -223,6 +226,7 @@ export const getPatronReport = query({
     endDate: v.number(),
   },
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     const allPatronAccounts = await ctx.db
       .query("accounts")
       .withIndex("by_organization_and_accountType", (q) =>
@@ -300,6 +304,7 @@ export const getCollectionReport = query({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     const items = await ctx.db
       .query("libraryItems")
       .withIndex("by_organization", (q) =>
@@ -377,6 +382,7 @@ export const getFinancialReport = query({
     endDate: v.number(),
   },
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     // Fines created in period
     const fines = await ctx.db
       .query("libraryFines")

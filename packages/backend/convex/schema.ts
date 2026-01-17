@@ -53,6 +53,7 @@ export default defineSchema({
               v.literal("natural_history"),
               v.literal("archive"),
               v.literal("library"),
+              v.literal("accounts"),
             ),
           ),
         ),
@@ -104,6 +105,7 @@ export default defineSchema({
       v.literal("media"),
       v.literal("users"),
       v.literal("organization"),
+      v.literal("accounts"),
     ),
   }).index("by_category", ["category"]),
 
@@ -865,6 +867,32 @@ export default defineSchema({
       }),
     ),
 
+    // CRM fields (MUS-362)
+    legalName: v.optional(v.string()),
+    taxId: v.optional(v.string()),
+    website: v.optional(v.string()),
+    billingAddress: v.optional(
+      v.object({
+        street1: v.string(),
+        street2: v.optional(v.string()),
+        city: v.string(),
+        state: v.string(),
+        postalCode: v.string(),
+        country: v.string(),
+      }),
+    ),
+    shippingAddress: v.optional(
+      v.object({
+        street1: v.string(),
+        street2: v.optional(v.string()),
+        city: v.string(),
+        state: v.string(),
+        postalCode: v.string(),
+        country: v.string(),
+      }),
+    ),
+    tags: v.optional(v.array(v.string())),
+
     // Library-specific fields (for patron accounts)
     cardNumber: v.optional(v.string()), // Library card number
     pin: v.optional(v.string()),
@@ -879,6 +907,7 @@ export default defineSchema({
         v.literal("suspended"),
         v.literal("blocked"),
         v.literal("inactive"),
+        v.literal("archived"),
       ),
     ),
     blockReason: v.optional(v.string()),
@@ -2585,4 +2614,101 @@ export default defineSchema({
     ])
     .index("by_subscription", ["subscriptionId"])
     .index("by_status", ["status"]),
+
+  contacts: defineTable({
+    organizationId: v.id("organizations"),
+    accountId: v.id("accounts"),
+    firstName: v.string(),
+    lastName: v.string(),
+    title: v.optional(v.string()),
+    role: v.union(
+      v.literal("primary"),
+      v.literal("billing"),
+      v.literal("shipping"),
+      v.literal("technical"),
+    ),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    mobile: v.optional(v.string()),
+    preferredContact: v.optional(
+      v.union(v.literal("email"), v.literal("phone"), v.literal("mobile")),
+    ),
+    isPrimary: v.boolean(),
+    isActive: v.boolean(),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_account", ["accountId"])
+    .index("by_organization_and_account", ["organizationId", "accountId"])
+    .index("by_email", ["email"]),
+
+  accountRelationships: defineTable({
+    organizationId: v.id("organizations"),
+    accountId: v.id("accounts"),
+    relatedEntityType: v.union(
+      v.literal("loan"),
+      v.literal("exhibition"),
+      v.literal("acquisition"),
+      v.literal("item"),
+    ),
+    relatedEntityId: v.string(),
+    relationshipType: v.union(
+      v.literal("lender"),
+      v.literal("borrower"),
+      v.literal("donor"),
+      v.literal("vendor"),
+      v.literal("buyer"),
+    ),
+    startDate: v.number(),
+    endDate: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_account", ["accountId"])
+    .index("by_organization_and_account", ["organizationId", "accountId"])
+    .index("by_related_entity", ["relatedEntityType", "relatedEntityId"])
+    .index("by_organization_account_and_type", [
+      "organizationId",
+      "accountId",
+      "relationshipType",
+    ]),
+
+  accountDocuments: defineTable({
+    organizationId: v.id("organizations"),
+    accountId: v.id("accounts"),
+    storageId: v.id("_storage"),
+    filename: v.string(),
+    mimeType: v.string(),
+    size: v.number(),
+    documentType: v.union(
+      v.literal("contract"),
+      v.literal("agreement"),
+      v.literal("invoice"),
+      v.literal("correspondence"),
+      v.literal("other"),
+    ),
+    description: v.optional(v.string()),
+    uploadedBy: v.id("users"),
+    uploadedAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_account", ["accountId"])
+    .index("by_organization_and_account", ["organizationId", "accountId"])
+    .index("by_storage", ["storageId"]),
+
+  accountSegments: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    filters: v.any(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_name", ["organizationId", "name"]),
 });

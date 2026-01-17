@@ -12,11 +12,13 @@ export type FeatureId =
   | "installations";
 
 export type ModuleId =
+  | "library"
   | "fine_art"
   | "wine"
   | "automotive"
   | "natural_history"
-  | "archive";
+  | "archive"
+  | "accounts";
 
 export type IntegrationId = "library";
 
@@ -109,6 +111,16 @@ export async function requireFeatureAccess(
   }
 }
 
+export async function hasModuleEnabled(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  moduleId: ModuleId,
+) {
+  const org = await getOrganization(ctx, organizationId);
+  const enabledModules = org.settings?.enabledModules ?? [];
+  return enabledModules.includes(moduleId);
+}
+
 export async function requireModuleEnabled(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
@@ -119,6 +131,16 @@ export async function requireModuleEnabled(
   if (!enabledModules.includes(moduleId)) {
     throw new Error(`Module not enabled: ${moduleId}`);
   }
+}
+
+export async function hasIntegrationEnabled(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  integrationId: IntegrationId,
+) {
+  const org = await getOrganization(ctx, organizationId);
+  const enabledIntegrations = org.settings?.enabledIntegrations ?? [];
+  return enabledIntegrations.includes(integrationId);
 }
 
 export async function requireIntegrationEnabled(

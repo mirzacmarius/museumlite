@@ -1,8 +1,9 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import { mutation, query } from "../_generated/server";
+import { requireModuleEnabled } from "../utils/featureGates";
 
 /**
  * Create a new vendor
@@ -28,7 +29,7 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    const now = Date.now();
+    await requireModuleEnabled(ctx, args.organizationId, "library");
 
     const vendorId = await ctx.db.insert("libraryVendors", {
       organizationId: args.organizationId,
@@ -43,95 +44,10 @@ export const create = mutation({
       discountPercent: args.discountPercent,
       notes: args.notes,
       isActive: true,
-      createdAt: now,
+      createdAt: Date.now(),
     });
 
     return vendorId;
-  },
-});
-
-/**
- * Get a vendor by ID
- */
-export const get = query({
-  args: {
-    vendorId: v.id("libraryVendors"),
-  },
-  handler: async (ctx, args) => {
-    const vendor = await ctx.db.get(args.vendorId);
-    if (!vendor) {
-      return null;
-    }
-
-    // Get acquisition requests for this vendor
-    const requests = await ctx.db
-      .query("libraryAcquisitionRequests")
-      .filter((q) => q.eq(q.field("vendorId"), args.vendorId))
-      .collect();
-
-    const ordersCount = requests.length;
-    const totalSpent = requests
-      .filter(
-        (r) => r.actualPrice && ["received", "cataloged"].includes(r.status),
-      )
-      .reduce((sum, r) => sum + (r.actualPrice || 0) * r.quantity, 0);
-
-    return {
-      ...vendor,
-      ordersCount,
-      totalSpent,
-    };
-  },
-});
-
-/**
- * List vendors
- */
-export const list = query({
-  args: {
-    organizationId: v.id("organizations"),
-    paginationOpts: paginationOptsValidator,
-    activeOnly: v.optional(v.boolean()),
-  },
-  handler: async (ctx, args) => {
-    let query;
-
-    if (args.activeOnly) {
-      query = ctx.db
-        .query("libraryVendors")
-        .withIndex("by_organization_and_active", (q) =>
-          q.eq("organizationId", args.organizationId).eq("isActive", true),
-        );
-    } else {
-      query = ctx.db
-        .query("libraryVendors")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        );
-    }
-
-    const vendors = await query.paginate(args.paginationOpts);
-
-    return vendors;
-  },
-});
-
-/**
- * List all active vendors (for dropdowns)
- */
-export const listActive = query({
-  args: {
-    organizationId: v.id("organizations"),
-  },
-  handler: async (ctx, args) => {
-    const vendors = await ctx.db
-      .query("libraryVendors")
-      .withIndex("by_organization_and_active", (q) =>
-        q.eq("organizationId", args.organizationId).eq("isActive", true),
-      )
-      .collect();
-
-    return vendors;
   },
 });
 
@@ -164,6 +80,8 @@ export const update = mutation({
     if (!vendor) {
       throw new Error("Vendor not found");
     }
+
+    await requireModuleEnabled(ctx, vendor.organizationId, "library");
 
     const updates: Record<string, unknown> = {};
 
@@ -202,6 +120,13 @@ export const deactivate = mutation({
       throw new Error("Not authenticated");
     }
 
+    const vendor = await ctx.db.get(args.vendorId);
+    if (!vendor) {
+      throw new Error("Vendor not found");
+    }
+
+    await requireModuleEnabled(ctx, vendor.organizationId, "library");
+
     await ctx.db.patch(args.vendorId, { isActive: false });
 
     return null;
@@ -221,6 +146,13 @@ export const reactivate = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
+
+    const vendor = await ctx.db.get(args.vendorId);
+    if (!vendor) {
+      throw new Error("Vendor not found");
+    }
+
+    await requireModuleEnabled(ctx, vendor.organizationId, "library");
 
     await ctx.db.patch(args.vendorId, { isActive: true });
 
@@ -246,6 +178,8 @@ export const remove = mutation({
     if (!vendor) {
       throw new Error("Vendor not found");
     }
+
+    await requireModuleEnabled(ctx, vendor.organizationId, "library");
 
     // Check if vendor has any acquisition requests
     const requests = await ctx.db
@@ -273,6 +207,7 @@ export const getStatistics = query({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     const vendors = await ctx.db
       .query("libraryVendors")
       .withIndex("by_organization", (q) =>

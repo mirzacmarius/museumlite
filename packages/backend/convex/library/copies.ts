@@ -1,7 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import { mutation, query } from "../_generated/server";
+import { requireModuleEnabled } from "../utils/featureGates";
 
 // Copy status validator
 const copyStatusValidator = v.union(
@@ -55,6 +56,8 @@ export const create = mutation({
     if (!item) {
       throw new Error("Library item not found");
     }
+
+    await requireModuleEnabled(ctx, item.organizationId, "library");
 
     // Check if barcode is unique within organization
     const existingCopy = await ctx.db
@@ -123,6 +126,8 @@ export const get = query({
       return null;
     }
 
+    await requireModuleEnabled(ctx, copy.organizationId, "library");
+
     // Get the parent item
     const item = await ctx.db.get(copy.itemId);
 
@@ -145,6 +150,13 @@ export const listByItem = query({
     itemId: v.id("libraryItems"),
   },
   handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item) {
+      throw new Error("Library item not found");
+    }
+
+    await requireModuleEnabled(ctx, item.organizationId, "library");
+
     const copies = await ctx.db
       .query("itemCopies")
       .withIndex("by_item", (q) => q.eq("itemId", args.itemId))
@@ -179,6 +191,7 @@ export const getByBarcode = query({
     barcode: v.string(),
   },
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     const copy = await ctx.db
       .query("itemCopies")
       .withIndex("by_organization_and_barcode", (q) =>
@@ -234,119 +247,10 @@ export const update = mutation({
       throw new Error("Copy not found");
     }
 
-    // If changing barcode, check uniqueness
-    if (args.barcode && args.barcode !== copy.barcode) {
-      const existingCopy = await ctx.db
-        .query("itemCopies")
-        .withIndex("by_organization_and_barcode", (q) =>
-          q
-            .eq("organizationId", copy.organizationId)
-            .eq("barcode", args.barcode!),
-        )
-        .first();
-
-      if (existingCopy) {
-        throw new Error("A copy with this barcode already exists");
-      }
-    }
-
-    const updates: Record<string, any> = {};
-
-    if (args.barcode !== undefined) updates.barcode = args.barcode;
-    if (args.locationId !== undefined) updates.locationId = args.locationId;
-    if (args.shelfLocation !== undefined)
-      updates.shelfLocation = args.shelfLocation;
-    if (args.condition !== undefined) updates.condition = args.condition;
-    if (args.conditionNotes !== undefined)
-      updates.conditionNotes = args.conditionNotes;
-    if (args.acquisitionDate !== undefined)
-      updates.acquisitionDate = args.acquisitionDate;
-    if (args.acquisitionMethod !== undefined)
-      updates.acquisitionMethod = args.acquisitionMethod;
-    if (args.acquisitionPrice !== undefined)
-      updates.acquisitionPrice = args.acquisitionPrice;
-    if (args.vendor !== undefined) updates.vendor = args.vendor;
-    if (args.replacementCost !== undefined)
-      updates.replacementCost = args.replacementCost;
-    if (args.notes !== undefined) updates.notes = args.notes;
-
-    await ctx.db.patch(args.copyId, updates);
-
-    return null;
-  },
-});
-
-/**
- * Update copy status
- */
-export const updateStatus = mutation({
-  args: {
-    copyId: v.id("itemCopies"),
-    status: copyStatusValidator,
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-
-    const copy = await ctx.db.get(args.copyId);
-    if (!copy) {
-      throw new Error("Copy not found");
-    }
-
-    const oldStatus = copy.status;
-    const newStatus = args.status;
-
-    if (oldStatus === newStatus) {
-      return null;
-    }
-
-    // Update copy status
-    await ctx.db.patch(args.copyId, { status: newStatus });
-
-    // Update item available copies count
-    const item = await ctx.db.get(copy.itemId);
-    if (item) {
-      const wasAvailable = oldStatus === "available";
-      const isNowAvailable = newStatus === "available";
-
-      if (wasAvailable && !isNowAvailable) {
-        await ctx.db.patch(copy.itemId, {
-          availableCopies: Math.max(0, item.availableCopies - 1),
-        });
-      } else if (!wasAvailable && isNowAvailable) {
-        await ctx.db.patch(copy.itemId, {
-          availableCopies: item.availableCopies + 1,
-        });
-      }
-    }
-
-    return null;
-  },
-});
-
-/**
- * Delete a copy
- */
-export const remove = mutation({
-  args: {
-    copyId: v.id("itemCopies"),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-
-    const copy = await ctx.db.get(args.copyId);
-    if (!copy) {
-      throw new Error("Copy not found");
-    }
+    await requireModuleEnabled(ctx, copy.organizationId, "library");
 
     // Check for active circulations
+
     const activeCirculation = await ctx.db
       .query("circulations")
       .withIndex("by_copy", (q) => q.eq("copyId", args.copyId))
@@ -396,6 +300,8 @@ export const markLost = mutation({
       throw new Error("Copy not found");
     }
 
+    await requireModuleEnabled(ctx, copy.organizationId, "library");
+
     const wasAvailable = copy.status === "available";
 
     await ctx.db.patch(args.copyId, { status: "lost" });
@@ -432,6 +338,8 @@ export const withdraw = mutation({
     if (!copy) {
       throw new Error("Copy not found");
     }
+
+    await requireModuleEnabled(ctx, copy.organizationId, "library");
 
     // Check for active circulations
     const activeCirculation = await ctx.db
@@ -473,6 +381,7 @@ export const generateBarcode = query({
   },
   returns: v.string(),
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     const settings = await ctx.db
       .query("librarySettings")
       .withIndex("by_organization", (q) =>

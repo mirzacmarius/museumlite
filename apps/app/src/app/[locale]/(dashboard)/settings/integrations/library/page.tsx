@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -21,16 +22,9 @@ import { useEffect, useState } from "react";
 
 export default function LibrarySettingsPage() {
   const { currentOrganizationId } = useOrganization();
+  const { hasModule } = useFeatureAccess();
 
-  const isLibraryEnabled = useQuery(
-    api.integrations.isEnabled,
-    currentOrganizationId
-      ? {
-          organizationId: currentOrganizationId as Id<"organizations">,
-          integrationId: "library",
-        }
-      : "skip",
-  );
+  const isLibraryEnabled = hasModule("library");
 
   const librarySettings = useQuery(
     api.library.settings.get,
@@ -123,7 +117,7 @@ export default function LibrarySettingsPage() {
     );
   }
 
-  if (isLibraryEnabled === undefined || librarySettings === undefined) {
+  if (librarySettings === undefined) {
     return (
       <div className="flex h-full w-full flex-col gap-6">
         <div className="flex w-full items-center justify-center rounded-lg border border-border bg-card p-12">

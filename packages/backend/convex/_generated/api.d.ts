@@ -10,6 +10,9 @@
 
 import type * as accessionTemplates from "../accessionTemplates.js";
 import type * as accessions from "../accessions.js";
+import type * as accountDocuments from "../accountDocuments.js";
+import type * as accountRelationships from "../accountRelationships.js";
+import type * as accountSegments from "../accountSegments.js";
 import type * as accounts from "../accounts.js";
 import type * as apiKeys from "../apiKeys.js";
 import type * as archiveDetails from "../archiveDetails.js";
@@ -21,6 +24,7 @@ import type * as collectionGroups from "../collectionGroups.js";
 import type * as collections from "../collections.js";
 import type * as conditionOptions from "../conditionOptions.js";
 import type * as conservationTreatments from "../conservationTreatments.js";
+import type * as contacts from "../contacts.js";
 import type * as crons from "../crons.js";
 import type * as dashboard from "../dashboard.js";
 import type * as deaccessions from "../deaccessions.js";
@@ -85,6 +89,9 @@ import type {
 declare const fullApi: ApiFromModules<{
   accessionTemplates: typeof accessionTemplates;
   accessions: typeof accessions;
+  accountDocuments: typeof accountDocuments;
+  accountRelationships: typeof accountRelationships;
+  accountSegments: typeof accountSegments;
   accounts: typeof accounts;
   apiKeys: typeof apiKeys;
   archiveDetails: typeof archiveDetails;
@@ -96,6 +103,7 @@ declare const fullApi: ApiFromModules<{
   collections: typeof collections;
   conditionOptions: typeof conditionOptions;
   conservationTreatments: typeof conservationTreatments;
+  contacts: typeof contacts;
   crons: typeof crons;
   dashboard: typeof dashboard;
   deaccessions: typeof deaccessions;

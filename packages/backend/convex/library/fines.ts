@@ -3,6 +3,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
+import { requireModuleEnabled } from "../utils/featureGates";
 
 const fineTypeValidator = v.union(
   v.literal("overdue"),
@@ -51,6 +52,8 @@ export const create = mutation({
       throw new Error("Account not found");
     }
 
+    await requireModuleEnabled(ctx, account.organizationId, "library");
+
     const now = Date.now();
 
     const fineId = await ctx.db.insert("libraryFines", {
@@ -95,6 +98,8 @@ export const recordPayment = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
+
+    await requireModuleEnabled(ctx, account.organizationId, "library");
 
     if (args.amount <= 0) {
       throw new Error("Payment amount must be positive");
@@ -191,6 +196,8 @@ export const waive = mutation({
       throw new Error("Fine not found");
     }
 
+    await requireModuleEnabled(ctx, fine.organizationId, "library");
+
     if (fine.status !== "outstanding") {
       throw new Error("Can only waive outstanding fines");
     }
@@ -229,6 +236,8 @@ export const forgive = mutation({
       throw new Error("Fine not found");
     }
 
+    await requireModuleEnabled(ctx, fine.organizationId, "library");
+
     if (fine.status !== "outstanding") {
       throw new Error("Can only forgive outstanding fines");
     }
@@ -260,6 +269,8 @@ export const get = query({
       return null;
     }
 
+    await requireModuleEnabled(ctx, fine.organizationId, "library");
+
     const account = await ctx.db.get(fine.accountId);
     const circulation = fine.circulationId
       ? await ctx.db.get(fine.circulationId)
@@ -285,6 +296,8 @@ export const list = query({
     fineType: v.optional(fineTypeValidator),
   },
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
+
     const query = args.status
       ? ctx.db
           .query("libraryFines")
@@ -329,6 +342,13 @@ export const getPaymentHistory = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
+    const account = await ctx.db.get(args.accountId);
+    if (!account) {
+      throw new Error("Account not found");
+    }
+
+    await requireModuleEnabled(ctx, account.organizationId, "library");
+
     const payments = await ctx.db
       .query("libraryPayments")
       .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
@@ -374,6 +394,8 @@ export const getStatistics = query({
     collectedToday: v.number(),
   }),
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
+
     const fines = await ctx.db
       .query("libraryFines")
       .withIndex("by_organization", (q) =>
@@ -444,6 +466,8 @@ export const getReceipt = query({
     if (!payment) {
       return null;
     }
+
+    await requireModuleEnabled(ctx, payment.organizationId, "library");
 
     const account = await ctx.db.get(payment.accountId);
     const receivedBy = await ctx.db.get(payment.receivedBy);

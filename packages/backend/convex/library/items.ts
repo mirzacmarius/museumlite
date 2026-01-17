@@ -1,8 +1,9 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import type { Doc, Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
-import type { Id } from "../_generated/dataModel";
+import { requireModuleEnabled } from "../utils/featureGates";
 
 // Item type validator
 const itemTypeValidator = v.union(
@@ -109,16 +110,7 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Verify library integration is enabled
-    const org = await ctx.db.get(args.organizationId);
-    if (!org) {
-      throw new Error("Organization not found");
-    }
-    if (!org.settings?.enabledIntegrations?.includes("library")) {
-      throw new Error(
-        "Library integration is not enabled for this organization",
-      );
-    }
+    await requireModuleEnabled(ctx, args.organizationId, "library");
 
     const itemId = await ctx.db.insert("libraryItems", {
       organizationId: args.organizationId,
@@ -189,6 +181,8 @@ export const get = query({
       return null;
     }
 
+    await requireModuleEnabled(ctx, item.organizationId, "library");
+
     // Get cover image URL if stored locally
     let coverImageUrl = item.coverImageUrl;
     if (item.coverImageId) {
@@ -222,11 +216,12 @@ export const list = query({
     isCirculating: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    let results: any[];
+    await requireModuleEnabled(ctx, args.organizationId, "library");
+    let results: Doc<"libraryItems">[] = [];
 
     // Use search index when search term is provided
     if (args.search && args.search.trim().length > 0) {
-      let searchQuery = ctx.db
+      const searchQuery = ctx.db
         .query("libraryItems")
         .withSearchIndex("search_library_items", (q) => {
           let filter = q
@@ -352,7 +347,7 @@ export const list = query({
 
     // Handle pagination manually
     const cursor = args.paginationOpts.cursor
-      ? parseInt(args.paginationOpts.cursor, 10)
+      ? Number.parseInt(args.paginationOpts.cursor, 10)
       : 0;
     const startIndex = cursor;
     const endIndex = Math.min(
@@ -455,64 +450,74 @@ export const update = mutation({
       throw new Error("Library item not found");
     }
 
-    const updates: Record<string, any> = {
+    await requireModuleEnabled(ctx, item.organizationId, "library");
+
+    const updates: Partial<Doc<"libraryItems">> = {
       lastModifiedBy: userId,
       lastModifiedAt: Date.now(),
     };
 
-    // Build updates object
-    const fields = [
-      "itemType",
-      "title",
-      "subtitle",
-      "authors",
-      "contributors",
-      "isbn",
-      "isbn13",
-      "issn",
-      "barcode",
-      "callNumber",
-      "accessionNumber",
-      "publisher",
-      "publicationYear",
-      "publicationPlace",
-      "edition",
-      "volume",
-      "issue",
-      "language",
-      "originalLanguage",
-      "originalTitle",
-      "pages",
-      "duration",
-      "format",
-      "dimensions",
-      "deweyDecimal",
-      "lcClassification",
-      "categories",
-      "genres",
-      "subjects",
-      "keywords",
-      "targetAudience",
-      "series",
-      "seriesNumber",
-      "description",
-      "tableOfContents",
-      "summary",
-      "coverImageUrl",
-      "catalogStatus",
-      "isCirculating",
-      "loanPeriodDays",
-      "maxRenewals",
-      "notes",
-      "internalNotes",
-      "collectionId",
-    ];
-
-    for (const field of fields) {
-      if ((args as any)[field] !== undefined) {
-        updates[field] = (args as any)[field];
-      }
-    }
+    if (args.itemType !== undefined) updates.itemType = args.itemType;
+    if (args.title !== undefined) updates.title = args.title;
+    if (args.subtitle !== undefined) updates.subtitle = args.subtitle;
+    if (args.authors !== undefined) updates.authors = args.authors;
+    if (args.contributors !== undefined)
+      updates.contributors = args.contributors;
+    if (args.isbn !== undefined) updates.isbn = args.isbn;
+    if (args.isbn13 !== undefined) updates.isbn13 = args.isbn13;
+    if (args.issn !== undefined) updates.issn = args.issn;
+    if (args.barcode !== undefined) updates.barcode = args.barcode;
+    if (args.callNumber !== undefined) updates.callNumber = args.callNumber;
+    if (args.accessionNumber !== undefined)
+      updates.accessionNumber = args.accessionNumber;
+    if (args.publisher !== undefined) updates.publisher = args.publisher;
+    if (args.publicationYear !== undefined)
+      updates.publicationYear = args.publicationYear;
+    if (args.publicationPlace !== undefined)
+      updates.publicationPlace = args.publicationPlace;
+    if (args.edition !== undefined) updates.edition = args.edition;
+    if (args.volume !== undefined) updates.volume = args.volume;
+    if (args.issue !== undefined) updates.issue = args.issue;
+    if (args.language !== undefined) updates.language = args.language;
+    if (args.originalLanguage !== undefined)
+      updates.originalLanguage = args.originalLanguage;
+    if (args.originalTitle !== undefined)
+      updates.originalTitle = args.originalTitle;
+    if (args.pages !== undefined) updates.pages = args.pages;
+    if (args.duration !== undefined) updates.duration = args.duration;
+    if (args.format !== undefined) updates.format = args.format;
+    if (args.dimensions !== undefined) updates.dimensions = args.dimensions;
+    if (args.deweyDecimal !== undefined)
+      updates.deweyDecimal = args.deweyDecimal;
+    if (args.lcClassification !== undefined)
+      updates.lcClassification = args.lcClassification;
+    if (args.categories !== undefined) updates.categories = args.categories;
+    if (args.genres !== undefined) updates.genres = args.genres;
+    if (args.subjects !== undefined) updates.subjects = args.subjects;
+    if (args.keywords !== undefined) updates.keywords = args.keywords;
+    if (args.targetAudience !== undefined)
+      updates.targetAudience = args.targetAudience;
+    if (args.series !== undefined) updates.series = args.series;
+    if (args.seriesNumber !== undefined)
+      updates.seriesNumber = args.seriesNumber;
+    if (args.description !== undefined) updates.description = args.description;
+    if (args.tableOfContents !== undefined)
+      updates.tableOfContents = args.tableOfContents;
+    if (args.summary !== undefined) updates.summary = args.summary;
+    if (args.coverImageUrl !== undefined)
+      updates.coverImageUrl = args.coverImageUrl;
+    if (args.catalogStatus !== undefined)
+      updates.catalogStatus = args.catalogStatus;
+    if (args.isCirculating !== undefined)
+      updates.isCirculating = args.isCirculating;
+    if (args.loanPeriodDays !== undefined)
+      updates.loanPeriodDays = args.loanPeriodDays;
+    if (args.maxRenewals !== undefined) updates.maxRenewals = args.maxRenewals;
+    if (args.notes !== undefined) updates.notes = args.notes;
+    if (args.internalNotes !== undefined)
+      updates.internalNotes = args.internalNotes;
+    if (args.collectionId !== undefined)
+      updates.collectionId = args.collectionId;
 
     await ctx.db.patch(args.itemId, updates);
 
@@ -538,6 +543,8 @@ export const remove = mutation({
     if (!item) {
       throw new Error("Library item not found");
     }
+
+    await requireModuleEnabled(ctx, item.organizationId, "library");
 
     // Check if there are any copies
     const copies = await ctx.db
@@ -587,6 +594,8 @@ export const publish = mutation({
       throw new Error("Library item not found");
     }
 
+    await requireModuleEnabled(ctx, item.organizationId, "library");
+
     if (item.catalogStatus === "published") {
       return null;
     }
@@ -620,6 +629,8 @@ export const archive = mutation({
       throw new Error("Library item not found");
     }
 
+    await requireModuleEnabled(ctx, item.organizationId, "library");
+
     // Check for active circulations
     const activeCirculations = await ctx.db
       .query("circulations")
@@ -650,6 +661,7 @@ export const getByIsbn = query({
     isbn: v.string(),
   },
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     // Try ISBN-10
     let item = await ctx.db
       .query("libraryItems")
@@ -681,6 +693,7 @@ export const getByBarcode = query({
     barcode: v.string(),
   },
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     const item = await ctx.db
       .query("libraryItems")
       .withIndex("by_barcode", (q) => q.eq("barcode", args.barcode))
@@ -695,13 +708,17 @@ export const getByBarcode = query({
  * Upload cover image
  */
 export const generateUploadUrl = mutation({
-  args: {},
+  args: {
+    organizationId: v.id("organizations"),
+  },
   returns: v.string(),
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
+
+    await requireModuleEnabled(ctx, args.organizationId, "library");
 
     return await ctx.storage.generateUploadUrl();
   },
@@ -726,6 +743,8 @@ export const setCoverImage = mutation({
     if (!item) {
       throw new Error("Library item not found");
     }
+
+    await requireModuleEnabled(ctx, item.organizationId, "library");
 
     await ctx.db.patch(args.itemId, {
       coverImageId: args.storageId,
@@ -755,6 +774,7 @@ export const getStats = query({
     byType: v.record(v.string(), v.number()),
   }),
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     const allItems = await ctx.db
       .query("libraryItems")
       .withIndex("by_organization", (q) =>

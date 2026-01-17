@@ -64,16 +64,6 @@ export default function IntegrationsSettingsPage() {
       : "skip",
   );
 
-  const librarySubscription = useQuery(
-    api.integrations.getSubscription,
-    currentOrganizationId
-      ? {
-          organizationId: currentOrganizationId as Id<"organizations">,
-          integrationId: "library",
-        }
-      : "skip",
-  );
-
   const enableIntegration = useMutation(api.integrations.enable);
   const disableIntegration = useMutation(api.integrations.disable);
   const createCheckoutLink = useAction(api.integrations.createCheckoutLink);
@@ -99,12 +89,6 @@ export default function IntegrationsSettingsPage() {
         return;
       }
 
-      if (pendingEnableIntegration === "library") {
-        if (!librarySubscription?.isEntitled) {
-          return;
-        }
-      }
-
       try {
         const result = await enableIntegration({
           organizationId: currentOrganizationId as Id<"organizations">,
@@ -128,12 +112,7 @@ export default function IntegrationsSettingsPage() {
     };
 
     tryEnablePendingIntegration();
-  }, [
-    pendingEnableIntegration,
-    currentOrganizationId,
-    enableIntegration,
-    librarySubscription,
-  ]);
+  }, [pendingEnableIntegration, currentOrganizationId, enableIntegration]);
 
   const handleToggle = async (
     integrationId: string,
@@ -238,9 +217,6 @@ export default function IntegrationsSettingsPage() {
         {availableIntegrations.map((integration) => {
           const isEnabled = enabledIntegrations.includes(integration.id);
           const isLoading = isToggling === integration.id;
-          const subscription =
-            integration.id === "library" ? librarySubscription : null;
-          const isEntitled = subscription?.isEntitled ?? false;
           const requiresSubscription = integration.requiresSubscription;
 
           return (
@@ -266,33 +242,15 @@ export default function IntegrationsSettingsPage() {
                           Enabled
                         </Badge>
                       )}
-                      {subscription?.status === "active" &&
-                        subscription.cancelAtPeriodEnd && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs text-amber-500 border-amber-500/50"
-                          >
-                            Canceling
-                          </Badge>
-                        )}
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {integration.description}
                     </p>
-                    {requiresSubscription && !isEntitled && (
-                      <p className="mt-1 text-xs font-medium text-amber-500">
-                        Subscription required to enable this integration.
+                    {requiresSubscription && (
+                      <p className="mt-1 text-xs font-medium text-muted-foreground">
+                        Requires active subscription.
                       </p>
                     )}
-                    {subscription?.cancelAtPeriodEnd &&
-                      subscription.currentPeriodEnd && (
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Access until{" "}
-                          {new Date(
-                            subscription.currentPeriodEnd,
-                          ).toLocaleDateString()}
-                        </p>
-                      )}
                   </div>
                 </div>
                 <div className="flex items-center gap-4">

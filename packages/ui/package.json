@@ -8,6 +8,7 @@
     "./accordion": "./src/components/accordion.tsx",
     "./alert-dialog": "./src/components/alert-dialog.tsx",
     "./avatar": "./src/components/avatar.tsx",
+    "./aura": "./src/components/aura/index.ts",
     "./badge": "./src/components/badge.tsx",
     "./bento-gallery": "./src/components/bento-gallery.tsx",
     "./button": "./src/components/button.tsx",

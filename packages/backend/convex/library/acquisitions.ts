@@ -1,14 +1,15 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
+import { mutation, query } from "../_generated/server";
+import { requireModuleEnabled } from "../utils/featureGates";
 import {
-  requirePermission,
-  canInitiateWorkflow,
   canApproveAtStep,
+  canInitiateWorkflow,
   getUsersToNotifyForWorkflowStep,
+  requirePermission,
 } from "../utils/permissions";
 
 // Priority validator
@@ -57,17 +58,19 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
+    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requirePermission(ctx, args.organizationId, "collections.create");
+
     const canInitiate = await canInitiateWorkflow(
       ctx,
       args.organizationId,
       "acquisition",
     );
-
     if (!canInitiate) {
-      throw new Error("Permission denied: cannot initiate acquisition request");
+      throw new Error(
+        "Permission denied: cannot initiate acquisition workflow",
+      );
     }
-
-    const now = Date.now();
 
     const workflowConfig = await ctx.db
       .query("workflowConfigs")
@@ -77,6 +80,7 @@ export const create = mutation({
       .filter((q) => q.eq(q.field("workflowType"), "acquisition"))
       .first();
 
+    const now = Date.now();
     const workflowHistory = workflowConfig
       ? [
           {
@@ -98,15 +102,15 @@ export const create = mutation({
       requestedBy: userId,
       requestedAt: now,
       reason: args.reason,
-      priority: args.priority || "normal",
-      quantity: args.quantity || 1,
+      priority: args.priority ?? "normal",
+      quantity: args.quantity ?? 1,
       estimatedPrice: args.estimatedPrice,
       vendorId: args.vendorId,
       fundSource: args.fundSource,
       status: "submitted",
-      notes: args.notes,
       workflowStep: workflowConfig ? 1 : undefined,
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
+      notes: args.notes,
     });
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -132,7 +136,7 @@ export const create = mutation({
             organizationId: args.organizationId,
             userId: approverId,
             type: "workflow_pending",
-            title: "New Acquisition Request",
+            title: "Acquisition Request Requires Approval",
             message: `Acquisition request for "${args.title}" is pending your approval at step 1.`,
             relatedEntityType: "libraryAcquisitionRequest",
             relatedEntityId: requestId,
@@ -145,43 +149,6 @@ export const create = mutation({
   },
 });
 
-/**
- * Get an acquisition request by ID
- */
-export const get = query({
-  args: {
-    requestId: v.id("libraryAcquisitionRequests"),
-  },
-  handler: async (ctx, args) => {
-    const request = await ctx.db.get(args.requestId);
-    if (!request) {
-      return null;
-    }
-
-    await requirePermission(ctx, request.organizationId, "collections.read");
-
-    const requestedBy = await ctx.db.get(request.requestedBy);
-    const reviewedBy = request.reviewedBy
-      ? await ctx.db.get(request.reviewedBy)
-      : null;
-    const vendor = request.vendorId ? await ctx.db.get(request.vendorId) : null;
-    const libraryItem = request.libraryItemId
-      ? await ctx.db.get(request.libraryItemId)
-      : null;
-
-    return {
-      ...request,
-      requestedByUser: requestedBy,
-      reviewedByUser: reviewedBy,
-      vendor,
-      libraryItem,
-    };
-  },
-});
-
-/**
- * List acquisition requests
- */
 export const list = query({
   args: {
     organizationId: v.id("organizations"),
@@ -189,36 +156,36 @@ export const list = query({
     status: v.optional(requestStatusValidator),
     priority: v.optional(priorityValidator),
   },
+  returns: v.object({
+    page: v.array(v.any()),
+    isDone: v.boolean(),
+    continueCursor: v.union(v.string(), v.null()),
+  }),
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     await requirePermission(ctx, args.organizationId, "collections.read");
 
-    let query;
+    const requestQuery = args.status
+      ? ctx.db
+          .query("libraryAcquisitionRequests")
+          .withIndex("by_organization_and_status", (q) =>
+            q
+              .eq("organizationId", args.organizationId)
+              .eq("status", args.status!),
+          )
+      : ctx.db
+          .query("libraryAcquisitionRequests")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          );
 
-    if (args.status) {
-      query = ctx.db
-        .query("libraryAcquisitionRequests")
-        .withIndex("by_organization_and_status", (q) =>
-          q
-            .eq("organizationId", args.organizationId)
-            .eq("status", args.status!),
-        );
-    } else {
-      query = ctx.db
-        .query("libraryAcquisitionRequests")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        );
-    }
+    const requests = await requestQuery.paginate(args.paginationOpts);
 
-    const requests = await query.paginate(args.paginationOpts);
-
-    // Filter by priority if specified
     let filteredPage = requests.page;
     if (args.priority) {
       filteredPage = requests.page.filter((r) => r.priority === args.priority);
     }
 
-    // Enrich with user data
     const enrichedPage = await Promise.all(
       filteredPage.map(async (request) => {
         const requestedBy = await ctx.db.get(request.requestedBy);
@@ -262,6 +229,8 @@ export const updateStatus = mutation({
     if (!request) {
       throw new Error("Request not found");
     }
+
+    await requireModuleEnabled(ctx, request.organizationId, "library");
 
     await requirePermission(ctx, request.organizationId, "collections.update");
 
@@ -326,6 +295,8 @@ export const updateOrderInfo = mutation({
       throw new Error("Request not found");
     }
 
+    await requireModuleEnabled(ctx, request.organizationId, "library");
+
     await requirePermission(ctx, request.organizationId, "collections.update");
 
     if (!["approved", "ordered"].includes(request.status)) {
@@ -382,6 +353,8 @@ export const linkToItem = mutation({
       throw new Error("Request not found");
     }
 
+    await requireModuleEnabled(ctx, request.organizationId, "library");
+
     await requirePermission(ctx, request.organizationId, "collections.update");
 
     if (request.status !== "received") {
@@ -436,6 +409,8 @@ export const update = mutation({
     if (!request) {
       throw new Error("Request not found");
     }
+
+    await requireModuleEnabled(ctx, request.organizationId, "library");
 
     await requirePermission(ctx, request.organizationId, "collections.update");
 
@@ -493,6 +468,8 @@ export const cancel = mutation({
       throw new Error("Request not found");
     }
 
+    await requireModuleEnabled(ctx, request.organizationId, "library");
+
     await requirePermission(ctx, request.organizationId, "collections.update");
 
     if (["received", "cataloged"].includes(request.status)) {
@@ -529,6 +506,8 @@ export const remove = mutation({
     if (!request) {
       throw new Error("Request not found");
     }
+
+    await requireModuleEnabled(ctx, request.organizationId, "library");
 
     await requirePermission(ctx, request.organizationId, "collections.delete");
 
@@ -578,6 +557,7 @@ export const getStatistics = query({
     thisMonth: v.number(),
   }),
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     await requirePermission(ctx, args.organizationId, "collections.read");
 
     const requests = await ctx.db
@@ -659,6 +639,8 @@ export const approve = mutation({
     if (!request) {
       throw new Error("Request not found");
     }
+
+    await requireModuleEnabled(ctx, request.organizationId, "library");
 
     if (!["submitted", "under_review"].includes(request.status)) {
       throw new Error("Request is not pending approval");
@@ -804,6 +786,8 @@ export const reject = mutation({
       throw new Error("Request not found");
     }
 
+    await requireModuleEnabled(ctx, request.organizationId, "library");
+
     if (!["submitted", "under_review"].includes(request.status)) {
       throw new Error("Request is not pending approval");
     }
@@ -882,6 +866,8 @@ export const getWorkflowHistory = query({
     if (!request) {
       throw new Error("Request not found");
     }
+
+    await requireModuleEnabled(ctx, request.organizationId, "library");
 
     const history = request.workflowHistory ?? [];
 

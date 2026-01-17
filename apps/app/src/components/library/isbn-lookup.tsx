@@ -1,6 +1,8 @@
 "use client";
 
+import { useOrganization } from "@/components/organization-provider";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
@@ -37,6 +39,7 @@ export function IsbnLookup({ onDataFound, onIsbnChange }: IsbnLookupProps) {
   const [isbn, setIsbn] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { currentOrganizationId } = useOrganization();
 
   const lookupIsbn = useAction(api.library.isbnLookup.lookupIsbn);
 
@@ -46,11 +49,19 @@ export function IsbnLookup({ onDataFound, onIsbnChange }: IsbnLookupProps) {
       return;
     }
 
+    if (!currentOrganizationId) {
+      setError("Organization ID is required");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
-      const result = await lookupIsbn({ isbn: isbn.trim() });
+      const result = await lookupIsbn({
+        isbn: isbn.trim(),
+        organizationId: currentOrganizationId as Id<"organizations">,
+      });
 
       if (result.found) {
         onDataFound({

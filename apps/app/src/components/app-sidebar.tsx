@@ -210,7 +210,7 @@ export function AppSidebar({
 }) {
   const { organizations, currentOrganizationId, setCurrentOrganizationId } =
     useOrganization();
-  const { hasFeature } = useFeatureAccess();
+  const { hasFeature, hasModule } = useFeatureAccess();
   const { setOpen } = useCommandPalette();
   const user = usePreloadedQuery(preloadedUser);
   const products = usePreloadedQuery(preloadedProducts);
@@ -236,28 +236,7 @@ export function AppSidebar({
     (org) => org._id === currentOrganizationId,
   );
 
-  const librarySubscription = useQuery(
-    api.integrations.getSubscription,
-    currentOrganizationId
-      ? {
-          organizationId: currentOrganizationId as Id<"organizations">,
-          integrationId: "library",
-        }
-      : "skip",
-  );
-
-  const isLibraryEnabled = useQuery(
-    api.integrations.isEnabled,
-    currentOrganizationId
-      ? {
-          organizationId: currentOrganizationId as Id<"organizations">,
-          integrationId: "library",
-        }
-      : "skip",
-  );
-
-  const showLibrarySection =
-    isLibraryEnabled && librarySubscription?.isEntitled;
+  const showLibrarySection = hasModule("library");
 
   const collectionGroups = useQuery(
     api.collectionGroups.list,
@@ -362,7 +341,7 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+              <DropdownMenuTrigger asChild id="org-menu-trigger">
                 <button
                   type="button"
                   className="w-full flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-muted/50 transition-all duration-200 group border border-transparent hover:border-border data-[state=open]:bg-muted/50 outline-none"
@@ -575,7 +554,7 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+              <DropdownMenuTrigger asChild id="user-menu-trigger">
                 <button
                   type="button"
                   className="flex w-full items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors text-left outline-none group-data-[state=open]:bg-muted/50"

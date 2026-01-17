@@ -1,7 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import type { Doc, Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
-import type { Id } from "../_generated/dataModel";
+import { requireModuleEnabled } from "../utils/featureGates";
 
 /**
  * Get library settings for an organization
@@ -43,6 +44,7 @@ export const get = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     const settings = await ctx.db
       .query("librarySettings")
       .withIndex("by_organization", (q) =>
@@ -88,6 +90,8 @@ export const update = mutation({
       throw new Error("Not authenticated");
     }
 
+    await requireModuleEnabled(ctx, args.organizationId, "library");
+
     const settings = await ctx.db
       .query("librarySettings")
       .withIndex("by_organization", (q) =>
@@ -101,7 +105,7 @@ export const update = mutation({
       );
     }
 
-    const updates: Record<string, any> = {
+    const updates: Partial<Doc<"librarySettings">> = {
       lastModifiedAt: Date.now(),
     };
 
@@ -192,6 +196,7 @@ export const listMembershipTypes = query({
     }),
   ),
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     const types = await ctx.db
       .query("membershipTypes")
       .withIndex("by_organization", (q) =>
@@ -226,6 +231,8 @@ export const createMembershipType = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
+
+    await requireModuleEnabled(ctx, args.organizationId, "library");
 
     // If setting as default, unset other defaults
     if (args.isDefault) {
@@ -289,6 +296,8 @@ export const updateMembershipType = mutation({
       throw new Error("Membership type not found");
     }
 
+    await requireModuleEnabled(ctx, membershipType.organizationId, "library");
+
     // If setting as default, unset other defaults
     if (args.isDefault) {
       const existingDefault = await ctx.db
@@ -305,7 +314,7 @@ export const updateMembershipType = mutation({
       }
     }
 
-    const updates: Record<string, any> = {};
+    const updates: Partial<Doc<"membershipTypes">> = {};
     if (args.name !== undefined) updates.name = args.name;
     if (args.description !== undefined) updates.description = args.description;
     if (args.borrowingLimit !== undefined)
@@ -346,6 +355,8 @@ export const deleteMembershipType = mutation({
       throw new Error("Membership type not found");
     }
 
+    await requireModuleEnabled(ctx, membershipType.organizationId, "library");
+
     const accountsWithType = await ctx.db
       .query("accounts")
       .withIndex("by_organization_and_accountType", (q) =>
@@ -384,6 +395,7 @@ export const getLibraryStats = query({
     pendingHolds: v.number(),
   }),
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     const now = Date.now();
 
     const items = await ctx.db

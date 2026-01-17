@@ -1,3 +1,4 @@
+import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation } from "./_generated/server";
 
@@ -345,5 +346,90 @@ export const backfillMediaCategory = internalMutation({
 
     console.log(result.message);
     return result;
+  },
+});
+
+/**
+ * Migration: Add accounts permissions for existing organizations
+ *
+ * Creates accounts.read, accounts.write, accounts.manage, accounts.delete permissions
+ * and assigns them to admin roles for all existing organizations.
+ *
+ * Run: npx convex run migrations:addAccountsPermissions
+ */
+export const addAccountsPermissions = internalMutation({
+  args: {},
+  returns: v.object({
+    created: v.number(),
+    assigned: v.number(),
+  }),
+  handler: async (ctx) => {
+    console.log("Starting migration: Add accounts permissions");
+
+    const accountsPermissions = [
+      { name: "accounts.read", description: "View accounts and contacts" },
+      {
+        name: "accounts.write",
+        description: "Create and edit accounts and contacts",
+      },
+      {
+        name: "accounts.manage",
+        description: "Manage account relationships and segments",
+      },
+      { name: "accounts.delete", description: "Delete accounts and contacts" },
+    ];
+
+    const permissionIds: Id<"permissions">[] = [];
+    let created = 0;
+
+    for (const perm of accountsPermissions) {
+      const existing = await ctx.db
+        .query("permissions")
+        .withIndex("by_category", (q) => q.eq("category", "accounts"))
+        .filter((q) => q.eq(q.field("name"), perm.name))
+        .first();
+
+      if (existing) {
+        permissionIds.push(existing._id);
+      } else {
+        const id = await ctx.db.insert("permissions", {
+          name: perm.name,
+          description: perm.description,
+          category: "accounts",
+        });
+        permissionIds.push(id);
+        created++;
+      }
+    }
+
+    // Assign all accounts permissions to admin roles
+    const adminRoles = await ctx.db
+      .query("roles")
+      .filter((q) => q.eq(q.field("name"), "admin"))
+      .collect();
+
+    let assigned = 0;
+    for (const role of adminRoles) {
+      for (const permId of permissionIds) {
+        const existing = await ctx.db
+          .query("rolePermissions")
+          .withIndex("by_role", (q) => q.eq("roleId", role._id))
+          .filter((q) => q.eq(q.field("permissionId"), permId))
+          .first();
+
+        if (!existing) {
+          await ctx.db.insert("rolePermissions", {
+            roleId: role._id,
+            permissionId: permId,
+          });
+          assigned++;
+        }
+      }
+    }
+
+    console.log(
+      `Created ${created} permissions, assigned ${assigned} role-permissions`,
+    );
+    return { created, assigned };
   },
 });

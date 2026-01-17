@@ -15,6 +15,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const isRolesPath = pathname === "/settings/roles";
   const isOrganizationPath = pathname === "/settings/organization";
   const isIntegrationsPath = pathname?.startsWith("/settings/integrations");
+  const isModulesPath = pathname === "/settings/modules";
   const isActivityPath = pathname === "/settings/activity";
   const isDeveloperPath = pathname === "/settings/developer";
   return (
@@ -90,6 +91,20 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
               )}
             >
               Integrations
+            </span>
+          </Link>
+          <Link
+            href="/settings/modules"
+            className={cn(
+              `${buttonVariants({ variant: "ghost" })} ${isModulesPath && "bg-primary/5"} justify-start rounded-md`,
+            )}
+          >
+            <span
+              className={cn(
+                `text-sm text-primary/80 ${isModulesPath && "font-medium text-primary"}`,
+              )}
+            >
+              Modules
             </span>
           </Link>
           <Link

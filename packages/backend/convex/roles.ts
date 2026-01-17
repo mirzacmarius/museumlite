@@ -1,10 +1,10 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
+import { mutation, query } from "./_generated/server";
 import {
-  hasPermission,
   getUserPermissions as getUserPerms,
+  hasPermission,
   requirePermission,
 } from "./utils/permissions";
 
@@ -231,6 +231,7 @@ export const listRoles = query({
             v.literal("media"),
             v.literal("users"),
             v.literal("organization"),
+            v.literal("accounts"),
           ),
         }),
       ),
@@ -300,6 +301,7 @@ export const getRole = query({
             v.literal("media"),
             v.literal("users"),
             v.literal("organization"),
+            v.literal("accounts"),
           ),
         }),
       ),
@@ -365,6 +367,7 @@ export const listPermissions = query({
         v.literal("media"),
         v.literal("users"),
         v.literal("organization"),
+        v.literal("accounts"),
       ),
     }),
   ),

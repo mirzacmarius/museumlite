@@ -3,6 +3,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { type MutationCtx, mutation, query } from "../_generated/server";
+import { requireModuleEnabled } from "../utils/featureGates";
 
 const holdStatusValidator = v.union(
   v.literal("pending"),
@@ -38,6 +39,8 @@ export const place = mutation({
     if (account.status !== "active") {
       throw new Error(`Cannot place hold: Account status is ${account.status}`);
     }
+
+    await requireModuleEnabled(ctx, account.organizationId, "library");
 
     const item = await ctx.db.get(args.itemId);
     if (!item) {
@@ -132,6 +135,8 @@ export const cancel = mutation({
       throw new Error("Hold not found");
     }
 
+    await requireModuleEnabled(ctx, hold.organizationId, "library");
+
     if (hold.status === "fulfilled" || hold.status === "cancelled") {
       throw new Error(`Cannot cancel hold with status: ${hold.status}`);
     }
@@ -174,6 +179,8 @@ export const fulfill = mutation({
       throw new Error("Hold not found");
     }
 
+    await requireModuleEnabled(ctx, hold.organizationId, "library");
+
     if (hold.status !== "available") {
       throw new Error("Hold is not ready for pickup");
     }
@@ -203,6 +210,8 @@ export const updatePickupLocation = mutation({
       throw new Error("Hold not found");
     }
 
+    await requireModuleEnabled(ctx, hold.organizationId, "library");
+
     if (hold.status !== "pending") {
       throw new Error("Can only update pickup location for pending holds");
     }
@@ -224,6 +233,8 @@ export const get = query({
     if (!hold) {
       return null;
     }
+
+    await requireModuleEnabled(ctx, hold.organizationId, "library");
 
     const account = await ctx.db.get(hold.accountId);
     const item = await ctx.db.get(hold.itemId);
@@ -247,6 +258,13 @@ export const listByItem = query({
     itemId: v.id("libraryItems"),
   },
   handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item) {
+      return [];
+    }
+
+    await requireModuleEnabled(ctx, item.organizationId, "library");
+
     const holds = await ctx.db
       .query("libraryHolds")
       .withIndex("by_item", (q) => q.eq("itemId", args.itemId))
@@ -281,6 +299,7 @@ export const list = query({
     status: v.optional(holdStatusValidator),
   },
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     const query = args.status
       ? ctx.db
           .query("libraryHolds")
@@ -326,6 +345,7 @@ export const listAvailable = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     const holds = await ctx.db
       .query("libraryHolds")
       .withIndex("by_organization_and_status", (q) =>
@@ -369,6 +389,7 @@ export const getStatistics = query({
     placedToday: v.number(),
   }),
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     const holds = await ctx.db
       .query("libraryHolds")
       .withIndex("by_organization", (q) =>
@@ -405,6 +426,7 @@ export const expireOldHolds = mutation({
   },
   returns: v.number(),
   handler: async (ctx, args) => {
+    await requireModuleEnabled(ctx, args.organizationId, "library");
     const now = Date.now();
 
     const expiredHolds = await ctx.db

@@ -5,6 +5,7 @@ import {
   type IsbnLookupData,
 } from "@/components/library/isbn-lookup";
 import { useOrganization } from "@/components/organization-provider";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -53,30 +54,11 @@ export default function EditCatalogItemPage() {
   const router = useRouter();
   const itemId = params.id as Id<"libraryItems">;
   const { currentOrganizationId } = useOrganization();
+  const { hasModule } = useFeatureAccess();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isLibraryEnabled = useQuery(
-    api.integrations.isEnabled,
-    currentOrganizationId
-      ? {
-          organizationId: currentOrganizationId as Id<"organizations">,
-          integrationId: "library",
-        }
-      : "skip",
-  );
-
-  const librarySubscription = useQuery(
-    api.integrations.getSubscription,
-    currentOrganizationId
-      ? {
-          organizationId: currentOrganizationId as Id<"organizations">,
-          integrationId: "library",
-        }
-      : "skip",
-  );
-
-  const isEntitled = librarySubscription?.isEntitled ?? false;
+  const isLibraryEnabled = hasModule("library");
 
   const item = useQuery(api.library.items.get, { itemId });
   const updateItem = useMutation(api.library.items.update);
@@ -315,30 +297,10 @@ export default function EditCatalogItemPage() {
     );
   }
 
-  if (
-    isLibraryEnabled === undefined ||
-    librarySubscription === undefined ||
-    item === undefined
-  ) {
+  if (isLibraryEnabled === undefined || item === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (!isEntitled) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground">
-            An active subscription is required to access the Library
-            integration.
-          </p>
-          <Button asChild className="mt-4">
-            <Link href="/settings/integrations">Manage Subscription</Link>
-          </Button>
-        </div>
       </div>
     );
   }

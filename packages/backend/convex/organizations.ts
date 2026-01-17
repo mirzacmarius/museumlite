@@ -22,7 +22,8 @@ type EnabledModule =
   | "wine"
   | "automotive"
   | "natural_history"
-  | "archive";
+  | "archive"
+  | "accounts";
 
 type OrganizationSettings = Doc<"organizations">["settings"];
 type PermissionCategory = Doc<"permissions">["category"];
@@ -34,6 +35,7 @@ const enabledModuleValidator = v.union(
   v.literal("automotive"),
   v.literal("natural_history"),
   v.literal("archive"),
+  v.literal("accounts"),
 );
 
 /**
@@ -984,6 +986,11 @@ export const createDefaultRoles = internalMutation({
       // Organization
       "organization.manage_settings",
       "organization.view_analytics",
+      // Accounts
+      "accounts.read",
+      "accounts.write",
+      "accounts.manage",
+      "accounts.delete",
     ];
 
     const permissionMap = new Map<string, Id<"permissions">>();
@@ -1033,6 +1040,7 @@ export const createDefaultRoles = internalMutation({
       "locations.read",
       "locations.update",
       "locations.delete",
+      "accounts.read",
     ];
     for (const permName of curatorPerms) {
       const permId = permissionMap.get(permName);
@@ -1061,6 +1069,8 @@ export const createDefaultRoles = internalMutation({
       "locations.update",
       "locations.delete",
       "media.read",
+      "accounts.read",
+      "accounts.write",
     ];
     for (const permName of registrarPerms) {
       const permId = permissionMap.get(permName);
@@ -1081,6 +1091,7 @@ export const createDefaultRoles = internalMutation({
       "media.read",
       "media.delete",
       "locations.read",
+      "accounts.read",
     ];
     for (const permName of catalogerPerms) {
       const permId = permissionMap.get(permName);
@@ -1098,6 +1109,7 @@ export const createDefaultRoles = internalMutation({
       "loans.read",
       "locations.read",
       "media.read",
+      "accounts.read",
     ];
     for (const permName of viewerPerms) {
       const permId = permissionMap.get(permName);
