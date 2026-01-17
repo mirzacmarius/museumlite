@@ -122,19 +122,19 @@ export function ImageLightbox({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background backdrop-blur-sm"
           onClick={onClose}
         >
           {/* Top toolbar */}
-          <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between bg-gradient-to-b from-black/60 to-transparent p-4">
+          <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between bg-card/40 border-b border-border/60 backdrop-blur-xl p-4">
             <div className="flex items-center gap-4">
               {hasMultiple && (
-                <span className="text-sm text-white/80">
+                <span className="text-sm text-muted-foreground">
                   {currentIndex + 1} / {images.length}
                 </span>
               )}
               {currentImage.title && (
-                <span className="text-sm font-medium text-white">
+                <span className="text-sm font-medium text-foreground">
                   {currentImage.title}
                 </span>
               )}
@@ -146,7 +146,7 @@ export function ImageLightbox({
                   e.stopPropagation();
                   setIsZoomed(!isZoomed);
                 }}
-                className="rounded-lg p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                className="rounded-lg p-2 text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
                 aria-label={isZoomed ? "Zoom out" : "Zoom in"}
               >
                 {isZoomed ? <ZoomOut size={20} /> : <ZoomIn size={20} />}
@@ -157,7 +157,7 @@ export function ImageLightbox({
                   e.stopPropagation();
                   handleDownload();
                 }}
-                className="rounded-lg p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                className="rounded-lg p-2 text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
                 aria-label="Download image"
               >
                 <Download size={20} />
@@ -168,7 +168,7 @@ export function ImageLightbox({
                   e.stopPropagation();
                   onClose();
                 }}
-                className="rounded-lg p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                className="rounded-lg p-2 text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
                 aria-label="Close"
               >
                 <X size={20} />
@@ -212,7 +212,7 @@ export function ImageLightbox({
                   e.stopPropagation();
                   goToPrevious();
                 }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white/80 transition-colors hover:bg-black/70 hover:text-white"
+                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-card/40 border border-border/60 backdrop-blur-xl p-3 text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
                 aria-label="Previous image"
               >
                 <ChevronLeft size={24} />
@@ -223,7 +223,7 @@ export function ImageLightbox({
                   e.stopPropagation();
                   goToNext();
                 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white/80 transition-colors hover:bg-black/70 hover:text-white"
+                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-card/40 border border-border/60 backdrop-blur-xl p-3 text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
                 aria-label="Next image"
               >
                 <ChevronRight size={24} />
@@ -233,14 +233,16 @@ export function ImageLightbox({
 
           {/* Bottom caption */}
           {currentImage.caption && (
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 text-center">
-              <p className="text-sm text-white/90">{currentImage.caption}</p>
+            <div className="absolute bottom-0 left-0 right-0 bg-card/40 border-t border-border/60 backdrop-blur-xl p-4 text-center">
+              <p className="text-sm text-foreground/90">
+                {currentImage.caption}
+              </p>
             </div>
           )}
 
           {/* Thumbnail strip for multiple images */}
           {hasMultiple && images.length <= 12 && (
-            <div className="absolute bottom-16 left-1/2 flex -translate-x-1/2 gap-2 rounded-lg bg-black/50 p-2">
+            <div className="absolute bottom-16 left-1/2 flex -translate-x-1/2 gap-2 rounded-lg bg-card/40 border border-border/60 backdrop-blur-xl p-2">
               {images.map((img, idx) => (
                 <button
                   key={img.id}
