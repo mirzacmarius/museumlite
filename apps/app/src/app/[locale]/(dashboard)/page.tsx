@@ -8,6 +8,7 @@ import {
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { KpiCard } from "@v1/ui/kpi-card";
+import { SkeletonCard } from "@v1/ui/skeleton-variants";
 import { useQuery } from "convex/react";
 import {
   ArrowLeftRight,
@@ -21,6 +22,8 @@ import {
   Settings,
 } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
+import { AssignmentsQueue } from "./_components/assignments-queue";
 
 export default function DashboardPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
@@ -117,6 +120,12 @@ export default function DashboardPage() {
             icon={FileClock}
           />
         </div>
+      </div>
+
+      <div className="px-6 pt-6">
+        <Suspense fallback={<SkeletonCard className="h-96" />}>
+          <AssignmentsQueue />
+        </Suspense>
       </div>
 
       <div className="flex-1 overflow-y-auto scroll-smooth p-6">
