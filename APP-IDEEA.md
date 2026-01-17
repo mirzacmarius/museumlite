@@ -236,17 +236,87 @@ Missing from routes but present in design:
 - Location occupancy and storage utilization analytics.
 - Exports: CSV/PDF for board and insurer reporting.
 
-## Epic 23 — Accounts & Institution CRM
+## Epic 23 — Compliance & Security (GDPR + SOC2-Style)
+
+### GDPR Compliance (EU)
+- **Data Residency**: Option to select EU or US region during organization setup; data stored in selected region only.
+- **Data Subject Rights (DSR)**:
+  - **Right to Access**: User can export all personal data as JSON/CSV via settings.
+  - **Right to Erasure**: User can request account deletion; soft-delete with retention exceptions for legal/audit requirements (7-year audit log retention).
+  - **Right to Portability**: Export includes all user-generated data in machine-readable format.
+- **Consent Management**: Explicit opt-in for non-essential processing (marketing emails, analytics tracking); consent records logged.
+- **Data Retention Policies**: Define retention periods per data type (e.g., audit logs 7 years, inactive patron records 5 years); automated deletion jobs.
+
+### SOC2-Style Controls (US)
+- **Audit Logs**: Comprehensive activity tracking for all sensitive operations (create/update/delete objects, loans, accessions, user access changes, permission changes, data exports, deletions).
+  - Log fields: timestamp, user, action, entity type, entity ID, changes (before/after), IP address, result (success/failure).
+  - Audit logs immutable and retained for 7 years minimum.
+  - Searchable via filters: user, entity type, action, date range, result.
+- **Access Reviews**: Periodic permission audits; UI to review active user roles and permissions per organization.
+  - Generate access review reports (who has what permissions, last login, active sessions).
+- **Encryption**:
+  - **At Rest**: Convex database encryption (managed by Convex platform).
+  - **In Transit**: HTTPS for all API calls; TLS 1.2+ enforced.
+- **Incident Response**: Documented procedures for data breaches (detection, containment, notification, remediation).
+  - Incident log: track reported incidents, investigation status, remediation steps.
+  - Notification template for affected users (if PII exposed).
+
+### Privacy by Design (Per Module)
+
+#### Accounts/CRM (Epic 24)
+- **PII Fields**: Donor/institution names, addresses, phone, email, tax IDs, banking details (if applicable).
+- **Handling**:
+  - Encrypt sensitive fields (phone, tax ID) at rest using Convex encryption.
+  - Mask phone/tax ID in UI (show last 4 digits only) unless user has explicit permission.
+  - Audit log all access to sensitive fields.
+  - DSR export includes all account data; deletion removes account and linked records (with audit log retention).
+  - Consent tracking: record opt-in/opt-out for marketing communications.
+
+#### Library (Epic 17)
+- **PII Fields**: Patron names, addresses, phone, email, membership details, borrowing history.
+- **Handling**:
+  - Encrypt patron contact info at rest.
+  - Anonymize borrowing history after patron deletion (retain counts only for analytics).
+  - DSR export includes patron profile, borrowing history, fines, holds.
+  - Deletion: soft-delete patron record; retain anonymized circulation data for 5 years (for analytics/reporting).
+  - Consent: track opt-in for library communications (overdue notices, new acquisitions).
+
+#### Users (Staff)
+- **PII Fields**: Staff names, email, phone, emergency contacts, role assignments.
+- **Handling**:
+  - Encrypt emergency contact info at rest.
+  - Audit log all permission changes and role assignments.
+  - DSR export includes user profile, role history, activity log.
+  - Deletion: deactivate user account; retain audit logs of their actions for 7 years.
+  - No consent needed (staff are employees/contractors).
+
+#### Data Minimization & Anonymization
+- Collect only necessary PII for operational purposes (no "nice to have" fields).
+- Anonymize data for reporting/analytics: use aggregated counts, remove identifiers.
+- Example: "5 patrons borrowed books in Q4" instead of listing patron names.
+- Provide anonymization option in exports (checkbox: "Remove PII from export").
+
+### Implementation Notes
+- **No External Vendors**: All compliance controls built into MuseumLite; no OneTrust, TrustArc, or third-party compliance platforms required.
+- **Audit Log Storage**: Use Convex `auditLogs` table with indexes on `userId`, `entityType`, `action`, `timestamp` for fast filtering.
+- **Encryption**: Leverage Convex platform encryption for at-rest; HTTPS enforced by Next.js/Vercel.
+- **DSR Automation**: Build export/delete jobs in Convex actions; queue large exports as background jobs.
+- **Consent Records**: Store in `consentRecords` table with timestamp, user, consent type, value (opt-in/opt-out).
+- **Retention Jobs**: Use Convex crons to run daily/weekly deletion jobs for expired records.
+
+---
+
+## Epic 24 — Accounts & Institution CRM
 - Account detail page with contacts, notes, documents, activity timeline.
 - Relationship mapping between institutions and loans/exhibitions.
 - Patron segmentation and bulk communications.
 
-## Epic 24 — Workflow Engine Hardening
+## Epic 25 — Workflow Engine Hardening
 - Unified workflow system for accessions/loans/deaccessions/exhibitions/conservation.
 - SLA timers, escalations, and role-based inbox.
 - Audit trail for approvals + rollback support.
 
-## Epic 25 — QA, Seed Data, Tests
+## Epic 26 — QA, Seed Data, Tests
 - Extend Convex tests: accessions, deaccessions, loans, locations.
 - Seed data for media, loan docs, workflows, integrations (per `SEED_DATA_SUMMARY.md`).
 - UI empty/loading/error states for every module.
