@@ -433,3 +433,138 @@ export const addAccountsPermissions = internalMutation({
     return { created, assigned };
   },
 });
+
+/**
+ * Migration: Add loans admin permissions for existing organizations
+ *
+ * Creates loans.view_admin_overview, loans.view_transport permissions
+ * and adds organization.view_analytics to registrar role.
+ * Assigns all three permissions to admin and registrar roles.
+ *
+ * Run: npx convex run migrations:backfillLoanAdminPermissions
+ */
+export const backfillLoanAdminPermissions = internalMutation({
+  args: {},
+  returns: v.object({
+    permissionsCreated: v.number(),
+    rolePermissionsAdded: v.number(),
+  }),
+  handler: async (ctx) => {
+    console.log("Starting migration: Add loans admin permissions");
+
+    const newPermissions = [
+      {
+        name: "loans.view_admin_overview",
+        description: "View loans admin overview and KPIs",
+        category: "loans" as const,
+      },
+      {
+        name: "loans.view_transport",
+        description: "View loan transport status",
+        category: "loans" as const,
+      },
+    ];
+
+    const permissionIds: Map<string, Id<"permissions">> = new Map();
+    let permissionsCreated = 0;
+
+    for (const perm of newPermissions) {
+      const existing = await ctx.db
+        .query("permissions")
+        .withIndex("by_category", (q) => q.eq("category", perm.category))
+        .filter((q) => q.eq(q.field("name"), perm.name))
+        .first();
+
+      if (existing) {
+        permissionIds.set(perm.name, existing._id);
+        console.log(`Permission ${perm.name} already exists`);
+      } else {
+        const id = await ctx.db.insert("permissions", {
+          name: perm.name,
+          description: perm.description,
+          category: perm.category,
+        });
+        permissionIds.set(perm.name, id);
+        permissionsCreated++;
+        console.log(`Created permission ${perm.name}`);
+      }
+    }
+
+    const analyticsPermission = await ctx.db
+      .query("permissions")
+      .withIndex("by_category", (q) => q.eq("category", "organization"))
+      .filter((q) => q.eq(q.field("name"), "organization.view_analytics"))
+      .first();
+
+    if (analyticsPermission) {
+      permissionIds.set("organization.view_analytics", analyticsPermission._id);
+    }
+
+    const organizations = await ctx.db.query("organizations").collect();
+    console.log(`Found ${organizations.length} organizations`);
+
+    let rolePermissionsAdded = 0;
+
+    for (const org of organizations) {
+      const adminRole = await ctx.db
+        .query("roles")
+        .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("name"), "admin"),
+            q.eq(q.field("isSystemRole"), true),
+          ),
+        )
+        .first();
+
+      const registrarRole = await ctx.db
+        .query("roles")
+        .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("name"), "registrar"),
+            q.eq(q.field("isSystemRole"), true),
+          ),
+        )
+        .first();
+
+      const rolesToUpdate = [
+        { role: adminRole, name: "admin" },
+        { role: registrarRole, name: "registrar" },
+      ];
+
+      for (const { role, name } of rolesToUpdate) {
+        if (!role) {
+          console.warn(`No ${name} role found for organization ${org.name}`);
+          continue;
+        }
+
+        for (const [permName, permId] of permissionIds) {
+          const existing = await ctx.db
+            .query("rolePermissions")
+            .withIndex("by_role", (q) => q.eq("roleId", role._id))
+            .filter((q) => q.eq(q.field("permissionId"), permId))
+            .first();
+
+          if (!existing) {
+            await ctx.db.insert("rolePermissions", {
+              roleId: role._id,
+              permissionId: permId,
+            });
+            rolePermissionsAdded++;
+            console.log(`Added ${permName} to ${name} role for ${org.name}`);
+          }
+        }
+      }
+    }
+
+    console.log(
+      `Created ${permissionsCreated} permissions, added ${rolePermissionsAdded} role-permissions`,
+    );
+
+    return {
+      permissionsCreated,
+      rolePermissionsAdded,
+    };
+  },
+});

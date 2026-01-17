@@ -970,6 +970,8 @@ export const createDefaultRoles = internalMutation({
       "loans.update",
       "loans.delete",
       "loans.approve",
+      "loans.view_admin_overview",
+      "loans.view_transport",
       // Locations
       "locations.create",
       "locations.read",
@@ -1064,6 +1066,8 @@ export const createDefaultRoles = internalMutation({
       "loans.update",
       "loans.delete",
       "loans.approve",
+      "loans.view_admin_overview",
+      "loans.view_transport",
       "locations.create",
       "locations.read",
       "locations.update",
@@ -1071,6 +1075,7 @@ export const createDefaultRoles = internalMutation({
       "media.read",
       "accounts.read",
       "accounts.write",
+      "organization.view_analytics",
     ];
     for (const permName of registrarPerms) {
       const permId = permissionMap.get(permName);
