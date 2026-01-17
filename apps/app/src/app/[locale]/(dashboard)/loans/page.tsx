@@ -28,8 +28,9 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
+import { AdminOverview } from "./_components/admin-overview";
 import { LoansBulkActionsBar } from "./_components/loans-bulk-actions-bar";
 
 type LoanStatus =
@@ -131,6 +132,14 @@ export default function LoansPage() {
               </PermissionGate>
             </div>
           </div>
+
+          <Suspense
+            fallback={
+              <div className="h-24 animate-pulse rounded-xl bg-card/40" />
+            }
+          >
+            <AdminOverview />
+          </Suspense>
 
           <LoanList
             organizationId={currentOrganizationId}

@@ -1,0 +1,44 @@
+"use client";
+
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { KpiCard } from "@v1/ui/kpi-card";
+import { useQuery } from "convex/react";
+import { Clock } from "lucide-react";
+
+export function KpiPendingApprovals() {
+  const { currentOrganizationId } = useOrganization();
+
+  return (
+    <PermissionGate permission="organization.view_analytics">
+      <KpiPendingApprovalsContent organizationId={currentOrganizationId} />
+    </PermissionGate>
+  );
+}
+
+function KpiPendingApprovalsContent({
+  organizationId,
+}: {
+  organizationId: string | null;
+}) {
+  const analytics = useQuery(
+    api.dashboard.getAnalytics,
+    organizationId
+      ? { organizationId: organizationId as Id<"organizations"> }
+      : "skip",
+  );
+
+  if (analytics === undefined) {
+    return <KpiCard title="Pending Approvals" value="—" loading />;
+  }
+
+  return (
+    <KpiCard
+      title="Pending Approvals"
+      value={analytics.loans.pending}
+      icon={Clock}
+    />
+  );
+}
