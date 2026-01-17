@@ -109,7 +109,7 @@ export default function CollectionGroupDetailPage() {
   return (
     <div className="flex h-full w-full bg-background px-6">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-        <div className="flex w-full flex-col rounded-lg border border-border bg-card">
+        <div className="flex w-full flex-col rounded-lg border border-border/60 bg-card">
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="sm" asChild>
@@ -162,7 +162,7 @@ export default function CollectionGroupDetailPage() {
             </div>
           </div>
           <div className="flex w-full px-6">
-            <div className="w-full border-b border-border" />
+            <div className="w-full border-b border-border/60" />
           </div>
 
           <CollectionGroupKPIs groupId={group._id} />
@@ -184,12 +184,12 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
 
   if (stats === undefined) {
     return (
-      <div className="p-6 border-b border-border">
+      <div className="p-6 border-b border-border/60">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="bg-muted/30 border border-border rounded-lg p-3 animate-pulse h-16"
+              className="bg-muted/30 border border-border/60 rounded-lg p-3 animate-pulse h-16"
             />
           ))}
         </div>
@@ -202,9 +202,9 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
   }
 
   return (
-    <div className="p-6 border-b border-border">
+    <div className="p-6 border-b border-border/60">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-muted/30 border border-border rounded-lg p-3 flex items-center gap-3">
+        <div className="bg-muted/30 border border-border/60 rounded-lg p-3 flex items-center gap-3">
           <div className="p-2 bg-indigo-500/10 rounded-md border border-indigo-500/20">
             <Package className="w-4 h-4 text-indigo-400" />
           </div>
@@ -218,7 +218,7 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
           </div>
         </div>
 
-        <div className="bg-muted/30 border border-border rounded-lg p-3 flex items-center gap-3">
+        <div className="bg-muted/30 border border-border/60 rounded-lg p-3 flex items-center gap-3">
           <div className="p-2 bg-emerald-500/10 rounded-md border border-emerald-500/20">
             <Eye className="w-4 h-4 text-emerald-400" />
           </div>
@@ -232,7 +232,7 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
           </div>
         </div>
 
-        <div className="bg-muted/30 border border-border rounded-lg p-3 flex items-center gap-3">
+        <div className="bg-muted/30 border border-border/60 rounded-lg p-3 flex items-center gap-3">
           <div className="p-2 bg-blue-500/10 rounded-md border border-blue-500/20">
             <ArrowLeftRight className="w-4 h-4 text-blue-400" />
           </div>
@@ -246,7 +246,7 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
           </div>
         </div>
 
-        <div className="bg-muted/30 border border-border rounded-lg p-3 flex items-center gap-3">
+        <div className="bg-muted/30 border border-border/60 rounded-lg p-3 flex items-center gap-3">
           <div className="p-2 bg-amber-500/10 rounded-md border border-amber-500/20">
             <Archive className="w-4 h-4 text-amber-400" />
           </div>
@@ -403,7 +403,7 @@ function CollectionObjectsList({
                     : "No available objects to add"}
                 </p>
               ) : (
-                <div className="max-h-[200px] space-y-1 overflow-y-auto rounded-md border border-border p-2">
+                <div className="max-h-[200px] space-y-1 overflow-y-auto rounded-md border border-border/60 p-2">
                   {availableCollections.map((collection) => {
                     const isSelected = selectedCollectionIds.includes(
                       collection._id,
@@ -550,7 +550,7 @@ function CollectionListItem({
   });
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent">
+    <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card p-4 transition-colors hover:bg-accent">
       <Link
         href={`/objects/${item.collectionId}`}
         className="flex flex-1 items-center gap-4"
