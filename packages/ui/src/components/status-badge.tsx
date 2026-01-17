@@ -1,99 +1,94 @@
-import { type VariantProps, cva } from "class-variance-authority";
-import type { LucideIcon } from "lucide-react";
-import type * as React from "react";
+import * as React from "react";
 import { cn } from "../utils";
 
-const statusBadgeTones = {
-  amber: {
-    badge: "border-amber-500/30",
-    icon: "text-amber-400",
-    text: "text-amber-200",
-  },
-  rose: {
-    badge: "border-rose-500/30",
-    icon: "text-rose-400",
-    text: "text-rose-200",
-  },
-  cyan: {
-    badge: "border-cyan-500/30",
-    icon: "text-cyan-400",
-    text: "text-cyan-200",
-  },
-  purple: {
-    badge: "border-purple-500/30",
-    icon: "text-purple-400",
-    text: "text-purple-200",
-  },
-  indigo: {
-    badge: "border-indigo-500/30",
-    icon: "text-indigo-400",
-    text: "text-indigo-200",
-  },
-  blue: {
-    badge: "border-blue-500/30",
-    icon: "text-blue-400",
-    text: "text-blue-200",
-  },
-  emerald: {
-    badge: "border-emerald-500/30",
-    icon: "text-emerald-400",
-    text: "text-emerald-200",
-  },
-  zinc: {
-    badge: "border-zinc-700",
-    icon: "text-zinc-400",
-    text: "text-zinc-400",
-  },
-} as const;
+export type Status = "pending" | "active" | "completed" | "overdue" | "draft";
+export type StatusSize = "sm" | "md";
+export type StatusVariant = "solid" | "outline";
 
-type StatusBadgeTone = keyof typeof statusBadgeTones;
+export interface StatusBadgeProps
+  extends React.HTMLAttributes<HTMLSpanElement> {
+  status: Status;
+  size?: StatusSize;
+  variant?: StatusVariant;
+  showDot?: boolean;
+}
 
-const statusBadgeVariants = cva(
-  "inline-flex items-center gap-1.5 rounded-md border bg-zinc-950/90 px-2 py-1 shadow-sm backdrop-blur-md",
+const statusConfig: Record<
+  Status,
   {
-    variants: {
-      tone: {
-        amber: statusBadgeTones.amber.badge,
-        rose: statusBadgeTones.rose.badge,
-        cyan: statusBadgeTones.cyan.badge,
-        purple: statusBadgeTones.purple.badge,
-        indigo: statusBadgeTones.indigo.badge,
-        blue: statusBadgeTones.blue.badge,
-        emerald: statusBadgeTones.emerald.badge,
-        zinc: statusBadgeTones.zinc.badge,
-      },
+    solid: string;
+    outline: string;
+    dot: string;
+  }
+> = {
+  pending: {
+    solid: "bg-amber-500/20 border-amber-500/30 text-amber-200",
+    outline: "border-amber-500 text-amber-400",
+    dot: "bg-amber-500",
+  },
+  active: {
+    solid: "bg-emerald-500/20 border-emerald-500/30 text-emerald-200",
+    outline: "border-emerald-500 text-emerald-400",
+    dot: "bg-emerald-500",
+  },
+  completed: {
+    solid: "bg-indigo-500/20 border-indigo-500/30 text-indigo-200",
+    outline: "border-indigo-500 text-indigo-400",
+    dot: "bg-indigo-500",
+  },
+  overdue: {
+    solid: "bg-rose-500/20 border-rose-500/30 text-rose-200",
+    outline: "border-rose-500 text-rose-400",
+    dot: "bg-rose-500",
+  },
+  draft: {
+    solid: "bg-zinc-500/20 border-zinc-500/30 text-zinc-200",
+    outline: "border-zinc-500 text-muted-foreground",
+    dot: "bg-zinc-500",
+  },
+};
+
+const sizeConfig: Record<StatusSize, string> = {
+  sm: "text-[10px] px-1.5 py-0.5",
+  md: "text-xs px-2 py-1",
+};
+
+const StatusBadge = React.forwardRef<HTMLSpanElement, StatusBadgeProps>(
+  (
+    {
+      status,
+      size = "md",
+      variant = "solid",
+      showDot = false,
+      className,
+      children,
+      ...props
     },
-    defaultVariants: {
-      tone: "zinc",
-    },
+    ref,
+  ) => {
+    const config = statusConfig[status];
+
+    return (
+      <span
+        ref={ref}
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-full font-medium border transition-colors",
+          sizeConfig[size],
+          variant === "solid" && config.solid,
+          variant === "outline" && cn("bg-transparent", config.outline),
+          className,
+        )}
+        {...props}
+      >
+        {showDot && (
+          <span className={cn("w-1.5 h-1.5 rounded-full", config.dot)} />
+        )}
+        {children}
+      </span>
+    );
   },
 );
 
-interface StatusBadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof statusBadgeVariants> {
-  icon?: LucideIcon;
-  label: string;
-}
+StatusBadge.displayName = "StatusBadge";
 
-function StatusBadge({
-  className,
-  tone = "zinc",
-  icon: Icon,
-  label,
-  ...props
-}: StatusBadgeProps) {
-  const toneStyles = statusBadgeTones[tone ?? "zinc"];
-
-  return (
-    <div className={cn(statusBadgeVariants({ tone }), className)} {...props}>
-      {Icon && <Icon className={cn("h-3 w-3", toneStyles.icon)} />}
-      <span className={cn("text-[10px] font-medium", toneStyles.text)}>
-        {label}
-      </span>
-    </div>
-  );
-}
-
-export { StatusBadge, statusBadgeVariants, statusBadgeTones };
-export type { StatusBadgeProps, StatusBadgeTone };
+export { StatusBadge };
