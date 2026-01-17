@@ -924,6 +924,90 @@ export const getLocationTypes = query({
 });
 
 /**
+ * Get location history for a location (items moved in/out)
+ */
+export const getLocationHistory = query({
+  args: {
+    locationId: v.id("locations"),
+    limit: v.optional(v.number()),
+  },
+  returns: v.array(
+    v.object({
+      id: v.string(),
+      collectionId: v.id("collections"),
+      collectionTitle: v.string(),
+      accessionNumber: v.string(),
+      eventType: v.union(v.literal("moved_in"), v.literal("moved_out")),
+      timestamp: v.number(),
+      movedByName: v.optional(v.string()),
+      otherLocationName: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const location = await ctx.db.get(args.locationId);
+    if (!location) {
+      throw new Error("Location not found");
+    }
+
+    await requirePermission(ctx, location.organizationId, "locations.read");
+
+    const limit = args.limit ?? 50;
+
+    const movedIn = await ctx.db
+      .query("locationHistory")
+      .withIndex("by_toLocation_and_movedAt", (q) =>
+        q.eq("toLocationId", args.locationId),
+      )
+      .order("desc")
+      .take(limit);
+
+    const movedOut = await ctx.db
+      .query("locationHistory")
+      .withIndex("by_fromLocation_and_movedAt", (q) =>
+        q.eq("fromLocationId", args.locationId),
+      )
+      .order("desc")
+      .take(limit);
+
+    const allEvents = [...movedIn, ...movedOut];
+
+    const enrichedEvents = await Promise.all(
+      allEvents.map(async (event) => {
+        const collection = await ctx.db.get(event.collectionId);
+        if (!collection) return null;
+
+        const movedBy = await ctx.db.get(event.movedBy);
+        const isMovedIn = event.toLocationId === args.locationId;
+        const otherLocationId = isMovedIn
+          ? event.fromLocationId
+          : event.toLocationId;
+        const otherLocation = otherLocationId
+          ? await ctx.db.get(otherLocationId)
+          : null;
+
+        return {
+          id: event._id,
+          collectionId: event.collectionId,
+          collectionTitle: collection.title,
+          accessionNumber: collection.accessionNumber,
+          eventType: isMovedIn ? ("moved_in" as const) : ("moved_out" as const),
+          timestamp: event.movedAt,
+          movedByName: movedBy?.name || movedBy?.username,
+          otherLocationName: otherLocation?.name,
+        };
+      }),
+    );
+
+    const validEvents = enrichedEvents.filter(
+      (e): e is NonNullable<typeof e> => e !== null,
+    );
+    validEvents.sort((a, b) => b.timestamp - a.timestamp);
+
+    return validEvents.slice(0, limit);
+  },
+});
+
+/**
  * Get location history for a collection object
  */
 export const getCollectionLocationHistory = query({
@@ -1402,9 +1486,12 @@ export const seedAllLocations = internalMutation({
     let totalLocations = 0;
 
     for (const orgSlug of Object.keys(LOCATIONS_DATA)) {
-      const count = await seedLocationsForOrg(ctx, {
-        organizationSlug: orgSlug,
-      });
+      const count = await ctx.runMutation(
+        internal.locations.seedLocationsForOrg,
+        {
+          organizationSlug: orgSlug,
+        },
+      );
       totalLocations += count;
     }
 
@@ -1453,9 +1540,12 @@ export const adminSeedAllLocations = internalMutation({
   handler: async (ctx): Promise<number> => {
     let totalLocations = 0;
     for (const orgSlug of Object.keys(LOCATIONS_DATA)) {
-      const count = await seedLocationsForOrg(ctx, {
-        organizationSlug: orgSlug,
-      });
+      const count = await ctx.runMutation(
+        internal.locations.seedLocationsForOrg,
+        {
+          organizationSlug: orgSlug,
+        },
+      );
       totalLocations += count;
     }
     return totalLocations;

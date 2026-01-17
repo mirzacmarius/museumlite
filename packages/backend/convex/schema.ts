@@ -815,7 +815,9 @@ export default defineSchema({
     .index("by_collection", ["collectionId"])
     .index("by_toLocation", ["toLocationId"])
     .index("by_fromLocation", ["fromLocationId"])
-    .index("by_movedAt", ["movedAt"]),
+    .index("by_movedAt", ["movedAt"])
+    .index("by_toLocation_and_movedAt", ["toLocationId", "movedAt"])
+    .index("by_fromLocation_and_movedAt", ["fromLocationId", "movedAt"]),
 
   // Unified accounts (museum lenders/borrowers + library patrons)
   accounts: defineTable({
