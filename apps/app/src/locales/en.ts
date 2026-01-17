@@ -58,4 +58,34 @@ export default {
     selectOrganizationDescription:
       "Please select an organization from the dropdown above to view activity.",
   },
+  kpi: {
+    totalObjects: "Total Objects",
+    objectsOnLoan: "Objects on Loan",
+    activeLoans: "Active Loans",
+    pendingAccessions: "Pending Accessions",
+  },
+  assignments: {
+    pendingApprovals: "Pending Approvals",
+    noPendingAssignments: "No pending assignments",
+  },
+  newArrivals: {
+    title: "New Arrivals",
+    noRecentAccessions: "No recent accessions",
+  },
+  loans: {
+    admin: {
+      activeLoans: "Active Loans",
+      pendingApprovals: "Pending Approvals",
+      inTransit: "In Transit",
+      overdue: "Overdue",
+    },
+  },
+  transit: {
+    status: "Transport Status",
+    noTransportRecords: "No transport records",
+  },
+  locations: {
+    timeline: "Location History",
+    noLocationHistory: "No location history",
+  },
 } as const;

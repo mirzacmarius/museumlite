@@ -61,4 +61,34 @@ export default {
     selectOrganizationDescription:
       "Por favor selecciona una organización del menú desplegable arriba para ver la actividad.",
   },
+  kpi: {
+    totalObjects: "Objetos Totales",
+    objectsOnLoan: "Objetos en Préstamo",
+    activeLoans: "Préstamos Activos",
+    pendingAccessions: "Adquisiciones Pendientes",
+  },
+  assignments: {
+    pendingApprovals: "Aprobaciones Pendientes",
+    noPendingAssignments: "No hay asignaciones pendientes",
+  },
+  newArrivals: {
+    title: "Nuevas Llegadas",
+    noRecentAccessions: "No hay adquisiciones recientes",
+  },
+  loans: {
+    admin: {
+      activeLoans: "Préstamos Activos",
+      pendingApprovals: "Aprobaciones Pendientes",
+      inTransit: "En Tránsito",
+      overdue: "Vencidos",
+    },
+  },
+  transit: {
+    status: "Estado del Transporte",
+    noTransportRecords: "No hay registros de transporte",
+  },
+  locations: {
+    timeline: "Historial de Ubicaciones",
+    noLocationHistory: "No hay historial de ubicación",
+  },
 } as const;

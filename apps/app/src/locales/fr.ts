@@ -59,4 +59,34 @@ export default {
     selectOrganizationDescription:
       "Veuillez sélectionner une organisation dans le menu déroulant ci-dessus pour voir l'activité.",
   },
+  kpi: {
+    totalObjects: "Objets Totaux",
+    objectsOnLoan: "Objets en Prêt",
+    activeLoans: "Prêts Actifs",
+    pendingAccessions: "Acquisitions en Attente",
+  },
+  assignments: {
+    pendingApprovals: "Approbations en Attente",
+    noPendingAssignments: "Aucune affectation en attente",
+  },
+  newArrivals: {
+    title: "Nouvelles Arrivées",
+    noRecentAccessions: "Aucune acquisition récente",
+  },
+  loans: {
+    admin: {
+      activeLoans: "Prêts Actifs",
+      pendingApprovals: "Approbations en Attente",
+      inTransit: "En Transit",
+      overdue: "En Retard",
+    },
+  },
+  transit: {
+    status: "Statut du Transport",
+    noTransportRecords: "Aucun enregistrement de transport",
+  },
+  locations: {
+    timeline: "Historique des Emplacements",
+    noLocationHistory: "Aucun historique d'emplacement",
+  },
 } as const;
