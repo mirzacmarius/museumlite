@@ -61,6 +61,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { LoanAgreement } from "./_components/loan-agreement";
 import { LoanApprovalWorkflow } from "./_components/loan-approval-workflow";
+import { TransportStatus } from "./_components/transport-status";
 
 type LoanStatus =
   | "pending"
@@ -1223,6 +1224,11 @@ function LoanContextSidebar({ loan }: { loan: Loan }) {
             </div>
           </div>
         </div>
+
+        <SidebarSeparator />
+
+        {/* Transport Status */}
+        <TransportStatus loanId={loan._id} />
 
         <SidebarSeparator />
 

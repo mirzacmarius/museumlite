@@ -1158,6 +1158,88 @@ export const getTransitForLoan = query({
   },
 });
 
+export const getTransitForLoanWithHistory = query({
+  args: { loanId: v.id("loans"), limit: v.optional(v.number()) },
+  returns: v.array(
+    v.object({
+      _id: v.id("transitRecords"),
+      transitNumber: v.string(),
+      transitType: transitTypeValidator,
+      carrier: v.string(),
+      status: transitStatusValidator,
+      scheduledPickupDate: v.optional(v.number()),
+      estimatedDeliveryDate: v.optional(v.number()),
+      actualDeliveryDate: v.optional(v.number()),
+      statusHistory: v.array(
+        v.object({
+          status: transitStatusValidator,
+          location: v.optional(v.string()),
+          description: v.string(),
+          reportedAt: v.number(),
+          reportedByName: v.optional(v.string()),
+        }),
+      ),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    // Load loan first to get organizationId for permission check
+    const loan = await ctx.db.get(args.loanId);
+    if (!loan) {
+      return [];
+    }
+
+    // Permission check: require loans.read (same as existing transit queries)
+    await requirePermission(ctx, loan.organizationId, "loans.read");
+
+    // Query transit records for loan
+    const transitRecords = await ctx.db
+      .query("transitRecords")
+      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+      .collect();
+
+    // Limit to 5 most recent records if limit specified
+    const recordsToProcess = args.limit
+      ? transitRecords.slice(0, args.limit)
+      : transitRecords;
+
+    // For each record, fetch status history
+    const recordsWithHistory = await Promise.all(
+      recordsToProcess.map(async (record) => {
+        const statusUpdates = await ctx.db
+          .query("transitStatusUpdates")
+          .withIndex("by_transitRecord", (q) =>
+            q.eq("transitRecordId", record._id),
+          )
+          .collect();
+
+        const statusHistory = statusUpdates
+          .sort((a, b) => b.reportedAt - a.reportedAt)
+          .map((update) => ({
+            status: update.status,
+            location: update.location,
+            description: update.description,
+            reportedAt: update.reportedAt,
+            reportedByName: update.reportedByName,
+          }));
+
+        return {
+          _id: record._id,
+          transitNumber: record.transitNumber,
+          transitType: record.transitType,
+          carrier: record.carrier,
+          status: record.status,
+          scheduledPickupDate: record.scheduledPickupDate,
+          estimatedDeliveryDate: record.estimatedDeliveryDate,
+          actualDeliveryDate: record.actualDeliveryDate,
+          statusHistory,
+        };
+      }),
+    );
+
+    return recordsWithHistory;
+  },
+});
+
 export const getTransitForExhibition = query({
   args: {
     exhibitionId: v.id("exhibitions"),
