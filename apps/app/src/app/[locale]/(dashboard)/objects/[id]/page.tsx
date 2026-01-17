@@ -397,10 +397,10 @@ export default function ObjectDetailPage() {
                     <img
                       src={heroImage.thumbnailUrl || heroImage.url}
                       alt={collection.title}
-                      className="h-48 w-48 rounded-xl border border-border bg-secondary object-cover shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
+                      className="h-48 w-48 rounded-xl border border-border/60 bg-secondary object-cover shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
                     />
                   ) : (
-                    <div className="flex h-48 w-48 items-center justify-center rounded-xl border border-border bg-secondary">
+                    <div className="flex h-48 w-48 items-center justify-center rounded-xl border border-border/60 bg-secondary">
                       <ImageIcon className="h-12 w-12 text-muted-foreground" />
                     </div>
                   )}
@@ -470,7 +470,7 @@ export default function ObjectDetailPage() {
                       <PopoverTrigger asChild>
                         <button
                           type="button"
-                          className="flex cursor-pointer items-center gap-1.5 rounded border border-border bg-secondary px-2 py-1 font-mono text-xs text-foreground transition-colors hover:bg-secondary/80"
+                          className="flex cursor-pointer items-center gap-1.5 rounded border border-border/60 bg-secondary px-2 py-1 font-mono text-xs text-foreground transition-colors hover:bg-secondary/80"
                           onClick={() => {
                             navigator.clipboard.writeText(
                               collection.accessionNumber,
@@ -502,7 +502,7 @@ export default function ObjectDetailPage() {
                               (altNum, idx) => (
                                 <div
                                   key={altNum}
-                                  className="flex items-center gap-1.5 rounded-md border border-border bg-secondary/50 px-2 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+                                  className="flex items-center gap-1.5 rounded-md border border-border/60 bg-secondary/50 px-2 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
                                 >
                                   <span className="select-none font-mono text-muted-foreground/60">
                                     {idx === 0 ? "ID:" : "ALT:"}
@@ -581,7 +581,7 @@ export default function ObjectDetailPage() {
                             <TooltipTrigger asChild>
                               <Link
                                 href={`/objects/${parentObject._id}`}
-                                className="group flex items-center gap-2 rounded-full border border-border bg-background/50 py-1 pl-1 pr-3 transition-all hover:border-accent hover:bg-accent/5"
+                                className="group flex items-center gap-2 rounded-full border border-border/60 bg-background/50 py-1 pl-1 pr-3 transition-all hover:border-accent hover:bg-accent/5"
                               >
                                 <Avatar className="h-6 w-6 ring-1 ring-border group-hover:ring-accent">
                                   <AvatarImage
@@ -599,7 +599,7 @@ export default function ObjectDetailPage() {
                             </TooltipTrigger>
                             <TooltipContent
                               side="bottom"
-                              className="max-w-xs border border-border bg-popover text-popover-foreground"
+                              className="max-w-xs border border-border/60 bg-popover text-popover-foreground"
                             >
                               <div className="space-y-1">
                                 <p className="font-medium">
@@ -661,7 +661,7 @@ export default function ObjectDetailPage() {
                               </TooltipTrigger>
                               <TooltipContent
                                 side="bottom"
-                                className="max-w-xs border border-border bg-popover text-popover-foreground"
+                                className="max-w-xs border border-border/60 bg-popover text-popover-foreground"
                               >
                                 <div className="space-y-1">
                                   <p className="font-medium">
@@ -688,7 +688,7 @@ export default function ObjectDetailPage() {
                                 <TooltipTrigger asChild>
                                   <Link
                                     href={`/objects/${sibling._id}`}
-                                    className="group flex items-center gap-2 rounded-full border border-border bg-background/50 py-1 pl-1 pr-3 transition-all hover:border-accent hover:bg-accent/5"
+                                    className="group flex items-center gap-2 rounded-full border border-border/60 bg-background/50 py-1 pl-1 pr-3 transition-all hover:border-accent hover:bg-accent/5"
                                   >
                                     <Avatar className="h-6 w-6 ring-1 ring-border group-hover:ring-accent">
                                       <AvatarImage
@@ -711,7 +711,7 @@ export default function ObjectDetailPage() {
                                 </TooltipTrigger>
                                 <TooltipContent
                                   side="bottom"
-                                  className="max-w-xs border border-border bg-popover text-popover-foreground"
+                                  className="max-w-xs border border-border/60 bg-popover text-popover-foreground"
                                 >
                                   <div className="space-y-1">
                                     <p className="font-medium">
@@ -733,7 +733,7 @@ export default function ObjectDetailPage() {
 
                           {/* More indicator */}
                           {siblingObjects.length > 3 && (
-                            <div className="flex h-7 items-center rounded-full border border-border bg-secondary/50 px-2.5 text-[10px] font-medium text-muted-foreground">
+                            <div className="flex h-7 items-center rounded-full border border-border/60 bg-secondary/50 px-2.5 text-[10px] font-medium text-muted-foreground">
                               +{siblingObjects.length - 3} more
                             </div>
                           )}
@@ -1414,7 +1414,7 @@ function PhysicalTab({ collection }: { collection: CollectionData }) {
             Materials
           </span>
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-secondary">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
               <span className="font-serif text-xs text-foreground">M</span>
             </div>
             <span className="text-sm font-medium text-foreground">
@@ -1429,7 +1429,7 @@ function PhysicalTab({ collection }: { collection: CollectionData }) {
             Technique
           </span>
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-secondary">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
               <Hammer className="h-3.5 w-3.5 text-muted-foreground" />
             </div>
             <span className="text-sm font-medium text-foreground">
@@ -1566,7 +1566,7 @@ function PhysicalTab({ collection }: { collection: CollectionData }) {
             collection.inscriptionMarks.length > 0 &&
             collection.inscriptionMarks.map((mark) => (
               <div key={mark.label} className="mt-2 flex items-start gap-2">
-                <span className="shrink-0 rounded border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                <span className="shrink-0 rounded border border-border/60 bg-secondary px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
                   {mark.label}
                 </span>
                 <p className="text-xs text-muted-foreground">
@@ -1914,7 +1914,7 @@ function ExhibitionsTab({
                   : "border-border/60 bg-secondary/20 opacity-75 hover:opacity-100",
               )}
             >
-              <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border border-border bg-secondary text-center">
+              <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border border-border/60 bg-secondary text-center">
                 <span className="text-[10px] font-bold uppercase text-muted-foreground">
                   {exhibition.isCurrent
                     ? "Now"
@@ -1941,13 +1941,13 @@ function ExhibitionsTab({
                   </p>
                 )}
                 <div className="mt-2 flex gap-2">
-                  <span className="rounded border border-border bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                  <span className="rounded border border-border/60 bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
                     {new Date(exhibition.startDate).toLocaleDateString()}
                     {exhibition.endDate &&
                       ` - ${new Date(exhibition.endDate).toLocaleDateString()}`}
                   </span>
                   {exhibition.isLoan && exhibition.loanVenue && (
-                    <span className="rounded border border-border bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                    <span className="rounded border border-border/60 bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
                       Loan: {exhibition.loanVenue}
                     </span>
                   )}
@@ -2119,7 +2119,7 @@ function LogsTab({
                   </td>
                   <td className="px-4 py-3 align-top">
                     <div className="flex items-center gap-2">
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full border border-border bg-secondary text-[9px] text-muted-foreground">
+                      <div className="flex h-5 w-5 items-center justify-center rounded-full border border-border/60 bg-secondary text-[9px] text-muted-foreground">
                         {log.userName?.charAt(0) || "?"}
                       </div>
                       <span className="text-xs text-muted-foreground">
