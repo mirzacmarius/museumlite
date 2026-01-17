@@ -253,8 +253,8 @@ Task 1 → Task 2 → Task 3 → Task 4 → Task 5 → Task 6
 ```
 
 ### Final Checklist
-- [ ] Full-scope plan with no MVP language
-- [ ] Integrations expanded with standards and interoperability
-- [ ] Compliance controls added (GDPR + SOC2-style)
-- [ ] Guardrails clearly stated
-- [ ] Dependency map + Linear alignment included
+- [x] Full-scope plan with no MVP language
+- [x] Integrations expanded with standards and interoperability
+- [x] Compliance controls added (GDPR + SOC2-style)
+- [x] Guardrails clearly stated
+- [x] Dependency map + Linear alignment included
