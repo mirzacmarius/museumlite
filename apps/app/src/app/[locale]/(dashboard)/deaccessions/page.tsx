@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -27,12 +28,13 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 export default function DeaccessionsPage() {
+  const t = useScopedI18n("deaccessions");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
 
   if (isLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t("detail.loading")}</p>
       </div>
     );
   }
@@ -44,16 +46,16 @@ export default function DeaccessionsPage() {
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
-              No Organization Found
+              {t("noOrg.title")}
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You need to create an organization to manage deaccessions.
+              {t("noOrg.description")}
             </p>
           </div>
           <Button asChild>
             <Link href="/organizations/new">
               <Plus className="mr-2 h-4 w-4" />
-              Create Organization
+              {t("noOrg.createButton")}
             </Link>
           </Button>
         </div>
@@ -68,11 +70,10 @@ export default function DeaccessionsPage() {
           <Archive className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
-              Select an Organization
+              {t("selectOrg.title")}
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select an organization from the dropdown above to view
-              deaccessions.
+              {t("selectOrg.description")}
             </p>
           </div>
         </div>
@@ -92,6 +93,7 @@ function DeaccessionTable({
 }: {
   organizationId: Id<"organizations">;
 }) {
+  const t = useScopedI18n("deaccessions");
   const [status, setStatus] = useState<
     "all" | "pending" | "approved" | "rejected"
   >("all");
