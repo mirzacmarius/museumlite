@@ -1,11 +1,13 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
-import { Textarea } from "@v1/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -13,14 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { DatePicker } from "@v1/ui/date-picker";
+import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, use } from "react";
+import { use, useEffect, useState } from "react";
 import { toast } from "sonner";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
 type TreatmentType =
   | "routine"
@@ -31,21 +32,12 @@ type TreatmentType =
   | "assessment"
   | "other";
 
-const TREATMENT_TYPES: { value: TreatmentType; label: string }[] = [
-  { value: "routine", label: "Routine Maintenance" },
-  { value: "stabilization", label: "Stabilization" },
-  { value: "restoration", label: "Restoration" },
-  { value: "cleaning", label: "Cleaning" },
-  { value: "repair", label: "Repair" },
-  { value: "assessment", label: "Condition Assessment" },
-  { value: "other", label: "Other" },
-];
-
 export default function EditTreatmentPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const t = useScopedI18n("conservation");
   const { id } = use(params);
   const router = useRouter();
   const treatment = useQuery(api.conservationTreatments.get, {
@@ -62,6 +54,16 @@ export default function EditTreatmentPage({
     notes: "",
   });
 
+  const TREATMENT_TYPES: { value: TreatmentType; label: string }[] = [
+    { value: "routine", label: t("treatmentTypes.routine") },
+    { value: "stabilization", label: t("treatmentTypes.stabilization") },
+    { value: "restoration", label: t("treatmentTypes.restoration") },
+    { value: "cleaning", label: t("treatmentTypes.cleaning") },
+    { value: "repair", label: t("treatmentTypes.repair") },
+    { value: "assessment", label: t("treatmentTypes.assessment") },
+    { value: "other", label: t("treatmentTypes.other") },
+  ];
+
   useEffect(() => {
     if (treatment) {
       setFormData({
@@ -77,7 +79,7 @@ export default function EditTreatmentPage({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.treatmentType || !formData.title || !formData.description) {
-      toast.error("Please fill in all required fields");
+      toast.error(t("form.validationError"));
       return;
     }
 
@@ -92,11 +94,11 @@ export default function EditTreatmentPage({
         notes: formData.notes || undefined,
       });
 
-      toast.success("Treatment record updated");
+      toast.success(t("form.updateSuccess"));
       router.push(`/conservation/${id}`);
     } catch (error) {
       console.error(error);
-      toast.error("Failed to update treatment record");
+      toast.error(t("form.updateError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -113,9 +115,9 @@ export default function EditTreatmentPage({
   if (treatment === null) {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-background">
-        <p className="text-muted-foreground">Treatment record not found</p>
+        <p className="text-muted-foreground">{t("detail.notFound")}</p>
         <Button asChild variant="outline">
-          <Link href="/conservation">Back to List</Link>
+          <Link href="/conservation">{t("detail.backToList")}</Link>
         </Button>
       </div>
     );
@@ -137,10 +139,10 @@ export default function EditTreatmentPage({
           </Button>
           <div>
             <h1 className="text-2xl font-semibold text-foreground">
-              Edit Treatment Record
+              {t("form.editTitle")}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Update details for {treatment.title}
+              {t("form.editSubtitle")} {treatment.title}
             </p>
           </div>
         </div>
@@ -151,16 +153,19 @@ export default function EditTreatmentPage({
         >
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-foreground/80">Collection Object</Label>
+              <Label className="text-foreground/80">
+                {t("form.collectionObject")}
+              </Label>
               <div className="rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-                {treatment.collectionTitle || "Unknown Object"}
+                {treatment.collectionTitle || t("detail.unknownObject")}
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label className="text-foreground/80">
-                  Treatment Type <span className="text-red-500">*</span>
+                  {t("form.treatmentType")}{" "}
+                  <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   value={formData.treatmentType}
@@ -169,7 +174,7 @@ export default function EditTreatmentPage({
                   }
                 >
                   <SelectTrigger className="bg-muted/50 border-border text-foreground/80">
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder={t("form.selectType")} />
                   </SelectTrigger>
                   <SelectContent>
                     {TREATMENT_TYPES.map((type) => (
@@ -183,7 +188,8 @@ export default function EditTreatmentPage({
 
               <div className="space-y-2">
                 <Label className="text-foreground/80">
-                  Date Performed <span className="text-red-500">*</span>
+                  {t("form.datePerformed")}{" "}
+                  <span className="text-red-500">*</span>
                 </Label>
                 <DatePicker
                   date={formData.performedAt}
@@ -197,10 +203,10 @@ export default function EditTreatmentPage({
 
             <div className="space-y-2">
               <Label className="text-foreground/80">
-                Title <span className="text-red-500">*</span>
+                {t("form.title")} <span className="text-red-500">*</span>
               </Label>
               <Input
-                placeholder="e.g. Surface Cleaning"
+                placeholder={t("form.titlePlaceholder")}
                 value={formData.title}
                 onChange={(e) =>
                   setFormData({ ...formData, title: e.target.value })
@@ -212,10 +218,10 @@ export default function EditTreatmentPage({
 
             <div className="space-y-2">
               <Label className="text-foreground/80">
-                Description <span className="text-red-500">*</span>
+                {t("form.description")} <span className="text-red-500">*</span>
               </Label>
               <Textarea
-                placeholder="Detailed description of the treatment performed..."
+                placeholder={t("form.descriptionPlaceholder")}
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
@@ -226,9 +232,11 @@ export default function EditTreatmentPage({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-foreground/80">Additional Notes</Label>
+              <Label className="text-foreground/80">
+                {t("form.additionalNotes")}
+              </Label>
               <Textarea
-                placeholder="Any observations, materials used, or recommendations..."
+                placeholder={t("form.notesPlaceholder")}
                 value={formData.notes}
                 onChange={(e) =>
                   setFormData({ ...formData, notes: e.target.value })
@@ -245,7 +253,7 @@ export default function EditTreatmentPage({
               asChild
               className="text-muted-foreground hover:text-foreground"
             >
-              <Link href={`/conservation/${id}`}>Cancel</Link>
+              <Link href={`/conservation/${id}`}>{t("form.cancel")}</Link>
             </Button>
             <Button
               type="submit"
@@ -255,7 +263,7 @@ export default function EditTreatmentPage({
               {isSubmitting && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Save Changes
+              {t("form.saveChanges")}
             </Button>
           </div>
         </form>

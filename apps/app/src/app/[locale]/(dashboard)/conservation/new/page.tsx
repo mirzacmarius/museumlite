@@ -1,12 +1,14 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
 import { CollectionSelector } from "@/components/collection-selector";
+import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
-import { Textarea } from "@v1/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -14,14 +16,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { DatePicker } from "@v1/ui/date-picker";
+import { Textarea } from "@v1/ui/textarea";
 import { useMutation } from "convex/react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
 type TreatmentType =
   | "routine"
@@ -32,17 +33,8 @@ type TreatmentType =
   | "assessment"
   | "other";
 
-const TREATMENT_TYPES: { value: TreatmentType; label: string }[] = [
-  { value: "routine", label: "Routine Maintenance" },
-  { value: "stabilization", label: "Stabilization" },
-  { value: "restoration", label: "Restoration" },
-  { value: "cleaning", label: "Cleaning" },
-  { value: "repair", label: "Repair" },
-  { value: "assessment", label: "Condition Assessment" },
-  { value: "other", label: "Other" },
-];
-
 export default function NewTreatmentPage() {
+  const t = useScopedI18n("conservation");
   const { currentOrganizationId } = useOrganization();
   const router = useRouter();
   const createTreatment = useMutation(api.conservationTreatments.create);
@@ -57,6 +49,16 @@ export default function NewTreatmentPage() {
     notes: "",
   });
 
+  const TREATMENT_TYPES: { value: TreatmentType; label: string }[] = [
+    { value: "routine", label: t("treatmentTypes.routine") },
+    { value: "stabilization", label: t("treatmentTypes.stabilization") },
+    { value: "restoration", label: t("treatmentTypes.restoration") },
+    { value: "cleaning", label: t("treatmentTypes.cleaning") },
+    { value: "repair", label: t("treatmentTypes.repair") },
+    { value: "assessment", label: t("treatmentTypes.assessment") },
+    { value: "other", label: t("treatmentTypes.other") },
+  ];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (
@@ -65,7 +67,7 @@ export default function NewTreatmentPage() {
       !formData.title ||
       !formData.description
     ) {
-      toast.error("Please fill in all required fields");
+      toast.error(t("form.validationError"));
       return;
     }
 
@@ -80,11 +82,11 @@ export default function NewTreatmentPage() {
         notes: formData.notes || undefined,
       });
 
-      toast.success("Treatment record created");
+      toast.success(t("form.createSuccess"));
       router.push(`/conservation/${treatmentId}`);
     } catch (error) {
       console.error(error);
-      toast.error("Failed to create treatment record");
+      toast.error(t("form.createError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -106,10 +108,10 @@ export default function NewTreatmentPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-semibold text-foreground">
-              New Treatment Record
+              {t("form.newTitle")}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Log a new conservation treatment or assessment
+              {t("form.newSubtitle")}
             </p>
           </div>
         </div>
@@ -121,7 +123,8 @@ export default function NewTreatmentPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label className="text-foreground/80">
-                Collection Object <span className="text-red-500">*</span>
+                {t("form.collectionObject")}{" "}
+                <span className="text-red-500">*</span>
               </Label>
               {currentOrganizationId && (
                 <CollectionSelector
@@ -138,7 +141,8 @@ export default function NewTreatmentPage() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label className="text-foreground/80">
-                  Treatment Type <span className="text-red-500">*</span>
+                  {t("form.treatmentType")}{" "}
+                  <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   value={formData.treatmentType}
@@ -147,7 +151,7 @@ export default function NewTreatmentPage() {
                   }
                 >
                   <SelectTrigger className="bg-muted/50 border-border text-foreground/80">
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder={t("form.selectType")} />
                   </SelectTrigger>
                   <SelectContent>
                     {TREATMENT_TYPES.map((type) => (
@@ -161,7 +165,8 @@ export default function NewTreatmentPage() {
 
               <div className="space-y-2">
                 <Label className="text-foreground/80">
-                  Date Performed <span className="text-red-500">*</span>
+                  {t("form.datePerformed")}{" "}
+                  <span className="text-red-500">*</span>
                 </Label>
                 <DatePicker
                   date={formData.performedAt}
@@ -175,10 +180,10 @@ export default function NewTreatmentPage() {
 
             <div className="space-y-2">
               <Label className="text-foreground/80">
-                Title <span className="text-red-500">*</span>
+                {t("form.title")} <span className="text-red-500">*</span>
               </Label>
               <Input
-                placeholder="e.g. Surface Cleaning"
+                placeholder={t("form.titlePlaceholder")}
                 value={formData.title}
                 onChange={(e) =>
                   setFormData({ ...formData, title: e.target.value })
@@ -190,10 +195,10 @@ export default function NewTreatmentPage() {
 
             <div className="space-y-2">
               <Label className="text-foreground/80">
-                Description <span className="text-red-500">*</span>
+                {t("form.description")} <span className="text-red-500">*</span>
               </Label>
               <Textarea
-                placeholder="Detailed description of the treatment performed..."
+                placeholder={t("form.descriptionPlaceholder")}
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
@@ -204,9 +209,11 @@ export default function NewTreatmentPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-foreground/80">Additional Notes</Label>
+              <Label className="text-foreground/80">
+                {t("form.additionalNotes")}
+              </Label>
               <Textarea
-                placeholder="Any observations, materials used, or recommendations..."
+                placeholder={t("form.notesPlaceholder")}
                 value={formData.notes}
                 onChange={(e) =>
                   setFormData({ ...formData, notes: e.target.value })
@@ -223,7 +230,7 @@ export default function NewTreatmentPage() {
               asChild
               className="text-muted-foreground hover:text-foreground"
             >
-              <Link href="/conservation">Cancel</Link>
+              <Link href="/conservation">{t("form.cancel")}</Link>
             </Button>
             <Button
               type="submit"
@@ -233,7 +240,7 @@ export default function NewTreatmentPage() {
               {isSubmitting && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Create Record
+              {t("form.createRecord")}
             </Button>
           </div>
         </form>

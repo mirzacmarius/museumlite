@@ -2,23 +2,9 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
-import { Button } from "@v1/ui/button";
-import { useQuery, useMutation } from "convex/react";
-import {
-  ArrowLeft,
-  Calendar,
-  Loader2,
-  Pencil,
-  Trash2,
-  User,
-  Box,
-} from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { use } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +16,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@v1/ui/alert-dialog";
+import { Button } from "@v1/ui/button";
+import { useMutation, useQuery } from "convex/react";
+import {
+  ArrowLeft,
+  Box,
+  Calendar,
+  Loader2,
+  Pencil,
+  Trash2,
+  User,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { use } from "react";
+import { toast } from "sonner";
 
 const TREATMENT_TYPE_STYLES: Record<string, string> = {
   routine: "bg-muted text-muted-foreground border-border",
@@ -46,6 +47,7 @@ export default function TreatmentDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const t = useScopedI18n("conservation");
   const { id } = use(params);
   const router = useRouter();
   const treatment = useQuery(api.conservationTreatments.get, {
@@ -64,9 +66,9 @@ export default function TreatmentDetailPage({
   if (treatment === null) {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-background">
-        <p className="text-muted-foreground">Treatment record not found</p>
+        <p className="text-muted-foreground">{t("detail.notFound")}</p>
         <Button asChild variant="outline">
-          <Link href="/conservation">Back to List</Link>
+          <Link href="/conservation">{t("detail.backToList")}</Link>
         </Button>
       </div>
     );
@@ -75,11 +77,11 @@ export default function TreatmentDetailPage({
   const handleDelete = async () => {
     try {
       await removeTreatment({ id: id as Id<"conservationTreatments"> });
-      toast.success("Treatment record deleted");
+      toast.success(t("form.deleteSuccess"));
       router.push("/conservation");
     } catch (error) {
       console.error(error);
-      toast.error("Failed to delete treatment record");
+      toast.error(t("form.deleteError"));
     }
   };
 
@@ -100,7 +102,7 @@ export default function TreatmentDetailPage({
             >
               <Link href="/conservation">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to List
+                {t("detail.backToList")}
               </Link>
             </Button>
 
@@ -112,7 +114,7 @@ export default function TreatmentDetailPage({
                   {treatment.treatmentType}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  Created{" "}
+                  {t("detail.created")}{" "}
                   {new Date(treatment._creationTime).toLocaleDateString()}
                 </span>
               </div>
@@ -131,7 +133,7 @@ export default function TreatmentDetailPage({
               >
                 <Link href={`/conservation/${id}/edit`}>
                   <Pencil className="mr-2 h-4 w-4" />
-                  Edit
+                  {t("detail.edit")}
                 </Link>
               </Button>
 
@@ -142,24 +144,27 @@ export default function TreatmentDetailPage({
                     className="border-red-900/30 bg-red-950/10 text-red-400 hover:bg-red-950/30 hover:text-red-300 hover:border-red-900/50"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
+                    {t("detail.delete")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogTitle>
+                      {t("detail.deleteDialog.title")}
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete
-                      the conservation treatment record.
+                      {t("detail.deleteDialog.description")}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel>
+                      {t("detail.deleteDialog.cancel")}
+                    </AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleDelete}
                       className="bg-red-600 text-white hover:bg-red-700"
                     >
-                      Delete
+                      {t("detail.deleteDialog.confirm")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -172,7 +177,7 @@ export default function TreatmentDetailPage({
           <div className="lg:col-span-2 space-y-6">
             <div className="rounded-xl border border-border bg-card p-6 space-y-4">
               <h3 className="text-lg font-medium text-foreground">
-                Description
+                {t("detail.description")}
               </h3>
               <div className="prose prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
                 {treatment.description}
@@ -181,7 +186,9 @@ export default function TreatmentDetailPage({
 
             {treatment.notes && (
               <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-                <h3 className="text-lg font-medium text-foreground">Notes</h3>
+                <h3 className="text-lg font-medium text-foreground">
+                  {t("detail.notes")}
+                </h3>
                 <div className="prose prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
                   {treatment.notes}
                 </div>
@@ -192,7 +199,7 @@ export default function TreatmentDetailPage({
           <div className="space-y-6">
             <div className="rounded-xl border border-border bg-card p-6 space-y-6">
               <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
-                Details
+                {t("detail.details")}
               </h3>
 
               <div className="space-y-4">
@@ -200,13 +207,13 @@ export default function TreatmentDetailPage({
                   <Box className="mt-0.5 h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">
-                      Collection Object
+                      {t("detail.collectionObject")}
                     </p>
                     <Link
                       href={`/collections/${treatment.collectionId}`}
                       className="text-sm text-blue-400 hover:text-blue-300 hover:underline"
                     >
-                      {treatment.collectionTitle || "Unknown Object"}
+                      {treatment.collectionTitle || t("detail.unknownObject")}
                     </Link>
                   </div>
                 </div>
@@ -215,7 +222,7 @@ export default function TreatmentDetailPage({
                   <Calendar className="mt-0.5 h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">
-                      Date Performed
+                      {t("detail.datePerformed")}
                     </p>
                     <p className="text-sm text-foreground/80">
                       {new Date(treatment.performedAt).toLocaleDateString()}
@@ -227,10 +234,10 @@ export default function TreatmentDetailPage({
                   <User className="mt-0.5 h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">
-                      Performed By
+                      {t("detail.performedBy")}
                     </p>
                     <p className="text-sm text-foreground/80">
-                      {treatment.performedByName || "Unknown"}
+                      {treatment.performedByName || t("detail.unknown")}
                     </p>
                   </div>
                 </div>

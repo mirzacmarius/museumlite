@@ -3,6 +3,7 @@
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -22,6 +23,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 export default function ConservationPage() {
+  const t = useScopedI18n("conservation");
   const { currentOrganizationId, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
   const [searchQuery, setSearchQuery] = useState("");
@@ -29,7 +31,7 @@ export default function ConservationPage() {
   if (isLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-background">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t("loading")}</p>
       </div>
     );
   }
@@ -41,11 +43,10 @@ export default function ConservationPage() {
           <GalleryVerticalEnd className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
-              No Organization Found
+              {t("noOrganizationTitle")}
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You need to create an organization to manage conservation
-              treatments.
+              {t("noOrganizationDescription")}
             </p>
           </div>
         </div>
@@ -55,7 +56,7 @@ export default function ConservationPage() {
 
   return (
     <FeatureGuard
-      featureName="Conservation"
+      featureName={t("title")}
       isLocked={!hasFeature("conservation")}
       tierNeeded="pro"
     >
@@ -65,10 +66,10 @@ export default function ConservationPage() {
             <div className="flex w-full items-center justify-between rounded-lg p-6">
               <div className="flex flex-col gap-2">
                 <h2 className="text-xl font-medium text-foreground">
-                  Conservation
+                  {t("title")}
                 </h2>
                 <p className="text-sm font-normal text-muted-foreground">
-                  Track conservation treatments and condition assessments
+                  {t("description")}
                 </p>
               </div>
               <PermissionGate permission="collections.update">
@@ -78,7 +79,7 @@ export default function ConservationPage() {
                 >
                   <Link href="/conservation/new">
                     <Plus className="mr-2 h-4 w-4" />
-                    New Treatment
+                    {t("newTreatment")}
                   </Link>
                 </Button>
               </PermissionGate>
@@ -91,7 +92,7 @@ export default function ConservationPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search by title, description, or notes..."
+                  placeholder={t("searchPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9 bg-muted/50 border-border text-foreground/80 placeholder:text-muted-foreground focus-visible:ring-ring"
@@ -117,6 +118,7 @@ function TreatmentList({
   organizationId: string;
   searchQuery: string;
 }) {
+  const t = useScopedI18n("conservation");
   const treatments = useQuery(api.conservationTreatments.listByOrganization, {
     organizationId: organizationId as Id<"organizations">,
   });
@@ -124,7 +126,7 @@ function TreatmentList({
   if (treatments === undefined) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Loading treatments...</p>
+        <p className="text-muted-foreground">{t("loadingTreatments")}</p>
       </div>
     );
   }
@@ -145,11 +147,9 @@ function TreatmentList({
       <div className="flex h-64 flex-col items-center justify-center gap-4">
         <Wrench className="h-12 w-12 text-muted-foreground" />
         <div className="text-center">
-          <p className="text-muted-foreground">No treatments found</p>
+          <p className="text-muted-foreground">{t("noTreatmentsFound")}</p>
           <p className="mt-2 text-sm text-muted-foreground">
-            {searchQuery
-              ? "Try adjusting your search query"
-              : "Create your first conservation record to get started"}
+            {searchQuery ? t("tryAdjustingSearch") : t("createFirstRecord")}
           </p>
         </div>
       </div>
