@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -27,6 +28,7 @@ import { LocationTimeline } from "./_components/location-timeline";
 import { ObjectsAtLocation } from "./_components/objects-at-location";
 
 export default function LocationDetailPage() {
+  const t = useScopedI18n("locations");
   const params = useParams();
   const router = useRouter();
   const locationId = params.id as string;
@@ -43,9 +45,7 @@ export default function LocationDetailPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">
-          Please select an organization to view locations.
-        </p>
+        <p className="text-muted-foreground">{t("selectOrganizationToView")}</p>
       </div>
     );
   }
@@ -53,7 +53,7 @@ export default function LocationDetailPage() {
   if (location === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t("loading")}</p>
       </div>
     );
   }
@@ -61,7 +61,7 @@ export default function LocationDetailPage() {
   if (location === null) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Location not found</p>
+        <p className="text-muted-foreground">{t("locationNotFound")}</p>
       </div>
     );
   }
@@ -86,7 +86,7 @@ export default function LocationDetailPage() {
           <Button variant="ghost" size="sm" asChild>
             <Link href="/locations">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Locations
+              {t("backToLocations")}
             </Link>
           </Button>
           <PermissionGate permission="locations.delete">
@@ -98,21 +98,20 @@ export default function LocationDetailPage() {
                   className="text-destructive hover:text-destructive"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+                  {t("delete")}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Location</AlertDialogTitle>
+                  <AlertDialogTitle>{t("deleteLocation")}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete this location? This action
-                    cannot be undone.
+                    {t("deleteConfirm")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
                   <AlertDialogAction onClick={handleDelete}>
-                    Delete Location
+                    {t("deleteLocation")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -133,20 +132,20 @@ export default function LocationDetailPage() {
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
-                  Location Name
+                  {t("locationName")}
                 </label>
                 <p className="mt-1 text-lg font-medium">{location.name}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
-                  Type
+                  {t("type")}
                 </label>
                 <p className="mt-1 capitalize">{location.type}</p>
               </div>
               {location.address && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Address
+                    {t("address")}
                   </label>
                   <p className="mt-1">{location.address}</p>
                 </div>
@@ -154,7 +153,7 @@ export default function LocationDetailPage() {
               {location.coordinates && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Coordinates
+                    {t("coordinates")}
                   </label>
                   <p className="mt-1">
                     {location.coordinates.latitude.toFixed(6)},
@@ -166,11 +165,13 @@ export default function LocationDetailPage() {
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
-                  Children Locations
+                  {t("childrenLocations")}
                 </label>
                 <p className="mt-1">
-                  {location.children.length} sub-location
-                  {location.children.length !== 1 ? "s" : ""}
+                  {location.children.length}{" "}
+                  {location.children.length !== 1
+                    ? t("subLocations")
+                    : t("subLocation")}
                 </p>
                 {location.children.length > 0 && (
                   <div className="mt-2 space-y-1">
@@ -189,7 +190,7 @@ export default function LocationDetailPage() {
               {location.notes && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Notes
+                    {t("notes")}
                   </label>
                   <p className="mt-1 whitespace-pre-wrap">{location.notes}</p>
                 </div>
@@ -202,7 +203,7 @@ export default function LocationDetailPage() {
           <div className="mb-4 flex items-center gap-2">
             <Archive className="h-5 w-5" />
             <h3 className="text-lg font-medium">
-              Objects at this Location ({location.objectCount})
+              {t("objectsAtThisLocation")} ({location.objectCount})
             </h3>
           </div>
           <ObjectsAtLocation locationId={locationId} />
@@ -211,7 +212,7 @@ export default function LocationDetailPage() {
         <GlassPanel padding="lg">
           <div className="mb-4 flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            <h3 className="text-lg font-medium">Location History</h3>
+            <h3 className="text-lg font-medium">{t("locationHistory")}</h3>
           </div>
           <Suspense fallback={<Skeleton className="h-64 w-full" />}>
             <LocationTimeline locationId={locationId} />

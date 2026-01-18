@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -154,6 +155,7 @@ function parseCSVLine(line: string): string[] {
 }
 
 export default function ImportLocationsPage() {
+  const t = useScopedI18n("locations");
   const { currentOrganizationId } = useOrganization();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -278,7 +280,7 @@ export default function ImportLocationsPage() {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <p className="text-muted-foreground">
-          Please select an organization to import locations.
+          {t("selectOrganizationToImport")}
         </p>
       </div>
     );
@@ -292,12 +294,12 @@ export default function ImportLocationsPage() {
             <Button variant="ghost" size="sm" asChild>
               <Link href="/locations">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Locations
+                {t("backToLocations")}
               </Link>
             </Button>
             <Button variant="outline" size="sm" onClick={downloadTemplate}>
               <Download className="mr-2 h-4 w-4" />
-              Download Template
+              {t("downloadTemplate")}
             </Button>
           </div>
 
@@ -306,12 +308,9 @@ export default function ImportLocationsPage() {
               <div className="mx-auto max-w-2xl">
                 <div className="mb-8 text-center">
                   <FileSpreadsheet className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                  <h2 className="text-xl font-semibold">
-                    Import Locations from CSV
-                  </h2>
+                  <h2 className="text-xl font-semibold">{t("importTitle")}</h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Upload a CSV file with your location data. Required columns:
-                    name, type.
+                    {t("importDescription")}
                   </p>
                 </div>
 
@@ -333,31 +332,31 @@ export default function ImportLocationsPage() {
                   className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 transition-all hover:border-primary/50 hover:bg-muted/30"
                 >
                   <Upload className="mb-4 h-10 w-10 text-muted-foreground" />
-                  <p className="font-medium">
-                    Drop CSV file here or click to upload
-                  </p>
+                  <p className="font-medium">{t("dropCSVHere")}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Maximum 1000 rows per import
+                    {t("maxRows")}
                   </p>
                 </div>
 
                 <div className="mt-8 rounded-lg border border-border bg-muted/30 p-4">
-                  <h3 className="mb-2 font-medium">CSV Format Requirements</h3>
+                  <h3 className="mb-2 font-medium">
+                    {t("csvFormatRequirements")}
+                  </h3>
                   <ul className="space-y-1 text-sm text-muted-foreground">
                     <li>
-                      <strong>Required:</strong> name, type
+                      <strong>{t("requiredColumns")}:</strong> name, type
                     </li>
                     <li>
-                      <strong>Optional:</strong> parentLocation, address,
-                      capacity, notes
+                      <strong>{t("optionalColumns")}:</strong> parentLocation,
+                      address, capacity, notes
                     </li>
                     <li>
-                      <strong>Types:</strong> building, floor, room, gallery,
-                      storage, cabinet, shelf, drawer
+                      <strong>{t("types")}:</strong> building, floor, room,
+                      gallery, storage, cabinet, shelf, drawer
                     </li>
                     <li>
-                      <strong>Parent:</strong> Reference parent location by name
-                      (must exist or be in same import)
+                      <strong>{t("parentReference")}:</strong>{" "}
+                      {t("parentReferenceDescription")}
                     </li>
                   </ul>
                 </div>
@@ -368,16 +367,20 @@ export default function ImportLocationsPage() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-semibold">Preview Import</h2>
+                    <h2 className="text-xl font-semibold">
+                      {t("previewImport")}
+                    </h2>
                     <p className="text-sm text-muted-foreground">
-                      {state.rows.length} rows ready to import from{" "}
-                      {state.file?.name}
+                      {t("rowsReadyToImport", {
+                        count: state.rows.length.toString(),
+                        filename: state.file?.name || "",
+                      })}
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={handleReset}>
                       <X className="mr-2 h-4 w-4" />
-                      Cancel
+                      {t("cancel")}
                     </Button>
                     <PermissionGate permission="locations.create">
                       <Button
@@ -386,7 +389,9 @@ export default function ImportLocationsPage() {
                         className="bg-indigo-600 hover:bg-indigo-500"
                       >
                         <Upload className="mr-2 h-4 w-4" />
-                        Import {state.rows.length} Locations
+                        {t("importLocations", {
+                          count: state.rows.length.toString(),
+                        })}
                       </Button>
                     </PermissionGate>
                   </div>
@@ -397,7 +402,9 @@ export default function ImportLocationsPage() {
                     <div className="flex items-center gap-2 text-destructive">
                       <AlertCircle className="h-4 w-4" />
                       <span className="font-medium">
-                        {state.errors.length} validation errors
+                        {t("validationErrors", {
+                          count: state.errors.length.toString(),
+                        })}
                       </span>
                     </div>
                     <ul className="mt-2 space-y-1 text-sm text-destructive">
@@ -455,11 +462,15 @@ export default function ImportLocationsPage() {
               <div className="mx-auto max-w-md text-center">
                 <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-primary" />
                 <h2 className="text-xl font-semibold">
-                  Importing Locations...
+                  {t("importingLocations")}
                 </h2>
                 <p className="mt-2 text-muted-foreground">
-                  {importJob?.processedItems || 0} of{" "}
-                  {importJob?.totalItems || state.rows.length} processed
+                  {t("processedCount", {
+                    current: (importJob?.processedItems || 0).toString(),
+                    total: (
+                      importJob?.totalItems || state.rows.length
+                    ).toString(),
+                  })}
                 </p>
                 <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
                   <div
@@ -473,10 +484,13 @@ export default function ImportLocationsPage() {
             {state.step === "complete" && (
               <div className="mx-auto max-w-md text-center">
                 <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-green-500" />
-                <h2 className="text-xl font-semibold">Import Complete</h2>
+                <h2 className="text-xl font-semibold">{t("importComplete")}</h2>
                 <p className="mt-2 text-muted-foreground">
-                  Successfully imported{" "}
-                  {importJob?.processedItems || state.rows.length} locations
+                  {t("successfullyImported", {
+                    count: (
+                      importJob?.processedItems || state.rows.length
+                    ).toString(),
+                  })}
                 </p>
 
                 {state.errors.length > 0 && (
@@ -484,7 +498,9 @@ export default function ImportLocationsPage() {
                     <div className="flex items-center gap-2 text-amber-600">
                       <AlertCircle className="h-4 w-4" />
                       <span className="font-medium">
-                        {state.errors.length} rows had issues
+                        {t("rowsHadIssues", {
+                          count: state.errors.length.toString(),
+                        })}
                       </span>
                     </div>
                     <ul className="mt-2 space-y-1 text-sm text-amber-600">
@@ -500,10 +516,10 @@ export default function ImportLocationsPage() {
 
                 <div className="mt-6 flex justify-center gap-4">
                   <Button variant="outline" onClick={handleReset}>
-                    Import More
+                    {t("importMore")}
                   </Button>
                   <Button asChild className="bg-indigo-600 hover:bg-indigo-500">
-                    <Link href="/locations">View Locations</Link>
+                    <Link href="/locations">{t("viewLocations")}</Link>
                   </Button>
                 </div>
               </div>

@@ -10,6 +10,7 @@ import { VitrinesGrid } from "@/components/locations/vitrines-grid";
 import { WallDisplay } from "@/components/locations/wall-display";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -32,6 +33,7 @@ function ExportLocationsButton({
 }: {
   onExport: () => Promise<Array<Record<string, unknown>> | undefined>;
 }) {
+  const t = useScopedI18n("locations");
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = useCallback(async () => {
@@ -67,18 +69,19 @@ function ExportLocationsButton({
       disabled={isExporting}
     >
       <Download className="mr-2 h-3 w-3" />
-      Export CSV
+      {t("exportCSV")}
     </Button>
   );
 }
 
 export default function LocationsPage() {
+  const t = useScopedI18n("locations");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
 
   if (isLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t("loading")}</p>
       </div>
     );
   }
@@ -90,16 +93,16 @@ export default function LocationsPage() {
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
-              No Organization Found
+              {t("noOrganizationTitle")}
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You need to create an organization to start managing locations.
+              {t("noOrganizationDescription")}
             </p>
           </div>
           <Button asChild>
             <Link href="/organizations/new">
               <Plus className="mr-2 h-4 w-4" />
-              Create Organization
+              {t("createOrganization")}
             </Link>
           </Button>
         </div>
@@ -114,11 +117,10 @@ export default function LocationsPage() {
           <MapPin className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
-              Select an Organization
+              {t("selectOrganizationTitle")}
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select an organization from the dropdown above to view
-              locations.
+              {t("selectOrganizationDescription")}
             </p>
           </div>
         </div>
@@ -141,6 +143,7 @@ function LocationLayout({
 }: {
   organizationId: Id<"organizations">;
 }) {
+  const t = useScopedI18n("locations");
   const [selectedLocationId, setSelectedLocationId] =
     useState<Id<"locations"> | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -299,11 +302,9 @@ function LocationLayout({
           <div className="flex h-full flex-col items-center justify-center gap-4">
             <MapPin className="h-12 w-12 text-zinc-600" />
             <div className="text-center">
-              <p className="text-zinc-500">
-                Select a location from the sidebar
-              </p>
+              <p className="text-zinc-500">{t("selectLocationFromSidebar")}</p>
               <p className="mt-1 text-xs text-zinc-600">
-                View details and objects at each location
+                {t("viewDetailsAndObjects")}
               </p>
             </div>
           </div>
@@ -315,14 +316,14 @@ function LocationLayout({
             <div className="flex items-end justify-between mb-8">
               <div>
                 <div className="flex items-center gap-2 text-xs text-zinc-500 mb-1">
-                  <span>Locations</span>
+                  <span>{t("locations")}</span>
                   <ChevronRight className="w-3 h-3" />
                   <span className="capitalize">{selectedLocation.type}</span>
                 </div>
                 <h2 className="text-2xl font-bold text-zinc-100 tracking-tight flex items-center gap-3">
                   <span>{selectedLocation.name}</span>
                   <span className="text-xs font-normal px-2 py-0.5 rounded-full border text-blue-400 bg-blue-500/10 border-blue-500/20">
-                    {selectedLocation.isActive ? "Active" : "Inactive"}
+                    {selectedLocation.isActive ? t("active") : t("inactive")}
                   </span>
                 </h2>
               </div>
@@ -349,27 +350,27 @@ function LocationLayout({
 
             {/* Exhibition View - Vitrines Grid */}
             <VitrinesGrid
-              title="Freestanding Vitrines"
-              subtitle="Gallery Display"
-              occupancy="12/16 Slots"
+              title={t("freestandingVitrines")}
+              subtitle={t("galleryDisplay")}
+              occupancy={`12/16 ${t("slots")}`}
               items={mockVitrines}
             />
 
             {/* Wall Display and Secure Drawers */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
               <WallDisplay
-                title="Wall Mounted Display"
-                location="North Wall"
-                securityStatus="Locked"
+                title={t("wallMountedDisplay")}
+                location={t("northWall")}
+                securityStatus={t("locked")}
                 slots={mockWallSlots}
               />
-              <SecureDrawers title="Secure Drawers" drawers={mockDrawers} />
+              <SecureDrawers title={t("secureDrawers")} drawers={mockDrawers} />
             </div>
 
             {/* Storage View - Units Table */}
             <div className="mt-8">
               <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide mb-4">
-                Storage Units
+                {t("storageUnits")}
               </h3>
               <StorageUnitsTable units={mockStorageUnits} />
             </div>
@@ -378,12 +379,12 @@ function LocationLayout({
             <div className="mt-8">
               <div className="flex items-end justify-between mb-4">
                 <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide">
-                  Objects at this Location
+                  {t("objectsAtThisLocation")}
                 </h3>
                 <div className="text-xs text-zinc-500">
-                  Total:{" "}
+                  {t("total")}:{" "}
                   <span className="text-zinc-300">
-                    {objectsAtLocation?.length ?? 0} items
+                    {objectsAtLocation?.length ?? 0} {t("items")}
                   </span>
                 </div>
               </div>
@@ -436,7 +437,7 @@ function LocationLayout({
                 <div className="flex h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/20">
                   <Package className="h-8 w-8 text-muted-foreground" />
                   <p className="mt-2 text-xs text-muted-foreground">
-                    No objects at this location
+                    {t("noObjectsAtLocation")}
                   </p>
                 </div>
               )}
@@ -446,7 +447,7 @@ function LocationLayout({
             {selectedLocation.notes && (
               <div className="mt-8 p-4 bg-card/30 border border-border/60 rounded-lg">
                 <h3 className="text-sm font-semibold text-foreground/80 uppercase tracking-wide mb-2">
-                  Notes
+                  {t("notes")}
                 </h3>
                 <p className="text-sm text-muted-foreground">
                   {selectedLocation.notes}
@@ -465,7 +466,7 @@ function LocationLayout({
             <Button variant="outline" size="sm" className="w-full" asChild>
               <Link href="/locations/import">
                 <FileUp className="mr-2 h-3 w-3" />
-                Import CSV
+                {t("importCSV")}
               </Link>
             </Button>
           </PermissionGate>
@@ -477,7 +478,7 @@ function LocationLayout({
               onClick={() => setAddDialogOpen(true)}
             >
               <Plus className="mr-2 h-3 w-3" />
-              Add Location
+              {t("addLocation")}
             </Button>
           </PermissionGate>
         </div>
