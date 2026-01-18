@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -48,6 +49,7 @@ function formatFileSize(bytes: number): string {
 }
 
 export default function MediaPage() {
+  const t = useI18n();
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
 
   if (isLoading) {
@@ -65,10 +67,10 @@ export default function MediaPage() {
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
-              No Organization Found
+              {t("mediaPage.noOrg.title")}
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You need to create an organization to manage media.
+              {t("mediaPage.noOrg.description")}
             </p>
           </div>
         </div>
@@ -83,11 +85,10 @@ export default function MediaPage() {
           <Image className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
-              Select an Organization
+              {t("mediaPage.selectOrg.title")}
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select an organization from the dropdown above to view
-              media.
+              {t("mediaPage.selectOrg.description")}
             </p>
           </div>
         </div>
@@ -107,6 +108,7 @@ function MediaBrowser({
 }: {
   organizationId: Id<"organizations">;
 }) {
+  const t = useI18n();
   const [fileType, setFileType] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [cursor, setCursor] = useState<string | null>(null);

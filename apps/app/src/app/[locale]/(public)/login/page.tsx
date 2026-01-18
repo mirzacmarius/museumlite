@@ -1,9 +1,13 @@
 import { GoogleSignin } from "@/components/google-signin";
+import { getI18n } from "@/locales/server";
 import { Logo } from "@v1/ui/logo";
 
-export const metadata = {
-  title: "Login",
-};
+export async function generateMetadata() {
+  const t = await getI18n();
+  return {
+    title: t("loginPage.title"),
+  };
+}
 
 export default function Page() {
   return (

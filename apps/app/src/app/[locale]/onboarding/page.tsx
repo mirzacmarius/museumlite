@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/locales/client";
 import { useForm } from "@tanstack/react-form";
 import { api } from "@v1/backend/convex/_generated/api";
 import * as validators from "@v1/backend/convex/utils/validators";
@@ -12,6 +13,7 @@ import { useEffect } from "react";
 import { useFormStatus } from "react-dom";
 
 export default function OnboardingUsername() {
+  const t = useI18n();
   const user = useQuery(api.users.getUser);
   const updateUsername = useMutation(api.users.updateUsername);
   const router = useRouter();
@@ -47,10 +49,10 @@ export default function OnboardingUsername() {
       <div className="flex flex-col items-center gap-2">
         <span className="mb-2 select-none text-6xl">👋</span>
         <h3 className="text-center text-2xl font-medium text-primary">
-          Welcome!
+          {t("onboardingPage.welcome")}
         </h3>
         <p className="text-center text-base font-normal text-primary/60">
-          Let's get started by choosing a username.
+          {t("onboardingPage.description")}
         </p>
       </div>
       <form
@@ -63,7 +65,7 @@ export default function OnboardingUsername() {
       >
         <div className="flex w-full flex-col gap-1.5">
           <label htmlFor="username" className="sr-only">
-            Username
+            {t("onboardingPage.usernameLabel")}
           </label>
           <form.Field
             name="username"
@@ -73,7 +75,7 @@ export default function OnboardingUsername() {
             // biome-ignore lint/correctness/noChildrenProp: tanstack best practice
             children={(field) => (
               <Input
-                placeholder="Username"
+                placeholder={t("onboardingPage.usernameLabel")}
                 autoComplete="off"
                 required
                 value={field.state.value}
@@ -97,12 +99,16 @@ export default function OnboardingUsername() {
         </div>
 
         <Button type="submit" size="sm" className="w-full">
-          {pending ? <Loader2 className="animate-spin" /> : "Continue"}
+          {pending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            t("onboardingPage.continue")
+          )}
         </Button>
       </form>
 
       <p className="px-6 text-center text-sm font-normal leading-normal text-primary/60">
-        You can update your username at any time from your account settings.
+        {t("onboardingPage.updateNote")}
       </p>
     </div>
   );

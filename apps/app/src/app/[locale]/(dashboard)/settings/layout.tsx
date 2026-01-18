@@ -48,7 +48,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
                 `text-sm text-primary/80 ${isOrganizationPath && "font-medium text-primary"}`,
               )}
             >
-              Organization
+              {t("organization")}
             </span>
           </Link>
           <Link
@@ -62,7 +62,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
                 `text-sm text-primary/80 ${isUsersPath && "font-medium text-primary"}`,
               )}
             >
-              Users
+              {t("users")}
             </span>
           </Link>
           <Link
@@ -76,7 +76,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
                 `text-sm text-primary/80 ${isRolesPath && "font-medium text-primary"}`,
               )}
             >
-              Roles
+              {t("roles")}
             </span>
           </Link>
           <Link
@@ -90,7 +90,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
                 `text-sm text-primary/80 ${isIntegrationsPath && "font-medium text-primary"}`,
               )}
             >
-              Integrations
+              {t("integrations")}
             </span>
           </Link>
           <Link
@@ -104,7 +104,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
                 `text-sm text-primary/80 ${isModulesPath && "font-medium text-primary"}`,
               )}
             >
-              Modules
+              {t("modules")}
             </span>
           </Link>
           <Link
@@ -132,7 +132,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
                 `text-sm text-primary/80 ${isActivityPath && "font-medium text-primary"}`,
               )}
             >
-              Activity
+              {t("activity")}
             </span>
           </Link>
           <Link
@@ -146,7 +146,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
                 `text-sm text-primary/80 ${isDeveloperPath && "font-medium text-primary"}`,
               )}
             >
-              Developer
+              {t("developer")}
             </span>
           </Link>
         </div>

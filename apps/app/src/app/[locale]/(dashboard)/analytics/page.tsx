@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { FeatureGuard } from "@v1/ui/feature-guard";
@@ -17,6 +18,7 @@ import { LocationUtilizationCard } from "./_components/location-utilization-card
 import { ReportExportsCard } from "./_components/report-exports-card";
 
 export default function AnalyticsPage() {
+  const t = useI18n();
   const { currentOrganizationId } = useOrganization();
   const { hasFeature } = useFeatureAccess();
   const hasReporting = hasFeature("reporting");
@@ -48,7 +50,7 @@ export default function AnalyticsPage() {
   if (!hasReporting) {
     return (
       <FeatureGuard
-        featureName="Analytics & Reporting"
+        featureName={t("analytics.featureName")}
         isLocked={true}
         tierNeeded="pro"
       >
@@ -94,7 +96,7 @@ export default function AnalyticsPage() {
 
   return (
     <FeatureGuard
-      featureName="Analytics & Reporting"
+      featureName={t("analytics.featureName")}
       isLocked={!hasFeature("reporting")}
       tierNeeded="pro"
     >
@@ -103,15 +105,15 @@ export default function AnalyticsPage() {
           <div className="space-y-1">
             <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
               <BarChart3 className="w-6 h-6 text-indigo-400" />
-              Analytics & Compliance
+              {t("analytics.title")}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Real-time insights into collection assets, loans, exhibitions,
-              storage, and compliance.
+              {t("analytics.description")}
             </p>
           </div>
           <div className="text-xs text-muted-foreground font-mono bg-muted/30 px-2 py-1 rounded border border-border">
-            Updated: {new Date(kpis.generatedAt).toLocaleTimeString()}
+            {t("analytics.updatedAt")}{" "}
+            {new Date(kpis.generatedAt).toLocaleTimeString()}
           </div>
         </div>
 

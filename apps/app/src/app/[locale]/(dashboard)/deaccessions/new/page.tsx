@@ -1,5 +1,7 @@
 "use client";
 
+import { useScopedI18n } from "@/locales/client";
+
 import { CollectionSelector } from "@/components/collection-selector";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";

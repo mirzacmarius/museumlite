@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -67,6 +68,7 @@ function getNotificationLink(
 }
 
 export default function NotificationsPage() {
+  const t = useI18n();
   const { currentOrganizationId, isLoading } = useOrganization();
   const [filter, setFilter] = useState<FilterType>("all");
 
@@ -98,7 +100,9 @@ export default function NotificationsPage() {
   if (isLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">
+          {t("notificationsPage.loading")}
+        </p>
       </div>
     );
   }
@@ -108,10 +112,11 @@ export default function NotificationsPage() {
       <div className="flex h-full w-full items-center justify-center">
         <div className="flex flex-col items-center gap-4 rounded-lg border p-8">
           <div className="text-center">
-            <h3 className="text-lg font-semibold">Select an Organization</h3>
+            <h3 className="text-lg font-semibold">
+              {t("notificationsPage.selectOrg.title")}
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select an organization from the dropdown above to view
-              notifications.
+              {t("notificationsPage.selectOrg.description")}
             </p>
           </div>
         </div>
@@ -125,9 +130,11 @@ export default function NotificationsPage() {
   return (
     <div className="flex h-full w-full flex-col gap-6">
       <div className="flex w-full flex-col gap-2">
-        <h2 className="text-xl font-medium text-primary">Notifications</h2>
+        <h2 className="text-xl font-medium text-primary">
+          {t("notificationsPage.title")}
+        </h2>
         <p className="text-sm text-muted-foreground">
-          Stay updated on workflow approvals and activity
+          {t("notificationsPage.description")}
         </p>
       </div>
 
@@ -138,14 +145,14 @@ export default function NotificationsPage() {
             size="sm"
             onClick={() => setFilter("all")}
           >
-            All
+            {t("notificationsPage.filters.all")}
           </Button>
           <Button
             variant={filter === "unread" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilter("unread")}
           >
-            Unread
+            {t("notificationsPage.filters.unread")}
             {unreadCount > 0 && (
               <span className="ml-2 rounded-full bg-primary-foreground px-2 py-0.5 text-xs text-primary">
                 {unreadCount}
@@ -157,7 +164,7 @@ export default function NotificationsPage() {
         {unreadCount > 0 && (
           <Button variant="ghost" size="sm" onClick={handleMarkAllRead}>
             <CheckCheck className="mr-2 h-4 w-4" />
-            Mark all as read
+            {t("notificationsPage.markAllRead")}
           </Button>
         )}
       </div>
@@ -165,7 +172,9 @@ export default function NotificationsPage() {
       <div className="flex-1">
         {notificationsData === undefined ? (
           <div className="flex h-64 items-center justify-center">
-            <p className="text-muted-foreground">Loading notifications...</p>
+            <p className="text-muted-foreground">
+              {t("notificationsPage.loadingNotifications")}
+            </p>
           </div>
         ) : notifications.length === 0 ? (
           <div className="flex h-64 flex-col items-center justify-center gap-4 rounded-lg border border-dashed">
@@ -175,13 +184,13 @@ export default function NotificationsPage() {
             <div className="text-center">
               <h3 className="font-medium">
                 {filter === "unread"
-                  ? "No unread notifications"
-                  : "No notifications"}
+                  ? t("notificationsPage.empty.noUnread")
+                  : t("notificationsPage.empty.noNotifications")}
               </h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 {filter === "unread"
-                  ? "You're all caught up!"
-                  : "Notifications will appear here when there's activity requiring your attention"}
+                  ? t("notificationsPage.empty.caughtUp")
+                  : t("notificationsPage.empty.description")}
               </p>
             </div>
             {filter === "unread" && (
@@ -190,7 +199,7 @@ export default function NotificationsPage() {
                 size="sm"
                 onClick={() => setFilter("all")}
               >
-                View all notifications
+                {t("notificationsPage.viewAll")}
               </Button>
             )}
           </div>
@@ -267,7 +276,7 @@ export default function NotificationsPage() {
                       </span>
                       {link && (
                         <span className="flex items-center gap-1 text-xs text-primary">
-                          View details
+                          {t("notificationsPage.viewDetails")}
                           <ArrowRight className="h-3 w-3" />
                         </span>
                       )}

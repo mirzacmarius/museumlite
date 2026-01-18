@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -17,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function NewOrganizationPage() {
+  const t = useI18n();
   const router = useRouter();
   const createOrganization = useMutation(api.organizations.create);
   const { setCurrentOrganizationId } = useOrganization();
@@ -69,10 +71,10 @@ export default function NewOrganizationPage() {
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex flex-col gap-2">
               <h2 className="text-xl font-medium text-primary">
-                Organization Details
+                {t("organizationsNew.title")}
               </h2>
               <p className="text-sm font-normal text-primary/60">
-                Create a new organization to start managing collections
+                {t("organizationsNew.description")}
               </p>
             </div>
           </div>
@@ -86,7 +88,7 @@ export default function NewOrganizationPage() {
                   htmlFor="name"
                   className="mb-2 block text-sm font-medium"
                 >
-                  Organization Name *
+                  {t("organizationsNew.nameLabel")}
                 </label>
                 <Input
                   id="name"
@@ -95,7 +97,7 @@ export default function NewOrganizationPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  placeholder="e.g., Metropolitan Museum of Art"
+                  placeholder={t("organizationsNew.namePlaceholder")}
                   required
                 />
               </div>
@@ -105,7 +107,7 @@ export default function NewOrganizationPage() {
                   htmlFor="slug"
                   className="mb-2 block text-sm font-medium"
                 >
-                  Slug (URL-friendly identifier)
+                  {t("organizationsNew.slugLabel")}
                 </label>
                 <Input
                   id="slug"
@@ -114,10 +116,10 @@ export default function NewOrganizationPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, slug: e.target.value })
                   }
-                  placeholder="Auto-generated from name"
+                  placeholder={t("organizationsNew.slugPlaceholder")}
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Leave empty to auto-generate from name
+                  {t("organizationsNew.slugHelp")}
                 </p>
               </div>
 
@@ -126,7 +128,7 @@ export default function NewOrganizationPage() {
                   htmlFor="type"
                   className="mb-2 block text-sm font-medium"
                 >
-                  Organization Type *
+                  {t("organizationsNew.typeLabel")}
                 </label>
                 <Select
                   value={formData.type}
@@ -141,10 +143,18 @@ export default function NewOrganizationPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="museum">Museum</SelectItem>
-                    <SelectItem value="gallery">Gallery</SelectItem>
-                    <SelectItem value="library">Library</SelectItem>
-                    <SelectItem value="collector">Collector</SelectItem>
+                    <SelectItem value="museum">
+                      {t("organizationsNew.types.museum")}
+                    </SelectItem>
+                    <SelectItem value="gallery">
+                      {t("organizationsNew.types.gallery")}
+                    </SelectItem>
+                    <SelectItem value="library">
+                      {t("organizationsNew.types.library")}
+                    </SelectItem>
+                    <SelectItem value="collector">
+                      {t("organizationsNew.types.collector")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -157,14 +167,16 @@ export default function NewOrganizationPage() {
 
               <div className="flex gap-4">
                 <Button type="submit" disabled={isSubmitting || !formData.name}>
-                  {isSubmitting ? "Creating..." : "Create Organization"}
+                  {isSubmitting
+                    ? t("organizationsNew.submitting")
+                    : t("organizationsNew.submit")}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
                 >
-                  Cancel
+                  {t("organizationsNew.cancel")}
                 </Button>
               </div>
             </div>
