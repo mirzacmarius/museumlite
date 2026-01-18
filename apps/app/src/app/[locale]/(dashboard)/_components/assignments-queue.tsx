@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { EmptyState } from "@v1/ui/empty-state";
@@ -12,6 +13,7 @@ import Link from "next/link";
 
 export function AssignmentsQueue() {
   const { currentOrganizationId } = useOrganization();
+  const t = useScopedI18n("assignments");
 
   const assignments = useQuery(
     api.assignments.listMyAssignments,
@@ -29,8 +31,8 @@ export function AssignmentsQueue() {
       <GlassPanel>
         <EmptyState
           icon={ClipboardList}
-          title="No pending assignments"
-          description="You're all caught up! Check back later for new items requiring approval."
+          title={t("noPendingAssignments")}
+          description={t("allCaughtUpDescription")}
         />
       </GlassPanel>
     );
@@ -52,24 +54,17 @@ export function AssignmentsQueue() {
     low: "text-muted-foreground",
   };
 
-  const typeLabels = {
-    accession: "Accessions",
-    loan: "Loans",
-    exhibition: "Exhibitions",
-    conservation: "Conservation",
-  };
-
   return (
     <GlassPanel className="space-y-4">
       <h3 className="text-sm font-semibold text-foreground">
-        Pending Approvals
+        {t("pendingApprovals")}
       </h3>
 
       <div className="space-y-6">
         {Object.entries(grouped).map(([type, items]) => (
           <div key={type}>
             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              {typeLabels[type as keyof typeof typeLabels] || type}
+              {t(`typeLabels.${type}` as any)}
             </h4>
             <div className="space-y-2">
               {items.map((item) => {
@@ -99,7 +94,7 @@ export function AssignmentsQueue() {
                         )}
                         {item.workflowStep !== undefined && (
                           <p className="text-xs text-muted-foreground/60 mt-1">
-                            Step {item.workflowStep}
+                            {t("stepNumber", { step: item.workflowStep })}
                           </p>
                         )}
                       </div>

@@ -10,6 +10,26 @@ export default {
     headerTitle: "Dashboard",
     headerDescription: "Manage your apps and view your usage.",
     documentationLink: "Explore Documentation",
+    noOrganizationTitle: "No Organization Found",
+    noOrganizationDescription:
+      "You need to create an organization to view the dashboard.",
+    selectOrganizationTitle: "Select an Organization",
+    selectOrganizationDescription:
+      "Please select an organization from the dropdown above to view the dashboard.",
+    departmentsAndCollections: "Departments & Collections",
+    viewCollection: "View Collection",
+    items: "Items",
+    groups: "Groups",
+    loaned: "Loaned",
+    allCollectionGroups: "All Collection Groups",
+    addNewObject: "Add New Object",
+    createCatalogEntry: "Create catalog entry",
+    quickAction: "Quick Action",
+    accessionsWorkflow: "Accessions Workflow",
+    reviewIncomingItems: "Review incoming items",
+    approved: "Approved",
+    processing: "Processing",
+    rejected: "Rejected",
   },
   settings: {
     title: "Settings",
@@ -67,10 +87,23 @@ export default {
   assignments: {
     pendingApprovals: "Pending Approvals",
     noPendingAssignments: "No pending assignments",
+    allCaughtUpDescription:
+      "You're all caught up! Check back later for new items requiring approval.",
+    typeLabels: {
+      accessions: "Accessions",
+      loans: "Loans",
+      exhibitions: "Exhibitions",
+      conservation: "Conservation",
+    },
+    stepNumber: "Step {step}",
   },
   newArrivals: {
     title: "New Arrivals",
     noRecentAccessions: "No recent accessions",
+    description: "New accessions will appear here",
+    statusProcessing: "Processing",
+    statusCataloged: "Cataloged",
+    statusRejected: "Rejected",
   },
   loans: {
     admin: {

@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { EmptyState } from "@v1/ui/empty-state";
@@ -14,6 +15,8 @@ import Link from "next/link";
 
 export function NewArrivalsFeed() {
   const { currentOrganizationId } = useOrganization();
+  const t = useScopedI18n("newArrivals");
+  const common = useScopedI18n("common");
 
   const accessions = useQuery(
     api.accessions.list,
@@ -30,13 +33,13 @@ export function NewArrivalsFeed() {
       <GlassPanel>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-foreground">
-            New Arrivals
+            {t("title")}
           </h2>
           <Link
             href="/accessions"
             className="text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
-            View all
+            {common("viewAll")}
           </Link>
         </div>
 
@@ -45,8 +48,8 @@ export function NewArrivalsFeed() {
         ) : accessions.page.length === 0 ? (
           <EmptyState
             icon={Package}
-            title="No recent accessions"
-            description="New accessions will appear here"
+            title={t("noRecentAccessions")}
+            description={t("description")}
           />
         ) : (
           <div className="space-y-2">
@@ -60,10 +63,10 @@ export function NewArrivalsFeed() {
 
               const statusLabel =
                 accession.status === "pending"
-                  ? "Processing"
+                  ? t("statusProcessing")
                   : accession.status === "approved"
-                    ? "Cataloged"
-                    : "Rejected";
+                    ? t("statusCataloged")
+                    : t("statusRejected");
 
               return (
                 <Link

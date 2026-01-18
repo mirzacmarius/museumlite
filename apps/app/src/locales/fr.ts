@@ -10,6 +10,26 @@ export default {
     headerTitle: "Tableau de bord",
     headerDescription: "Gérez vos applications et consultez votre utilisation.",
     documentationLink: "Explorer la documentation",
+    noOrganizationTitle: "Aucune Organisation Trouvée",
+    noOrganizationDescription:
+      "Vous devez créer une organisation pour voir le tableau de bord.",
+    selectOrganizationTitle: "Sélectionner une Organisation",
+    selectOrganizationDescription:
+      "Veuillez sélectionner une organisation dans le menu déroulant ci-dessus pour voir le tableau de bord.",
+    departmentsAndCollections: "Départements et Collections",
+    viewCollection: "Voir la Collection",
+    items: "Éléments",
+    groups: "Groupes",
+    loaned: "Prêté",
+    allCollectionGroups: "Tous les Groupes de Collections",
+    addNewObject: "Ajouter un Nouvel Objet",
+    createCatalogEntry: "Créer une entrée de catalogue",
+    quickAction: "Action Rapide",
+    accessionsWorkflow: "Flux de Travail d'Acquisitions",
+    reviewIncomingItems: "Examiner les éléments entrants",
+    approved: "Approuvé",
+    processing: "En Traitement",
+    rejected: "Rejeté",
   },
   settings: {
     title: "Paramètres",
@@ -68,10 +88,23 @@ export default {
   assignments: {
     pendingApprovals: "Approbations en Attente",
     noPendingAssignments: "Aucune affectation en attente",
+    allCaughtUpDescription:
+      "Vous êtes à jour ! Revenez plus tard pour de nouveaux éléments nécessitant une approbation.",
+    typeLabels: {
+      accessions: "Acquisitions",
+      loans: "Prêts",
+      exhibitions: "Expositions",
+      conservation: "Conservation",
+    },
+    stepNumber: "Étape {step}",
   },
   newArrivals: {
     title: "Nouvelles Arrivées",
     noRecentAccessions: "Aucune acquisition récente",
+    description: "Les nouvelles acquisitions apparaîtront ici",
+    statusProcessing: "En Traitement",
+    statusCataloged: "Catalogué",
+    statusRejected: "Rejeté",
   },
   loans: {
     admin: {

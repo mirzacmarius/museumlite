@@ -12,6 +12,26 @@ export default {
     headerTitle: "Panel de control",
     headerDescription: "Administra tus apps y mira tu uso.",
     documentationLink: "Explorar documentación",
+    noOrganizationTitle: "No se Encontró Organización",
+    noOrganizationDescription:
+      "Necesitas crear una organización para ver el panel de control.",
+    selectOrganizationTitle: "Selecciona una Organización",
+    selectOrganizationDescription:
+      "Por favor selecciona una organización del menú desplegable arriba para ver el panel de control.",
+    departmentsAndCollections: "Departamentos y Colecciones",
+    viewCollection: "Ver Colección",
+    items: "Elementos",
+    groups: "Grupos",
+    loaned: "Prestado",
+    allCollectionGroups: "Todos los Grupos de Colecciones",
+    addNewObject: "Agregar Nuevo Objeto",
+    createCatalogEntry: "Crear entrada de catálogo",
+    quickAction: "Acción Rápida",
+    accessionsWorkflow: "Flujo de Trabajo de Adquisiciones",
+    reviewIncomingItems: "Revisar elementos entrantes",
+    approved: "Aprobado",
+    processing: "Procesando",
+    rejected: "Rechazado",
   },
   settings: {
     title: "Configuración",
@@ -70,10 +90,23 @@ export default {
   assignments: {
     pendingApprovals: "Aprobaciones Pendientes",
     noPendingAssignments: "No hay asignaciones pendientes",
+    allCaughtUpDescription:
+      "¡Estás al día! Vuelve más tarde para nuevos elementos que requieren aprobación.",
+    typeLabels: {
+      accessions: "Adquisiciones",
+      loans: "Préstamos",
+      exhibitions: "Exposiciones",
+      conservation: "Conservación",
+    },
+    stepNumber: "Paso {step}",
   },
   newArrivals: {
     title: "Nuevas Llegadas",
     noRecentAccessions: "No hay adquisiciones recientes",
+    description: "Las nuevas adquisiciones aparecerán aquí",
+    statusProcessing: "Procesando",
+    statusCataloged: "Catalogado",
+    statusRejected: "Rechazado",
   },
   loans: {
     admin: {

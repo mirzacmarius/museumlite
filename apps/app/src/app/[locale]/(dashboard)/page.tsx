@@ -5,6 +5,7 @@ import {
   type RecentActivityItem,
   RecentActivityLog,
 } from "@/components/recent-activity-log";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { KpiCard } from "@v1/ui/kpi-card";
@@ -28,6 +29,9 @@ import { NewArrivalsFeed } from "./_components/new-arrivals-feed";
 
 export default function DashboardPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
+  const t = useScopedI18n("dashboard");
+  const kpi = useScopedI18n("kpi");
+  const common = useScopedI18n("common");
 
   const analytics = useQuery(
     api.dashboard.getAnalytics,
@@ -39,7 +43,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-background">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{common("loading")}</p>
       </div>
     );
   }
@@ -51,10 +55,10 @@ export default function DashboardPage() {
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
-              No Organization Found
+              {t("noOrganizationTitle")}
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You need to create an organization to view the dashboard.
+              {t("noOrganizationDescription")}
             </p>
           </div>
         </div>
@@ -69,11 +73,10 @@ export default function DashboardPage() {
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
-              Select an Organization
+              {t("selectOrganizationTitle")}
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select an organization from the dropdown above to view the
-              dashboard.
+              {t("selectOrganizationDescription")}
             </p>
           </div>
         </div>
@@ -101,22 +104,22 @@ export default function DashboardPage() {
       <div className="px-6 py-4 border-b border-border bg-background/50 backdrop-blur-sm">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           <KpiCard
-            title="Total Objects"
+            title={kpi("totalObjects")}
             value={analytics.objects.total.toLocaleString()}
             icon={Package}
           />
           <KpiCard
-            title="Objects on Loan"
+            title={kpi("objectsOnLoan")}
             value={analytics.objects.loaned.toLocaleString()}
             icon={ArrowLeftRight}
           />
           <KpiCard
-            title="Active Loans"
+            title={kpi("activeLoans")}
             value={analytics.loans.active.toLocaleString()}
             icon={ArrowLeftRight}
           />
           <KpiCard
-            title="Pending Accessions"
+            title={kpi("pendingAccessions")}
             value={analytics.accessions.pending.toLocaleString()}
             icon={FileClock}
           />
@@ -137,7 +140,7 @@ export default function DashboardPage() {
 
       <div className="flex-1 overflow-y-auto scroll-smooth p-6">
         <h3 className="text-xs font-semibold text-muted-foreground mb-4 uppercase tracking-wider">
-          Departments & Collections
+          {t("departmentsAndCollections")}
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
@@ -167,7 +170,7 @@ export default function DashboardPage() {
 
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30 pointer-events-none">
                     <span className="bg-background/60 backdrop-blur-md text-foreground text-[11px] font-medium px-3 py-1.5 rounded-full border border-border shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                      View Collection
+                      {t("viewCollection")}
                     </span>
                   </div>
 
@@ -175,7 +178,7 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-1.5 px-2 py-1 bg-background/90 backdrop-blur-md rounded-md border border-border shadow-sm">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       <span className="text-[10px] font-medium text-foreground/80">
-                        {group.itemsCount} Items
+                        {group.itemsCount} {t("items")}
                       </span>
                     </div>
                   </div>
@@ -196,7 +199,7 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-[10px]">
                     <div className="group/item">
                       <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
-                        Items
+                        {t("items")}
                       </span>
                       <span className="text-foreground/80 font-medium group-hover/item:text-indigo-400 transition-colors flex items-center gap-1">
                         {group.itemsCount.toLocaleString()}
@@ -204,10 +207,10 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
-                        Status
+                        {common("status")}
                       </span>
                       <span className="font-mono bg-emerald-900/10 text-emerald-500 px-1 py-0.5 rounded border border-emerald-900/30">
-                        Active
+                        {common("active")}
                       </span>
                     </div>
                   </div>
@@ -231,7 +234,7 @@ export default function DashboardPage() {
 
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30 pointer-events-none">
                   <span className="bg-background/60 backdrop-blur-md text-foreground text-[11px] font-medium px-3 py-1.5 rounded-full border border-border shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                    View All
+                    {common("viewAll")}
                   </span>
                 </div>
 
@@ -239,17 +242,18 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-1.5 px-2 py-1 bg-background/90 backdrop-blur-md rounded-md border border-blue-500/30 shadow-sm">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                     <span className="text-[10px] font-medium text-blue-400 dark:text-blue-300">
-                      {analytics.collections.total} Groups
+                      {analytics.collections.total} {t("groups")}
                     </span>
                   </div>
                 </div>
 
                 <div className="absolute bottom-3 left-3 right-3 z-20">
                   <h3 className="text-sm font-semibold text-foreground tracking-tight leading-snug drop-shadow-md">
-                    All Collection Groups
+                    {t("allCollectionGroups")}
                   </h3>
                   <p className="text-[11px] text-foreground/70 truncate opacity-90">
-                    {analytics.objects.total.toLocaleString()} Total Objects
+                    {analytics.objects.total.toLocaleString()}{" "}
+                    {kpi("totalObjects")}
                   </p>
                 </div>
               </div>
@@ -258,7 +262,7 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-[10px]">
                   <div className="group/item">
                     <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
-                      Active
+                      {common("active")}
                     </span>
                     <span className="text-foreground/80 font-medium group-hover/item:text-blue-400 transition-colors flex items-center gap-1">
                       {analytics.objects.active.toLocaleString()}
@@ -266,7 +270,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="text-right">
                     <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
-                      Loaned
+                      {t("loaned")}
                     </span>
                     <span className="font-mono text-muted-foreground">
                       {analytics.objects.loaned}
@@ -290,16 +294,16 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-center">
                   <h3 className="text-sm font-medium text-foreground/80">
-                    Add New Object
+                    {t("addNewObject")}
                   </h3>
                   <p className="text-[11px] text-muted-foreground">
-                    Create catalog entry
+                    {t("createCatalogEntry")}
                   </p>
                 </div>
               </div>
               <div className="p-3 border-t border-border bg-muted/10">
                 <div className="text-[10px] text-center text-muted-foreground">
-                  Quick Action
+                  {t("quickAction")}
                 </div>
               </div>
             </div>
@@ -317,7 +321,7 @@ export default function DashboardPage() {
 
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30 pointer-events-none">
                   <span className="bg-background/60 backdrop-blur-md text-foreground text-[11px] font-medium px-3 py-1.5 rounded-full border border-border shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                    View Details
+                    {common("viewDetails")}
                   </span>
                 </div>
 
@@ -329,17 +333,17 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/90 backdrop-blur-md rounded-md border border-amber-500/30 shadow-sm text-amber-500">
                     <ScanBarcode className="w-3 h-3" />
                     <span className="text-[10px] font-medium">
-                      {analytics.accessions.pending} Pending
+                      {analytics.accessions.pending} {common("pending")}
                     </span>
                   </div>
                 </div>
 
                 <div className="absolute bottom-3 left-3 right-3 z-20">
                   <h3 className="text-sm font-medium text-foreground tracking-tight leading-snug">
-                    Accessions Workflow
+                    {t("accessionsWorkflow")}
                   </h3>
                   <p className="text-[11px] text-muted-foreground truncate">
-                    Review incoming items
+                    {t("reviewIncomingItems")}
                   </p>
                 </div>
               </div>
@@ -348,7 +352,7 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-[10px]">
                   <div className="group/item">
                     <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
-                      Approved
+                      {t("approved")}
                     </span>
                     <span className="text-muted-foreground group-hover/item:text-amber-400 transition-colors flex items-center gap-1">
                       {analytics.accessions.approved}
@@ -356,15 +360,15 @@ export default function DashboardPage() {
                   </div>
                   <div className="text-right">
                     <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
-                      Status
+                      {common("status")}
                     </span>
                     <span className="font-mono bg-amber-900/10 text-amber-500 px-1 py-0.5 rounded border border-amber-900/30">
-                      Processing
+                      {t("processing")}
                     </span>
                   </div>
                   <div>
                     <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
-                      Rejected
+                      {t("rejected")}
                     </span>
                     <span className="text-muted-foreground flex items-center gap-1 truncate">
                       {analytics.accessions.rejected}

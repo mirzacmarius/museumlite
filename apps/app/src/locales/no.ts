@@ -9,6 +9,26 @@ export default {
     headerTitle: "Dashboard",
     headerDescription: "Administrer dine apper og se din bruk.",
     documentationLink: "Utforsk dokumentasjon",
+    noOrganizationTitle: "Ingen Organisasjon Funnet",
+    noOrganizationDescription:
+      "Du må opprette en organisasjon for å se dashbordet.",
+    selectOrganizationTitle: "Velg en Organisasjon",
+    selectOrganizationDescription:
+      "Vennligst velg en organisasjon fra rullegardinmenyen ovenfor for å se dashbordet.",
+    departmentsAndCollections: "Avdelinger og Samlinger",
+    viewCollection: "Se Samling",
+    items: "Elementer",
+    groups: "Grupper",
+    loaned: "Utlånt",
+    allCollectionGroups: "Alle Samlingsgrupper",
+    addNewObject: "Legg til Nytt Objekt",
+    createCatalogEntry: "Opprett katalogoppføring",
+    quickAction: "Hurtighandling",
+    accessionsWorkflow: "Aksesjonsarbeidsflyt",
+    reviewIncomingItems: "Gjennomgå innkommende elementer",
+    approved: "Godkjent",
+    processing: "Behandler",
+    rejected: "Avvist",
   },
   settings: {
     title: "Innstillinger",
@@ -67,10 +87,23 @@ export default {
   assignments: {
     pendingApprovals: "Ventende godkjenninger",
     noPendingAssignments: "Ingen ventende oppdrag",
+    allCaughtUpDescription:
+      "Du er oppdatert! Kom tilbake senere for nye elementer som krever godkjenning.",
+    typeLabels: {
+      accessions: "Aksessjoner",
+      loans: "Lån",
+      exhibitions: "Utstillinger",
+      conservation: "Konservering",
+    },
+    stepNumber: "Steg {step}",
   },
   newArrivals: {
     title: "Nye ankomster",
     noRecentAccessions: "Ingen nylige aksessjoner",
+    description: "Nye aksessjoner vil vises her",
+    statusProcessing: "Behandler",
+    statusCataloged: "Katalogisert",
+    statusRejected: "Avvist",
   },
   loans: {
     admin: {
