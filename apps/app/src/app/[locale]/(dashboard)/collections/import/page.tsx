@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -187,6 +188,8 @@ function parseCSVLine(line: string): string[] {
 }
 
 export default function ImportObjectsPage() {
+  const t = useScopedI18n("collections");
+  const common = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -311,9 +314,7 @@ export default function ImportObjectsPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">
-          Please select an organization to import objects.
-        </p>
+        <p className="text-muted-foreground">{t("selectOrganizationImport")}</p>
       </div>
     );
   }
@@ -326,12 +327,12 @@ export default function ImportObjectsPage() {
             <Button variant="ghost" size="sm" asChild>
               <Link href="/collections">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Collections
+                {t("backToCollections")}
               </Link>
             </Button>
             <Button variant="outline" size="sm" onClick={downloadTemplate}>
               <Download className="mr-2 h-4 w-4" />
-              Download Template
+              {t("csvImport.downloadTemplate")}
             </Button>
           </div>
 
@@ -341,11 +342,10 @@ export default function ImportObjectsPage() {
                 <div className="mb-8 text-center">
                   <FileSpreadsheet className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
                   <h2 className="text-xl font-semibold">
-                    Import Objects from CSV
+                    {t("csvImport.title")}
                   </h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Upload a CSV file with your collection objects. Required
-                    column: title.
+                    {t("csvImport.description")}
                   </p>
                 </div>
 
@@ -367,16 +367,16 @@ export default function ImportObjectsPage() {
                   className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 transition-all hover:border-primary/50 hover:bg-muted/30"
                 >
                   <Upload className="mb-4 h-10 w-10 text-muted-foreground" />
-                  <p className="font-medium">
-                    Drop CSV file here or click to upload
-                  </p>
+                  <p className="font-medium">{t("csvImport.dropZone")}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Maximum 1000 rows per import
+                    {t("csvImport.maxRows")}
                   </p>
                 </div>
 
                 <div className="mt-8 rounded-lg border border-border bg-muted/30 p-4">
-                  <h3 className="mb-2 font-medium">CSV Format Requirements</h3>
+                  <h3 className="mb-2 font-medium">
+                    {t("csvImport.formatTitle")}
+                  </h3>
                   <ul className="space-y-1 text-sm text-muted-foreground">
                     <li>
                       <strong>Required:</strong> title
@@ -408,7 +408,9 @@ export default function ImportObjectsPage() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-semibold">Preview Import</h2>
+                    <h2 className="text-xl font-semibold">
+                      {t("csvImport.previewTitle")}
+                    </h2>
                     <p className="text-sm text-muted-foreground">
                       {state.rows.length} rows ready to import from{" "}
                       {state.file?.name}
@@ -417,7 +419,7 @@ export default function ImportObjectsPage() {
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={handleReset}>
                       <X className="mr-2 h-4 w-4" />
-                      Cancel
+                      {common("cancel")}
                     </Button>
                     <PermissionGate permission="collections.create">
                       <Button
@@ -496,7 +498,9 @@ export default function ImportObjectsPage() {
             {state.step === "importing" && (
               <div className="mx-auto max-w-md text-center">
                 <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-primary" />
-                <h2 className="text-xl font-semibold">Importing Objects...</h2>
+                <h2 className="text-xl font-semibold">
+                  {t("csvImport.importing")}
+                </h2>
                 <p className="mt-2 text-muted-foreground">
                   {importJob?.processedItems || 0} of{" "}
                   {importJob?.totalItems || state.rows.length} processed
@@ -513,7 +517,9 @@ export default function ImportObjectsPage() {
             {state.step === "complete" && (
               <div className="mx-auto max-w-md text-center">
                 <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-green-500" />
-                <h2 className="text-xl font-semibold">Import Complete</h2>
+                <h2 className="text-xl font-semibold">
+                  {t("csvImport.complete")}
+                </h2>
                 <p className="mt-2 text-muted-foreground">
                   Successfully imported{" "}
                   {importJob?.processedItems || state.rows.length} objects
@@ -540,10 +546,12 @@ export default function ImportObjectsPage() {
 
                 <div className="mt-6 flex justify-center gap-4">
                   <Button variant="outline" onClick={handleReset}>
-                    Import More
+                    {t("csvImport.importMore")}
                   </Button>
                   <Button asChild className="bg-indigo-600 hover:bg-indigo-500">
-                    <Link href="/collections">View Collections</Link>
+                    <Link href="/collections">
+                      {t("csvImport.viewCollections")}
+                    </Link>
                   </Button>
                 </div>
               </div>

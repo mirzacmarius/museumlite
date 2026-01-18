@@ -3,6 +3,7 @@
 import { ObjectCombobox } from "@/components/object-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -51,6 +52,8 @@ interface MediaImportState {
 }
 
 export default function MediaImportPage() {
+  const t = useScopedI18n("collections");
+  const common = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
   const [state, setState] = useState<MediaImportState>({
     step: "select-mapping",
@@ -219,7 +222,7 @@ export default function MediaImportPage() {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <p className="text-muted-foreground">
-          Select an organization to continue.
+          {t("selectOrganizationContinue")}
         </p>
       </div>
     );
@@ -233,11 +236,11 @@ export default function MediaImportPage() {
             <Button variant="ghost" size="sm" asChild>
               <Link href="/collections">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Collections
+                {t("backToCollections")}
               </Link>
             </Button>
             <div className="text-sm text-muted-foreground">
-              Bulk Media Import
+              {t("mediaImport.title")}
             </div>
           </div>
 
@@ -245,7 +248,7 @@ export default function MediaImportPage() {
             {state.step === "select-mapping" && (
               <div className="mx-auto max-w-4xl">
                 <h2 className="mb-8 text-center text-2xl font-semibold">
-                  How would you like to map your files?
+                  {t("mediaImport.mappingTitle")}
                 </h2>
                 <div className="grid gap-6 md:grid-cols-3">
                   <button
@@ -254,9 +257,11 @@ export default function MediaImportPage() {
                     onClick={() => handleMappingSelect("csv")}
                   >
                     <FileSpreadsheet className="mb-4 h-10 w-10 text-indigo-500" />
-                    <h3 className="mb-2 font-medium">CSV Mapping</h3>
+                    <h3 className="mb-2 font-medium">
+                      {t("mediaImport.csvMapping")}
+                    </h3>
                     <p className="text-sm text-muted-foreground">
-                      Upload a CSV that links filenames to accession numbers.
+                      {t("mediaImport.csvMappingDescription")}
                     </p>
                   </button>
 
@@ -266,10 +271,11 @@ export default function MediaImportPage() {
                     onClick={() => handleMappingSelect("filename")}
                   >
                     <FileImage className="mb-4 h-10 w-10 text-indigo-500" />
-                    <h3 className="mb-2 font-medium">Filename Extraction</h3>
+                    <h3 className="mb-2 font-medium">
+                      {t("mediaImport.filenameExtraction")}
+                    </h3>
                     <p className="text-sm text-muted-foreground">
-                      Automatically extract accession numbers from filenames
-                      (e.g. 2024.001.jpg).
+                      {t("mediaImport.filenameExtractionDescription")}
                     </p>
                   </button>
 
@@ -279,10 +285,11 @@ export default function MediaImportPage() {
                     onClick={() => handleMappingSelect("manual")}
                   >
                     <LinkIcon className="mb-4 h-10 w-10 text-indigo-500" />
-                    <h3 className="mb-2 font-medium">Manual Mapping</h3>
+                    <h3 className="mb-2 font-medium">
+                      {t("mediaImport.manualMapping")}
+                    </h3>
                     <p className="text-sm text-muted-foreground">
-                      Upload files now and manually assign them to objects
-                      later.
+                      {t("mediaImport.manualMappingDescription")}
                     </p>
                   </button>
                 </div>
@@ -292,7 +299,9 @@ export default function MediaImportPage() {
             {state.step === "upload" && (
               <div className="mx-auto max-w-3xl space-y-8">
                 <div className="text-center">
-                  <h2 className="text-xl font-semibold">Upload Files</h2>
+                  <h2 className="text-xl font-semibold">
+                    {t("mediaImport.uploadTitle")}
+                  </h2>
                   <p className="text-sm text-muted-foreground">
                     Selected method:{" "}
                     {state.mappingType === "csv"
@@ -426,7 +435,7 @@ export default function MediaImportPage() {
 
                 <div className="flex justify-end gap-2 pt-4">
                   <Button variant="outline" onClick={reset}>
-                    Cancel
+                    {common("cancel")}
                   </Button>
                   <PermissionGate permission="media.upload">
                     <Button
@@ -437,7 +446,7 @@ export default function MediaImportPage() {
                       }
                       className="bg-indigo-600 hover:bg-indigo-500"
                     >
-                      Start Import
+                      {t("mediaImport.startImport")}
                     </Button>
                   </PermissionGate>
                 </div>
@@ -448,7 +457,7 @@ export default function MediaImportPage() {
               <div className="mx-auto max-w-md text-center pt-12">
                 <Loader2 className="mx-auto mb-6 h-12 w-12 animate-spin text-primary" />
                 <h2 className="text-xl font-semibold mb-2">
-                  Importing Media...
+                  {t("mediaImport.importing")}
                 </h2>
                 <p className="text-muted-foreground mb-6">
                   Uploading {state.currentFileIndex + 1} of{" "}
@@ -471,7 +480,9 @@ export default function MediaImportPage() {
             {state.step === "complete" && (
               <div className="mx-auto max-w-md text-center pt-8">
                 <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-green-500" />
-                <h2 className="text-xl font-semibold">Import Complete</h2>
+                <h2 className="text-xl font-semibold">
+                  {t("mediaImport.complete")}
+                </h2>
                 <p className="mt-2 text-muted-foreground">
                   Processed {importJob?.processedItems} files
                 </p>
@@ -481,14 +492,16 @@ export default function MediaImportPage() {
                     <div className="text-2xl font-bold text-green-600">
                       {importJob?.successfulMappings || 0}
                     </div>
-                    <div className="text-sm text-muted-foreground">Mapped</div>
+                    <div className="text-sm text-muted-foreground">
+                      {t("mediaImport.mapped")}
+                    </div>
                   </div>
                   <div className="rounded-lg border border-border bg-muted/30 p-4">
                     <div className="text-2xl font-bold text-amber-600">
                       {importJob?.failedMappings || 0}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Unmapped
+                      {t("mediaImport.unmapped")}
                     </div>
                   </div>
                 </div>
@@ -519,13 +532,15 @@ export default function MediaImportPage() {
                   )}
                   <div className="flex gap-3 justify-center">
                     <Button variant="outline" onClick={reset}>
-                      Import More
+                      {t("csvImport.importMore")}
                     </Button>
                     <Button
                       asChild
                       className="bg-indigo-600 hover:bg-indigo-500"
                     >
-                      <Link href="/collections">View Collections</Link>
+                      <Link href="/collections">
+                        {t("csvImport.viewCollections")}
+                      </Link>
                     </Button>
                   </div>
                 </div>
@@ -549,6 +564,7 @@ function UnmappedFilesReview({
   jobId,
   onComplete,
 }: { jobId: Id<"importJobs">; onComplete: () => void }) {
+  const t = useScopedI18n("collections");
   const unmappedFiles = useQuery(api.mediaImports.getUnmappedFiles, { jobId });
   const mapFile = useMutation(api.mediaImports.mapFileToCollection);
   const deleteFile = useMutation(api.mediaImports.deleteUnmappedFile);
@@ -572,9 +588,11 @@ function UnmappedFilesReview({
     return (
       <div className="text-center py-12">
         <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-green-500" />
-        <h3 className="text-lg font-medium">All files handled</h3>
+        <h3 className="text-lg font-medium">
+          {t("mediaImport.allFilesHandled")}
+        </h3>
         <Button onClick={onComplete} className="mt-4">
-          Back to Summary
+          {t("mediaImport.backToSummary")}
         </Button>
       </div>
     );
@@ -609,7 +627,9 @@ function UnmappedFilesReview({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Review Unmapped Files</h2>
+          <h2 className="text-lg font-semibold">
+            {t("mediaImport.reviewTitle")}
+          </h2>
           <p className="text-sm text-muted-foreground">
             {remainingFiles.length} files need attention
           </p>
@@ -650,7 +670,7 @@ function UnmappedFilesReview({
                 <TableCell>
                   <ObjectCombobox
                     organizationId={currentOrganizationId ?? undefined}
-                    placeholder="Search for object..."
+                    placeholder={t("mediaImport.searchObjectPlaceholder")}
                     onValueChange={(val) =>
                       val && handleMap(file.storageId, val)
                     }

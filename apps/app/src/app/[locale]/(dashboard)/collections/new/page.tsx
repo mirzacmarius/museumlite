@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -21,6 +22,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function NewCollectionPage() {
+  const t = useScopedI18n("collections");
+  const common = useScopedI18n("common");
   const router = useRouter();
   const { currentOrganizationId } = useOrganization();
   const createGroup = useMutation(api.collectionGroups.create);
@@ -47,9 +50,7 @@ export default function NewCollectionPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">
-          Please select an organization to create collections.
-        </p>
+        <p className="text-muted-foreground">{t("selectOrganizationCreate")}</p>
       </div>
     );
   }
@@ -58,7 +59,7 @@ export default function NewCollectionPage() {
     e.preventDefault();
     setError(null);
     if (!formData.name.trim()) {
-      setError("Name is required");
+      setError(t("form.nameError"));
       return;
     }
 
@@ -78,11 +79,7 @@ export default function NewCollectionPage() {
       router.push("/collections");
     } catch (err) {
       console.error("Error creating collection:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to create collection. Please try again.",
-      );
+      setError(err instanceof Error ? err.message : t("form.createError"));
       setIsSubmitting(false);
     }
   };
@@ -96,11 +93,11 @@ export default function NewCollectionPage() {
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/collections">
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
+                  {t("back")}
                 </Link>
               </Button>
               <h2 className="text-xl font-medium text-primary">
-                New Collection
+                {t("newCollection")}
               </h2>
             </div>
           </div>
@@ -118,7 +115,8 @@ export default function NewCollectionPage() {
 
             <div className="space-y-2">
               <Label htmlFor="name">
-                Name <span className="text-red-500">*</span>
+                {t("form.nameLabel")}{" "}
+                <span className="text-red-500">{t("form.nameRequired")}</span>
               </Label>
               <Input
                 id="name"
@@ -126,26 +124,26 @@ export default function NewCollectionPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder="e.g., Ancient Egyptian Artifacts"
+                placeholder={t("form.namePlaceholder")}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("form.descriptionLabel")}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                placeholder="Describe this collection..."
+                placeholder={t("form.descriptionPlaceholder")}
                 rows={4}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="curator">Curator</Label>
+              <Label htmlFor="curator">{t("form.curatorLabel")}</Label>
               <Select
                 value={formData.curatorId}
                 onValueChange={(value) =>
@@ -153,12 +151,12 @@ export default function NewCollectionPage() {
                 }
               >
                 <SelectTrigger id="curator">
-                  <SelectValue placeholder="Select a curator (optional)" />
+                  <SelectValue placeholder={t("form.curatorPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {members?.map((member) => (
                     <SelectItem key={member._id} value={member._id}>
-                      {member.name || member.email || "Unknown"}
+                      {member.name || member.email || t("form.unknown")}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -166,7 +164,9 @@ export default function NewCollectionPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="managedByRole">Managed By Role</Label>
+              <Label htmlFor="managedByRole">
+                {t("form.managedByRoleLabel")}
+              </Label>
               <Select
                 value={formData.managedByRoleId}
                 onValueChange={(value) =>
@@ -174,7 +174,9 @@ export default function NewCollectionPage() {
                 }
               >
                 <SelectTrigger id="managedByRole">
-                  <SelectValue placeholder="Any role can manage (optional)" />
+                  <SelectValue
+                    placeholder={t("form.managedByRolePlaceholder")}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {roles?.map((role) => (
@@ -185,18 +187,17 @@ export default function NewCollectionPage() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Restrict who can edit this collection to users with a specific
-                role
+                {t("form.roleHint")}
               </p>
             </div>
 
             <div className="flex justify-end gap-4 pt-4">
               <Button type="button" variant="outline" asChild>
-                <Link href="/collections">Cancel</Link>
+                <Link href="/collections">{common("cancel")}</Link>
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 <Save className="mr-2 h-4 w-4" />
-                {isSubmitting ? "Creating..." : "Create Collection"}
+                {isSubmitting ? t("form.creating") : t("form.createButton")}
               </Button>
             </div>
           </form>

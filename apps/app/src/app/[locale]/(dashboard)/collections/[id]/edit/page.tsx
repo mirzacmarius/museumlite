@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -33,6 +34,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function EditCollectionPage() {
+  const t = useScopedI18n("collections");
+  const common = useScopedI18n("common");
   const params = useParams();
   const router = useRouter();
   const groupId = params.id as Id<"collectionGroups">;
@@ -76,9 +79,7 @@ export default function EditCollectionPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">
-          Please select an organization to edit collections.
-        </p>
+        <p className="text-muted-foreground">{t("selectOrganizationEdit")}</p>
       </div>
     );
   }
@@ -86,7 +87,7 @@ export default function EditCollectionPage() {
   if (group === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{common("loading")}</p>
       </div>
     );
   }
@@ -94,7 +95,7 @@ export default function EditCollectionPage() {
   if (group === null) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Collection not found</p>
+        <p className="text-muted-foreground">{t("notFound")}</p>
       </div>
     );
   }
@@ -114,7 +115,7 @@ export default function EditCollectionPage() {
     e.preventDefault();
     setError(null);
     if (!formData.name.trim()) {
-      setError("Name is required");
+      setError(t("form.nameError"));
       return;
     }
 
@@ -134,11 +135,7 @@ export default function EditCollectionPage() {
       router.push(`/collections/${groupId}`);
     } catch (err) {
       console.error("Error updating collection:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to update collection. Please try again.",
-      );
+      setError(err instanceof Error ? err.message : t("form.updateError"));
       setIsSubmitting(false);
     }
   };
@@ -151,7 +148,7 @@ export default function EditCollectionPage() {
             <Button variant="ghost" size="sm" asChild>
               <Link href={`/collections/${groupId}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Collection
+                {t("backToCollection")}
               </Link>
             </Button>
           </div>
@@ -165,7 +162,8 @@ export default function EditCollectionPage() {
             <div className="mx-auto max-w-2xl space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="name">
-                  Name <span className="text-red-500">*</span>
+                  {t("form.nameLabel")}{" "}
+                  <span className="text-red-500">{t("form.nameRequired")}</span>
                 </Label>
                 <Input
                   id="name"
@@ -173,26 +171,28 @@ export default function EditCollectionPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  placeholder="e.g., Ancient Egyptian Artifacts"
+                  placeholder={t("form.namePlaceholder")}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">
+                  {t("form.descriptionLabel")}
+                </Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  placeholder="Describe this collection..."
+                  placeholder={t("form.descriptionPlaceholder")}
                   rows={4}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="curator">Curator</Label>
+                <Label htmlFor="curator">{t("form.curatorLabel")}</Label>
                 <Select
                   value={formData.curatorId}
                   onValueChange={(value) =>
@@ -203,13 +203,13 @@ export default function EditCollectionPage() {
                   }
                 >
                   <SelectTrigger id="curator">
-                    <SelectValue placeholder="Select a curator (optional)" />
+                    <SelectValue placeholder={t("form.curatorPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No curator</SelectItem>
+                    <SelectItem value="none">{t("form.noCurator")}</SelectItem>
                     {members?.map((member) => (
                       <SelectItem key={member._id} value={member._id}>
-                        {member.name || member.email || "Unknown"}
+                        {member.name || member.email || t("form.unknown")}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -217,7 +217,9 @@ export default function EditCollectionPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="managedByRole">Managed By Role</Label>
+                <Label htmlFor="managedByRole">
+                  {t("form.managedByRoleLabel")}
+                </Label>
                 <Select
                   value={formData.managedByRoleId}
                   onValueChange={(value) =>
@@ -228,10 +230,12 @@ export default function EditCollectionPage() {
                   }
                 >
                   <SelectTrigger id="managedByRole">
-                    <SelectValue placeholder="Any role can manage (optional)" />
+                    <SelectValue
+                      placeholder={t("form.managedByRolePlaceholder")}
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Any role can manage</SelectItem>
+                    <SelectItem value="none">{t("form.anyRole")}</SelectItem>
                     {roles?.map((role) => (
                       <SelectItem key={role._id} value={role._id}>
                         {role.name}
@@ -240,8 +244,7 @@ export default function EditCollectionPage() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Restrict who can edit this collection to users with a specific
-                  role
+                  {t("form.roleHint")}
                 </p>
               </div>
 
@@ -251,27 +254,26 @@ export default function EditCollectionPage() {
                   variant="outline"
                   onClick={() => router.back()}
                 >
-                  Cancel
+                  {common("cancel")}
                 </Button>
                 <PermissionGate permission="collections.update">
                   <Button type="submit" disabled={isSubmitting}>
                     <Save className="mr-2 h-4 w-4" />
-                    {isSubmitting ? "Updating..." : "Update Collection"}
+                    {isSubmitting ? t("form.updating") : t("form.updateButton")}
                   </Button>
                 </PermissionGate>
               </div>
 
               <div className="mt-12 border-t border-border pt-8">
                 <h3 className="text-lg font-medium text-destructive mb-4">
-                  Danger Zone
+                  {t("delete.dangerZone")}
                 </h3>
                 <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">Delete this collection</p>
+                      <p className="font-medium">{t("delete.title")}</p>
                       <p className="text-sm text-muted-foreground">
-                        Objects in this collection will be unlinked but not
-                        deleted.
+                        {t("delete.description")}
                       </p>
                     </div>
                     <PermissionGate permission="collections.delete">
@@ -279,13 +281,13 @@ export default function EditCollectionPage() {
                         <AlertDialogTrigger asChild>
                           <Button variant="destructive" disabled={isDeleting}>
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {common("delete")}
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>
-                              Delete Collection
+                              {t("delete.dialogTitle")}
                             </AlertDialogTitle>
                             <AlertDialogDescription>
                               Are you sure you want to delete "{group.name}"?
@@ -294,13 +296,17 @@ export default function EditCollectionPage() {
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel>
+                              {common("cancel")}
+                            </AlertDialogCancel>
                             <AlertDialogAction
                               onClick={handleDelete}
                               disabled={isDeleting}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
-                              {isDeleting ? "Deleting..." : "Delete Collection"}
+                              {isDeleting
+                                ? t("delete.deleting")
+                                : t("delete.deleteButton")}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>

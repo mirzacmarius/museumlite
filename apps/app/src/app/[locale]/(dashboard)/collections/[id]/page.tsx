@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
@@ -50,6 +51,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 export default function CollectionGroupDetailPage() {
+  const t = useScopedI18n("collections");
+  const common = useScopedI18n("common");
   const params = useParams();
   const router = useRouter();
   const rawId = params.id as string;
@@ -75,7 +78,7 @@ export default function CollectionGroupDetailPage() {
   if (collection?._id) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Redirecting...</p>
+        <p className="text-muted-foreground">{t("redirecting")}</p>
       </div>
     );
   }
@@ -84,7 +87,7 @@ export default function CollectionGroupDetailPage() {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <p className="text-muted-foreground">
-          Please select an organization to view collections.
+          {t("selectOrganizationDescription")}
         </p>
       </div>
     );
@@ -93,7 +96,7 @@ export default function CollectionGroupDetailPage() {
   if (group === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{common("loading")}</p>
       </div>
     );
   }
@@ -101,7 +104,7 @@ export default function CollectionGroupDetailPage() {
   if (group === null) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Collection not found</p>
+        <p className="text-muted-foreground">{t("notFound")}</p>
       </div>
     );
   }
@@ -115,7 +118,7 @@ export default function CollectionGroupDetailPage() {
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/collections">
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
+                  {t("back")}
                 </Link>
               </Button>
               <div className="flex flex-col gap-1">
@@ -123,7 +126,9 @@ export default function CollectionGroupDetailPage() {
                   {group.name}
                 </h2>
                 <div className="flex items-center gap-3 text-sm font-normal text-primary/60">
-                  <span>{group.itemsCount || 0} items</span>
+                  <span>
+                    {group.itemsCount || 0} {t("items")}
+                  </span>
                   {group.curatorName && (
                     <span className="flex items-center gap-1">
                       <User className="h-3 w-3" />
@@ -138,7 +143,7 @@ export default function CollectionGroupDetailPage() {
                 <Button variant="outline" asChild>
                   <Link href={`/collections/${group._id}/edit`}>
                     <Settings className="mr-2 h-4 w-4" />
-                    Settings
+                    {t("settings")}
                   </Link>
                 </Button>
               </PermissionGate>
@@ -148,14 +153,14 @@ export default function CollectionGroupDetailPage() {
                   onClick={() => setIsAddDialogOpen(true)}
                 >
                   <FolderInput className="mr-2 h-4 w-4" />
-                  Import Existing
+                  {t("importExisting")}
                 </Button>
               </PermissionGate>
               <PermissionGate permission="collections.create">
                 <Button asChild>
                   <Link href={`/objects/new?collectionGroupId=${group._id}`}>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    New Object
+                    {t("newObject")}
                   </Link>
                 </Button>
               </PermissionGate>
@@ -180,6 +185,7 @@ export default function CollectionGroupDetailPage() {
 }
 
 function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
+  const t = useScopedI18n("collections");
   const stats = useQuery(api.collectionGroups.getStats, { groupId });
 
   if (stats === undefined) {
@@ -210,7 +216,7 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
           </div>
           <div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-              Total Objects
+              {t("kpi.totalObjects")}
             </div>
             <div className="text-lg font-semibold text-foreground">
               {stats.total.toLocaleString()}
@@ -224,7 +230,7 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
           </div>
           <div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-              Active
+              {t("kpi.active")}
             </div>
             <div className="text-lg font-semibold text-foreground">
               {stats.active.toLocaleString()}
@@ -238,7 +244,7 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
           </div>
           <div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-              On Loan
+              {t("kpi.onLoan")}
             </div>
             <div className="text-lg font-semibold text-foreground">
               {stats.loaned.toLocaleString()}
@@ -252,7 +258,7 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
           </div>
           <div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-              Deaccessioned
+              {t("kpi.deaccessioned")}
             </div>
             <div className="text-lg font-semibold text-foreground">
               {stats.deaccessioned.toLocaleString()}
@@ -275,6 +281,8 @@ function CollectionObjectsList({
   isAddDialogOpen: boolean;
   onAddDialogOpenChange: (open: boolean) => void;
 }) {
+  const t = useScopedI18n("collections");
+  const common = useScopedI18n("common");
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>(
     [],
   );
@@ -318,7 +326,7 @@ function CollectionObjectsList({
 
   const handleAddItems = async () => {
     if (selectedCollectionIds.length === 0) {
-      setError("Please select at least one object");
+      setError(t("importDialog.errorSelectOne"));
       return;
     }
 
@@ -332,9 +340,7 @@ function CollectionObjectsList({
       onAddDialogOpenChange(false);
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to add items to collection",
+        err instanceof Error ? err.message : t("importDialog.errorAddFailed"),
       );
     }
   };
@@ -350,7 +356,7 @@ function CollectionObjectsList({
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to remove item from collection",
+          : t("importDialog.errorRemoveFailed"),
       );
     }
   };
@@ -358,7 +364,7 @@ function CollectionObjectsList({
   if (groupItems === undefined) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Loading items...</p>
+        <p className="text-muted-foreground">{t("loadingItems")}</p>
       </div>
     );
   }
@@ -375,18 +381,18 @@ function CollectionObjectsList({
       <Dialog open={isAddDialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Import Existing Objects</DialogTitle>
+            <DialogTitle>{t("importDialog.title")}</DialogTitle>
             <DialogDescription>
-              Search and select existing objects to add to this collection
+              {t("importDialog.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Search and Select Objects *</Label>
+              <Label>{t("importDialog.searchLabel")}</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search by accession number or title..."
+                  placeholder={t("importDialog.searchPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
@@ -394,13 +400,13 @@ function CollectionObjectsList({
               </div>
               {collections === undefined ? (
                 <p className="text-sm text-muted-foreground">
-                  Loading objects...
+                  {t("importDialog.loadingObjects")}
                 </p>
               ) : availableCollections.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   {searchQuery
-                    ? "No objects found matching your search"
-                    : "No available objects to add"}
+                    ? t("importDialog.noMatches")
+                    : t("importDialog.noAvailable")}
                 </p>
               ) : (
                 <div className="max-h-[200px] space-y-1 overflow-y-auto rounded-md border border-border/60 p-2">
@@ -490,28 +496,30 @@ function CollectionObjectsList({
               variant="outline"
               onClick={() => onAddDialogOpenChange(false)}
             >
-              Cancel
+              {common("cancel")}
             </Button>
-            <Button onClick={handleAddItems}>Import Objects</Button>
+            <Button onClick={handleAddItems}>
+              {t("importDialog.importButton")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {groupItems.length === 0 ? (
         <div className="flex h-64 flex-col items-center justify-center gap-4">
-          <p className="text-muted-foreground">No items in this collection</p>
+          <p className="text-muted-foreground">{t("noItems")}</p>
           <div className="flex gap-2">
             <PermissionGate permission="collections.update">
               <Button onClick={() => onAddDialogOpenChange(true)}>
                 <FolderInput className="mr-2 h-4 w-4" />
-                Import Existing
+                {t("importExisting")}
               </Button>
             </PermissionGate>
             <PermissionGate permission="collections.create">
               <Button variant="outline" asChild>
                 <Link href={`/objects/new?collectionGroupId=${groupId}`}>
                   <PlusCircle className="mr-2 h-4 w-4" />
-                  New Object
+                  {t("newObject")}
                 </Link>
               </Button>
             </PermissionGate>
@@ -545,6 +553,8 @@ function CollectionListItem({
   organizationId: Id<"organizations">;
   onRemove?: () => void;
 }) {
+  const t = useScopedI18n("collections");
+  const common = useScopedI18n("common");
   const primaryImageUrl = useQuery(api.media.getPrimaryImageUrl, {
     collectionId: item.collectionId,
   });
@@ -612,7 +622,7 @@ function CollectionListItem({
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Remove from Collection</AlertDialogTitle>
+                  <AlertDialogTitle>{t("removeDialog.title")}</AlertDialogTitle>
                   <AlertDialogDescription>
                     Are you sure you want to remove "{item.title}" from this
                     collection? The object will not be deleted, only removed
@@ -620,9 +630,9 @@ function CollectionListItem({
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>{common("cancel")}</AlertDialogCancel>
                   <AlertDialogAction onClick={onRemove}>
-                    Remove
+                    {t("removeDialog.remove")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

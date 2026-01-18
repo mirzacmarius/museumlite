@@ -3,6 +3,7 @@
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -21,6 +22,8 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 
 export default function CollectionsPage() {
+  const t = useScopedI18n("collections");
+  const common = useScopedI18n("common");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const [search, setSearch] = useState("");
 
@@ -34,7 +37,7 @@ export default function CollectionsPage() {
   if (isLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{common("loading")}</p>
       </div>
     );
   }
@@ -45,15 +48,17 @@ export default function CollectionsPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">No Organization Found</h3>
+            <h3 className="text-lg font-semibold">
+              {t("noOrganizationTitle")}
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You need to create an organization to start managing collections.
+              {t("noOrganizationDescription")}
             </p>
           </div>
           <Button asChild>
             <Link href="/organizations/new">
               <Plus className="mr-2 h-4 w-4" />
-              Create Organization
+              {t("createOrganization")}
             </Link>
           </Button>
         </div>
@@ -67,9 +72,9 @@ export default function CollectionsPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">Select an Organization</h3>
+            <h3 className="text-lg font-semibold">{t("selectOrganization")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select an organization to view collections.
+              {t("selectOrganizationDescription")}
             </p>
           </div>
         </div>
@@ -83,9 +88,9 @@ export default function CollectionsPage() {
         <div className="flex w-full flex-col rounded-lg border border-border/60 bg-card">
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex flex-col gap-2">
-              <h2 className="text-xl font-medium text-primary">Collections</h2>
+              <h2 className="text-xl font-medium text-primary">{t("title")}</h2>
               <p className="text-sm font-normal text-primary/60">
-                Manage your object collections
+                {t("description")}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -96,7 +101,7 @@ export default function CollectionsPage() {
                 <Button asChild variant="outline">
                   <Link href="/collections/import">
                     <FileUp className="mr-2 h-4 w-4" />
-                    Import CSV
+                    {t("importCSV")}
                   </Link>
                 </Button>
               </PermissionGate>
@@ -104,7 +109,7 @@ export default function CollectionsPage() {
                 <Button asChild>
                   <Link href="/collections/new">
                     <FolderPlus className="mr-2 h-4 w-4" />
-                    New Collection
+                    {t("newCollection")}
                   </Link>
                 </Button>
               </PermissionGate>
@@ -119,7 +124,7 @@ export default function CollectionsPage() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search collections..."
+                  placeholder={t("searchPlaceholder")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9"
@@ -145,6 +150,9 @@ function CollectionGroupsList({
   organizationId: Id<"organizations">;
   search: string;
 }) {
+  const t = useScopedI18n("collections");
+  const common = useScopedI18n("common");
+
   const groups = useQuery(api.collectionGroups.list, {
     organizationId,
     search: search || undefined,
@@ -153,7 +161,7 @@ function CollectionGroupsList({
   if (groups === undefined) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{common("loading")}</p>
       </div>
     );
   }
@@ -161,12 +169,12 @@ function CollectionGroupsList({
   if (groups.length === 0) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">No collections found</p>
+        <p className="text-muted-foreground">{t("noCollections")}</p>
         <PermissionGate permission="collections.create">
           <Button asChild>
             <Link href="/collections/new">
               <FolderPlus className="mr-2 h-4 w-4" />
-              Create Your First Collection
+              {t("createFirst")}
             </Link>
           </Button>
         </PermissionGate>
@@ -188,7 +196,7 @@ function CollectionGroupsList({
               <h3 className="font-medium line-clamp-1">{group.name}</h3>
             </div>
             <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground">
-              {group.itemsCount || 0} items
+              {group.itemsCount || 0} {t("items")}
             </span>
           </div>
           {group.description && (
@@ -198,7 +206,7 @@ function CollectionGroupsList({
           )}
           <div className="mt-auto flex items-center justify-between text-xs text-muted-foreground">
             <span>
-              Created {new Date(group.createdAt).toLocaleDateString()}
+              {t("created")} {new Date(group.createdAt).toLocaleDateString()}
             </span>
             {group.curatorName && (
               <span className="flex items-center gap-1">
