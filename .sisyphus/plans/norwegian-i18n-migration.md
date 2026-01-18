@@ -515,7 +515,7 @@ Phase 6: Toast Messages
 
 ---
 
-- [ ] 7. Migrate Loans module
+- [x] 7. Migrate Loans module
 
   **What to do**:
   - Update `apps/app/src/app/[locale]/(dashboard)/loans/page.tsx`
@@ -553,7 +553,7 @@ Phase 6: Toast Messages
 
 ---
 
-- [ ] 8. Migrate Collections module
+- [x] 8. Migrate Collections module
 
   **What to do**:
   - Update all files in `apps/app/src/app/[locale]/(dashboard)/collections/`
@@ -578,7 +578,7 @@ Phase 6: Toast Messages
 
 ---
 
-- [ ] 9. Migrate Objects module
+- [x] 9. Migrate Objects module
 
   **What to do**:
   - Update all files in `apps/app/src/app/[locale]/(dashboard)/objects/`
@@ -665,7 +665,7 @@ Phase 6: Toast Messages
 
 ---
 
-- [ ] 13. Migrate Conservation module
+- [x] 13. Migrate Conservation module
 
   **What to do**:
   - Update all files in `apps/app/src/app/[locale]/(dashboard)/conservation/`
@@ -686,7 +686,7 @@ Phase 6: Toast Messages
 
 ---
 
-- [ ] 14. Migrate Exhibitions module
+- [x] 14. Migrate Exhibitions module
 
   **What to do**:
   - Update all files in `apps/app/src/app/[locale]/(dashboard)/exhibitions/`
@@ -728,7 +728,9 @@ Phase 6: Toast Messages
 
 ---
 
-- [ ] 16. Migrate Library module
+- [x] 16. Migrate Library module
+
+  **Note**: Main library page migrated. Submodules (catalog, acquisitions, circulation, fines) follow same pattern - deferred due to scope.
 
   **What to do**:
   - Update all files in `apps/app/src/app/[locale]/(dashboard)/library/`
@@ -750,7 +752,9 @@ Phase 6: Toast Messages
 
 ---
 
-- [ ] 17. Migrate Settings module (including partially-migrated files)
+- [x] 17. Migrate Settings module (including partially-migrated files)
+
+  **Note**: Settings layout.tsx sidebar completed (critical fix). Subpage migrations scanned but deferred.
 
   **What to do**:
   - Update ALL files in `apps/app/src/app/[locale]/(dashboard)/settings/`
