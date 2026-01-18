@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -132,6 +133,8 @@ const moduleTabMap: Record<string, { id: TabId; label: string }> = {
 };
 
 export default function ObjectDetailPage() {
+  const t = useScopedI18n("objects");
+  const common = useScopedI18n("common");
   const params = useParams();
   const collectionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
@@ -252,7 +255,7 @@ export default function ObjectDetailPage() {
   if (collection === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-background">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{common("loading")}</p>
       </div>
     );
   }
@@ -260,7 +263,7 @@ export default function ObjectDetailPage() {
   if (collection === null) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-background">
-        <p className="text-muted-foreground">Object not found</p>
+        <p className="text-muted-foreground">{t("objectNotFound")}</p>
       </div>
     );
   }

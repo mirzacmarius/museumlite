@@ -4,6 +4,7 @@ import { DeaccessionDialog } from "@/components/deaccession-dialog";
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -53,6 +54,8 @@ import { ObjectGridView } from "./_components/object-grid-view";
 import { type ViewMode, ViewToggle } from "./_components/view-toggle";
 
 export default function CollectionsPage() {
+  const t = useScopedI18n("objects");
+  const common = useScopedI18n("common");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
 
   const exportObjects = useMutation(api.imports.exportObjects);
@@ -65,7 +68,7 @@ export default function CollectionsPage() {
   if (isLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{common("loading")}</p>
       </div>
     );
   }
@@ -76,15 +79,15 @@ export default function CollectionsPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">No Organization Found</h3>
+            <h3 className="text-lg font-semibold">{t("objectNotFound")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You need to create an organization to start managing collections.
+              {t("form.errors.selectOrganization")}
             </p>
           </div>
           <Button asChild>
             <Link href="/organizations/new">
               <Plus className="mr-2 h-4 w-4" />
-              Create Organization
+              {common("create")}
             </Link>
           </Button>
         </div>
@@ -98,10 +101,11 @@ export default function CollectionsPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">Select an Organization</h3>
+            <h3 className="text-lg font-semibold">
+              {t("form.errors.selectOrganization")}
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select an organization from the dropdown above to view
-              objects.
+              {t("form.errors.selectOrganization")}
             </p>
           </div>
         </div>
@@ -115,11 +119,9 @@ export default function CollectionsPage() {
         <div className="flex w-full flex-col rounded-lg border border-border/60 bg-card">
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex flex-col gap-2">
-              <h2 className="text-xl font-medium text-primary">
-                Collection Objects
-              </h2>
+              <h2 className="text-xl font-medium text-primary">{t("title")}</h2>
               <p className="text-sm font-normal text-primary/60">
-                Browse and manage your objects
+                {t("description")}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -130,7 +132,7 @@ export default function CollectionsPage() {
                 <Button asChild>
                   <Link href="/objects/new">
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Object
+                    {t("addObject")}
                   </Link>
                 </Button>
               </PermissionGate>
@@ -164,6 +166,8 @@ function CollectionFiltersAndList({
 }: {
   organizationId: Id<"organizations">;
 }) {
+  const t = useScopedI18n("objects");
+  const common = useScopedI18n("common");
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<CollectionFilters>({
     search: "",
@@ -361,7 +365,7 @@ function CollectionFiltersAndList({
 
   const handleExport = () => {
     if (!bulkExport || bulkExport.length === 0) {
-      toast.error("No data to export");
+      toast.error(t("form.toasts.noDataToExport"));
       return;
     }
 
@@ -442,7 +446,7 @@ function CollectionFiltersAndList({
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search by title, accession number, description..."
+                placeholder={t("searchPlaceholder")}
                 value={filters.search}
                 onChange={(e) =>
                   setFilters({ ...filters, search: e.target.value })
@@ -487,7 +491,7 @@ function CollectionFiltersAndList({
                   }
                 >
                   <SelectTrigger id="status">
-                    <SelectValue placeholder="All statuses" />
+                    <SelectValue placeholder={t("filters.allStatuses")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Active</SelectItem>
@@ -508,7 +512,7 @@ function CollectionFiltersAndList({
                   }
                 >
                   <SelectTrigger id="objectType">
-                    <SelectValue placeholder="All types" />
+                    <SelectValue placeholder={t("filters.allTypes")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
@@ -525,7 +529,7 @@ function CollectionFiltersAndList({
                 <Label htmlFor="culture">Culture</Label>
                 <Input
                   id="culture"
-                  placeholder="Filter by culture"
+                  placeholder={t("filters.filterByCulture")}
                   value={filters.culture}
                   onChange={(e) =>
                     setFilters({ ...filters, culture: e.target.value })
@@ -537,7 +541,7 @@ function CollectionFiltersAndList({
                 <Label htmlFor="period">Period</Label>
                 <Input
                   id="period"
-                  placeholder="Filter by period"
+                  placeholder={t("filters.filterByPeriod")}
                   value={filters.period}
                   onChange={(e) =>
                     setFilters({ ...filters, period: e.target.value })
@@ -549,7 +553,7 @@ function CollectionFiltersAndList({
                 <Label htmlFor="materials">Materials</Label>
                 <Input
                   id="materials"
-                  placeholder="Filter by materials"
+                  placeholder={t("filters.filterByMaterials")}
                   value={filters.materials}
                   onChange={(e) =>
                     setFilters({ ...filters, materials: e.target.value })
@@ -569,7 +573,7 @@ function CollectionFiltersAndList({
                   }
                 >
                   <SelectTrigger id="collectionGroup">
-                    <SelectValue placeholder="All groups" />
+                    <SelectValue placeholder={t("filters.allGroups")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Groups</SelectItem>
@@ -594,7 +598,7 @@ function CollectionFiltersAndList({
                   }
                 >
                   <SelectTrigger id="location">
-                    <SelectValue placeholder="All locations" />
+                    <SelectValue placeholder={t("filters.allLocations")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Locations</SelectItem>

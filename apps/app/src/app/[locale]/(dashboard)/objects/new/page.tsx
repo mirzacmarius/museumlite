@@ -1,5 +1,6 @@
 "use client";
 
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
@@ -13,19 +14,19 @@ import {
 } from "@v1/ui/tags-input";
 import { Textarea } from "@v1/ui/textarea";
 
+import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
+import {
+  type CollectionType,
+  CollectionTypeSelector,
+} from "@/components/collection-type-selector";
 import { ConditionCombobox } from "@/components/condition-combobox";
 import { DonorCombobox } from "@/components/donor-combobox";
 import { LocationSelector } from "@/components/location-selector";
 import { MaterialsCombobox } from "@/components/materials-combobox";
-import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
 import { ObjectCombobox } from "@/components/object-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { TypeCombobox } from "@/components/type-combobox";
-import {
-  CollectionTypeSelector,
-  type CollectionType,
-} from "@/components/collection-type-selector";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { NaturalLanguageDatePicker } from "@v1/ui/natural-language-date-picker";
 import { useMutation } from "convex/react";
@@ -64,6 +65,8 @@ interface CollectionFormData {
 }
 
 export default function CollectionFormPage() {
+  const t = useScopedI18n("objects");
+  const common = useScopedI18n("common");
   const router = useRouter();
   const searchParams = useSearchParams();
   const collectionGroupId = searchParams.get("collectionGroupId");
@@ -227,7 +230,7 @@ export default function CollectionFormPage() {
     e.preventDefault();
     setError(null);
     if (!formData.title.trim()) {
-      setError("Title is required");
+      setError(t("form.errors.titleRequired"));
       return;
     }
 
@@ -396,9 +399,7 @@ export default function CollectionFormPage() {
     } catch (err) {
       console.error("Error saving collection:", err);
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to save object. Please try again.",
+        err instanceof Error ? err.message : t("form.errors.saveFailed"),
       );
       setIsSubmitting(false);
     }
@@ -459,7 +460,7 @@ export default function CollectionFormPage() {
                         id="title"
                         value={formData.title}
                         onChange={(e) => updateField("title", e.target.value)}
-                        placeholder="Enter object title"
+                        placeholder={t("form.placeholders.title")}
                         required
                       />
                     </div>
@@ -479,7 +480,7 @@ export default function CollectionFormPage() {
                         onChange={(e) =>
                           updateField("accessionNumber", e.target.value)
                         }
-                        placeholder="Auto-generated if empty"
+                        placeholder={t("form.placeholders.accessionNumber")}
                       />
                     </div>
 

@@ -11,6 +11,7 @@ import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { TypeCombobox } from "@/components/type-combobox";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -89,6 +90,8 @@ interface CollectionFormData {
 }
 
 export default function CollectionEditPage() {
+  const t = useScopedI18n("objects");
+  const common = useScopedI18n("common");
   const params = useParams();
   const router = useRouter();
   const collectionId = params.id as string;
@@ -390,7 +393,7 @@ export default function CollectionEditPage() {
   if (collection === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{common("loading")}</p>
       </div>
     );
   }
@@ -482,7 +485,7 @@ export default function CollectionEditPage() {
     e.preventDefault();
     setError(null);
     if (!formData.title.trim()) {
-      setError("Title is required");
+      setError(t("form.errors.titleRequired"));
       return;
     }
 
