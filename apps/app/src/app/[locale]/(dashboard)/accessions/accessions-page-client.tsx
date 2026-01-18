@@ -7,6 +7,7 @@ import { useCallback, useState } from "react";
 
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { FileUp, Plus, Search } from "lucide-react";
@@ -36,6 +37,7 @@ export function AccessionsPageClient({
   preloadedAccessions,
   accessionsStats,
 }: AccessionsPageClientProps) {
+  const t = useScopedI18n("accessions");
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(
     organizations[0]?._id ?? null,
   );
@@ -77,10 +79,10 @@ export function AccessionsPageClient({
           </div>
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
-              Select an Organization
+              {t("selectOrganization")}
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select an organization to view accessions.
+              {t("selectOrganizationDescription")}
             </p>
           </div>
         </div>
@@ -106,7 +108,7 @@ export function AccessionsPageClient({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search accessions..."
+              placeholder={t("searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-64 border-border/60 bg-muted/50 pl-9 text-sm placeholder:text-muted-foreground"
@@ -119,7 +121,7 @@ export function AccessionsPageClient({
             <Button asChild variant="outline">
               <Link href="/accessions/import">
                 <FileUp className="mr-2 h-4 w-4" />
-                Import CSV
+                {t("importCSV")}
               </Link>
             </Button>
           </PermissionGate>
@@ -130,7 +132,7 @@ export function AccessionsPageClient({
             >
               <Link href="/accessions/new">
                 <Plus className="mr-2 h-4 w-4" />
-                New Accession
+                {t("newAccession")}
               </Link>
             </Button>
           </PermissionGate>

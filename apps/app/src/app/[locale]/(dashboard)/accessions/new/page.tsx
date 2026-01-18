@@ -7,6 +7,7 @@ import {
 } from "@/components/dropzone-uploader";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -28,6 +29,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
 export default function NewAccessionPage() {
+  const t = useScopedI18n("accessions");
   const router = useRouter();
   const { currentOrganizationId } = useOrganization();
   const createAccession = useMutation(api.accessions.create);
@@ -131,7 +133,7 @@ export default function NewAccessionPage() {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <p className="text-muted-foreground">
-          Please select an organization to create accessions.
+          {t("selectOrganizationDescription")}
         </p>
       </div>
     );
@@ -141,7 +143,7 @@ export default function NewAccessionPage() {
     e.preventDefault();
     setError(null);
     if (!formData.source.trim() && !formData.donorAccountId) {
-      setError("Either Source or Donor/Source Account is required");
+      setError(t("form.sourceRequiredError"));
       return;
     }
 
@@ -167,9 +169,7 @@ export default function NewAccessionPage() {
     } catch (err) {
       console.error("Error creating accession:", err);
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to create accession. Please try again.",
+        err instanceof Error ? err.message : t("form.sourceRequiredError"),
       );
       setIsSubmitting(false);
     }
@@ -183,7 +183,7 @@ export default function NewAccessionPage() {
             <Button variant="ghost" size="sm" asChild>
               <Link href="/accessions">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Accessions
+                {t("backToAccessions")}
               </Link>
             </Button>
           </div>
@@ -196,7 +196,9 @@ export default function NewAccessionPage() {
             )}
             <div className="mx-auto max-w-2xl space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="accessionNumber">Accession Number</Label>
+                <Label htmlFor="accessionNumber">
+                  {t("form.accessionNumber")}
+                </Label>
                 <Input
                   id="accessionNumber"
                   value={formData.accessionNumber}
@@ -206,16 +208,18 @@ export default function NewAccessionPage() {
                       accessionNumber: e.target.value,
                     })
                   }
-                  placeholder="Auto-generated if left empty"
+                  placeholder={t("form.accessionNumberPlaceholder")}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Leave empty to auto-generate based on organization format
+                  {t("form.accessionNumberHint")}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="dateReceived">Date Received *</Label>
+                  <Label htmlFor="dateReceived">
+                    {t("form.dateReceived")} {t("form.required")}
+                  </Label>
                   <DatePicker
                     id="dateReceived"
                     date={formData.dateReceived}
@@ -225,12 +229,14 @@ export default function NewAccessionPage() {
                         dateReceived: date || new Date(),
                       })
                     }
-                    placeholder="Select date received"
+                    placeholder={t("form.dateReceivedPlaceholder")}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="method">Method *</Label>
+                  <Label htmlFor="method">
+                    {t("form.method")} {t("form.required")}
+                  </Label>
                   <Select
                     value={formData.method}
                     onValueChange={(
@@ -248,33 +254,42 @@ export default function NewAccessionPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="purchase">Purchase</SelectItem>
-                      <SelectItem value="gift">Gift</SelectItem>
-                      <SelectItem value="loan">Loan</SelectItem>
-                      <SelectItem value="transfer">Transfer</SelectItem>
+                      <SelectItem value="purchase">
+                        {t("form.methods.purchase")}
+                      </SelectItem>
+                      <SelectItem value="gift">
+                        {t("form.methods.gift")}
+                      </SelectItem>
+                      <SelectItem value="loan">
+                        {t("form.methods.loan")}
+                      </SelectItem>
+                      <SelectItem value="transfer">
+                        {t("form.methods.transfer")}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="donorAccount">Donor / Source Account</Label>
+                <Label htmlFor="donorAccount">{t("form.donorAccount")}</Label>
                 <AccountCombobox
                   organizationId={currentOrganizationId}
                   value={formData.donorAccountId}
                   onValueChange={(accountId) =>
                     setFormData({ ...formData, donorAccountId: accountId })
                   }
-                  placeholder="Select or create donor account..."
+                  placeholder={t("form.donorAccountPlaceholder")}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Link to an existing account or create a new one
+                  {t("form.donorAccountHint")}
                 </p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="source">
-                  Source {!formData.donorAccountId && "*"}
+                  {t("form.source")}{" "}
+                  {!formData.donorAccountId && t("form.required")}
                 </Label>
                 <Input
                   id="source"
@@ -282,18 +297,18 @@ export default function NewAccessionPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, source: e.target.value })
                   }
-                  placeholder="e.g., Private collector, Auction house"
+                  placeholder={t("form.sourcePlaceholder")}
                   required={!formData.donorAccountId}
                 />
                 <p className="text-xs text-muted-foreground">
                   {formData.donorAccountId
-                    ? "Optional if donor account is selected"
-                    : "Required if no donor account selected"}
+                    ? t("form.sourceOptional")
+                    : t("form.sourceRequired")}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cost">Cost</Label>
+                <Label htmlFor="cost">{t("form.cost")}</Label>
                 <Input
                   id="cost"
                   type="number"
@@ -302,25 +317,25 @@ export default function NewAccessionPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, cost: e.target.value })
                   }
-                  placeholder="0.00"
+                  placeholder={t("form.costPlaceholder")}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">{t("form.notes")}</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) =>
                     setFormData({ ...formData, notes: e.target.value })
                   }
-                  placeholder="Additional notes about this accession..."
+                  placeholder={t("form.notesPlaceholder")}
                   rows={4}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Supporting Documents</Label>
+                <Label>{t("form.supportingDocuments")}</Label>
                 <DropzoneUploader
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                   multiple
@@ -328,8 +343,8 @@ export default function NewAccessionPage() {
                   maxFiles={10}
                   onFilesSelected={handleDocumentUpload}
                   uploadingFiles={uploadingFiles}
-                  label="Drop documents here or click to upload"
-                  sublabel="PDF, Word, or images up to 20MB each"
+                  label={t("form.documentsLabel")}
+                  sublabel={t("form.documentsSublabel")}
                 />
                 {uploadedDocuments.length > 0 && (
                   <div className="mt-2 space-y-1">
@@ -360,12 +375,14 @@ export default function NewAccessionPage() {
                   variant="outline"
                   onClick={() => router.back()}
                 >
-                  Cancel
+                  {t("form.cancel")}
                 </Button>
                 <PermissionGate permission="collections.create">
                   <Button type="submit" disabled={isSubmitting}>
                     <Save className="mr-2 h-4 w-4" />
-                    {isSubmitting ? "Creating..." : "Create Accession"}
+                    {isSubmitting
+                      ? t("form.creating")
+                      : t("form.createAccession")}
                   </Button>
                 </PermissionGate>
               </div>

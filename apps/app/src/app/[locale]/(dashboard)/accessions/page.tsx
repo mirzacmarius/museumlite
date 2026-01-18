@@ -54,7 +54,13 @@ export default async function AccessionsPage() {
   );
 }
 
+("use client");
+
+import { useScopedI18n } from "@/locales/client";
+
 function NoOrganizationState() {
+  const t = useScopedI18n("accessions");
+
   return (
     <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
       <div className="flex flex-col items-center gap-4 rounded-xl border border-border/60 bg-card p-8">
@@ -80,10 +86,10 @@ function NoOrganizationState() {
         </div>
         <div className="text-center">
           <h3 className="text-lg font-semibold text-foreground">
-            No Organization Found
+            {t("noOrganizationTitle")}
           </h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            You need to create an organization to start managing accessions.
+            {t("noOrganizationDescription")}
           </p>
         </div>
         <a
@@ -105,7 +111,7 @@ function NoOrganizationState() {
             <path d="M5 12h14" />
             <path d="M12 5v14" />
           </svg>
-          Create Organization
+          {t("createOrganization")}
         </a>
       </div>
     </div>
