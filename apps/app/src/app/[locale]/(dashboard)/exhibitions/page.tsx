@@ -3,6 +3,7 @@
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -37,6 +38,7 @@ import {
 type ExhibitionStatus = "all" | "current" | "upcoming" | "past";
 
 export default function ExhibitionsPage() {
+  const t = useScopedI18n("exhibitions");
   const { currentOrganizationId, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
   const [searchQuery, setSearchQuery] = useState("");
@@ -72,7 +74,7 @@ export default function ExhibitionsPage() {
   if (isLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-background">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t("loading")}</p>
       </div>
     );
   }
@@ -84,10 +86,10 @@ export default function ExhibitionsPage() {
           <GalleryVerticalEnd className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
-              No Organization Found
+              {t("noOrganizationTitle")}
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You need to create an organization to manage exhibitions.
+              {t("noOrganizationDescription")}
             </p>
           </div>
         </div>
@@ -114,10 +116,10 @@ export default function ExhibitionsPage() {
             <div className="flex w-full items-center justify-between rounded-lg p-6">
               <div className="flex flex-col gap-2">
                 <h2 className="text-xl font-medium text-foreground">
-                  Exhibitions
+                  {t("title")}
                 </h2>
                 <p className="text-sm font-normal text-muted-foreground">
-                  Manage your exhibition history and planning
+                  {t("description")}
                 </p>
               </div>
               <PermissionGate permission="collections.update">
@@ -127,7 +129,7 @@ export default function ExhibitionsPage() {
                 >
                   <Link href="/exhibitions/new">
                     <Plus className="mr-2 h-4 w-4" />
-                    New Exhibition
+                    {t("newExhibition")}
                   </Link>
                 </Button>
               </PermissionGate>
@@ -142,7 +144,7 @@ export default function ExhibitionsPage() {
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="Search by title, location, or notes..."
+                      placeholder={t("searchPlaceholder")}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-9 bg-muted/50 border-border text-foreground/80 placeholder:text-muted-foreground focus-visible:ring-ring"
@@ -157,12 +159,12 @@ export default function ExhibitionsPage() {
                     onClick={() => setShowFilters(!showFilters)}
                   >
                     <Filter className="mr-2 h-4 w-4" />
-                    Filters
+                    {t("filters.title")}
                   </Button>
                   {hasActiveFilters && (
                     <Button variant="ghost" onClick={clearFilters}>
                       <X className="mr-2 h-4 w-4" />
-                      Clear
+                      {t("filters.clear")}
                     </Button>
                   )}
                 </div>
@@ -177,13 +179,21 @@ export default function ExhibitionsPage() {
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="All statuses" />
+                          <SelectValue placeholder={t("filters.allStatuses")} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All Exhibitions</SelectItem>
-                          <SelectItem value="current">Current</SelectItem>
-                          <SelectItem value="upcoming">Upcoming</SelectItem>
-                          <SelectItem value="past">Past</SelectItem>
+                          <SelectItem value="all">
+                            {t("filters.allExhibitions")}
+                          </SelectItem>
+                          <SelectItem value="current">
+                            {t("filters.current")}
+                          </SelectItem>
+                          <SelectItem value="upcoming">
+                            {t("filters.upcoming")}
+                          </SelectItem>
+                          <SelectItem value="past">
+                            {t("filters.past")}
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -216,6 +226,7 @@ function ExhibitionList({
   statusFilter: ExhibitionStatus;
   viewMode: ExhibitionViewMode;
 }) {
+  const t = useScopedI18n("exhibitions");
   const exhibitions = useQuery(api.exhibitions.listByOrganization, {
     organizationId: organizationId as Id<"organizations">,
   });
@@ -223,7 +234,7 @@ function ExhibitionList({
   if (exhibitions === undefined) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Loading exhibitions...</p>
+        <p className="text-muted-foreground">{t("loadingExhibitions")}</p>
       </div>
     );
   }
@@ -256,11 +267,13 @@ function ExhibitionList({
       <div className="flex h-64 flex-col items-center justify-center gap-4">
         <GalleryVerticalEnd className="h-12 w-12 text-muted-foreground" />
         <div className="text-center">
-          <p className="text-muted-foreground">No exhibitions found</p>
+          <p className="text-muted-foreground">
+            {t("emptyState.noExhibitions")}
+          </p>
           <p className="mt-2 text-sm text-muted-foreground">
             {searchQuery || statusFilter !== "all"
-              ? "Try adjusting your filters"
-              : "Create your first exhibition record to get started"}
+              ? t("emptyState.adjustFilters")
+              : t("emptyState.createFirst")}
           </p>
         </div>
       </div>
@@ -296,18 +309,19 @@ interface Exhibition {
 }
 
 function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
+  const t = useScopedI18n("exhibitions");
   const isPast = exhibition.endDate && exhibition.endDate < Date.now();
   const isUpcoming = exhibition.startDate > Date.now();
 
   let statusColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-  let statusText = "Current";
+  let statusText = t("status.current");
 
   if (isPast) {
     statusColor = "bg-muted text-muted-foreground border-border";
-    statusText = "Past";
+    statusText = t("status.past");
   } else if (isUpcoming) {
     statusColor = "bg-blue-500/10 text-blue-400 border-blue-500/20";
-    statusText = "Upcoming";
+    statusText = t("status.upcoming");
   }
 
   return (
@@ -324,7 +338,7 @@ function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
           </span>
           {exhibition.isLoan && (
             <span className="text-[10px] font-medium text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
-              LOAN
+              {t("status.loan")}
             </span>
           )}
         </div>
@@ -348,7 +362,7 @@ function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
               {new Date(exhibition.startDate).toLocaleDateString()}
               {exhibition.endDate
                 ? ` — ${new Date(exhibition.endDate).toLocaleDateString()}`
-                : " (Ongoing)"}
+                : ` ${t("card.ongoing")}`}
             </span>
           </div>
         </div>
