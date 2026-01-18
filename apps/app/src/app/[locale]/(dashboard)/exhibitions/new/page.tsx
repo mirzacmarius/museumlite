@@ -3,9 +3,9 @@
 import { CollectionSelector } from "@/components/collection-selector";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
 import { DatePicker } from "@v1/ui/date-picker";
@@ -21,6 +21,7 @@ import { useState } from "react";
 export default function NewExhibitionPage() {
   const router = useRouter();
   const { currentOrganizationId } = useOrganization();
+  const t = useScopedI18n("exhibitions");
   const createExhibition = useMutation(api.exhibitions.create);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,11 +64,11 @@ export default function NewExhibitionPage() {
     setError(null);
 
     if (!formData.title.trim()) {
-      setError("Title is required");
+      setError(t("form.titleRequired"));
       return;
     }
     if (!formData.collectionId) {
-      setError("Please select a collection object");
+      setError(t("form.selectObject"));
       return;
     }
 
@@ -87,7 +88,7 @@ export default function NewExhibitionPage() {
       router.push("/exhibitions");
     } catch (err) {
       console.error("Error creating exhibition:", err);
-      setError("Failed to create exhibition. Please try again.");
+      setError(t("form.createError"));
       setIsSubmitting(false);
     }
   };
@@ -327,7 +328,9 @@ export default function NewExhibitionPage() {
                 className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-100 dark:text-zinc-900"
               >
                 <Save className="mr-2 h-4 w-4" />
-                {isSubmitting ? "Creating..." : "Create Exhibition"}
+                {isSubmitting
+                  ? t("actions.creating")
+                  : t("actions.createExhibition")}
               </Button>
             </PermissionGate>
           </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
 import { Calendar, LayoutGrid } from "lucide-react";
@@ -17,6 +18,8 @@ export function ExhibitionViewToggle({
   onChange,
   className,
 }: ViewToggleProps) {
+  const t = useScopedI18n("exhibitions");
+
   return (
     <div
       className={cn("inline-flex rounded-md border border-border", className)}
@@ -29,7 +32,7 @@ export function ExhibitionViewToggle({
           value === "gallery" && "bg-accent text-accent-foreground",
         )}
         onClick={() => onChange("gallery")}
-        aria-label="Gallery view"
+        aria-label={t("viewMode.gallery")}
       >
         <LayoutGrid className="h-4 w-4" />
       </Button>
@@ -41,7 +44,7 @@ export function ExhibitionViewToggle({
           value === "timeline" && "bg-accent text-accent-foreground",
         )}
         onClick={() => onChange("timeline")}
-        aria-label="Timeline view"
+        aria-label={t("viewMode.timeline")}
       >
         <Calendar className="h-4 w-4" />
       </Button>

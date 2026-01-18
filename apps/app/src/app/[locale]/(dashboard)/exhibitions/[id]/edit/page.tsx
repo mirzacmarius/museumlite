@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -21,6 +22,7 @@ export default function EditExhibitionPage() {
   const params = useParams();
   const exhibitionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
+  const t = useScopedI18n("exhibitions");
   const updateExhibition = useMutation(api.exhibitions.update);
 
   const exhibition = useQuery(api.exhibitions.get, {
@@ -71,9 +73,7 @@ export default function EditExhibitionPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-background">
-        <p className="text-muted-foreground">
-          Please select an organization to edit exhibitions.
-        </p>
+        <p className="text-muted-foreground">{t("selectOrganization")}</p>
       </div>
     );
   }
@@ -81,7 +81,7 @@ export default function EditExhibitionPage() {
   if (exhibition === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-background">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t("loading")}</p>
       </div>
     );
   }
@@ -89,7 +89,7 @@ export default function EditExhibitionPage() {
   if (exhibition === null) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-background">
-        <p className="text-muted-foreground">Exhibition not found</p>
+        <p className="text-muted-foreground">{t("exhibitionNotFound")}</p>
       </div>
     );
   }
@@ -99,7 +99,7 @@ export default function EditExhibitionPage() {
     setError(null);
 
     if (!formData.title.trim()) {
-      setError("Title is required");
+      setError(t("form.titleRequired"));
       return;
     }
 
@@ -119,7 +119,7 @@ export default function EditExhibitionPage() {
       router.push(`/exhibitions/${exhibitionId}`);
     } catch (err) {
       console.error("Error updating exhibition:", err);
-      setError("Failed to update exhibition. Please try again.");
+      setError(t("form.updateError"));
       setIsSubmitting(false);
     }
   };
@@ -133,23 +133,25 @@ export default function EditExhibitionPage() {
               <ArrowLeft className="h-4 w-4 text-muted-foreground" />
             </Link>
           </Button>
-          <span className="text-muted-foreground">Exhibitions</span>
+          <span className="text-muted-foreground">{t("title")}</span>
           <span className="text-muted-foreground">/</span>
           <span className="text-muted-foreground truncate max-w-[150px]">
             {exhibition.title}
           </span>
           <span className="text-muted-foreground">/</span>
-          <span className="font-medium text-foreground">Edit</span>
+          <span className="font-medium text-foreground">
+            {t("actions.edit")}
+          </span>
         </div>
       </header>
 
       <div className="mx-auto max-w-3xl px-6 py-8">
         <div className="mb-8">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Edit Exhibition
+            {t("form.editTitle")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Update exhibition details for{" "}
+            {t("form.editSubtitle")}{" "}
             <span className="text-foreground/80">{exhibition.title}</span>
           </p>
         </div>
@@ -350,7 +352,7 @@ export default function EditExhibitionPage() {
                 className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-100 dark:text-zinc-900"
               >
                 <Save className="mr-2 h-4 w-4" />
-                {isSubmitting ? "Saving..." : "Save Changes"}
+                {isSubmitting ? t("actions.saving") : t("actions.save")}
               </Button>
             </PermissionGate>
           </div>

@@ -991,6 +991,13 @@ export default {
       created: "Created",
       step: "Step {step} of {total}",
       stepApproved: "Step {step} Approved",
+      status: "Status",
+      createdBy: "Created by",
+      approvedBy: "Approved by",
+      uploadDescription:
+        "Add floor plans, labels, or other exhibition materials",
+      file: "File",
+      unknownUser: "Unknown user",
     },
     actions: {
       edit: "Edit",
@@ -1001,7 +1008,9 @@ export default {
       uploading: "Uploading...",
       cancel: "Cancel",
       save: "Save Changes",
+      saving: "Saving...",
       creating: "Creating...",
+      createExhibition: "Create Exhibition",
     },
     form: {
       titleLabel: "Exhibition Title",
@@ -1020,6 +1029,14 @@ export default {
       selectObject: "Please select a collection object",
       scheduleConflict: "Schedule Conflict Detected",
       selectOrganization: "Please select an organization to continue.",
+      updateError: "Failed to update exhibition. Please try again.",
+      createError: "Failed to create exhibition. Please try again.",
+      editTitle: "Edit Exhibition",
+      editSubtitle: "Update exhibition details for",
+      exhibitionDetails: "Exhibition Details",
+      newExhibitionTitle: "Create Exhibition Record",
+      newExhibitionSubtitle: "Record a new exhibition history for an object.",
+      loanInfo: "Loan Information",
     },
     documentUpload: {
       typeLabel: "Document Type",
@@ -1029,6 +1046,10 @@ export default {
       checklist: "Checklist",
       other: "Other",
       uploadButton: "Upload",
+    },
+    viewMode: {
+      gallery: "Gallery view",
+      timeline: "Timeline view",
     },
   },
 } as const;

@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -53,6 +54,7 @@ export default function ExhibitionDetailPage() {
   const router = useRouter();
   const exhibitionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
+  const t = useScopedI18n("exhibitions");
   const deleteExhibition = useMutation(api.exhibitions.remove);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -128,9 +130,7 @@ export default function ExhibitionDetailPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-background">
-        <p className="text-muted-foreground">
-          Please select an organization to view exhibitions.
-        </p>
+        <p className="text-muted-foreground">{t("selectOrganization")}</p>
       </div>
     );
   }
@@ -138,7 +138,7 @@ export default function ExhibitionDetailPage() {
   if (exhibition === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-background">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t("loading")}</p>
       </div>
     );
   }
@@ -146,7 +146,7 @@ export default function ExhibitionDetailPage() {
   if (exhibition === null) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-background">
-        <p className="text-muted-foreground">Exhibition not found</p>
+        <p className="text-muted-foreground">{t("exhibitionNotFound")}</p>
       </div>
     );
   }
@@ -167,14 +167,14 @@ export default function ExhibitionDetailPage() {
 
   let timeStatusColor =
     "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-  let timeStatusText = "Current";
+  let timeStatusText = t("status.current");
 
   if (isPast) {
     timeStatusColor = "bg-muted text-muted-foreground border-border";
-    timeStatusText = "Past";
+    timeStatusText = t("status.past");
   } else if (isUpcoming) {
     timeStatusColor = "bg-blue-500/10 text-blue-400 border-blue-500/20";
-    timeStatusText = "Upcoming";
+    timeStatusText = t("status.upcoming");
   }
 
   const getWorkflowStatusInfo = () => {
@@ -184,31 +184,31 @@ export default function ExhibitionDetailPage() {
         return {
           color: "bg-amber-500/10 text-amber-400 border-amber-500/20",
           icon: CircleDot,
-          text: "Pending Approval",
+          text: t("status.pendingApproval"),
         };
       case "approved":
         return {
           color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
           icon: CheckCircle2,
-          text: "Approved",
+          text: t("status.approved"),
         };
       case "active":
         return {
           color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
           icon: CheckCircle2,
-          text: "Active",
+          text: t("status.active"),
         };
       case "closed":
         return {
           color: "bg-muted text-muted-foreground border-border",
           icon: CheckCircle2,
-          text: "Closed",
+          text: t("status.closed"),
         };
       case "rejected":
         return {
           color: "bg-red-500/10 text-red-400 border-red-500/20",
           icon: XCircle,
-          text: "Rejected",
+          text: t("status.rejected"),
         };
       default:
         return {
@@ -229,14 +229,23 @@ export default function ExhibitionDetailPage() {
 
     if (isUpcoming) {
       const daysUntilStart = Math.ceil((start - now) / (1000 * 60 * 60 * 24));
-      return { label: "Starts in", value: `${daysUntilStart} days` };
+      return {
+        label: t("detail.startsIn"),
+        value: `${daysUntilStart} ${t("detail.days")}`,
+      };
     }
     if (isPast && end) {
       const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-      return { label: "Duration", value: `${totalDays} days` };
+      return {
+        label: t("detail.duration"),
+        value: `${totalDays} ${t("detail.days")}`,
+      };
     }
     const daysActive = Math.ceil((now - start) / (1000 * 60 * 60 * 24));
-    return { label: "Active for", value: `${daysActive} days` };
+    return {
+      label: t("detail.activeFor"),
+      value: `${daysActive} ${t("detail.days")}`,
+    };
   };
 
   const duration = calculateDuration();
@@ -250,7 +259,7 @@ export default function ExhibitionDetailPage() {
               <ArrowLeft className="h-4 w-4 text-muted-foreground" />
             </Link>
           </Button>
-          <span className="text-muted-foreground">Exhibitions</span>
+          <span className="text-muted-foreground">{t("title")}</span>
           <span className="text-muted-foreground">/</span>
           <span className="font-medium text-foreground truncate max-w-[200px]">
             {exhibition.title}
@@ -267,7 +276,7 @@ export default function ExhibitionDetailPage() {
             >
               <Link href={`/exhibitions/${exhibitionId}/edit`}>
                 <Pencil className="mr-2 h-3.5 w-3.5" />
-                Edit
+                {t("actions.edit")}
               </Link>
             </Button>
           </PermissionGate>
@@ -281,17 +290,16 @@ export default function ExhibitionDetailPage() {
                   className="border-red-900/30 text-red-400 hover:bg-red-950/50 hover:text-red-300 hover:border-red-900/50"
                 >
                   <Trash2 className="mr-2 h-3.5 w-3.5" />
-                  Delete
+                  {t("actions.delete")}
                 </Button>
               </DialogTrigger>
               <DialogContent className="bg-background border-border sm:max-w-[425px]">
                 <DialogHeader>
                   <DialogTitle className="text-foreground">
-                    Delete Exhibition
+                    {t("actions.delete")}
                   </DialogTitle>
                   <DialogDescription className="text-muted-foreground">
-                    Are you sure you want to delete this exhibition record? This
-                    action cannot be undone.
+                    {t("actions.deleteConfirm")}
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
@@ -300,7 +308,7 @@ export default function ExhibitionDetailPage() {
                     className="border-border text-foreground/80 hover:bg-muted"
                     disabled={isDeleting}
                   >
-                    Cancel
+                    {t("actions.cancel")}
                   </Button>
                   <Button
                     variant="destructive"
@@ -308,7 +316,7 @@ export default function ExhibitionDetailPage() {
                     disabled={isDeleting}
                     className="bg-red-900 text-red-100 hover:bg-red-800"
                   >
-                    {isDeleting ? "Deleting..." : "Delete"}
+                    {isDeleting ? t("actions.deleting") : t("actions.delete")}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -336,7 +344,7 @@ export default function ExhibitionDetailPage() {
               )}
               {exhibition.isLoan && (
                 <span className="text-[10px] font-medium text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
-                  LOAN
+                  {t("status.loan")}
                 </span>
               )}
             </div>
@@ -363,11 +371,11 @@ export default function ExhibitionDetailPage() {
             <div className="flex items-center gap-2 text-muted-foreground">
               <AlertCircle className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">
-                Status
+                {t("detail.status")}
               </span>
             </div>
             <p className="mt-2 text-lg font-semibold text-foreground capitalize">
-              {exhibition.status ?? "Active"}
+              {exhibition.status ?? t("status.active")}
             </p>
             {exhibition.workflowStep && exhibition.totalWorkflowSteps && (
               <p className="text-xs text-muted-foreground">
@@ -382,7 +390,7 @@ export default function ExhibitionDetailPage() {
               <div className="flex items-center gap-2 text-muted-foreground">
                 <User className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">
-                  Created by
+                  {t("detail.createdBy")}
                 </span>
               </div>
               <p className="mt-2 text-sm font-medium text-foreground truncate">
@@ -399,7 +407,7 @@ export default function ExhibitionDetailPage() {
               <div className="flex items-center gap-2 text-muted-foreground">
                 <CheckCircle2 className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">
-                  Approved by
+                  {t("detail.approvedBy")}
                 </span>
               </div>
               <p className="mt-2 text-sm font-medium text-foreground truncate">
@@ -417,13 +425,13 @@ export default function ExhibitionDetailPage() {
             <div className="rounded-xl border border-border bg-muted/20 p-6">
               <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
                 <GalleryVerticalEnd className="h-4 w-4" />
-                Overview
+                {t("detail.overview")}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
                 <div>
                   <label className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
-                    Location
+                    {t("detail.location")}
                   </label>
                   <p className="text-sm text-foreground mt-1 flex items-center gap-2">
                     <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
@@ -432,21 +440,21 @@ export default function ExhibitionDetailPage() {
                 </div>
                 <div>
                   <label className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
-                    Date Range
+                    {t("detail.dateRange")}
                   </label>
                   <p className="text-sm text-foreground mt-1 flex items-center gap-2">
                     <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                     {new Date(exhibition.startDate).toLocaleDateString()}
                     {exhibition.endDate
                       ? ` — ${new Date(exhibition.endDate).toLocaleDateString()}`
-                      : " (Ongoing)"}
+                      : ` ${t("card.ongoing")}`}
                   </p>
                 </div>
 
                 {exhibition.isLoan && (
                   <div className="md:col-span-2">
                     <label className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
-                      Loan Venue
+                      {t("detail.loanVenue")}
                     </label>
                     <p className="text-sm text-foreground mt-1">
                       {exhibition.loanVenue || "—"}
@@ -459,10 +467,10 @@ export default function ExhibitionDetailPage() {
             <div className="rounded-xl border border-border bg-muted/20 p-6">
               <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
                 <Info className="h-4 w-4" />
-                Notes
+                {t("detail.notes")}
               </h2>
               <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
-                {exhibition.notes || "No notes available."}
+                {exhibition.notes || t("detail.noNotes")}
               </p>
             </div>
 
@@ -470,7 +478,7 @@ export default function ExhibitionDetailPage() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                   <FileText className="h-4 w-4" />
-                  Documents
+                  {t("detail.documents")}
                 </h2>
                 <PermissionGate permission="collections.update">
                   <Dialog
@@ -480,22 +488,22 @@ export default function ExhibitionDetailPage() {
                     <DialogTrigger asChild>
                       <Button variant="outline" size="sm">
                         <Plus className="mr-1 h-3.5 w-3.5" />
-                        Add
+                        {t("detail.add")}
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="bg-background border-border">
                       <DialogHeader>
                         <DialogTitle className="text-foreground">
-                          Upload Document
+                          {t("actions.uploadDocument")}
                         </DialogTitle>
                         <DialogDescription className="text-muted-foreground">
-                          Add floor plans, labels, or other exhibition materials
+                          {t("detail.uploadDescription")}
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
                         <div className="space-y-2">
                           <Label className="text-muted-foreground">
-                            Document Type
+                            {t("documentUpload.typeLabel")}
                           </Label>
                           <Select
                             value={uploadDocType}
@@ -506,21 +514,27 @@ export default function ExhibitionDetailPage() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="floor_plan">
-                                Floor Plan
+                                {t("documentUpload.floorPlan")}
                               </SelectItem>
-                              <SelectItem value="label">Label</SelectItem>
+                              <SelectItem value="label">
+                                {t("documentUpload.label")}
+                              </SelectItem>
                               <SelectItem value="press_release">
-                                Press Release
+                                {t("documentUpload.pressRelease")}
                               </SelectItem>
                               <SelectItem value="checklist">
-                                Checklist
+                                {t("documentUpload.checklist")}
                               </SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
+                              <SelectItem value="other">
+                                {t("documentUpload.other")}
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-muted-foreground">File</Label>
+                          <Label className="text-muted-foreground">
+                            {t("detail.file")}
+                          </Label>
                           <Input
                             type="file"
                             onChange={(e) =>
@@ -536,7 +550,7 @@ export default function ExhibitionDetailPage() {
                           onClick={() => setIsUploadDialogOpen(false)}
                           className="border-border"
                         >
-                          Cancel
+                          {t("actions.cancel")}
                         </Button>
                         <Button
                           onClick={handleFileUpload}
@@ -544,7 +558,9 @@ export default function ExhibitionDetailPage() {
                           className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
                         >
                           <Upload className="mr-2 h-4 w-4" />
-                          {isUploading ? "Uploading..." : "Upload"}
+                          {isUploading
+                            ? t("actions.uploading")
+                            : t("documentUpload.uploadButton")}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -605,7 +621,7 @@ export default function ExhibitionDetailPage() {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  No documents attached
+                  {t("detail.noDocuments")}
                 </p>
               )}
             </div>
@@ -615,7 +631,7 @@ export default function ExhibitionDetailPage() {
             <div className="rounded-xl border border-border bg-muted/20 p-6">
               <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
                 <Box className="h-4 w-4" />
-                Related Object
+                {t("detail.relatedObject")}
               </h2>
 
               {exhibition.collectionId && (
@@ -625,10 +641,10 @@ export default function ExhibitionDetailPage() {
                     className="absolute inset-0 z-10"
                   />
                   <h3 className="font-medium text-foreground group-hover:text-white truncate">
-                    {exhibition.collectionTitle || "Unknown Object"}
+                    {exhibition.collectionTitle || t("detail.unknownObject")}
                   </h3>
                   <div className="mt-2 flex items-center text-xs text-muted-foreground group-hover:text-muted-foreground">
-                    View object details{" "}
+                    {t("detail.viewObjectDetails")}{" "}
                     <ArrowLeft className="ml-1 h-3 w-3 rotate-180" />
                   </div>
                 </div>
@@ -639,7 +655,7 @@ export default function ExhibitionDetailPage() {
               <div className="rounded-xl border border-border bg-muted/20 p-6">
                 <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
                   <Clock className="h-4 w-4" />
-                  Approval History
+                  {t("detail.approvalHistory")}
                 </h2>
 
                 <div className="space-y-4">
@@ -652,13 +668,13 @@ export default function ExhibitionDetailPage() {
                       <div className="text-sm">
                         <p className="font-medium text-foreground">
                           {item.step === 0
-                            ? "Created"
+                            ? t("detail.created")
                             : item.comment?.startsWith("Rejected")
-                              ? "Rejected"
+                              ? t("status.rejected")
                               : `Step ${item.step} Approved`}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {item.approverName ?? "Unknown user"} •{" "}
+                          {item.approverName ?? t("detail.unknownUser")} •{" "}
                           {new Date(item.approvedAt).toLocaleDateString()}
                         </p>
                         {item.comment &&

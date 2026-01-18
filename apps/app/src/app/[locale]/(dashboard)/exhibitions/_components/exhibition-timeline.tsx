@@ -1,5 +1,6 @@
 "use client";
 
+import { useScopedI18n } from "@/locales/client";
 import { Box, Calendar, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
@@ -21,6 +22,8 @@ interface ExhibitionTimelineProps {
 }
 
 export function ExhibitionTimeline({ exhibitions }: ExhibitionTimelineProps) {
+  const t = useScopedI18n("exhibitions");
+
   const groupedByYear = useMemo(() => {
     const groups: Record<string, Exhibition[]> = {};
 
@@ -48,20 +51,20 @@ export function ExhibitionTimeline({ exhibitions }: ExhibitionTimelineProps) {
     const now = Date.now();
     if (ex.endDate && ex.endDate < now) {
       return {
-        status: "past",
+        status: t("status.past"),
         color: "bg-muted",
         textColor: "text-muted-foreground",
       };
     }
     if (ex.startDate > now) {
       return {
-        status: "upcoming",
+        status: t("status.upcoming"),
         color: "bg-blue-500/20",
         textColor: "text-blue-400",
       };
     }
     return {
-      status: "current",
+      status: t("status.current"),
       color: "bg-emerald-500/20",
       textColor: "text-emerald-400",
     };
@@ -102,7 +105,7 @@ export function ExhibitionTimeline({ exhibitions }: ExhibitionTimelineProps) {
                         </span>
                         {ex.isLoan && (
                           <span className="text-[10px] font-medium text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded">
-                            LOAN
+                            {t("status.loan")}
                           </span>
                         )}
                       </div>
