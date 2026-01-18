@@ -12,4 +12,5 @@ export const {
   en: () => import("./en"),
   fr: () => import("./fr"),
   es: () => import("./es"),
+  no: () => import("./no"),
 });

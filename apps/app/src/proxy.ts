@@ -7,7 +7,7 @@ import {
 import { createI18nMiddleware } from "next-international/middleware";
 
 const I18nMiddleware = createI18nMiddleware({
-  locales: ["en", "fr", "es"],
+  locales: ["en", "fr", "es", "no"],
   defaultLocale: "en",
   urlMappingStrategy: "rewrite",
 });
