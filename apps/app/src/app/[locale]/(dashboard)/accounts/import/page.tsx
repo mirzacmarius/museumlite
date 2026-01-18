@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -188,6 +189,9 @@ function parseCSVLine(line: string): string[] {
 }
 
 export default function ImportAccountsPage() {
+  const t = useScopedI18n("accounts.csvImport");
+  const tAccounts = useScopedI18n("accounts");
+  const tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -277,7 +281,7 @@ export default function ImportAccountsPage() {
         ...prev,
         errors: [
           ...prev.errors,
-          err instanceof Error ? err.message : "Import failed",
+          err instanceof Error ? err.message : t("errors.importFailed"),
         ],
       }));
     }
@@ -313,7 +317,7 @@ export default function ImportAccountsPage() {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <p className="text-muted-foreground">
-          Please select an organization to import accounts.
+          {tAccounts("selectOrganizationImport")}
         </p>
       </div>
     );
@@ -327,12 +331,12 @@ export default function ImportAccountsPage() {
             <Button variant="ghost" size="sm" asChild>
               <Link href="/accounts">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Accounts
+                {t("backToAccounts")}
               </Link>
             </Button>
             <Button variant="outline" size="sm" onClick={downloadTemplate}>
               <Download className="mr-2 h-4 w-4" />
-              Download Template
+              {t("downloadTemplate")}
             </Button>
           </div>
 
@@ -341,12 +345,9 @@ export default function ImportAccountsPage() {
               <div className="mx-auto max-w-2xl">
                 <div className="mb-8 text-center">
                   <FileSpreadsheet className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                  <h2 className="text-xl font-semibold">
-                    Import Accounts from CSV
-                  </h2>
+                  <h2 className="text-xl font-semibold">{t("title")}</h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Upload a CSV file with your account data. Required column:
-                    accountType.
+                    {t("description")}
                   </p>
                 </div>
 
@@ -368,35 +369,34 @@ export default function ImportAccountsPage() {
                   className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 transition-all hover:border-primary/50 hover:bg-muted/30"
                 >
                   <Upload className="mb-4 h-10 w-10 text-muted-foreground" />
-                  <p className="font-medium">
-                    Drop CSV file here or click to upload
-                  </p>
+                  <p className="font-medium">{t("dropZone")}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Maximum 1000 rows per import
+                    {t("maxRows")}
                   </p>
                 </div>
 
                 <div className="mt-8 rounded-lg border border-border bg-muted/30 p-4">
-                  <h3 className="mb-2 font-medium">CSV Format Requirements</h3>
+                  <h3 className="mb-2 font-medium">
+                    {t("formatRequirements")}
+                  </h3>
                   <ul className="space-y-1 text-sm text-muted-foreground">
                     <li>
-                      <strong>Required:</strong> accountType
+                      <strong>{t("required")}</strong> accountType
                     </li>
                     <li>
-                      <strong>Account Types:</strong> lender, borrower, both,
-                      institution, patron
+                      <strong>{t("accountTypes")}</strong>{" "}
+                      {t("accountTypesValues")}
                     </li>
                     <li>
-                      <strong>For Institutions:</strong> businessName,
-                      contactPerson, contactEmail
+                      <strong>{t("forInstitutions")}</strong>{" "}
+                      {t("forInstitutionsValues")}
                     </li>
                     <li>
-                      <strong>For Individuals:</strong> firstName, lastName,
-                      email, phone
+                      <strong>{t("forIndividuals")}</strong>{" "}
+                      {t("forIndividualsValues")}
                     </li>
                     <li>
-                      <strong>Optional:</strong> accountNumber, address, city,
-                      zipCode, country, notes
+                      <strong>{t("optional")}</strong> {t("optionalValues")}
                     </li>
                   </ul>
                 </div>
@@ -407,16 +407,20 @@ export default function ImportAccountsPage() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-semibold">Preview Import</h2>
+                    <h2 className="text-xl font-semibold">
+                      {t("previewTitle")}
+                    </h2>
                     <p className="text-sm text-muted-foreground">
-                      {state.rows.length} rows ready to import from{" "}
-                      {state.file?.name}
+                      {t("rowsReady", {
+                        count: state.rows.length.toString(),
+                        filename: state.file?.name || "",
+                      })}
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={handleReset}>
                       <X className="mr-2 h-4 w-4" />
-                      Cancel
+                      {t("cancel")}
                     </Button>
                     <PermissionGate permission="accounts.create">
                       <Button
@@ -425,7 +429,9 @@ export default function ImportAccountsPage() {
                         className="bg-indigo-600 hover:bg-indigo-500"
                       >
                         <Upload className="mr-2 h-4 w-4" />
-                        Import {state.rows.length} Accounts
+                        {t("importButton", {
+                          count: state.rows.length.toString(),
+                        })}
                       </Button>
                     </PermissionGate>
                   </div>
@@ -436,7 +442,9 @@ export default function ImportAccountsPage() {
                     <div className="flex items-center gap-2 text-destructive">
                       <AlertCircle className="h-4 w-4" />
                       <span className="font-medium">
-                        {state.errors.length} validation errors
+                        {t("validationErrors", {
+                          count: state.errors.length.toString(),
+                        })}
                       </span>
                     </div>
                     <ul className="mt-2 space-y-1 text-sm text-destructive">
