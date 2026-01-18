@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -63,6 +64,8 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 export default function AccountDetailPage() {
+  const t = useScopedI18n("accounts");
+  const tCommon = useScopedI18n("common");
   const params = useParams();
   const router = useRouter();
   const accountId = params.id as Id<"accounts">;
@@ -100,9 +103,7 @@ export default function AccountDetailPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">
-          Please select an organization to view accounts.
-        </p>
+        <p className="text-muted-foreground">{t("selectOrganizationTitle")}</p>
       </div>
     );
   }
@@ -110,7 +111,7 @@ export default function AccountDetailPage() {
   if (account === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
   }
@@ -118,7 +119,7 @@ export default function AccountDetailPage() {
   if (account === null) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Account not found</p>
+        <p className="text-muted-foreground">{t("accountNotFound")}</p>
       </div>
     );
   }
@@ -144,7 +145,7 @@ export default function AccountDetailPage() {
             <Button variant="ghost" size="sm" asChild>
               <Link href="/accounts">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
+                {t("back")}
               </Link>
             </Button>
             <div>
@@ -164,7 +165,7 @@ export default function AccountDetailPage() {
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/accounts/${accountId}/edit`}>
                   <Edit className="mr-2 h-4 w-4" />
-                  Edit
+                  {tCommon("edit")}
                 </Link>
               </Button>
             </PermissionGate>
@@ -178,28 +179,28 @@ export default function AccountDetailPage() {
                     disabled={isDeleting}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
+                    {tCommon("delete")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Account</AlertDialogTitle>
+                    <AlertDialogTitle>
+                      {t("detail.deleteAccount")}
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to delete this account? This action
-                      cannot be undone. If this account is used in any loans, it
-                      cannot be deleted.
+                      {t("detail.deleteConfirm")}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel disabled={isDeleting}>
-                      Cancel
+                      {tCommon("cancel")}
                     </AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleDelete}
                       disabled={isDeleting}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                      {isDeleting ? "Deleting..." : "Delete Account"}
+                      {isDeleting ? "Deleting..." : t("detail.deleteAccount")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -218,9 +219,9 @@ export default function AccountDetailPage() {
         {/* Tabs */}
         <Tabs defaultValue="overview" className="flex-1">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="overview">{t("detail.overview")}</TabsTrigger>
             <TabsTrigger value="contacts">
-              Contacts
+              {t("detail.contacts")}
               {contacts && contacts.length > 0 && (
                 <Badge variant="secondary" className="ml-2">
                   {contacts.length}
@@ -228,7 +229,7 @@ export default function AccountDetailPage() {
               )}
             </TabsTrigger>
             <TabsTrigger value="documents">
-              Documents
+              {t("detail.documents")}
               {documents && documents.length > 0 && (
                 <Badge variant="secondary" className="ml-2">
                   {documents.length}
@@ -236,14 +237,14 @@ export default function AccountDetailPage() {
               )}
             </TabsTrigger>
             <TabsTrigger value="relationships">
-              Relationships
+              {t("detail.relationships")}
               {relationships && relationships.length > 0 && (
                 <Badge variant="secondary" className="ml-2">
                   {relationships.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="activity">Activity</TabsTrigger>
+            <TabsTrigger value="activity">{t("detail.activity")}</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -353,22 +354,27 @@ type TimelineEvent = {
 };
 
 function OverviewTab({ account }: { account: Account }) {
+  const t = useScopedI18n("accounts");
   return (
     <div className="rounded-lg border border-border bg-card p-6">
-      <h2 className="mb-6 text-lg font-medium">Account Information</h2>
+      <h2 className="mb-6 text-lg font-medium">
+        {t("detail.accountInformation")}
+      </h2>
       <div className="grid gap-6 md:grid-cols-2">
         {/* Business Information */}
         <div className="space-y-4">
           <div>
             <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-              Business Information
+              {t("form.businessInformation")}
             </h3>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <Building2 className="mt-0.5 h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">{account.businessName}</p>
-                  <p className="text-xs text-muted-foreground">Business Name</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("detail.businessName")}
+                  </p>
                 </div>
               </div>
               {account.phone && (
@@ -376,7 +382,9 @@ function OverviewTab({ account }: { account: Account }) {
                   <Phone className="mt-0.5 h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm">{account.phone}</p>
-                    <p className="text-xs text-muted-foreground">Phone</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("detail.phone")}
+                    </p>
                   </div>
                 </div>
               )}
@@ -385,7 +393,9 @@ function OverviewTab({ account }: { account: Account }) {
                   <Mail className="mt-0.5 h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm">{account.email}</p>
-                    <p className="text-xs text-muted-foreground">Email</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("detail.email")}
+                    </p>
                   </div>
                 </div>
               )}
@@ -401,7 +411,7 @@ function OverviewTab({ account }: { account: Account }) {
           <div className="space-y-4">
             <div>
               <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                Address
+                {t("detail.address")}
               </h3>
               <div className="flex items-start gap-3">
                 <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
@@ -430,7 +440,7 @@ function OverviewTab({ account }: { account: Account }) {
           <div className="space-y-4 md:col-span-2">
             <div>
               <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                Notes
+                {t("detail.notes")}
               </h3>
               <p className="text-sm whitespace-pre-wrap">{account.notes}</p>
             </div>
@@ -449,6 +459,7 @@ function ContactsTab({
   accountId: Id<"accounts">;
   contacts: Contact[] | undefined;
 }) {
+  const t = useScopedI18n("accounts");
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const deleteContact = useMutation(api.contacts.remove);
@@ -456,18 +467,18 @@ function ContactsTab({
   return (
     <div className="rounded-lg border border-border bg-card p-6">
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-lg font-medium">Contacts</h2>
+        <h2 className="text-lg font-medium">{t("detail.contacts")}</h2>
         <PermissionGate permission="accounts.write">
           <Dialog open={isAddingContact} onOpenChange={setIsAddingContact}>
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="mr-2 h-4 w-4" />
-                Add Contact
+                {t("detail.addContact")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add Contact</DialogTitle>
+                <DialogTitle>{t("detail.addContact")}</DialogTitle>
                 <DialogDescription>
                   Add a new contact person for this account.
                 </DialogDescription>
@@ -483,7 +494,7 @@ function ContactsTab({
 
       {!contacts || contacts.length === 0 ? (
         <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
-          No contacts yet. Add one to get started.
+          {t("detail.noContacts")}
         </div>
       ) : (
         <div className="space-y-3">

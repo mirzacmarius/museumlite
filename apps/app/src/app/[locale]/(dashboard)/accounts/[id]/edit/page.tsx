@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -23,6 +24,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function EditAccountPage() {
+  const t = useScopedI18n("accounts");
+  const tCommon = useScopedI18n("common");
   const params = useParams();
   const router = useRouter();
   const accountId = params.id as Id<"accounts">;
@@ -113,9 +116,7 @@ export default function EditAccountPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">
-          Please select an organization to edit accounts.
-        </p>
+        <p className="text-muted-foreground">{t("selectOrganizationEdit")}</p>
       </div>
     );
   }
@@ -131,7 +132,7 @@ export default function EditAccountPage() {
   if (account === null) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Account not found</p>
+        <p className="text-muted-foreground">{t("accountNotFound")}</p>
       </div>
     );
   }
@@ -140,7 +141,7 @@ export default function EditAccountPage() {
     e.preventDefault();
     setError(null);
     if (!formData.businessName.trim()) {
-      setError("Business name is required");
+      setError(t("form.errors.businessNameRequired"));
       return;
     }
 
@@ -170,9 +171,7 @@ export default function EditAccountPage() {
     } catch (err) {
       console.error("Error updating account:", err);
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to update account. Please try again.",
+        err instanceof Error ? err.message : t("form.errors.updateFailed"),
       );
       setIsSubmitting(false);
     }
@@ -186,7 +185,7 @@ export default function EditAccountPage() {
             <Button variant="ghost" size="sm" asChild>
               <Link href={`/accounts/${accountId}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Account
+                {t("back")}
               </Link>
             </Button>
           </div>
@@ -201,12 +200,13 @@ export default function EditAccountPage() {
               {/* Business Information */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-muted-foreground">
-                  Business Information
+                  {t("form.businessInformation")}
                 </h3>
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="businessName">
-                      Business Name <span className="text-red-500">*</span>
+                      {t("form.businessName")}{" "}
+                      <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="businessName"
@@ -217,25 +217,25 @@ export default function EditAccountPage() {
                           businessName: e.target.value,
                         })
                       }
-                      placeholder="e.g., Museum of Modern Art"
+                      placeholder={t("form.placeholders.businessName")}
                       required
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Phone</Label>
+                      <Label htmlFor="phone">{t("form.phone")}</Label>
                       <Input
                         id="phone"
                         value={formData.phone}
                         onChange={(e) =>
                           setFormData({ ...formData, phone: e.target.value })
                         }
-                        placeholder="+1 (555) 123-4567"
+                        placeholder={t("form.placeholders.phone")}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
+                      <Label htmlFor="email">{t("form.email")}</Label>
                       <Input
                         id="email"
                         type="email"
@@ -243,7 +243,7 @@ export default function EditAccountPage() {
                         onChange={(e) =>
                           setFormData({ ...formData, email: e.target.value })
                         }
-                        placeholder="contact@example.com"
+                        placeholder={t("form.placeholders.email")}
                       />
                     </div>
                   </div>
@@ -253,63 +253,63 @@ export default function EditAccountPage() {
               {/* Address */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-muted-foreground">
-                  Address
+                  {t("form.address")}
                 </h3>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="address">Street Address</Label>
+                    <Label htmlFor="address">{t("form.streetAddress")}</Label>
                     <Input
                       id="address"
                       value={formData.address}
                       onChange={(e) =>
                         setFormData({ ...formData, address: e.target.value })
                       }
-                      placeholder="123 Main Street"
+                      placeholder={t("form.placeholders.streetAddress")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="address2">Address Line 2</Label>
+                    <Label htmlFor="address2">{t("form.addressLine2")}</Label>
                     <Input
                       id="address2"
                       value={formData.address2}
                       onChange={(e) =>
                         setFormData({ ...formData, address2: e.target.value })
                       }
-                      placeholder="Suite 100"
+                      placeholder={t("form.placeholders.addressLine2")}
                     />
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="city">City</Label>
+                      <Label htmlFor="city">{t("form.city")}</Label>
                       <Input
                         id="city"
                         value={formData.city}
                         onChange={(e) =>
                           setFormData({ ...formData, city: e.target.value })
                         }
-                        placeholder="New York"
+                        placeholder={t("form.placeholders.city")}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="zipCode">ZIP Code</Label>
+                      <Label htmlFor="zipCode">{t("form.zipCode")}</Label>
                       <Input
                         id="zipCode"
                         value={formData.zipCode}
                         onChange={(e) =>
                           setFormData({ ...formData, zipCode: e.target.value })
                         }
-                        placeholder="10001"
+                        placeholder={t("form.placeholders.zipCode")}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="country">Country</Label>
+                      <Label htmlFor="country">{t("form.country")}</Label>
                       <Input
                         id="country"
                         value={formData.country}
                         onChange={(e) =>
                           setFormData({ ...formData, country: e.target.value })
                         }
-                        placeholder="United States"
+                        placeholder={t("form.placeholders.country")}
                       />
                     </div>
                   </div>
@@ -319,11 +319,13 @@ export default function EditAccountPage() {
               {/* Contact Person */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-muted-foreground">
-                  Contact Person
+                  {t("form.contactPerson")}
                 </h3>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="contactPerson">Contact Name</Label>
+                    <Label htmlFor="contactPerson">
+                      {t("form.contactName")}
+                    </Label>
                     <Input
                       id="contactPerson"
                       value={formData.contactPerson}
@@ -333,12 +335,14 @@ export default function EditAccountPage() {
                           contactPerson: e.target.value,
                         })
                       }
-                      placeholder="John Doe"
+                      placeholder={t("form.placeholders.contactName")}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="contactPhone">Contact Phone</Label>
+                      <Label htmlFor="contactPhone">
+                        {t("form.contactPhone")}
+                      </Label>
                       <Input
                         id="contactPhone"
                         value={formData.contactPhone}
@@ -348,11 +352,13 @@ export default function EditAccountPage() {
                             contactPhone: e.target.value,
                           })
                         }
-                        placeholder="+1 (555) 123-4567"
+                        placeholder={t("form.placeholders.phone")}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="contactEmail">Contact Email</Label>
+                      <Label htmlFor="contactEmail">
+                        {t("form.contactEmail")}
+                      </Label>
                       <Input
                         id="contactEmail"
                         type="email"
@@ -363,7 +369,7 @@ export default function EditAccountPage() {
                             contactEmail: e.target.value,
                           })
                         }
-                        placeholder="john@example.com"
+                        placeholder={t("form.placeholders.contactEmail")}
                       />
                     </div>
                   </div>
@@ -372,14 +378,14 @@ export default function EditAccountPage() {
 
               {/* Notes */}
               <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">{t("form.notes")}</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) =>
                     setFormData({ ...formData, notes: e.target.value })
                   }
-                  placeholder="Additional notes about this account..."
+                  placeholder={t("form.placeholders.notes")}
                   rows={4}
                 />
               </div>
@@ -388,11 +394,11 @@ export default function EditAccountPage() {
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   <UserCog className="h-4 w-4" />
-                  Account Type & Role
+                  {t("form.accountTypeRole")}
                 </h3>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="accountType">Account Type</Label>
+                    <Label htmlFor="accountType">{t("form.accountType")}</Label>
                     <Select
                       value={formData.accountType}
                       onValueChange={(
@@ -405,19 +411,25 @@ export default function EditAccountPage() {
                       ) => setFormData({ ...formData, accountType: value })}
                     >
                       <SelectTrigger id="accountType">
-                        <SelectValue placeholder="Select account type" />
+                        <SelectValue
+                          placeholder={t("form.placeholders.accountType")}
+                        />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="lender">Lender</SelectItem>
-                        <SelectItem value="borrower">Borrower</SelectItem>
-                        <SelectItem value="both">
-                          Both (Lender & Borrower)
+                        <SelectItem value="lender">
+                          {t("types.lender")}
                         </SelectItem>
-                        <SelectItem value="institution">Institution</SelectItem>
+                        <SelectItem value="borrower">
+                          {t("types.borrower")}
+                        </SelectItem>
+                        <SelectItem value="both">{t("types.both")}</SelectItem>
+                        <SelectItem value="institution">
+                          {t("types.institution")}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
-                      Categorize this account by its role in loan transactions
+                      {t("form.accountTypeDescription")}
                     </p>
                   </div>
                 </div>
@@ -427,12 +439,11 @@ export default function EditAccountPage() {
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   <Shield className="h-4 w-4" />
-                  Roles with Account Access
+                  {t("form.rolesWithAccess")}
                 </h3>
                 <div className="space-y-4 rounded-lg border border-border p-4">
                   <p className="text-sm text-muted-foreground">
-                    Select which roles can manage this account. Roles with loans
-                    permissions are shown below.
+                    {t("form.rolesDescription")}
                   </p>
                   {rolesWithLoansPermissions &&
                   rolesWithLoansPermissions.length > 0 ? (
@@ -513,7 +524,7 @@ export default function EditAccountPage() {
                   variant="outline"
                   onClick={() => router.back()}
                 >
-                  Cancel
+                  {tCommon("cancel")}
                 </Button>
                 <PermissionGate permission="loans.update">
                   <Button type="submit" disabled={isSubmitting}>
@@ -522,7 +533,7 @@ export default function EditAccountPage() {
                     ) : (
                       <Save className="mr-2 h-4 w-4" />
                     )}
-                    {isSubmitting ? "Updating..." : "Update Account"}
+                    {isSubmitting ? t("form.updating") : t("form.updateButton")}
                   </Button>
                 </PermissionGate>
               </div>

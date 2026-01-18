@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -22,6 +23,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function NewAccountPage() {
+  const t = useScopedI18n("accounts");
+  const tCommon = useScopedI18n("common");
   const router = useRouter();
   const { currentOrganizationId } = useOrganization();
   const createAccount = useMutation(api.accounts.create);
@@ -75,9 +78,7 @@ export default function NewAccountPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">
-          Please select an organization to create accounts.
-        </p>
+        <p className="text-muted-foreground">{t("selectOrganizationCreate")}</p>
       </div>
     );
   }
@@ -86,7 +87,7 @@ export default function NewAccountPage() {
     e.preventDefault();
     setError(null);
     if (!formData.businessName.trim()) {
-      setError("Business name is required");
+      setError(t("form.errors.businessNameRequired"));
       return;
     }
 
@@ -116,9 +117,7 @@ export default function NewAccountPage() {
     } catch (err) {
       console.error("Error creating account:", err);
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to create account. Please try again.",
+        err instanceof Error ? err.message : t("form.errors.createFailed"),
       );
       setIsSubmitting(false);
     }
@@ -133,10 +132,12 @@ export default function NewAccountPage() {
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/accounts">
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
+                  {t("back")}
                 </Link>
               </Button>
-              <h2 className="text-xl font-medium text-primary">New Account</h2>
+              <h2 className="text-xl font-medium text-primary">
+                {t("newAccount")}
+              </h2>
             </div>
           </div>
 
@@ -154,12 +155,13 @@ export default function NewAccountPage() {
             {/* Business Information */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground">
-                Business Information
+                {t("form.businessInformation")}
               </h3>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="businessName">
-                    Business Name <span className="text-red-500">*</span>
+                    {t("form.businessName")}{" "}
+                    <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="businessName"
@@ -167,25 +169,25 @@ export default function NewAccountPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, businessName: e.target.value })
                     }
-                    placeholder="e.g., Museum of Modern Art"
+                    placeholder={t("form.placeholders.businessName")}
                     required
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone</Label>
+                    <Label htmlFor="phone">{t("form.phone")}</Label>
                     <Input
                       id="phone"
                       value={formData.phone}
                       onChange={(e) =>
                         setFormData({ ...formData, phone: e.target.value })
                       }
-                      placeholder="+1 (555) 123-4567"
+                      placeholder={t("form.placeholders.phone")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t("form.email")}</Label>
                     <Input
                       id="email"
                       type="email"
@@ -193,7 +195,7 @@ export default function NewAccountPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, email: e.target.value })
                       }
-                      placeholder="contact@example.com"
+                      placeholder={t("form.placeholders.email")}
                     />
                   </div>
                 </div>
@@ -203,63 +205,63 @@ export default function NewAccountPage() {
             {/* Address */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground">
-                Address
+                {t("form.address")}
               </h3>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="address">Street Address</Label>
+                  <Label htmlFor="address">{t("form.streetAddress")}</Label>
                   <Input
                     id="address"
                     value={formData.address}
                     onChange={(e) =>
                       setFormData({ ...formData, address: e.target.value })
                     }
-                    placeholder="123 Main Street"
+                    placeholder={t("form.placeholders.streetAddress")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address2">Address Line 2</Label>
+                  <Label htmlFor="address2">{t("form.addressLine2")}</Label>
                   <Input
                     id="address2"
                     value={formData.address2}
                     onChange={(e) =>
                       setFormData({ ...formData, address2: e.target.value })
                     }
-                    placeholder="Suite 100"
+                    placeholder={t("form.placeholders.addressLine2")}
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="city">City</Label>
+                    <Label htmlFor="city">{t("form.city")}</Label>
                     <Input
                       id="city"
                       value={formData.city}
                       onChange={(e) =>
                         setFormData({ ...formData, city: e.target.value })
                       }
-                      placeholder="New York"
+                      placeholder={t("form.placeholders.city")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="zipCode">ZIP Code</Label>
+                    <Label htmlFor="zipCode">{t("form.zipCode")}</Label>
                     <Input
                       id="zipCode"
                       value={formData.zipCode}
                       onChange={(e) =>
                         setFormData({ ...formData, zipCode: e.target.value })
                       }
-                      placeholder="10001"
+                      placeholder={t("form.placeholders.zipCode")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="country">Country</Label>
+                    <Label htmlFor="country">{t("form.country")}</Label>
                     <Input
                       id="country"
                       value={formData.country}
                       onChange={(e) =>
                         setFormData({ ...formData, country: e.target.value })
                       }
-                      placeholder="United States"
+                      placeholder={t("form.placeholders.country")}
                     />
                   </div>
                 </div>
@@ -269,11 +271,11 @@ export default function NewAccountPage() {
             {/* Contact Person */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground">
-                Contact Person
+                {t("form.contactPerson")}
               </h3>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="contactPerson">Contact Name</Label>
+                  <Label htmlFor="contactPerson">{t("form.contactName")}</Label>
                   <Input
                     id="contactPerson"
                     value={formData.contactPerson}
@@ -283,12 +285,14 @@ export default function NewAccountPage() {
                         contactPerson: e.target.value,
                       })
                     }
-                    placeholder="John Doe"
+                    placeholder={t("form.placeholders.contactName")}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="contactPhone">Contact Phone</Label>
+                    <Label htmlFor="contactPhone">
+                      {t("form.contactPhone")}
+                    </Label>
                     <Input
                       id="contactPhone"
                       value={formData.contactPhone}
@@ -298,11 +302,13 @@ export default function NewAccountPage() {
                           contactPhone: e.target.value,
                         })
                       }
-                      placeholder="+1 (555) 123-4567"
+                      placeholder={t("form.placeholders.phone")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="contactEmail">Contact Email</Label>
+                    <Label htmlFor="contactEmail">
+                      {t("form.contactEmail")}
+                    </Label>
                     <Input
                       id="contactEmail"
                       type="email"
@@ -313,7 +319,7 @@ export default function NewAccountPage() {
                           contactEmail: e.target.value,
                         })
                       }
-                      placeholder="john@example.com"
+                      placeholder={t("form.placeholders.contactEmail")}
                     />
                   </div>
                 </div>
@@ -322,14 +328,14 @@ export default function NewAccountPage() {
 
             {/* Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{t("form.notes")}</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) =>
                   setFormData({ ...formData, notes: e.target.value })
                 }
-                placeholder="Additional notes about this account..."
+                placeholder={t("form.placeholders.notes")}
                 rows={4}
               />
             </div>
@@ -338,11 +344,11 @@ export default function NewAccountPage() {
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <UserCog className="h-4 w-4" />
-                Account Type & Role
+                {t("form.accountTypeRole")}
               </h3>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="accountType">Account Type</Label>
+                  <Label htmlFor="accountType">{t("form.accountType")}</Label>
                   <Select
                     value={formData.accountType}
                     onValueChange={(
@@ -350,19 +356,25 @@ export default function NewAccountPage() {
                     ) => setFormData({ ...formData, accountType: value })}
                   >
                     <SelectTrigger id="accountType">
-                      <SelectValue placeholder="Select account type" />
+                      <SelectValue
+                        placeholder={t("form.placeholders.accountType")}
+                      />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="lender">Lender</SelectItem>
-                      <SelectItem value="borrower">Borrower</SelectItem>
-                      <SelectItem value="both">
-                        Both (Lender & Borrower)
+                      <SelectItem value="lender">
+                        {t("types.lender")}
                       </SelectItem>
-                      <SelectItem value="institution">Institution</SelectItem>
+                      <SelectItem value="borrower">
+                        {t("types.borrower")}
+                      </SelectItem>
+                      <SelectItem value="both">{t("types.both")}</SelectItem>
+                      <SelectItem value="institution">
+                        {t("types.institution")}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Categorize this account by its role in loan transactions
+                    {t("form.accountTypeDescription")}
                   </p>
                 </div>
               </div>
@@ -374,12 +386,11 @@ export default function NewAccountPage() {
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Shield className="h-4 w-4" />
-                    Roles with Account Access
+                    {t("form.rolesWithAccess")}
                   </h3>
                   <div className="space-y-4 rounded-lg border border-border p-4">
                     <p className="text-sm text-muted-foreground">
-                      Select which roles can manage this account. Roles with
-                      loans permissions are shown below.
+                      {t("form.rolesDescription")}
                     </p>
                     <div className="space-y-3">
                       {rolesWithLoansPermissions.map((role) => (
@@ -412,7 +423,7 @@ export default function NewAccountPage() {
 
             <div className="flex justify-end gap-4 pt-4">
               <Button type="button" variant="outline" asChild>
-                <Link href="/accounts">Cancel</Link>
+                <Link href="/accounts">{tCommon("cancel")}</Link>
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
@@ -420,7 +431,7 @@ export default function NewAccountPage() {
                 ) : (
                   <Save className="mr-2 h-4 w-4" />
                 )}
-                {isSubmitting ? "Creating..." : "Create Account"}
+                {isSubmitting ? t("form.creating") : t("form.createButton")}
               </Button>
             </div>
           </form>

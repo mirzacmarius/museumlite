@@ -3,6 +3,7 @@
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
@@ -32,6 +33,7 @@ import { useCallback, useState } from "react";
 type AccountType = "lender" | "borrower" | "both" | "institution" | "patron";
 
 export default function AccountsPage() {
+  const t = useScopedI18n("accounts");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const searchParams = useSearchParams();
   const typeParam = searchParams.get("type") as AccountType | null;
@@ -52,7 +54,9 @@ export default function AccountsPage() {
   if (isLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">
+          {t("emptyState.noAccountsFound")}
+        </p>
       </div>
     );
   }
@@ -63,15 +67,17 @@ export default function AccountsPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">No Organization Found</h3>
+            <h3 className="text-lg font-semibold">
+              {t("noOrganizationTitle")}
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You need to create an organization to start managing accounts.
+              {t("noOrganizationDescription")}
             </p>
           </div>
           <Button asChild>
             <Link href="/organizations/new">
               <Plus className="mr-2 h-4 w-4" />
-              Create Organization
+              {t("createOrganization")}
             </Link>
           </Button>
         </div>
@@ -85,10 +91,11 @@ export default function AccountsPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Users className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">Select an Organization</h3>
+            <h3 className="text-lg font-semibold">
+              {t("selectOrganizationTitle")}
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select an organization from the dropdown above to view
-              accounts.
+              {t("selectOrganizationDescription")}
             </p>
           </div>
         </div>
@@ -103,12 +110,10 @@ export default function AccountsPage() {
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex flex-col gap-2">
               <h2 className="text-xl font-medium text-primary">
-                {isPatronView ? "Library Patrons" : "Accounts"}
+                {isPatronView ? t("patronsTitle") : t("title")}
               </h2>
               <p className="text-sm font-normal text-primary/60">
-                {isPatronView
-                  ? "Manage library members and their accounts"
-                  : "Manage lenders, borrowers, institutions, and contacts"}
+                {isPatronView ? t("patronsDescription") : t("description")}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -119,7 +124,7 @@ export default function AccountsPage() {
                 <Button asChild variant="outline">
                   <Link href="/accounts/import">
                     <FileUp className="mr-2 h-4 w-4" />
-                    Import CSV
+                    {t("importCSV")}
                   </Link>
                 </Button>
               </PermissionGate>
@@ -127,7 +132,7 @@ export default function AccountsPage() {
                 <Button asChild>
                   <Link href="/accounts/new">
                     <Plus className="mr-2 h-4 w-4" />
-                    New Account
+                    {t("newAccount")}
                   </Link>
                 </Button>
               </PermissionGate>
@@ -145,8 +150,8 @@ export default function AccountsPage() {
                 <Input
                   placeholder={
                     isPatronView
-                      ? "Search by name, card number, or email..."
-                      : "Search by business name, account number, email, or contact person..."
+                      ? t("patronsSearchPlaceholder")
+                      : t("searchPlaceholder")
                   }
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -161,15 +166,23 @@ export default function AccountsPage() {
                   }
                 >
                   <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Types" />
+                    <SelectValue placeholder={t("filters.allTypes")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="lender">Lenders</SelectItem>
-                    <SelectItem value="borrower">Borrowers</SelectItem>
-                    <SelectItem value="both">Both</SelectItem>
-                    <SelectItem value="institution">Institutions</SelectItem>
-                    <SelectItem value="patron">Patrons</SelectItem>
+                    <SelectItem value="all">{t("filters.allTypes")}</SelectItem>
+                    <SelectItem value="lender">
+                      {t("filters.lenders")}
+                    </SelectItem>
+                    <SelectItem value="borrower">
+                      {t("filters.borrowers")}
+                    </SelectItem>
+                    <SelectItem value="both">{t("filters.both")}</SelectItem>
+                    <SelectItem value="institution">
+                      {t("filters.institutions")}
+                    </SelectItem>
+                    <SelectItem value="patron">
+                      {t("filters.patrons")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               )}
@@ -202,6 +215,7 @@ function AccountList({
   searchQuery: string;
   accountType?: AccountType;
 }) {
+  const t = useScopedI18n("accounts");
   const accounts = useQuery(api.accounts.list, {
     organizationId,
     search: searchQuery || undefined,
@@ -211,7 +225,9 @@ function AccountList({
   if (accounts === undefined) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">
+          {t("emptyState.noAccountsFound")}
+        </p>
       </div>
     );
   }
@@ -221,14 +237,14 @@ function AccountList({
       <div className="flex h-64 flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">
           {searchQuery
-            ? "No accounts found matching your search"
-            : "No accounts found"}
+            ? t("emptyState.noSearchResults")
+            : t("emptyState.noAccountsFound")}
         </p>
         <PermissionGate permission="loans.create">
           <Button asChild>
             <Link href="/accounts/new">
               <Plus className="mr-2 h-4 w-4" />
-              Create Your First Account
+              {t("emptyState.createFirst")}
             </Link>
           </Button>
         </PermissionGate>
@@ -242,24 +258,24 @@ function AccountList({
     if (account.accountType === "patron") {
       return (
         `${account.firstName ?? ""} ${account.lastName ?? ""}`.trim() ||
-        "Unnamed Patron"
+        t("list.unnamedPatron")
       );
     }
-    return account.businessName ?? "Unnamed Account";
+    return account.businessName ?? t("list.unnamedAccount");
   };
 
   const getAccountTypeBadge = (type?: string) => {
     switch (type) {
       case "lender":
-        return <Badge variant="outline">Lender</Badge>;
+        return <Badge variant="outline">{t("types.lender")}</Badge>;
       case "borrower":
-        return <Badge variant="outline">Borrower</Badge>;
+        return <Badge variant="outline">{t("types.borrower")}</Badge>;
       case "both":
-        return <Badge variant="outline">Both</Badge>;
+        return <Badge variant="outline">{t("types.both")}</Badge>;
       case "institution":
-        return <Badge variant="secondary">Institution</Badge>;
+        return <Badge variant="secondary">{t("types.institution")}</Badge>;
       case "patron":
-        return <Badge variant="default">Patron</Badge>;
+        return <Badge variant="default">{t("types.patron")}</Badge>;
       default:
         return null;
     }
@@ -304,7 +320,7 @@ function AccountList({
                   {account.accountType !== "patron" &&
                     account.contactPerson && (
                       <span className="truncate">
-                        Contact: {account.contactPerson}
+                        {t("list.contact")} {account.contactPerson}
                       </span>
                     )}
                   {account.accountType === "patron" && account.status && (
