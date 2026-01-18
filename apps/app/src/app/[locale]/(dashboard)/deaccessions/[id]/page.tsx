@@ -2,6 +2,8 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { formatCurrency } from "@/lib/format-number";
+import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -31,6 +33,7 @@ import { useEffect, useState } from "react";
 export default function DeaccessionDetailPage() {
   const params = useParams();
   const deaccessionId = params.id as string;
+  const locale = useCurrentLocale();
   const { currentOrganizationId } = useOrganization();
 
   const deaccession = useQuery(
@@ -489,12 +492,11 @@ export default function DeaccessionDetailPage() {
                             Amount
                           </p>
                           <p className="text-black font-semibold">
-                            {new Intl.NumberFormat("en-US", {
-                              style: "currency",
-                              currency:
-                                exportData.deaccession.proceedsCurrency ||
-                                "USD",
-                            }).format(exportData.deaccession.proceedsAmount)}
+                            {formatCurrency(
+                              exportData.deaccession.proceedsAmount,
+                              locale,
+                              exportData.deaccession.proceedsCurrency || "USD",
+                            )}
                           </p>
                         </div>
                       )}

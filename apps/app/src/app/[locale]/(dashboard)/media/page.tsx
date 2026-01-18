@@ -1,7 +1,8 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
-import { useI18n } from "@/locales/client";
+import { formatDistanceLocale } from "@/lib/format-date";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -23,7 +24,6 @@ import {
 } from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
-import { formatDistanceToNow } from "date-fns";
 import {
   Building2,
   File,

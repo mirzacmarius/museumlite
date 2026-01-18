@@ -1,5 +1,7 @@
 "use client";
 
+import { formatCurrency as formatCurrencyUtil } from "@/lib/format-number";
+import { useCurrentLocale } from "@/locales/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import { Separator } from "@v1/ui/separator";
 import { Car, DollarSign, Palette, Wine } from "lucide-react";
@@ -15,12 +17,9 @@ interface InventoryValuationCardProps {
 }
 
 export function InventoryValuationCard({ data }: InventoryValuationCardProps) {
+  const locale = useCurrentLocale();
   const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 0,
-    }).format(value);
+    formatCurrencyUtil(value, locale, "USD").replace(/\.\d+$/, "");
 
   const chartData = [
     {

@@ -238,6 +238,53 @@ export default {
     viewAll: "Ver todo",
     viewDetails: "Ver detalles",
     backToList: "Volver a la lista",
+    toast: {
+      exportFailed: "Error al exportar datos",
+      invalidEmail: "Formato de dirección de correo electrónico inválido",
+      createFailed: "Error al crear. Por favor intenta de nuevo.",
+      businessNameRequired: "El nombre comercial es obligatorio",
+      accountCreated: "Cuenta creada exitosamente",
+      moduleToggled: "Módulo {action}",
+      moduleUpdateFailed: "Error al actualizar módulos",
+      waitingSubscription: "Esperando confirmación de suscripción...",
+      integrationEnabled: "Integración habilitada exitosamente",
+      integrationAlreadyEnabled: "La integración ya está habilitada",
+      subscriptionNotActive:
+        "Suscripción aún no activa. Por favor intenta de nuevo en breve.",
+      integrationEnableFailed: "Error al habilitar integración",
+      loansApproved: "{count} préstamo(s) aprobado(s) exitosamente",
+      someLoansSkipped: "{count} préstamo(s) fueron omitidos (no pendientes)",
+      loansApproveFailed: "Error al aprobar préstamos",
+      loansCancelled: "{count} préstamo(s) cancelado(s) exitosamente",
+      loansCancelSkipped:
+        "{count} préstamo(s) fueron omitidos (no cancelables)",
+      loansCancelFailed: "Error al cancelar préstamos",
+      loanExported: "Préstamo exportado exitosamente",
+      contactDeleted: "Contacto eliminado",
+      contactDeleteFailed: "Error al eliminar contacto",
+      contactUpdated: "Contacto actualizado exitosamente",
+      contactAdded: "Contacto agregado exitosamente",
+      contactSaveFailed: "Error al guardar contacto",
+      documentUploaded: "Documento subido exitosamente",
+      documentUploadFailed: "Error al subir documento",
+      documentDeleted: "Documento eliminado",
+      documentDeleteFailed: "Error al eliminar documento",
+      selectLocation: "Por favor selecciona una ubicación",
+      itemsMoved: "{count} elemento(s) movido(s) exitosamente",
+      itemsMoveFailed: "Error al mover elementos",
+      selectCollectionGroup: "Por favor selecciona un grupo de colección",
+      itemsAddedToGroup:
+        "{count} elemento(s) agregado(s) al grupo exitosamente",
+      itemsAddToGroupFailed: "Error al agregar elementos al grupo",
+      selectDeaccessionReason:
+        "Por favor proporciona una razón para la desaccesión",
+      itemsDeaccessioned: "{count} elemento(s) desaccesionado(s) exitosamente",
+      someItemsSkipped:
+        "{count} elemento(s) fueron omitidos (en préstamo activo)",
+      itemsDeaccessionFailed: "Error al desaccesionar elementos",
+      imageOrderUpdated: "Orden de imágenes actualizado",
+      imageOrderUpdateFailed: "Error al actualizar orden de imágenes",
+    },
   },
   objects: {
     title: "Objetos de la Colección",
@@ -1406,7 +1453,8 @@ export default {
       unknown: "Desconocido",
     },
     form: {
-      selectOrg: "Por favor selecciona una organización para crear desaccesiones.",
+      selectOrg:
+        "Por favor selecciona una organización para crear desaccesiones.",
       selectOrgEdit:
         "Por favor selecciona una organización para editar desaccesiones.",
       collectionLabel: "Objeto de Colección",
@@ -1442,7 +1490,8 @@ export default {
       errors: {
         collectionRequired: "La colección es requerida",
         reasonRequired: "La razón es requerida",
-        createFailed: "Error al crear la desaccesión. Por favor intenta de nuevo.",
+        createFailed:
+          "Error al crear la desaccesión. Por favor intenta de nuevo.",
         updateFailed:
           "Error al actualizar la desaccesión. Por favor intenta de nuevo.",
         approveFailed: "Error al aprobar la desaccesión",

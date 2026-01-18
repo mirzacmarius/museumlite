@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Download, Loader2 } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -53,8 +54,9 @@ export function ExportCSVButton({
   data,
   onExport,
   filename,
-  disabled = false,
+  disabled,
 }: ExportCSVButtonProps) {
+  const t = useI18n();
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = useCallback(async () => {
@@ -79,7 +81,7 @@ export function ExportCSVButton({
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (error) {
-      toast.error("Failed to export data");
+      toast.error(t("common.toast.exportFailed"));
     } finally {
       setIsExporting(false);
     }

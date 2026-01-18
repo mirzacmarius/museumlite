@@ -1,7 +1,8 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
+import { formatCurrency } from "@/lib/format-number";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -29,6 +30,7 @@ import { useEffect, useRef, useState } from "react";
 
 export default function DeaccessionsPage() {
   const t = useScopedI18n("deaccessions");
+  const locale = useCurrentLocale();
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
 
   if (isLoading) {
@@ -301,11 +303,11 @@ function DeaccessionTable({
                   </div>
                   <div className="rounded border border-gray-200 p-3 text-center">
                     <p className="text-2xl font-bold text-black">
-                      {new Intl.NumberFormat("en-US", {
-                        style: "currency",
-                        currency: "USD",
-                        maximumFractionDigits: 0,
-                      }).format(exportData.totals.totalProceeds)}
+                      {formatCurrency(
+                        exportData.totals.totalProceeds,
+                        locale,
+                        "USD",
+                      ).replace(/\.\d+$/, "")}
                     </p>
                     <p className="text-xs text-gray-500">Total Proceeds</p>
                   </div>
@@ -357,10 +359,11 @@ function DeaccessionTable({
                           </td>
                           <td className="py-2 text-right text-gray-600">
                             {item.proceedsAmount
-                              ? new Intl.NumberFormat("en-US", {
-                                  style: "currency",
-                                  currency: item.proceedsCurrency || "USD",
-                                }).format(item.proceedsAmount)
+                              ? formatCurrency(
+                                  item.proceedsAmount,
+                                  locale,
+                                  item.proceedsCurrency || "USD",
+                                )
                               : "—"}
                           </td>
                           <td className="py-2 text-right">

@@ -307,6 +307,50 @@ export default {
     viewAll: "Voir tout",
     viewDetails: "Voir les détails",
     backToList: "Retour à la liste",
+    toast: {
+      exportFailed: "Échec de l'exportation des données",
+      invalidEmail: "Format d'adresse e-mail invalide",
+      createFailed: "Échec de la création. Veuillez réessayer.",
+      businessNameRequired: "Le nom commercial est requis",
+      accountCreated: "Compte créé avec succès",
+      moduleToggled: "Module {action}",
+      moduleUpdateFailed: "Échec de la mise à jour des modules",
+      waitingSubscription: "En attente de la confirmation de l'abonnement...",
+      integrationEnabled: "Intégration activée avec succès",
+      integrationAlreadyEnabled: "L'intégration est déjà activée",
+      subscriptionNotActive:
+        "Abonnement pas encore actif. Veuillez réessayer dans quelques instants.",
+      integrationEnableFailed: "Échec de l'activation de l'intégration",
+      loansApproved: "{count} prêt(s) approuvé(s) avec succès",
+      someLoansSkipped: "{count} prêt(s) ont été ignoré(s) (non en attente)",
+      loansApproveFailed: "Échec de l'approbation des prêts",
+      loansCancelled: "{count} prêt(s) annulé(s) avec succès",
+      loansCancelSkipped: "{count} prêt(s) ont été ignoré(s) (non annulables)",
+      loansCancelFailed: "Échec de l'annulation des prêts",
+      loanExported: "Prêt exporté avec succès",
+      contactDeleted: "Contact supprimé",
+      contactDeleteFailed: "Échec de la suppression du contact",
+      contactUpdated: "Contact mis à jour avec succès",
+      contactAdded: "Contact ajouté avec succès",
+      contactSaveFailed: "Échec de l'enregistrement du contact",
+      documentUploaded: "Document téléchargé avec succès",
+      documentUploadFailed: "Échec du téléchargement du document",
+      documentDeleted: "Document supprimé",
+      documentDeleteFailed: "Échec de la suppression du document",
+      selectLocation: "Veuillez sélectionner un emplacement",
+      itemsMoved: "{count} élément(s) déplacé(s) avec succès",
+      itemsMoveFailed: "Échec du déplacement des éléments",
+      selectCollectionGroup: "Veuillez sélectionner un groupe de collection",
+      itemsAddedToGroup: "{count} élément(s) ajouté(s) au groupe avec succès",
+      itemsAddToGroupFailed: "Échec de l'ajout d'éléments au groupe",
+      selectDeaccessionReason:
+        "Veuillez fournir une raison pour la désaccession",
+      itemsDeaccessioned: "{count} élément(s) désaccessionné(s) avec succès",
+      someItemsSkipped: "{count} élément(s) ont été ignoré(s) (sur prêt actif)",
+      itemsDeaccessionFailed: "Échec de la désaccession des éléments",
+      imageOrderUpdated: "Ordre des images mis à jour",
+      imageOrderUpdateFailed: "Échec de la mise à jour de l'ordre des images",
+    },
   },
   objects: {
     title: "Objets de Collection",
@@ -1434,7 +1478,8 @@ export default {
       unknown: "Inconnu",
     },
     form: {
-      selectOrg: "Veuillez sélectionner une organisation pour créer des désaccessions.",
+      selectOrg:
+        "Veuillez sélectionner une organisation pour créer des désaccessions.",
       selectOrgEdit:
         "Veuillez sélectionner une organisation pour modifier les désaccessions.",
       collectionLabel: "Objet de Collection",
@@ -1443,10 +1488,12 @@ export default {
       deaccessionNumberPlaceholder: "Généré automatiquement si laissé vide",
       deaccessionNumberHint:
         "Laissez vide pour générer automatiquement selon le format de l'organisation",
-      deaccessionNumberReadonly: "Le numéro de désaccession ne peut pas être modifié",
+      deaccessionNumberReadonly:
+        "Le numéro de désaccession ne peut pas être modifié",
       dateDeaccessioned: "Date de Désaccession *",
       dateDeaccessionedPlaceholder: "Sélectionner la date de désaccession",
-      dateDeaccessionedReadonly: "La date de désaccession ne peut pas être modifiée",
+      dateDeaccessionedReadonly:
+        "La date de désaccession ne peut pas être modifiée",
       methodLabel: "Méthode *",
       methodSale: "Vente",
       methodDonation: "Don",
@@ -1470,12 +1517,14 @@ export default {
       errors: {
         collectionRequired: "La collection est requise",
         reasonRequired: "La raison est requise",
-        createFailed: "Échec de la création de la désaccession. Veuillez réessayer.",
+        createFailed:
+          "Échec de la création de la désaccession. Veuillez réessayer.",
         updateFailed:
           "Échec de la mise à jour de la désaccession. Veuillez réessayer.",
         approveFailed: "Échec de l'approbation de la désaccession",
         rejectFailed: "Échec du rejet de la désaccession",
-        cannotEdit: "Impossible de modifier une désaccession qui n'est pas en attente",
+        cannotEdit:
+          "Impossible de modifier une désaccession qui n'est pas en attente",
       },
     },
     report: {

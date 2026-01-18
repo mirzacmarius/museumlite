@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -46,6 +47,7 @@ export function DonorCombobox({
   placeholder = "Select or add donors...",
   disabled = false,
 }: DonorComboboxProps) {
+  const t = useI18n();
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
   const [newDonorDialogOpen, setNewDonorDialogOpen] = React.useState(false);
@@ -205,7 +207,7 @@ export function DonorCombobox({
       if (err instanceof Error) {
         if (err.message.includes("Invalid email")) {
           setEmailError("Please enter a valid email address");
-          toast.error("Invalid email address format");
+          toast.error(t("common.toast.invalidEmail"));
           // Keep dialog open so user can fix the email
           return false;
         }
@@ -242,7 +244,7 @@ export function DonorCombobox({
         }
       }
       // For other errors, show generic error toast
-      toast.error("Failed to create donor. Please try again.");
+      toast.error(t("common.toast.createFailed"));
       return false;
     } finally {
       isSubmittingRef.current = false;

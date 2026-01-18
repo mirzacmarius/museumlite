@@ -1,5 +1,7 @@
 "use client";
 
+import { formatCurrency as formatCurrencyUtil } from "@/lib/format-number";
+import { useCurrentLocale } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import {
@@ -146,12 +148,11 @@ function formatDate(timestamp: number): string {
   });
 }
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(value);
+function formatCurrency(
+  value: number,
+  locale: "en" | "fr" | "es" | "no",
+): string {
+  return formatCurrencyUtil(value, locale, "USD").replace(/\.\d+$/, "");
 }
 
 function downloadCSV(filename: string, csvContent: string) {
@@ -439,20 +440,20 @@ export function ReportExportsCard({
         ["Category", "Items", "Total Value"],
         [
           "Fine Art",
-          kpis.inventory.fineArt.itemCount,
-          formatCurrency(kpis.inventory.fineArt.totalValue),
+          kpis.inventory.fineArt.itemCount.toString(),
+          formatCurrency(kpis.inventory.fineArt.totalValue, locale),
         ],
         [
-          "Wine & Spirits",
-          kpis.inventory.wine.itemCount,
-          formatCurrency(kpis.inventory.wine.totalValue),
+          "Wine",
+          kpis.inventory.wine.itemCount.toString(),
+          formatCurrency(kpis.inventory.wine.totalValue, locale),
         ],
         [
           "Vehicles",
-          kpis.inventory.vehicles.itemCount,
-          formatCurrency(kpis.inventory.vehicles.totalValue),
+          kpis.inventory.vehicles.itemCount.toString(),
+          formatCurrency(kpis.inventory.vehicles.totalValue, locale),
         ],
-        ["TOTAL", "", formatCurrency(kpis.inventory.totalValue)],
+        ["TOTAL", "", formatCurrency(kpis.inventory.totalValue, locale)],
         [],
         ["LOAN STATUS"],
         ["Overdue Loans", kpis.loans.overdue],
@@ -500,26 +501,38 @@ export function ReportExportsCard({
           "Fine Art",
           kpis.inventory.fineArt.itemCount,
           kpis.inventory.fineArt.valuedCount,
-          formatCurrency(kpis.inventory.fineArt.totalValue),
+          formatCurrency(
+            kpis.inventory.fineArt.totalValue,
+            locale as "en" | "fr" | "es" | "no",
+          ),
         ],
         [
           "Wine & Spirits",
           kpis.inventory.wine.itemCount,
           kpis.inventory.wine.valuedCount,
-          formatCurrency(kpis.inventory.wine.totalValue),
+          formatCurrency(
+            kpis.inventory.wine.totalValue,
+            locale as "en" | "fr" | "es" | "no",
+          ),
         ],
         [
           "Vehicles",
           kpis.inventory.vehicles.itemCount,
           kpis.inventory.vehicles.valuedCount,
-          formatCurrency(kpis.inventory.vehicles.totalValue),
+          formatCurrency(
+            kpis.inventory.vehicles.totalValue,
+            locale as "en" | "fr" | "es" | "no",
+          ),
         ],
         [],
         [
           "TOTAL INSURABLE VALUE",
           "",
           "",
-          formatCurrency(kpis.inventory.totalValue),
+          formatCurrency(
+            kpis.inventory.totalValue,
+            locale as "en" | "fr" | "es" | "no",
+          ),
         ],
         [],
         ["ITEMS ON LOAN (POTENTIAL EXPOSURE)"],

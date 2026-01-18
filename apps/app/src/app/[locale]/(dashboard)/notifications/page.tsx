@@ -1,13 +1,13 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
-import { useI18n } from "@/locales/client";
+import { formatDistanceLocale } from "@/lib/format-date";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
-import { formatDistanceToNow } from "date-fns";
 import {
   ArrowRight,
   Bell,
@@ -69,6 +69,7 @@ function getNotificationLink(
 
 export default function NotificationsPage() {
   const t = useI18n();
+  const locale = useCurrentLocale();
   const { currentOrganizationId, isLoading } = useOrganization();
   const [filter, setFilter] = useState<FilterType>("all");
 
@@ -270,9 +271,11 @@ export default function NotificationsPage() {
 
                     <div className="flex items-center gap-2 mt-2">
                       <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(notification.createdAt), {
-                          addSuffix: true,
-                        })}
+                        {formatDistanceLocale(
+                          new Date(notification.createdAt),
+                          locale,
+                          { addSuffix: true },
+                        )}
                       </span>
                       {link && (
                         <span className="flex items-center gap-1 text-xs text-primary">
