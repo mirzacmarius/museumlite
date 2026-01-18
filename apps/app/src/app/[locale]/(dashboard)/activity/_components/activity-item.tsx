@@ -1,5 +1,6 @@
 "use client";
 
+import { useScopedI18n } from "@/locales/client";
 import { GitBranch, User } from "lucide-react";
 
 interface ActivityItemProps {
@@ -25,9 +26,10 @@ function formatActionDescription(
   action: string,
   entityType: string,
   entityId: string,
+  t: ReturnType<typeof useScopedI18n<"activity">>,
   changes?: Record<string, unknown>,
 ): React.ReactNode {
-  const parts: React.ReactNode[] = ["You "];
+  const parts: React.ReactNode[] = [t("you"), " "];
 
   // Format action verb
   const actionVerb = action.toLowerCase();
@@ -59,7 +61,10 @@ function formatActionDescription(
   return <>{parts}</>;
 }
 
-function formatRelativeTime(timestamp: number): string {
+function formatRelativeTime(
+  timestamp: number,
+  t: ReturnType<typeof useScopedI18n<"activity">>,
+): string {
   const now = Date.now();
   const diff = now - timestamp;
   const seconds = Math.floor(diff / 1000);
@@ -76,7 +81,7 @@ function formatRelativeTime(timestamp: number): string {
   if (days > 0) return `${days}d`;
   if (hours > 0) return `${hours}h`;
   if (minutes > 0) return `${minutes}m`;
-  return "now";
+  return t("now");
 }
 
 export function ActivityItem({
@@ -88,14 +93,15 @@ export function ActivityItem({
   timestamp,
   changes,
 }: ActivityItemProps) {
-  const relativeTime = formatRelativeTime(timestamp);
+  const t = useScopedI18n("activity");
+  const relativeTime = formatRelativeTime(timestamp, t);
 
   return (
     <div className="flex items-start gap-3 py-3">
       <div className="mt-0.5 flex-shrink-0">{getActionIcon(entityType)}</div>
       <div className="flex flex-1 items-start justify-between gap-4">
         <div className="flex-1 text-sm">
-          {formatActionDescription(action, entityType, entityId, changes)}
+          {formatActionDescription(action, entityType, entityId, t, changes)}
         </div>
         <div className="text-sm text-muted-foreground">{relativeTime}</div>
       </div>

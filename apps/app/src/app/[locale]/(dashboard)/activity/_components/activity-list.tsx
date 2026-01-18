@@ -1,5 +1,6 @@
 "use client";
 
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -51,6 +52,8 @@ export function ActivityList({
   startDate,
   endDate,
 }: ActivityListProps) {
+  const t = useScopedI18n("activity");
+  const common = useScopedI18n("common");
   const [cursor, setCursor] = useState<string | undefined>();
   const [allActivities, setAllActivities] = useState<Activity[]>([]);
   const lastProcessedCursor = useRef<string | undefined>(undefined);
@@ -144,7 +147,7 @@ export function ActivityList({
   if (activities === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{common("loading")}</p>
       </div>
     );
   }
@@ -153,7 +156,7 @@ export function ActivityList({
     <div className="flex flex-col">
       {sortedMonths.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24">
-          <p className="text-muted-foreground">No activity found</p>
+          <p className="text-muted-foreground">{t("noActivity")}</p>
         </div>
       ) : (
         <>
@@ -180,7 +183,7 @@ export function ActivityList({
           {!isDone && continueCursor && (
             <div className="mt-8 flex justify-center">
               <Button variant="outline" onClick={handleLoadMore}>
-                Load More
+                {t("loadMore")}
               </Button>
             </div>
           )}

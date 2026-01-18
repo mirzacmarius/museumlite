@@ -1,11 +1,14 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { useState } from "react";
 import { ActivityFilters } from "./_components/activity-filters";
 import { ActivityList } from "./_components/activity-list";
 
 export default function ActivityPage() {
+  const t = useScopedI18n("activity");
+  const common = useScopedI18n("common");
   const { currentOrganizationId, isLoading } = useOrganization();
   const [selectedEntityType, setSelectedEntityType] = useState<
     string | undefined
@@ -17,7 +20,7 @@ export default function ActivityPage() {
   if (isLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-black">
-        <p className="text-white/60">Loading...</p>
+        <p className="text-white/60">{common("loading")}</p>
       </div>
     );
   }
@@ -28,11 +31,10 @@ export default function ActivityPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-white/10 bg-black p-8">
           <div className="text-center">
             <h3 className="text-lg font-semibold text-white">
-              Select an Organization
+              {t("selectOrganization")}
             </h3>
             <p className="mt-2 text-sm text-white/60">
-              Please select an organization from the dropdown above to view
-              activity.
+              {t("selectOrganizationDescription")}
             </p>
           </div>
         </div>

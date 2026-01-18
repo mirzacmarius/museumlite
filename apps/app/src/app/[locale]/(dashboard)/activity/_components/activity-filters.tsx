@@ -1,5 +1,6 @@
 "use client";
 
+import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Calendar } from "@v1/ui/calendar";
 import {
@@ -22,35 +23,30 @@ interface ActivityFiltersProps {
   onDateRangeChange: (range: { start?: number; end?: number }) => void;
 }
 
-const entityTypes = [
-  { value: "organization", label: "Organization" },
-  { value: "collection", label: "Collection" },
-  { value: "loan", label: "Loan" },
-  { value: "accession", label: "Accession" },
-  { value: "deaccession", label: "Deaccession" },
-  { value: "location", label: "Location" },
-  { value: "user", label: "User" },
-];
-
-function getDateRangeLabel(dateRange: {
-  start?: number;
-  end?: number;
-}): string {
+function getDateRangeLabel(
+  dateRange: {
+    start?: number;
+    end?: number;
+  },
+  t: ReturnType<typeof useScopedI18n<"activity">>,
+): string {
   if (!dateRange.start && !dateRange.end) {
-    return "All Time";
+    return t("dateRangePresets.allTime");
   }
   if (dateRange.start && dateRange.end) {
     const start = format(new Date(dateRange.start), "MMM d");
     const end = format(new Date(dateRange.end), "MMM d, yyyy");
-    return `${start} - ${end}`;
+    return t("dateRangePresets.range", { start, end });
   }
   if (dateRange.start) {
-    return `From ${format(new Date(dateRange.start), "MMM d, yyyy")}`;
+    const date = format(new Date(dateRange.start), "MMM d, yyyy");
+    return t("dateRangePresets.from", { date });
   }
   if (dateRange.end) {
-    return `Until ${format(new Date(dateRange.end), "MMM d, yyyy")}`;
+    const date = format(new Date(dateRange.end), "MMM d, yyyy");
+    return t("dateRangePresets.until", { date });
   }
-  return "All Time";
+  return t("dateRangePresets.allTime");
 }
 
 export function ActivityFilters({
@@ -59,6 +55,7 @@ export function ActivityFilters({
   dateRange,
   onDateRangeChange,
 }: ActivityFiltersProps) {
+  const t = useScopedI18n("activity");
   const [customRangeOpen, setCustomRangeOpen] = useState(false);
   const [dateRangePicker, setDateRangePicker] = useState<DateRange | undefined>(
     dateRange.start || dateRange.end
@@ -68,6 +65,16 @@ export function ActivityFilters({
         }
       : undefined,
   );
+
+  const entityTypes = [
+    { value: "organization", label: t("entityTypes.organization") },
+    { value: "collection", label: t("entityTypes.collection") },
+    { value: "loan", label: t("entityTypes.loan") },
+    { value: "accession", label: t("entityTypes.accession") },
+    { value: "deaccession", label: t("entityTypes.deaccession") },
+    { value: "location", label: t("entityTypes.location") },
+    { value: "user", label: t("entityTypes.user") },
+  ];
 
   useEffect(() => {
     setDateRangePicker(
@@ -146,7 +153,7 @@ export function ActivityFilters({
 
   return (
     <div className="flex flex-wrap items-center gap-4">
-      <h2 className="text-base font-semibold">Filters</h2>
+      <h2 className="text-base font-semibold">{t("filters.title")}</h2>
 
       {/* Date Range Dropdown */}
       <DropdownMenu>
@@ -154,26 +161,26 @@ export function ActivityFilters({
           <Button variant="outline" className="justify-between">
             <div className="flex items-center gap-2">
               <CalendarIcon className="h-4 w-4" />
-              <span className="text-sm">{getDateRangeLabel(dateRange)}</span>
+              <span className="text-sm">{getDateRangeLabel(dateRange, t)}</span>
             </div>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuItem onClick={() => handlePresetRange("today")}>
-            Today
+            {t("dateRangePresets.today")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => handlePresetRange("last7days")}>
-            Last 7 days
+            {t("dateRangePresets.last7days")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => handlePresetRange("last30days")}>
-            Last 30 days
+            {t("dateRangePresets.last30days")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => handlePresetRange("last90days")}>
-            Last 90 days
+            {t("dateRangePresets.last90days")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => handlePresetRange("alltime")}>
-            All Time
+            {t("dateRangePresets.allTime")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <Popover open={customRangeOpen} onOpenChange={setCustomRangeOpen}>
@@ -184,7 +191,7 @@ export function ActivityFilters({
                   setCustomRangeOpen(true);
                 }}
               >
-                Custom Range
+                {t("dateRangePresets.customRange")}
               </DropdownMenuItem>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -215,7 +222,7 @@ export function ActivityFilters({
             }
           }}
         >
-          <span>Type</span>
+          <span>{t("filters.type")}</span>
           <ChevronRight
             className={`h-4 w-4 transition-transform ${
               selectedEntityType !== undefined ? "rotate-90" : ""
