@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { KpiCard } from "@v1/ui/kpi-card";
@@ -23,6 +24,7 @@ function KpiActiveLoansContent({
 }: {
   organizationId: string | null;
 }) {
+  const t = useScopedI18n("loans.kpis");
   const analytics = useQuery(
     api.dashboard.getAnalytics,
     organizationId
@@ -31,12 +33,12 @@ function KpiActiveLoansContent({
   );
 
   if (analytics === undefined) {
-    return <KpiCard title="Active Loans" value="—" loading />;
+    return <KpiCard title={t("activeLoans")} value="—" loading />;
   }
 
   return (
     <KpiCard
-      title="Active Loans"
+      title={t("activeLoans")}
       value={analytics.loans.active}
       icon={ArrowRightLeft}
     />

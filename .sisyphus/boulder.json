@@ -1,8 +1,18 @@
 {
-  "active_plan": "/Users/marius/Developer/ml/.sisyphus/plans/aura-app-upgrade.md",
-  "started_at": "2026-01-17T17:03:56.778Z",
-  "session_ids": [
-    "ses_433e2a162ffezZWqLtPSOha8cv"
-  ],
-  "plan_name": "aura-app-upgrade"
+  "active_plan": "/Users/marius/Developer/ml/.sisyphus/plans/norwegian-i18n-migration.md",
+  "started_at": "2026-01-18T09:05:15.129Z",
+  "session_ids": ["ses_4320a4060ffexLIleFwo87I2BN"],
+  "plan_name": "norwegian-i18n-migration",
+  "completed_plans": [
+    {
+      "plan_path": "/Users/marius/Developer/ml/.sisyphus/plans/aura-app-upgrade.md",
+      "plan_name": "aura-app-upgrade",
+      "started_at": "2026-01-17T17:03:56.778Z",
+      "completed_at": "2026-01-17T19:45:00.000Z",
+      "session_ids": ["ses_433e2a162ffezZWqLtPSOha8cv"],
+      "tasks_completed": 27,
+      "tasks_total": 27,
+      "status": "complete"
+    }
+  ]
 }

@@ -3,6 +3,7 @@
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { KpiCard } from "@v1/ui/kpi-card";
@@ -29,6 +30,7 @@ function KpiOverdueContent({
 }: {
   organizationId: string | null;
 }) {
+  const t = useScopedI18n("loans.kpis");
   const operationalKpis = useQuery(
     api.dashboard.getOperationalKpis,
     organizationId
@@ -37,12 +39,12 @@ function KpiOverdueContent({
   );
 
   if (operationalKpis === undefined) {
-    return <KpiCard title="Overdue Loans" value="—" loading />;
+    return <KpiCard title={t("overdueLoans")} value="—" loading />;
   }
 
   return (
     <KpiCard
-      title="Overdue Loans"
+      title={t("overdueLoans")}
       value={operationalKpis.loans.overdue}
       icon={AlertCircle}
       changeType={operationalKpis.loans.overdue > 0 ? "negative" : "neutral"}

@@ -48,5 +48,8 @@
     "vitest": "^4.0.17"
   },
   "packageManager": "bun@1.1.26",
-  "version": "0.0.1"
+  "version": "0.0.1",
+  "dependencies": {
+    "next": "^16.1.1-canary.32"
+  }
 }

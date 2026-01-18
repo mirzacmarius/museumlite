@@ -1,6 +1,7 @@
 "use client";
 
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { CheckCircle, Download, X, XCircle } from "lucide-react";
 
@@ -19,6 +20,7 @@ export function LoansBulkActionsBar({
   onBulkCancel,
   onExport,
 }: LoansBulkActionsBarProps) {
+  const t = useScopedI18n("loans.bulkActions");
   if (selectedCount === 0) return null;
 
   return (
@@ -26,7 +28,8 @@ export function LoansBulkActionsBar({
       <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-lg">
         <div className="flex items-center gap-2 border-r border-border pr-3">
           <span className="text-sm font-medium">
-            {selectedCount} loan{selectedCount !== 1 ? "s" : ""} selected
+            {selectedCount} {selectedCount !== 1 ? t("loansPlural") : t("loan")}{" "}
+            {t("selected")}
           </span>
           <Button
             variant="ghost"
@@ -42,14 +45,14 @@ export function LoansBulkActionsBar({
           <PermissionGate permission="loans.approve">
             <Button variant="outline" size="sm" onClick={onBulkApprove}>
               <CheckCircle className="mr-2 h-4 w-4" />
-              Approve Selected
+              {t("approveSelected")}
             </Button>
           </PermissionGate>
 
           <PermissionGate permission="loans.read">
             <Button variant="outline" size="sm" onClick={onExport}>
               <Download className="mr-2 h-4 w-4" />
-              Export
+              {t("export")}
             </Button>
           </PermissionGate>
 
@@ -61,7 +64,7 @@ export function LoansBulkActionsBar({
               onClick={onBulkCancel}
             >
               <XCircle className="mr-2 h-4 w-4" />
-              Cancel Selected
+              {t("cancelSelected")}
             </Button>
           </PermissionGate>
         </div>

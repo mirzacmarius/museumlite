@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { KpiCard } from "@v1/ui/kpi-card";
@@ -23,6 +24,7 @@ function KpiInTransitContent({
 }: {
   organizationId: string | null;
 }) {
+  const t = useScopedI18n("loans.kpis");
   const transitStats = useQuery(
     api.transit.getTransitStats,
     organizationId
@@ -31,10 +33,14 @@ function KpiInTransitContent({
   );
 
   if (transitStats === undefined) {
-    return <KpiCard title="In Transit" value="—" loading />;
+    return <KpiCard title={t("inTransit")} value="—" loading />;
   }
 
   return (
-    <KpiCard title="In Transit" value={transitStats.inTransit} icon={Truck} />
+    <KpiCard
+      title={t("inTransit")}
+      value={transitStats.inTransit}
+      icon={Truck}
+    />
   );
 }

@@ -4,6 +4,7 @@ import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -43,6 +44,8 @@ type LoanStatus =
 type LoanType = "incoming" | "outgoing" | "all";
 
 export default function LoansPage() {
+  const t = useScopedI18n("loans");
+  const tCommon = useScopedI18n("common");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
   const [statusFilter, setStatusFilter] = useState<LoanStatus>("all");
@@ -59,7 +62,7 @@ export default function LoansPage() {
   if (isLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
   }
@@ -70,15 +73,15 @@ export default function LoansPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">No Organization Found</h3>
+            <h3 className="text-lg font-semibold">{t("noOrg.title")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You need to create an organization to start managing loans.
+              {t("noOrg.description")}
             </p>
           </div>
           <Button asChild>
             <Link href="/organizations/new">
               <Plus className="mr-2 h-4 w-4" />
-              Create Organization
+              {t("noOrg.createButton")}
             </Link>
           </Button>
         </div>
@@ -92,10 +95,9 @@ export default function LoansPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Handshake className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">Select an Organization</h3>
+            <h3 className="text-lg font-semibold">{t("selectOrg.title")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select an organization from the dropdown above to view
-              loans.
+              {t("selectOrg.description")}
             </p>
           </div>
         </div>
@@ -105,7 +107,7 @@ export default function LoansPage() {
 
   return (
     <FeatureGuard
-      featureName="Loans"
+      featureName={t("title")}
       isLocked={!hasFeature("loans")}
       tierNeeded="pro"
     >
@@ -113,9 +115,11 @@ export default function LoansPage() {
         <div className="mx-auto w-full max-w-7xl space-y-8 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Loans</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">
+                {t("title")}
+              </h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                Manage incoming and outgoing loan agreements
+                {t("description")}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -126,7 +130,7 @@ export default function LoansPage() {
                 <Button asChild>
                   <Link href="/loans/new">
                     <Plus className="h-3.5 w-3.5" />
-                    <span>New Loan</span>
+                    <span>{t("newLoan")}</span>
                   </Link>
                 </Button>
               </PermissionGate>
@@ -173,6 +177,7 @@ function LoanList({
   onTypeFilterChange: (type: LoanType) => void;
   onSearchQueryChange: (query: string) => void;
 }) {
+  const t = useScopedI18n("loans");
   const [selectedIds, setSelectedIds] = useState<Set<Id<"loans">>>(new Set());
   const bulkApprove = useMutation(api.loans.bulkApprove);
   const bulkCancel = useMutation(api.loans.bulkCancel);
@@ -220,17 +225,17 @@ function LoanList({
   const getStatusLabel = (status: string): string => {
     switch (status) {
       case "pending":
-        return "Pending Review";
+        return t("status.pendingReview");
       case "active":
-        return "Active";
+        return t("status.active");
       case "dispatched":
-        return "Dispatched";
+        return t("status.dispatched");
       case "returned":
-        return "Returned";
+        return t("status.returned");
       case "cancelled":
-        return "Cancelled";
+        return t("status.cancelled");
       default:
-        return "Draft";
+        return t("status.draft");
     }
   };
 
@@ -393,7 +398,7 @@ function LoanList({
             </span>
           </div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Active Loans
+            {t("kpis.activeLoans")}
           </p>
           <p className="mt-1 text-2xl font-bold tracking-tight">
             {activeLoansCount}
@@ -407,7 +412,7 @@ function LoanList({
             </div>
           </div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Objects in Transit
+            {t("kpis.objectsInTransit")}
           </p>
           <p className="mt-1 text-2xl font-bold tracking-tight">
             {totalItemsInTransit}
@@ -421,7 +426,7 @@ function LoanList({
             </div>
           </div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Total Insured Value
+            {t("kpis.totalInsuredValue")}
           </p>
           <p className="mt-1 text-2xl font-bold tracking-tight">—</p>
         </div>
@@ -433,11 +438,11 @@ function LoanList({
               <AlertCircle className="h-4 w-4" />
             </div>
             <span className="rounded border border-red-500/30 bg-red-500/20 px-1.5 py-0.5 text-xs font-medium text-red-200">
-              Action Req.
+              {t("kpis.actionRequired")}
             </span>
           </div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Expiring Agreements
+            {t("kpis.expiringAgreements")}
           </p>
           <p className="mt-1 text-2xl font-bold tracking-tight">—</p>
         </div>
@@ -455,7 +460,7 @@ function LoanList({
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              All Loans
+              {t("filters.allLoans")}
             </button>
             <button
               type="button"
@@ -466,7 +471,7 @@ function LoanList({
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Outgoing
+              {t("filters.outgoing")}
             </button>
             <button
               type="button"
@@ -477,7 +482,7 @@ function LoanList({
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Incoming
+              {t("filters.incoming")}
             </button>
             <button
               type="button"
@@ -488,7 +493,7 @@ function LoanList({
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Pending
+              {t("filters.pending")}
             </button>
           </div>
 
@@ -500,7 +505,7 @@ function LoanList({
               <Input
                 type="text"
                 className="block w-48 rounded-lg border border-border/60 bg-card p-2 pl-9 text-xs outline-none transition-all focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                placeholder="Search loans..."
+                placeholder={t("searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => onSearchQueryChange(e.target.value)}
               />
@@ -532,27 +537,30 @@ function LoanList({
             },
             {
               key: "type",
-              label: "Type",
+              label: t("table.type"),
               className: "w-12",
               render: (loan) => getTypeIcon(loan.type),
             },
             {
               key: "loanNumber",
-              label: "Loan ID & Title",
+              label: t("table.loanIdTitle"),
               render: (loan) => (
                 <div className="flex flex-col">
                   <span className="text-xs font-semibold">
                     {loan.loanNumber}
                   </span>
                   <span className="mt-0.5 font-mono text-[10px] text-muted-foreground">
-                    {loan.itemCount} item{loan.itemCount !== 1 ? "s" : ""}
+                    {loan.itemCount}{" "}
+                    {loan.itemCount !== 1
+                      ? t("table.itemsPlural")
+                      : t("table.items")}
                   </span>
                 </div>
               ),
             },
             {
               key: "lenderBorrowerName",
-              label: "Partner Institution",
+              label: t("table.partnerInstitution"),
               render: (loan) => (
                 <div className="flex items-center gap-2">
                   <div className="flex h-5 w-5 items-center justify-center rounded bg-muted text-[9px] font-bold text-muted-foreground">
@@ -564,7 +572,7 @@ function LoanList({
             },
             {
               key: "duration",
-              label: "Duration",
+              label: t("table.duration"),
               render: (loan) => (
                 <div className="text-xs text-foreground/80">
                   {formatDateRange(loan.startDate, loan.endDate)}
@@ -573,7 +581,7 @@ function LoanList({
             },
             {
               key: "status",
-              label: "Status",
+              label: t("table.status"),
               render: (loan) => (
                 <StatusBadge
                   status={mapLoanStatus(loan.status)}
@@ -600,12 +608,14 @@ function LoanList({
             <div className="flex flex-col items-center justify-center gap-4 py-8">
               <Handshake className="h-12 w-12 text-muted-foreground/50" />
               <div className="text-center">
-                <p className="text-muted-foreground">No loans found</p>
+                <p className="text-muted-foreground">
+                  {t("emptyState.noLoansFound")}
+                </p>
                 <p className="mt-2 text-sm text-muted-foreground/60">
                   {searchQuery
-                    ? "Try adjusting your search query"
+                    ? t("emptyState.adjustSearch")
                     : statusFilter === "all" && typeFilter === "all"
-                      ? "Create your first loan to get started"
+                      ? t("emptyState.createFirst")
                       : `No ${statusFilter !== "all" ? statusFilter : ""} ${typeFilter !== "all" ? typeFilter : ""} loans`}
                 </p>
               </div>
@@ -614,7 +624,7 @@ function LoanList({
                   <Button asChild>
                     <Link href="/loans/new">
                       <Plus className="h-4 w-4" />
-                      Create Loan
+                      {t("createLoan")}
                     </Link>
                   </Button>
                 </PermissionGate>
@@ -627,7 +637,11 @@ function LoanList({
           <>
             <div className="flex items-center justify-between px-2 pt-2 text-xs text-muted-foreground">
               <span>
-                Showing 1-{loansPage.length} of {loansPage.length} loans
+                {t("pagination.showing", {
+                  start: "1",
+                  end: loansPage.length.toString(),
+                  total: loansPage.length.toString(),
+                })}
               </span>
               <div className="flex gap-2">
                 <button
@@ -635,14 +649,14 @@ function LoanList({
                   className="rounded border border-border/60 px-2 py-1 hover:bg-card/50 disabled:opacity-50"
                   disabled
                 >
-                  Previous
+                  {t("pagination.previous")}
                 </button>
                 <button
                   type="button"
                   className="rounded border border-border/60 px-2 py-1 hover:bg-card/50"
                   disabled={!loans?.continueCursor}
                 >
-                  Next
+                  {t("pagination.next")}
                 </button>
               </div>
             </div>

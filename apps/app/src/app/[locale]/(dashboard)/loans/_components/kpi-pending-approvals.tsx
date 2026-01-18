@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { KpiCard } from "@v1/ui/kpi-card";
@@ -23,6 +24,7 @@ function KpiPendingApprovalsContent({
 }: {
   organizationId: string | null;
 }) {
+  const t = useScopedI18n("loans.kpis");
   const analytics = useQuery(
     api.dashboard.getAnalytics,
     organizationId
@@ -31,12 +33,12 @@ function KpiPendingApprovalsContent({
   );
 
   if (analytics === undefined) {
-    return <KpiCard title="Pending Approvals" value="—" loading />;
+    return <KpiCard title={t("pendingApprovals")} value="—" loading />;
   }
 
   return (
     <KpiCard
-      title="Pending Approvals"
+      title={t("pendingApprovals")}
       value={analytics.loans.pending}
       icon={Clock}
     />
