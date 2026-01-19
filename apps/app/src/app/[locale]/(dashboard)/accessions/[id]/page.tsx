@@ -2,6 +2,8 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -24,6 +26,7 @@ export default function AccessionDetailPage() {
   const router = useRouter();
   const accessionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
+  const locale = useCurrentLocale();
 
   const accession = useQuery(
     api.accessions.get,
@@ -152,7 +155,7 @@ export default function AccessionDetailPage() {
                     Date Received
                   </label>
                   <p className="mt-1">
-                    {new Date(accession.dateReceived).toLocaleDateString()}
+                    {formatDate(new Date(accession.dateReceived), locale)}
                   </p>
                 </div>
                 <div>
@@ -195,7 +198,7 @@ export default function AccessionDetailPage() {
                     </label>
                     <p className="mt-1">
                       {accession.approvedAt
-                        ? new Date(accession.approvedAt).toLocaleString()
+                        ? formatDate(new Date(accession.approvedAt), locale)
                         : "—"}
                     </p>
                   </div>
@@ -225,7 +228,7 @@ export default function AccessionDetailPage() {
                           <div>
                             <p className="font-medium">Step {entry.step}</p>
                             <p className="text-sm text-muted-foreground">
-                              {new Date(entry.approvedAt).toLocaleString()}
+                              {formatDate(new Date(entry.approvedAt), locale)}
                             </p>
                             {entry.comment && (
                               <p className="mt-1 text-sm">{entry.comment}</p>

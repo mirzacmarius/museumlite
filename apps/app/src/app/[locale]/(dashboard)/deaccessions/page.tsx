@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { formatDateFns } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -15,7 +16,6 @@ import {
 import { Input } from "@v1/ui/input";
 import { ScrollArea } from "@v1/ui/scroll-area";
 import { useQuery } from "convex/react";
-import { format } from "date-fns";
 import {
   Archive,
   Building2,
@@ -350,9 +350,10 @@ function DeaccessionTable({
                             </p>
                           </td>
                           <td className="py-2 text-gray-600">
-                            {format(
+                            {formatDateFns(
                               new Date(item.dateDeaccessioned),
                               "MMM d, yyyy",
+                              locale,
                             )}
                           </td>
                           <td className="py-2 capitalize text-gray-600">
@@ -390,8 +391,12 @@ function DeaccessionTable({
                 <div className="border-t border-gray-200 pt-3 text-[10px] text-gray-400">
                   <p>
                     Generated on{" "}
-                    {format(new Date(), "MMMM d, yyyy 'at' h:mm a")} •{" "}
-                    {exportData.organization.name}
+                    {formatDateFns(
+                      new Date(),
+                      "MMMM d, yyyy 'at' h:mm a",
+                      locale,
+                    )}{" "}
+                    • {exportData.organization.name}
                   </p>
                 </div>
               </div>
@@ -434,6 +439,7 @@ function DeaccessionRow({
     workflowStep?: number;
   };
 }) {
+  const locale = useCurrentLocale();
   const collection = useQuery(api.collections.get, {
     collectionId: item.collectionId,
   });
@@ -518,7 +524,7 @@ function DeaccessionRow({
         </Link>
       </td>
       <td className="px-4 py-3 text-muted-foreground">
-        {format(new Date(item.dateDeaccessioned), "MMM d, yyyy")}
+        {formatDateFns(new Date(item.dateDeaccessioned), "MMM d, yyyy", locale)}
       </td>
       <td className="px-4 py-3 text-muted-foreground">
         {getMethodDisplay(item.method)}

@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { Badge } from "@v1/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import { Calendar, MapPin, Presentation } from "lucide-react";
@@ -31,6 +33,7 @@ interface ExhibitionPipelineCardProps {
 }
 
 export function ExhibitionPipelineCard({ data }: ExhibitionPipelineCardProps) {
+  const locale = useCurrentLocale();
   const chartData = [
     { label: "Active", value: data.active, color: "bg-emerald-500" },
     { label: "Approved", value: data.approved, color: "bg-blue-500" },
@@ -126,7 +129,7 @@ export function ExhibitionPipelineCard({ data }: ExhibitionPipelineCardProps) {
                     <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />{" "}
-                        {new Date(exh.startDate).toLocaleDateString()}
+                        {formatDate(new Date(exh.startDate), locale)}
                       </span>
                       {exh.location && <span>• {exh.location}</span>}
                     </div>

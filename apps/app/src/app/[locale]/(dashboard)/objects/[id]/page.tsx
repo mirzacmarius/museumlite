@@ -2,7 +2,8 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -135,6 +136,7 @@ const moduleTabMap: Record<string, { id: TabId; label: string }> = {
 export default function ObjectDetailPage() {
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
+  const locale = useCurrentLocale();
   const params = useParams();
   const collectionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
@@ -796,21 +798,24 @@ export default function ObjectDetailPage() {
                 <ConservationTab
                   collectionId={collectionId}
                   organizationId={currentOrganizationId}
+                  locale={locale}
                 />
               )}
               {activeTab === "exhibitions" && (
                 <ExhibitionsTab
                   collectionId={collectionId}
                   organizationId={currentOrganizationId}
+                  locale={locale}
                 />
               )}
               {activeTab === "loans" && (
-                <LoansTab collectionId={collectionId} />
+                <LoansTab collectionId={collectionId} locale={locale} />
               )}
               {activeTab === "logs" && (
                 <LogsTab
                   collectionId={collectionId}
                   organizationId={currentOrganizationId}
+                  locale={locale}
                 />
               )}
               {activeTab === "fine_art" && (
@@ -1238,7 +1243,7 @@ export default function ObjectDetailPage() {
               <div className="border-t border-gray-200 pt-3 text-[10px] text-gray-400 print:pt-2 print:text-[9px]">
                 <p>
                   Printed on{" "}
-                  {new Date().toLocaleDateString("en-US", {
+                  {formatDate(new Date(), locale, {
                     year: "numeric",
                     month: "long",
                     day: "numeric",
@@ -1798,9 +1803,11 @@ function ProvenanceTab({ collection }: { collection: CollectionData }) {
 function ConservationTab({
   collectionId,
   organizationId,
+  locale,
 }: {
   collectionId: string;
   organizationId: Id<"organizations">;
+  locale: string;
 }) {
   const treatments = useQuery(
     api.conservationTreatments?.list,
@@ -1844,7 +1851,7 @@ function ConservationTab({
                   </span>
                 </div>
                 <span className="font-mono text-xs text-muted-foreground">
-                  {new Date(treatment.performedAt).toLocaleDateString()}
+                  {formatDate(new Date(treatment.performedAt), locale)}
                 </span>
               </div>
               <div className="p-4">
@@ -1882,9 +1889,11 @@ function ConservationTab({
 function ExhibitionsTab({
   collectionId,
   organizationId,
+  locale,
 }: {
   collectionId: string;
   organizationId: Id<"organizations">;
+  locale: string;
 }) {
   const exhibitions = useQuery(
     api.exhibitions?.list,
@@ -1945,9 +1954,9 @@ function ExhibitionsTab({
                 )}
                 <div className="mt-2 flex gap-2">
                   <span className="rounded border border-border/60 bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                    {new Date(exhibition.startDate).toLocaleDateString()}
+                    {formatDate(new Date(exhibition.startDate), locale)}
                     {exhibition.endDate &&
-                      ` - ${new Date(exhibition.endDate).toLocaleDateString()}`}
+                      ` - ${formatDate(new Date(exhibition.endDate), locale)}`}
                   </span>
                   {exhibition.isLoan && exhibition.loanVenue && (
                     <span className="rounded border border-border/60 bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
@@ -1976,7 +1985,13 @@ function ExhibitionsTab({
   );
 }
 
-function LoansTab({ collectionId }: { collectionId: string }) {
+function LoansTab({
+  collectionId,
+  locale,
+}: {
+  collectionId: string;
+  locale: string;
+}) {
   const loans = useQuery(api.loans.getLoansForCollection, {
     collectionId: collectionId as Id<"collections">,
   });
@@ -2035,9 +2050,9 @@ function LoansTab({ collectionId }: { collectionId: string }) {
                 </div>
                 <div className="text-right">
                   <p className="font-mono text-xs text-muted-foreground">
-                    {new Date(loan.startDate).toLocaleDateString()}
+                    {formatDate(new Date(loan.startDate), locale)}
                     {loan.endDate &&
-                      ` - ${new Date(loan.endDate).toLocaleDateString()}`}
+                      ` - ${formatDate(new Date(loan.endDate), locale)}`}
                   </p>
                 </div>
               </div>
@@ -2058,9 +2073,11 @@ function LoansTab({ collectionId }: { collectionId: string }) {
 function LogsTab({
   collectionId,
   organizationId,
+  locale,
 }: {
   collectionId: string;
   organizationId: Id<"organizations">;
+  locale: string;
 }) {
   const auditLogs = useQuery(api.auditLog.getByEntity, {
     organizationId,
@@ -2109,12 +2126,9 @@ function LogsTab({
                 >
                   <td className="px-4 py-3 align-top">
                     <span className="font-mono text-xs text-muted-foreground">
-                      {new Date(log.timestamp).toLocaleDateString("en-US", {
+                      {formatDate(new Date(log.timestamp), locale, {
                         month: "short",
                         day: "numeric",
-                      })}
-                      ,{" "}
-                      {new Date(log.timestamp).toLocaleTimeString("en-US", {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}

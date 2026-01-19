@@ -1,6 +1,7 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -28,14 +29,15 @@ type Activity = {
   timestamp: number;
 };
 
-function groupByMonth(activities: Activity[]) {
+function groupByMonth(activities: Activity[], locale: string) {
   const groups: Record<string, Activity[]> = {};
 
   for (const activity of activities) {
     const date = new Date(activity.timestamp);
-    const monthKey = `${date.toLocaleString("default", {
+    const monthKey = formatDate(date, locale, {
       month: "long",
-    })} ${date.getFullYear()}`;
+      year: "numeric",
+    });
 
     if (!groups[monthKey]) {
       groups[monthKey] = [];
@@ -52,6 +54,7 @@ export function ActivityList({
   startDate,
   endDate,
 }: ActivityListProps) {
+  const locale = useCurrentLocale();
   const t = useScopedI18n("activity");
   const common = useScopedI18n("common");
   const [cursor, setCursor] = useState<string | undefined>();
@@ -124,8 +127,8 @@ export function ActivityList({
   }, [activities, cursor]);
 
   const groupedActivities = useMemo(
-    () => groupByMonth(allActivities),
-    [allActivities],
+    () => groupByMonth(allActivities, locale),
+    [allActivities, locale],
   );
 
   const sortedMonths = useMemo(

@@ -3,7 +3,8 @@
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useScopedI18n } from "@/locales/client";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -310,6 +311,7 @@ interface Exhibition {
 
 function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
   const t = useScopedI18n("exhibitions");
+  const locale = useCurrentLocale();
   const isPast = exhibition.endDate && exhibition.endDate < Date.now();
   const isUpcoming = exhibition.startDate > Date.now();
 
@@ -359,9 +361,9 @@ function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
           <div className="flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
             <span>
-              {new Date(exhibition.startDate).toLocaleDateString()}
+              {formatDate(new Date(exhibition.startDate), locale)}
               {exhibition.endDate
-                ? ` — ${new Date(exhibition.endDate).toLocaleDateString()}`
+                ? ` — ${formatDate(new Date(exhibition.endDate), locale)}`
                 : ` ${t("card.ongoing")}`}
             </span>
           </div>

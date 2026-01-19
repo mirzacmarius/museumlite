@@ -1,6 +1,7 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { Box, Calendar, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
@@ -22,6 +23,7 @@ interface ExhibitionTimelineProps {
 }
 
 export function ExhibitionTimeline({ exhibitions }: ExhibitionTimelineProps) {
+  const locale = useCurrentLocale();
   const t = useScopedI18n("exhibitions");
 
   const groupedByYear = useMemo(() => {
@@ -126,7 +128,7 @@ export function ExhibitionTimeline({ exhibitions }: ExhibitionTimelineProps) {
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Calendar className="h-3.5 w-3.5" />
                         <span>
-                          {new Date(ex.startDate).toLocaleDateString("en-US", {
+                          {formatDate(new Date(ex.startDate), locale, {
                             month: "short",
                             day: "numeric",
                           })}
@@ -135,7 +137,7 @@ export function ExhibitionTimeline({ exhibitions }: ExhibitionTimelineProps) {
                       {ex.endDate && (
                         <div className="mt-0.5 text-xs text-muted-foreground">
                           —{" "}
-                          {new Date(ex.endDate).toLocaleDateString("en-US", {
+                          {formatDate(new Date(ex.endDate), locale, {
                             month: "short",
                             day: "numeric",
                           })}

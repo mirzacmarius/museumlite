@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDate as formatDateUtil } from "@/lib/format-date";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/format-number";
 import { useCurrentLocale } from "@/locales/client";
 import { Button } from "@v1/ui/button";
@@ -140,8 +141,8 @@ interface ReportExportsCardProps {
   };
 }
 
-function formatDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString("en-US", {
+function formatDate(timestamp: number, locale: string): string {
+  return formatDateUtil(new Date(timestamp), locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -190,7 +191,7 @@ export function ReportExportsCard({
     try {
       const rows = [
         ["Inventory Valuation Report"],
-        [`Generated: ${formatDate(kpis.generatedAt)}`],
+        [`Generated: ${formatDate(kpis.generatedAt, locale)}`],
         [],
         ["Category", "Item Count", "Valued Items", "Total Value"],
         [
@@ -230,7 +231,7 @@ export function ReportExportsCard({
     try {
       const rows = [
         ["Loan Status Report"],
-        [`Generated: ${formatDate(kpis.generatedAt)}`],
+        [`Generated: ${formatDate(kpis.generatedAt, locale)}`],
         [],
         ["Status Summary"],
         ["Overdue", kpis.loans.overdue],
@@ -251,7 +252,7 @@ export function ReportExportsCard({
           loan.loanNumber,
           loan.lenderBorrowerName,
           loan.type,
-          formatDate(loan.endDate),
+          formatDate(loan.endDate, locale),
           loan.daysRemaining,
           loan.status,
         ]),
@@ -274,7 +275,7 @@ export function ReportExportsCard({
     try {
       const rows = [
         ["Compliance & Audit Report"],
-        [`Generated: ${formatDate(kpis.generatedAt)}`],
+        [`Generated: ${formatDate(kpis.generatedAt, locale)}`],
         [],
         ["Accession Summary"],
         ["Total", compliance.accessions.total],
@@ -287,7 +288,7 @@ export function ReportExportsCard({
         ...compliance.accessions.pendingApprovals.map((a) => [
           a.accessionNumber,
           a.source,
-          formatDate(a.dateReceived),
+          formatDate(a.dateReceived, locale),
           a.method,
         ]),
         [],
@@ -296,7 +297,7 @@ export function ReportExportsCard({
         ...compliance.accessions.recentApprovals.map((a) => [
           a.accessionNumber,
           a.source,
-          formatDate(a.approvedAt),
+          formatDate(a.approvedAt, locale),
           a.approvedByName,
           a.status,
         ]),
@@ -319,7 +320,7 @@ export function ReportExportsCard({
         ...compliance.deaccessions.recentApprovals.map((d) => [
           d.deaccessionNumber,
           d.reason,
-          formatDate(d.approvedAt),
+          formatDate(d.approvedAt, locale),
           d.approvedByName,
           d.status,
           d.proceedsAmount ?? "",
@@ -331,7 +332,7 @@ export function ReportExportsCard({
           e.action,
           e.entityType,
           e.userName,
-          formatDate(e.timestamp),
+          formatDate(e.timestamp, locale),
         ]),
       ];
 
@@ -350,7 +351,7 @@ export function ReportExportsCard({
     try {
       const rows = [
         ["Location Utilization Report"],
-        [`Generated: ${formatDate(kpis.generatedAt)}`],
+        [`Generated: ${formatDate(kpis.generatedAt, locale)}`],
         [],
         ["Summary"],
         ["Total Locations", locationUtilization.summary.totalLocations],
@@ -435,7 +436,7 @@ export function ReportExportsCard({
 
       const rows = [
         ["Board Summary Report"],
-        [`Generated: ${formatDate(kpis.generatedAt)}`],
+        [`Generated: ${formatDate(kpis.generatedAt, locale)}`],
         [],
         ["COLLECTION VALUATION"],
         ["Category", "Items", "Total Value"],
@@ -494,7 +495,7 @@ export function ReportExportsCard({
     try {
       const rows = [
         ["Insurance Valuation Report"],
-        [`Generated: ${formatDate(kpis.generatedAt)}`],
+        [`Generated: ${formatDate(kpis.generatedAt, locale)}`],
         [],
         ["COLLECTION VALUATION SUMMARY"],
         ["Category", "Item Count", "Valued Items", "Insurance Value"],
@@ -542,7 +543,7 @@ export function ReportExportsCard({
           loan.loanNumber,
           loan.lenderBorrowerName,
           loan.type,
-          formatDate(loan.endDate),
+          formatDate(loan.endDate, locale),
           loan.status,
         ]),
         [],

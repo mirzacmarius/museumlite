@@ -1,7 +1,9 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
 import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -122,6 +124,7 @@ export default function DeveloperPage() {
 function ApiKeysTab({
   organizationId,
 }: { organizationId: Id<"organizations"> }) {
+  const locale = useCurrentLocale();
   const apiKeys = useQuery(api.apiKeys.list, { organizationId });
   const createKey = useMutation(api.apiKeys.create);
   const revokeKey = useMutation(api.apiKeys.revoke);
@@ -227,12 +230,12 @@ function ApiKeysTab({
                         {key.prefix}...
                       </code>
                       <span>
-                        Created {new Date(key.createdAt).toLocaleDateString()}
+                        Created {formatDate(new Date(key.createdAt), locale)}
                       </span>
                       {key.lastUsedAt && (
                         <span>
                           Last used{" "}
-                          {new Date(key.lastUsedAt).toLocaleDateString()}
+                          {formatDate(new Date(key.lastUsedAt), locale)}
                         </span>
                       )}
                     </div>

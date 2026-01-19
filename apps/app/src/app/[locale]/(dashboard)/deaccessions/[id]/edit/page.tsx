@@ -2,7 +2,8 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -29,6 +30,7 @@ export default function EditDeaccessionPage() {
   const router = useRouter();
   const t = useScopedI18n("deaccessions");
   const tCommon = useScopedI18n("common");
+  const locale = useCurrentLocale();
   const deaccessionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
   const updateDeaccession = useMutation(api.deaccessions.update);
@@ -190,9 +192,10 @@ export default function EditDeaccessionPage() {
               <div className="space-y-2">
                 <Label>{t("form.dateDeaccessioned")}</Label>
                 <Input
-                  value={new Date(
-                    deaccession.dateDeaccessioned,
-                  ).toLocaleDateString()}
+                  value={formatDate(
+                    new Date(deaccession.dateDeaccessioned),
+                    locale,
+                  )}
                   disabled
                   className="bg-muted"
                 />

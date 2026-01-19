@@ -2,6 +2,8 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { formatDate as formatDateUtil } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
@@ -60,6 +62,7 @@ interface SelectedFine {
 export default function LibraryFinesPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasModule } = useFeatureAccess();
+  const locale = useCurrentLocale();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedFine, setSelectedFine] = useState<SelectedFine | null>(null);
@@ -192,7 +195,7 @@ export default function LibraryFinesPage() {
   };
 
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString();
+    return formatDateUtil(new Date(timestamp), locale);
   };
 
   const getStatusBadge = (status: string) => {

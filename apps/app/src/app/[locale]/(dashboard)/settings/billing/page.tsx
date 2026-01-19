@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { CheckoutLink, CustomerPortalLink } from "@convex-dev/polar/react";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
@@ -63,6 +65,7 @@ const Plan = ({
 };
 
 export default function BillingSettings() {
+  const locale = useCurrentLocale();
   const user = useQuery(api.users.getUser);
   const products = useQuery(api.subscriptions.listAllProducts);
 
@@ -175,9 +178,12 @@ export default function BillingSettings() {
                         </span>
                       )}
                       on:{" "}
-                      {new Date(
-                        user.subscription.currentPeriodEnd ?? 0 * 1000,
-                      ).toLocaleDateString("en-US")}
+                      {formatDate(
+                        new Date(
+                          user.subscription.currentPeriodEnd ?? 0 * 1000,
+                        ),
+                        locale,
+                      )}
                       .
                     </p>
                   </div>

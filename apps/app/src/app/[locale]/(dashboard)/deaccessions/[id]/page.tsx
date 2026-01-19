@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { formatDateFns } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -16,7 +17,6 @@ import {
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
-import { format } from "date-fns";
 import {
   ArrowLeft,
   CheckCircle,
@@ -181,9 +181,10 @@ export default function DeaccessionDetailPage() {
                   {deaccession.deaccessionNumber}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  {format(
+                  {formatDateFns(
                     new Date(deaccession.dateDeaccessioned),
                     "MMMM d, yyyy",
+                    locale,
                   )}
                 </p>
               </div>
@@ -291,9 +292,10 @@ export default function DeaccessionDetailPage() {
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {entry.approverName || t("detail.unknown")} •{" "}
-                        {format(
+                        {formatDateFns(
                           new Date(entry.approvedAt),
                           "MMM d, yyyy 'at' h:mm a",
+                          locale,
                         )}
                       </p>
                       {entry.comment && (
@@ -449,9 +451,10 @@ export default function DeaccessionDetailPage() {
                         Date Deaccessioned
                       </p>
                       <p className="text-black">
-                        {format(
+                        {formatDateFns(
                           new Date(exportData.deaccession.dateDeaccessioned),
                           "MMMM d, yyyy",
+                          locale,
                         )}
                       </p>
                     </div>
@@ -532,9 +535,10 @@ export default function DeaccessionDetailPage() {
                             Date Received
                           </p>
                           <p className="text-black">
-                            {format(
+                            {formatDateFns(
                               new Date(exportData.deaccession.proceedsDate),
                               "MMMM d, yyyy",
+                              locale,
                             )}
                           </p>
                         </div>
@@ -575,9 +579,10 @@ export default function DeaccessionDetailPage() {
                             </p>
                             <p className="text-xs text-gray-500">
                               {entry.approverName} •{" "}
-                              {format(
+                              {formatDateFns(
                                 new Date(entry.approvedAt),
                                 "MMM d, yyyy 'at' h:mm a",
+                                locale,
                               )}
                             </p>
                             {entry.comment && (
@@ -604,9 +609,10 @@ export default function DeaccessionDetailPage() {
                             {exportData.approverName}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {format(
+                            {formatDateFns(
                               new Date(exportData.deaccession.approvedAt),
                               "MMMM d, yyyy 'at' h:mm a",
+                              locale,
                             )}
                           </p>
                         </div>
@@ -618,8 +624,12 @@ export default function DeaccessionDetailPage() {
                 <div className="border-t border-gray-200 pt-3 text-[10px] text-gray-400 print:pt-2 print:text-[9px]">
                   <p>
                     Generated on{" "}
-                    {format(new Date(), "MMMM d, yyyy 'at' h:mm a")} •{" "}
-                    {exportData.organization.name}
+                    {formatDateFns(
+                      new Date(),
+                      "MMMM d, yyyy 'at' h:mm a",
+                      locale,
+                    )}{" "}
+                    • {exportData.organization.name}
                   </p>
                 </div>
               </div>

@@ -3,7 +3,8 @@
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -150,6 +151,7 @@ function CollectionGroupsList({
   organizationId: Id<"organizations">;
   search: string;
 }) {
+  const locale = useCurrentLocale();
   const t = useScopedI18n("collections");
   const common = useScopedI18n("common");
 
@@ -206,7 +208,7 @@ function CollectionGroupsList({
           )}
           <div className="mt-auto flex items-center justify-between text-xs text-muted-foreground">
             <span>
-              {t("created")} {new Date(group.createdAt).toLocaleDateString()}
+              {t("created")} {formatDate(new Date(group.createdAt), locale)}
             </span>
             {group.curatorName && (
               <span className="flex items-center gap-1">

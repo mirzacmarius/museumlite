@@ -2,7 +2,8 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -64,6 +65,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 export default function AccountDetailPage() {
+  const locale = useCurrentLocale();
   const t = useScopedI18n("accounts");
   const tCommon = useScopedI18n("common");
   const tToast = useScopedI18n("accounts.detail.toasts");
@@ -1032,6 +1034,7 @@ function RelationshipsTab({
   accountId: Id<"accounts">;
   relationships: any;
 }) {
+  const locale = useCurrentLocale();
   const t = useScopedI18n("accounts.detail");
   return (
     <div className="rounded-lg border border-border bg-card p-6">
@@ -1062,9 +1065,9 @@ function RelationshipsTab({
                   <p className="font-medium">{rel.relationshipType}</p>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {new Date(rel.startDate).toLocaleDateString()}
+                  {formatDate(new Date(rel.startDate), locale)}
                   {rel.endDate &&
-                    ` - ${new Date(rel.endDate).toLocaleDateString()}`}
+                    ` - ${formatDate(new Date(rel.endDate), locale)}`}
                 </p>
               </div>
             </div>
@@ -1076,6 +1079,7 @@ function RelationshipsTab({
 }
 
 function ActivityTab({ timeline }: { timeline: TimelineEvent[] | undefined }) {
+  const locale = useCurrentLocale();
   const t = useScopedI18n("accounts.detail");
   return (
     <div className="rounded-lg border border-border bg-card p-6">
@@ -1100,7 +1104,7 @@ function ActivityTab({ timeline }: { timeline: TimelineEvent[] | undefined }) {
               <div className="flex-1 pb-8">
                 <p className="font-medium">{event.type}</p>
                 <p className="text-sm text-muted-foreground">
-                  {new Date(event.timestamp).toLocaleString()}
+                  {formatDate(new Date(event.timestamp), locale)}
                 </p>
                 {event.description && (
                   <p className="mt-1 text-sm">{event.description}</p>

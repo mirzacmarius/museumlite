@@ -4,7 +4,8 @@ import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useI18n, useScopedI18n } from "@/locales/client";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -180,6 +181,7 @@ function LoanList({
 }) {
   const t = useScopedI18n("loans");
   const tToast = useScopedI18n("common.toast");
+  const locale = useCurrentLocale();
   const [selectedIds, setSelectedIds] = useState<Set<Id<"loans">>>(new Set());
   const bulkApprove = useMutation(api.loans.bulkApprove);
   const bulkCancel = useMutation(api.loans.bulkCancel);
@@ -255,7 +257,7 @@ function LoanList({
 
   const formatDateRange = (startDate: number, endDate?: number) => {
     const start = new Date(startDate);
-    const startStr = start.toLocaleDateString("en-US", {
+    const startStr = formatDate(start, locale, {
       month: "short",
       day: "numeric",
     });
@@ -263,7 +265,7 @@ function LoanList({
     if (!endDate) return startStr;
 
     const end = new Date(endDate);
-    const endStr = end.toLocaleDateString("en-US", {
+    const endStr = formatDate(end, locale, {
       month: "short",
       day: "numeric",
       year: "numeric",

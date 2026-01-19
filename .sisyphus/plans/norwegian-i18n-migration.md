@@ -818,7 +818,7 @@ Phase 6: Toast Messages
 
 ### Phase 4: Date Formatting
 
-- [ ] 19. Make date formatting locale-aware
+- [x] 19. Make date formatting locale-aware
 
   **What to do**:
   

@@ -2,7 +2,8 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -27,6 +28,7 @@ export default function EditAccessionPage() {
   const router = useRouter();
   const t = useScopedI18n("accessions");
   const tCommon = useScopedI18n("common");
+  const locale = useCurrentLocale();
   const accessionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
   const updateAccession = useMutation(api.accessions.update);
@@ -172,7 +174,7 @@ export default function EditAccessionPage() {
               <div className="space-y-2">
                 <Label>{t("form.dateReceived")}</Label>
                 <Input
-                  value={new Date(accession.dateReceived).toLocaleDateString()}
+                  value={formatDate(new Date(accession.dateReceived), locale)}
                   disabled
                   className="bg-muted"
                 />

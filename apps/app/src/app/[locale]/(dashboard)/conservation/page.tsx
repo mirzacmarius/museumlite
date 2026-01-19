@@ -3,7 +3,8 @@
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useScopedI18n } from "@/locales/client";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -186,6 +187,7 @@ interface Treatment {
 }
 
 function TreatmentCard({ treatment }: { treatment: Treatment }) {
+  const locale = useCurrentLocale();
   const typeStyle =
     TREATMENT_TYPE_STYLES[treatment.treatmentType] ||
     TREATMENT_TYPE_STYLES.other;
@@ -216,7 +218,7 @@ function TreatmentCard({ treatment }: { treatment: Treatment }) {
         <div className="flex flex-col gap-2 border-t border-border/50 pt-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>{new Date(treatment.performedAt).toLocaleDateString()}</span>
+            <span>{formatDate(new Date(treatment.performedAt), locale)}</span>
           </div>
           {treatment.performedByName && (
             <div className="flex items-center gap-1.5">

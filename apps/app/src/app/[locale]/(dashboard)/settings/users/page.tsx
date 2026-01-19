@@ -2,6 +2,8 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
@@ -29,6 +31,7 @@ import { Trash2, UserCog, UserPlus } from "lucide-react";
 import { useState } from "react";
 
 export default function UsersSettingsPage() {
+  const locale = useCurrentLocale();
   const { currentOrganizationId } = useOrganization();
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -270,7 +273,7 @@ export default function UsersSettingsPage() {
                       {user.email}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Joined {new Date(user.joinedAt).toLocaleDateString()}
+                      Joined {formatDate(new Date(user.joinedAt), locale)}
                     </p>
                   </div>
                 </div>

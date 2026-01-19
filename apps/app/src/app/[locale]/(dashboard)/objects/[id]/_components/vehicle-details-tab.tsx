@@ -1,13 +1,14 @@
 "use client";
 
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { formatDateFns } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
-import { format } from "date-fns";
 import {
   Award,
   Calendar,
@@ -29,6 +30,7 @@ export function VehicleDetailsTab({
   collectionId,
   organizationId,
 }: VehicleDetailsTabProps) {
+  const locale = useCurrentLocale();
   const { hasModule } = useFeatureAccess();
   const hasModuleAccess = hasModule("automotive");
   const details = useQuery(
@@ -242,7 +244,11 @@ export function VehicleDetailsTab({
                     </span>
                   </div>
                   <span className="font-mono text-xs text-muted-foreground">
-                    {format(new Date(entry.serviceDate), "MMM d, yyyy")}
+                    {formatDateFns(
+                      new Date(entry.serviceDate),
+                      "MMM d, yyyy",
+                      locale,
+                    )}
                   </span>
                 </div>
                 <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
@@ -294,7 +300,11 @@ export function VehicleDetailsTab({
                     </span>
                   </div>
                   <span className="font-mono text-xs text-muted-foreground">
-                    {format(new Date(event.eventDate), "MMM d, yyyy")}
+                    {formatDateFns(
+                      new Date(event.eventDate),
+                      "MMM d, yyyy",
+                      locale,
+                    )}
                   </span>
                 </div>
                 {event.location && (

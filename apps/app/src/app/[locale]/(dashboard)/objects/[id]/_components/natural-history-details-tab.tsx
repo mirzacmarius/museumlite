@@ -1,13 +1,14 @@
 "use client";
 
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { formatDateFns } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
-import { format } from "date-fns";
 import { Calendar, MapPin, Plus, TreePine, User } from "lucide-react";
 
 interface NaturalHistoryDetailsTabProps {
@@ -19,6 +20,7 @@ export function NaturalHistoryDetailsTab({
   collectionId,
   organizationId,
 }: NaturalHistoryDetailsTabProps) {
+  const locale = useCurrentLocale();
   const { hasModule } = useFeatureAccess();
   const hasModuleAccess = hasModule("natural_history");
   const details = useQuery(
@@ -115,7 +117,11 @@ export function NaturalHistoryDetailsTab({
           </div>
           <span className="text-sm font-medium text-foreground">
             {details.collectionDate
-              ? format(new Date(details.collectionDate), "MMM yyyy")
+              ? formatDateFns(
+                  new Date(details.collectionDate),
+                  "MMM yyyy",
+                  locale,
+                )
               : "—"}
           </span>
           {details.collectorName && (
@@ -285,7 +291,11 @@ export function NaturalHistoryDetailsTab({
               </div>
               <div className="text-sm font-medium text-foreground">
                 {details.collectionDate
-                  ? format(new Date(details.collectionDate), "MMM d, yyyy")
+                  ? formatDateFns(
+                      new Date(details.collectionDate),
+                      "MMM d, yyyy",
+                      locale,
+                    )
                   : "—"}
               </div>
             </div>

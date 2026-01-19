@@ -1,6 +1,7 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
+import { formatDateFns } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Calendar } from "@v1/ui/calendar";
 import {
@@ -11,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
-import { format } from "date-fns";
 import { Calendar as CalendarIcon, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { DateRange } from "react-day-picker";
@@ -29,21 +29,26 @@ function getDateRangeLabel(
     end?: number;
   },
   t: ReturnType<typeof useScopedI18n<"activity">>,
+  locale: string,
 ): string {
   if (!dateRange.start && !dateRange.end) {
     return t("dateRangePresets.allTime");
   }
   if (dateRange.start && dateRange.end) {
-    const start = format(new Date(dateRange.start), "MMM d");
-    const end = format(new Date(dateRange.end), "MMM d, yyyy");
+    const start = formatDateFns(new Date(dateRange.start), "MMM d", locale);
+    const end = formatDateFns(new Date(dateRange.end), "MMM d, yyyy", locale);
     return t("dateRangePresets.range", { start, end });
   }
   if (dateRange.start) {
-    const date = format(new Date(dateRange.start), "MMM d, yyyy");
+    const date = formatDateFns(
+      new Date(dateRange.start),
+      "MMM d, yyyy",
+      locale,
+    );
     return t("dateRangePresets.from", { date });
   }
   if (dateRange.end) {
-    const date = format(new Date(dateRange.end), "MMM d, yyyy");
+    const date = formatDateFns(new Date(dateRange.end), "MMM d, yyyy", locale);
     return t("dateRangePresets.until", { date });
   }
   return t("dateRangePresets.allTime");
@@ -56,6 +61,7 @@ export function ActivityFilters({
   onDateRangeChange,
 }: ActivityFiltersProps) {
   const t = useScopedI18n("activity");
+  const locale = useCurrentLocale();
   const [customRangeOpen, setCustomRangeOpen] = useState(false);
   const [dateRangePicker, setDateRangePicker] = useState<DateRange | undefined>(
     dateRange.start || dateRange.end
@@ -161,7 +167,9 @@ export function ActivityFilters({
           <Button variant="outline" className="justify-between">
             <div className="flex items-center gap-2">
               <CalendarIcon className="h-4 w-4" />
-              <span className="text-sm">{getDateRangeLabel(dateRange, t)}</span>
+              <span className="text-sm">
+                {getDateRangeLabel(dateRange, t, locale)}
+              </span>
             </div>
             <ChevronRight className="h-4 w-4" />
           </Button>

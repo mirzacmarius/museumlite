@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { Badge } from "@v1/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import {
@@ -71,8 +73,8 @@ interface ComplianceReportCardProps {
   };
 }
 
-function formatDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString("en-US", {
+function formatDateShort(timestamp: number, locale: string): string {
+  return formatDate(new Date(timestamp), locale, {
     month: "short",
     day: "numeric",
   });
@@ -91,6 +93,7 @@ function formatRelativeTime(timestamp: number): string {
 }
 
 export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
+  const locale = useCurrentLocale();
   const totalPending = data.accessions.pending + data.deaccessions.pending;
   const totalApproved = data.accessions.approved + data.deaccessions.approved;
   const totalRejected = data.accessions.rejected + data.deaccessions.rejected;
@@ -202,7 +205,7 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
                                 {item.source}
                               </TableCell>
                               <TableCell className="text-xs text-right text-muted-foreground">
-                                {formatDate(item.dateReceived)}
+                                {formatDateShort(item.dateReceived, locale)}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -325,7 +328,10 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
                                 {item.reason}
                               </TableCell>
                               <TableCell className="text-xs text-right text-muted-foreground">
-                                {formatDate(item.dateDeaccessioned)}
+                                {formatDateShort(
+                                  item.dateDeaccessioned,
+                                  locale,
+                                )}
                               </TableCell>
                             </TableRow>
                           ))}

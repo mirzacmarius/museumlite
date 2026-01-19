@@ -2,7 +2,8 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { EmptyState } from "@v1/ui/empty-state";
@@ -14,6 +15,7 @@ import { Package } from "lucide-react";
 import Link from "next/link";
 
 export function NewArrivalsFeed() {
+  const locale = useCurrentLocale();
   const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("newArrivals");
   const common = useScopedI18n("common");
@@ -89,9 +91,7 @@ export function NewArrivalsFeed() {
                           {accession.source}
                         </p>
                         <p className="text-[10px] text-muted-foreground/60 mt-1">
-                          {new Date(
-                            accession.dateReceived,
-                          ).toLocaleDateString()}
+                          {formatDate(new Date(accession.dateReceived), locale)}
                         </p>
                       </div>
                     </div>

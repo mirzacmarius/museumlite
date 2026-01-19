@@ -1,13 +1,14 @@
 "use client";
 
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { formatDateFns } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
-import { format } from "date-fns";
 import {
   DollarSign,
   FileCheck,
@@ -26,6 +27,7 @@ export function FineArtDetailsTab({
   collectionId,
   organizationId,
 }: FineArtDetailsTabProps) {
+  const locale = useCurrentLocale();
   const { hasModule } = useFeatureAccess();
   const hasModuleAccess = hasModule("fine_art");
   const details = useQuery(
@@ -152,7 +154,11 @@ export function FineArtDetailsTab({
             <FileCheck className="h-4 w-4 text-amber-500" />
             <span className="text-sm font-medium text-amber-500">
               Reappraisal Due:{" "}
-              {format(new Date(details.reappraisalDate), "MMMM d, yyyy")}
+              {formatDateFns(
+                new Date(details.reappraisalDate),
+                "MMMM d, yyyy",
+                locale,
+              )}
             </span>
           </div>
         </div>
@@ -267,7 +273,11 @@ export function FineArtDetailsTab({
                   </div>
                   {log.arrivedAt && (
                     <span className="font-mono text-xs text-muted-foreground">
-                      {format(new Date(log.arrivedAt), "MMM d, yyyy")}
+                      {formatDateFns(
+                        new Date(log.arrivedAt),
+                        "MMM d, yyyy",
+                        locale,
+                      )}
                     </span>
                   )}
                 </div>

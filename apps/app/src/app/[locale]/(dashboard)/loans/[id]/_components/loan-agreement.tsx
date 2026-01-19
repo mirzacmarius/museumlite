@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -61,9 +63,10 @@ export function LoanAgreement({
 }: LoanAgreementProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+  const locale = useCurrentLocale();
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString("en-GB", {
+  const formatLoanDate = (timestamp: number) => {
+    return formatDate(new Date(timestamp), locale, {
       day: "2-digit",
       month: "long",
       year: "numeric",
@@ -118,6 +121,8 @@ export function LoanAgreement({
 
   const handleEmail = () => {
     const subject = encodeURIComponent(`Loan Agreement - ${loan.loanNumber}`);
+    const startDateFormatted = formatLoanDate(loan.startDate);
+    const endDateFormatted = loan.endDate ? formatLoanDate(loan.endDate) : "";
     const body = encodeURIComponent(
       `Dear ${loan.lenderBorrowerName},
 
@@ -126,8 +131,8 @@ Please find attached the loan agreement for ${loan.loanNumber}.
 Loan Details:
 - Loan Number: ${loan.loanNumber}
 - Type: ${loan.type === "incoming" ? "Incoming Loan" : "Outgoing Loan"}
-- Start Date: ${formatDate(loan.startDate)}
-${loan.endDate ? `- End Date: ${formatDate(loan.endDate)}` : ""}
+- Start Date: ${startDateFormatted}
+${loan.endDate ? `- End Date: ${endDateFormatted}` : ""}
 
 Objects:
 ${items.map((item) => `- ${item.accessionNumber}: ${item.title}`).join("\n")}
@@ -258,12 +263,12 @@ ${organizationName}`,
             </h2>
             <p>
               <span className="font-bold">Start Date:</span>{" "}
-              {formatDate(loan.startDate)}
+              {formatLoanDate(loan.startDate)}
             </p>
             {loan.endDate && (
               <p>
                 <span className="font-bold">End Date:</span>{" "}
-                {formatDate(loan.endDate)}
+                {formatLoanDate(loan.endDate)}
               </p>
             )}
           </div>

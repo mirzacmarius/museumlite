@@ -2,6 +2,8 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
@@ -104,6 +106,7 @@ type Loan = {
 export default function LoanDetailPage() {
   const params = useParams();
   const loanId = params.id as string;
+  const locale = useCurrentLocale();
   const { currentOrganizationId } = useOrganization();
   const [activeTab, setActiveTab] = useState("overview");
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
@@ -298,14 +301,14 @@ export default function LoanDetailPage() {
                     <div className="flex items-center gap-2 text-xs">
                       <CalendarRange className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground">
-                        {new Date(loan.startDate).toLocaleDateString("en-US", {
+                        {formatDate(new Date(loan.startDate), locale, {
                           month: "short",
                           day: "numeric",
                           year: "numeric",
                         })}{" "}
                         —{" "}
                         {loan.endDate
-                          ? new Date(loan.endDate).toLocaleDateString("en-US", {
+                          ? formatDate(new Date(loan.endDate), locale, {
                               month: "short",
                               day: "numeric",
                               year: "numeric",
@@ -452,7 +455,7 @@ export default function LoanDetailPage() {
                   </p>
                 </div>
                 <div className="text-right text-xs text-muted-foreground">
-                  <p>Date: {new Date().toLocaleDateString()}</p>
+                  <p>Date: {formatDate(new Date(), locale)}</p>
                   <p>Page 1 of 4</p>
                 </div>
               </div>
@@ -545,6 +548,7 @@ function OverviewTab({
   loan: Loan;
   documents: LoanDocument[];
 }) {
+  const locale = useCurrentLocale();
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* Left: Approval Pipeline */}
@@ -574,7 +578,7 @@ function OverviewTab({
                   </p>
                   <p className="text-[10px] text-muted-foreground">
                     Rec:{" "}
-                    {new Date(loan.startDate).toLocaleDateString(undefined, {
+                    {formatDate(new Date(loan.startDate), locale, {
                       month: "short",
                       day: "numeric",
                     })}
@@ -592,7 +596,7 @@ function OverviewTab({
                   </p>
                   <p className="text-[10px] text-muted-foreground">
                     App:{" "}
-                    {new Date(loan.startDate).toLocaleDateString(undefined, {
+                    {formatDate(new Date(loan.startDate), locale, {
                       month: "short",
                       day: "numeric",
                     })}
@@ -681,7 +685,7 @@ function OverviewTab({
                   Countersigned
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  on {new Date(loan.startDate).toLocaleDateString()}
+                  on {formatDate(new Date(loan.startDate), locale)}
                 </span>
               </div>
             </div>
@@ -739,7 +743,7 @@ function OverviewTab({
                       •{" "}
                       {doc.uploaderName
                         ? `Uploaded by ${doc.uploaderName}`
-                        : new Date(doc.uploadedAt).toLocaleDateString()}
+                        : formatDate(new Date(doc.uploadedAt), locale)}
                     </p>
                   </div>
                 </a>
@@ -1098,6 +1102,7 @@ function ActivityTab({
 }: {
   workflowHistory: WorkflowHistoryEntry[];
 }) {
+  const locale = useCurrentLocale();
   const getStepLabel = (step: number, comment?: string) => {
     if (comment) return comment;
     switch (step) {
@@ -1140,7 +1145,7 @@ function ActivityTab({
             }`}
           />
           <p className="text-xs text-muted-foreground mb-1">
-            {new Date(entry.approvedAt).toLocaleDateString("en-US", {
+            {formatDate(new Date(entry.approvedAt), locale, {
               month: "short",
               day: "numeric",
               year: "numeric",

@@ -1,9 +1,10 @@
 "use client";
 
+import { formatDistanceLocale } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
-import { formatDistanceToNow } from "date-fns";
 import {
   AlertCircle,
   ArrowRight,
@@ -69,6 +70,7 @@ interface AssignmentsPageClientProps {
 export function AssignmentsPageClient({
   assignments,
 }: AssignmentsPageClientProps) {
+  const locale = useCurrentLocale();
   const { pendingApprovals, recentlyModified, myCatalogedItems, stats } =
     assignments;
 
@@ -156,7 +158,7 @@ export function AssignmentsPageClient({
                   <CollectionCard
                     key={item._id}
                     item={item}
-                    subtitle={`Modified ${formatDistanceToNow(item.lastModifiedAt, { addSuffix: true })}`}
+                    subtitle={`Modified ${formatDistanceLocale(new Date(item.lastModifiedAt), locale, { addSuffix: true })}`}
                   />
                 ))}
               </div>
@@ -195,7 +197,7 @@ export function AssignmentsPageClient({
                       thumbnailUrl: item.thumbnailUrl,
                       lastModifiedAt: item.catalogedAt,
                     }}
-                    subtitle={`Cataloged ${formatDistanceToNow(item.catalogedAt, { addSuffix: true })}`}
+                    subtitle={`Cataloged ${formatDistanceLocale(new Date(item.catalogedAt), locale, { addSuffix: true })}`}
                     status={item.status}
                   />
                 ))}
@@ -228,6 +230,7 @@ export function AssignmentsPageClient({
 }
 
 function PendingApprovalCard({ item }: { item: PendingApproval }) {
+  const locale = useCurrentLocale();
   const typeConfig = {
     accession: {
       icon: FileCheck,
@@ -311,7 +314,9 @@ function PendingApprovalCard({ item }: { item: PendingApproval }) {
 
         <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground border-t border-border/50 pt-3">
           <span>
-            {formatDistanceToNow(item.createdAt, { addSuffix: true })}
+            {formatDistanceLocale(new Date(item.createdAt), locale, {
+              addSuffix: true,
+            })}
           </span>
           {item.workflowStep !== undefined && (
             <span className="text-muted-foreground">

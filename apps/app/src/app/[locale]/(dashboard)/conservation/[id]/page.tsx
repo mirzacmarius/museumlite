@@ -2,7 +2,8 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -47,6 +48,7 @@ export default function TreatmentDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const locale = useCurrentLocale();
   const t = useScopedI18n("conservation");
   const { id } = use(params);
   const router = useRouter();
@@ -115,7 +117,7 @@ export default function TreatmentDetailPage({
                 </span>
                 <span className="text-sm text-muted-foreground">
                   {t("detail.created")}{" "}
-                  {new Date(treatment._creationTime).toLocaleDateString()}
+                  {formatDate(new Date(treatment._creationTime), locale)}
                 </span>
               </div>
               <h1 className="text-3xl font-semibold text-foreground">
@@ -225,7 +227,7 @@ export default function TreatmentDetailPage({
                       {t("detail.datePerformed")}
                     </p>
                     <p className="text-sm text-foreground/80">
-                      {new Date(treatment.performedAt).toLocaleDateString()}
+                      {formatDate(new Date(treatment.performedAt), locale)}
                     </p>
                   </div>
                 </div>

@@ -2,7 +2,8 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -54,6 +55,7 @@ export default function ExhibitionDetailPage() {
   const router = useRouter();
   const exhibitionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
+  const locale = useCurrentLocale();
   const t = useScopedI18n("exhibitions");
   const deleteExhibition = useMutation(api.exhibitions.remove);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -397,7 +399,7 @@ export default function ExhibitionDetailPage() {
                 {exhibition.creatorName}
               </p>
               <p className="text-xs text-muted-foreground">
-                {new Date(exhibition._creationTime).toLocaleDateString()}
+                {formatDate(new Date(exhibition._creationTime), locale)}
               </p>
             </div>
           )}
@@ -414,7 +416,7 @@ export default function ExhibitionDetailPage() {
                 {exhibition.approverName}
               </p>
               <p className="text-xs text-muted-foreground">
-                {new Date(exhibition.approvedAt).toLocaleDateString()}
+                {formatDate(new Date(exhibition.approvedAt), locale)}
               </p>
             </div>
           )}
@@ -444,9 +446,9 @@ export default function ExhibitionDetailPage() {
                   </label>
                   <p className="text-sm text-foreground mt-1 flex items-center gap-2">
                     <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                    {new Date(exhibition.startDate).toLocaleDateString()}
+                    {formatDate(new Date(exhibition.startDate), locale)}
                     {exhibition.endDate
-                      ? ` — ${new Date(exhibition.endDate).toLocaleDateString()}`
+                      ? ` — ${formatDate(new Date(exhibition.endDate), locale)}`
                       : ` ${t("card.ongoing")}`}
                   </p>
                 </div>
@@ -583,7 +585,7 @@ export default function ExhibitionDetailPage() {
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {doc.documentType.replace("_", " ")} •{" "}
-                            {new Date(doc.uploadedAt).toLocaleDateString()}
+                            {formatDate(new Date(doc.uploadedAt), locale)}
                           </p>
                         </div>
                       </div>
@@ -675,7 +677,7 @@ export default function ExhibitionDetailPage() {
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {item.approverName ?? t("detail.unknownUser")} •{" "}
-                          {new Date(item.approvedAt).toLocaleDateString()}
+                          {formatDate(new Date(item.approvedAt), locale)}
                         </p>
                         {item.comment &&
                           !item.comment.startsWith("Rejected") && (

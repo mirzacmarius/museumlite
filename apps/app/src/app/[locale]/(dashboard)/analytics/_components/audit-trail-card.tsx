@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { Badge } from "@v1/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import {
@@ -36,7 +38,7 @@ interface AuditTrailCardProps {
   };
 }
 
-function formatRelativeTime(timestamp: number): string {
+function formatRelativeTime(timestamp: number, locale: string): string {
   const now = Date.now();
   const diff = now - timestamp;
   const minutes = Math.floor(diff / (60 * 1000));
@@ -48,7 +50,7 @@ function formatRelativeTime(timestamp: number): string {
   if (hours < 24) return `${hours}h ago`;
   if (days === 1) return "1d ago";
   if (days < 30) return `${days}d ago`;
-  return new Date(timestamp).toLocaleDateString("en-US", {
+  return formatDate(new Date(timestamp), locale, {
     month: "short",
     day: "numeric",
   });
@@ -77,6 +79,7 @@ function formatEntityType(type: string): string {
 }
 
 export function AuditTrailCard({ data }: AuditTrailCardProps) {
+  const locale = useCurrentLocale();
   const maxTypeCount = Math.max(...data.eventsByType.map((e) => e.count), 1);
 
   return (
@@ -165,7 +168,7 @@ export function AuditTrailCard({ data }: AuditTrailCardProps) {
                         {event.userName}
                       </TableCell>
                       <TableCell className="text-xs text-right text-muted-foreground">
-                        {formatRelativeTime(event.timestamp)}
+                        {formatRelativeTime(event.timestamp, locale)}
                       </TableCell>
                     </TableRow>
                   ))

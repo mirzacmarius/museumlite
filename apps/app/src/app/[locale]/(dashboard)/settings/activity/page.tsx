@@ -2,6 +2,8 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { formatDistanceLocale } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
@@ -17,13 +19,13 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { useQuery } from "convex/react";
-import { formatDistanceToNow } from "date-fns";
 import { Calendar, Filter, RotateCcw, X } from "lucide-react";
 import { useState } from "react";
 
 export default function ActivityPage() {
   const { currentOrganizationId, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
+  const locale = useCurrentLocale();
 
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedEntityType, setSelectedEntityType] = useState<string>("");
@@ -150,16 +152,19 @@ export default function ActivityPage() {
                 User
               </Label>
               <Select
-                value={selectedUserId}
+                value={selectedUserId || "all"}
                 onValueChange={(value) =>
-                  handleFilterChange(setSelectedUserId, value)
+                  handleFilterChange(
+                    setSelectedUserId,
+                    value === "all" ? "" : value,
+                  )
                 }
               >
                 <SelectTrigger id="user-filter">
                   <SelectValue placeholder="All users" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All users</SelectItem>
+                  <SelectItem value="all">All users</SelectItem>
                   {activeUsers?.map((user) => (
                     <SelectItem key={user._id} value={user._id}>
                       {user.name || user.email || "Unknown user"}
@@ -177,16 +182,19 @@ export default function ActivityPage() {
                 Entity Type
               </Label>
               <Select
-                value={selectedEntityType}
+                value={selectedEntityType || "all"}
                 onValueChange={(value) =>
-                  handleFilterChange(setSelectedEntityType, value)
+                  handleFilterChange(
+                    setSelectedEntityType,
+                    value === "all" ? "" : value,
+                  )
                 }
               >
                 <SelectTrigger id="entity-filter">
                   <SelectValue placeholder="All types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All types</SelectItem>
+                  <SelectItem value="all">All types</SelectItem>
                   {entityTypes?.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -204,16 +212,19 @@ export default function ActivityPage() {
                 Action
               </Label>
               <Select
-                value={actionFilter}
+                value={actionFilter || "all"}
                 onValueChange={(value) =>
-                  handleFilterChange(setActionFilter, value)
+                  handleFilterChange(
+                    setActionFilter,
+                    value === "all" ? "" : value,
+                  )
                 }
               >
                 <SelectTrigger id="action-filter">
                   <SelectValue placeholder="All actions" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All actions</SelectItem>
+                  <SelectItem value="all">All actions</SelectItem>
                   {availableActions?.map((action) => (
                     <SelectItem key={action} value={action}>
                       {action}
@@ -346,7 +357,7 @@ export default function ActivityPage() {
                     </div>
 
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {formatDistanceToNow(new Date(entry.timestamp), {
+                      {formatDistanceLocale(new Date(entry.timestamp), locale, {
                         addSuffix: true,
                       })}
                     </span>

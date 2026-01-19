@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
@@ -45,6 +47,8 @@ export function RecordContextSidebar({
   provenance,
   ownershipHistory,
 }: RecordContextSidebarProps) {
+  const locale = useCurrentLocale();
+
   // Query for related objects (same collection group or parent/child)
   const collection = useQuery(
     api.collections.get,
@@ -271,7 +275,7 @@ export function RecordContextSidebar({
                         </span>
                       </p>
                       <p className="mt-0.5 text-[10px] text-muted-foreground">
-                        {formatRelativeTime(activity.timestamp)}
+                        {formatRelativeTime(activity.timestamp, locale)}
                         {activity.userName && ` • ${activity.userName}`}
                       </p>
                     </div>
@@ -310,7 +314,7 @@ export function RecordContextSidebar({
   );
 }
 
-function formatRelativeTime(timestamp: number): string {
+function formatRelativeTime(timestamp: number, locale: string): string {
   const now = Date.now();
   const diff = now - timestamp;
   const minutes = Math.floor(diff / 60000);
@@ -322,7 +326,7 @@ function formatRelativeTime(timestamp: number): string {
   if (hours < 24) return `${hours}h ago`;
   if (days < 7) return `${days}d ago`;
 
-  return new Date(timestamp).toLocaleDateString("en-US", {
+  return formatDate(new Date(timestamp), locale, {
     month: "short",
     day: "numeric",
   });

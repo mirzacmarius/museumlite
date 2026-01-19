@@ -4,6 +4,8 @@ import { AccountCombobox } from "@/components/account-combobox";
 import { CollectionMultiSelectCombobox } from "@/components/collection-multi-select-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Doc, Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
@@ -114,6 +116,7 @@ function SelectedCollectionItem({
 
 export default function NewLoanPage() {
   const router = useRouter();
+  const locale = useCurrentLocale();
   const { currentOrganizationId } = useOrganization();
   const createLoan = useMutation(api.loans.create);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -740,12 +743,12 @@ export default function NewLoanPage() {
                     </span>
                     <div className="flex items-center gap-2 text-sm">
                       <span className="text-foreground">
-                        {formData.startDate.toLocaleDateString()}
+                        {formatDate(formData.startDate, locale)}
                       </span>
                       <span className="text-muted-foreground">→</span>
                       <span className="text-foreground">
                         {formData.endDate
-                          ? formData.endDate.toLocaleDateString()
+                          ? formatDate(formData.endDate, locale)
                           : "Indefinite"}
                       </span>
                     </div>

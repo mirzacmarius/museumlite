@@ -1,13 +1,14 @@
 "use client";
 
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { formatDateFns } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
-import { format } from "date-fns";
 import {
   AlertTriangle,
   Calendar,
@@ -28,6 +29,7 @@ export function ArchiveDetailsTab({
   collectionId,
   organizationId,
 }: ArchiveDetailsTabProps) {
+  const locale = useCurrentLocale();
   const { hasModule } = useFeatureAccess();
   const hasModuleAccess = hasModule("archive");
   const details = useQuery(
@@ -137,7 +139,11 @@ export function ArchiveDetailsTab({
           {details.retentionExpiresAt && (
             <p className="mt-1 text-xs text-muted-foreground">
               Expires:{" "}
-              {format(new Date(details.retentionExpiresAt), "MMM d, yyyy")}
+              {formatDateFns(
+                new Date(details.retentionExpiresAt),
+                "MMM d, yyyy",
+                locale,
+              )}
             </p>
           )}
         </div>
@@ -194,7 +200,11 @@ export function ArchiveDetailsTab({
           {details.destructionDate && (
             <p className="mt-1 text-sm text-orange-500/80">
               Scheduled:{" "}
-              {format(new Date(details.destructionDate), "MMMM d, yyyy")}
+              {formatDateFns(
+                new Date(details.destructionDate),
+                "MMMM d, yyyy",
+                locale,
+              )}
             </p>
           )}
           {details.destructionMethod && (
@@ -273,7 +283,11 @@ export function ArchiveDetailsTab({
               </div>
               <div className="text-sm font-medium text-foreground">
                 {details.retentionStartDate
-                  ? format(new Date(details.retentionStartDate), "MMM d, yyyy")
+                  ? formatDateFns(
+                      new Date(details.retentionStartDate),
+                      "MMM d, yyyy",
+                      locale,
+                    )
                   : "—"}
               </div>
             </div>
@@ -283,7 +297,11 @@ export function ArchiveDetailsTab({
               </div>
               <div className="text-sm font-medium text-foreground">
                 {details.retentionExpiresAt
-                  ? format(new Date(details.retentionExpiresAt), "MMM d, yyyy")
+                  ? formatDateFns(
+                      new Date(details.retentionExpiresAt),
+                      "MMM d, yyyy",
+                      locale,
+                    )
                   : "—"}
               </div>
             </div>
@@ -463,7 +481,11 @@ export function ArchiveDetailsTab({
                 </div>
                 <div className="text-sm font-medium text-foreground">
                   {details.destructionDate
-                    ? format(new Date(details.destructionDate), "MMM d, yyyy")
+                    ? formatDateFns(
+                        new Date(details.destructionDate),
+                        "MMM d, yyyy",
+                        locale,
+                      )
                     : "—"}
                 </div>
               </div>

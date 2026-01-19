@@ -1,6 +1,8 @@
 "use client";
 
 import { PermissionGate } from "@/components/permission-gate";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Timeline } from "@v1/ui/timeline";
@@ -19,6 +21,7 @@ export function TransportStatus({ loanId }: TransportStatusProps) {
 }
 
 function TransportStatusContent({ loanId }: TransportStatusProps) {
+  const locale = useCurrentLocale();
   const transitRecords = useQuery(api.transit.getTransitForLoanWithHistory, {
     loanId,
     limit: 5,
@@ -58,7 +61,7 @@ function TransportStatusContent({ loanId }: TransportStatusProps) {
                 items={record.statusHistory.map((update) => ({
                   title: formatStatus(update.status),
                   description: update.description,
-                  date: new Date(update.reportedAt).toLocaleDateString(),
+                  date: formatDate(new Date(update.reportedAt), locale),
                   status: mapStatusToTimelineStatus(update.status),
                 }))}
               />
