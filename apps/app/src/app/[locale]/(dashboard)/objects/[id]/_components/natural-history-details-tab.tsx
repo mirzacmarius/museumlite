@@ -2,7 +2,7 @@
 
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDateFns } from "@/lib/format-date";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -21,6 +21,8 @@ export function NaturalHistoryDetailsTab({
   organizationId,
 }: NaturalHistoryDetailsTabProps) {
   const locale = useCurrentLocale();
+  const t = useScopedI18n("modules.naturalHistory");
+  const common = useScopedI18n("modules.common");
   const { hasModule } = useFeatureAccess();
   const hasModuleAccess = hasModule("natural_history");
   const details = useQuery(
@@ -33,9 +35,9 @@ export function NaturalHistoryDetailsTab({
   if (!hasModuleAccess) {
     return (
       <FeatureGuard
-        featureName="Natural History Module"
+        featureName={t("moduleName")}
         isLocked={true}
-        description="Enable the Natural History module to track taxonomy, geolocation, and more."
+        description={t("moduleDescription")}
         showUpgrade={false}
       >
         <div />
@@ -47,7 +49,7 @@ export function NaturalHistoryDetailsTab({
     return (
       <div className="flex h-32 items-center justify-center">
         <p className="text-sm text-muted-foreground">
-          Loading natural history details...
+          {common("loading", { module: "natural history" })}
         </p>
       </div>
     );
@@ -58,11 +60,11 @@ export function NaturalHistoryDetailsTab({
       <div className="space-y-6">
         <div className="flex h-32 flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-border">
           <p className="text-sm text-muted-foreground">
-            No natural history details recorded yet
+            {common("noDetailsYet", { module: "natural history" })}
           </p>
           <Button variant="outline" size="sm">
             <Plus className="mr-2 h-4 w-4" />
-            Add Natural History Details
+            {common("addDetails", { module: "Natural History" })}
           </Button>
         </div>
       </div>
@@ -76,7 +78,7 @@ export function NaturalHistoryDetailsTab({
           <div className="mb-2 flex items-center gap-2">
             <TreePine className="h-4 w-4 text-green-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Species
+              {t("species")}
             </span>
           </div>
           <span className="text-lg font-light text-foreground">
@@ -93,7 +95,7 @@ export function NaturalHistoryDetailsTab({
           <div className="mb-2 flex items-center gap-2">
             <MapPin className="h-4 w-4 text-blue-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Location
+              {t("location")}
             </span>
           </div>
           <span className="text-sm font-medium text-foreground">
@@ -112,7 +114,7 @@ export function NaturalHistoryDetailsTab({
           <div className="mb-2 flex items-center gap-2">
             <Calendar className="h-4 w-4 text-purple-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Collected
+              {t("collected")}
             </span>
           </div>
           <span className="text-sm font-medium text-foreground">
@@ -135,7 +137,7 @@ export function NaturalHistoryDetailsTab({
           <div className="mb-2 flex items-center gap-2">
             <TreePine className="h-4 w-4 text-amber-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Preservation
+              {t("preservation")}
             </span>
           </div>
           <span className="text-sm font-medium text-foreground">
@@ -152,13 +154,13 @@ export function NaturalHistoryDetailsTab({
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
           <TreePine className="h-4 w-4 text-green-500" />
-          Taxonomic Classification
+          {t("taxonomicClassification")}
         </h3>
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="rounded-lg border border-border/60 bg-secondary/20 p-3">
             <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-              Kingdom
+              {t("kingdom")}
             </div>
             <div className="text-sm font-medium text-foreground">
               {details.kingdom || "—"}
@@ -166,7 +168,7 @@ export function NaturalHistoryDetailsTab({
           </div>
           <div className="rounded-lg border border-border/60 bg-secondary/20 p-3">
             <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-              Phylum
+              {t("phylum")}
             </div>
             <div className="text-sm font-medium text-foreground">
               {details.phylum || "—"}
@@ -174,7 +176,7 @@ export function NaturalHistoryDetailsTab({
           </div>
           <div className="rounded-lg border border-border/60 bg-secondary/20 p-3">
             <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-              Class
+              {t("class")}
             </div>
             <div className="text-sm font-medium text-foreground">
               {details.taxonomyClass || "—"}
@@ -182,7 +184,7 @@ export function NaturalHistoryDetailsTab({
           </div>
           <div className="rounded-lg border border-border/60 bg-secondary/20 p-3">
             <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-              Order
+              {t("order")}
             </div>
             <div className="text-sm font-medium text-foreground">
               {details.order || "—"}
@@ -190,7 +192,7 @@ export function NaturalHistoryDetailsTab({
           </div>
           <div className="rounded-lg border border-border/60 bg-secondary/20 p-3">
             <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-              Family
+              {t("family")}
             </div>
             <div className="text-sm font-medium text-foreground">
               {details.family || "—"}
@@ -198,7 +200,7 @@ export function NaturalHistoryDetailsTab({
           </div>
           <div className="rounded-lg border border-border/60 bg-secondary/20 p-3">
             <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-              Genus
+              {t("genus")}
             </div>
             <div className="text-sm font-medium text-foreground">
               {details.genus || "—"}
@@ -206,7 +208,7 @@ export function NaturalHistoryDetailsTab({
           </div>
           <div className="rounded-lg border border-border/60 bg-secondary/20 p-3">
             <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-              Species
+              {t("species")}
             </div>
             <div className="text-sm font-medium text-foreground">
               {details.species || "—"}
@@ -214,7 +216,7 @@ export function NaturalHistoryDetailsTab({
           </div>
           <div className="rounded-lg border border-border/60 bg-secondary/20 p-3">
             <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-              Subspecies
+              {t("subspecies")}
             </div>
             <div className="text-sm font-medium text-foreground">
               {details.subspecies || "—"}
@@ -226,14 +228,14 @@ export function NaturalHistoryDetailsTab({
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
           <MapPin className="h-4 w-4 text-blue-500" />
-          Geolocation Data
+          {t("geolocationData")}
         </h3>
 
         <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <div>
               <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                Latitude
+                {t("latitude")}
               </div>
               <div className="text-sm font-medium text-foreground">
                 {details.latitude || "—"}
@@ -241,7 +243,7 @@ export function NaturalHistoryDetailsTab({
             </div>
             <div>
               <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                Longitude
+                {t("longitude")}
               </div>
               <div className="text-sm font-medium text-foreground">
                 {details.longitude || "—"}
@@ -249,15 +251,15 @@ export function NaturalHistoryDetailsTab({
             </div>
             <div>
               <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                Altitude
+                {t("altitude")}
               </div>
               <div className="text-sm font-medium text-foreground">
-                {details.altitude ? `${details.altitude}m` : "—"}
+                {details.altitude ? `${details.altitude}${t("meters")}` : "—"}
               </div>
             </div>
             <div>
               <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                Habitat
+                {t("habitat")}
               </div>
               <div className="text-sm font-medium text-foreground">
                 {details.habitat || "—"}
@@ -267,7 +269,7 @@ export function NaturalHistoryDetailsTab({
           {details.locality && (
             <div className="mt-4 pt-4 border-t border-border/40">
               <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-2">
-                Locality Description
+                {t("localityDescription")}
               </div>
               <p className="text-sm text-muted-foreground">
                 {details.locality}
@@ -280,14 +282,14 @@ export function NaturalHistoryDetailsTab({
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
           <Calendar className="h-4 w-4 text-purple-500" />
-          Collection Information
+          {t("collectionInformation")}
         </h3>
 
         <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <div>
               <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                Collection Date
+                {t("collectionDate")}
               </div>
               <div className="text-sm font-medium text-foreground">
                 {details.collectionDate
@@ -301,7 +303,7 @@ export function NaturalHistoryDetailsTab({
             </div>
             <div>
               <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                Collection Method
+                {t("collectionMethod")}
               </div>
               <div className="text-sm font-medium text-foreground">
                 {details.collectionMethod || "—"}
@@ -309,7 +311,7 @@ export function NaturalHistoryDetailsTab({
             </div>
             <div>
               <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                Collector
+                {t("collector")}
               </div>
               <div className="text-sm font-medium text-foreground">
                 {details.collectorName || "—"}
@@ -317,7 +319,7 @@ export function NaturalHistoryDetailsTab({
             </div>
             <div>
               <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                Specimen Type
+                {t("specimenType")}
               </div>
               <div className="text-sm font-medium text-foreground">
                 {details.specimenType || "—"}
@@ -330,14 +332,14 @@ export function NaturalHistoryDetailsTab({
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
           <TreePine className="h-4 w-4 text-amber-500" />
-          Preservation & Storage
+          {t("preservationStorage")}
         </h3>
 
         <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                Preservation Method
+                {t("preservationMethod")}
               </div>
               <div className="text-sm font-medium text-foreground">
                 {details.preservationMethod || "—"}
@@ -345,7 +347,7 @@ export function NaturalHistoryDetailsTab({
             </div>
             <div>
               <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                Storage Medium
+                {t("storageMedium")}
               </div>
               <div className="text-sm font-medium text-foreground">
                 {details.storageMedium || "—"}
@@ -355,7 +357,7 @@ export function NaturalHistoryDetailsTab({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mt-4">
             <div>
               <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                Container Type
+                {t("containerType")}
               </div>
               <div className="text-sm font-medium text-foreground">
                 {details.containerType || "—"}
@@ -363,7 +365,7 @@ export function NaturalHistoryDetailsTab({
             </div>
             <div>
               <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                Sex
+                {t("sex")}
               </div>
               <div className="text-sm font-medium text-foreground">
                 {details.sex || "—"}
@@ -371,7 +373,7 @@ export function NaturalHistoryDetailsTab({
             </div>
             <div>
               <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                Life Stage
+                {t("lifeStage")}
               </div>
               <div className="text-sm font-medium text-foreground">
                 {details.lifeStage || "—"}
@@ -385,7 +387,7 @@ export function NaturalHistoryDetailsTab({
         <div>
           <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
             <TreePine className="h-4 w-4 text-cyan-500" />
-            Scientific Data Availability
+            {t("scientificDataAvailability")}
           </h3>
 
           <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
@@ -393,20 +395,20 @@ export function NaturalHistoryDetailsTab({
               {details.dnaAvailable !== undefined && (
                 <div>
                   <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                    DNA Available
+                    {t("dnaAvailable")}
                   </div>
                   <div className="text-sm font-medium text-foreground">
-                    {details.dnaAvailable ? "Yes" : "No"}
+                    {details.dnaAvailable ? common("yes") : common("no")}
                   </div>
                 </div>
               )}
               {details.tissueAvailable !== undefined && (
                 <div>
                   <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                    Tissue Available
+                    {t("tissueAvailable")}
                   </div>
                   <div className="text-sm font-medium text-foreground">
-                    {details.tissueAvailable ? "Yes" : "No"}
+                    {details.tissueAvailable ? common("yes") : common("no")}
                   </div>
                 </div>
               )}
@@ -419,7 +421,7 @@ export function NaturalHistoryDetailsTab({
         <div>
           <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
             <TreePine className="h-4 w-4 text-orange-500" />
-            Geological Information
+            {t("geologicalInformation")}
           </h3>
 
           <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
@@ -427,7 +429,7 @@ export function NaturalHistoryDetailsTab({
               {details.geologicalPeriod && (
                 <div>
                   <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                    Geological Period
+                    {t("geologicalPeriod")}
                   </div>
                   <div className="text-sm font-medium text-foreground">
                     {details.geologicalPeriod}
@@ -437,7 +439,7 @@ export function NaturalHistoryDetailsTab({
               {details.formation && (
                 <div>
                   <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-                    Formation
+                    {t("formation")}
                   </div>
                   <div className="text-sm font-medium text-foreground">
                     {details.formation}

@@ -3,7 +3,7 @@
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDateFns } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -29,6 +29,8 @@ export function FineArtDetailsTab({
   organizationId,
 }: FineArtDetailsTabProps) {
   const locale = useCurrentLocale();
+  const t = useScopedI18n("modules.fineArt");
+  const common = useScopedI18n("modules.common");
   const { hasModule } = useFeatureAccess();
   const hasModuleAccess = hasModule("fine_art");
   const details = useQuery(
@@ -41,9 +43,9 @@ export function FineArtDetailsTab({
   if (!hasModuleAccess) {
     return (
       <FeatureGuard
-        featureName="Fine Art Module"
+        featureName={t("moduleName")}
         isLocked={true}
-        description="Enable the Fine Art module to track appraisals, provenance, and more."
+        description={t("moduleDescription")}
         showUpgrade={false}
       >
         <div />
@@ -55,7 +57,7 @@ export function FineArtDetailsTab({
     return (
       <div className="flex h-32 items-center justify-center">
         <p className="text-sm text-muted-foreground">
-          Loading fine art details...
+          {common("loading", { module: "fine art" })}
         </p>
       </div>
     );
@@ -66,11 +68,11 @@ export function FineArtDetailsTab({
       <div className="space-y-6">
         <div className="flex h-32 flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-border">
           <p className="text-sm text-muted-foreground">
-            No fine art details recorded yet
+            {common("noDetailsYet", { module: "fine art" })}
           </p>
           <Button variant="outline" size="sm">
             <Plus className="mr-2 h-4 w-4" />
-            Add Fine Art Details
+            {common("addDetails", { module: "Fine Art" })}
           </Button>
         </div>
       </div>
@@ -84,7 +86,7 @@ export function FineArtDetailsTab({
           <div className="mb-2 flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-emerald-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Appraised Value
+              {t("appraisedValue")}
             </span>
           </div>
           <span className="text-2xl font-light text-foreground">
@@ -98,7 +100,7 @@ export function FineArtDetailsTab({
           <div className="mb-2 flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-blue-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Replacement Value
+              {t("replacementValue")}
             </span>
           </div>
           <span className="text-2xl font-light text-foreground">
@@ -112,11 +114,11 @@ export function FineArtDetailsTab({
           <div className="mb-2 flex items-center gap-2">
             <Shield className="h-4 w-4 text-purple-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Insurance Policy
+              {t("insurancePolicy")}
             </span>
           </div>
           <span className="text-sm font-medium text-foreground">
-            {details.insurancePolicyNumber || "Not insured"}
+            {details.insurancePolicyNumber || t("notInsured")}
           </span>
           {details.insuranceCarrier && (
             <p className="mt-1 text-xs text-muted-foreground">
@@ -129,7 +131,7 @@ export function FineArtDetailsTab({
           <div className="mb-2 flex items-center gap-2">
             <FileCheck className="h-4 w-4 text-amber-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Display Status
+              {t("displayStatus")}
             </span>
           </div>
           <span
@@ -144,7 +146,7 @@ export function FineArtDetailsTab({
                     : "bg-secondary text-muted-foreground",
             )}
           >
-            {details.displayStatus?.replace(/_/g, " ") || "Unknown"}
+            {details.displayStatus?.replace(/_/g, " ") || common("unknown")}
           </span>
         </div>
       </div>
@@ -154,7 +156,7 @@ export function FineArtDetailsTab({
           <div className="flex items-center gap-2">
             <FileCheck className="h-4 w-4 text-amber-500" />
             <span className="text-sm font-medium text-amber-500">
-              Reappraisal Due:{" "}
+              {t("reappraisalDue")}:{" "}
               {formatDateFns(
                 new Date(details.reappraisalDate),
                 "MMMM d, yyyy",
@@ -168,7 +170,7 @@ export function FineArtDetailsTab({
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
           <History className="h-4 w-4 text-purple-500" />
-          Provenance Chain
+          {t("provenanceChain")}
         </h3>
 
         {details.provenanceChain && details.provenanceChain.length > 0 ? (
@@ -220,13 +222,14 @@ export function FineArtDetailsTab({
                   )}
                   {entry.salePrice && (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Sale Price:{" "}
+                      {t("salePrice")}:{" "}
                       {formatCurrency(
                         entry.salePrice,
                         locale,
                         entry.currency || "USD",
                       )}
-                      {entry.auctionHouse && ` at ${entry.auctionHouse}`}
+                      {entry.auctionHouse &&
+                        ` ${t("at")} ${entry.auctionHouse}`}
                     </p>
                   )}
                   {entry.notes && (
@@ -237,7 +240,7 @@ export function FineArtDetailsTab({
                   {entry.verified && (
                     <div className="mt-2 flex items-center gap-1 text-[10px] text-emerald-500">
                       <FileCheck className="h-3 w-3" />
-                      Verified
+                      {t("verified")}
                     </div>
                   )}
                 </div>
@@ -247,7 +250,7 @@ export function FineArtDetailsTab({
         ) : (
           <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-border">
             <p className="text-sm text-muted-foreground">
-              No provenance chain recorded
+              {t("noProvenanceRecorded")}
             </p>
           </div>
         )}
@@ -256,7 +259,7 @@ export function FineArtDetailsTab({
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
           <Truck className="h-4 w-4 text-cyan-500" />
-          Shipping & Movement Log
+          {t("shippingMovementLog")}
         </h3>
 
         {details.shippingLogs && details.shippingLogs.length > 0 ? (
@@ -288,7 +291,7 @@ export function FineArtDetailsTab({
                 </div>
                 {log.carrier && (
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Carrier: {log.carrier}
+                    {t("carrier")}: {log.carrier}
                     {log.trackingNumber && ` (${log.trackingNumber})`}
                   </p>
                 )}
@@ -302,7 +305,9 @@ export function FineArtDetailsTab({
           </div>
         ) : (
           <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-border">
-            <p className="text-sm text-muted-foreground">No shipping records</p>
+            <p className="text-sm text-muted-foreground">
+              {t("noShippingRecords")}
+            </p>
           </div>
         )}
       </div>

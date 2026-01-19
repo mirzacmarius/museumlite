@@ -2,7 +2,7 @@
 
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDateFns } from "@/lib/format-date";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -30,6 +30,8 @@ export function ArchiveDetailsTab({
   organizationId,
 }: ArchiveDetailsTabProps) {
   const locale = useCurrentLocale();
+  const t = useScopedI18n("modules.archive");
+  const common = useScopedI18n("modules.common");
   const { hasModule } = useFeatureAccess();
   const hasModuleAccess = hasModule("archive");
   const details = useQuery(
@@ -42,9 +44,9 @@ export function ArchiveDetailsTab({
   if (!hasModuleAccess) {
     return (
       <FeatureGuard
-        featureName="Archive Module"
+        featureName={t("moduleName")}
         isLocked={true}
-        description="Enable the Archive module to track document types, retention schedules, and classification."
+        description={t("moduleDescription")}
         showUpgrade={false}
       >
         <div />
@@ -56,7 +58,7 @@ export function ArchiveDetailsTab({
     return (
       <div className="flex h-32 items-center justify-center">
         <p className="text-sm text-muted-foreground">
-          Loading archive details...
+          {common("loading", { module: "archive" })}
         </p>
       </div>
     );
@@ -67,11 +69,11 @@ export function ArchiveDetailsTab({
       <div className="space-y-6">
         <div className="flex h-32 flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-border">
           <p className="text-sm text-muted-foreground">
-            No archive details recorded yet
+            {common("noDetailsYet", { module: "archive" })}
           </p>
           <Button variant="outline" size="sm">
             <Plus className="mr-2 h-4 w-4" />
-            Add Archive Details
+            {common("addDetails", { module: "Archive" })}
           </Button>
         </div>
       </div>
@@ -85,7 +87,7 @@ export function ArchiveDetailsTab({
           <div className="mb-2 flex items-center gap-2">
             <FileText className="h-4 w-4 text-blue-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Document Type
+              {t("documentType")}
             </span>
           </div>
           <span className="text-sm font-medium text-foreground">
@@ -102,7 +104,7 @@ export function ArchiveDetailsTab({
           <div className="mb-2 flex items-center gap-2">
             <Shield className="h-4 w-4 text-purple-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Confidentiality
+              {t("confidentiality")}
             </span>
           </div>
           <span
@@ -122,7 +124,7 @@ export function ArchiveDetailsTab({
             )}
           >
             {details.confidentialityLevel?.replace(/_/g, " ") ||
-              "Not classified"}
+              t("notClassified")}
           </span>
         </div>
 
@@ -130,15 +132,17 @@ export function ArchiveDetailsTab({
           <div className="mb-2 flex items-center gap-2">
             <Clock className="h-4 w-4 text-cyan-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Retention
+              {t("retention")}
             </span>
           </div>
           <span className="text-sm font-medium text-foreground">
-            {details.retentionYears ? `${details.retentionYears} years` : "—"}
+            {details.retentionYears
+              ? `${details.retentionYears} ${t("years")}`
+              : "—"}
           </span>
           {details.retentionExpiresAt && (
             <p className="mt-1 text-xs text-muted-foreground">
-              Expires:{" "}
+              {t("expires")}:{" "}
               {formatDateFns(
                 new Date(details.retentionExpiresAt),
                 "MMM d, yyyy",
@@ -152,22 +156,24 @@ export function ArchiveDetailsTab({
           <div className="mb-2 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Status
+              {t("status")}
             </span>
           </div>
           <div className="space-y-1">
             {details.legalHold && (
               <span className="inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium bg-red-500/10 text-red-500">
-                Legal Hold
+                {t("legalHold")}
               </span>
             )}
             {details.flaggedForDestruction && (
               <span className="inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium bg-orange-500/10 text-orange-500 ml-1">
-                Flagged for Destruction
+                {t("flaggedForDestruction")}
               </span>
             )}
             {!details.legalHold && !details.flaggedForDestruction && (
-              <span className="text-xs text-muted-foreground">Active</span>
+              <span className="text-xs text-muted-foreground">
+                {t("active")}
+              </span>
             )}
           </div>
         </div>
@@ -178,12 +184,12 @@ export function ArchiveDetailsTab({
           <div className="flex items-center gap-2">
             <Lock className="h-4 w-4 text-red-500" />
             <span className="text-sm font-medium text-red-500">
-              Legal Hold Active
+              {t("legalHoldActive")}
             </span>
           </div>
           {details.legalHoldReason && (
             <p className="mt-2 text-sm text-red-500/80">
-              Reason: {details.legalHoldReason}
+              {t("reason")}: {details.legalHoldReason}
             </p>
           )}
         </div>
@@ -194,12 +200,12 @@ export function ArchiveDetailsTab({
           <div className="flex items-center gap-2">
             <Trash2 className="h-4 w-4 text-orange-500" />
             <span className="text-sm font-medium text-orange-500">
-              Flagged for Destruction
+              {t("flaggedForDestruction")}
             </span>
           </div>
           {details.destructionDate && (
             <p className="mt-1 text-sm text-orange-500/80">
-              Scheduled:{" "}
+              {t("scheduled")}:{" "}
               {formatDateFns(
                 new Date(details.destructionDate),
                 "MMMM d, yyyy",
@@ -209,7 +215,7 @@ export function ArchiveDetailsTab({
           )}
           {details.destructionMethod && (
             <p className="mt-1 text-sm text-orange-500/80">
-              Method: {details.destructionMethod}
+              {t("method")}: {details.destructionMethod}
             </p>
           )}
         </div>

@@ -3,7 +3,7 @@
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDateFns } from "@/lib/format-date";
 import { formatCurrency, formatNumber } from "@/lib/format-number";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -32,6 +32,8 @@ export function VehicleDetailsTab({
   organizationId,
 }: VehicleDetailsTabProps) {
   const locale = useCurrentLocale();
+  const t = useScopedI18n("modules.vehicle");
+  const common = useScopedI18n("modules.common");
   const { hasModule } = useFeatureAccess();
   const hasModuleAccess = hasModule("automotive");
   const details = useQuery(
@@ -44,9 +46,9 @@ export function VehicleDetailsTab({
   if (!hasModuleAccess) {
     return (
       <FeatureGuard
-        featureName="Automotive Module"
+        featureName={t("moduleName")}
         isLocked={true}
-        description="Enable the Automotive module to track VIN, service history, and events."
+        description={t("moduleDescription")}
         showUpgrade={false}
       >
         <div />
@@ -58,7 +60,7 @@ export function VehicleDetailsTab({
     return (
       <div className="flex h-32 items-center justify-center">
         <p className="text-sm text-muted-foreground">
-          Loading vehicle details...
+          {common("loading", { module: "vehicle" })}
         </p>
       </div>
     );
@@ -69,11 +71,11 @@ export function VehicleDetailsTab({
       <div className="space-y-6">
         <div className="flex h-32 flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-border">
           <p className="text-sm text-muted-foreground">
-            No vehicle details recorded yet
+            {common("noDetailsYet", { module: "vehicle" })}
           </p>
           <Button variant="outline" size="sm">
             <Plus className="mr-2 h-4 w-4" />
-            Add Vehicle Details
+            {common("addDetails", { module: "Vehicle" })}
           </Button>
         </div>
       </div>
@@ -87,7 +89,7 @@ export function VehicleDetailsTab({
           <div className="mb-2 flex items-center gap-2">
             <Car className="h-4 w-4 text-blue-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Vehicle
+              {t("vehicle")}
             </span>
           </div>
           <span className="text-lg font-medium text-foreground">
@@ -100,11 +102,11 @@ export function VehicleDetailsTab({
           <div className="mb-2 flex items-center gap-2">
             <Settings className="h-4 w-4 text-muted-foreground" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              VIN
+              {t("vin")}
             </span>
           </div>
           <span className="font-mono text-sm text-foreground">
-            {details.vin || "Not recorded"}
+            {details.vin || t("notRecorded")}
           </span>
         </div>
 
@@ -112,14 +114,14 @@ export function VehicleDetailsTab({
           <div className="mb-2 flex items-center gap-2">
             <Gauge className="h-4 w-4 text-amber-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Odometer
+              {t("odometer")}
             </span>
           </div>
           <span className="text-2xl font-light text-foreground">
             {details.odometer ? formatNumber(details.odometer, locale) : "—"}
           </span>
           <span className="ml-1 text-sm text-muted-foreground">
-            {details.odometerUnit || "miles"}
+            {details.odometerUnit || t("miles")}
           </span>
         </div>
 
@@ -127,7 +129,7 @@ export function VehicleDetailsTab({
           <div className="mb-2 flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-emerald-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Insurance Value
+              {t("insuranceValue")}
             </span>
           </div>
           <span className="text-2xl font-light text-foreground">
@@ -225,7 +227,7 @@ export function VehicleDetailsTab({
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
           <Wrench className="h-4 w-4 text-blue-500" />
-          Service History
+          {t("serviceHistory")}
         </h3>
 
         {details.serviceLog && details.serviceLog.length > 0 ? (
@@ -254,7 +256,9 @@ export function VehicleDetailsTab({
                 </div>
                 <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
                   {entry.mileage && (
-                    <span>{formatNumber(entry.mileage, locale)} miles</span>
+                    <span>
+                      {formatNumber(entry.mileage, locale)} {t("miles")}
+                    </span>
                   )}
                   {entry.provider && <span>{entry.provider}</span>}
                   {entry.cost && (
@@ -266,7 +270,9 @@ export function VehicleDetailsTab({
           </div>
         ) : (
           <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-border">
-            <p className="text-sm text-muted-foreground">No service records</p>
+            <p className="text-sm text-muted-foreground">
+              {t("noServiceRecords")}
+            </p>
           </div>
         )}
       </div>
@@ -274,7 +280,7 @@ export function VehicleDetailsTab({
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
           <Trophy className="h-4 w-4 text-amber-500" />
-          Event History
+          {t("eventHistory")}
         </h3>
 
         {details.eventHistory && details.eventHistory.length > 0 ? (
@@ -336,7 +342,9 @@ export function VehicleDetailsTab({
           </div>
         ) : (
           <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-border">
-            <p className="text-sm text-muted-foreground">No event history</p>
+            <p className="text-sm text-muted-foreground">
+              {t("noEventHistory")}
+            </p>
           </div>
         )}
       </div>
