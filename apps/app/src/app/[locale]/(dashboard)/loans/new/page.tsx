@@ -5,7 +5,7 @@ import { CollectionMultiSelectCombobox } from "@/components/collection-multi-sel
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { formatDate } from "@/lib/format-date";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Doc, Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
@@ -36,6 +36,7 @@ function SelectedCollectionItem({
   onRemove,
   hasIssue = false,
   issueMessage,
+  conditionPlaceholder,
 }: {
   collection: Pick<Doc<"collections">, "_id" | "accessionNumber" | "title">;
   condition: string;
@@ -43,6 +44,7 @@ function SelectedCollectionItem({
   onRemove: () => void;
   hasIssue?: boolean;
   issueMessage?: string;
+  conditionPlaceholder: string;
 }) {
   const primaryImageUrl = useQuery(api.media.getPrimaryImageUrl, {
     collectionId: collection._id,
@@ -103,7 +105,7 @@ function SelectedCollectionItem({
           id={`condition-${collection._id}`}
           value={condition}
           onChange={(e) => onConditionChange(e.target.value)}
-          placeholder="e.g. Good, Stable, minor wear..."
+          placeholder={conditionPlaceholder}
           className={cn(
             "bg-background text-sm",
             hasIssue && "border-destructive",
@@ -117,6 +119,7 @@ function SelectedCollectionItem({
 export default function NewLoanPage() {
   const router = useRouter();
   const locale = useCurrentLocale();
+  const t = useScopedI18n("loans");
   const { currentOrganizationId } = useOrganization();
   const createLoan = useMutation(api.loans.create);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -395,7 +398,7 @@ export default function NewLoanPage() {
                           loanNumber: e.target.value,
                         })
                       }
-                      placeholder="Auto-generated"
+                      placeholder={t("placeholders.loanNumber")}
                       className="bg-background font-mono placeholder:text-muted-foreground/50"
                     />
                   </div>
@@ -429,7 +432,7 @@ export default function NewLoanPage() {
                           });
                         }
                       }}
-                      placeholder={`Search ${formData.type === "incoming" ? "lender" : "borrower"}...`}
+                      placeholder={t("placeholders.lenderBorrower")}
                     />
                   </div>
 
@@ -448,7 +451,7 @@ export default function NewLoanPage() {
                             lenderBorrowerName: e.target.value,
                           })
                         }
-                        placeholder="e.g. Museum of Modern Art"
+                        placeholder={t("placeholders.institutionName")}
                         required
                         className="bg-background"
                       />
@@ -469,7 +472,7 @@ export default function NewLoanPage() {
                             lenderBorrowerContact: e.target.value,
                           })
                         }
-                        placeholder="Email, phone, etc."
+                        placeholder={t("placeholders.contactDetails")}
                         className="bg-background"
                       />
                     </div>
@@ -502,7 +505,7 @@ export default function NewLoanPage() {
                           startDate: date || new Date(),
                         })
                       }
-                      placeholder="Select date"
+                      placeholder={t("placeholders.selectDate")}
                     />
                   </div>
                   <div className="space-y-2">
@@ -513,7 +516,7 @@ export default function NewLoanPage() {
                       onSelect={(date: Date | undefined) =>
                         setFormData({ ...formData, endDate: date })
                       }
-                      placeholder="Select date"
+                      placeholder={t("placeholders.selectDate")}
                     />
                   </div>
                 </div>
@@ -531,7 +534,7 @@ export default function NewLoanPage() {
                         insuranceValue: e.target.value,
                       })
                     }
-                    placeholder="0.00"
+                    placeholder={t("placeholders.insuranceValue")}
                     className="bg-background"
                   />
                 </div>
@@ -544,7 +547,7 @@ export default function NewLoanPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, terms: e.target.value })
                     }
-                    placeholder="Loan duration terms, special requirements..."
+                    placeholder={t("placeholders.terms")}
                     rows={3}
                     className="bg-background resize-none"
                   />
@@ -558,7 +561,7 @@ export default function NewLoanPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, notes: e.target.value })
                     }
-                    placeholder="Staff notes..."
+                    placeholder={t("placeholders.notes")}
                     rows={2}
                     className="bg-background resize-none"
                   />
@@ -596,7 +599,7 @@ export default function NewLoanPage() {
                         return updated;
                       });
                     }}
-                    placeholder="Search and select collections..."
+                    placeholder={t("placeholders.collections")}
                   />
                 </div>
 
@@ -661,6 +664,7 @@ export default function NewLoanPage() {
                             }}
                             hasIssue={hasIssue}
                             issueMessage={issueMessage}
+                            conditionPlaceholder={t("placeholders.condition")}
                           />
                         );
                       })}

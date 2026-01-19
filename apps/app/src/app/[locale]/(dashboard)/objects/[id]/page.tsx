@@ -311,7 +311,7 @@ export default function ObjectDetailPage() {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    title="Share"
+                    title={common("share")}
                   >
                     <Share2 className="h-4 w-4" />
                   </Button>
@@ -340,7 +340,7 @@ export default function ObjectDetailPage() {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                title="Print Record"
+                title={common("printRecord")}
                 onClick={() => setIsPrintModalOpen(true)}
               >
                 <Printer className="h-4 w-4" />

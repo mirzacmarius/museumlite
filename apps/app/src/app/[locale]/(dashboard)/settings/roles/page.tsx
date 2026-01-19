@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -23,6 +24,7 @@ import { Edit, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 export default function RolesSettingsPage() {
+  const t = useScopedI18n("settings.roles");
   const { currentOrganizationId } = useOrganization();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -80,12 +82,12 @@ export default function RolesSettingsPage() {
     setError(null);
 
     if (!formData.name.trim()) {
-      setError("Role name is required");
+      setError(t("nameRequired"));
       return;
     }
 
     if (formData.selectedPermissions.length === 0) {
-      setError("At least one permission must be selected");
+      setError(t("permissionsRequired"));
       return;
     }
 
@@ -105,11 +107,7 @@ export default function RolesSettingsPage() {
       setCreateDialogOpen(false);
     } catch (err) {
       console.error("Error creating role:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to create role. Please try again.",
-      );
+      setError(err instanceof Error ? err.message : t("createFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -117,7 +115,7 @@ export default function RolesSettingsPage() {
 
   const handleEditRole = (role: NonNullable<typeof roles>[0]) => {
     if (role.isSystemRole) {
-      alert("System roles cannot be edited");
+      alert(t("systemRoleError"));
       return;
     }
     setEditingRole({
@@ -145,12 +143,12 @@ export default function RolesSettingsPage() {
     setError(null);
 
     if (!formData.name.trim()) {
-      setError("Role name is required");
+      setError(t("nameRequired"));
       return;
     }
 
     if (formData.selectedPermissions.length === 0) {
-      setError("At least one permission must be selected");
+      setError(t("permissionsRequired"));
       return;
     }
 
@@ -171,22 +169,14 @@ export default function RolesSettingsPage() {
       setEditDialogOpen(false);
     } catch (err) {
       console.error("Error updating role:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to update role. Please try again.",
-      );
+      setError(err instanceof Error ? err.message : t("updateFailed"));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDeleteRole = async (roleId: Id<"roles">) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this role? Users with this role will need to be reassigned.",
-      )
-    ) {
+    if (!confirm(t("deleteConfirm"))) {
       return;
     }
 
@@ -194,11 +184,7 @@ export default function RolesSettingsPage() {
       await deleteRole({ roleId });
     } catch (err) {
       console.error("Error deleting role:", err);
-      alert(
-        err instanceof Error
-          ? err.message
-          : "Failed to delete role. Please try again.",
-      );
+      alert(err instanceof Error ? err.message : t("deleteFailed"));
     }
   };
 
@@ -214,14 +200,12 @@ export default function RolesSettingsPage() {
   return (
     <div className="flex w-full flex-col gap-6">
       <div className="flex w-full flex-col gap-2">
-        <h2 className="text-xl font-medium text-primary">Role Management</h2>
-        <p className="text-sm text-muted-foreground">
-          Create and manage custom roles with specific permissions
-        </p>
+        <h2 className="text-xl font-medium text-primary">{t("title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("description")}</p>
       </div>
       <div className="flex w-full items-center justify-between">
         <div>
-          <h3 className="text-lg font-medium">Roles</h3>
+          <h3 className="text-lg font-medium">{t("rolesLabel")}</h3>
           <p className="text-sm text-muted-foreground">
             {roles?.length || 0} role{roles?.length !== 1 ? "s" : ""} defined
           </p>
@@ -231,16 +215,15 @@ export default function RolesSettingsPage() {
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Create Role
+                {t("createButton")}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
               <form onSubmit={handleCreateRole}>
                 <DialogHeader>
-                  <DialogTitle>Create New Role</DialogTitle>
+                  <DialogTitle>{t("createNewRole")}</DialogTitle>
                   <DialogDescription>
-                    Create a custom role with specific permissions for your
-                    organization.
+                    {t("createDescription")}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -250,19 +233,21 @@ export default function RolesSettingsPage() {
                     </div>
                   )}
                   <div className="space-y-2">
-                    <Label htmlFor="role-name">Role Name *</Label>
+                    <Label htmlFor="role-name">{t("roleNameLabel")}</Label>
                     <Input
                       id="role-name"
                       value={formData.name}
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
                       }
-                      placeholder="e.g., Assistant Curator"
+                      placeholder={t("roleNamePlaceholder")}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="role-description">Description</Label>
+                    <Label htmlFor="role-description">
+                      {t("descriptionLabel")}
+                    </Label>
                     <Textarea
                       id="role-description"
                       value={formData.description}
@@ -272,12 +257,12 @@ export default function RolesSettingsPage() {
                           description: e.target.value,
                         })
                       }
-                      placeholder="Describe what this role can do..."
+                      placeholder={t("descriptionPlaceholder")}
                       rows={3}
                     />
                   </div>
                   <div className="space-y-3">
-                    <Label>Permissions *</Label>
+                    <Label>{t("permissionsLabel")}</Label>
                     <div className="space-y-4 rounded-lg border border-border p-4">
                       {groupedPermissions &&
                         Object.entries(groupedPermissions).map(
@@ -335,10 +320,10 @@ export default function RolesSettingsPage() {
                       setError(null);
                     }}
                   >
-                    Cancel
+                    {t("cancel")}
                   </Button>
                   <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Creating..." : "Create Role"}
+                    {isSubmitting ? t("updating") : t("createButton")}
                   </Button>
                 </DialogFooter>
               </form>
@@ -368,7 +353,7 @@ export default function RolesSettingsPage() {
                     <h3 className="font-medium">{role.name}</h3>
                     {role.isSystemRole && (
                       <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                        System
+                        {t("systemBadge")}
                       </span>
                     )}
                   </div>
@@ -392,7 +377,7 @@ export default function RolesSettingsPage() {
                       ))}
                       {role.permissions.length > 5 && (
                         <span className="rounded bg-secondary px-2 py-0.5 text-xs">
-                          +{role.permissions.length - 5} more
+                          +{role.permissions.length - 5} {t("morePermissions")}
                         </span>
                       )}
                     </div>
@@ -430,10 +415,8 @@ export default function RolesSettingsPage() {
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           <form onSubmit={handleUpdateRole}>
             <DialogHeader>
-              <DialogTitle>Edit Role</DialogTitle>
-              <DialogDescription>
-                Update role details and permissions.
-              </DialogDescription>
+              <DialogTitle>{t("editRole")}</DialogTitle>
+              <DialogDescription>{t("editDescription")}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               {error && (
@@ -442,7 +425,7 @@ export default function RolesSettingsPage() {
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="edit-role-name">Role Name *</Label>
+                <Label htmlFor="edit-role-name">{t("roleNameLabel")}</Label>
                 <Input
                   id="edit-role-name"
                   value={formData.name}
@@ -453,7 +436,9 @@ export default function RolesSettingsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-role-description">Description</Label>
+                <Label htmlFor="edit-role-description">
+                  {t("descriptionLabel")}
+                </Label>
                 <Textarea
                   id="edit-role-description"
                   value={formData.description}
@@ -467,7 +452,7 @@ export default function RolesSettingsPage() {
                 />
               </div>
               <div className="space-y-3">
-                <Label>Permissions *</Label>
+                <Label>{t("permissionsLabel")}</Label>
                 <div className="space-y-4 rounded-lg border border-border p-4">
                   {groupedPermissions &&
                     Object.entries(groupedPermissions).map(
@@ -526,10 +511,10 @@ export default function RolesSettingsPage() {
                   setError(null);
                 }}
               >
-                Cancel
+                {t("cancel")}
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Updating..." : "Update Role"}
+                {isSubmitting ? t("updating") : t("updateButton")}
               </Button>
             </DialogFooter>
           </form>

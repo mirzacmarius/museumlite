@@ -1326,7 +1326,7 @@ export default function CollectionEditPage() {
                     {collection.status === "active" && hasActiveLoan && (
                       <div
                         className="flex items-center text-xs text-muted-foreground"
-                        title="Cannot deaccession - item is on active loan"
+                        title={common("cannotDeaccession")}
                       >
                         <AlertOctagon className="mr-2 h-4 w-4" />
                         Cannot deaccession (On Loan)
@@ -1399,7 +1399,7 @@ export default function CollectionEditPage() {
                                       size="sm"
                                       variant="secondary"
                                       onClick={() => handleSetPrimary(file._id)}
-                                      title="Set as primary"
+                                      title={common("setAsPrimary")}
                                     >
                                       <Star className="h-3 w-3" />
                                     </Button>
@@ -1409,7 +1409,7 @@ export default function CollectionEditPage() {
                                     size="sm"
                                     variant="destructive"
                                     onClick={() => handleDelete(file._id)}
-                                    title="Delete"
+                                    title={common("delete")}
                                   >
                                     <X className="h-3 w-3" />
                                   </Button>
@@ -1484,7 +1484,7 @@ export default function CollectionEditPage() {
                               size="sm"
                               variant="ghost"
                               onClick={() => handleDelete(doc._id)}
-                              title="Delete"
+                              title={common("delete")}
                             >
                               <X className="h-3 w-3" />
                             </Button>

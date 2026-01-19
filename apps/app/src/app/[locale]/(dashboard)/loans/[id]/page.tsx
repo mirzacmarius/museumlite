@@ -4,7 +4,7 @@ import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
@@ -108,6 +108,7 @@ export default function LoanDetailPage() {
   const params = useParams();
   const loanId = params.id as string;
   const locale = useCurrentLocale();
+  const common = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
   const [activeTab, setActiveTab] = useState("overview");
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
@@ -217,7 +218,7 @@ export default function LoanDetailPage() {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                title="Print Manifest"
+                title={common("printManifest")}
                 onClick={() => setIsPrintModalOpen(true)}
               >
                 <Printer className="h-4 w-4" />

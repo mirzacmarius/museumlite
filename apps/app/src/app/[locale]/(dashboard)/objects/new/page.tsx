@@ -963,7 +963,7 @@ export default function CollectionFormPage() {
                                   size="sm"
                                   variant="secondary"
                                   onClick={() => handleSetPrimary(file.id)}
-                                  title="Set as primary"
+                                  title={common("setAsPrimary")}
                                 >
                                   <Star className="h-3 w-3" />
                                 </Button>
@@ -973,7 +973,7 @@ export default function CollectionFormPage() {
                                 size="sm"
                                 variant="destructive"
                                 onClick={() => handleDelete(file.id)}
-                                title="Delete"
+                                title={common("delete")}
                               >
                                 <X className="h-3 w-3" />
                               </Button>
@@ -1046,7 +1046,7 @@ export default function CollectionFormPage() {
                               size="sm"
                               variant="ghost"
                               onClick={() => handleDeleteDocument(doc.id)}
-                              title="Delete"
+                              title={common("delete")}
                             >
                               <X className="h-3 w-3" />
                             </Button>

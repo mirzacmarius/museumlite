@@ -3,7 +3,7 @@
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { formatDate } from "@/lib/format-date";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -65,11 +65,14 @@ interface WebhookItem {
 
 export default function DeveloperPage() {
   const { currentOrganizationId } = useOrganization();
+  const t = useScopedI18n("settings");
 
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Select an organization</p>
+        <p className="text-muted-foreground">
+          {t("developer.selectOrganization")}
+        </p>
       </div>
     );
   }
@@ -77,9 +80,11 @@ export default function DeveloperPage() {
   return (
     <div className="w-full space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Developer</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {t("developer.title")}
+        </h1>
         <p className="text-muted-foreground mt-2">
-          Manage API keys, webhooks, and developer utilities.
+          {t("developer.description")}
         </p>
       </div>
 
@@ -87,15 +92,15 @@ export default function DeveloperPage() {
         <TabsList>
           <TabsTrigger value="api-keys" className="gap-2">
             <Key className="h-4 w-4" />
-            API Keys
+            {t("tabs.apiKeys")}
           </TabsTrigger>
           <TabsTrigger value="webhooks" className="gap-2">
             <Webhook className="h-4 w-4" />
-            Webhooks
+            {t("tabs.webhooks")}
           </TabsTrigger>
           <TabsTrigger value="utilities" className="gap-2">
             <AlertTriangle className="h-4 w-4" />
-            Utilities
+            {t("tabs.utilities")}
           </TabsTrigger>
         </TabsList>
 
@@ -125,6 +130,7 @@ function ApiKeysTab({
   organizationId,
 }: { organizationId: Id<"organizations"> }) {
   const locale = useCurrentLocale();
+  const t = useScopedI18n("settings");
   const apiKeys = useQuery(api.apiKeys.list, { organizationId });
   const createKey = useMutation(api.apiKeys.create);
   const revokeKey = useMutation(api.apiKeys.revoke);
@@ -189,14 +195,14 @@ function ApiKeysTab({
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold">API Keys</h2>
+            <h2 className="text-xl font-semibold">{t("apiKeys.title")}</h2>
             <p className="text-sm text-muted-foreground">
-              Manage API keys for external integrations.
+              {t("apiKeys.description")}
             </p>
           </div>
           <Button onClick={() => setShowCreate(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            Create API Key
+            {t("apiKeys.createButton")}
           </Button>
         </div>
 
@@ -207,7 +213,7 @@ function ApiKeysTab({
             </div>
           ) : apiKeys.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
-              No API keys yet. Create one to get started.
+              {t("apiKeys.noKeys")}
             </div>
           ) : (
             <div className="divide-y divide-border">
@@ -221,7 +227,7 @@ function ApiKeysTab({
                       <span className="font-medium">{key.name}</span>
                       {key.isRevoked && (
                         <span className="rounded bg-destructive/10 px-2 py-0.5 text-xs text-destructive">
-                          Revoked
+                          {t("apiKeys.revoked")}
                         </span>
                       )}
                     </div>
@@ -230,11 +236,12 @@ function ApiKeysTab({
                         {key.prefix}...
                       </code>
                       <span>
-                        Created {formatDate(new Date(key.createdAt), locale)}
+                        {t("apiKeys.created")}{" "}
+                        {formatDate(new Date(key.createdAt), locale)}
                       </span>
                       {key.lastUsedAt && (
                         <span>
-                          Last used{" "}
+                          {t("apiKeys.lastUsed")}{" "}
                           {formatDate(new Date(key.lastUsedAt), locale)}
                         </span>
                       )}
@@ -245,24 +252,27 @@ function ApiKeysTab({
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="outline" size="sm">
-                            Revoke
+                            {t("apiKeys.revokeButton")}
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Revoke API Key?</AlertDialogTitle>
+                            <AlertDialogTitle>
+                              {t("apiKeys.revokeDialog.title")}
+                            </AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will immediately disable this API key. Any
-                              integrations using it will stop working.
+                              {t("apiKeys.revokeDialog.description")}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel>
+                              {t("apiKeys.revokeDialog.cancel")}
+                            </AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => handleRevoke(key._id)}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
-                              Revoke Key
+                              {t("apiKeys.revokeDialog.confirm")}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -276,18 +286,22 @@ function ApiKeysTab({
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Delete API Key?</AlertDialogTitle>
+                          <AlertDialogTitle>
+                            {t("apiKeys.deleteDialog.title")}
+                          </AlertDialogTitle>
                           <AlertDialogDescription>
-                            This will permanently delete this API key.
+                            {t("apiKeys.deleteDialog.description")}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel>
+                            {t("apiKeys.deleteDialog.cancel")}
+                          </AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => handleDelete(key._id)}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                           >
-                            Delete
+                            {t("apiKeys.deleteDialog.confirm")}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -303,12 +317,14 @@ function ApiKeysTab({
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {createdKey ? "API Key Created" : "Create API Key"}
+                {createdKey
+                  ? t("apiKeys.createDialog.createdTitle")
+                  : t("apiKeys.createDialog.title")}
               </DialogTitle>
               <DialogDescription>
                 {createdKey
-                  ? "Copy your API key now. You won't be able to see it again."
-                  : "Give your API key a name to identify it."}
+                  ? t("apiKeys.createDialog.createdDescription")
+                  : t("apiKeys.createDialog.description")}
               </DialogDescription>
             </DialogHeader>
 
@@ -329,17 +345,18 @@ function ApiKeysTab({
                   </div>
                 </div>
                 <p className="text-sm text-amber-600">
-                  Make sure to copy your API key now. You won't be able to see
-                  it again!
+                  {t("apiKeys.createDialog.warning")}
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="key-name">Name</Label>
+                  <Label htmlFor="key-name">
+                    {t("apiKeys.createDialog.nameLabel")}
+                  </Label>
                   <Input
                     id="key-name"
-                    placeholder="e.g., Production API"
+                    placeholder={t("apiKeys.createDialog.namePlaceholder")}
                     value={newKeyName}
                     onChange={(e) => setNewKeyName(e.target.value)}
                   />
@@ -349,11 +366,13 @@ function ApiKeysTab({
 
             <DialogFooter>
               {createdKey ? (
-                <Button onClick={closeDialog}>Done</Button>
+                <Button onClick={closeDialog}>
+                  {t("apiKeys.createDialog.done")}
+                </Button>
               ) : (
                 <>
                   <Button variant="outline" onClick={closeDialog}>
-                    Cancel
+                    {t("apiKeys.createDialog.cancel")}
                   </Button>
                   <Button
                     onClick={handleCreate}
@@ -362,7 +381,7 @@ function ApiKeysTab({
                     {isCreating ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    Create Key
+                    {t("apiKeys.createDialog.create")}
                   </Button>
                 </>
               )}
@@ -377,6 +396,7 @@ function ApiKeysTab({
 function WebhooksTab({
   organizationId,
 }: { organizationId: Id<"organizations"> }) {
+  const t = useScopedI18n("settings");
   const webhooks = useQuery(api.webhooks.list, { organizationId });
   const availableEvents = useQuery(api.webhooks.listEvents, {});
   const createWebhook = useMutation(api.webhooks.create);
@@ -497,14 +517,14 @@ function WebhooksTab({
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold">Webhooks</h2>
+            <h2 className="text-xl font-semibold">{t("webhooks.title")}</h2>
             <p className="text-sm text-muted-foreground">
-              Send real-time notifications to external services.
+              {t("webhooks.description")}
             </p>
           </div>
           <Button onClick={() => setShowCreate(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            Add Webhook
+            {t("webhooks.addButton")}
           </Button>
         </div>
 
@@ -515,7 +535,7 @@ function WebhooksTab({
             </div>
           ) : webhooks.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
-              No webhooks configured. Add one to get started.
+              {t("webhooks.noWebhooks")}
             </div>
           ) : (
             <div className="divide-y divide-border">
@@ -540,7 +560,7 @@ function WebhooksTab({
                         ) : (
                           <Send className="mr-2 h-4 w-4" />
                         )}
-                        Test
+                        {t("webhooks.test")}
                       </Button>
                       <Button
                         variant="outline"
@@ -747,6 +767,7 @@ function WebhooksTab({
 function UtilitiesTab({
   organizationId,
 }: { organizationId: Id<"organizations"> }) {
+  const t = useScopedI18n("settings");
   const [isDeletingLoans, setIsDeletingLoans] = useState(false);
   const [deleteResult, setDeleteResult] = useState<{
     deletedLoans: number;

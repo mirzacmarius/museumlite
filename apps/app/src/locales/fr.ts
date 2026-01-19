@@ -77,6 +77,174 @@ export default {
       activity: "Activité",
       developer: "Développeur",
     },
+    roles: {
+      title: "Gestion des Rôles",
+      description:
+        "Créer et gérer des rôles personnalisés avec des permissions spécifiques",
+      rolesLabel: "Rôles",
+      createNewRole: "Créer un Nouveau Rôle",
+      createDescription:
+        "Créer un rôle personnalisé avec des permissions spécifiques pour votre organisation.",
+      editRole: "Modifier le Rôle",
+      editDescription: "Mettre à jour les détails et les permissions du rôle.",
+      roleNameLabel: "Nom du Rôle *",
+      roleNamePlaceholder: "ex., Conservateur Adjoint",
+      descriptionLabel: "Description",
+      descriptionPlaceholder: "Décrivez ce que ce rôle peut faire...",
+      permissionsLabel: "Permissions *",
+      cancel: "Annuler",
+      createButton: "Créer le Rôle",
+      updateButton: "Mettre à Jour le Rôle",
+      updating: "Mise à jour...",
+      systemRoleError: "Les rôles système ne peuvent pas être modifiés",
+      nameRequired: "Le nom du rôle est requis",
+      permissionsRequired: "Au moins une permission doit être sélectionnée",
+      createFailed: "Échec de la création du rôle. Veuillez réessayer.",
+      updateFailed: "Échec de la mise à jour du rôle. Veuillez réessayer.",
+      deleteFailed: "Échec de la suppression du rôle. Veuillez réessayer.",
+      deleteConfirm:
+        "Êtes-vous sûr de vouloir supprimer ce rôle ? Les utilisateurs avec ce rôle devront être réassignés.",
+      systemBadge: "Système",
+      permissionsCount: "Permissions ({count})",
+      morePermissions: "plus",
+    },
+    organization: {
+      title: "Paramètres de l'Organisation",
+      description: "Gérez les paramètres et préférences de votre organisation",
+      basicInformation: "Informations de Base",
+      nameLabel: "Nom de l'Organisation *",
+      typeLabel: "Type d'Organisation",
+      typeCannotChange: "Le type d'organisation ne peut pas être modifié",
+      slugLabel: "Slug",
+      slugCannotChange: "Le slug ne peut pas être modifié",
+      accessionNumberSettings: "Paramètres du Numéro d'Accession",
+      formatTemplate: "Modèle de Format",
+      chooseTemplate: "Choisir un modèle...",
+      counterResetSchedule: "Calendrier de Réinitialisation du Compteur",
+      neverGlobal: "Jamais (Compteur Global)",
+      yearlyResets: "Annuellement (Réinitialise 1er Jan)",
+      monthlyResets: "Mensuellement (Réinitialise 1er)",
+      dailyResets: "Quotidiennement (Réinitialise Minuit)",
+      whenCounterReset: "Quand le compteur doit-il être réinitialisé à 1 ?",
+      autoGeneration: "Génération Automatique",
+      autoGenerateAccession: "Générer automatiquement les numéros d'accession",
+      locationTypes: "Types d'Emplacement",
+      customLocationTypes: "Types d'Emplacement Personnalisés",
+      addLocationType: "Ajouter un Type d'Emplacement",
+      locationTypeHint:
+        "Définissez des types d'emplacement personnalisés pour votre organisation (par exemple, Galerie, Coffre-fort, Vitrine)",
+      conditionOptions: "Options de Condition",
+      organizationConditions: "Conditions de l'Organisation",
+      conditionHint:
+        "Les conditions personnalisées peuvent être ajoutées directement à partir du menu déroulant des conditions lors de la création ou de la modification de collections.",
+      yourCustomConditions: "Vos Conditions Personnalisées :",
+      conditionTip:
+        "💡 Conseil : Ouvrez le menu déroulant des conditions dans n'importe quel formulaire de collection et cliquez sur « Nouveau » pour ajouter des conditions personnalisées à la volée.",
+      standardConditions:
+        "Les conditions standard (Excellent, Très Bon, Bon, Mauvais) sont toujours disponibles.",
+      materialOptions: "Options de Matériau",
+      organizationMaterials: "Matériaux de l'Organisation",
+      materialHint:
+        "Les matériaux peuvent être ajoutés directement à partir du champ des matériaux lors de la création ou de la modification de collections.",
+      yourMaterials: "Vos Matériaux :",
+      materialTip:
+        "💡 Conseil : Ouvrez le menu déroulant des matériaux dans n'importe quel formulaire de collection et cliquez sur « Nouveau » pour ajouter des matériaux à la volée.",
+      loanSettings: "Paramètres de Prêt",
+      enableDetailedConditionReports:
+        "Activer les Rapports de Condition Détaillés",
+      detailedConditionReportsHint:
+        "Exiger des rapports de condition détaillés avec photos pour les articles en prêt",
+      saveChanges: "Enregistrer les Modifications",
+      saving: "Enregistrement...",
+      organizationNameRequired: "Le nom de l'organisation est requis",
+      invalidAccessionFormat: "Format d'accession invalide : {error}",
+      updateSuccess: "Organisation mise à jour avec succès",
+      updateError:
+        "Échec de la mise à jour de l'organisation. Veuillez réessayer.",
+      templateDialog: {
+        updateTemplate: "Mettre à Jour le Modèle",
+        saveTemplate: "Enregistrer le Modèle",
+        updateDescription:
+          "Mettez à jour votre modèle personnalisé avec le format, le nom et la description actuels.",
+        saveDescription:
+          "Enregistrez votre format de numéro d'accession actuel en tant que modèle réutilisable.",
+        templateName: "Nom du Modèle *",
+        templateNamePlaceholder: "par exemple, Format Mensuel",
+        description: "Description (optionnel)",
+        descriptionPlaceholder: "Décrivez quand utiliser ce modèle...",
+        templateFormat: "Format du Modèle",
+        preview: "Aperçu :",
+        cancel: "Annuler",
+        update: "Mettre à Jour le Modèle",
+        save: "Enregistrer le Modèle",
+        templateNameRequired: "Le nom du modèle est requis",
+        validTemplateRequired: "Veuillez d'abord entrer un modèle valide",
+      },
+      deleteTemplateDialog: {
+        title: "Supprimer le Modèle",
+        description:
+          "Êtes-vous sûr de vouloir supprimer ce modèle ? Cette action ne peut pas être annulée.",
+        cancel: "Annuler",
+        delete: "Supprimer",
+      },
+    },
+    developer: {
+      selectOrganization:
+        "Veuillez sélectionner une organisation pour voir les paramètres développeur",
+      title: "Paramètres Développeur",
+      description: "Gérer les clés API, webhooks et utilitaires",
+    },
+    tabs: {
+      apiKeys: "Clés API",
+      webhooks: "Webhooks",
+      utilities: "Utilitaires",
+    },
+    apiKeys: {
+      title: "Clés API",
+      description: "Créer et gérer des clés API pour l'accès programmatique",
+      createButton: "Créer une Clé API",
+      noKeys: "Aucune clé API trouvée",
+      revoked: "Révoquée",
+      created: "Créée",
+      lastUsed: "Dernière utilisation",
+      revokeButton: "Révoquer",
+      revokeDialog: {
+        title: "Révoquer la Clé API",
+        description:
+          "Cela invalidera immédiatement la clé API. Toutes les applications l'utilisant perdront l'accès.",
+        cancel: "Annuler",
+        confirm: "Révoquer la Clé",
+      },
+      deleteDialog: {
+        title: "Supprimer la Clé API",
+        description:
+          "Cela supprimera définitivement l'enregistrement de la clé API. Cette action ne peut pas être annulée.",
+        cancel: "Annuler",
+        confirm: "Supprimer",
+      },
+      createDialog: {
+        title: "Créer une Clé API",
+        description: "Entrez un nom pour votre nouvelle clé API",
+        createdTitle: "Clé API Créée",
+        createdDescription:
+          "Copiez votre clé API maintenant. Vous ne pourrez plus la voir.",
+        warning:
+          "Enregistrez cette clé en toute sécurité. Elle ne sera plus affichée.",
+        nameLabel: "Nom de la Clé",
+        namePlaceholder: "ex., Clé API de Production",
+        done: "Terminé",
+        cancel: "Annuler",
+        create: "Créer la Clé",
+      },
+    },
+    webhooks: {
+      title: "Webhooks",
+      description:
+        "Configurer les points de terminaison webhook pour les notifications d'événements",
+      addButton: "Ajouter un Webhook",
+      noWebhooks: "Aucun webhook configuré",
+      test: "Tester",
+    },
   },
   activity: {
     title: "Activité",
@@ -148,6 +316,18 @@ export default {
     newLoan: "Nouveau Prêt",
     createLoan: "Créer un Prêt",
     searchPlaceholder: "Rechercher des prêts...",
+    placeholders: {
+      condition: "ex. Bon, Stable, usure mineure...",
+      loanNumber: "Généré automatiquement",
+      lenderBorrower: "Rechercher prêteur/emprunteur...",
+      institutionName: "ex. Musée d'Art Moderne",
+      contactDetails: "Email, téléphone, etc.",
+      selectDate: "Sélectionner une date",
+      insuranceValue: "0.00",
+      terms: "Conditions de durée du prêt, exigences spéciales...",
+      notes: "Notes du personnel...",
+      collections: "Rechercher et sélectionner des collections...",
+    },
     filters: {
       allLoans: "Tous les Prêts",
       outgoing: "Sortants",
@@ -368,6 +548,12 @@ export default {
     filter: "Filtrer",
     actions: "Actions",
     status: "Statut",
+    share: "Partager",
+    printRecord: "Imprimer la fiche",
+    printManifest: "Imprimer le manifeste",
+    setAsPrimary: "Définir comme principal",
+    unavailable: "Indisponible",
+    cannotDeaccession: "Impossible de désaccessionner - élément en prêt actif",
     active: "Actif",
     inactive: "Inactif",
     pending: "En attente",
@@ -1537,6 +1723,126 @@ export default {
       showingRows: "Affichage de 20 sur {count} lignes",
     },
   },
+  developer: {
+    title: "Développeur",
+    description:
+      "Gérez les clés API, les webhooks et les utilitaires de développement.",
+    selectOrganization: "Sélectionner une organisation",
+    tabs: {
+      apiKeys: "Clés API",
+      webhooks: "Webhooks",
+      utilities: "Utilitaires",
+    },
+    apiKeys: {
+      title: "Clés API",
+      description: "Gérez les clés API pour les intégrations externes.",
+      createButton: "Créer une clé API",
+      noKeys: "Aucune clé API pour le moment. Créez-en une pour commencer.",
+      created: "Créée",
+      lastUsed: "Dernière utilisation",
+      revoked: "Révoquée",
+      revokeButton: "Révoquer",
+      deleteButton: "Supprimer",
+      revokeDialog: {
+        title: "Révoquer la clé API ?",
+        description:
+          "Cela désactivera immédiatement cette clé API. Toute intégration l'utilisant cessera de fonctionner.",
+        cancel: "Annuler",
+        confirm: "Révoquer la clé",
+      },
+      deleteDialog: {
+        title: "Supprimer la clé API ?",
+        description: "Cela supprimera définitivement cette clé API.",
+        cancel: "Annuler",
+        confirm: "Supprimer",
+      },
+      createDialog: {
+        title: "Créer une clé API",
+        createdTitle: "Clé API créée",
+        description: "Donnez un nom à votre clé API pour l'identifier.",
+        createdDescription:
+          "Copiez votre clé API maintenant. Vous ne pourrez pas la voir à nouveau.",
+        nameLabel: "Nom",
+        namePlaceholder: "ex. API Production",
+        warning:
+          "Assurez-vous de copier votre clé API maintenant. Vous ne pourrez pas la voir à nouveau !",
+        cancel: "Annuler",
+        create: "Créer la clé",
+        done: "Terminé",
+      },
+    },
+    webhooks: {
+      title: "Webhooks",
+      description:
+        "Envoyez des notifications en temps réel aux services externes.",
+      addButton: "Ajouter un webhook",
+      noWebhooks: "Aucun webhook configuré. Ajoutez-en un pour commencer.",
+      test: "Tester",
+      enable: "Activer",
+      disable: "Désactiver",
+      deleteButton: "Supprimer",
+      deleteDialog: {
+        title: "Supprimer le webhook ?",
+        description:
+          "Cela supprimera définitivement ce point de terminaison webhook.",
+        cancel: "Annuler",
+        confirm: "Supprimer",
+      },
+      createDialog: {
+        title: "Ajouter un webhook",
+        createdTitle: "Webhook créé",
+        description:
+          "Configurez un point de terminaison webhook pour recevoir les notifications d'événements.",
+        createdDescription:
+          "Copiez votre secret webhook maintenant. Vous ne pourrez pas le voir à nouveau.",
+        nameLabel: "Nom",
+        namePlaceholder: "ex. Notifications Slack",
+        urlLabel: "URL du point de terminaison",
+        urlPlaceholder: "https://example.com/webhook",
+        urlHint: "Doit utiliser HTTPS",
+        eventsLabel: "Événements",
+        eventsHint:
+          "Sélectionnez les événements à recevoir. Laissez vide pour tous les événements.",
+        signingSecret: "Secret de signature",
+        secretWarning:
+          "Utilisez ce secret pour vérifier les signatures webhook. Stockez-le en toute sécurité !",
+        cancel: "Annuler",
+        create: "Créer le webhook",
+        done: "Terminé",
+      },
+    },
+    utilities: {
+      title: "Utilitaires de développement",
+      description:
+        "Outils administratifs pour les tests et le développement. À utiliser avec prudence.",
+      deleteAllLoans: {
+        title: "Supprimer tous les prêts",
+        description:
+          'Supprimez définitivement tous les prêts, articles de prêt et restaurez les statuts des collections à "actif". Cette action ne peut pas être annulée.',
+        operationCompleted: "Opération terminée :",
+        deletedLoans: "{count} prêt(s) supprimé(s)",
+        deletedLoanItems: "{count} article(s) de prêt supprimé(s)",
+        updatedCollections:
+          "{count} collection(s) mise(s) à jour avec le statut actif",
+        button: "Supprimer tous les prêts",
+        deleting: "Suppression en cours...",
+        dialog: {
+          title: "Supprimer tous les prêts ?",
+          description: "Cela supprimera définitivement :",
+          willDelete: [
+            "Tous les prêts de votre organisation",
+            "Tous les articles de prêt",
+            'Restaurer tous les statuts des collections à "actif"',
+          ],
+          warning:
+            "Cette action ne peut pas être annulée. Êtes-vous absolument sûr ?",
+          cancel: "Annuler",
+          confirm: "Oui, supprimer tous les prêts",
+        },
+      },
+    },
+  },
+
   deaccessions: {
     title: "Registres de Désaccession",
     description: "Éléments définitivement retirés de la collection.",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { usePermission } from "@/components/permission-gate";
 import {
   type RecentActivityItem,
   RecentActivityLog,
@@ -35,9 +36,14 @@ export default function DashboardPage() {
   const kpi = useScopedI18n("kpi");
   const common = useScopedI18n("common");
 
+  const hasAnalyticsPermission = usePermission(
+    currentOrganizationId,
+    "organization.view_analytics",
+  );
+
   const analytics = useQuery(
     api.dashboard.getAnalytics,
-    currentOrganizationId
+    currentOrganizationId && hasAnalyticsPermission
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
@@ -81,6 +87,50 @@ export default function DashboardPage() {
               {t("selectOrganizationDescription")}
             </p>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (hasAnalyticsPermission === undefined) {
+    return (
+      <div className="flex h-full w-full flex-col bg-background">
+        <div className="px-6 py-4 border-b border-border bg-background/50 backdrop-blur-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <KpiCard title="" value="" loading />
+            <KpiCard title="" value="" loading />
+            <KpiCard title="" value="" loading />
+            <KpiCard title="" value="" loading />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasAnalyticsPermission) {
+    return (
+      <div className="flex h-full w-full flex-col bg-background">
+        <div className="px-6 py-4 border-b border-border bg-background/50 backdrop-blur-sm">
+          <div className="flex flex-col items-center justify-center py-12">
+            <Eye className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              Analytics Access Required
+            </h3>
+            <p className="text-sm text-muted-foreground text-center max-w-md">
+              You don't have permission to view analytics. Please contact your
+              organization administrator to request access.
+            </p>
+          </div>
+        </div>
+        <div className="px-6 pt-6">
+          <Suspense fallback={<SkeletonCard className="h-96" />}>
+            <AssignmentsQueue />
+          </Suspense>
+        </div>
+        <div className="px-6 pt-6">
+          <Suspense fallback={<SkeletonCard className="h-64" />}>
+            <NewArrivalsFeed />
+          </Suspense>
         </div>
       </div>
     );

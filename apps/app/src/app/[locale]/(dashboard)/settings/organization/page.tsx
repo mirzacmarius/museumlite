@@ -4,6 +4,7 @@ import { InfoTooltip } from "@/components/info-tooltip";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { TemplateCombobox } from "@/components/template-combobox";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -42,6 +43,7 @@ import { Save, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 export default function OrganizationSettingsPage() {
+  const t = useScopedI18n("settings");
   const { currentOrganizationId } = useOrganization();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -174,7 +176,7 @@ export default function OrganizationSettingsPage() {
   // Open save/update template modal
   const openSaveTemplateModal = (isUpdate = false) => {
     if (!formData.accessionNumberFormat || !validation?.isValid) {
-      setError("Please enter a valid template first");
+      setError(t("organization.templateDialog.validTemplateRequired"));
       return;
     }
 
@@ -191,7 +193,7 @@ export default function OrganizationSettingsPage() {
   // Save or update template handler
   const handleSaveTemplate = async () => {
     if (!saveTemplateName.trim()) {
-      setError("Template name is required");
+      setError(t("organization.templateDialog.templateNameRequired"));
       return;
     }
 
@@ -271,7 +273,7 @@ export default function OrganizationSettingsPage() {
     setError(null);
 
     if (!formData.name.trim()) {
-      setError("Organization name is required");
+      setError(t("organization.organizationNameRequired"));
       return;
     }
 
@@ -302,9 +304,7 @@ export default function OrganizationSettingsPage() {
     } catch (err) {
       console.error("Error updating organization:", err);
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to update organization. Please try again.",
+        err instanceof Error ? err.message : t("organization.updateError"),
       );
     } finally {
       setIsSubmitting(false);
@@ -332,10 +332,10 @@ export default function OrganizationSettingsPage() {
     <div className="flex w-full flex-col gap-6">
       <div className="flex w-full flex-col gap-2">
         <h2 className="text-xl font-medium text-primary">
-          Organization Settings
+          {t("organization.title")}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Manage your organization's settings and preferences
+          {t("organization.description")}
         </p>
       </div>
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -346,10 +346,12 @@ export default function OrganizationSettingsPage() {
         )}
 
         <div className="rounded-lg border border-border bg-card p-6">
-          <h2 className="mb-4 text-lg font-medium">Basic Information</h2>
+          <h2 className="mb-4 text-lg font-medium">
+            {t("organization.basicInformation")}
+          </h2>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Organization Name *</Label>
+              <Label htmlFor="name">{t("organization.nameLabel")}</Label>
               <PermissionGate
                 permission="organization.manage_settings"
                 fallback={
@@ -372,17 +374,17 @@ export default function OrganizationSettingsPage() {
               </PermissionGate>
             </div>
             <div className="space-y-2">
-              <Label>Organization Type</Label>
+              <Label>{t("organization.typeLabel")}</Label>
               <Input value={organization.type} disabled className="bg-muted" />
               <p className="text-xs text-muted-foreground">
-                Organization type cannot be changed
+                {t("organization.typeCannotChange")}
               </p>
             </div>
             <div className="space-y-2">
-              <Label>Slug</Label>
+              <Label>{t("organization.slugLabel")}</Label>
               <Input value={organization.slug} disabled className="bg-muted" />
               <p className="text-xs text-muted-foreground">
-                Slug cannot be changed
+                {t("organization.slugCannotChange")}
               </p>
             </div>
           </div>
@@ -391,12 +393,14 @@ export default function OrganizationSettingsPage() {
         <PermissionGate permission="organization.manage_settings">
           <div className="rounded-lg border border-border bg-card p-6">
             <h2 className="mb-4 text-lg font-medium">
-              Accession Number Settings
+              {t("organization.accessionNumberSettings")}
             </h2>
             <div className="space-y-6">
               {/* Template Selection - Full Width */}
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Format Template</Label>
+                <Label className="text-sm font-medium">
+                  {t("organization.formatTemplate")}
+                </Label>
                 <TemplateCombobox
                   systemPresets={systemPresets}
                   customTemplates={customTemplateOptions}
@@ -404,7 +408,7 @@ export default function OrganizationSettingsPage() {
                   onValueChange={(value) =>
                     setFormData({ ...formData, accessionNumberFormat: value })
                   }
-                  placeholder="Choose template..."
+                  placeholder={t("organization.chooseTemplate")}
                   validation={
                     validation
                       ? {
@@ -428,7 +432,7 @@ export default function OrganizationSettingsPage() {
                 {/* Counter Reset */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
-                    Counter Reset Schedule
+                    {t("organization.counterResetSchedule")}
                   </Label>
                   <Select
                     value={formData.accessionCounterScope}
@@ -443,30 +447,32 @@ export default function OrganizationSettingsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="global">
-                        Never (Global Counter)
+                        {t("organization.neverGlobal")}
                       </SelectItem>
                       <SelectItem value="year">
-                        Yearly (Resets Jan 1)
+                        {t("organization.yearlyResets")}
                       </SelectItem>
                       <SelectItem value="month">
-                        Monthly (Resets 1st)
+                        {t("organization.monthlyResets")}
                       </SelectItem>
                       <SelectItem value="day">
-                        Daily (Resets Midnight)
+                        {t("organization.dailyResets")}
                       </SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    When should the counter reset to 1?
+                    {t("organization.whenCounterReset")}
                   </p>
                 </div>
 
                 {/* Auto-generate */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Auto-generation</Label>
+                  <Label className="text-sm font-medium">
+                    {t("organization.autoGeneration")}
+                  </Label>
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
-                      Automatically generate accession numbers
+                      {t("organization.autoGenerateAccession")}
                     </p>
                     <Switch
                       id="autoGenerate"
@@ -485,10 +491,12 @@ export default function OrganizationSettingsPage() {
           </div>
 
           <div className="rounded-lg border border-border bg-card p-6">
-            <h2 className="mb-4 text-lg font-medium">Location Types</h2>
+            <h2 className="mb-4 text-lg font-medium">
+              {t("organization.locationTypes")}
+            </h2>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Custom Location Types</Label>
+                <Label>{t("organization.customLocationTypes")}</Label>
                 <div className="flex flex-wrap gap-2">
                   {formData.locationTypes.map((type, index) => {
                     // Use a combination of type and index for unique key since types might have duplicates
@@ -516,29 +524,29 @@ export default function OrganizationSettingsPage() {
                   size="sm"
                   onClick={handleAddLocationType}
                 >
-                  Add Location Type
+                  {t("organization.addLocationType")}
                 </Button>
                 <p className="text-xs text-muted-foreground">
-                  Define custom location types for your organization (e.g.,
-                  Gallery, Vault, Display Case)
+                  {t("organization.locationTypeHint")}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="rounded-lg border border-border bg-card p-6">
-            <h2 className="mb-4 text-lg font-medium">Condition Options</h2>
+            <h2 className="mb-4 text-lg font-medium">
+              {t("organization.conditionOptions")}
+            </h2>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Organization Conditions</Label>
+                <Label>{t("organization.organizationConditions")}</Label>
                 <p className="text-xs text-muted-foreground">
-                  Custom conditions can be added directly from the condition
-                  dropdown when creating or editing collections.
+                  {t("organization.conditionHint")}
                 </p>
                 {customConditions && customConditions.length > 0 && (
                   <div className="mt-3 rounded-lg border p-3 bg-secondary/10">
                     <p className="text-xs font-medium mb-2">
-                      Your Custom Conditions:
+                      {t("organization.yourCustomConditions")}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {customConditions.map((condition) => (
@@ -561,31 +569,31 @@ export default function OrganizationSettingsPage() {
                 )}
                 <div className="mt-3 rounded-lg border border-dashed p-4 bg-muted/20">
                   <p className="text-xs text-muted-foreground">
-                    💡 <strong>Tip:</strong> Open the condition dropdown in any
-                    collection form and click "New" to add custom conditions on
-                    the fly.
+                    {t("organization.conditionTip")}
                   </p>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Standard conditions (Excellent, Very Good, Good, Poor) are
-                  always available.
+                  {t("organization.standardConditions")}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="rounded-lg border border-border bg-card p-6">
-            <h2 className="mb-4 text-lg font-medium">Material Options</h2>
+            <h2 className="mb-4 text-lg font-medium">
+              {t("organization.materialOptions")}
+            </h2>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Organization Materials</Label>
+                <Label>{t("organization.organizationMaterials")}</Label>
                 <p className="text-xs text-muted-foreground">
-                  Materials can be added directly from the materials field when
-                  creating or editing collections.
+                  {t("organization.materialHint")}
                 </p>
                 {customMaterials && customMaterials.length > 0 && (
                   <div className="mt-3 rounded-lg border p-3 bg-secondary/10">
-                    <p className="text-xs font-medium mb-2">Your Materials:</p>
+                    <p className="text-xs font-medium mb-2">
+                      {t("organization.yourMaterials")}
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       {customMaterials.map((material) => (
                         <div
@@ -607,8 +615,7 @@ export default function OrganizationSettingsPage() {
                 )}
                 <div className="mt-3 rounded-lg border border-dashed p-4 bg-muted/20">
                   <p className="text-xs text-muted-foreground">
-                    💡 <strong>Tip:</strong> Open the materials dropdown in any
-                    collection form and click "New" to add materials on the fly.
+                    {t("organization.materialTip")}
                   </p>
                 </div>
               </div>
@@ -616,16 +623,17 @@ export default function OrganizationSettingsPage() {
           </div>
 
           <div className="rounded-lg border border-border bg-card p-6">
-            <h2 className="mb-4 text-lg font-medium">Loan Settings</h2>
+            <h2 className="mb-4 text-lg font-medium">
+              {t("organization.loanSettings")}
+            </h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="detailedConditionReports">
-                    Enable Detailed Condition Reports
+                    {t("organization.enableDetailedConditionReports")}
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Require detailed condition reports with photos for loan
-                    items
+                    {t("organization.detailedConditionReportsHint")}
                   </p>
                 </div>
                 <Switch
@@ -645,7 +653,9 @@ export default function OrganizationSettingsPage() {
           <div className="flex justify-end gap-4">
             <Button type="submit" disabled={isSubmitting}>
               <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? "Saving..." : "Save Changes"}
+              {isSubmitting
+                ? t("organization.saving")
+                : t("organization.saveChanges")}
             </Button>
           </div>
         </PermissionGate>
@@ -656,45 +666,55 @@ export default function OrganizationSettingsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {selectedCustomTemplateId ? "Update Template" : "Save Template"}
+              {selectedCustomTemplateId
+                ? t("organization.templateDialog.updateTemplate")
+                : t("organization.templateDialog.saveTemplate")}
             </DialogTitle>
             <DialogDescription>
               {selectedCustomTemplateId
-                ? "Update your custom template with the current format, name, and description."
-                : "Save your current accession number format as a reusable template."}
+                ? t("organization.templateDialog.updateDescription")
+                : t("organization.templateDialog.saveDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="templateName">Template Name *</Label>
+              <Label htmlFor="templateName">
+                {t("organization.templateDialog.templateName")}
+              </Label>
               <Input
                 id="templateName"
                 value={saveTemplateName}
                 onChange={(e) => setSaveTemplateName(e.target.value)}
-                placeholder="e.g., Monthly Format"
+                placeholder={t(
+                  "organization.templateDialog.templateNamePlaceholder",
+                )}
                 autoFocus
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="templateDesc">Description (optional)</Label>
+              <Label htmlFor="templateDesc">
+                {t("organization.templateDialog.description")}
+              </Label>
               <Textarea
                 id="templateDesc"
                 value={saveTemplateDesc}
                 onChange={(e) => setSaveTemplateDesc(e.target.value)}
-                placeholder="Describe when to use this template..."
+                placeholder={t(
+                  "organization.templateDialog.descriptionPlaceholder",
+                )}
                 rows={3}
               />
             </div>
             <div className="rounded-md bg-secondary p-3">
               <Label className="text-xs text-muted-foreground">
-                Template Format
+                {t("organization.templateDialog.templateFormat")}
               </Label>
               <code className="text-sm block mt-1 font-mono">
                 {formData.accessionNumberFormat}
               </code>
               {validation?.preview && (
                 <p className="text-xs text-muted-foreground mt-2">
-                  Preview:{" "}
+                  {t("organization.templateDialog.preview")}{" "}
                   <code className="font-mono">{validation.preview}</code>
                 </p>
               )}
@@ -710,10 +730,12 @@ export default function OrganizationSettingsPage() {
                 setSaveTemplateDesc("");
               }}
             >
-              Cancel
+              {t("organization.templateDialog.cancel")}
             </Button>
             <Button type="button" onClick={handleSaveTemplate}>
-              {selectedCustomTemplateId ? "Update Template" : "Save Template"}
+              {selectedCustomTemplateId
+                ? t("organization.templateDialog.update")
+                : t("organization.templateDialog.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -726,16 +748,19 @@ export default function OrganizationSettingsPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Template</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("organization.deleteTemplateDialog.title")}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this template? This action cannot
-              be undone.
+              {t("organization.deleteTemplateDialog.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>
+              {t("organization.deleteTemplateDialog.cancel")}
+            </AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteTemplate}>
-              Delete
+              {t("organization.deleteTemplateDialog.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

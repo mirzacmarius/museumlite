@@ -65,6 +65,7 @@ export function MediaGallery({
 }: MediaGalleryProps) {
   const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("common.toast");
+  const common = useScopedI18n("common");
   const media = useQuery(
     api.media.list,
     collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
@@ -504,7 +505,7 @@ export function MediaGallery({
                                     e.stopPropagation();
                                     handleSetPrimary(file._id);
                                   }}
-                                  title="Set as primary"
+                                  title={common("setAsPrimary")}
                                   className="h-7 w-7 p-0"
                                 >
                                   <Star className="h-3.5 w-3.5" />
@@ -545,7 +546,7 @@ export function MediaGallery({
                                     size="sm"
                                     variant="destructive"
                                     onClick={(e) => e.stopPropagation()}
-                                    title="Delete"
+                                    title={common("delete")}
                                     className="h-7 w-7 p-0"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
@@ -674,7 +675,7 @@ export function MediaGallery({
                             type="button"
                             size="sm"
                             variant="ghost"
-                            title="Delete"
+                            title={common("delete")}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -731,6 +732,7 @@ function MediaEditDialog({
   open,
   onOpenChange,
 }: MediaEditDialogProps) {
+  const common = useScopedI18n("common");
   const [formData, setFormData] = useState({
     caption: media.caption || "",
     photographer: media.photographer || "",
@@ -763,7 +765,12 @@ function MediaEditDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button type="button" size="sm" variant="secondary" title="Edit">
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          title={common("edit")}
+        >
           <Edit className="h-4 w-4" />
         </Button>
       </DialogTrigger>
