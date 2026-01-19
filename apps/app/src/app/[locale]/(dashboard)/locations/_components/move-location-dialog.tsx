@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -41,6 +42,9 @@ export function MoveLocationDialog({
   onOpenChange,
   onSuccess,
 }: MoveLocationDialogProps) {
+  const t = useScopedI18n("locations.move");
+  const tForm = useScopedI18n("locations.form");
+  const tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
   const [newParentId, setNewParentId] = useState<string>("root");
   const [notes, setNotes] = useState("");
@@ -139,7 +143,7 @@ export function MoveLocationDialog({
       <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Move Location</DialogTitle>
+            <DialogTitle>{t("title")}</DialogTitle>
             <DialogDescription>
               Move <span className="font-medium">{locationName}</span> to a new
               parent location
@@ -152,14 +156,16 @@ export function MoveLocationDialog({
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="parent">New Parent Location *</Label>
+              <Label htmlFor="parent">{t("selectDestination")} *</Label>
               <Select
                 value={newParentId}
                 onValueChange={setNewParentId}
                 required
               >
                 <SelectTrigger id="parent">
-                  <SelectValue placeholder="Select a parent location" />
+                  <SelectValue
+                    placeholder={t("selectDestinationPlaceholder")}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="root">
@@ -185,7 +191,7 @@ export function MoveLocationDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{tForm("notesLabel")}</Label>
               <Textarea
                 id="notes"
                 value={notes}
@@ -202,10 +208,10 @@ export function MoveLocationDialog({
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Moving..." : "Move Location"}
+              {isSubmitting ? t("moving") : t("moveLocation")}
             </Button>
           </DialogFooter>
         </form>

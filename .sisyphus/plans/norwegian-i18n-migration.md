@@ -643,7 +643,7 @@ Phase 6: Toast Messages
 
 ---
 
-- [ ] 12. Migrate Locations module
+- [x] 12. Migrate Locations module
 
   **What to do**:
   - Update all files in `apps/app/src/app/[locale]/(dashboard)/locations/`

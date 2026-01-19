@@ -1,5 +1,6 @@
 "use client";
 
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -47,6 +48,8 @@ export function EditLocationDialog({
   open,
   onOpenChange,
 }: EditLocationDialogProps) {
+  const t = useScopedI18n("locations.form");
+  const tCommon = useScopedI18n("common");
   const [name, setName] = useState("");
   const [type, setType] = useState("");
   const [address, setAddress] = useState("");
@@ -117,10 +120,8 @@ export function EditLocationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Edit Location</DialogTitle>
-          <DialogDescription>
-            Update the location details below.
-          </DialogDescription>
+          <DialogTitle>{t("editLocation")}</DialogTitle>
+          <DialogDescription>{t("editDescription")}</DialogDescription>
         </DialogHeader>
 
         {!location ? (
@@ -131,21 +132,21 @@ export function EditLocationDialog({
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="name">Name *</Label>
+                <Label htmlFor="name">{t("nameLabel")}</Label>
                 <Input
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter location name"
+                  placeholder={t("nameEnterPlaceholder")}
                   required
                 />
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="type">Type *</Label>
+                <Label htmlFor="type">{t("typeLabel")}</Label>
                 <Select value={type} onValueChange={setType} required>
                   <SelectTrigger id="type">
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder={t("typePlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {LOCATION_TYPES.map((locationType) => (
@@ -158,41 +159,41 @@ export function EditLocationDialog({
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="address">{t("addressLabel")}</Label>
                 <Input
                   id="address"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Enter address (optional)"
+                  placeholder={t("addressEnterPlaceholder")}
                 />
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="capacity">Capacity</Label>
+                <Label htmlFor="capacity">{t("capacityLabel")}</Label>
                 <Input
                   id="capacity"
                   type="number"
                   min="0"
                   value={capacity}
                   onChange={(e) => setCapacity(e.target.value)}
-                  placeholder="Max objects (optional)"
+                  placeholder={t("capacityPlaceholder")}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="temperature">Temperature (°C)</Label>
+                  <Label htmlFor="temperature">{t("temperatureLabel")}</Label>
                   <Input
                     id="temperature"
                     type="number"
                     step="0.1"
                     value={temperature}
                     onChange={(e) => setTemperature(e.target.value)}
-                    placeholder="e.g., 21.0"
+                    placeholder={t("temperaturePlaceholder")}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="humidity">Humidity (%)</Label>
+                  <Label htmlFor="humidity">{t("humidityLabel")}</Label>
                   <Input
                     id="humidity"
                     type="number"
@@ -200,18 +201,18 @@ export function EditLocationDialog({
                     max="100"
                     value={humidity}
                     onChange={(e) => setHumidity(e.target.value)}
-                    placeholder="e.g., 45"
+                    placeholder={t("humidityPlaceholder")}
                   />
                 </div>
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">{t("notesLabel")}</Label>
                 <Textarea
                   id="notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Enter any additional notes (optional)"
+                  placeholder={t("notesEnterPlaceholder")}
                   rows={3}
                 />
               </div>
@@ -224,13 +225,13 @@ export function EditLocationDialog({
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
               >
-                Cancel
+                {tCommon("cancel")}
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Save Changes
+                {t("saveChanges")}
               </Button>
             </DialogFooter>
           </form>

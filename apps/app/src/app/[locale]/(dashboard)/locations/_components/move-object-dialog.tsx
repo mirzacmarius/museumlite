@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -40,6 +41,9 @@ export function MoveObjectDialog({
   onOpenChange,
   onSuccess,
 }: MoveObjectDialogProps) {
+  const t = useScopedI18n("locations.moveObject");
+  const tForm = useScopedI18n("locations.form");
+  const tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
   const [toLocationId, setToLocationId] = useState<string>("");
   const [reason, setReason] = useState("");
@@ -121,11 +125,8 @@ export function MoveObjectDialog({
       <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Move Object</DialogTitle>
-            <DialogDescription>
-              Move this object to a different location. This will create a
-              location history entry.
-            </DialogDescription>
+            <DialogTitle>{t("title")}</DialogTitle>
+            <DialogDescription>{t("description")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             {error && (
@@ -134,14 +135,16 @@ export function MoveObjectDialog({
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="location">Destination Location *</Label>
+              <Label htmlFor="location">{t("selectDestination")} *</Label>
               <Select
                 value={toLocationId}
                 onValueChange={setToLocationId}
                 required
               >
                 <SelectTrigger id="location">
-                  <SelectValue placeholder="Select a location" />
+                  <SelectValue
+                    placeholder={t("selectDestinationPlaceholder")}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {availableLocations.map((loc) => (
@@ -162,12 +165,12 @@ export function MoveObjectDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{tForm("notesLabel")}</Label>
               <Textarea
                 id="notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Additional notes about this move..."
+                placeholder={tForm("notesPlaceholder")}
                 rows={4}
               />
             </div>
@@ -178,10 +181,10 @@ export function MoveObjectDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Moving..." : "Move Object"}
+              {isSubmitting ? t("moving") : t("moveObject")}
             </Button>
           </DialogFooter>
         </form>

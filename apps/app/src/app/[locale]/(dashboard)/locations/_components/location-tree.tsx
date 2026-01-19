@@ -1,6 +1,7 @@
 "use client";
 
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import {
   dragAndDropFeature,
   hotkeysCoreFeature,
@@ -90,6 +91,8 @@ function LocationTreeInner({
   onDelete: (location: { id: string; name: string; parentId?: string }) => void;
 }) {
   const router = useRouter();
+  const t = useScopedI18n("locations.tree");
+  const tCommon = useScopedI18n("common");
 
   // Fetch all locations for the tree
   const allLocations = useQuery(
@@ -324,7 +327,7 @@ function LocationTreeInner({
   if (allLocations === undefined) {
     return (
       <div className="flex h-64 items-center justify-center p-6">
-        <p className="text-muted-foreground">Loading locations...</p>
+        <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
   }
@@ -334,9 +337,9 @@ function LocationTreeInner({
       <div className="flex h-64 flex-col items-center justify-center gap-4 p-6">
         <MapPin className="h-12 w-12 text-muted-foreground" />
         <div className="text-center">
-          <p className="text-muted-foreground">No locations found</p>
+          <p className="text-muted-foreground">{t("noLocations")}</p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Create your first location to get started
+            {t("createFirst")}
           </p>
         </div>
       </div>

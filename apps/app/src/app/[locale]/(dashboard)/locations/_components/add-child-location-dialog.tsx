@@ -1,5 +1,6 @@
 "use client";
 
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -56,6 +57,8 @@ export function AddChildLocationDialog({
   onOpenChange,
   onSuccess,
 }: AddChildLocationDialogProps) {
+  const t = useScopedI18n("locations.form");
+  const tCommon = useScopedI18n("common");
   const [name, setName] = useState("");
   const [type, setType] = useState("");
   const [address, setAddress] = useState("");
@@ -85,12 +88,12 @@ export function AddChildLocationDialog({
     setError(null);
 
     if (!name.trim()) {
-      setError("Please enter a location name");
+      setError(t("errors.nameRequired"));
       return;
     }
 
     if (!type) {
-      setError("Please select a location type");
+      setError(t("errors.typeRequired"));
       return;
     }
 
@@ -116,9 +119,7 @@ export function AddChildLocationDialog({
       onOpenChange(false);
       onSuccess?.();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create location",
-      );
+      setError(err instanceof Error ? err.message : t("errors.createFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -130,16 +131,16 @@ export function AddChildLocationDialog({
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>
-              {parentLocationId ? "Add Child Location" : "Add Root Location"}
+              {parentLocationId ? t("addChildLocation") : t("addRootLocation")}
             </DialogTitle>
             <DialogDescription>
               {parentLocationId ? (
                 <>
-                  Create a new location under{" "}
+                  {t("createUnder")}{" "}
                   <span className="font-medium">{parentLocationName}</span>
                 </>
               ) : (
-                "Create a new root-level location"
+                t("createRootLevel")
               )}
             </DialogDescription>
           </DialogHeader>
@@ -150,20 +151,20 @@ export function AddChildLocationDialog({
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">{t("nameLabel")}</Label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., East Wing, Drawer 3"
+                placeholder={t("namePlaceholder")}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="type">Type *</Label>
+              <Label htmlFor="type">{t("typeLabel")}</Label>
               <Select value={type} onValueChange={setType} required>
                 <SelectTrigger id="type">
-                  <SelectValue placeholder="Select a type" />
+                  <SelectValue placeholder={t("typePlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {LOCATION_TYPES.map((locationType) => (
@@ -175,32 +176,32 @@ export function AddChildLocationDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="address">{t("addressLabel")}</Label>
               <Input
                 id="address"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="Physical address (optional)"
+                placeholder={t("addressPlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="capacity">Capacity</Label>
+              <Label htmlFor="capacity">{t("capacityLabel")}</Label>
               <Input
                 id="capacity"
                 type="number"
                 min="0"
                 value={capacity}
                 onChange={(e) => setCapacity(e.target.value)}
-                placeholder="Max objects (optional)"
+                placeholder={t("capacityPlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{t("notesLabel")}</Label>
               <Textarea
                 id="notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Additional notes..."
+                placeholder={t("notesPlaceholder")}
                 rows={3}
               />
             </div>
@@ -212,10 +213,10 @@ export function AddChildLocationDialog({
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create Location"}
+              {isSubmitting ? t("creating") : t("createLocation")}
             </Button>
           </DialogFooter>
         </form>
