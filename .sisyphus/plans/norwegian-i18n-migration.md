@@ -50,10 +50,10 @@ Add Norwegian as 4th language and migrate all dashboard pages from hardcoded Eng
 ### Definition of Done
 - [x] `bun run typecheck` passes (5 pre-existing errors unrelated to i18n)
 - [x] `bun run lint` passes (6 pre-existing errors in @v1/ui package, not app)
-- [ ] App loads in all 4 locales (en, fr, es, no) without errors (requires manual test)
-- [ ] Language switcher shows all 4 options and works (requires manual test)
+- [ ] App loads in all 4 locales (en, fr, es, no) without errors (BLOCKED: requires human login)
+- [ ] Language switcher shows all 4 options and works (BLOCKED: requires human login)
 - [x] No hardcoded English strings remain in dashboard pages (verified via grep)
-- [ ] Dates display in locale-appropriate format (requires manual browser test)
+- [ ] Dates display in locale-appropriate format (BLOCKED: requires human login)
 - [x] Numbers/currency display in locale-appropriate format (verified via grep)
 
 ### Must Have
@@ -1008,12 +1008,16 @@ bun dev:app           # Expected: App starts, no console errors
 ```
 
 ### Final Checklist
-- [ ] All 4 locales (en, fr, es, no) work end-to-end (requires manual browser test)
-- [ ] Language switcher shows all 4 options (requires manual browser test)
-- [ ] All dashboard pages display translated text (requires manual browser test)
-- [ ] Dates display in locale-appropriate format (NO: "15. jan. 2024") (requires manual browser test)
-- [ ] Numbers/currency display in locale-appropriate format (NO: "1 234") (requires manual browser test)
-- [ ] Toast messages display in selected locale (requires manual browser test)
+
+> **BLOCKER**: Manual browser tests require Google OAuth authentication. Cannot be automated.
+> **Action Required**: Human must log in and verify these items manually.
+
+- [ ] All 4 locales (en, fr, es, no) work end-to-end (BLOCKED: requires human login)
+- [ ] Language switcher shows all 4 options (BLOCKED: requires human login)
+- [ ] All dashboard pages display translated text (BLOCKED: requires human login)
+- [ ] Dates display in locale-appropriate format (NO: "15. jan. 2024") (BLOCKED: requires human login)
+- [ ] Numbers/currency display in locale-appropriate format (NO: "1 234") (BLOCKED: requires human login)
+- [ ] Toast messages display in selected locale (BLOCKED: requires human login)
 - [x] **Date formatting migration complete**:
   - [x] `grep -rn 'toLocaleDateString' apps/app/src/app` → 0 matches ✓
   - [x] `grep -rn "from \"date-fns\"" apps/app/src/app` → 0 matches ✓
