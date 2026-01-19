@@ -1,6 +1,7 @@
 "use client";
 
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
@@ -313,8 +314,8 @@ ${organizationName}`,
                 4. INSURANCE
               </h2>
               <p>
-                <span className="font-bold">Total Insurance Value:</span> $
-                {loan.insuranceValue.toLocaleString()}
+                <span className="font-bold">Total Insurance Value:</span>{" "}
+                {formatCurrency(loan.insuranceValue, locale, "USD")}
               </p>
             </div>
           )}

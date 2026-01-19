@@ -3,6 +3,7 @@
 import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDate as formatDateUtil } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -187,13 +188,6 @@ export default function LibraryFinesPage() {
     );
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
-
   const formatDate = (timestamp: number) => {
     return formatDateUtil(new Date(timestamp), locale);
   };
@@ -246,7 +240,7 @@ export default function LibraryFinesPage() {
                 <span className="text-sm">Outstanding</span>
               </div>
               <p className="mt-2 text-2xl font-medium text-destructive">
-                {formatCurrency(statistics.totalOutstanding)}
+                {formatCurrency(statistics.totalOutstanding, locale, "USD")}
               </p>
               <p className="text-xs text-muted-foreground">
                 {statistics.outstandingCount} fines
@@ -258,7 +252,7 @@ export default function LibraryFinesPage() {
                 <span className="text-sm">Collected</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
-                {formatCurrency(statistics.totalCollected)}
+                {formatCurrency(statistics.totalCollected, locale, "USD")}
               </p>
               <p className="text-xs text-muted-foreground">
                 {statistics.paidCount} paid
@@ -270,7 +264,7 @@ export default function LibraryFinesPage() {
                 <span className="text-sm">Waived</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
-                {formatCurrency(statistics.totalWaived)}
+                {formatCurrency(statistics.totalWaived, locale, "USD")}
               </p>
               <p className="text-xs text-muted-foreground">
                 {statistics.waivedCount} waived
@@ -282,7 +276,7 @@ export default function LibraryFinesPage() {
                 <span className="text-sm">Today</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
-                {formatCurrency(statistics.collectedToday)}
+                {formatCurrency(statistics.collectedToday, locale, "USD")}
               </p>
               <p className="text-xs text-muted-foreground">
                 {statistics.createdToday} new fines
@@ -378,11 +372,12 @@ export default function LibraryFinesPage() {
                     <div className="flex items-center gap-4">
                       <div className="text-right">
                         <p className="text-lg font-medium">
-                          {formatCurrency(fine.balance)}
+                          {formatCurrency(fine.balance, locale, "USD")}
                         </p>
                         {fine.amountPaid > 0 && (
                           <p className="text-xs text-muted-foreground">
-                            Paid: {formatCurrency(fine.amountPaid)}
+                            Paid:{" "}
+                            {formatCurrency(fine.amountPaid, locale, "USD")}
                           </p>
                         )}
                       </div>
@@ -439,7 +434,8 @@ export default function LibraryFinesPage() {
                 <div className="rounded-lg border border-border p-4">
                   <p className="font-medium">{selectedFine.description}</p>
                   <p className="text-sm text-muted-foreground">
-                    Balance: {formatCurrency(selectedFine.balance)}
+                    Balance:{" "}
+                    {formatCurrency(selectedFine.balance, locale, "USD")}
                   </p>
                 </div>
               )}

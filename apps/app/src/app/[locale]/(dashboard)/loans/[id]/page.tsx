@@ -3,6 +3,7 @@
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -326,7 +327,8 @@ export default function LoanDetailPage() {
                       <div className="flex items-center gap-2 text-xs">
                         <Banknote className="h-4 w-4 text-muted-foreground" />
                         <span className="text-muted-foreground">
-                          Total Value: ${loan.insuranceValue.toLocaleString()}
+                          Total Value:{" "}
+                          {formatCurrency(loan.insuranceValue, locale, "USD")}
                         </span>
                       </div>
                     )}

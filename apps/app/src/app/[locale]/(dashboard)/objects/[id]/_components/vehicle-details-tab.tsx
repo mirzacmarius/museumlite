@@ -2,6 +2,7 @@
 
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDateFns } from "@/lib/format-date";
+import { formatCurrency, formatNumber } from "@/lib/format-number";
 import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -115,7 +116,7 @@ export function VehicleDetailsTab({
             </span>
           </div>
           <span className="text-2xl font-light text-foreground">
-            {details.odometer?.toLocaleString() || "—"}
+            {details.odometer ? formatNumber(details.odometer, locale) : "—"}
           </span>
           <span className="ml-1 text-sm text-muted-foreground">
             {details.odometerUnit || "miles"}
@@ -131,7 +132,7 @@ export function VehicleDetailsTab({
           </div>
           <span className="text-2xl font-light text-foreground">
             {details.insuranceValue
-              ? `$${details.insuranceValue.toLocaleString()}`
+              ? formatCurrency(details.insuranceValue, locale, "USD")
               : "—"}
           </span>
         </div>
@@ -253,10 +254,12 @@ export function VehicleDetailsTab({
                 </div>
                 <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
                   {entry.mileage && (
-                    <span>{entry.mileage.toLocaleString()} miles</span>
+                    <span>{formatNumber(entry.mileage, locale)} miles</span>
                   )}
                   {entry.provider && <span>{entry.provider}</span>}
-                  {entry.cost && <span>${entry.cost.toLocaleString()}</span>}
+                  {entry.cost && (
+                    <span>{formatCurrency(entry.cost, locale, "USD")}</span>
+                  )}
                 </div>
               </div>
             ))}

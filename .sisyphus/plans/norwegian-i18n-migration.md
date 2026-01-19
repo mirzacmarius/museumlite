@@ -893,7 +893,7 @@ Phase 6: Toast Messages
 
 ### Phase 5: Number Formatting
 
-- [ ] 20. Make number/currency formatting locale-aware
+- [x] 20. Make number/currency formatting locale-aware
 
   **What to do**:
   

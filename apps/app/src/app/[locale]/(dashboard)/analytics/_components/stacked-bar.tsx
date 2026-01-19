@@ -1,5 +1,7 @@
 "use client";
 
+import { formatNumber } from "@/lib/format-number";
+import { useCurrentLocale } from "@/locales/client";
 import {
   Tooltip,
   TooltipContent,
@@ -25,6 +27,7 @@ export function StackedBar({
   total: totalOverride,
   height = "h-2",
 }: StackedBarProps) {
+  const locale = useCurrentLocale();
   const total =
     totalOverride ?? data.reduce((acc, item) => acc + item.value, 0);
 
@@ -67,7 +70,8 @@ export function StackedBar({
                 <div className="flex flex-col gap-1">
                   <span className="font-semibold text-xs">{item.label}</span>
                   <span className="text-xs text-muted-foreground">
-                    {item.value.toLocaleString()} ({percentage.toFixed(1)}%)
+                    {formatNumber(item.value, locale)} ({percentage.toFixed(1)}
+                    %)
                   </span>
                 </div>
               </TooltipContent>

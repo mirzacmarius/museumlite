@@ -1,6 +1,7 @@
 "use client";
 
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -136,7 +137,7 @@ export function RecordContextSidebar({
                 Valuation
               </p>
               <p className="text-xs font-medium text-foreground">
-                {valuation ? `$${valuation.toLocaleString()}` : "—"}
+                {valuation ? formatCurrency(valuation, locale, "USD") : "—"}
               </p>
             </div>
           </div>

@@ -2,7 +2,8 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { formatNumber } from "@/lib/format-number";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
@@ -185,6 +186,7 @@ export default function CollectionGroupDetailPage() {
 }
 
 function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
+  const locale = useCurrentLocale();
   const t = useScopedI18n("collections");
   const stats = useQuery(api.collectionGroups.getStats, { groupId });
 
@@ -219,7 +221,7 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
               {t("kpi.totalObjects")}
             </div>
             <div className="text-lg font-semibold text-foreground">
-              {stats.total.toLocaleString()}
+              {formatNumber(stats.total, locale)}
             </div>
           </div>
         </div>
@@ -233,7 +235,7 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
               {t("kpi.active")}
             </div>
             <div className="text-lg font-semibold text-foreground">
-              {stats.active.toLocaleString()}
+              {formatNumber(stats.active, locale)}
             </div>
           </div>
         </div>
@@ -247,7 +249,7 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
               {t("kpi.onLoan")}
             </div>
             <div className="text-lg font-semibold text-foreground">
-              {stats.loaned.toLocaleString()}
+              {formatNumber(stats.loaned, locale)}
             </div>
           </div>
         </div>
@@ -261,7 +263,7 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
               {t("kpi.deaccessioned")}
             </div>
             <div className="text-lg font-semibold text-foreground">
-              {stats.deaccessioned.toLocaleString()}
+              {formatNumber(stats.deaccessioned, locale)}
             </div>
           </div>
         </div>

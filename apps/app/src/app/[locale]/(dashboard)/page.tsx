@@ -5,7 +5,8 @@ import {
   type RecentActivityItem,
   RecentActivityLog,
 } from "@/components/recent-activity-log";
-import { useScopedI18n } from "@/locales/client";
+import { formatNumber } from "@/lib/format-number";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { KpiCard } from "@v1/ui/kpi-card";
@@ -29,6 +30,7 @@ import { NewArrivalsFeed } from "./_components/new-arrivals-feed";
 
 export default function DashboardPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
+  const locale = useCurrentLocale();
   const t = useScopedI18n("dashboard");
   const kpi = useScopedI18n("kpi");
   const common = useScopedI18n("common");
@@ -105,22 +107,22 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           <KpiCard
             title={kpi("totalObjects")}
-            value={analytics.objects.total.toLocaleString()}
+            value={formatNumber(analytics.objects.total, locale)}
             icon={Package}
           />
           <KpiCard
             title={kpi("objectsOnLoan")}
-            value={analytics.objects.loaned.toLocaleString()}
+            value={formatNumber(analytics.objects.loaned, locale)}
             icon={ArrowLeftRight}
           />
           <KpiCard
             title={kpi("activeLoans")}
-            value={analytics.loans.active.toLocaleString()}
+            value={formatNumber(analytics.loans.active, locale)}
             icon={ArrowLeftRight}
           />
           <KpiCard
             title={kpi("pendingAccessions")}
-            value={analytics.accessions.pending.toLocaleString()}
+            value={formatNumber(analytics.accessions.pending, locale)}
             icon={FileClock}
           />
         </div>
@@ -202,7 +204,7 @@ export default function DashboardPage() {
                         {t("items")}
                       </span>
                       <span className="text-foreground/80 font-medium group-hover/item:text-indigo-400 transition-colors flex items-center gap-1">
-                        {group.itemsCount.toLocaleString()}
+                        {formatNumber(group.itemsCount, locale)}
                       </span>
                     </div>
                     <div className="text-right">
@@ -252,7 +254,7 @@ export default function DashboardPage() {
                     {t("allCollectionGroups")}
                   </h3>
                   <p className="text-[11px] text-foreground/70 truncate opacity-90">
-                    {analytics.objects.total.toLocaleString()}{" "}
+                    {formatNumber(analytics.objects.total, locale)}{" "}
                     {kpi("totalObjects")}
                   </p>
                 </div>
@@ -265,7 +267,7 @@ export default function DashboardPage() {
                       {common("active")}
                     </span>
                     <span className="text-foreground/80 font-medium group-hover/item:text-blue-400 transition-colors flex items-center gap-1">
-                      {analytics.objects.active.toLocaleString()}
+                      {formatNumber(analytics.objects.active, locale)}
                     </span>
                   </div>
                   <div className="text-right">

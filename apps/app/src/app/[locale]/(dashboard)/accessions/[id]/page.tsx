@@ -3,6 +3,7 @@
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -175,7 +176,9 @@ export default function AccessionDetailPage() {
                     <label className="text-sm font-medium text-muted-foreground">
                       Cost
                     </label>
-                    <p className="mt-1">${accession.cost.toLocaleString()}</p>
+                    <p className="mt-1">
+                      {formatCurrency(accession.cost, locale, "USD")}
+                    </p>
                   </div>
                 )}
               </div>

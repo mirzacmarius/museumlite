@@ -3,6 +3,7 @@
 import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDate as formatDateUtil } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -266,13 +267,6 @@ export default function LibraryAcquisitionsPage() {
     );
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
-
   const formatDate = (timestamp: number) => {
     return formatDateUtil(new Date(timestamp), locale);
   };
@@ -381,7 +375,7 @@ export default function LibraryAcquisitionsPage() {
                 <span className="text-sm">Spent</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
-                {formatCurrency(statistics.totalSpent)}
+                {formatCurrency(statistics.totalSpent, locale, "USD")}
               </p>
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
@@ -390,7 +384,7 @@ export default function LibraryAcquisitionsPage() {
                 <span className="text-sm">Pending Budget</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
-                {formatCurrency(statistics.pendingBudget)}
+                {formatCurrency(statistics.pendingBudget, locale, "USD")}
               </p>
             </div>
           </div>
@@ -509,7 +503,12 @@ export default function LibraryAcquisitionsPage() {
                         <p className="text-sm">Qty: {request.quantity}</p>
                         {request.estimatedPrice && (
                           <p className="text-xs text-muted-foreground">
-                            Est: {formatCurrency(request.estimatedPrice)}
+                            Est:{" "}
+                            {formatCurrency(
+                              request.estimatedPrice,
+                              locale,
+                              "USD",
+                            )}
                           </p>
                         )}
                       </div>

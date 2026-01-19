@@ -2,6 +2,7 @@
 
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDateFns } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -88,7 +89,7 @@ export function FineArtDetailsTab({
           </div>
           <span className="text-2xl font-light text-foreground">
             {details.appraisedValue
-              ? `$${details.appraisedValue.toLocaleString()}`
+              ? formatCurrency(details.appraisedValue, locale, "USD")
               : "—"}
           </span>
         </div>
@@ -102,7 +103,7 @@ export function FineArtDetailsTab({
           </div>
           <span className="text-2xl font-light text-foreground">
             {details.replacementValue
-              ? `$${details.replacementValue.toLocaleString()}`
+              ? formatCurrency(details.replacementValue, locale, "USD")
               : "—"}
           </span>
         </div>
@@ -219,8 +220,12 @@ export function FineArtDetailsTab({
                   )}
                   {entry.salePrice && (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Sale Price: ${entry.salePrice.toLocaleString()}{" "}
-                      {entry.currency || "USD"}
+                      Sale Price:{" "}
+                      {formatCurrency(
+                        entry.salePrice,
+                        locale,
+                        entry.currency || "USD",
+                      )}
                       {entry.auctionHouse && ` at ${entry.auctionHouse}`}
                     </p>
                   )}

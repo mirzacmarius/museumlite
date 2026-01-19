@@ -1,6 +1,8 @@
 "use client";
 
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { formatCurrency } from "@/lib/format-number";
+import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -27,6 +29,7 @@ export function WineDetailsTab({
   collectionId,
   organizationId,
 }: WineDetailsTabProps) {
+  const locale = useCurrentLocale();
   const { hasModule } = useFeatureAccess();
   const hasModuleAccess = hasModule("wine");
   const details = useQuery(
@@ -278,7 +281,7 @@ export function WineDetailsTab({
                 </span>
                 <p className="mt-1 text-lg font-light text-foreground">
                   {details.purchasePrice
-                    ? `$${details.purchasePrice.toLocaleString()}`
+                    ? formatCurrency(details.purchasePrice, locale, "USD")
                     : "—"}
                 </p>
               </div>
@@ -288,7 +291,7 @@ export function WineDetailsTab({
                 </span>
                 <p className="mt-1 text-lg font-light text-emerald-500">
                   {details.currentValue
-                    ? `$${details.currentValue.toLocaleString()}`
+                    ? formatCurrency(details.currentValue, locale, "USD")
                     : "—"}
                 </p>
               </div>
