@@ -146,9 +146,11 @@ function MediaBrowser({
     <div className="flex h-full flex-col p-6">
       <div className="mb-6 flex items-end justify-between">
         <div>
-          <h3 className="text-sm font-medium text-foreground">Media Library</h3>
+          <h3 className="text-sm font-medium text-foreground">
+            {t("mediaPage.title")}
+          </h3>
           <p className="text-xs text-muted-foreground">
-            All media files across your collection.
+            {t("mediaPage.description")}
           </p>
         </div>
         {stats && (
@@ -156,20 +158,26 @@ function MediaBrowser({
             <div className="flex items-center gap-2">
               <HardDrive className="h-4 w-4 text-muted-foreground" />
               <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground">Storage</span>
+                <span className="text-xs text-muted-foreground">
+                  {t("mediaPage.stats.storage")}
+                </span>
                 <span className="text-sm font-semibold text-white">
                   {formatFileSize(stats.totalSize)}
                 </span>
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground">Files</span>
+              <span className="text-xs text-muted-foreground">
+                {t("mediaPage.stats.files")}
+              </span>
               <span className="text-sm font-semibold text-white">
                 {stats.totalFiles}
               </span>
             </div>
             <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground">This Week</span>
+              <span className="text-xs text-muted-foreground">
+                {t("mediaPage.stats.thisWeek")}
+              </span>
               <span className="text-sm font-semibold text-white">
                 +{stats.recentUploads}
               </span>
@@ -182,7 +190,7 @@ function MediaBrowser({
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search files..."
+            placeholder={t("mediaPage.search")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full border-border bg-muted/50 pl-9 text-sm placeholder:text-muted-foreground"
@@ -190,14 +198,16 @@ function MediaBrowser({
         </div>
         <Select value={fileType} onValueChange={setFileType}>
           <SelectTrigger className="w-[140px] border-border bg-muted/50">
-            <SelectValue placeholder="All types" />
+            <SelectValue placeholder={t("mediaPage.types.all")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="image">Images</SelectItem>
-            <SelectItem value="document">Documents</SelectItem>
-            <SelectItem value="video">Videos</SelectItem>
-            <SelectItem value="3d">3D Models</SelectItem>
+            <SelectItem value="all">{t("mediaPage.types.all")}</SelectItem>
+            <SelectItem value="image">{t("mediaPage.types.image")}</SelectItem>
+            <SelectItem value="document">
+              {t("mediaPage.types.document")}
+            </SelectItem>
+            <SelectItem value="video">{t("mediaPage.types.video")}</SelectItem>
+            <SelectItem value="3d">{t("mediaPage.types.model3d")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -234,7 +244,9 @@ function MediaBrowser({
           {media && media.page.length === 0 && (
             <div className="flex h-64 flex-col items-center justify-center gap-2">
               <Image className="h-8 w-8 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">No media found</p>
+              <p className="text-sm text-muted-foreground">
+                {t("mediaPage.empty")}
+              </p>
             </div>
           )}
 
@@ -286,7 +298,7 @@ function MediaBrowser({
             onClick={() => setCursor(media.continueCursor)}
             className="border-border text-muted-foreground hover:bg-accent hover:text-white"
           >
-            Load More
+            {t("mediaPage.loadMore")}
           </Button>
         </div>
       )}
@@ -308,6 +320,7 @@ function MediaDetailModal({
   mediaId: Id<"mediaFiles">;
   onClose: () => void;
 }) {
+  const t = useI18n();
   const locale = useCurrentLocale();
   const [isEditing, setIsEditing] = useState(false);
   const [caption, setCaption] = useState("");
@@ -350,7 +363,7 @@ function MediaDetailModal({
   };
 
   const handleDelete = async () => {
-    if (confirm("Delete this file? This cannot be undone.")) {
+    if (confirm(t("mediaPage.deleteConfirm"))) {
       await deleteMedia({ mediaId });
       onClose();
     }
@@ -360,7 +373,7 @@ function MediaDetailModal({
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Media Details</DialogTitle>
+          <DialogTitle>{t("mediaPage.details.title")}</DialogTitle>
         </DialogHeader>
 
         {!item ? (
@@ -395,7 +408,9 @@ function MediaDetailModal({
               </div>
 
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Object</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("mediaPage.details.object")}
+                </p>
                 <Link
                   href={`/objects/${item.collectionId}`}
                   className="text-sm text-primary hover:underline"
@@ -413,7 +428,7 @@ function MediaDetailModal({
                 <div className="space-y-3">
                   <div className="space-y-1">
                     <Label htmlFor="caption" className="text-xs">
-                      Caption
+                      {t("mediaPage.details.caption")}
                     </Label>
                     <Textarea
                       id="caption"
@@ -425,7 +440,7 @@ function MediaDetailModal({
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="photographer" className="text-xs">
-                      Photographer
+                      {t("mediaPage.details.photographer")}
                     </Label>
                     <Input
                       id="photographer"
@@ -436,7 +451,7 @@ function MediaDetailModal({
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="copyright" className="text-xs">
-                      Copyright
+                      {t("mediaPage.details.copyright")}
                     </Label>
                     <Input
                       id="copyright"
@@ -447,14 +462,16 @@ function MediaDetailModal({
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={handleSave} disabled={isSaving}>
-                      {isSaving ? "Saving..." : "Save"}
+                      {isSaving
+                        ? t("mediaPage.details.saving")
+                        : t("mediaPage.details.save")}
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => setIsEditing(false)}
                     >
-                      Cancel
+                      {t("mediaPage.details.cancel")}
                     </Button>
                   </div>
                 </div>
@@ -462,21 +479,25 @@ function MediaDetailModal({
                 <div className="space-y-2">
                   {item.caption && (
                     <div>
-                      <p className="text-xs text-muted-foreground">Caption</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("mediaPage.details.caption")}
+                      </p>
                       <p className="text-sm">{item.caption}</p>
                     </div>
                   )}
                   {item.photographer && (
                     <div>
                       <p className="text-xs text-muted-foreground">
-                        Photographer
+                        {t("mediaPage.details.photographer")}
                       </p>
                       <p className="text-sm">{item.photographer}</p>
                     </div>
                   )}
                   {item.copyright && (
                     <div>
-                      <p className="text-xs text-muted-foreground">Copyright</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("mediaPage.details.copyright")}
+                      </p>
                       <p className="text-sm">{item.copyright}</p>
                     </div>
                   )}
@@ -490,7 +511,7 @@ function MediaDetailModal({
                     variant="outline"
                     onClick={() => setIsEditing(true)}
                   >
-                    Edit Metadata
+                    {t("mediaPage.details.editMetadata")}
                   </Button>
                 )}
                 {!item.isPrimary && item.fileType === "image" && (
@@ -500,11 +521,11 @@ function MediaDetailModal({
                     onClick={handleSetPrimary}
                   >
                     <Star className="mr-1 h-3 w-3" />
-                    Set as Primary
+                    {t("mediaPage.details.setPrimary")}
                   </Button>
                 )}
                 <Button size="sm" variant="destructive" onClick={handleDelete}>
-                  Delete
+                  {t("mediaPage.details.delete")}
                 </Button>
               </div>
             </div>

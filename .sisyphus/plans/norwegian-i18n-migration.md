@@ -789,7 +789,7 @@ Phase 6: Toast Messages
 
 ---
 
-- [ ] 18. Migrate remaining pages
+- [x] 18. Migrate remaining pages
 
   **What to do**:
   - Update `apps/app/src/app/[locale]/(dashboard)/analytics/page.tsx`
