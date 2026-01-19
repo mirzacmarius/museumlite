@@ -248,6 +248,9 @@ export default {
       title: "Filters",
       dateRange: "All Time",
       type: "Type",
+      allUsers: "All users",
+      allTypes: "All types",
+      allActions: "All actions",
     },
     entityTypes: {
       organization: "Organization",
@@ -317,9 +320,13 @@ export default {
       institutionName: "e.g. Museum of Modern Art",
       contactDetails: "Email, phone, etc.",
       selectDate: "Select date",
+      selectStartDate: "Select start date",
+      selectEndDate: "Select end date",
       insuranceValue: "0.00",
       terms: "Loan duration terms, special requirements...",
+      termsEdit: "Specific loan terms, restrictions, or requirements...",
       notes: "Staff notes...",
+      notesEdit: "Additional notes for staff...",
       collections: "Search and select collections...",
     },
     filters: {

@@ -3,7 +3,7 @@
 import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDistanceLocale } from "@/lib/format-date";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
@@ -26,6 +26,7 @@ export default function ActivityPage() {
   const { currentOrganizationId, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
   const locale = useCurrentLocale();
+  const t = useScopedI18n("activity.filters");
 
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedEntityType, setSelectedEntityType] = useState<string>("");
@@ -161,10 +162,10 @@ export default function ActivityPage() {
                 }
               >
                 <SelectTrigger id="user-filter">
-                  <SelectValue placeholder="All users" />
+                  <SelectValue placeholder={t("allUsers")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All users</SelectItem>
+                  <SelectItem value="all">{t("allUsers")}</SelectItem>
                   {activeUsers?.map((user) => (
                     <SelectItem key={user._id} value={user._id}>
                       {user.name || user.email || "Unknown user"}
@@ -191,10 +192,10 @@ export default function ActivityPage() {
                 }
               >
                 <SelectTrigger id="entity-filter">
-                  <SelectValue placeholder="All types" />
+                  <SelectValue placeholder={t("allTypes")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All types</SelectItem>
+                  <SelectItem value="all">{t("allTypes")}</SelectItem>
                   {entityTypes?.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -221,10 +222,10 @@ export default function ActivityPage() {
                 }
               >
                 <SelectTrigger id="action-filter">
-                  <SelectValue placeholder="All actions" />
+                  <SelectValue placeholder={t("allActions")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All actions</SelectItem>
+                  <SelectItem value="all">{t("allActions")}</SelectItem>
                   {availableActions?.map((action) => (
                     <SelectItem key={action} value={action}>
                       {action}

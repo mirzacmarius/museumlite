@@ -255,6 +255,9 @@ export default {
       title: "Filtros",
       dateRange: "Todo el tiempo",
       type: "Tipo",
+      allUsers: "Todos los usuarios",
+      allTypes: "Todos los tipos",
+      allActions: "Todas las acciones",
     },
     entityTypes: {
       organization: "Organización",
@@ -324,9 +327,14 @@ export default {
       institutionName: "ej. Museo de Arte Moderno",
       contactDetails: "Email, teléfono, etc.",
       selectDate: "Seleccionar fecha",
+      selectStartDate: "Seleccionar fecha de inicio",
+      selectEndDate: "Seleccionar fecha de fin",
       insuranceValue: "0.00",
       terms: "Términos de duración del préstamo, requisitos especiales...",
+      termsEdit:
+        "Términos específicos del préstamo, restricciones o requisitos...",
       notes: "Notas del personal...",
+      notesEdit: "Notas adicionales para el personal...",
       collections: "Buscar y seleccionar colecciones...",
     },
     admin: {

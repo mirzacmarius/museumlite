@@ -249,6 +249,9 @@ export default {
       title: "Filtre",
       dateRange: "Alle tider",
       type: "Type",
+      allUsers: "Alle brukere",
+      allTypes: "Alle typer",
+      allActions: "Alle handlinger",
     },
     entityTypes: {
       organization: "Organisasjon",
@@ -318,9 +321,13 @@ export default {
       institutionName: "f.eks. Museum for Moderne Kunst",
       contactDetails: "E-post, telefon, osv.",
       selectDate: "Velg dato",
+      selectStartDate: "Velg startdato",
+      selectEndDate: "Velg sluttdato",
       insuranceValue: "0.00",
       terms: "Lånevilkår, spesielle krav...",
+      termsEdit: "Spesifikke lånevilkår, begrensninger eller krav...",
       notes: "Personalnotater...",
+      notesEdit: "Tilleggsnotater for personalet...",
       collections: "Søk og velg samlinger...",
     },
     filters: {

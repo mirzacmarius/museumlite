@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -30,6 +31,7 @@ export default function EditLoanPage() {
   const router = useRouter();
   const loanId = params.id as string;
   const { currentOrganizationId } = useOrganization();
+  const t = useScopedI18n("loans.placeholders");
   const updateLoan = useMutation(api.loans.update);
 
   const loan = useQuery(
@@ -257,7 +259,7 @@ export default function EditLoanPage() {
                         lenderBorrowerContact: e.target.value,
                       })
                     }
-                    placeholder="Email, phone, or address"
+                    placeholder={t("contactDetails")}
                     className="bg-background"
                   />
                 </div>
@@ -286,7 +288,7 @@ export default function EditLoanPage() {
                       startDate: date || new Date(),
                     })
                   }
-                  placeholder="Select start date"
+                  placeholder={t("selectStartDate")}
                 />
               </div>
 
@@ -298,7 +300,7 @@ export default function EditLoanPage() {
                   onSelect={(date: Date | undefined) =>
                     setFormData({ ...formData, endDate: date })
                   }
-                  placeholder="Select end date"
+                  placeholder={t("selectEndDate")}
                 />
               </div>
 
@@ -341,7 +343,7 @@ export default function EditLoanPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, terms: e.target.value })
                   }
-                  placeholder="Specific loan terms, restrictions, or requirements..."
+                  placeholder={t("termsEdit")}
                   rows={4}
                   className="bg-background resize-none"
                 />
@@ -355,7 +357,7 @@ export default function EditLoanPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, notes: e.target.value })
                   }
-                  placeholder="Additional notes for staff..."
+                  placeholder={t("notesEdit")}
                   rows={3}
                   className="bg-background resize-none"
                 />
