@@ -50,3 +50,25 @@
 - settings/modules/page.tsx - boolean | null vs boolean | undefined
 - organization-provider.tsx - enabledModules type mismatch
 - mediaThumbnails.ts - Buffer type issue
+- @v1/ui data-table.tsx - 6 lint errors (noExplicitAny, useKeyWithClickEvents)
+
+## Final Migration Stats
+
+| Metric | Before | After |
+|--------|--------|-------|
+| toLocaleDateString calls | 117 | 0 |
+| date-fns direct imports | 8 | 0 |
+| toLocaleString() number calls | 25 | 0 |
+| Intl.NumberFormat("en-US") | 2 | 0 |
+
+## Commits Made
+1. `dd75ae9` - feat(i18n): make date formatting locale-aware (Task 19)
+2. `336c22e` - feat(i18n): make number/currency formatting locale-aware (Task 20)
+
+## Remaining Manual Verification
+The following require manual browser testing:
+- [ ] All 4 locales work end-to-end
+- [ ] Language switcher shows all 4 options
+- [ ] Dates display correctly in Norwegian (e.g., "15. jan. 2024")
+- [ ] Numbers display correctly in Norwegian (e.g., "1 234")
+- [ ] Toast messages display in selected locale
