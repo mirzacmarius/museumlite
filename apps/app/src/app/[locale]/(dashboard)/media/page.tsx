@@ -308,6 +308,7 @@ function MediaDetailModal({
   mediaId: Id<"mediaFiles">;
   onClose: () => void;
 }) {
+  const locale = useCurrentLocale();
   const [isEditing, setIsEditing] = useState(false);
   const [caption, setCaption] = useState("");
   const [photographer, setPhotographer] = useState("");
@@ -387,7 +388,9 @@ function MediaDetailModal({
                 <p className="text-sm font-medium">{item.fileName}</p>
                 <p className="text-xs text-muted-foreground">
                   {formatFileSize(item.fileSize)} &bull;{" "}
-                  {formatDistanceToNow(item.uploadedAt, { addSuffix: true })}
+                  {formatDistanceLocale(new Date(item.uploadedAt), locale, {
+                    addSuffix: true,
+                  })}
                 </p>
               </div>
 

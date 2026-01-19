@@ -1,6 +1,6 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -93,6 +93,7 @@ export function AccountCombobox({
   disabled = false,
 }: AccountComboboxProps) {
   const t = useI18n();
+  const tToast = useScopedI18n("common.toast");
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -141,7 +142,7 @@ export function AccountCombobox({
 
   const handleCreateAccount = async () => {
     if (!organizationId || !formData.businessName.trim()) {
-      toast.error("Business name is required");
+      toast.error(tToast("businessNameRequired"));
       return;
     }
 
@@ -163,7 +164,7 @@ export function AccountCombobox({
         contactEmail: formData.contactEmail.trim() || undefined,
       });
 
-      toast.success("Account created successfully");
+      toast.success(tToast("accountCreated"));
       setDialogOpen(false);
       setFormData(initialFormState);
 
@@ -177,9 +178,7 @@ export function AccountCombobox({
       });
     } catch (err) {
       console.error("Error creating account:", err);
-      toast.error(
-        err instanceof Error ? err.message : "Failed to create account",
-      );
+      toast.error(err instanceof Error ? err.message : tToast("createFailed"));
     } finally {
       setIsSubmitting(false);
     }

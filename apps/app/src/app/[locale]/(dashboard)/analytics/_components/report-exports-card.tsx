@@ -181,6 +181,7 @@ export function ReportExportsCard({
   compliance,
   locationUtilization,
 }: ReportExportsCardProps) {
+  const locale = useCurrentLocale();
   const [exporting, setExporting] = useState<string | null>(null);
   const hasCompliance = Boolean(compliance);
 

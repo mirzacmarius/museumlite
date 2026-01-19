@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { usePermission } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
@@ -80,6 +81,7 @@ type ModuleId = (typeof MODULES)[number]["id"];
 
 export default function ModulesSettingsPage() {
   const { currentOrganizationId } = useOrganization();
+  const t = useScopedI18n("common.toast");
   const canManage = usePermission(
     currentOrganizationId,
     "organization.manage_settings",
@@ -122,10 +124,12 @@ export default function ModulesSettingsPage() {
         organizationId: currentOrganizationId as Id<"organizations">,
         settings: { enabledModules: next },
       });
-      toast.success(enabled ? "Module enabled" : "Module disabled");
+      toast.success(
+        t("moduleToggled", { action: enabled ? "enabled" : "disabled" }),
+      );
     } catch (error) {
       setEnabledModules(previous);
-      toast.error("Failed to update modules");
+      toast.error(t("moduleUpdateFailed"));
     } finally {
       setIsSaving(null);
     }

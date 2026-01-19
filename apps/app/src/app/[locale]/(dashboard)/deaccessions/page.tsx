@@ -96,6 +96,7 @@ function DeaccessionTable({
   organizationId: Id<"organizations">;
 }) {
   const t = useScopedI18n("deaccessions");
+  const locale = useCurrentLocale();
   const [status, setStatus] = useState<
     "all" | "pending" | "approved" | "rejected"
   >("all");

@@ -1,5 +1,6 @@
 "use client";
 
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -31,6 +32,7 @@ export function BulkDeaccessionDialog({
   selectedIds,
   onSuccess,
 }: BulkDeaccessionDialogProps) {
+  const t = useScopedI18n("common.toast");
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -38,7 +40,7 @@ export function BulkDeaccessionDialog({
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
-      toast.error("Please provide a reason for deaccessioning");
+      toast.error(t("selectDeaccessionReason"));
       return;
     }
 
@@ -51,12 +53,10 @@ export function BulkDeaccessionDialog({
 
       const messages = [];
       if (result.deaccessioned > 0) {
-        messages.push(
-          `${result.deaccessioned} item${result.deaccessioned !== 1 ? "s" : ""} deaccessioned`,
-        );
+        messages.push(t("itemsDeaccessioned", { count: result.deaccessioned }));
       }
       if (result.skipped > 0) {
-        messages.push(`${result.skipped} already deaccessioned`);
+        messages.push(t("someItemsSkipped", { count: result.skipped }));
       }
       if (result.failed > 0) {
         messages.push(`${result.failed} failed (may be on loan)`);
@@ -72,7 +72,7 @@ export function BulkDeaccessionDialog({
       onOpenChange(false);
       setReason("");
     } catch (error) {
-      toast.error("Failed to deaccession items");
+      toast.error(t("itemsDeaccessionFailed"));
     } finally {
       setIsSubmitting(false);
     }

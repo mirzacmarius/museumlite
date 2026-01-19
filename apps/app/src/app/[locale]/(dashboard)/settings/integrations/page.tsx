@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -43,6 +44,7 @@ const INTEGRATION_ICONS: Record<string, React.ReactNode> = {
 
 export default function IntegrationsSettingsPage() {
   const { currentOrganizationId } = useOrganization();
+  const t = useScopedI18n("common.toast");
   const searchParams = useSearchParams();
   const router = useRouter();
   const [disableDialogOpen, setDisableDialogOpen] = useState(false);
@@ -79,7 +81,7 @@ export default function IntegrationsSettingsPage() {
       newParams.delete("subscribed");
       router.replace(`?${newParams.toString()}`);
       setPendingEnableIntegration(subscribedIntegrationId);
-      toast.info("Waiting for subscription confirmation...");
+      toast.info(t("waitingSubscription"));
     }
   }, [searchParams, currentOrganizationId, availableIntegrations, router]);
 
@@ -96,18 +98,18 @@ export default function IntegrationsSettingsPage() {
         });
 
         if (result.ok) {
-          toast.success("Integration enabled successfully");
+          toast.success(t("integrationEnabled"));
         } else if (result.reason === "already_enabled") {
-          toast.info("Integration is already enabled");
+          toast.info(t("integrationAlreadyEnabled"));
         } else if (result.reason === "subscription_required") {
-          toast.error("Subscription not active yet. Please try again shortly.");
+          toast.error(t("subscriptionNotActive"));
           return;
         }
 
         setPendingEnableIntegration(null);
       } catch (error) {
         console.error("Failed to auto-enable integration:", error);
-        toast.error("Failed to enable integration");
+        toast.error(t("integrationEnableFailed"));
       }
     };
 

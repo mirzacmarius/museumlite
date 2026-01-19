@@ -66,6 +66,7 @@ import { toast } from "sonner";
 export default function AccountDetailPage() {
   const t = useScopedI18n("accounts");
   const tCommon = useScopedI18n("common");
+  const tToast = useScopedI18n("accounts.detail.toasts");
   const params = useParams();
   const router = useRouter();
   const accountId = params.id as Id<"accounts">;
@@ -460,6 +461,7 @@ function ContactsTab({
   contacts: Contact[] | undefined;
 }) {
   const t = useScopedI18n("accounts");
+  const tToast = useScopedI18n("accounts.detail.toasts");
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const deleteContact = useMutation(api.contacts.remove);
@@ -552,9 +554,9 @@ function ContactsTab({
                           onClick={async () => {
                             try {
                               await deleteContact({ contactId: contact._id });
-                              toast.success("Contact deleted");
+                              toast.success(tToast("contactDeleted"));
                             } catch (error) {
-                              toast.error("Failed to delete contact");
+                              toast.error(tToast("contactDeleteFailed"));
                             }
                           }}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -606,6 +608,7 @@ function ContactForm({
   contact?: Contact;
   onSuccess: () => void;
 }) {
+  const tToast = useScopedI18n("accounts.detail.toasts");
   const createContact = useMutation(api.contacts.create);
   const updateContact = useMutation(api.contacts.update);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -640,18 +643,18 @@ function ContactForm({
           contactId: contact._id,
           ...contactData,
         });
-        toast.success("Contact updated successfully");
+        toast.success(tToast("contactUpdated"));
       } else {
         await createContact({
           accountId,
           ...contactData,
         });
-        toast.success("Contact added successfully");
+        toast.success(tToast("contactAdded"));
       }
       onSuccess();
     } catch (error) {
       toast.error(
-        contact ? "Failed to update contact" : "Failed to add contact",
+        contact ? tToast("contactUpdateFailed") : tToast("contactAddFailed"),
       );
     } finally {
       setIsSubmitting(false);
@@ -776,6 +779,7 @@ function DocumentsTab({
   accountId: Id<"accounts">;
   documents: AccountDocument[] | undefined;
 }) {
+  const tToast = useScopedI18n("accounts.detail.toasts");
   const [isUploading, setIsUploading] = useState(false);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -825,7 +829,7 @@ function DocumentsTab({
         description: description || undefined,
       });
 
-      toast.success("Document uploaded successfully");
+      toast.success(tToast("documentUploaded"));
       setShowUploadDialog(false);
       setSelectedFile(null);
       setDescription("");
@@ -834,7 +838,7 @@ function DocumentsTab({
         fileInputRef.current.value = "";
       }
     } catch (error) {
-      toast.error("Failed to upload document");
+      toast.error(tToast("documentUploadFailed"));
     } finally {
       setIsUploading(false);
     }
@@ -909,9 +913,9 @@ function DocumentsTab({
                           onClick={async () => {
                             try {
                               await deleteDocument({ documentId: doc._id });
-                              toast.success("Document deleted");
+                              toast.success(tToast("documentDeleted"));
                             } catch (error) {
-                              toast.error("Failed to delete document");
+                              toast.error(tToast("documentDeleteFailed"));
                             }
                           }}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

@@ -46,6 +46,7 @@ type LoanType = "incoming" | "outgoing" | "all";
 export default function LoansPage() {
   const t = useScopedI18n("loans");
   const tCommon = useScopedI18n("common");
+  const tToast = useScopedI18n("common.toast");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
   const [statusFilter, setStatusFilter] = useState<LoanStatus>("all");
@@ -178,6 +179,7 @@ function LoanList({
   onSearchQueryChange: (query: string) => void;
 }) {
   const t = useScopedI18n("loans");
+  const tToast = useScopedI18n("common.toast");
   const [selectedIds, setSelectedIds] = useState<Set<Id<"loans">>>(new Set());
   const bulkApprove = useMutation(api.loans.bulkApprove);
   const bulkCancel = useMutation(api.loans.bulkCancel);
@@ -299,14 +301,10 @@ function LoanList({
     try {
       const result = await bulkApprove({ loanIds });
       if (result.approved > 0) {
-        toast.success(
-          `Approved ${result.approved} loan${result.approved !== 1 ? "s" : ""}`,
-        );
+        toast.success(tToast("loansApproved", { count: result.approved }));
       }
       if (result.skipped > 0) {
-        toast.warning(
-          `Skipped ${result.skipped} loan${result.skipped !== 1 ? "s" : ""}`,
-        );
+        toast.warning(tToast("someLoansSkipped", { count: result.skipped }));
       }
       if (result.errors.length > 0) {
         for (const error of result.errors.slice(0, 3)) {
@@ -315,7 +313,7 @@ function LoanList({
       }
       setSelectedIds(new Set());
     } catch (error) {
-      toast.error("Failed to approve loans");
+      toast.error(tToast("loansApproveFailed"));
     }
   };
 
@@ -324,14 +322,10 @@ function LoanList({
     try {
       const result = await bulkCancel({ loanIds });
       if (result.cancelled > 0) {
-        toast.success(
-          `Cancelled ${result.cancelled} loan${result.cancelled !== 1 ? "s" : ""}`,
-        );
+        toast.success(tToast("loansCancelled", { count: result.cancelled }));
       }
       if (result.skipped > 0) {
-        toast.warning(
-          `Skipped ${result.skipped} loan${result.skipped !== 1 ? "s" : ""}`,
-        );
+        toast.warning(tToast("loansCancelSkipped", { count: result.skipped }));
       }
       if (result.errors.length > 0) {
         for (const error of result.errors.slice(0, 3)) {
@@ -340,7 +334,7 @@ function LoanList({
       }
       setSelectedIds(new Set());
     } catch (error) {
-      toast.error("Failed to cancel loans");
+      toast.error(tToast("loansCancelFailed"));
     }
   };
 

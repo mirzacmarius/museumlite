@@ -6,6 +6,7 @@ import {
 } from "@/components/dropzone-uploader";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -63,6 +64,7 @@ export function MediaGallery({
   onOpenLightbox,
 }: MediaGalleryProps) {
   const { currentOrganizationId } = useOrganization();
+  const t = useScopedI18n("common.toast");
   const media = useQuery(
     api.media.list,
     collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
@@ -304,9 +306,9 @@ export function MediaGallery({
       await updateOrder({
         mediaIds: newOrder,
       });
-      toast.success("Image order updated");
+      toast.success(t("imageOrderUpdated"));
     } catch (err) {
-      toast.error("Failed to update image order");
+      toast.error(t("imageOrderUpdateFailed"));
     }
 
     setDraggedId(null);

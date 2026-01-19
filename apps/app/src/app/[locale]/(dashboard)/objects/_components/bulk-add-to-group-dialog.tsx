@@ -1,5 +1,6 @@
 "use client";
 
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -39,6 +40,7 @@ export function BulkAddToGroupDialog({
   organizationId,
   onSuccess,
 }: BulkAddToGroupDialogProps) {
+  const t = useScopedI18n("common.toast");
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -50,7 +52,7 @@ export function BulkAddToGroupDialog({
 
   const handleSubmit = async () => {
     if (!selectedGroupId) {
-      toast.error("Please select a collection group");
+      toast.error(t("selectCollectionGroup"));
       return;
     }
 
@@ -60,15 +62,13 @@ export function BulkAddToGroupDialog({
         groupId: selectedGroupId as Id<"collectionGroups">,
         collectionIds: selectedIds,
       });
-      toast.success(
-        `Added ${selectedIds.length} object${selectedIds.length !== 1 ? "s" : ""} to collection`,
-      );
+      toast.success(t("itemsAddedToGroup", { count: selectedIds.length }));
       onSuccess();
       onOpenChange(false);
       setSelectedGroupId("");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to add to collection",
+        error instanceof Error ? error.message : t("itemsAddToGroupFailed"),
       );
     } finally {
       setIsSubmitting(false);
