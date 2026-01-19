@@ -44,6 +44,21 @@ export default {
         "Haz clic en el avatar para subir uno personalizado desde tus archivos.",
       resetButton: "Restablecer",
     },
+    name: {
+      title: "Tu Nombre",
+      description:
+        "Este es tu nombre de visualización. Se mostrará a otros usuarios de la organización.",
+      placeholder: "Tu nombre",
+      hint: "Por favor, utiliza un máximo de 64 caracteres.",
+      save: "Guardar",
+    },
+    username: {
+      title: "Tu Nombre de Usuario",
+      description: "Este es tu nombre de usuario. Se mostrará en tu perfil.",
+      placeholder: "Nombre de usuario",
+      hint: "Por favor, utiliza un máximo de 32 caracteres.",
+      save: "Guardar",
+    },
     deleteAccount: {
       title: "Eliminar Cuenta",
       description:

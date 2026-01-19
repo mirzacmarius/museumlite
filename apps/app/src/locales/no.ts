@@ -41,6 +41,21 @@ export default {
         "Klikk på avataren for å laste opp en tilpasset fra filene dine.",
       resetButton: "Tilbakestill",
     },
+    name: {
+      title: "Ditt navn",
+      description:
+        "Dette er visningsnavnet ditt. Det vil vises for andre brukere i organisasjonen.",
+      placeholder: "Ditt navn",
+      hint: "Vennligst bruk maksimalt 64 tegn.",
+      save: "Lagre",
+    },
+    username: {
+      title: "Ditt brukernavn",
+      description: "Dette er brukernavnet ditt. Det vil vises på profilen din.",
+      placeholder: "Brukernavn",
+      hint: "Vennligst bruk maksimalt 32 tegn.",
+      save: "Lagre",
+    },
     deleteAccount: {
       title: "Slett konto",
       description:

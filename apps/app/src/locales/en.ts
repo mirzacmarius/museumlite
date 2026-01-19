@@ -41,6 +41,22 @@ export default {
       uploadHint: "Click on the avatar to upload a custom one from your files.",
       resetButton: "Reset",
     },
+    name: {
+      title: "Your Name",
+      description:
+        "This is your display name. It will be shown to other users in the organization.",
+      placeholder: "Your name",
+      hint: "Please use 64 characters at maximum.",
+      save: "Save",
+    },
+    username: {
+      title: "Your Username",
+      description:
+        "This is your username. It will be displayed on your profile.",
+      placeholder: "Username",
+      hint: "Please use 32 characters at maximum.",
+      save: "Save",
+    },
     deleteAccount: {
       title: "Delete Account",
       description:

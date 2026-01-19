@@ -42,6 +42,22 @@ export default {
         "Cliquez sur l'avatar pour en télécharger un personnalisé depuis vos fichiers.",
       resetButton: "Réinitialiser",
     },
+    name: {
+      title: "Votre Nom",
+      description:
+        "Ceci est votre nom d'affichage. Il sera visible par les autres utilisateurs de l'organisation.",
+      placeholder: "Votre nom",
+      hint: "Veuillez utiliser un maximum de 64 caractères.",
+      save: "Enregistrer",
+    },
+    username: {
+      title: "Votre Nom d'Utilisateur",
+      description:
+        "Ceci est votre nom d'utilisateur. Il sera affiché sur votre profil.",
+      placeholder: "Nom d'utilisateur",
+      hint: "Veuillez utiliser un maximum de 32 caractères.",
+      save: "Enregistrer",
+    },
     deleteAccount: {
       title: "Supprimer le Compte",
       description:

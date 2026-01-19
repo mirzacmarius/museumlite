@@ -134,10 +134,11 @@ export default function DashboardSettings() {
       >
         <div className="flex w-full flex-col gap-4 rounded-lg p-6">
           <div className="flex flex-col gap-2">
-            <h2 className="text-xl font-medium text-primary">Your Name</h2>
+            <h2 className="text-xl font-medium text-primary">
+              {t("name.title")}
+            </h2>
             <p className="text-sm font-normal text-primary/60">
-              This is your display name. It will be shown to other users in the
-              organization.
+              {t("name.description")}
             </p>
           </div>
           <nameForm.Field
@@ -145,7 +146,7 @@ export default function DashboardSettings() {
             // biome-ignore lint/correctness/noChildrenProp: <explanation>
             children={(field) => (
               <Input
-                placeholder="Your name"
+                placeholder={t("name.placeholder")}
                 autoComplete="name"
                 required
                 value={field.state.value}
@@ -158,10 +159,10 @@ export default function DashboardSettings() {
         </div>
         <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 dark:bg-card">
           <p className="text-sm font-normal text-primary/60">
-            Please use 64 characters at maximum.
+            {t("name.hint")}
           </p>
           <Button type="submit" size="sm">
-            Save
+            {t("name.save")}
           </Button>
         </div>
       </form>
@@ -177,9 +178,11 @@ export default function DashboardSettings() {
       >
         <div className="flex w-full flex-col gap-4 rounded-lg p-6">
           <div className="flex flex-col gap-2">
-            <h2 className="text-xl font-medium text-primary">Your Username</h2>
+            <h2 className="text-xl font-medium text-primary">
+              {t("username.title")}
+            </h2>
             <p className="text-sm font-normal text-primary/60">
-              This is your username. It will be displayed on your profile.
+              {t("username.description")}
             </p>
           </div>
           <usernameForm.Field
@@ -190,7 +193,7 @@ export default function DashboardSettings() {
             // biome-ignore lint/correctness/noChildrenProp: <explanation>
             children={(field) => (
               <Input
-                placeholder="Username"
+                placeholder={t("username.placeholder")}
                 autoComplete="off"
                 required
                 value={field.state.value}
@@ -211,10 +214,10 @@ export default function DashboardSettings() {
         </div>
         <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 dark:bg-card">
           <p className="text-sm font-normal text-primary/60">
-            Please use 32 characters at maximum.
+            {t("username.hint")}
           </p>
           <Button type="submit" size="sm">
-            Save
+            {t("username.save")}
           </Button>
         </div>
       </form>
