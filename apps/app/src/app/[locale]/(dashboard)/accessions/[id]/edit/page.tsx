@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -24,6 +25,8 @@ import { useEffect, useState } from "react";
 export default function EditAccessionPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useScopedI18n("accessions");
+  const tCommon = useScopedI18n("common");
   const accessionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
   const updateAccession = useMutation(api.accessions.update);
@@ -64,7 +67,7 @@ export default function EditAccessionPage() {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <p className="text-muted-foreground">
-          Please select an organization to edit accessions.
+          {t("selectOrganizationDescription")}
         </p>
       </div>
     );
@@ -73,7 +76,7 @@ export default function EditAccessionPage() {
   if (accession === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
   }
@@ -81,7 +84,7 @@ export default function EditAccessionPage() {
   if (accession === null) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Accession not found</p>
+        <p className="text-muted-foreground">{t("accessionNotFound")}</p>
       </div>
     );
   }
@@ -94,11 +97,11 @@ export default function EditAccessionPage() {
             <div className="flex h-64 items-center justify-center">
               <div className="text-center">
                 <p className="text-muted-foreground">
-                  Cannot edit accession that is not pending
+                  {t("detail.cannotEditNotPending")}
                 </p>
                 <Button variant="outline" className="mt-4" asChild>
                   <Link href={`/accessions/${accessionId}`}>
-                    Back to Accession
+                    {t("detail.backToAccession")}
                   </Link>
                 </Button>
               </div>
@@ -113,7 +116,7 @@ export default function EditAccessionPage() {
     e.preventDefault();
     setError(null);
     if (!formData.source.trim()) {
-      setError("Source is required");
+      setError(t("error.sourceRequired"));
       return;
     }
 
@@ -129,11 +132,7 @@ export default function EditAccessionPage() {
       router.push(`/accessions/${accessionId}`);
     } catch (err) {
       console.error("Error updating accession:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to update accession. Please try again.",
-      );
+      setError(err instanceof Error ? err.message : t("error.failedToUpdate"));
       setIsSubmitting(false);
     }
   };
@@ -146,7 +145,7 @@ export default function EditAccessionPage() {
             <Button variant="ghost" size="sm" asChild>
               <Link href={`/accessions/${accessionId}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Accession
+                {t("detail.backToAccession")}
               </Link>
             </Button>
           </div>
@@ -159,44 +158,48 @@ export default function EditAccessionPage() {
             )}
             <div className="mx-auto max-w-2xl space-y-6">
               <div className="space-y-2">
-                <Label>Accession Number</Label>
+                <Label>{t("form.accessionNumber")}</Label>
                 <Input
                   value={accession.accessionNumber}
                   disabled
                   className="bg-muted"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Accession number cannot be changed
+                  {t("detail.accessionNumberCannotChange")}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label>Date Received</Label>
+                <Label>{t("form.dateReceived")}</Label>
                 <Input
                   value={new Date(accession.dateReceived).toLocaleDateString()}
                   disabled
                   className="bg-muted"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Date received cannot be changed
+                  {t("detail.dateReceivedCannotChange")}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="source">Source *</Label>
+                <Label htmlFor="source">
+                  {t("form.source")} {t("form.required")}
+                </Label>
                 <Input
                   id="source"
                   value={formData.source}
                   onChange={(e) =>
                     setFormData({ ...formData, source: e.target.value })
                   }
-                  placeholder="e.g., Private collector, Auction house"
+                  placeholder={t("form.sourcePlaceholder")}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="method">Method *</Label>
+                <Label htmlFor="method">
+                  {t("form.method")} {t("form.required")}
+                </Label>
                 <Select
                   value={formData.method}
                   onValueChange={(
@@ -214,19 +217,33 @@ export default function EditAccessionPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="purchase">Purchase</SelectItem>
-                    <SelectItem value="gift">Gift</SelectItem>
-                    <SelectItem value="loan">Loan</SelectItem>
-                    <SelectItem value="transfer">Transfer</SelectItem>
-                    <SelectItem value="donation">Donation</SelectItem>
-                    <SelectItem value="bequest">Bequest</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="purchase">
+                      {t("form.methods.purchase")}
+                    </SelectItem>
+                    <SelectItem value="gift">
+                      {t("form.methods.gift")}
+                    </SelectItem>
+                    <SelectItem value="loan">
+                      {t("form.methods.loan")}
+                    </SelectItem>
+                    <SelectItem value="transfer">
+                      {t("form.methods.transfer")}
+                    </SelectItem>
+                    <SelectItem value="donation">
+                      {t("form.methods.donation")}
+                    </SelectItem>
+                    <SelectItem value="bequest">
+                      {t("form.methods.bequest")}
+                    </SelectItem>
+                    <SelectItem value="other">
+                      {t("form.methods.other")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cost">Cost</Label>
+                <Label htmlFor="cost">{t("form.cost")}</Label>
                 <Input
                   id="cost"
                   type="number"
@@ -235,19 +252,19 @@ export default function EditAccessionPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, cost: e.target.value })
                   }
-                  placeholder="0.00"
+                  placeholder={t("form.costPlaceholder")}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">{t("form.notes")}</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) =>
                     setFormData({ ...formData, notes: e.target.value })
                   }
-                  placeholder="Additional notes about this accession..."
+                  placeholder={t("form.notesPlaceholder")}
                   rows={4}
                 />
               </div>
@@ -258,12 +275,14 @@ export default function EditAccessionPage() {
                   variant="outline"
                   onClick={() => router.back()}
                 >
-                  Cancel
+                  {tCommon("cancel")}
                 </Button>
                 <PermissionGate permission="collections.update">
                   <Button type="submit" disabled={isSubmitting}>
                     <Save className="mr-2 h-4 w-4" />
-                    {isSubmitting ? "Updating..." : "Update Accession"}
+                    {isSubmitting
+                      ? t("form.updating")
+                      : t("form.updateAccession")}
                   </Button>
                 </PermissionGate>
               </div>

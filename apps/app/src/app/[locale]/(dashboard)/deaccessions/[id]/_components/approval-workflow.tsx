@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -28,6 +29,8 @@ interface ApprovalWorkflowProps {
 
 export function ApprovalWorkflow({ deaccessionId }: ApprovalWorkflowProps) {
   const { currentOrganizationId } = useOrganization();
+  const t = useScopedI18n("deaccessions");
+  const tCommon = useScopedI18n("common");
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +60,7 @@ export function ApprovalWorkflow({ deaccessionId }: ApprovalWorkflowProps) {
       setComment("");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to approve deaccession",
+        err instanceof Error ? err.message : t("form.errors.approveFailed"),
       );
     } finally {
       setIsSubmitting(false);
@@ -75,7 +78,7 @@ export function ApprovalWorkflow({ deaccessionId }: ApprovalWorkflowProps) {
       setComment("");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to reject deaccession",
+        err instanceof Error ? err.message : t("form.errors.rejectFailed"),
       );
     } finally {
       setIsSubmitting(false);
@@ -84,7 +87,7 @@ export function ApprovalWorkflow({ deaccessionId }: ApprovalWorkflowProps) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">Approval Actions</h3>
+      <h3 className="text-lg font-medium">{t("detail.approvalAction")}</h3>
       {error && (
         <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
           {error}
@@ -92,12 +95,12 @@ export function ApprovalWorkflow({ deaccessionId }: ApprovalWorkflowProps) {
       )}
       <div className="space-y-4">
         <div>
-          <Label htmlFor="comment">Comment (optional)</Label>
+          <Label htmlFor="comment">{t("detail.commentLabel")}</Label>
           <Textarea
             id="comment"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Add a comment or reason for approval/rejection..."
+            placeholder={t("detail.commentPlaceholder")}
             rows={3}
           />
         </div>
@@ -110,28 +113,29 @@ export function ApprovalWorkflow({ deaccessionId }: ApprovalWorkflowProps) {
             >
               <CheckCircle className="mr-2 h-4 w-4" />
               {deaccession.workflowStep
-                ? `Approve Step ${deaccession.workflowStep}`
-                : "Approve"}
+                ? t("detail.step", { step: deaccession.workflowStep })
+                : t("actions.approve")}
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button disabled={isSubmitting} variant="destructive">
                   <XCircle className="mr-2 h-4 w-4" />
-                  Reject
+                  {t("actions.reject")}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Reject Deaccession</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    {t("actions.rejectDialogTitle")}
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to reject this deaccession? This
-                    action cannot be undone.
+                    {t("actions.rejectDialogDescription")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
                   <AlertDialogAction onClick={handleReject}>
-                    Reject Deaccession
+                    {t("actions.rejectDialogTitle")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

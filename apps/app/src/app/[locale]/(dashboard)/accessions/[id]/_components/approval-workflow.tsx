@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -28,6 +29,8 @@ interface ApprovalWorkflowProps {
 
 export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
   const { currentOrganizationId } = useOrganization();
+  const t = useScopedI18n("accessions");
+  const tCommon = useScopedI18n("common");
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,9 +57,7 @@ export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
       });
       setComment("");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to approve accession",
-      );
+      setError(err instanceof Error ? err.message : t("error.failedToApprove"));
     } finally {
       setIsSubmitting(false);
     }
@@ -72,9 +73,7 @@ export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
       });
       setComment("");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to reject accession",
-      );
+      setError(err instanceof Error ? err.message : t("error.failedToReject"));
     } finally {
       setIsSubmitting(false);
     }
@@ -82,7 +81,7 @@ export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">Approval Actions</h3>
+      <h3 className="text-lg font-medium">{t("approval.title")}</h3>
       {error && (
         <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
           {error}
@@ -90,12 +89,12 @@ export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
       )}
       <div className="space-y-4">
         <div>
-          <Label htmlFor="comment">Comment (optional)</Label>
+          <Label htmlFor="comment">{t("approval.commentLabel")}</Label>
           <Textarea
             id="comment"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Add a comment or reason for approval/rejection..."
+            placeholder={t("approval.commentPlaceholder")}
             rows={3}
           />
         </div>
@@ -108,28 +107,29 @@ export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
             >
               <CheckCircle className="mr-2 h-4 w-4" />
               {accession.workflowStep
-                ? `Approve Step ${accession.workflowStep}`
-                : "Approve"}
+                ? t("approval.approveStep", { step: accession.workflowStep })
+                : t("approval.approve")}
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button disabled={isSubmitting} variant="destructive">
                   <XCircle className="mr-2 h-4 w-4" />
-                  Reject
+                  {t("approval.reject")}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Reject Accession</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    {t("approval.rejectDialogTitle")}
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to reject this accession? This action
-                    cannot be undone.
+                    {t("approval.rejectDialogDescription")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
                   <AlertDialogAction onClick={handleReject}>
-                    Reject Accession
+                    {t("approval.rejectAccession")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

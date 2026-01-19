@@ -600,7 +600,7 @@ Phase 6: Toast Messages
 
 ---
 
-- [ ] 10. Migrate Accessions module
+- [x] 10. Migrate Accessions module
 
   **What to do**:
   - Update all files in `apps/app/src/app/[locale]/(dashboard)/accessions/`
@@ -622,7 +622,7 @@ Phase 6: Toast Messages
 
 ---
 
-- [ ] 11. Migrate Deaccessions module
+- [x] 11. Migrate Deaccessions module
 
   **What to do**:
   - Update all files in `apps/app/src/app/[locale]/(dashboard)/deaccessions/`
@@ -946,7 +946,7 @@ Phase 6: Toast Messages
 
 ### Phase 6: Toast Messages
 
-- [ ] 21. Migrate toast and error messages
+- [x] 21. Migrate toast and error messages
 
   **What to do**:
   - Search for all `toast.success()`, `toast.error()`, `toast.warning()` calls

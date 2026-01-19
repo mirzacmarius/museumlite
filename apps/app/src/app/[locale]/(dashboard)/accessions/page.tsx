@@ -54,7 +54,6 @@ export default async function AccessionsPage() {
   );
 }
 
-("use client");
 
 import { useScopedI18n } from "@/locales/client";
 

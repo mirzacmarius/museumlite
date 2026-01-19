@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -26,6 +27,8 @@ type DeaccessionMethod = "sale" | "donation" | "destruction" | "transfer";
 export default function EditDeaccessionPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useScopedI18n("deaccessions");
+  const tCommon = useScopedI18n("common");
   const deaccessionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
   const updateDeaccession = useMutation(api.deaccessions.update);
@@ -72,9 +75,7 @@ export default function EditDeaccessionPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">
-          Please select an organization to edit deaccessions.
-        </p>
+        <p className="text-muted-foreground">{t("form.selectOrgEdit")}</p>
       </div>
     );
   }
@@ -82,7 +83,7 @@ export default function EditDeaccessionPage() {
   if (deaccession === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
   }
@@ -90,7 +91,7 @@ export default function EditDeaccessionPage() {
   if (deaccession === null) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Deaccession not found</p>
+        <p className="text-muted-foreground">{t("detail.notFound")}</p>
       </div>
     );
   }
@@ -103,11 +104,11 @@ export default function EditDeaccessionPage() {
             <div className="flex h-64 items-center justify-center">
               <div className="text-center">
                 <p className="text-muted-foreground">
-                  Cannot edit deaccession that is not pending
+                  {t("form.errors.cannotEdit")}
                 </p>
                 <Button variant="outline" className="mt-4" asChild>
                   <Link href={`/deaccessions/${deaccessionId}`}>
-                    Back to Deaccession
+                    {t("actions.backToDeaccession")}
                   </Link>
                 </Button>
               </div>
@@ -122,7 +123,7 @@ export default function EditDeaccessionPage() {
     e.preventDefault();
     setError(null);
     if (!formData.reason.trim()) {
-      setError("Reason is required");
+      setError(t("form.errors.reasonRequired"));
       return;
     }
 
@@ -148,9 +149,7 @@ export default function EditDeaccessionPage() {
     } catch (err) {
       console.error("Error updating deaccession:", err);
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to update deaccession. Please try again.",
+        err instanceof Error ? err.message : t("form.errors.updateFailed"),
       );
       setIsSubmitting(false);
     }
@@ -164,7 +163,7 @@ export default function EditDeaccessionPage() {
             <Button variant="ghost" size="sm" asChild>
               <Link href={`/deaccessions/${deaccessionId}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Deaccession
+                {t("actions.backToDeaccession")}
               </Link>
             </Button>
           </div>
@@ -177,19 +176,19 @@ export default function EditDeaccessionPage() {
             )}
             <div className="mx-auto max-w-2xl space-y-6">
               <div className="space-y-2">
-                <Label>Deaccession Number</Label>
+                <Label>{t("form.deaccessionNumber")}</Label>
                 <Input
                   value={deaccession.deaccessionNumber}
                   disabled
                   className="bg-muted"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Deaccession number cannot be changed
+                  {t("form.deaccessionNumberReadonly")}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label>Date Deaccessioned</Label>
+                <Label>{t("form.dateDeaccessioned")}</Label>
                 <Input
                   value={new Date(
                     deaccession.dateDeaccessioned,
@@ -198,25 +197,25 @@ export default function EditDeaccessionPage() {
                   className="bg-muted"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Date deaccessioned cannot be changed
+                  {t("form.dateDeaccessionedReadonly")}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="reason">Reason *</Label>
+                <Label htmlFor="reason">{t("form.reasonLabel")}</Label>
                 <Input
                   id="reason"
                   value={formData.reason}
                   onChange={(e) =>
                     setFormData({ ...formData, reason: e.target.value })
                   }
-                  placeholder="e.g., No longer fits collection mission"
+                  placeholder={t("form.reasonPlaceholder")}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="method">Method *</Label>
+                <Label htmlFor="method">{t("form.methodLabel")}</Label>
                 <Select
                   value={formData.method}
                   onValueChange={(value) =>
@@ -230,16 +229,24 @@ export default function EditDeaccessionPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="sale">Sale</SelectItem>
-                    <SelectItem value="donation">Donation</SelectItem>
-                    <SelectItem value="destruction">Destruction</SelectItem>
-                    <SelectItem value="transfer">Transfer</SelectItem>
+                    <SelectItem value="sale">{t("form.methodSale")}</SelectItem>
+                    <SelectItem value="donation">
+                      {t("form.methodDonation")}
+                    </SelectItem>
+                    <SelectItem value="destruction">
+                      {t("form.methodDestruction")}
+                    </SelectItem>
+                    <SelectItem value="transfer">
+                      {t("form.methodTransfer")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="disposition">Disposition</Label>
+                <Label htmlFor="disposition">
+                  {t("form.dispositionLabel")}
+                </Label>
                 <Input
                   id="disposition"
                   value={formData.disposition}
@@ -249,19 +256,19 @@ export default function EditDeaccessionPage() {
                       disposition: e.target.value,
                     })
                   }
-                  placeholder="e.g., Sold to private collector"
+                  placeholder={t("form.dispositionPlaceholder")}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">{t("form.notesLabel")}</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) =>
                     setFormData({ ...formData, notes: e.target.value })
                   }
-                  placeholder="Additional notes about this deaccession..."
+                  placeholder={t("form.notesPlaceholder")}
                   rows={4}
                 />
               </div>
@@ -269,12 +276,14 @@ export default function EditDeaccessionPage() {
               {formData.method === "sale" && (
                 <div className="border-t border-border pt-6 mt-6">
                   <h3 className="text-sm font-medium text-foreground mb-4">
-                    Proceeds Information
+                    {t("form.proceedsTitle")}
                   </h3>
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="proceedsAmount">Amount</Label>
+                        <Label htmlFor="proceedsAmount">
+                          {t("form.proceedsAmount")}
+                        </Label>
                         <Input
                           id="proceedsAmount"
                           type="number"
@@ -286,11 +295,13 @@ export default function EditDeaccessionPage() {
                               proceedsAmount: e.target.value,
                             })
                           }
-                          placeholder="0.00"
+                          placeholder={t("form.proceedsAmountPlaceholder")}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="proceedsCurrency">Currency</Label>
+                        <Label htmlFor="proceedsCurrency">
+                          {t("form.proceedsCurrency")}
+                        </Label>
                         <Select
                           value={formData.proceedsCurrency}
                           onValueChange={(value) =>
@@ -318,7 +329,9 @@ export default function EditDeaccessionPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="proceedsRecipient">Recipient</Label>
+                        <Label htmlFor="proceedsRecipient">
+                          {t("form.proceedsRecipient")}
+                        </Label>
                         <Input
                           id="proceedsRecipient"
                           value={formData.proceedsRecipient}
@@ -328,11 +341,13 @@ export default function EditDeaccessionPage() {
                               proceedsRecipient: e.target.value,
                             })
                           }
-                          placeholder="e.g., General acquisitions fund"
+                          placeholder={t("form.proceedsRecipientPlaceholder")}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="proceedsDate">Date Received</Label>
+                        <Label htmlFor="proceedsDate">
+                          {t("form.proceedsDate")}
+                        </Label>
                         <Input
                           id="proceedsDate"
                           type="date"
@@ -348,7 +363,9 @@ export default function EditDeaccessionPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="proceedsNotes">Proceeds Notes</Label>
+                      <Label htmlFor="proceedsNotes">
+                        {t("form.proceedsNotes")}
+                      </Label>
                       <Textarea
                         id="proceedsNotes"
                         value={formData.proceedsNotes}
@@ -358,7 +375,7 @@ export default function EditDeaccessionPage() {
                             proceedsNotes: e.target.value,
                           })
                         }
-                        placeholder="Additional notes about the proceeds..."
+                        placeholder={t("form.proceedsNotesPlaceholder")}
                         rows={2}
                       />
                     </div>
@@ -372,12 +389,12 @@ export default function EditDeaccessionPage() {
                   variant="outline"
                   onClick={() => router.back()}
                 >
-                  Cancel
+                  {tCommon("cancel")}
                 </Button>
                 <PermissionGate permission="collections.update">
                   <Button type="submit" disabled={isSubmitting}>
                     <Save className="mr-2 h-4 w-4" />
-                    {isSubmitting ? "Updating..." : "Update Deaccession"}
+                    {isSubmitting ? t("actions.updating") : t("actions.update")}
                   </Button>
                 </PermissionGate>
               </div>

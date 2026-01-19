@@ -3,7 +3,7 @@
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -34,6 +34,8 @@ export default function DeaccessionDetailPage() {
   const params = useParams();
   const deaccessionId = params.id as string;
   const locale = useCurrentLocale();
+  const t = useScopedI18n("deaccessions");
+  const tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
 
   const deaccession = useQuery(
@@ -78,7 +80,7 @@ export default function DeaccessionDetailPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Please select an organization</p>
+        <p className="text-muted-foreground">{t("detail.selectOrg")}</p>
       </div>
     );
   }
@@ -86,7 +88,7 @@ export default function DeaccessionDetailPage() {
   if (deaccession === undefined || collection === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
   }
@@ -94,7 +96,7 @@ export default function DeaccessionDetailPage() {
   if (deaccession === null) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Deaccession not found</p>
+        <p className="text-muted-foreground">{t("detail.notFound")}</p>
       </div>
     );
   }
@@ -139,21 +141,21 @@ export default function DeaccessionDetailPage() {
         return (
           <span className="inline-flex items-center rounded-full bg-blue-500/10 px-3 py-1 text-sm font-medium text-blue-600">
             <Clock className="mr-1.5 h-4 w-4" />
-            Pending
+            {t("status.pending")}
           </span>
         );
       case "approved":
         return (
           <span className="inline-flex items-center rounded-full bg-green-500/10 px-3 py-1 text-sm font-medium text-green-600">
             <CheckCircle className="mr-1.5 h-4 w-4" />
-            Approved
+            {t("status.approved")}
           </span>
         );
       case "rejected":
         return (
           <span className="inline-flex items-center rounded-full bg-red-500/10 px-3 py-1 text-sm font-medium text-red-600">
             <XCircle className="mr-1.5 h-4 w-4" />
-            Rejected
+            {t("status.rejected")}
           </span>
         );
     }
@@ -167,7 +169,7 @@ export default function DeaccessionDetailPage() {
           <Button variant="ghost" size="sm" asChild className="w-fit">
             <Link href="/deaccessions">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Deaccessions
+              {t("actions.backToDeaccessions")}
             </Link>
           </Button>
 
@@ -193,25 +195,31 @@ export default function DeaccessionDetailPage() {
                   onClick={() => setIsPrintModalOpen(true)}
                 >
                   <Printer className="mr-2 h-4 w-4" />
-                  Board Report
+                  {t("actions.boardReport")}
                 </Button>
               </div>
             </div>
 
             <div className="grid gap-4">
               <div>
-                <Label className="text-muted-foreground">Reason</Label>
+                <Label className="text-muted-foreground">
+                  {t("detail.reason")}
+                </Label>
                 <p className="mt-1 whitespace-pre-wrap">{deaccession.reason}</p>
               </div>
 
               <div>
-                <Label className="text-muted-foreground">Method</Label>
+                <Label className="text-muted-foreground">
+                  {t("detail.methodLabel")}
+                </Label>
                 <p className="mt-1 capitalize">{deaccession.method}</p>
               </div>
 
               {deaccession.disposition && (
                 <div>
-                  <Label className="text-muted-foreground">Disposition</Label>
+                  <Label className="text-muted-foreground">
+                    {t("detail.disposition")}
+                  </Label>
                   <p className="mt-1 whitespace-pre-wrap">
                     {deaccession.disposition}
                   </p>
@@ -220,7 +228,9 @@ export default function DeaccessionDetailPage() {
 
               {deaccession.notes && (
                 <div>
-                  <Label className="text-muted-foreground">Notes</Label>
+                  <Label className="text-muted-foreground">
+                    {t("detail.notes")}
+                  </Label>
                   <p className="mt-1 whitespace-pre-wrap">
                     {deaccession.notes}
                   </p>
@@ -232,7 +242,9 @@ export default function DeaccessionDetailPage() {
           {/* Collection Info Card */}
           {collection && (
             <div className="rounded-lg border border-border bg-card p-6">
-              <h3 className="text-lg font-semibold mb-4">Collection Object</h3>
+              <h3 className="text-lg font-semibold mb-4">
+                {t("detail.collectionObject")}
+              </h3>
               <Link
                 href={`/collections/${collection._id}`}
                 className="flex items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-accent"
@@ -254,7 +266,9 @@ export default function DeaccessionDetailPage() {
           {/* Workflow Timeline */}
           {workflowHistory && workflowHistory.length > 0 && (
             <div className="rounded-lg border border-border bg-card p-6">
-              <h3 className="text-lg font-semibold mb-4">Workflow History</h3>
+              <h3 className="text-lg font-semibold mb-4">
+                {t("detail.workflowHistory")}
+              </h3>
               <div className="space-y-4">
                 {workflowHistory.map((entry, index) => (
                   <div
@@ -272,11 +286,11 @@ export default function DeaccessionDetailPage() {
                     <div className="flex-1 pb-4">
                       <p className="font-medium">
                         {entry.step === 0
-                          ? "Created"
-                          : `Step ${entry.step} - Approved`}
+                          ? t("detail.created")
+                          : t("detail.step", { step: entry.step })}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {entry.approverName || "Unknown"} •{" "}
+                        {entry.approverName || t("detail.unknown")} •{" "}
                         {format(
                           new Date(entry.approvedAt),
                           "MMM d, yyyy 'at' h:mm a",
@@ -298,15 +312,17 @@ export default function DeaccessionDetailPage() {
           {deaccession.status === "pending" && (
             <PermissionGate permission="collections.approve_deaccession">
               <div className="rounded-lg border border-border bg-card p-6">
-                <h3 className="text-lg font-semibold mb-4">Approval Action</h3>
+                <h3 className="text-lg font-semibold mb-4">
+                  {t("detail.approvalAction")}
+                </h3>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="comment">Comment (optional)</Label>
+                    <Label htmlFor="comment">{t("detail.commentLabel")}</Label>
                     <Textarea
                       id="comment"
                       value={comment}
                       onChange={(e) => setComment(e.target.value)}
-                      placeholder="Add a comment about your decision..."
+                      placeholder={t("detail.commentPlaceholder")}
                       rows={3}
                       disabled={isApproving || isRejecting}
                     />
@@ -320,7 +336,7 @@ export default function DeaccessionDetailPage() {
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       )}
                       {!isApproving && <CheckCircle className="mr-2 h-4 w-4" />}
-                      Approve
+                      {t("actions.approve")}
                     </Button>
                     <Button
                       variant="destructive"
@@ -331,7 +347,7 @@ export default function DeaccessionDetailPage() {
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       )}
                       {!isRejecting && <XCircle className="mr-2 h-4 w-4" />}
-                      Reject
+                      {t("actions.reject")}
                     </Button>
                   </div>
                 </div>
@@ -345,7 +361,7 @@ export default function DeaccessionDetailPage() {
         <DialogContent className="flex flex-col max-w-[210mm] w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0">
           <DialogHeader className="flex-shrink-0 print:hidden border-b border-gray-200 p-6 pb-4">
             <DialogTitle className="text-black">
-              Deaccession Board Report
+              {t("report.deaccessionBoardReport")}
             </DialogTitle>
           </DialogHeader>
 
@@ -619,11 +635,11 @@ export default function DeaccessionDetailPage() {
               variant="outline"
               onClick={() => setIsPrintModalOpen(false)}
             >
-              Close
+              {t("actions.close")}
             </Button>
             <Button onClick={() => window.print()}>
               <Printer className="mr-2 h-4 w-4" />
-              Print
+              {t("actions.print")}
             </Button>
           </div>
         </DialogContent>

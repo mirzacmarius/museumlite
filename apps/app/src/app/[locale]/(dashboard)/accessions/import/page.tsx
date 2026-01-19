@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -148,6 +149,7 @@ function parseCSVLine(line: string): string[] {
 
 export default function ImportAccessionsPage() {
   const { currentOrganizationId } = useOrganization();
+  const t = useScopedI18n("accessions");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [state, setState] = useState<ImportState>({
@@ -271,7 +273,7 @@ export default function ImportAccessionsPage() {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <p className="text-muted-foreground">
-          Please select an organization to import accessions.
+          {t("selectOrganizationDescription")}
         </p>
       </div>
     );
@@ -285,12 +287,12 @@ export default function ImportAccessionsPage() {
             <Button variant="ghost" size="sm" asChild>
               <Link href="/accessions">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Accessions
+                {t("backToAccessions")}
               </Link>
             </Button>
             <Button variant="outline" size="sm" onClick={downloadTemplate}>
               <Download className="mr-2 h-4 w-4" />
-              Download Template
+              {t("import.downloadTemplate")}
             </Button>
           </div>
 
@@ -299,12 +301,9 @@ export default function ImportAccessionsPage() {
               <div className="mx-auto max-w-2xl">
                 <div className="mb-8 text-center">
                   <FileSpreadsheet className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                  <h2 className="text-xl font-semibold">
-                    Import Accessions from CSV
-                  </h2>
+                  <h2 className="text-xl font-semibold">{t("import.title")}</h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Upload a CSV file with your accession data. Required
-                    columns: dateReceived, source, method.
+                    {t("import.description")}
                   </p>
                 </div>
 
@@ -326,30 +325,32 @@ export default function ImportAccessionsPage() {
                   className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 transition-all hover:border-primary/50 hover:bg-muted/30"
                 >
                   <Upload className="mb-4 h-10 w-10 text-muted-foreground" />
-                  <p className="font-medium">
-                    Drop CSV file here or click to upload
-                  </p>
+                  <p className="font-medium">{t("import.dropZone")}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Maximum 1000 rows per import
+                    {t("import.maxRows")}
                   </p>
                 </div>
 
                 <div className="mt-8 rounded-lg border border-border bg-muted/30 p-4">
-                  <h3 className="mb-2 font-medium">CSV Format Requirements</h3>
+                  <h3 className="mb-2 font-medium">
+                    {t("import.formatTitle")}
+                  </h3>
                   <ul className="space-y-1 text-sm text-muted-foreground">
                     <li>
-                      • <strong>Required:</strong> dateReceived, source, method
+                      • <strong>{t("import.required")}</strong>{" "}
+                      {t("import.requiredFields")}
                     </li>
                     <li>
-                      • <strong>Optional:</strong> accessionNumber, cost, notes
+                      • <strong>{t("import.optional")}</strong>{" "}
+                      {t("import.optionalFields")}
                     </li>
                     <li>
-                      • <strong>Methods:</strong> purchase, gift, loan,
-                      transfer, donation, bequest, other
+                      • <strong>{t("import.methods")}</strong>{" "}
+                      {t("import.methodsList")}
                     </li>
                     <li>
-                      • <strong>Date format:</strong> YYYY-MM-DD or any
-                      parseable date
+                      • <strong>{t("import.dateFormat")}</strong>{" "}
+                      {t("import.dateFormatHint")}
                     </li>
                   </ul>
                 </div>
@@ -360,16 +361,20 @@ export default function ImportAccessionsPage() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-semibold">Preview Import</h2>
+                    <h2 className="text-xl font-semibold">
+                      {t("import.previewTitle")}
+                    </h2>
                     <p className="text-sm text-muted-foreground">
-                      {state.rows.length} rows ready to import from{" "}
-                      {state.file?.name}
+                      {t("import.rowsReady", {
+                        count: state.rows.length,
+                        filename: state.file?.name ?? "",
+                      })}
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={handleReset}>
                       <X className="mr-2 h-4 w-4" />
-                      Cancel
+                      {t("import.cancel")}
                     </Button>
                     <PermissionGate permission="collections.create">
                       <Button
@@ -378,7 +383,7 @@ export default function ImportAccessionsPage() {
                         className="bg-indigo-600 hover:bg-indigo-500"
                       >
                         <Upload className="mr-2 h-4 w-4" />
-                        Import {state.rows.length} Accessions
+                        {t("import.importButton", { count: state.rows.length })}
                       </Button>
                     </PermissionGate>
                   </div>
@@ -389,7 +394,9 @@ export default function ImportAccessionsPage() {
                     <div className="flex items-center gap-2 text-destructive">
                       <AlertCircle className="h-4 w-4" />
                       <span className="font-medium">
-                        {state.errors.length} validation errors
+                        {t("import.validationErrors", {
+                          count: state.errors.length,
+                        })}
                       </span>
                     </div>
                     <ul className="mt-2 space-y-1 text-sm text-destructive">
@@ -407,13 +414,19 @@ export default function ImportAccessionsPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-12">#</TableHead>
-                        <TableHead>Accession #</TableHead>
-                        <TableHead>Date Received</TableHead>
-                        <TableHead>Source</TableHead>
-                        <TableHead>Method</TableHead>
-                        <TableHead>Cost</TableHead>
-                        <TableHead>Notes</TableHead>
+                        <TableHead className="w-12">
+                          {t("import.tableHeaders.number")}
+                        </TableHead>
+                        <TableHead>
+                          {t("import.tableHeaders.accession")}
+                        </TableHead>
+                        <TableHead>
+                          {t("import.tableHeaders.dateReceived")}
+                        </TableHead>
+                        <TableHead>{t("import.tableHeaders.source")}</TableHead>
+                        <TableHead>{t("import.tableHeaders.method")}</TableHead>
+                        <TableHead>{t("import.tableHeaders.cost")}</TableHead>
+                        <TableHead>{t("import.tableHeaders.notes")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -425,7 +438,7 @@ export default function ImportAccessionsPage() {
                             {rowIndex + 1}
                           </TableCell>
                           <TableCell>
-                            {row.accessionNumber || "(auto)"}
+                            {row.accessionNumber || t("import.autoAccession")}
                           </TableCell>
                           <TableCell>{row.dateReceived}</TableCell>
                           <TableCell>{row.source}</TableCell>
@@ -440,7 +453,7 @@ export default function ImportAccessionsPage() {
                   </Table>
                   {state.rows.length > 20 && (
                     <div className="border-t border-border p-3 text-center text-sm text-muted-foreground">
-                      Showing 20 of {state.rows.length} rows
+                      {t("import.showingRows", { count: state.rows.length })}
                     </div>
                   )}
                 </div>
@@ -451,11 +464,13 @@ export default function ImportAccessionsPage() {
               <div className="mx-auto max-w-md text-center">
                 <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-primary" />
                 <h2 className="text-xl font-semibold">
-                  Importing Accessions...
+                  {t("import.importing")}
                 </h2>
                 <p className="mt-2 text-muted-foreground">
-                  {importJob?.processedItems || 0} of{" "}
-                  {importJob?.totalItems || state.rows.length} processed
+                  {t("import.progress", {
+                    current: importJob?.processedItems || 0,
+                    total: importJob?.totalItems || state.rows.length,
+                  })}
                 </p>
                 <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
                   <div
@@ -469,10 +484,13 @@ export default function ImportAccessionsPage() {
             {state.step === "complete" && (
               <div className="mx-auto max-w-md text-center">
                 <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-green-500" />
-                <h2 className="text-xl font-semibold">Import Complete</h2>
+                <h2 className="text-xl font-semibold">
+                  {t("import.complete")}
+                </h2>
                 <p className="mt-2 text-muted-foreground">
-                  Successfully imported{" "}
-                  {importJob?.processedItems || state.rows.length} accessions
+                  {t("import.successMessage", {
+                    count: importJob?.processedItems || state.rows.length,
+                  })}
                 </p>
 
                 {state.errors.length > 0 && (
@@ -480,7 +498,9 @@ export default function ImportAccessionsPage() {
                     <div className="flex items-center gap-2 text-amber-600">
                       <AlertCircle className="h-4 w-4" />
                       <span className="font-medium">
-                        {state.errors.length} rows had issues
+                        {t("import.issuesMessage", {
+                          count: state.errors.length,
+                        })}
                       </span>
                     </div>
                     <ul className="mt-2 space-y-1 text-sm text-amber-600">
@@ -496,10 +516,10 @@ export default function ImportAccessionsPage() {
 
                 <div className="mt-6 flex justify-center gap-4">
                   <Button variant="outline" onClick={handleReset}>
-                    Import More
+                    {t("import.importMore")}
                   </Button>
                   <Button asChild className="bg-indigo-600 hover:bg-indigo-500">
-                    <Link href="/accessions">View Accessions</Link>
+                    <Link href="/accessions">{t("import.viewAccessions")}</Link>
                   </Button>
                 </div>
               </div>

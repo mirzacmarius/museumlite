@@ -1,5 +1,6 @@
 "use client";
 
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { ScrollArea } from "@v1/ui/scroll-area";
@@ -62,6 +63,7 @@ export function KanbanColumn({
   roleName,
   searchQuery,
 }: KanbanColumnProps) {
+  const t = useScopedI18n("accessions");
   const accessions = useQuery(api.accessions.list, {
     organizationId,
     paginationOpts: { numItems: 100, cursor: null },
@@ -118,7 +120,7 @@ export function KanbanColumn({
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <div className="text-muted-foreground">{icon}</div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  No accessions in {stepName.toLowerCase()}
+                  {t("kanban.noAccessions", { step: stepName.toLowerCase() })}
                 </p>
               </div>
             ) : (
@@ -135,7 +137,7 @@ export function KanbanColumn({
                     <div className={`h-2 w-2 rounded-full ${color}`} />
                   </div>
                   <p className="mb-2 text-sm font-medium text-foreground line-clamp-2">
-                    {accession.source || "Unknown source"}
+                    {accession.source || t("kanban.unknownSource")}
                   </p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
