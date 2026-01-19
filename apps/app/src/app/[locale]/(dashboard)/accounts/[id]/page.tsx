@@ -201,7 +201,9 @@ export default function AccountDetailPage() {
                       disabled={isDeleting}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                      {isDeleting ? "Deleting..." : t("detail.deleteAccount")}
+                      {isDeleting
+                        ? tCommon("loading")
+                        : t("detail.deleteAccount")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -461,6 +463,7 @@ function ContactsTab({
   contacts: Contact[] | undefined;
 }) {
   const t = useScopedI18n("accounts");
+  const tCommon = useScopedI18n("common");
   const tToast = useScopedI18n("accounts.detail.toasts");
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
@@ -482,7 +485,7 @@ function ContactsTab({
               <DialogHeader>
                 <DialogTitle>{t("detail.addContact")}</DialogTitle>
                 <DialogDescription>
-                  Add a new contact person for this account.
+                  {t("detail.addContactDescription")}
                 </DialogDescription>
               </DialogHeader>
               <ContactForm
@@ -514,7 +517,7 @@ function ContactsTab({
                     </p>
                     {contact.isPrimary && (
                       <Badge variant="default" className="text-xs">
-                        Primary
+                        {t("detail.primary")}
                       </Badge>
                     )}
                   </div>
@@ -542,14 +545,19 @@ function ContactsTab({
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Contact</AlertDialogTitle>
+                        <AlertDialogTitle>
+                          {t("detail.deleteContact")}
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to delete {contact.firstName}{" "}
-                          {contact.lastName}? This action cannot be undone.
+                          {t("detail.deleteContactConfirm", {
+                            name: `${contact.firstName} ${contact.lastName}`,
+                          })}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>
+                          {tCommon("cancel")}
+                        </AlertDialogCancel>
                         <AlertDialogAction
                           onClick={async () => {
                             try {
@@ -561,7 +569,7 @@ function ContactsTab({
                           }}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                          Delete
+                          {tCommon("delete")}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -581,9 +589,9 @@ function ContactsTab({
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Edit Contact</DialogTitle>
+              <DialogTitle>{t("detail.editContact")}</DialogTitle>
               <DialogDescription>
-                Update contact information for this account.
+                {t("detail.editContactDescription")}
               </DialogDescription>
             </DialogHeader>
             <ContactForm
@@ -608,6 +616,8 @@ function ContactForm({
   contact?: Contact;
   onSuccess: () => void;
 }) {
+  const t = useScopedI18n("accounts.detail");
+  const tForm = useScopedI18n("accounts.form");
   const tToast = useScopedI18n("accounts.detail.toasts");
   const createContact = useMutation(api.contacts.create);
   const updateContact = useMutation(api.contacts.update);
@@ -665,7 +675,7 @@ function ContactForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="firstName">First Name *</Label>
+          <Label htmlFor="firstName">{t("firstName")}</Label>
           <Input
             id="firstName"
             name="firstName"
@@ -674,7 +684,7 @@ function ContactForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="lastName">Last Name *</Label>
+          <Label htmlFor="lastName">{t("lastName")}</Label>
           <Input
             id="lastName"
             name="lastName"
@@ -684,16 +694,16 @@ function ContactForm({
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="title">Title</Label>
+        <Label htmlFor="title">{t("title")}</Label>
         <Input
           id="title"
           name="title"
           defaultValue={contact?.title}
-          placeholder="e.g., Director"
+          placeholder={tForm("placeholders.title")}
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{tForm("email")}</Label>
         <Input
           id="email"
           name="email"
@@ -702,7 +712,7 @@ function ContactForm({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="phone">Phone</Label>
+        <Label htmlFor="phone">{tForm("phone")}</Label>
         <Input
           id="phone"
           name="phone"
@@ -711,16 +721,16 @@ function ContactForm({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="role">Role</Label>
+        <Label htmlFor="role">{t("roles.label")}</Label>
         <Select name="role" defaultValue={contact?.role || "primary"}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="primary">Primary</SelectItem>
-            <SelectItem value="billing">Billing</SelectItem>
-            <SelectItem value="shipping">Shipping</SelectItem>
-            <SelectItem value="technical">Technical</SelectItem>
+            <SelectItem value="primary">{t("roles.primary")}</SelectItem>
+            <SelectItem value="billing">{t("roles.billing")}</SelectItem>
+            <SelectItem value="shipping">{t("roles.shipping")}</SelectItem>
+            <SelectItem value="technical">{t("roles.technical")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -733,18 +743,18 @@ function ContactForm({
           className="h-4 w-4"
         />
         <Label htmlFor="isPrimary" className="text-sm font-normal">
-          Set as primary contact
+          {t("setPrimaryContact")}
         </Label>
       </div>
       <DialogFooter>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting
             ? contact
-              ? "Updating..."
-              : "Adding..."
+              ? t("updating")
+              : t("adding")
             : contact
-              ? "Update Contact"
-              : "Add Contact"}
+              ? t("updateContact")
+              : t("addContact")}
         </Button>
       </DialogFooter>
     </form>
@@ -779,6 +789,8 @@ function DocumentsTab({
   accountId: Id<"accounts">;
   documents: AccountDocument[] | undefined;
 }) {
+  const t = useScopedI18n("accounts.detail");
+  const tCommon = useScopedI18n("common");
   const tToast = useScopedI18n("accounts.detail.toasts");
   const [isUploading, setIsUploading] = useState(false);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -847,7 +859,7 @@ function DocumentsTab({
   return (
     <div className="rounded-lg border border-border bg-card p-6">
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-lg font-medium">Documents</h2>
+        <h2 className="text-lg font-medium">{t("documents")}</h2>
         <PermissionGate permission="accounts.write">
           <div>
             <input
@@ -863,7 +875,7 @@ function DocumentsTab({
               disabled={isUploading}
             >
               <Upload className="mr-2 h-4 w-4" />
-              Upload Document
+              {t("uploadDocument")}
             </Button>
           </div>
         </PermissionGate>
@@ -871,7 +883,7 @@ function DocumentsTab({
 
       {!documents || documents.length === 0 ? (
         <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
-          No documents yet. Upload one to get started.
+          {t("noDocuments")}
         </div>
       ) : (
         <div className="space-y-3">
@@ -901,14 +913,17 @@ function DocumentsTab({
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Document</AlertDialogTitle>
+                        <AlertDialogTitle>
+                          {t("deleteDocument")}
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to delete {doc.filename}? This
-                          action cannot be undone.
+                          {t("deleteDocumentConfirm", { name: doc.filename })}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>
+                          {tCommon("cancel")}
+                        </AlertDialogCancel>
                         <AlertDialogAction
                           onClick={async () => {
                             try {
@@ -920,7 +935,7 @@ function DocumentsTab({
                           }}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                          Delete
+                          {tCommon("delete")}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -935,20 +950,18 @@ function DocumentsTab({
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Upload Document</DialogTitle>
-            <DialogDescription>
-              Add a document to this account.
-            </DialogDescription>
+            <DialogTitle>{t("uploadDocument")}</DialogTitle>
+            <DialogDescription>{t("addDocumentDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>File</Label>
+              <Label>{t("file")}</Label>
               <p className="text-sm text-muted-foreground">
                 {selectedFile?.name}
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="documentType">Document Type</Label>
+              <Label htmlFor="documentType">{t("documentType")}</Label>
               <Select
                 value={documentType}
                 onValueChange={(value) =>
@@ -959,21 +972,31 @@ function DocumentsTab({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="contract">Contract</SelectItem>
-                  <SelectItem value="agreement">Agreement</SelectItem>
-                  <SelectItem value="invoice">Invoice</SelectItem>
-                  <SelectItem value="correspondence">Correspondence</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="contract">
+                    {t("documentTypes.contract")}
+                  </SelectItem>
+                  <SelectItem value="agreement">
+                    {t("documentTypes.agreement")}
+                  </SelectItem>
+                  <SelectItem value="invoice">
+                    {t("documentTypes.invoice")}
+                  </SelectItem>
+                  <SelectItem value="correspondence">
+                    {t("documentTypes.correspondence")}
+                  </SelectItem>
+                  <SelectItem value="other">
+                    {t("documentTypes.other")}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description (Optional)</Label>
+              <Label htmlFor="description">{t("descriptionOptional")}</Label>
               <Textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Add a description..."
+                placeholder={t("descriptionOptional")}
               />
             </div>
           </div>
@@ -989,10 +1012,10 @@ function DocumentsTab({
                 }
               }}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button onClick={handleUpload} disabled={isUploading}>
-              {isUploading ? "Uploading..." : "Upload"}
+              {isUploading ? t("uploading") : t("upload")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1009,21 +1032,22 @@ function RelationshipsTab({
   accountId: Id<"accounts">;
   relationships: any;
 }) {
+  const t = useScopedI18n("accounts.detail");
   return (
     <div className="rounded-lg border border-border bg-card p-6">
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-lg font-medium">Relationships</h2>
+        <h2 className="text-lg font-medium">{t("relationships")}</h2>
         <PermissionGate permission="accounts.write">
           <Button size="sm">
             <LinkIcon className="mr-2 h-4 w-4" />
-            Link Entity
+            {t("linkEntity")}
           </Button>
         </PermissionGate>
       </div>
 
       {!relationships || relationships.length === 0 ? (
         <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
-          No relationships yet. Link an entity to get started.
+          {t("noRelationships")}
         </div>
       ) : (
         <div className="space-y-3">
@@ -1052,13 +1076,14 @@ function RelationshipsTab({
 }
 
 function ActivityTab({ timeline }: { timeline: TimelineEvent[] | undefined }) {
+  const t = useScopedI18n("accounts.detail");
   return (
     <div className="rounded-lg border border-border bg-card p-6">
-      <h2 className="mb-6 text-lg font-medium">Activity Timeline</h2>
+      <h2 className="mb-6 text-lg font-medium">{t("activityTimeline")}</h2>
 
       {!timeline || timeline.length === 0 ? (
         <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
-          No activity yet.
+          {t("noActivity")}
         </div>
       ) : (
         <div className="space-y-4">

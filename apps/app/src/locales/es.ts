@@ -960,8 +960,20 @@ export default {
       setPrimaryContact: "Establecer como contacto principal",
       updateContact: "Actualizar Contacto",
       uploadDocument: "Subir Documento",
+      noDocuments: "Aún no hay documentos. Sube uno para comenzar.",
+      deleteDocument: "Eliminar Documento",
+      deleteDocumentConfirm:
+        "¿Estás seguro de que quieres eliminar {name}? Esta acción no se puede deshacer.",
+      addDocumentDescription: "Agregar un documento a esta cuenta.",
       file: "Archivo",
       documentType: "Tipo de Documento",
+      documentTypes: {
+        contract: "Contrato",
+        agreement: "Acuerdo",
+        invoice: "Factura",
+        correspondence: "Correspondencia",
+        other: "Otro",
+      },
       descriptionOptional: "Descripción (Opcional)",
       linkEntity: "Vincular Entidad",
       noRelationships:

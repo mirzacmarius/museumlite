@@ -1015,8 +1015,20 @@ export default {
       setPrimaryContact: "Sett som primærkontakt",
       updateContact: "Oppdater Kontakt",
       uploadDocument: "Last opp Dokument",
+      noDocuments: "Ingen dokumenter ennå. Last opp et for å komme i gang.",
+      deleteDocument: "Slett Dokument",
+      deleteDocumentConfirm:
+        "Er du sikker på at du vil slette {name}? Denne handlingen kan ikke angres.",
+      addDocumentDescription: "Legg til et dokument til denne kontoen.",
       file: "Fil",
       documentType: "Dokumenttype",
+      documentTypes: {
+        contract: "Kontrakt",
+        agreement: "Avtale",
+        invoice: "Faktura",
+        correspondence: "Korrespondanse",
+        other: "Annet",
+      },
       descriptionOptional: "Beskrivelse (Valgfritt)",
       linkEntity: "Koble Entitet",
       noRelationships:

@@ -707,7 +707,7 @@ Phase 6: Toast Messages
 
 ---
 
-- [ ] 15. Migrate Accounts module
+- [x] 15. Migrate Accounts module
 
   **What to do**:
   - Update all files in `apps/app/src/app/[locale]/(dashboard)/accounts/`

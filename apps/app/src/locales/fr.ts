@@ -983,8 +983,21 @@ export default {
       setPrimaryContact: "Définir comme contact principal",
       updateContact: "Mettre à Jour le Contact",
       uploadDocument: "Télécharger un Document",
+      noDocuments:
+        "Aucun document pour le moment. Téléchargez-en un pour commencer.",
+      deleteDocument: "Supprimer le Document",
+      deleteDocumentConfirm:
+        "Êtes-vous sûr de vouloir supprimer {name} ? Cette action ne peut pas être annulée.",
+      addDocumentDescription: "Ajouter un document à ce compte.",
       file: "Fichier",
       documentType: "Type de Document",
+      documentTypes: {
+        contract: "Contrat",
+        agreement: "Accord",
+        invoice: "Facture",
+        correspondence: "Correspondance",
+        other: "Autre",
+      },
       descriptionOptional: "Description (Optionnel)",
       linkEntity: "Lier une Entité",
       noRelationships:
