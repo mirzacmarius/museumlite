@@ -44,6 +44,7 @@ export function MoveLocationDialog({
 }: MoveLocationDialogProps) {
   const t = useScopedI18n("locations.move");
   const tForm = useScopedI18n("locations.form");
+  const tPlaceholders = useScopedI18n("locations.placeholders");
   const tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
   const [newParentId, setNewParentId] = useState<string>("root");
@@ -196,7 +197,7 @@ export function MoveLocationDialog({
                 id="notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Reason for moving this location..."
+                placeholder={tPlaceholders("notesPlaceholder")}
                 rows={3}
               />
             </div>

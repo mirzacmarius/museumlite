@@ -1,6 +1,6 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 import { CollectionSelector } from "@/components/collection-selector";
 import { useOrganization } from "@/components/organization-provider";
@@ -27,6 +27,8 @@ import { useState } from "react";
 
 export default function NewDeaccessionPage() {
   const router = useRouter();
+  const locale = useCurrentLocale();
+  const t = useScopedI18n("deaccessions");
   const { currentOrganizationId } = useOrganization();
   const createDeaccession = useMutation(api.deaccessions.create);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -130,7 +132,7 @@ export default function NewDeaccessionPage() {
                       deaccessionNumber: e.target.value,
                     })
                   }
-                  placeholder="Auto-generated if left empty"
+                  placeholder={t("placeholders.deaccessionNumber")}
                 />
                 <p className="text-xs text-muted-foreground">
                   Leave empty to auto-generate based on organization format
@@ -184,7 +186,7 @@ export default function NewDeaccessionPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, reason: e.target.value })
                   }
-                  placeholder="e.g., No longer fits collection mission"
+                  placeholder={t("placeholders.selectReason")}
                   required
                 />
               </div>
@@ -200,7 +202,7 @@ export default function NewDeaccessionPage() {
                       disposition: e.target.value,
                     })
                   }
-                  placeholder="e.g., Sold to private collector"
+                  placeholder={t("placeholders.selectDisposition")}
                 />
               </div>
 
@@ -212,7 +214,7 @@ export default function NewDeaccessionPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, notes: e.target.value })
                   }
-                  placeholder="Additional notes about this deaccession..."
+                  placeholder={t("placeholders.addNotes")}
                   rows={4}
                 />
               </div>

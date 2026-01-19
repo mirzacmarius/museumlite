@@ -240,6 +240,11 @@ export default {
       noWebhooks: "Ingen webhooks konfigurert",
       test: "Test",
     },
+    placeholders: {
+      searchUsers: "Søk etter brukere...",
+      selectRole: "Velg en rolle",
+      stepName: "f.eks. Kurator-godkjenning",
+    },
   },
   activity: {
     title: "Aktivitet",
@@ -308,6 +313,35 @@ export default {
     statusCataloged: "Katalogisert",
     statusRejected: "Avvist",
   },
+  library: {
+    placeholders: {
+      searchCatalog: "Søk etter tittel, forfatter, ISBN eller strekkode...",
+      enterISBN: "Skriv inn ISBN...",
+      bookTitle: "Boktittel",
+      commaSeparatedAuthors: "Forfattere atskilt med komma",
+      isbn: "ISBN",
+      publisher: "Forlegger",
+      whyNeeded: "Hvorfor er denne gjenstanden nødvendig?",
+      enterOrGenerateBarcode: "Skriv inn eller generer strekkode",
+      scanPatronOrBarcode: "Skann lånerkort eller gjenstandens strekkode...",
+      english: "Engelsk",
+      enterTitle: "Skriv inn tittel",
+      enterSubtitle: "Skriv inn undertittel (valgfritt)",
+      forPeriodicals: "For periodiske publikasjoner",
+      itemBarcode: "Gjenstandens strekkode",
+      libraryAccessionNumber: "Biblioteks aksesjonsnummer",
+      publisherName: "Forlegger",
+      numberOfPages: "Antall sider",
+      commaSeparatedCategories: "Kategorier atskilt med komma",
+      commaSeparatedGenres: "Sjangre atskilt med komma",
+      commaSeparatedSubjects: "Emner atskilt med komma",
+      selectAudience: "Velg målgruppe",
+      seriesName: "Serienavn",
+      bookDescription: "Bokbeskrivelse eller sammendrag",
+      notesVisibleToPatrons: "Notater synlige for låntakere",
+      staffOnlyNotes: "Notater kun for personalet",
+    },
+  },
   loans: {
     title: "Lån",
     description: "Administrer innkommende og utgående låneavtaler",
@@ -329,6 +363,11 @@ export default {
       notes: "Personalnotater...",
       notesEdit: "Tilleggsnotater for personalet...",
       collections: "Søk og velg samlinger...",
+      searchAccession: "Søk aksesjonsnummer...",
+      searchCollections: "Søk etter aksesjonsnummer eller tittel...",
+      conditionOut: "Tilstand ved avgang",
+      conditionIn: "Tilstand ved retur",
+      returnNotes: "Eventuelle tilleggsnotater",
     },
     filters: {
       allLoans: "Alle Lån",
@@ -535,6 +574,9 @@ export default {
       searchPlaceholder: "Søk i plasseringer...",
       noLocations: "Ingen plasseringer funnet",
       createFirst: "Opprett din første plassering for å komme i gang",
+    },
+    placeholders: {
+      notesPlaceholder: "Årsak til å flytte denne plasseringen...",
     },
   },
   common: {
@@ -841,6 +883,17 @@ export default {
         ownerName: "Eiernavn",
         yearStart: "f.eks., 1920",
         yearEnd: "f.eks., 1985 eller Nåtid",
+        caption: "Skriv inn en bildetekst for dette mediet...",
+        photographer: "Fotografnavn",
+        copyright: "Opphavsrettsinformasjon",
+        collectionGroup: "Velg en samlingsgruppe...",
+        deaccessionReason:
+          "Skriv inn årsaken til fraregistrering av disse elementene...",
+        donationInfoLong:
+          "Informasjon om donasjonens omstendigheter, betingelser eller kontekst",
+        ownershipNotes: "Hvordan ble det anskaffet, relevante detaljer...",
+        verificationSource:
+          "Verifikasjonskilde (f.eks. auksjonsregistre, proveniensforskning)",
       },
       actions: {
         cancel: "Avbryt",
@@ -1492,6 +1545,12 @@ export default {
       gallery: "Gallerivisning",
       timeline: "Tidslinjevisning",
     },
+    placeholders: {
+      enterTitle: "Skriv inn utstillingstittel...",
+      selectLocation: "f.eks., Galleri 4, Vinge B",
+      selectLoanVenue: "f.eks., Det Britiske Museet",
+      addNotes: "Kuratoriske notater, installasjonsdetaljer...",
+    },
   },
   analytics: {
     title: "Analyse & Etterlevelse",
@@ -2019,6 +2078,13 @@ export default {
       proceedsNotes: "Inntektsnotater",
       stepApproved: "Trinn {step} Godkjent",
       created: "Opprettet",
+    },
+    placeholders: {
+      searchObjects: "Søk deaksesjoner...",
+      deaccessionNumber: "Autogenerert hvis tomt",
+      selectReason: "f.eks., Passer ikke lenger samlingens oppdrag",
+      selectDisposition: "f.eks., Solgt til privat samler",
+      addNotes: "Tilleggsnotater om denne deaksesjonen...",
     },
   },
   modules: {

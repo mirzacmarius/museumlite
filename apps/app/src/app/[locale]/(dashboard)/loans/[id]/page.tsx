@@ -778,6 +778,7 @@ function OverviewTab({
 }
 
 function ObjectsTab({ loan }: { loan: Loan }) {
+  const t = useScopedI18n("loans.placeholders");
   return (
     <>
       <div className="flex items-center justify-between">
@@ -789,7 +790,7 @@ function ObjectsTab({ loan }: { loan: Loan }) {
             <input
               type="text"
               className="bg-background border border-border text-foreground text-xs rounded-lg block w-64 pl-10 p-2 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all"
-              placeholder="Search accession number..."
+              placeholder={t("searchAccession")}
             />
           </div>
         </div>

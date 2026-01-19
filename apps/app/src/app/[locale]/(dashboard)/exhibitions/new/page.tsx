@@ -176,7 +176,7 @@ export default function NewExhibitionPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, title: e.target.value })
                   }
-                  placeholder="e.g. Impressionism: A New Light"
+                  placeholder={t("placeholders.enterTitle")}
                   className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                 />
               </div>
@@ -204,7 +204,7 @@ export default function NewExhibitionPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, location: e.target.value })
                     }
-                    placeholder="e.g. Gallery 4, Wing B"
+                    placeholder={t("placeholders.selectLocation")}
                     className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                   />
                 </div>
@@ -290,7 +290,7 @@ export default function NewExhibitionPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, loanVenue: e.target.value })
                     }
-                    placeholder="e.g. The British Museum"
+                    placeholder={t("placeholders.selectLoanVenue")}
                     className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                   />
                 </div>
@@ -308,7 +308,7 @@ export default function NewExhibitionPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, notes: e.target.value })
                 }
-                placeholder="Curatorial notes, installation details..."
+                placeholder={t("placeholders.addNotes")}
                 className="min-h-[100px] bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring resize-none"
               />
             </div>

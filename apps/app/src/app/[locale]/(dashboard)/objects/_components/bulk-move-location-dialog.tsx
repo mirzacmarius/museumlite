@@ -40,6 +40,7 @@ export function BulkMoveLocationDialog({
   onSuccess,
 }: BulkMoveLocationDialogProps) {
   const t = useScopedI18n("common.toast");
+  const placeholders = useScopedI18n("objects.form.placeholders");
   const [locationId, setLocationId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -97,7 +98,7 @@ export function BulkMoveLocationDialog({
             <Label htmlFor="location">New Location</Label>
             <Select value={locationId} onValueChange={setLocationId}>
               <SelectTrigger id="location">
-                <SelectValue placeholder="Select a location" />
+                <SelectValue placeholder={placeholders("location")} />
               </SelectTrigger>
               <SelectContent>
                 {locations?.map((location) => (

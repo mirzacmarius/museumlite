@@ -2,9 +2,11 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { Checkbox } from "@v1/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +28,6 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import { ArrowDown, ArrowUp, Edit, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { Checkbox } from "@v1/ui/checkbox";
 
 type WorkflowType =
   | "accession"
@@ -49,6 +50,7 @@ interface WorkflowConfig {
 }
 
 export default function WorkflowsSettingsPage() {
+  const t = useScopedI18n("settings.placeholders");
   const { currentOrganizationId } = useOrganization();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingWorkflow, setEditingWorkflow] = useState<WorkflowType | null>(
@@ -384,7 +386,7 @@ export default function WorkflowsSettingsPage() {
                               updateStep(index, "name", e.target.value)
                             }
                             className="mt-1 border-border bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
-                            placeholder="e.g. Curator Approval"
+                            placeholder={t("stepName")}
                           />
                         </div>
 
@@ -399,7 +401,7 @@ export default function WorkflowsSettingsPage() {
                             }
                           >
                             <SelectTrigger className="mt-1 border-border bg-background text-foreground focus:ring-ring">
-                              <SelectValue placeholder="Select a role" />
+                              <SelectValue placeholder={t("selectRole")} />
                             </SelectTrigger>
                             <SelectContent className="border-border bg-background text-foreground">
                               {roles?.map((role) => (

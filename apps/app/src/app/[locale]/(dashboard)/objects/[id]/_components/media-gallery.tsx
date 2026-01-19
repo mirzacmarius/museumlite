@@ -66,6 +66,7 @@ export function MediaGallery({
   const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("common.toast");
   const common = useScopedI18n("common");
+  const placeholders = useScopedI18n("objects.form.placeholders");
   const media = useQuery(
     api.media.list,
     collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
@@ -733,6 +734,7 @@ function MediaEditDialog({
   onOpenChange,
 }: MediaEditDialogProps) {
   const common = useScopedI18n("common");
+  const placeholders = useScopedI18n("objects.form.placeholders");
   const [formData, setFormData] = useState({
     caption: media.caption || "",
     photographer: media.photographer || "",
@@ -791,7 +793,7 @@ function MediaEditDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, caption: e.target.value })
                 }
-                placeholder="Enter a caption for this media..."
+                placeholder={placeholders("caption")}
                 rows={3}
               />
             </div>
@@ -803,7 +805,7 @@ function MediaEditDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, photographer: e.target.value })
                 }
-                placeholder="Photographer name"
+                placeholder={placeholders("photographer")}
               />
             </div>
             <div className="space-y-2">
@@ -814,7 +816,7 @@ function MediaEditDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, copyright: e.target.value })
                 }
-                placeholder="Copyright information"
+                placeholder={placeholders("copyright")}
               />
             </div>
           </div>

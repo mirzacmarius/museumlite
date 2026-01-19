@@ -33,6 +33,7 @@ export function BulkDeaccessionDialog({
   onSuccess,
 }: BulkDeaccessionDialogProps) {
   const t = useScopedI18n("common.toast");
+  const placeholders = useScopedI18n("objects.form.placeholders");
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -102,7 +103,7 @@ export function BulkDeaccessionDialog({
             <Label htmlFor="reason">Reason for Deaccessioning</Label>
             <Textarea
               id="reason"
-              placeholder="Enter the reason for deaccessioning these items..."
+              placeholder={placeholders("deaccessionReason")}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}

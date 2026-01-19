@@ -3,7 +3,7 @@
 import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDate as formatDateUtil } from "@/lib/format-date";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
@@ -71,6 +71,7 @@ export default function LibraryCirculationPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasModule } = useFeatureAccess();
   const locale = useCurrentLocale();
+  const t = useScopedI18n("library.placeholders");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPatron, setSelectedPatron] = useState<SelectedPatron | null>(
     null,
@@ -359,7 +360,7 @@ export default function LibraryCirculationPage() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Scan patron card or item barcode..."
+                  placeholder={t("scanPatronOrBarcode")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleKeyDown}

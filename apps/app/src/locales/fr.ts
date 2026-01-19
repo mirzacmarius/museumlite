@@ -245,6 +245,11 @@ export default {
       noWebhooks: "Aucun webhook configuré",
       test: "Tester",
     },
+    placeholders: {
+      searchUsers: "Rechercher des utilisateurs...",
+      selectRole: "Sélectionner un rôle",
+      stepName: "ex. Approbation du Conservateur",
+    },
   },
   activity: {
     title: "Activité",
@@ -313,6 +318,36 @@ export default {
     statusCataloged: "Catalogué",
     statusRejected: "Rejeté",
   },
+  library: {
+    placeholders: {
+      searchCatalog: "Rechercher par titre, auteur, ISBN ou code-barres...",
+      enterISBN: "Entrez ISBN...",
+      bookTitle: "Titre du livre",
+      commaSeparatedAuthors: "Auteurs séparés par des virgules",
+      isbn: "ISBN",
+      publisher: "Nom de l'éditeur",
+      whyNeeded: "Pourquoi cet article est-il nécessaire ?",
+      enterOrGenerateBarcode: "Entrez ou générez un code-barres",
+      scanPatronOrBarcode:
+        "Scannez la carte du patron ou le code-barres de l'article...",
+      english: "Anglais",
+      enterTitle: "Entrez le titre",
+      enterSubtitle: "Entrez le sous-titre (facultatif)",
+      forPeriodicals: "Pour les périodiques",
+      itemBarcode: "Code-barres de l'article",
+      libraryAccessionNumber: "Numéro d'accession de la bibliothèque",
+      publisherName: "Nom de l'éditeur",
+      numberOfPages: "Nombre de pages",
+      commaSeparatedCategories: "Catégories séparées par des virgules",
+      commaSeparatedGenres: "Genres séparés par des virgules",
+      commaSeparatedSubjects: "Sujets séparés par des virgules",
+      selectAudience: "Sélectionner le public",
+      seriesName: "Nom de la série",
+      bookDescription: "Description ou résumé du livre",
+      notesVisibleToPatrons: "Notes visibles aux patrons",
+      staffOnlyNotes: "Notes réservées au personnel",
+    },
+  },
   loans: {
     title: "Prêts",
     description: "Gérer les accords de prêt entrants et sortants",
@@ -334,6 +369,11 @@ export default {
       notes: "Notes du personnel...",
       notesEdit: "Notes supplémentaires pour le personnel...",
       collections: "Rechercher et sélectionner des collections...",
+      searchAccession: "Rechercher le numéro d'accession...",
+      searchCollections: "Rechercher par numéro d'accession ou titre...",
+      conditionOut: "État lors du départ",
+      conditionIn: "État au retour",
+      returnNotes: "Toute note supplémentaire",
     },
     filters: {
       allLoans: "Tous les Prêts",
@@ -542,6 +582,9 @@ export default {
       searchPlaceholder: "Rechercher des emplacements...",
       noLocations: "Aucun emplacement trouvé",
       createFirst: "Créez votre premier emplacement pour commencer",
+    },
+    placeholders: {
+      notesPlaceholder: "Raison du déplacement de cet emplacement...",
     },
   },
   common: {
@@ -812,6 +855,17 @@ export default {
         ownerName: "Nom du propriétaire",
         yearStart: "par exemple, 1920",
         yearEnd: "par exemple, 1985 ou Présent",
+        caption: "Entrez une légende pour ce média...",
+        photographer: "Nom du photographe",
+        copyright: "Informations de droits d'auteur",
+        collectionGroup: "Sélectionnez un groupe de collection...",
+        deaccessionReason:
+          "Entrez la raison de la désaccession de ces éléments...",
+        donationInfoLong:
+          "Informations sur les circonstances, conditions ou contexte de la donation",
+        ownershipNotes: "Comment a-t-il été acquis, tout détail pertinent...",
+        verificationSource:
+          "Source de vérification (par exemple, dossiers d'enchères, recherche de provenance)",
       },
       actions: {
         cancel: "Annuler",
@@ -1469,6 +1523,12 @@ export default {
       gallery: "Vue galerie",
       timeline: "Vue chronologique",
     },
+    placeholders: {
+      enterTitle: "Entrez le titre de l'exposition...",
+      selectLocation: "par ex., Galerie 4, Aile B",
+      selectLoanVenue: "par ex., Le Musée Britannique",
+      addNotes: "Notes curatoriales, détails d'installation...",
+    },
   },
   analytics: {
     title: "Analytique & Conformité",
@@ -2014,6 +2074,13 @@ export default {
       proceedsNotes: "Notes sur les Produits",
       stepApproved: "Étape {step} Approuvée",
       created: "Créé",
+    },
+    placeholders: {
+      searchObjects: "Rechercher des désaccessions...",
+      deaccessionNumber: "Généré automatiquement si laissé vide",
+      selectReason: "ex. Ne correspond plus à la mission de la collection",
+      selectDisposition: "ex. Vendu à un collectionneur privé",
+      addNotes: "Notes supplémentaires sur cette désaccession...",
     },
   },
   modules: {

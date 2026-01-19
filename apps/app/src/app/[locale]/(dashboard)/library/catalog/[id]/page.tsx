@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -65,6 +66,7 @@ export default function CatalogItemDetailPage() {
   const router = useRouter();
   const itemId = params.id as Id<"libraryItems">;
   const { currentOrganizationId } = useOrganization();
+  const t = useScopedI18n("library.placeholders");
 
   const [isAddCopyOpen, setIsAddCopyOpen] = useState(false);
   const [newCopyBarcode, setNewCopyBarcode] = useState("");
@@ -583,7 +585,7 @@ export default function CatalogItemDetailPage() {
                     id="barcode"
                     value={newCopyBarcode}
                     onChange={(e) => setNewCopyBarcode(e.target.value)}
-                    placeholder="Enter or generate barcode"
+                    placeholder={t("enterOrGenerateBarcode")}
                   />
                   <Button
                     type="button"

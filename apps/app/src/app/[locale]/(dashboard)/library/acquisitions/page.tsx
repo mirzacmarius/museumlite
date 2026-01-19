@@ -4,7 +4,7 @@ import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDate as formatDateUtil } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
@@ -82,6 +82,7 @@ export default function LibraryAcquisitionsPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasModule } = useFeatureAccess();
   const locale = useCurrentLocale();
+  const t = useScopedI18n("library.placeholders");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
@@ -618,7 +619,7 @@ export default function LibraryAcquisitionsPage() {
                       title: e.target.value,
                     }))
                   }
-                  placeholder="Book title"
+                  placeholder={t("bookTitle")}
                 />
               </div>
               <div className="space-y-2">
@@ -631,7 +632,7 @@ export default function LibraryAcquisitionsPage() {
                       authors: e.target.value,
                     }))
                   }
-                  placeholder="Comma-separated authors"
+                  placeholder={t("commaSeparatedAuthors")}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -645,7 +646,7 @@ export default function LibraryAcquisitionsPage() {
                         isbn: e.target.value,
                       }))
                     }
-                    placeholder="ISBN"
+                    placeholder={t("isbn")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -658,7 +659,7 @@ export default function LibraryAcquisitionsPage() {
                         publisher: e.target.value,
                       }))
                     }
-                    placeholder="Publisher"
+                    placeholder={t("publisher")}
                   />
                 </div>
               </div>
@@ -722,7 +723,7 @@ export default function LibraryAcquisitionsPage() {
                       reason: e.target.value,
                     }))
                   }
-                  placeholder="Why is this item needed?"
+                  placeholder={t("whyNeeded")}
                   rows={3}
                 />
               </div>

@@ -246,6 +246,11 @@ export default {
       noWebhooks: "No hay webhooks configurados",
       test: "Probar",
     },
+    placeholders: {
+      searchUsers: "Buscar usuarios...",
+      selectRole: "Seleccionar un rol",
+      stepName: "ej. Aprobación del Curador",
+    },
   },
   activity: {
     title: "Actividad",
@@ -314,6 +319,36 @@ export default {
     statusCataloged: "Catalogado",
     statusRejected: "Rechazado",
   },
+  library: {
+    placeholders: {
+      searchCatalog: "Buscar por título, autor, ISBN o código de barras...",
+      enterISBN: "Ingrese ISBN...",
+      bookTitle: "Título del libro",
+      commaSeparatedAuthors: "Autores separados por comas",
+      isbn: "ISBN",
+      publisher: "Nombre del editor",
+      whyNeeded: "¿Por qué se necesita este artículo?",
+      enterOrGenerateBarcode: "Ingrese o genere un código de barras",
+      scanPatronOrBarcode:
+        "Escanee la tarjeta del patrón o el código de barras del artículo...",
+      english: "Inglés",
+      enterTitle: "Ingrese el título",
+      enterSubtitle: "Ingrese el subtítulo (opcional)",
+      forPeriodicals: "Para publicaciones periódicas",
+      itemBarcode: "Código de barras del artículo",
+      libraryAccessionNumber: "Número de acceso de la biblioteca",
+      publisherName: "Nombre del editor",
+      numberOfPages: "Número de páginas",
+      commaSeparatedCategories: "Categorías separadas por comas",
+      commaSeparatedGenres: "Géneros separados por comas",
+      commaSeparatedSubjects: "Temas separados por comas",
+      selectAudience: "Seleccionar audiencia",
+      seriesName: "Nombre de la serie",
+      bookDescription: "Descripción o resumen del libro",
+      notesVisibleToPatrons: "Notas visibles para los patrones",
+      staffOnlyNotes: "Notas solo para el personal",
+    },
+  },
   loans: {
     title: "Préstamos",
     description: "Administrar acuerdos de préstamo entrantes y salientes",
@@ -336,6 +371,11 @@ export default {
       notes: "Notas del personal...",
       notesEdit: "Notas adicionales para el personal...",
       collections: "Buscar y seleccionar colecciones...",
+      searchAccession: "Buscar número de acceso...",
+      searchCollections: "Buscar por número de acceso o título...",
+      conditionOut: "Condición al salir",
+      conditionIn: "Condición al retornar",
+      returnNotes: "Cualquier nota adicional",
     },
     admin: {
       activeLoans: "Préstamos Activos",
@@ -478,6 +518,9 @@ export default {
       searchPlaceholder: "Buscar ubicaciones...",
       noLocations: "No se encontraron ubicaciones",
       createFirst: "Cree su primera ubicación para comenzar",
+    },
+    placeholders: {
+      notesPlaceholder: "Razón para mover esta ubicación...",
     },
   },
   common: {
@@ -791,6 +834,17 @@ export default {
         ownerName: "Nombre del propietario",
         yearStart: "ej., 1920",
         yearEnd: "ej., 1985 o Presente",
+        caption: "Ingresa un título para este medio...",
+        photographer: "Nombre del fotógrafo",
+        copyright: "Información de derechos de autor",
+        collectionGroup: "Selecciona un grupo de colección...",
+        deaccessionReason:
+          "Ingresa la razón para desaccesionar estos elementos...",
+        donationInfoLong:
+          "Información sobre las circunstancias, condiciones o contexto de la donación",
+        ownershipNotes: "¿Cómo fue adquirido, cualquier detalle relevante...",
+        verificationSource:
+          "Fuente de verificación (por ejemplo, registros de subastas, investigación de procedencia)",
       },
       actions: {
         cancel: "Cancelar",
@@ -1450,6 +1504,12 @@ export default {
       gallery: "Vista galería",
       timeline: "Vista cronológica",
     },
+    placeholders: {
+      enterTitle: "Ingresa el título de la exposición...",
+      selectLocation: "ej., Galería 4, Ala B",
+      selectLoanVenue: "ej., El Museo Británico",
+      addNotes: "Notas curatoriales, detalles de instalación...",
+    },
   },
   analytics: {
     title: "Analítica y Cumplimiento",
@@ -1990,6 +2050,13 @@ export default {
       proceedsNotes: "Notas de Ingresos",
       stepApproved: "Paso {step} Aprobado",
       created: "Creado",
+    },
+    placeholders: {
+      searchObjects: "Buscar desaccesiones...",
+      deaccessionNumber: "Generado automáticamente si se deja vacío",
+      selectReason: "ej., Ya no se ajusta a la misión de la colección",
+      selectDisposition: "ej., Vendido a coleccionista privado",
+      addNotes: "Notas adicionales sobre esta desaccesión...",
     },
   },
   modules: {

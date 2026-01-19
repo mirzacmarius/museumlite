@@ -6,6 +6,7 @@ import {
 } from "@/components/library/isbn-lookup";
 import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -53,6 +54,7 @@ export default function NewCatalogItemPage() {
   const router = useRouter();
   const { currentOrganizationId } = useOrganization();
   const { hasModule } = useFeatureAccess();
+  const t = useScopedI18n("library.placeholders");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -326,7 +328,7 @@ export default function NewCatalogItemPage() {
                       language: e.target.value,
                     }))
                   }
-                  placeholder="English"
+                  placeholder={t("english")}
                   required
                 />
               </div>
@@ -339,7 +341,7 @@ export default function NewCatalogItemPage() {
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, title: e.target.value }))
                   }
-                  placeholder="Enter the title"
+                  placeholder={t("enterTitle")}
                   required
                 />
               </div>
@@ -355,7 +357,7 @@ export default function NewCatalogItemPage() {
                       subtitle: e.target.value,
                     }))
                   }
-                  placeholder="Enter subtitle (optional)"
+                  placeholder={t("enterSubtitle")}
                 />
               </div>
 
@@ -430,7 +432,7 @@ export default function NewCatalogItemPage() {
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, issn: e.target.value }))
                   }
-                  placeholder="For periodicals"
+                  placeholder={t("forPeriodicals")}
                 />
               </div>
               <div className="space-y-2">
@@ -444,7 +446,7 @@ export default function NewCatalogItemPage() {
                       barcode: e.target.value,
                     }))
                   }
-                  placeholder="Item barcode"
+                  placeholder={t("itemBarcode")}
                 />
               </div>
               <div className="space-y-2">
@@ -472,7 +474,7 @@ export default function NewCatalogItemPage() {
                       accessionNumber: e.target.value,
                     }))
                   }
-                  placeholder="Library accession number"
+                  placeholder={t("libraryAccessionNumber")}
                 />
               </div>
             </div>
@@ -495,7 +497,7 @@ export default function NewCatalogItemPage() {
                       publisher: e.target.value,
                     }))
                   }
-                  placeholder="Publisher name"
+                  placeholder={t("publisherName")}
                 />
               </div>
               <div className="space-y-2">
@@ -550,7 +552,7 @@ export default function NewCatalogItemPage() {
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, pages: e.target.value }))
                   }
-                  placeholder="Number of pages"
+                  placeholder={t("numberOfPages")}
                 />
               </div>
               <div className="space-y-2">
@@ -612,7 +614,7 @@ export default function NewCatalogItemPage() {
                       categories: e.target.value,
                     }))
                   }
-                  placeholder="Comma-separated categories"
+                  placeholder={t("commaSeparatedCategories")}
                 />
               </div>
               <div className="space-y-2">
@@ -623,7 +625,7 @@ export default function NewCatalogItemPage() {
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, genres: e.target.value }))
                   }
-                  placeholder="Comma-separated genres"
+                  placeholder={t("commaSeparatedGenres")}
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
@@ -637,7 +639,7 @@ export default function NewCatalogItemPage() {
                       subjects: e.target.value,
                     }))
                   }
-                  placeholder="Comma-separated subjects"
+                  placeholder={t("commaSeparatedSubjects")}
                 />
               </div>
               <div className="space-y-2">
@@ -649,7 +651,7 @@ export default function NewCatalogItemPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select audience" />
+                    <SelectValue placeholder={t("selectAudience")} />
                   </SelectTrigger>
                   <SelectContent>
                     {TARGET_AUDIENCES.map((audience) => (
@@ -668,7 +670,7 @@ export default function NewCatalogItemPage() {
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, series: e.target.value }))
                   }
-                  placeholder="Series name"
+                  placeholder={t("seriesName")}
                 />
               </div>
             </div>
@@ -691,7 +693,7 @@ export default function NewCatalogItemPage() {
                       description: e.target.value,
                     }))
                   }
-                  placeholder="Book description or summary"
+                  placeholder={t("bookDescription")}
                   rows={4}
                 />
               </div>
@@ -738,7 +740,7 @@ export default function NewCatalogItemPage() {
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, notes: e.target.value }))
                   }
-                  placeholder="Notes visible to patrons"
+                  placeholder={t("notesVisibleToPatrons")}
                   rows={2}
                 />
               </div>
@@ -753,7 +755,7 @@ export default function NewCatalogItemPage() {
                       internalNotes: e.target.value,
                     }))
                   }
-                  placeholder="Staff-only notes"
+                  placeholder={t("staffOnlyNotes")}
                   rows={2}
                 />
               </div>

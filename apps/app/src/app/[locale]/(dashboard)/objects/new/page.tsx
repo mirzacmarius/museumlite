@@ -67,6 +67,7 @@ interface CollectionFormData {
 export default function CollectionFormPage() {
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
+  const placeholders = useScopedI18n("objects.form.placeholders");
   const router = useRouter();
   const searchParams = useSearchParams();
   const collectionGroupId = searchParams.get("collectionGroupId");
@@ -460,7 +461,7 @@ export default function CollectionFormPage() {
                         id="title"
                         value={formData.title}
                         onChange={(e) => updateField("title", e.target.value)}
-                        placeholder={t("form.placeholders.title")}
+                        placeholder={placeholders("title")}
                         required
                       />
                     </div>
@@ -480,7 +481,7 @@ export default function CollectionFormPage() {
                         onChange={(e) =>
                           updateField("accessionNumber", e.target.value)
                         }
-                        placeholder={t("form.placeholders.accessionNumber")}
+                        placeholder={placeholders("accessionNumber")}
                       />
                     </div>
 
@@ -504,7 +505,9 @@ export default function CollectionFormPage() {
                               </TagsInputItem>
                             ),
                           )}
-                          <TagsInputInput placeholder="Add alternate ID..." />
+                          <TagsInputInput
+                            placeholder={placeholders("alternateId")}
+                          />
                         </TagsInputList>
                       </TagsInput>
                       <p className="mt-1 text-xs text-muted-foreground">
@@ -521,7 +524,7 @@ export default function CollectionFormPage() {
                         onChange={(e) =>
                           updateField("objectName", e.target.value)
                         }
-                        placeholder="e.g., Portrait"
+                        placeholder={placeholders("objectName")}
                       />
                     </div>
 
@@ -537,7 +540,7 @@ export default function CollectionFormPage() {
                         onValueChange={(value) =>
                           updateField("objectType", value)
                         }
-                        placeholder="Select or add types..."
+                        placeholder={placeholders("selectTypes")}
                       />
                     </div>
 
@@ -547,7 +550,7 @@ export default function CollectionFormPage() {
                         id="culture"
                         value={formData.culture || ""}
                         onChange={(e) => updateField("culture", e.target.value)}
-                        placeholder="e.g., French"
+                        placeholder={placeholders("culture")}
                       />
                     </div>
 
@@ -557,7 +560,7 @@ export default function CollectionFormPage() {
                         id="period"
                         value={formData.period || ""}
                         onChange={(e) => updateField("period", e.target.value)}
-                        placeholder="e.g., 19th Century"
+                        placeholder={placeholders("period")}
                       />
                     </div>
 
@@ -569,7 +572,7 @@ export default function CollectionFormPage() {
                         onChange={(e) =>
                           updateField("dateCreated", e.target.value)
                         }
-                        placeholder="e.g., 1850"
+                        placeholder={placeholders("dateCreated")}
                       />
                     </div>
 
@@ -579,7 +582,7 @@ export default function CollectionFormPage() {
                         id="creator"
                         value={formData.creator || ""}
                         onChange={(e) => updateField("creator", e.target.value)}
-                        placeholder="e.g., Vincent van Gogh"
+                        placeholder={placeholders("creator")}
                       />
                     </div>
                   </div>
@@ -614,7 +617,7 @@ export default function CollectionFormPage() {
                         onChange={(e) =>
                           updateField("dimensions", e.target.value)
                         }
-                        placeholder="e.g., 50 x 60 cm"
+                        placeholder={placeholders("dimensions")}
                       />
                     </div>
 
@@ -644,7 +647,7 @@ export default function CollectionFormPage() {
                       onValueChange={(value) =>
                         updateField("currentLocationId", value)
                       }
-                      placeholder="Select a location (optional)"
+                      placeholder={placeholders("location")}
                     />
                   </div>
                 </div>
@@ -666,7 +669,7 @@ export default function CollectionFormPage() {
                       onValueChange={(value) =>
                         updateField("parentObjectId", value)
                       }
-                      placeholder="Select parent object (optional)"
+                      placeholder={placeholders("parentObject")}
                     />
                   </div>
                   <div className="mt-4">
@@ -680,7 +683,7 @@ export default function CollectionFormPage() {
                       onValueChange={(value) =>
                         updateField("collectionGroupId", value)
                       }
-                      placeholder="Select collection (optional)"
+                      placeholder={placeholders("collection")}
                     />
                   </div>
                 </div>
@@ -700,7 +703,7 @@ export default function CollectionFormPage() {
                           updateField("description", e.target.value)
                         }
                         rows={4}
-                        placeholder="Enter detailed description"
+                        placeholder={placeholders("description")}
                       />
                     </div>
 
@@ -713,7 +716,7 @@ export default function CollectionFormPage() {
                           updateField("provenance", e.target.value)
                         }
                         rows={3}
-                        placeholder="Enter provenance information"
+                        placeholder={placeholders("provenance")}
                       />
                     </div>
 
@@ -728,7 +731,7 @@ export default function CollectionFormPage() {
                           updateField("exhibitionHistory", e.target.value)
                         }
                         rows={3}
-                        placeholder="Enter exhibition history"
+                        placeholder={placeholders("exhibitionHistory")}
                       />
                     </div>
 
@@ -749,7 +752,7 @@ export default function CollectionFormPage() {
                               );
                             }
                           }}
-                          placeholder="Select or add donors..."
+                          placeholder={placeholders("selectDonors")}
                         />
                       </div>
 
@@ -759,7 +762,7 @@ export default function CollectionFormPage() {
                         onChange={(value) =>
                           updateField("previous_owners", value)
                         }
-                        placeholder="Enter previous owner name"
+                        placeholder={placeholders("previousOwner")}
                         id="previous_owners"
                       />
                     </div>
@@ -795,7 +798,7 @@ export default function CollectionFormPage() {
                             updateField("donation_info", e.target.value)
                           }
                           rows={3}
-                          placeholder="Context, circumstances, conditions, etc."
+                          placeholder={placeholders("donationContext")}
                         />
                       </div>
                     </div>
@@ -859,7 +862,7 @@ export default function CollectionFormPage() {
                               };
                               updateField("links", newLinks);
                             }}
-                            placeholder="Link name (optional)"
+                            placeholder={placeholders("linkName")}
                           />
                         </div>
                         {(formData.links || []).length > 1 && (

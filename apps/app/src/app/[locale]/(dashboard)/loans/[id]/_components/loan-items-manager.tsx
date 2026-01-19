@@ -1,6 +1,7 @@
 "use client";
 
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -27,7 +28,7 @@ import {
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { useMutation, useQuery } from "convex/react";
-import { ExternalLink, Plus, Search, Trash2, X, RotateCcw } from "lucide-react";
+import { ExternalLink, Plus, RotateCcw, Search, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -56,6 +57,7 @@ export function LoanItemsManager({
   loanStatus,
   loanType,
 }: LoanItemsManagerProps) {
+  const t = useScopedI18n("loans.placeholders");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
   const [selectedItemToReturn, setSelectedItemToReturn] = useState<{
@@ -214,7 +216,7 @@ export function LoanItemsManager({
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
-                        placeholder="Search by accession number or title..."
+                        placeholder={t("searchCollections")}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-9"
@@ -323,7 +325,7 @@ export function LoanItemsManager({
                       id="conditionOut"
                       value={conditionOut}
                       onChange={(e) => setConditionOut(e.target.value)}
-                      placeholder="Condition when leaving"
+                      placeholder={t("conditionOut")}
                     />
                     <p className="text-xs text-muted-foreground">
                       This condition will be applied to all selected items
@@ -461,7 +463,7 @@ export function LoanItemsManager({
                   id="conditionIn"
                   value={conditionIn}
                   onChange={(e) => setConditionIn(e.target.value)}
-                  placeholder="Condition upon return"
+                  placeholder={t("conditionIn")}
                 />
               </div>
 
@@ -471,7 +473,7 @@ export function LoanItemsManager({
                   id="returnNotes"
                   value={returnNotes}
                   onChange={(e) => setReturnNotes(e.target.value)}
-                  placeholder="Any additional notes"
+                  placeholder={t("returnNotes")}
                 />
               </div>
             </div>

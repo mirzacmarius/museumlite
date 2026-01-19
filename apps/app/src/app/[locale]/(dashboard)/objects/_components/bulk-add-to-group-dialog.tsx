@@ -41,6 +41,7 @@ export function BulkAddToGroupDialog({
   onSuccess,
 }: BulkAddToGroupDialogProps) {
   const t = useScopedI18n("common.toast");
+  const placeholders = useScopedI18n("objects.form.placeholders");
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -101,7 +102,7 @@ export function BulkAddToGroupDialog({
             <Label htmlFor="group">Collection Group</Label>
             <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
               <SelectTrigger id="group">
-                <SelectValue placeholder="Select a collection group..." />
+                <SelectValue placeholder={placeholders("collectionGroup")} />
               </SelectTrigger>
               <SelectContent>
                 {collectionGroups === undefined ? (
