@@ -320,10 +320,10 @@ Phase 6: Toast Messages
   - `apps/app/src/locales/fr.ts:1-93` - Example translation file format
 
   **Acceptance Criteria**:
-  - [ ] File exists at `apps/app/src/locales/no.ts`
-  - [ ] All keys from `en.ts` translated to Norwegian (count keys in file, match en.ts)
-  - [ ] `bun run typecheck` passes
-  - [ ] Exports `as const`
+  - [x] File exists at `apps/app/src/locales/no.ts`
+  - [x] All keys from `en.ts` translated to Norwegian (count keys in file, match en.ts)
+  - [x] `bun run typecheck` passes
+  - [x] Exports `as const`
 
   **Commit**: YES
   - Message: `feat(i18n): add Norwegian locale file`
@@ -350,11 +350,11 @@ Phase 6: Toast Messages
   - `apps/app/src/proxy.ts:9-13` - Current middleware locales array
 
   **Acceptance Criteria**:
-  - [ ] `client.ts` has `no: () => import("./no")` line
-  - [ ] `server.ts` has `no: () => import("./no")` line
-  - [ ] `proxy.ts` locales array is `["en", "fr", "es", "no"]`
-  - [ ] `bun run typecheck` passes
-  - [ ] App starts without errors: `bun dev:app`
+  - [x] `client.ts` has `no: () => import("./no")` line
+  - [x] `server.ts` has `no: () => import("./no")` line
+  - [x] `proxy.ts` locales array is `["en", "fr", "es", "no"]`
+  - [x] `bun run typecheck` passes
+  - [x] App starts without errors: `bun dev:app`
 
   **Commit**: YES
   - Message: `feat(i18n): register Norwegian in configs`
@@ -377,9 +377,9 @@ Phase 6: Toast Messages
   - `apps/app/src/app/[locale]/(dashboard)/_components/language-switcher.tsx:16-20` - Current langs array
 
   **Acceptance Criteria**:
-  - [ ] Langs array includes Norwegian option
-  - [ ] Manual browser test: Navigate to `http://localhost:3000`, click language switcher dropdown, verify "Norsk" appears
-  - [ ] Select "Norsk", verify page content changes to Norwegian
+  - [x] Langs array includes Norwegian option
+  - [x] Manual browser test: Navigate to `http://localhost:3000`, click language switcher dropdown, verify "Norsk" appears
+  - [x] Select "Norsk", verify page content changes to Norwegian
 
   **Commit**: YES
   - Message: `feat(i18n): add Norwegian to language switcher`
@@ -426,10 +426,10 @@ Phase 6: Toast Messages
   - `apps/app/src/locales/en.ts` - Current key structure pattern
 
   **Acceptance Criteria**:
-  - [ ] All 4 locale files have identical key structure
-  - [ ] At least 200 new keys added (estimate based on audit)
-  - [ ] `bun run typecheck` passes
-  - [ ] Keys organized by namespace matching module names
+  - [x] All 4 locale files have identical key structure
+  - [x] At least 200 new keys added (estimate based on audit)
+  - [x] `bun run typecheck` passes
+  - [x] Keys organized by namespace matching module names
 
   **Commit**: YES
   - Message: `feat(i18n): expand locale files with all UI strings`
@@ -474,11 +474,11 @@ Phase 6: Toast Messages
   - `apps/app/src/app/[locale]/(dashboard)/settings/page.tsx:3,19` - Pattern: how to import and use useScopedI18n
 
   **Acceptance Criteria**:
-  - [ ] No hardcoded English strings in page.tsx (verify with grep pattern)
-  - [ ] No hardcoded English strings in AssignmentsQueue
-  - [ ] No hardcoded English strings in NewArrivalsFeed
-  - [ ] `bun run typecheck` passes
-  - [ ] Manual browser test: Navigate to `http://localhost:3000`, switch to each locale (en/fr/es/no), verify KPI cards and section titles change
+  - [x] No hardcoded English strings in page.tsx (verify with grep pattern)
+  - [x] No hardcoded English strings in AssignmentsQueue
+  - [x] No hardcoded English strings in NewArrivalsFeed
+  - [x] `bun run typecheck` passes
+  - [x] Manual browser test: Navigate to `http://localhost:3000`, switch to each locale (en/fr/es/no), verify KPI cards and section titles change
 
   **Commit**: YES
   - Message: `feat(i18n): migrate dashboard home page`
@@ -505,9 +505,9 @@ Phase 6: Toast Messages
   - `apps/app/src/locales/en.ts:38-60` - Existing activity keys
 
   **Acceptance Criteria**:
-  - [ ] No hardcoded English in activity module
-  - [ ] Uses existing `activity.*` keys where available
-  - [ ] `bun run typecheck` passes
+  - [x] No hardcoded English in activity module
+  - [x] Uses existing `activity.*` keys where available
+  - [x] `bun run typecheck` passes
 
   **Commit**: YES
   - Message: `feat(i18n): migrate activity module`
@@ -543,9 +543,9 @@ Phase 6: Toast Messages
   - `apps/app/src/locales/en.ts:76-83` - Existing loans.admin keys
 
   **Acceptance Criteria**:
-  - [ ] No hardcoded English in loans module
-  - [ ] All status labels translated
-  - [ ] `bun run typecheck` passes
+  - [x] No hardcoded English in loans module
+  - [x] All status labels translated
+  - [x] `bun run typecheck` passes
 
   **Commit**: YES
   - Message: `feat(i18n): migrate loans module`
@@ -569,8 +569,8 @@ Phase 6: Toast Messages
   - `apps/app/src/app/[locale]/(dashboard)/collections/page.tsx` - Main collections page
 
   **Acceptance Criteria**:
-  - [ ] No hardcoded English in collections module
-  - [ ] `bun run typecheck` passes
+  - [x] No hardcoded English in collections module
+  - [x] `bun run typecheck` passes
 
   **Commit**: YES
   - Message: `feat(i18n): migrate collections module`
@@ -591,8 +591,8 @@ Phase 6: Toast Messages
   - `apps/app/src/app/[locale]/(dashboard)/objects/page.tsx` - Main objects page
 
   **Acceptance Criteria**:
-  - [ ] No hardcoded English in objects module
-  - [ ] `bun run typecheck` passes
+  - [x] No hardcoded English in objects module
+  - [x] `bun run typecheck` passes
 
   **Commit**: YES
   - Message: `feat(i18n): migrate objects module`
@@ -613,8 +613,8 @@ Phase 6: Toast Messages
   - `apps/app/src/app/[locale]/(dashboard)/accessions/page.tsx` - Main page
 
   **Acceptance Criteria**:
-  - [ ] No hardcoded English in accessions module
-  - [ ] `bun run typecheck` passes
+  - [x] No hardcoded English in accessions module
+  - [x] `bun run typecheck` passes
 
   **Commit**: YES
   - Message: `feat(i18n): migrate accessions module`
@@ -634,8 +634,8 @@ Phase 6: Toast Messages
   - `apps/app/src/app/[locale]/(dashboard)/deaccessions/page.tsx` - Main page
 
   **Acceptance Criteria**:
-  - [ ] No hardcoded English in deaccessions module
-  - [ ] `bun run typecheck` passes
+  - [x] No hardcoded English in deaccessions module
+  - [x] `bun run typecheck` passes
 
   **Commit**: YES
   - Message: `feat(i18n): migrate deaccessions module`
@@ -656,8 +656,8 @@ Phase 6: Toast Messages
   - `apps/app/src/locales/en.ts:88-91` - Existing locations keys
 
   **Acceptance Criteria**:
-  - [ ] No hardcoded English in locations module
-  - [ ] `bun run typecheck` passes
+  - [x] No hardcoded English in locations module
+  - [x] `bun run typecheck` passes
 
   **Commit**: YES
   - Message: `feat(i18n): migrate locations module`
@@ -677,8 +677,8 @@ Phase 6: Toast Messages
   - `apps/app/src/app/[locale]/(dashboard)/conservation/page.tsx` - Main page
 
   **Acceptance Criteria**:
-  - [ ] No hardcoded English in conservation module
-  - [ ] `bun run typecheck` passes
+  - [x] No hardcoded English in conservation module
+  - [x] `bun run typecheck` passes
 
   **Commit**: YES
   - Message: `feat(i18n): migrate conservation module`
@@ -698,8 +698,8 @@ Phase 6: Toast Messages
   - `apps/app/src/app/[locale]/(dashboard)/exhibitions/page.tsx` - Main page
 
   **Acceptance Criteria**:
-  - [ ] No hardcoded English in exhibitions module
-  - [ ] `bun run typecheck` passes
+  - [x] No hardcoded English in exhibitions module
+  - [x] `bun run typecheck` passes
 
   **Commit**: YES
   - Message: `feat(i18n): migrate exhibitions module`
@@ -719,8 +719,8 @@ Phase 6: Toast Messages
   - `apps/app/src/app/[locale]/(dashboard)/accounts/page.tsx` - Main page
 
   **Acceptance Criteria**:
-  - [ ] No hardcoded English in accounts module
-  - [ ] `bun run typecheck` passes
+  - [x] No hardcoded English in accounts module
+  - [x] `bun run typecheck` passes
 
   **Commit**: YES
   - Message: `feat(i18n): migrate accounts module`
@@ -743,8 +743,8 @@ Phase 6: Toast Messages
   - `apps/app/src/app/[locale]/(dashboard)/library/page.tsx` - Main page
 
   **Acceptance Criteria**:
-  - [ ] No hardcoded English in library module
-  - [ ] `bun run typecheck` passes
+  - [x] No hardcoded English in library module
+  - [x] `bun run typecheck` passes
 
   **Commit**: YES
   - Message: `feat(i18n): migrate library module`
@@ -779,9 +779,9 @@ Phase 6: Toast Messages
   - `apps/app/src/app/[locale]/(dashboard)/settings/layout.tsx:51,65,79,93,107,135,149` - Hardcoded strings to migrate
 
   **Acceptance Criteria**:
-  - [ ] No hardcoded English in settings module (including layout.tsx and page.tsx)
-  - [ ] `settings.sidebar` namespace has keys: general, billing, organization, users, roles, integrations, modules, activity, developer
-  - [ ] `bun run typecheck` passes
+  - [x] No hardcoded English in settings module (including layout.tsx and page.tsx)
+  - [x] `settings.sidebar` namespace has keys: general, billing, organization, users, roles, integrations, modules, activity, developer
+  - [x] `bun run typecheck` passes
 
   **Commit**: YES
   - Message: `feat(i18n): migrate settings module`
@@ -807,8 +807,8 @@ Phase 6: Toast Messages
   - Each page file listed above
 
   **Acceptance Criteria**:
-  - [ ] No hardcoded English in any of these pages
-  - [ ] `bun run typecheck` passes
+  - [x] No hardcoded English in any of these pages
+  - [x] `bun run typecheck` passes
 
   **Commit**: YES
   - Message: `feat(i18n): migrate remaining pages`
@@ -879,11 +879,11 @@ Phase 6: Toast Messages
   - `apps/app/src/app/[locale]/(dashboard)/notifications/page.tsx:9` - formatDistanceToNow usage
 
   **Acceptance Criteria**:
-  - [ ] `apps/app/src/lib/format-date.ts` exists with formatDate, formatDateFns, formatDistanceLocale
-  - [ ] `grep -rn 'toLocaleDateString\|toLocaleString.*default' apps/app/src/app` → all replaced with formatDate
-  - [ ] `grep -rn "from \"date-fns\"" apps/app/src/app` → all imports updated to use locale wrappers
-  - [ ] `bun run typecheck` passes
-  - [ ] Manual browser test: In NO locale, dates show "15. jan. 2024" format, distances show "for 2 dager siden"
+  - [x] `apps/app/src/lib/format-date.ts` exists with formatDate, formatDateFns, formatDistanceLocale
+  - [x] `grep -rn 'toLocaleDateString\|toLocaleString.*default' apps/app/src/app` → all replaced with formatDate
+  - [x] `grep -rn "from \"date-fns\"" apps/app/src/app` → all imports updated to use locale wrappers
+  - [x] `bun run typecheck` passes
+  - [x] Manual browser test: In NO locale, dates show "15. jan. 2024" format, distances show "for 2 dager siden"
 
   **Commit**: YES
   - Message: `feat(i18n): make date formatting locale-aware`
@@ -932,11 +932,11 @@ Phase 6: Toast Messages
   - `apps/app/src/app/[locale]/(dashboard)/page.tsx:105` - toLocaleString() without locale
 
   **Acceptance Criteria**:
-  - [ ] `apps/app/src/lib/format-number.ts` exists with formatNumber, formatCurrency
-  - [ ] `grep -rn 'Intl\.NumberFormat("en-US"' apps/app/src/app` returns 0 matches
-  - [ ] `grep -rn '\.toLocaleString()' apps/app/src/app` → all replaced with formatNumber (except date-related)
-  - [ ] `bun run typecheck` passes
-  - [ ] Manual browser test: Numbers "1,234" (en) vs "1 234" (no)
+  - [x] `apps/app/src/lib/format-number.ts` exists with formatNumber, formatCurrency
+  - [x] `grep -rn 'Intl\.NumberFormat("en-US"' apps/app/src/app` returns 0 matches
+  - [x] `grep -rn '\.toLocaleString()' apps/app/src/app` → all replaced with formatNumber (except date-related)
+  - [x] `bun run typecheck` passes
+  - [x] Manual browser test: Numbers "1,234" (en) vs "1 234" (no)
 
   **Commit**: YES
   - Message: `feat(i18n): make number formatting locale-aware`
@@ -973,9 +973,9 @@ Phase 6: Toast Messages
   - `apps/app/src/app/[locale]/(dashboard)/loans/page.tsx:296-340` - Example toast calls
 
   **Acceptance Criteria**:
-  - [ ] `grep -rn 'toast\.\(success\|error\|warning\)("[A-Z]' apps/app/src/app` returns 0 matches
-  - [ ] Toast messages display in selected locale
-  - [ ] `bun run typecheck` passes
+  - [x] `grep -rn 'toast\.\(success\|error\|warning\)("[A-Z]' apps/app/src/app` returns 0 matches
+  - [x] Toast messages display in selected locale
+  - [x] `bun run typecheck` passes
 
   **Commit**: YES
   - Message: `feat(i18n): migrate toast messages`
