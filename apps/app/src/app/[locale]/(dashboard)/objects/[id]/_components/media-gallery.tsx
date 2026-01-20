@@ -826,10 +826,10 @@ function MediaEditDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {common("cancel")}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save Changes"}
+              {isSubmitting ? common("saving") : common("saveChanges")}
             </Button>
           </DialogFooter>
         </form>

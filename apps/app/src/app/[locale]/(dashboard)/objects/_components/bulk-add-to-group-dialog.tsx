@@ -1,6 +1,6 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -42,6 +42,7 @@ export function BulkAddToGroupDialog({
 }: BulkAddToGroupDialogProps) {
   const t = useScopedI18n("common.toast");
   const placeholders = useScopedI18n("objects.form.placeholders");
+  const common = useScopedI18n("common");
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -138,7 +139,7 @@ export function BulkAddToGroupDialog({
             onClick={handleSubmit}
             disabled={!selectedGroupId || isSubmitting}
           >
-            {isSubmitting ? "Adding..." : "Add to Group"}
+            {isSubmitting ? common("adding") : common("addToGroup")}
           </Button>
         </DialogFooter>
       </DialogContent>
