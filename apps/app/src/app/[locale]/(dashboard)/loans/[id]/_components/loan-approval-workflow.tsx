@@ -1,6 +1,7 @@
 "use client";
 
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { pluralize } from "@/lib/utils/pluralize";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -40,6 +41,7 @@ export function LoanApprovalWorkflow({
   loanId,
   loanStatus,
 }: LoanApprovalWorkflowProps) {
+  const t = useScopedI18n("loans.actions");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
@@ -215,7 +217,7 @@ export function LoanApprovalWorkflow({
 
     const handleProceedToConfirm = () => {
       if (selectedItemIds.size === 0) {
-        setError("Please select at least one item to return.");
+        setError(t("selectAtLeastOne"));
         return;
       }
       // Store selected items first (before closing dialog to prevent reset)
@@ -476,8 +478,8 @@ export function LoanApprovalWorkflow({
                     <AlertDialogHeader>
                       <AlertDialogTitle>
                         {isFullReturn
-                          ? "Confirm Full Return"
-                          : "Confirm Partial Return"}
+                          ? t("confirmFullReturn")
+                          : t("confirmPartialReturn")}
                       </AlertDialogTitle>
                       <AlertDialogDescription asChild>
                         <div className="space-y-2">
@@ -538,10 +540,10 @@ export function LoanApprovalWorkflow({
                         className="bg-blue-600 hover:bg-blue-700"
                       >
                         {isSubmitting
-                          ? "Returning..."
+                          ? t("returning")
                           : isFullReturn
-                            ? "Return All Items"
-                            : "Confirm Partial Return"}
+                            ? t("returnAllItems")
+                            : t("confirmPartialReturn")}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -602,7 +604,7 @@ export function LoanApprovalWorkflow({
 
     const handleProceedToConfirm = () => {
       if (selectedItemIds.size === 0) {
-        setError("Please select at least one item to return.");
+        setError(t("selectAtLeastOne"));
         return;
       }
       // Store selected items first (before closing dialog to prevent reset)
@@ -851,8 +853,8 @@ export function LoanApprovalWorkflow({
                   <AlertDialogHeader>
                     <AlertDialogTitle>
                       {isFullReturn
-                        ? "Confirm Full Return"
-                        : "Confirm Partial Return"}
+                        ? t("confirmFullReturn")
+                        : t("confirmPartialReturn")}
                     </AlertDialogTitle>
                     <AlertDialogDescription asChild>
                       <div className="space-y-2">
@@ -912,10 +914,10 @@ export function LoanApprovalWorkflow({
                       className="bg-blue-600 hover:bg-blue-700"
                     >
                       {isSubmitting
-                        ? "Returning..."
+                        ? t("returning")
                         : isFullReturn
-                          ? "Return All Items"
-                          : "Confirm Partial Return"}
+                          ? t("returnAllItems")
+                          : t("confirmPartialReturn")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

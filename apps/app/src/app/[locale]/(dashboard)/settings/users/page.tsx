@@ -124,28 +124,24 @@ export default function UsersSettingsPage() {
       });
     } catch (err) {
       console.error("Error updating user role:", err);
-      alert(
-        err instanceof Error
-          ? err.message
-          : "Failed to update user role. Please try again.",
-      );
+      alert(err instanceof Error ? err.message : t("updateRoleFailed"));
     }
   };
 
   return (
     <div className="flex w-full flex-col gap-6">
       <div className="flex w-full flex-col gap-2">
-        <h2 className="text-xl font-medium text-primary">User Management</h2>
-        <p className="text-sm text-muted-foreground">
-          Manage users and their roles in your organization
-        </p>
+        <h2 className="text-xl font-medium text-primary">{t("title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("description")}</p>
       </div>
       <div className="flex w-full items-center justify-between">
         <div>
-          <h3 className="text-lg font-medium">Users</h3>
+          <h3 className="text-lg font-medium">{t("usersLabel")}</h3>
           <p className="text-sm text-muted-foreground">
-            {users?.length || 0} user{users?.length !== 1 ? "s" : ""} in this
-            organization
+            {t("userCount", {
+              count: users?.length || 0,
+              plural: users?.length !== 1 ? "s" : "",
+            })}
           </p>
         </div>
         <PermissionGate permission="users.invite">
@@ -153,16 +149,15 @@ export default function UsersSettingsPage() {
             <DialogTrigger asChild>
               <Button>
                 <UserPlus className="mr-2 h-4 w-4" />
-                Invite User
+                {t("inviteUser")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <form onSubmit={handleInvite}>
                 <DialogHeader>
-                  <DialogTitle>Invite User</DialogTitle>
+                  <DialogTitle>{t("inviteUserDialog")}</DialogTitle>
                   <DialogDescription>
-                    Invite a user to join this organization. They must already
-                    have an account.
+                    {t("inviteDescription")}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -172,25 +167,27 @@ export default function UsersSettingsPage() {
                     </div>
                   )}
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
+                    <Label htmlFor="email">{t("emailAddress")}</Label>
                     <Input
                       id="email"
                       type="email"
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
-                      placeholder="user@example.com"
+                      placeholder={t("emailPlaceholder")}
                       required
                       aria-label="Email address"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
+                    <Label htmlFor="role">{t("role")}</Label>
                     <Select
                       value={selectedRoleId}
                       onValueChange={setSelectedRoleId}
                     >
                       <SelectTrigger id="role">
-                        <SelectValue placeholder={t("selectRole")} />
+                        <SelectValue
+                          placeholder={tPlaceholders("selectRole")}
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         {roles?.map((role) => (
@@ -214,10 +211,10 @@ export default function UsersSettingsPage() {
                       setError(null);
                     }}
                   >
-                    Cancel
+                    {t("cancel")}
                   </Button>
                   <Button type="submit" disabled={isInviting}>
-                    {isInviting ? "Inviting..." : "Invite User"}
+                    {isInviting ? t("inviting") : t("inviteUser")}
                   </Button>
                 </DialogFooter>
               </form>
@@ -229,11 +226,11 @@ export default function UsersSettingsPage() {
       <div className="rounded-lg border border-border bg-card">
         {users === undefined ? (
           <div className="flex h-64 items-center justify-center">
-            <p className="text-muted-foreground">Loading users...</p>
+            <p className="text-muted-foreground">{t("loadingUsers")}</p>
           </div>
         ) : users.length === 0 ? (
           <div className="flex h-64 items-center justify-center">
-            <p className="text-muted-foreground">No users found</p>
+            <p className="text-muted-foreground">{t("noUsers")}</p>
           </div>
         ) : (
           <div className="divide-y divide-border">
@@ -256,13 +253,15 @@ export default function UsersSettingsPage() {
                   </Avatar>
                   <div>
                     <p className="font-medium">
-                      {user.name || user.email || "Unknown User"}
+                      {user.name || user.email || t("unknownUser")}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {user.email}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Joined {formatDate(new Date(user.joinedAt), locale)}
+                      {t("joined", {
+                        date: formatDate(new Date(user.joinedAt), locale),
+                      })}
                     </p>
                   </div>
                 </div>

@@ -1070,6 +1070,7 @@ export default {
       allTypes: "Tous les Types",
       allGroups: "Tous les Groupes",
       allLocations: "Tous les Emplacements",
+      active: "Actif",
       deaccessioned: "Désaccessionné",
       filterByCulture: "Filtrer par culture",
       filterByPeriod: "Filtrer par période",
@@ -1139,7 +1140,12 @@ export default {
       requestLoan: "Demander un Prêt",
       deleteConfirm:
         'Êtes-vous sûr de vouloir supprimer "{title}" ? Cela marquera l\'objet comme désaccessionné.',
+      deleteTitle: "Supprimer l'Objet",
+      deleteObject: "Supprimer l'Objet",
       deleting: "Suppression...",
+      editObject: "Modifier l'Objet",
+      selectOrganization:
+        "Veuillez sélectionner une organisation pour afficher les collections.",
       collections: "Collections",
       public: "Public",
       private: "Privé",
@@ -1153,6 +1159,11 @@ export default {
         "Numéros de catalogue précédents, identifiants hérités ou références système externes utilisés pour identifier cet objet avant ou parallèlement au numéro d'accession actuel.",
       copiedToClipboard: "Copié dans le presse-papiers",
       alternativeTitle: "Titre Alternatif",
+    },
+    pagination: {
+      loadMore: "Charger Plus",
+      items: "éléments",
+      itemsMore: "éléments (plus disponibles)",
     },
     tabs: {
       general: "Général",

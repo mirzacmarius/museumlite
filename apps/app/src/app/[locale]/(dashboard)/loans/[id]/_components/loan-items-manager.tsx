@@ -57,6 +57,7 @@ export function LoanItemsManager({
   loanStatus,
   loanType,
 }: LoanItemsManagerProps) {
+  const tActions = useScopedI18n("loans.actions");
   const t = useScopedI18n("loans.placeholders");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
@@ -117,7 +118,7 @@ export function LoanItemsManager({
 
   const handleAddItems = async () => {
     if (selectedCollectionIds.length === 0) {
-      setError("Please select at least one collection");
+      setError(tActions("pleaseSelectAtLeastOneCollection"));
       return;
     }
 
@@ -133,7 +134,7 @@ export function LoanItemsManager({
       setIsAddDialogOpen(false);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to add items to loan",
+        err instanceof Error ? err.message : tActions("failedToAddItems"),
       );
     }
   };
@@ -147,7 +148,7 @@ export function LoanItemsManager({
       });
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to remove item from loan",
+        err instanceof Error ? err.message : tActions("failedToRemoveItem"),
       );
     }
   };
@@ -178,7 +179,7 @@ export function LoanItemsManager({
       setIsReturnDialogOpen(false);
       setSelectedItemToReturn(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to return item");
+      setError(err instanceof Error ? err.message : tActions("failedToReturnItem"));
     }
   };
 
@@ -229,8 +230,8 @@ export function LoanItemsManager({
                     ) : availableCollections.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
                         {searchQuery
-                          ? "No collections found matching your search"
-                          : "No available collections to add"}
+                          ? tActions("noCollectionsFound")
+                          : tActions("noAvailableCollections")}
                       </p>
                     ) : (
                       <div className="max-h-[200px] space-y-1 overflow-y-auto rounded-md border border-border p-2">
@@ -442,8 +443,8 @@ export function LoanItemsManager({
             <DialogTitle>Return Loan Item</DialogTitle>
             <DialogDescription>
               {loanType === "incoming"
-                ? "This will mark the item as returned and move it to deaccessions."
-                : "This will mark the item as returned and set its status back to active."}
+                ? tActions("returnLoanItem")
+                : tActions("returnLoanItem")}
             </DialogDescription>
           </DialogHeader>
 

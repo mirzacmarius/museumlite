@@ -65,14 +65,12 @@ interface WebhookItem {
 
 export default function DeveloperPage() {
   const { currentOrganizationId } = useOrganization();
-  const t = useScopedI18n("settings");
+  const t = useScopedI18n("settings.developer");
 
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">
-          {t("developer.selectOrganization")}
-        </p>
+        <p className="text-muted-foreground">{t("selectOrganization")}</p>
       </div>
     );
   }
@@ -80,27 +78,23 @@ export default function DeveloperPage() {
   return (
     <div className="w-full space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          {t("developer.title")}
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          {t("developer.description")}
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground mt-2">{t("description")}</p>
       </div>
 
       <Tabs defaultValue="api-keys" className="w-full">
         <TabsList>
           <TabsTrigger value="api-keys" className="gap-2">
             <Key className="h-4 w-4" />
-            {t("tabs.apiKeys")}
+            API Keys
           </TabsTrigger>
           <TabsTrigger value="webhooks" className="gap-2">
             <Webhook className="h-4 w-4" />
-            {t("tabs.webhooks")}
+            Webhooks
           </TabsTrigger>
           <TabsTrigger value="utilities" className="gap-2">
             <AlertTriangle className="h-4 w-4" />
-            {t("tabs.utilities")}
+            Utilities
           </TabsTrigger>
         </TabsList>
 
@@ -154,7 +148,9 @@ function ApiKeysTab({
       setCreatedKey(result.key);
       setNewKeyName("");
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to create key");
+      alert(
+        error instanceof Error ? error.message : t("developer.createKeyFailed"),
+      );
     } finally {
       setIsCreating(false);
     }
@@ -784,9 +780,9 @@ function UtilitiesTab({
       const result = await deleteAllLoans({ organizationId });
       setDeleteResult(result);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to delete loans");
+      alert(error instanceof Error ? error.message : "Failed to create key");
     } finally {
-      setIsDeletingLoans(false);
+      setIsCreating(false);
     }
   };
 

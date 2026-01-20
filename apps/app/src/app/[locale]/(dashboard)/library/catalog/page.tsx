@@ -3,6 +3,7 @@
 import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useScopedI18n } from "@/locales/client";
+import { useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
@@ -66,6 +67,8 @@ export default function LibraryCatalogPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasModule } = useFeatureAccess();
   const t = useScopedI18n("library.placeholders");
+  const tLib = useScopedI18n("library");
+  const tCat = useScopedI18n("library.catalog");
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -102,13 +105,13 @@ export default function LibraryCatalogPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">No Organization Found</h3>
+            <h3 className="text-lg font-semibold">{tCat("noOrganization")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You need to create an organization to use the library features.
+              {tCat("noOrganizationDescription")}
             </p>
           </div>
           <Button asChild>
-            <Link href="/organizations/new">Create Organization</Link>
+            <Link href="/organizations/new">{tLib("createOrganization")}</Link>
           </Button>
         </div>
       </div>
@@ -121,9 +124,11 @@ export default function LibraryCatalogPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Library className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">Select an Organization</h3>
+            <h3 className="text-lg font-semibold">
+              {tCat("selectOrganization")}
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select an organization from the dropdown above.
+              {tCat("selectOrganizationDescription")}
             </p>
           </div>
         </div>
@@ -137,13 +142,15 @@ export default function LibraryCatalogPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Library className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">Library Not Enabled</h3>
+            <h3 className="text-lg font-semibold">{tCat("notEnabled")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              The Library integration is not enabled for this organization.
+              {tCat("notEnabledDescription")}
             </p>
           </div>
           <Button asChild>
-            <Link href="/settings/integrations">Enable Integration</Link>
+            <Link href="/settings/integrations">
+              {tLib("enableIntegration")}
+            </Link>
           </Button>
         </div>
       </div>
@@ -175,16 +182,16 @@ export default function LibraryCatalogPage() {
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex flex-col gap-2">
               <h2 className="text-xl font-medium text-primary">
-                Library Catalog
+                {tCat("title")}
               </h2>
               <p className="text-sm font-normal text-primary/60">
-                Browse and manage books, periodicals, and media
+                {tCat("description")}
               </p>
             </div>
             <Button asChild>
               <Link href="/library/catalog/new">
                 <Plus className="mr-2 h-4 w-4" />
-                Add Item
+                {tCat("addItem")}
               </Link>
             </Button>
           </div>
@@ -206,7 +213,9 @@ export default function LibraryCatalogPage() {
             <div className="flex gap-4">
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Filters:</span>
+                <span className="text-sm text-muted-foreground">
+                  {tLib("filters")}:
+                </span>
               </div>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="w-40">
@@ -246,13 +255,13 @@ export default function LibraryCatalogPage() {
               <div className="text-center">
                 <p className="font-medium">
                   {searchQuery || typeFilter !== "all" || statusFilter !== "all"
-                    ? "No items found"
-                    : "No items in catalog"}
+                    ? tCat("emptyState.noItemsFiltered")
+                    : tCat("emptyState.noItems")}
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
                   {searchQuery || typeFilter !== "all" || statusFilter !== "all"
-                    ? "Try adjusting your search or filters"
-                    : "Add your first book or media item to get started"}
+                    ? tCat("emptyState.tryAdjustSearch")
+                    : tCat("emptyState.noItemsDescription")}
                 </p>
               </div>
               {!searchQuery &&
@@ -261,7 +270,7 @@ export default function LibraryCatalogPage() {
                   <Button asChild>
                     <Link href="/library/catalog/new">
                       <Plus className="mr-2 h-4 w-4" />
-                      Add First Item
+                      {tCat("addFirstItem")}
                     </Link>
                   </Button>
                 )}
@@ -326,7 +335,7 @@ export default function LibraryCatalogPage() {
                         {item.availableCopies}/{item.totalCopies}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        copies available
+                        {tCat("labels.copiesAvailable")}
                       </p>
                       <Badge variant="secondary" className="mt-1 capitalize">
                         {item.itemType}

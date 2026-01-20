@@ -4,7 +4,7 @@ import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDate as formatDateUtil } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
@@ -64,6 +64,8 @@ export default function LibraryFinesPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasModule } = useFeatureAccess();
   const locale = useCurrentLocale();
+  const tLib = useScopedI18n("library");
+  const tFines = useScopedI18n("library.fines");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedFine, setSelectedFine] = useState<SelectedFine | null>(null);
@@ -140,13 +142,15 @@ export default function LibraryFinesPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">No Organization Found</h3>
+            <h3 className="text-lg font-semibold">
+              {tFines("noOrganization")}
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You need to create an organization to manage fines.
+              {tFines("noOrganizationDescription")}
             </p>
           </div>
           <Button asChild>
-            <Link href="/organizations/new">Create Organization</Link>
+            <Link href="/organizations/new">{tLib("createOrganization")}</Link>
           </Button>
         </div>
       </div>
@@ -159,9 +163,11 @@ export default function LibraryFinesPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Library className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">Select an Organization</h3>
+            <h3 className="text-lg font-semibold">
+              {tFines("selectOrganization")}
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select an organization from the dropdown above.
+              {tFines("selectOrganizationDescription")}
             </p>
           </div>
         </div>
@@ -175,13 +181,15 @@ export default function LibraryFinesPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Library className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">Library Not Enabled</h3>
+            <h3 className="text-lg font-semibold">{tFines("notEnabled")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              The Library integration is not enabled for this organization.
+              {tFines("notEnabledDescription")}
             </p>
           </div>
           <Button asChild>
-            <Link href="/settings/integrations">Enable Integration</Link>
+            <Link href="/settings/integrations">
+              {tLib("enableIntegration")}
+            </Link>
           </Button>
         </div>
       </div>
@@ -290,10 +298,10 @@ export default function LibraryFinesPage() {
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex flex-col gap-2">
               <h2 className="text-xl font-medium text-primary">
-                Fines & Payments
+                {tFines("title")}
               </h2>
               <p className="text-sm font-normal text-primary/60">
-                Manage patron fines, fees, and payment records
+                {tFines("description")}
               </p>
             </div>
           </div>
@@ -306,7 +314,9 @@ export default function LibraryFinesPage() {
             <div className="flex gap-4">
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Filters:</span>
+                <span className="text-sm text-muted-foreground">
+                  {tLib("filters")}:
+                </span>
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-40">
@@ -334,13 +344,13 @@ export default function LibraryFinesPage() {
               <div className="text-center">
                 <p className="font-medium">
                   {statusFilter !== "all"
-                    ? "No fines found"
-                    : "No outstanding fines"}
+                    ? tFines("emptyState.noFinesFiltered")
+                    : tFines("emptyState.noFines")}
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
                   {statusFilter !== "all"
-                    ? "Try adjusting your filters"
-                    : "Fines will appear here when patrons have overdue items"}
+                    ? tFines("emptyState.tryAdjustFilters")
+                    : tFines("emptyState.noFinesDescription")}
                 </p>
               </div>
             </div>
@@ -365,7 +375,8 @@ export default function LibraryFinesPage() {
                           {fine.description}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Created: {formatDate(fine.createdAt)}
+                          {tFines("labels.created")}{" "}
+                          {formatDate(fine.createdAt)}
                         </p>
                       </div>
                     </div>
@@ -376,7 +387,7 @@ export default function LibraryFinesPage() {
                         </p>
                         {fine.amountPaid > 0 && (
                           <p className="text-xs text-muted-foreground">
-                            Paid:{" "}
+                            {tFines("labels.paid")}{" "}
                             {formatCurrency(fine.amountPaid, locale, "USD")}
                           </p>
                         )}
@@ -389,7 +400,7 @@ export default function LibraryFinesPage() {
                             onClick={() => handleWaive(fine)}
                             disabled={isProcessing}
                           >
-                            Waive
+                            {tFines("actions.waive")}
                           </Button>
                           <Button
                             size="sm"
@@ -405,7 +416,7 @@ export default function LibraryFinesPage() {
                             }}
                           >
                             <CreditCard className="mr-2 h-4 w-4" />
-                            Pay
+                            {tFines("actions.pay")}
                           </Button>
                         </>
                       )}
@@ -424,9 +435,9 @@ export default function LibraryFinesPage() {
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Record Payment</DialogTitle>
+              <DialogTitle>{tFines("paymentDialog.title")}</DialogTitle>
               <DialogDescription>
-                Record a payment for this fine
+                {tFines("paymentDialog.description")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -434,23 +445,23 @@ export default function LibraryFinesPage() {
                 <div className="rounded-lg border border-border p-4">
                   <p className="font-medium">{selectedFine.description}</p>
                   <p className="text-sm text-muted-foreground">
-                    Balance:{" "}
+                    {tFines("labels.balance")}{" "}
                     {formatCurrency(selectedFine.balance, locale, "USD")}
                   </p>
                 </div>
               )}
               <div className="space-y-2">
-                <Label>Amount</Label>
+                <Label>{tFines("paymentDialog.amount")}</Label>
                 <Input
                   type="number"
                   step="0.01"
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
-                  placeholder="0.00"
+                  placeholder={tFines("paymentDialog.amountPlaceholder")}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Payment Method</Label>
+                <Label>{tFines("paymentDialog.paymentMethod")}</Label>
                 <Select
                   value={paymentMethod}
                   onValueChange={(value: PaymentMethod) =>
@@ -461,11 +472,21 @@ export default function LibraryFinesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="card">Card</SelectItem>
-                    <SelectItem value="check">Check</SelectItem>
-                    <SelectItem value="online">Online</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="cash">
+                      {tFines("paymentMethods.cash")}
+                    </SelectItem>
+                    <SelectItem value="card">
+                      {tFines("paymentMethods.card")}
+                    </SelectItem>
+                    <SelectItem value="check">
+                      {tFines("paymentMethods.check")}
+                    </SelectItem>
+                    <SelectItem value="online">
+                      {tFines("paymentMethods.online")}
+                    </SelectItem>
+                    <SelectItem value="other">
+                      {tFines("paymentMethods.other")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -475,7 +496,7 @@ export default function LibraryFinesPage() {
                 variant="outline"
                 onClick={() => setIsPaymentDialogOpen(false)}
               >
-                Cancel
+                {tLib("cancel")}
               </Button>
               <Button
                 onClick={handlePayment}
@@ -484,7 +505,7 @@ export default function LibraryFinesPage() {
                 {isProcessing && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Record Payment
+                {tFines("paymentDialog.recordPayment")}
               </Button>
             </DialogFooter>
           </DialogContent>

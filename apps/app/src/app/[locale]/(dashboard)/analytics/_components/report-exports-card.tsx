@@ -2,7 +2,7 @@
 
 import { formatDate as formatDateUtil } from "@/lib/format-date";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/format-number";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import {
@@ -183,6 +183,7 @@ export function ReportExportsCard({
   locationUtilization,
 }: ReportExportsCardProps) {
   const locale = useCurrentLocale();
+  const t = useScopedI18n("analytics.reportExports");
   const [exporting, setExporting] = useState<string | null>(null);
   const hasCompliance = Boolean(compliance);
 
@@ -573,7 +574,7 @@ export function ReportExportsCard({
         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
           <span className="flex items-center gap-2">
             <Download className="w-4 h-4" />
-            Report Exports
+            {t("title")}
           </span>
         </CardTitle>
       </CardHeader>
@@ -587,13 +588,13 @@ export function ReportExportsCard({
                 ) : (
                   <FileText className="w-4 h-4" />
                 )}
-                Board Report
+                {t("boardReport")}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuItem onClick={exportBoardReport}>
                 <FileSpreadsheet className="w-4 h-4 mr-2" />
-                Export as CSV
+                {t("exportAsCSV")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -606,13 +607,13 @@ export function ReportExportsCard({
                 ) : (
                   <Package className="w-4 h-4" />
                 )}
-                Insurance Report
+                {t("insuranceReport")}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuItem onClick={exportInsuranceReport}>
                 <FileSpreadsheet className="w-4 h-4 mr-2" />
-                Export as CSV
+                {t("exportAsCSV")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -621,25 +622,25 @@ export function ReportExportsCard({
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
                 <FileSpreadsheet className="w-4 h-4" />
-                Individual Reports
+                {t("individualReports")}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuItem onClick={exportInventoryValuation}>
-                Inventory Valuation
+                {t("inventoryValuation")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={exportLoanReport}>
-                Loan Status
+                {t("loanStatusReport")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={exportComplianceReport}>
-                Compliance & Audit
+                {t("complianceAudit")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={exportLocationReport}>
-                Location Utilization
+                {t("locationUtilization")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={exportAllReports}>
-                Export All Reports
+                {t("exportAllReports")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

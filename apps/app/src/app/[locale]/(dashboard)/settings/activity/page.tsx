@@ -26,7 +26,7 @@ export default function ActivityPage() {
   const { currentOrganizationId, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
   const locale = useCurrentLocale();
-  const t = useScopedI18n("activity.filters");
+  const t = useScopedI18n("settings.activityLog");
 
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedEntityType, setSelectedEntityType] = useState<string>("");
@@ -92,7 +92,7 @@ export default function ActivityPage() {
   if (isLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t("loading")}</p>
       </div>
     );
   }
@@ -102,10 +102,9 @@ export default function ActivityPage() {
       <div className="flex h-full w-full items-center justify-center">
         <div className="flex flex-col items-center gap-4 rounded-lg border p-8">
           <div className="text-center">
-            <h3 className="text-lg font-semibold">Select an Organization</h3>
+            <h3 className="text-lg font-semibold">{t("selectOrganization")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select an organization from the dropdown above to view
-              activity.
+              {t("selectOrgDescription")}
             </p>
           </div>
         </div>
@@ -121,16 +120,14 @@ export default function ActivityPage() {
     >
       <div className="flex h-full w-full flex-col gap-6">
         <div className="flex w-full flex-col gap-2">
-          <h2 className="text-xl font-medium text-primary">Activity Log</h2>
-          <p className="text-sm text-muted-foreground">
-            View and filter activity across your organization
-          </p>
+          <h2 className="text-xl font-medium text-primary">{t("title")}</h2>
+          <p className="text-sm text-muted-foreground">{t("description")}</p>
         </div>
 
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="flex items-center gap-2 mb-4">
             <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Filters</span>
+            <span className="text-sm font-medium">{t("filters")}</span>
             {hasFilters && (
               <Button
                 variant="ghost"
@@ -139,7 +136,7 @@ export default function ActivityPage() {
                 className="ml-auto text-muted-foreground"
               >
                 <RotateCcw className="mr-2 h-3 w-3" />
-                Clear filters
+                {t("clearFilters")}
               </Button>
             )}
           </div>
@@ -150,7 +147,7 @@ export default function ActivityPage() {
                 htmlFor="user-filter"
                 className="text-xs text-muted-foreground"
               >
-                User
+                {t("user")}
               </Label>
               <Select
                 value={selectedUserId || "all"}
@@ -162,13 +159,13 @@ export default function ActivityPage() {
                 }
               >
                 <SelectTrigger id="user-filter">
-                  <SelectValue placeholder={t("allUsers")} />
+                  <SelectValue placeholder={t("user")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("allUsers")}</SelectItem>
+                  <SelectItem value="all">{t("user")}</SelectItem>
                   {activeUsers?.map((user) => (
                     <SelectItem key={user._id} value={user._id}>
-                      {user.name || user.email || "Unknown user"}
+                      {user.name || user.email || t("unknownUser")}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -180,7 +177,7 @@ export default function ActivityPage() {
                 htmlFor="entity-filter"
                 className="text-xs text-muted-foreground"
               >
-                Entity Type
+                {t("entityType")}
               </Label>
               <Select
                 value={selectedEntityType || "all"}
@@ -192,10 +189,10 @@ export default function ActivityPage() {
                 }
               >
                 <SelectTrigger id="entity-filter">
-                  <SelectValue placeholder={t("allTypes")} />
+                  <SelectValue placeholder={t("entityType")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("allTypes")}</SelectItem>
+                  <SelectItem value="all">{t("entityType")}</SelectItem>
                   {entityTypes?.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -210,7 +207,7 @@ export default function ActivityPage() {
                 htmlFor="action-filter"
                 className="text-xs text-muted-foreground"
               >
-                Action
+                {t("action")}
               </Label>
               <Select
                 value={actionFilter || "all"}
@@ -222,10 +219,10 @@ export default function ActivityPage() {
                 }
               >
                 <SelectTrigger id="action-filter">
-                  <SelectValue placeholder={t("allActions")} />
+                  <SelectValue placeholder={t("action")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("allActions")}</SelectItem>
+                  <SelectItem value="all">{t("action")}</SelectItem>
                   {availableActions?.map((action) => (
                     <SelectItem key={action} value={action}>
                       {action}
@@ -240,7 +237,7 @@ export default function ActivityPage() {
                 htmlFor="from-date"
                 className="text-xs text-muted-foreground"
               >
-                From Date
+                {t("fromDate")}
               </Label>
               <Input
                 id="from-date"
@@ -258,7 +255,7 @@ export default function ActivityPage() {
                 htmlFor="to-date"
                 className="text-xs text-muted-foreground"
               >
-                To Date
+                {t("toDate")}
               </Label>
               <Input
                 id="to-date"
@@ -274,13 +271,16 @@ export default function ActivityPage() {
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
             {auditLogData === undefined ? (
-              "Loading..."
+              t("loading")
             ) : (
               <>
                 <span className="font-medium text-primary">
                   {auditLogData.totalCount}
                 </span>{" "}
-                {auditLogData.totalCount === 1 ? "entry" : "entries"} found
+                {t("entriesFound", {
+                  count: auditLogData.totalCount,
+                  plural: auditLogData.totalCount === 1 ? "" : "s",
+                })}
               </>
             )}
           </p>
@@ -289,7 +289,7 @@ export default function ActivityPage() {
         <div className="flex-1 space-y-2">
           {auditLogData === undefined ? (
             <div className="flex h-64 items-center justify-center">
-              <p className="text-muted-foreground">Loading activity...</p>
+              <p className="text-muted-foreground">{t("loadingActivity")}</p>
             </div>
           ) : auditLogData.entries.length === 0 ? (
             <div className="flex h-64 flex-col items-center justify-center gap-4 rounded-lg border border-dashed">
@@ -297,17 +297,15 @@ export default function ActivityPage() {
                 <Calendar className="h-6 w-6 text-muted-foreground" />
               </div>
               <div className="text-center">
-                <h3 className="font-medium">No activity found</h3>
+                <h3 className="font-medium">{t("noActivity")}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {hasFilters
-                    ? "Try adjusting your filters"
-                    : "Activity will appear here once actions are performed"}
+                  {hasFilters ? t("tryAdjustFilters") : t("activityAppears")}
                 </p>
               </div>
               {hasFilters && (
                 <Button variant="outline" size="sm" onClick={clearFilters}>
                   <X className="mr-2 h-3 w-3" />
-                  Clear filters
+                  {t("clearFilters")}
                 </Button>
               )}
             </div>
@@ -369,7 +367,7 @@ export default function ActivityPage() {
               {auditLogData.nextCursor && (
                 <div className="flex justify-center pt-4">
                   <Button variant="outline" onClick={loadMore}>
-                    Load more
+                    {t("loadMore")}
                   </Button>
                 </div>
               )}

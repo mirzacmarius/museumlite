@@ -1004,6 +1004,7 @@ export default {
       allTypes: "Todos los Tipos",
       allGroups: "Todos los Grupos",
       allLocations: "Todas las Ubicaciones",
+      active: "Activo",
       deaccessioned: "Desaccesionado",
       filterByCulture: "Filtrar por cultura",
       filterByPeriod: "Filtrar por período",
