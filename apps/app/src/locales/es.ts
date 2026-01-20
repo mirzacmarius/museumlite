@@ -331,6 +331,7 @@ export default {
     configureSteps:
       "Configure los pasos de aprobación y los permisos de iniciación.",
     editWorkflow: "Editar flujo de trabajo",
+    editDialogTitle: "Editar {workflow}",
     approvalSteps: "Pasos de aprobación",
     noStepsConfigured:
       "Sin pasos de aprobación configurados. El flujo de trabajo se completa automáticamente.",
@@ -1109,9 +1110,11 @@ export default {
     columnConfig: {
       title: "Configurar columnas",
       visibleColumns: "Columnas Visibles",
+      select: "Seleccionar",
       checkbox: "Casilla de verificación",
       image: "Imagen",
-      accessionNumber: "Número de Accesión",
+      titleColumn: "Título",
+      accessionNumber: "N° de Accesión",
       location: "Ubicación",
       objectType: "Tipo de Objeto",
       status: "Estado",

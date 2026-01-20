@@ -218,7 +218,7 @@ export default function WorkflowsSettingsPage() {
     }
   };
 
-  const renderWorkflowCard = (type: WorkflowType, title: string) => {
+  const renderWorkflowCard = (type: WorkflowType) => {
     const config = getWorkflowConfig(type);
     const stepCount = config?.steps.length || 0;
     const initiatorCount = config?.canInitiateRoles.length || 0;
@@ -227,7 +227,9 @@ export default function WorkflowsSettingsPage() {
       <div className="rounded-xl border border-border bg-card p-6">
         <div className="mb-6 flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-medium text-foreground">{title}</h3>
+            <h3 className="text-lg font-medium text-foreground">
+              {getWorkflowTitle(type)}
+            </h3>
             <p className="mt-1 text-sm text-muted-foreground">
               {t("configureSteps")}
             </p>
@@ -318,19 +320,21 @@ export default function WorkflowsSettingsPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {renderWorkflowCard("accession", "Accession Workflow")}
-        {renderWorkflowCard("deaccession", "Deaccession Workflow")}
-        {renderWorkflowCard("loan", "Loan Workflow")}
-        {renderWorkflowCard("acquisition", "Acquisition Workflow")}
-        {renderWorkflowCard("exhibition", "Exhibition Workflow")}
-        {renderWorkflowCard("conservation", "Conservation Workflow")}
+        {renderWorkflowCard("accession")}
+        {renderWorkflowCard("deaccession")}
+        {renderWorkflowCard("loan")}
+        {renderWorkflowCard("acquisition")}
+        {renderWorkflowCard("exhibition")}
+        {renderWorkflowCard("conservation")}
       </div>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto bg-background border-border">
           <DialogHeader>
             <DialogTitle className="text-foreground">
-              Edit {getWorkflowTitle(editingWorkflow)} {t("title")}
+              {t("editDialogTitle", {
+                workflow: getWorkflowTitle(editingWorkflow),
+              })}
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
               {t("configureSteps")}

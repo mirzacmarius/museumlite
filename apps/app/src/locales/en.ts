@@ -320,6 +320,7 @@ export default {
     description: "Manage approval workflows for critical system actions.",
     configureSteps: "Configure approval steps and initiation permissions.",
     editWorkflow: "Edit Workflow",
+    editDialogTitle: "Edit {workflow}",
     approvalSteps: "Approval Steps",
     noStepsConfigured:
       "No approval steps configured. Workflow completes automatically.",
@@ -1113,9 +1114,11 @@ export default {
     columnConfig: {
       title: "Configure columns",
       visibleColumns: "Visible Columns",
+      select: "Select",
       checkbox: "Checkbox",
       image: "Image",
-      accessionNumber: "Accession Number",
+      titleColumn: "Title",
+      accessionNumber: "Accession #",
       location: "Location",
       objectType: "Object Type",
       status: "Status",

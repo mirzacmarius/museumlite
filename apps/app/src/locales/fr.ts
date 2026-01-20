@@ -333,6 +333,7 @@ export default {
     configureSteps:
       "Configurez les étapes d'approbation et les permissions d'initiation.",
     editWorkflow: "Modifier le flux de travail",
+    editDialogTitle: "Modifier {workflow}",
     approvalSteps: "Étapes d'approbation",
     noStepsConfigured:
       "Aucune étape d'approbation configurée. Le flux de travail se termine automatiquement.",
@@ -1176,9 +1177,11 @@ export default {
     columnConfig: {
       title: "Configurer les colonnes",
       visibleColumns: "Colonnes Visibles",
+      select: "Sélectionner",
       checkbox: "Case à cocher",
       image: "Image",
-      accessionNumber: "Numéro d'Accession",
+      titleColumn: "Titre",
+      accessionNumber: "N° d'Accession",
       location: "Emplacement",
       objectType: "Type d'Objet",
       status: "Statut",

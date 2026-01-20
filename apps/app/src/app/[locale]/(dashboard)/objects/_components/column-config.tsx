@@ -1,5 +1,6 @@
 "use client";
 
+import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
 import {
@@ -18,15 +19,50 @@ export interface ColumnConfig {
   required?: boolean;
 }
 
-export const DEFAULT_COLUMNS: ColumnConfig[] = [
-  { id: "checkbox", label: "Select", visible: true, required: true },
-  { id: "image", label: "Image", visible: true },
-  { id: "title", label: "Title", visible: true, required: true },
-  { id: "accessionNumber", label: "Accession #", visible: true },
-  { id: "location", label: "Location", visible: true },
-  { id: "objectType", label: "Object Type", visible: true },
-  { id: "status", label: "Status", visible: true },
-];
+export const COLUMN_IDS = [
+  "checkbox",
+  "image",
+  "title",
+  "accessionNumber",
+  "location",
+  "objectType",
+  "status",
+] as const;
+
+export type ColumnId = (typeof COLUMN_IDS)[number];
+
+export const DEFAULT_COLUMN_CONFIG: Record<
+  ColumnId,
+  { visible: boolean; required?: boolean }
+> = {
+  checkbox: { visible: true, required: true },
+  image: { visible: true },
+  title: { visible: true, required: true },
+  accessionNumber: { visible: true },
+  location: { visible: true },
+  objectType: { visible: true },
+  status: { visible: true },
+};
+
+const COLUMN_LABEL_KEYS: Record<ColumnId, string> = {
+  checkbox: "select",
+  image: "image",
+  title: "titleColumn",
+  accessionNumber: "accessionNumber",
+  location: "location",
+  objectType: "objectType",
+  status: "status",
+};
+
+export function useDefaultColumns(): ColumnConfig[] {
+  const t = useScopedI18n("objects.columnConfig");
+  return COLUMN_IDS.map((id) => ({
+    id,
+    label: t(COLUMN_LABEL_KEYS[id]),
+    visible: DEFAULT_COLUMN_CONFIG[id].visible,
+    required: DEFAULT_COLUMN_CONFIG[id].required,
+  }));
+}
 
 interface ColumnConfigDropdownProps {
   columns: ColumnConfig[];
@@ -37,16 +73,18 @@ export function ColumnConfigDropdown({
   columns,
   onColumnToggle,
 }: ColumnConfigDropdownProps) {
+  const t = useScopedI18n("objects.columnConfig");
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon">
           <Settings2 className="h-4 w-4" />
-          <span className="sr-only">Configure columns</span>
+          <span className="sr-only">{t("title")}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuLabel>Visible Columns</DropdownMenuLabel>
+        <DropdownMenuLabel>{t("visibleColumns")}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <div className="p-2 space-y-2">
           {columns.map((column) => (

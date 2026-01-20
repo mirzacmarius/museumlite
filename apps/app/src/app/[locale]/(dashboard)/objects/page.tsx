@@ -48,7 +48,7 @@ import { BulkMoveLocationDialog } from "./_components/bulk-move-location-dialog"
 import {
   type ColumnConfig,
   ColumnConfigDropdown,
-  DEFAULT_COLUMNS,
+  useDefaultColumns,
 } from "./_components/column-config";
 import { ObjectGridView } from "./_components/object-grid-view";
 import { type ViewMode, ViewToggle } from "./_components/view-toggle";
@@ -208,7 +208,8 @@ function CollectionFiltersAndList({
   });
   const setViewPreference = useMutation(api.userPreferences.set);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [columns, setColumns] = useState<ColumnConfig[]>(DEFAULT_COLUMNS);
+  const defaultColumns = useDefaultColumns();
+  const [columns, setColumns] = useState<ColumnConfig[] | null>(null);
 
   const collectionGroups = useQuery(api.collectionGroups.list, {
     organizationId,
@@ -227,17 +228,19 @@ function CollectionFiltersAndList({
     if (savedColumns) {
       try {
         const parsed = JSON.parse(savedColumns) as Record<string, boolean>;
-        setColumns((prev) =>
-          prev.map((col) => ({
+        setColumns(
+          defaultColumns.map((col) => ({
             ...col,
             visible: parsed[col.id] ?? col.visible,
           })),
         );
       } catch {
-        // Invalid JSON in preferences - use default columns
+        setColumns(defaultColumns);
       }
+    } else {
+      setColumns(defaultColumns);
     }
-  }, [savedColumns]);
+  }, [savedColumns, defaultColumns]);
 
   const handleViewModeChange = (mode: ViewMode) => {
     setViewMode(mode);
@@ -249,7 +252,8 @@ function CollectionFiltersAndList({
   };
 
   const handleColumnToggle = (columnId: string, visible: boolean) => {
-    const newColumns = columns.map((col) =>
+    const currentColumns = columns ?? defaultColumns;
+    const newColumns = currentColumns.map((col) =>
       col.id === columnId ? { ...col, visible } : col,
     );
     setColumns(newColumns);
@@ -457,7 +461,7 @@ function CollectionFiltersAndList({
             <ViewToggle value={viewMode} onChange={handleViewModeChange} />
             {viewMode === "list" && (
               <ColumnConfigDropdown
-                columns={columns}
+                columns={columns ?? defaultColumns}
                 onColumnToggle={handleColumnToggle}
               />
             )}
@@ -644,7 +648,7 @@ function CollectionFiltersAndList({
         organizationId={organizationId}
         collections={collections}
         viewMode={viewMode}
-        columns={columns}
+        columns={columns ?? defaultColumns}
         selectedIds={selectedIds}
         onSelectItem={handleSelectItem}
         onSelectAll={handleSelectAll}

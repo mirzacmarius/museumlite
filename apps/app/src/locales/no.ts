@@ -321,6 +321,7 @@ export default {
       "Administrer godkjenningsarbeidsflyter for kritiske systemhandlinger.",
     configureSteps: "Konfigurer godkjenningstrinn og initialisertillatelser.",
     editWorkflow: "Rediger arbeidsflyt",
+    editDialogTitle: "Rediger {workflow}",
     approvalSteps: "Godkjenningstrinn",
     noStepsConfigured:
       "Ingen godkjenningstrinn konfigurert. Arbeidsflyten fullføres automatisk.",
@@ -1147,9 +1148,11 @@ export default {
     columnConfig: {
       title: "Konfigurer kolonner",
       visibleColumns: "Synlige Kolonner",
+      select: "Velg",
       checkbox: "Avkryssingsboks",
       image: "Bilde",
-      accessionNumber: "Aksesjonsnummer",
+      titleColumn: "Tittel",
+      accessionNumber: "Aksesjonsnr.",
       location: "Plassering",
       objectType: "Objekttype",
       status: "Status",
