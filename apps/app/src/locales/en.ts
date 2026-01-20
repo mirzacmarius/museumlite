@@ -1340,6 +1340,13 @@ export default {
         imageCount: "{count} image{s}",
         documentCount: "{count} document{s}",
         documentsHint: "Upload related documents (PDFs, scanned images, etc.)",
+        deleteMedia: "Delete Media",
+        deleteMediaConfirm:
+          "Are you sure you want to delete this media file? This action cannot be undone.",
+        deleteDocument: "Delete Document",
+        deleteDocumentConfirm:
+          "Are you sure you want to delete this document? This action cannot be undone.",
+        primary: "Primary",
       },
       errors: {
         titleRequired: "Title is required",

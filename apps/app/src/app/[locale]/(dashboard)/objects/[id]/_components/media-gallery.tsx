@@ -68,6 +68,7 @@ export function MediaGallery({
   const common = useScopedI18n("common");
   const placeholders = useScopedI18n("objects.form.placeholders");
   const formErrors = useScopedI18n("objects.form.errors");
+  const tMedia = useScopedI18n("objects.form.media");
   const media = useQuery(
     api.media.list,
     collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
@@ -559,21 +560,20 @@ export function MediaGallery({
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>
-                                      Delete Media
+                                      {tMedia("deleteMedia")}
                                     </AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Are you sure you want to delete this media
-                                      file? This action cannot be undone.
+                                      {tMedia("deleteMediaConfirm")}
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>
-                                      Cancel
+                                      {common("cancel")}
                                     </AlertDialogCancel>
                                     <AlertDialogAction
                                       onClick={() => handleDelete(file._id)}
                                     >
-                                      Delete
+                                      {common("delete")}
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -583,7 +583,7 @@ export function MediaGallery({
 
                           {file.isPrimary && (
                             <div className="absolute left-2 top-2 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">
-                              Primary
+                              {tMedia("primary")}
                             </div>
                           )}
                         </>
@@ -686,18 +686,21 @@ export function MediaGallery({
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Document</AlertDialogTitle>
+                            <AlertDialogTitle>
+                              {tMedia("deleteDocument")}
+                            </AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete this document?
-                              This action cannot be undone.
+                              {tMedia("deleteDocumentConfirm")}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel>
+                              {common("cancel")}
+                            </AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => handleDelete(doc._id)}
                             >
-                              Delete
+                              {common("delete")}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>

@@ -1408,6 +1408,13 @@ export default {
         documentCount: "{count} document{s}",
         documentsHint:
           "Télécharger des documents connexes (PDF, images numérisées, etc.)",
+        deleteMedia: "Supprimer le Média",
+        deleteMediaConfirm:
+          "Êtes-vous sûr de vouloir supprimer ce fichier média ? Cette action ne peut pas être annulée.",
+        deleteDocument: "Supprimer le Document",
+        deleteDocumentConfirm:
+          "Êtes-vous sûr de vouloir supprimer ce document ? Cette action ne peut pas être annulée.",
+        primary: "Principal",
       },
       errors: {
         titleRequired: "Le titre est requis",

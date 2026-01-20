@@ -1405,6 +1405,13 @@ export default {
         documentCount: "{count} documento{s}",
         documentsHint:
           "Sube documentos relacionados (PDFs, imágenes escaneadas, etc.)",
+        deleteMedia: "Eliminar Medio",
+        deleteMediaConfirm:
+          "¿Estás seguro de que quieres eliminar este archivo de medios? Esta acción no se puede deshacer.",
+        deleteDocument: "Eliminar Documento",
+        deleteDocumentConfirm:
+          "¿Estás seguro de que quieres eliminar este documento? Esta acción no se puede deshacer.",
+        primary: "Principal",
       },
       errors: {
         titleRequired: "El título es obligatorio",

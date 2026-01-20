@@ -1439,6 +1439,13 @@ export default {
         documentCount: "{count} dokument",
         documentsHint:
           "Last opp relaterte dokumenter (PDF-er, skannede bilder, osv.)",
+        deleteMedia: "Slett Media",
+        deleteMediaConfirm:
+          "Er du sikker på at du vil slette denne mediefilen? Denne handlingen kan ikke angres.",
+        deleteDocument: "Slett Dokument",
+        deleteDocumentConfirm:
+          "Er du sikker på at du vil slette dette dokumentet? Denne handlingen kan ikke angres.",
+        primary: "Primær",
       },
       errors: {
         titleRequired: "Tittel er påkrevd",
