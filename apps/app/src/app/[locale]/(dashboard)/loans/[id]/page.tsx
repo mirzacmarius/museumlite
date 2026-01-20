@@ -184,7 +184,9 @@ export default function LoanDetailPage() {
               </span>
               <span className="text-muted-foreground/50">/</span>
               <span className="text-muted-foreground">
-                {loan.type === "incoming" ? tActions("incoming") : tActions("outgoing")}
+                {loan.type === "incoming"
+                  ? tActions("incoming")
+                  : tActions("outgoing")}
               </span>
               <span className="text-muted-foreground/50">/</span>
               <span className="font-medium text-foreground">
@@ -294,8 +296,10 @@ export default function LoanDetailPage() {
                       Loan {loan.loanNumber}
                     </h1>
                     <p className="text-muted-foreground text-sm">
-                      {loan.type === "outgoing" ? tActions("borrower") : tActions("lenderLabel")}:{" "}
-                      {loan.lenderBorrowerName}
+                      {loan.type === "outgoing"
+                        ? tActions("borrower")
+                        : tActions("lenderLabel")}
+                      : {loan.lenderBorrowerName}
                     </p>
                   </div>
 
@@ -353,7 +357,9 @@ export default function LoanDetailPage() {
                       className="rounded-none border-b-2 border-transparent py-3 text-xs font-medium text-muted-foreground hover:text-foreground data-[state=active]:border-cyan-500 data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
                     >
                       Overview &{" "}
-                      {loan.type === "outgoing" ? tActions("borrower") : tActions("lenderLabel")}
+                      {loan.type === "outgoing"
+                        ? tActions("borrower")
+                        : tActions("lenderLabel")}
                     </TabsTrigger>
                     <TabsTrigger
                       value="objects"
@@ -1108,23 +1114,24 @@ function ActivityTab({
   workflowHistory: WorkflowHistoryEntry[];
 }) {
   const locale = useCurrentLocale();
+  const t = useScopedI18n("loans.actions");
   const getStepLabel = (step: number, comment?: string) => {
     if (comment) return comment;
     switch (step) {
       case 0:
-        return "Loan created";
+        return t("loanCreated");
       case 1:
-        return "Submitted for approval";
+        return t("submittedForApproval");
       case 2:
-        return "Curatorial review completed";
+        return t("curatorialReviewCompleted");
       case 3:
-        return "Facilities review completed";
+        return t("facilitiesReviewCompleted");
       case 4:
-        return "Conservation review completed";
+        return t("conservationReviewCompleted");
       case 5:
-        return "Ready for dispatch";
+        return t("readyForDispatch");
       default:
-        return `Step ${step} completed`;
+        return t("stepCompleted", { step });
     }
   };
 
@@ -1135,7 +1142,7 @@ function ActivityTab({
   if (sortedHistory.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground text-sm">
-        No activity recorded yet.
+        {t("noActivityRecorded")}
       </div>
     );
   }
