@@ -777,10 +777,10 @@ function CollectionList({
           />
           <span className="text-sm text-muted-foreground">
             {allSelected
-              ? "All selected"
+              ? common("allSelected")
               : someSelected
-                ? `${selectedIds.size} selected`
-                : "Select all"}
+                ? common("selectedCount", { count: selectedIds.size })
+                : common("selectAll")}
           </span>
         </div>
       )}
