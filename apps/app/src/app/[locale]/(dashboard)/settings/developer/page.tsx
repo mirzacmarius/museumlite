@@ -639,12 +639,14 @@ function WebhooksTab({
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>
-                {createdSecret ? "Webhook Created" : "Add Webhook"}
+                {createdSecret
+                  ? t("webhooks.webhookCreated")
+                  : t("webhooks.addWebhook")}
               </DialogTitle>
               <DialogDescription>
                 {createdSecret
-                  ? "Copy your webhook secret now. You won't be able to see it again."
-                  : "Configure a webhook endpoint to receive event notifications."}
+                  ? t("webhooks.copySecret")
+                  : t("webhooks.configureWebhook")}
               </DialogDescription>
             </DialogHeader>
 
@@ -652,7 +654,7 @@ function WebhooksTab({
               <div className="space-y-4">
                 <div className="rounded-lg border border-border bg-muted p-4">
                   <Label className="text-xs text-muted-foreground">
-                    Signing Secret
+                    {t("webhooks.signingSecret")}
                   </Label>
                   <div className="mt-1 flex items-center justify-between gap-4">
                     <code className="flex-1 break-all text-sm">
@@ -668,17 +670,16 @@ function WebhooksTab({
                   </div>
                 </div>
                 <p className="text-sm text-amber-600">
-                  Use this secret to verify webhook signatures. Store it
-                  securely!
+                  {t("webhooks.useSecret")}
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="wh-name">Name</Label>
+                  <Label htmlFor="wh-name">{t("webhooks.name")}</Label>
                   <Input
                     id="wh-name"
-                    placeholder="e.g., Slack Notifications"
+                    placeholder={t("webhooks.namePlaceholder")}
                     value={newWebhook.name}
                     onChange={(e) =>
                       setNewWebhook((prev) => ({
@@ -689,10 +690,10 @@ function WebhooksTab({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="wh-url">Endpoint URL</Label>
+                  <Label htmlFor="wh-url">{t("webhooks.endpointURL")}</Label>
                   <Input
                     id="wh-url"
-                    placeholder="https://example.com/webhook"
+                    placeholder={t("webhooks.urlPlaceholder")}
                     value={newWebhook.url}
                     onChange={(e) =>
                       setNewWebhook((prev) => ({
@@ -702,13 +703,13 @@ function WebhooksTab({
                     }
                   />
                   <p className="text-xs text-muted-foreground">
-                    Must use HTTPS
+                    {t("webhooks.httpsRequired")}
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Events</Label>
+                  <Label>{t("webhooks.events")}</Label>
                   <p className="text-xs text-muted-foreground mb-2">
-                    Select events to receive. Leave empty for all events.
+                    {t("webhooks.selectEvents")}
                   </p>
                   <div className="max-h-48 overflow-y-auto rounded-lg border border-border p-3">
                     <div className="grid grid-cols-2 gap-2">
@@ -734,11 +735,11 @@ function WebhooksTab({
 
             <DialogFooter>
               {createdSecret ? (
-                <Button onClick={closeDialog}>Done</Button>
+                <Button onClick={closeDialog}>{t("webhooks.done")}</Button>
               ) : (
                 <>
                   <Button variant="outline" onClick={closeDialog}>
-                    Cancel
+                    {t("webhooks.cancel")}
                   </Button>
                   <Button
                     onClick={handleCreate}
@@ -751,7 +752,7 @@ function WebhooksTab({
                     {isCreating ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    Create Webhook
+                    {t("webhooks.createWebhook")}
                   </Button>
                 </>
               )}
@@ -855,29 +856,29 @@ function UtilitiesTab({
                   <AlertDialogHeader>
                     <AlertDialogTitle className="flex items-center gap-2">
                       <AlertTriangle className="h-5 w-5 text-destructive" />
-                      Delete All Loans?
+                      {t("developer.deleteLoansDialog")}
                     </AlertDialogTitle>
                     <AlertDialogDescription className="space-y-2">
-                      <p className="font-medium">
-                        This will permanently delete:
-                      </p>
+                      <p className="font-medium">{t("developer.willDelete")}</p>
                       <ul className="list-disc list-inside space-y-1 text-sm">
-                        <li>All loans in your organization</li>
-                        <li>All loan items</li>
-                        <li>Restore all collection statuses to "active"</li>
+                        <li>{t("developer.allLoans")}</li>
+                        <li>{t("developer.allLoanItems")}</li>
+                        <li>{t("developer.restoreActive")}</li>
                       </ul>
                       <p className="pt-2 font-semibold text-destructive">
-                        This action cannot be undone. Are you absolutely sure?
+                        {t("developer.cannotUndo")}
                       </p>
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel>
+                      {t("developer.cancel")}
+                    </AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleDeleteAllLoans}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                      Yes, Delete All Loans
+                      {t("developer.confirmDelete")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
