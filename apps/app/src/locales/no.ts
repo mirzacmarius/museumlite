@@ -1094,6 +1094,7 @@ export default {
       selectDeaccessionReason: "Vennligst oppgi en årsak for fraregistrering",
       itemsDeaccessioned: "{count} element fraregistrert",
       someItemsSkipped: "{count} element ble hoppet over (på aktivt utlån)",
+      failedOnLoan: "{count} feilet (kan være på utlån)",
       itemsDeaccessionFailed: "Kunne ikke fraregistrere elementer",
       imageOrderUpdated: "Bilderekkefølge oppdatert",
       imageOrderUpdateFailed: "Kunne ikke oppdatere bilderekkefølge",
@@ -1170,9 +1171,12 @@ export default {
       },
       moveLocation: {
         title: "Flytt til Plassering",
+        description: "Flytt {count} valgt(e) element(er) til en ny plassering.",
         label: "Ny Plassering",
         placeholder: "Velg en plassering",
         selectLocation: "Vennligst velg en plassering",
+        moving: "Flytter...",
+        moveItems: "Flytt elementer",
         failed: "Kunne ikke flytte elementer",
       },
       export: {
@@ -1182,9 +1186,18 @@ export default {
         exportButton: "Eksporter CSV",
       },
       deaccession: {
-        title: "Fraregistrer Objekter",
+        title: "Massefraregistrering",
         description:
-          "Er du sikker på at du vil fraregistrere {count} objekt? Dette vil markere {them} som fraregistrert og {they} vil ikke kunne lånes ut eller stilles ut.",
+          "Du er i ferd med å fraregistrere {count} element(er). Denne handlingen vil fjerne dem fra din aktive samling.",
+        onLoanWarning:
+          "Elementer som for øyeblikket er på utlån kan ikke fraregistreres og vil bli hoppet over.",
+        label: "Årsak for Fraregistrering",
+        placeholder:
+          "Skriv inn årsaken for fraregistrering av disse elementene...",
+        provideReason: "Vennligst oppgi en årsak for fraregistreringen",
+        processing: "Behandler...",
+        deaccessionItems: "Fraregistrer Elementer",
+        failed: "Kunne ikke fraregistrere elementer",
         deaccessioning: "Fraregistrerer...",
         deaccessionButton: "Fraregistrer Objekter",
         selectReason: "Du må velge en årsak",

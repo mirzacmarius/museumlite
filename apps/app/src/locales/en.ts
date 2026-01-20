@@ -1061,6 +1061,7 @@ export default {
       selectDeaccessionReason: "Please provide a reason for deaccessioning",
       itemsDeaccessioned: "Successfully deaccessioned {count} item(s)",
       someItemsSkipped: "{count} item(s) were skipped (on active loan)",
+      failedOnLoan: "{count} failed (may be on loan)",
       itemsDeaccessionFailed: "Failed to deaccession items",
       imageOrderUpdated: "Image order updated",
       imageOrderUpdateFailed: "Failed to update image order",
@@ -1136,17 +1137,27 @@ export default {
       },
       moveLocation: {
         title: "Move to Location",
+        description: "Move {count} selected item{s} to a new location.",
         label: "New Location",
         placeholder: "Select a location",
         selectLocation: "Please select a location",
+        moving: "Moving...",
+        moveItems: "Move Items",
         failed: "Failed to move items",
       },
       deaccession: {
-        title: "Deaccession Objects",
+        title: "Bulk Deaccession",
+        description:
+          "You are about to deaccession {count} item{s}. This action will remove them from your active collection.",
+        onLoanWarning:
+          "Items currently on loan cannot be deaccessioned and will be skipped.",
         label: "Reason for Deaccessioning",
         placeholder: "Enter the reason for deaccessioning these items...",
         provideReason: "Please provide a reason for deaccessioning",
+        processing: "Processing...",
+        deaccessionItems: "Deaccession Items",
         failed: "Failed to deaccession items",
+        failedOnLoan: "{count} failed (may be on loan)",
       },
     },
     detail: {

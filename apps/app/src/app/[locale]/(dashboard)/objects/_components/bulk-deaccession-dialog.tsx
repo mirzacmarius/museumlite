@@ -33,6 +33,8 @@ export function BulkDeaccessionDialog({
   onSuccess,
 }: BulkDeaccessionDialogProps) {
   const t = useScopedI18n("common.toast");
+  const tDialog = useScopedI18n("objects.bulkDialogs.deaccession");
+  const tCommon = useScopedI18n("common");
   const placeholders = useScopedI18n("objects.form.placeholders");
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,7 +62,7 @@ export function BulkDeaccessionDialog({
         messages.push(t("someItemsSkipped", { count: result.skipped }));
       }
       if (result.failed > 0) {
-        messages.push(`${result.failed} failed (may be on loan)`);
+        messages.push(t("failedOnLoan", { count: result.failed }));
       }
 
       if (result.deaccessioned > 0) {
@@ -85,22 +87,23 @@ export function BulkDeaccessionDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-amber-500" />
-            Bulk Deaccession
+            {tDialog("title")}
           </DialogTitle>
           <DialogDescription>
-            You are about to deaccession {selectedIds.length} item
-            {selectedIds.length !== 1 ? "s" : ""}. This action will remove them
-            from your active collection.
+            {tDialog("description", {
+              count: selectedIds.length,
+              s: selectedIds.length !== 1 ? "s" : "",
+            })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">
-            Items currently on loan cannot be deaccessioned and will be skipped.
+            {tDialog("onLoanWarning")}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="reason">Reason for Deaccessioning</Label>
+            <Label htmlFor="reason">{tDialog("label")}</Label>
             <Textarea
               id="reason"
               placeholder={placeholders("deaccessionReason")}
@@ -117,14 +120,14 @@ export function BulkDeaccessionDialog({
             onClick={() => onOpenChange(false)}
             disabled={isSubmitting}
           >
-            Cancel
+            {tCommon("cancel")}
           </Button>
           <Button
             variant="destructive"
             onClick={handleSubmit}
             disabled={isSubmitting || !reason.trim()}
           >
-            {isSubmitting ? "Processing..." : "Deaccession Items"}
+            {isSubmitting ? tDialog("processing") : tDialog("deaccessionItems")}
           </Button>
         </DialogFooter>
       </DialogContent>

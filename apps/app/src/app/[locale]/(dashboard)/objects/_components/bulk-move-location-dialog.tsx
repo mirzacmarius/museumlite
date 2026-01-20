@@ -40,6 +40,8 @@ export function BulkMoveLocationDialog({
   onSuccess,
 }: BulkMoveLocationDialogProps) {
   const t = useScopedI18n("common.toast");
+  const tDialog = useScopedI18n("objects.bulkDialogs.moveLocation");
+  const tCommon = useScopedI18n("common");
   const placeholders = useScopedI18n("objects.form.placeholders");
   const [locationId, setLocationId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,19 +88,21 @@ export function BulkMoveLocationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Move to Location</DialogTitle>
+          <DialogTitle>{tDialog("title")}</DialogTitle>
           <DialogDescription>
-            Move {selectedIds.length} selected item
-            {selectedIds.length !== 1 ? "s" : ""} to a new location.
+            {tDialog("description", {
+              count: selectedIds.length,
+              s: selectedIds.length !== 1 ? "s" : "",
+            })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="location">New Location</Label>
+            <Label htmlFor="location">{tDialog("label")}</Label>
             <Select value={locationId} onValueChange={setLocationId}>
               <SelectTrigger id="location">
-                <SelectValue placeholder={placeholders("location")} />
+                <SelectValue placeholder={tDialog("placeholder")} />
               </SelectTrigger>
               <SelectContent>
                 {locations?.map((location) => (
@@ -117,10 +121,10 @@ export function BulkMoveLocationDialog({
             onClick={() => onOpenChange(false)}
             disabled={isSubmitting}
           >
-            Cancel
+            {tCommon("cancel")}
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting || !locationId}>
-            {isSubmitting ? "Moving..." : "Move Items"}
+            {isSubmitting ? tDialog("moving") : tDialog("moveItems")}
           </Button>
         </DialogFooter>
       </DialogContent>

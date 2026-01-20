@@ -1122,6 +1122,7 @@ export default {
         "Veuillez fournir une raison pour la désaccession",
       itemsDeaccessioned: "{count} élément(s) désaccessionné(s) avec succès",
       someItemsSkipped: "{count} élément(s) ont été ignoré(s) (sur prêt actif)",
+      failedOnLoan: "{count} échec(s) (peut-être en prêt)",
       itemsDeaccessionFailed: "Échec de la désaccession des éléments",
       imageOrderUpdated: "Ordre des images mis à jour",
       imageOrderUpdateFailed: "Échec de la mise à jour de l'ordre des images",
@@ -1199,16 +1200,26 @@ export default {
       },
       moveLocation: {
         title: "Déplacer vers l'Emplacement",
+        description:
+          "Déplacer {count} élément{s} sélectionné{s} vers un nouvel emplacement.",
         label: "Nouvel Emplacement",
         placeholder: "Sélectionnez un emplacement",
         selectLocation: "Veuillez sélectionner un emplacement",
+        moving: "Déplacement...",
+        moveItems: "Déplacer les éléments",
         failed: "Échec du déplacement des éléments",
       },
       deaccession: {
-        title: "Désaccession d'Objets",
+        title: "Désaccession en Masse",
+        description:
+          "Vous êtes sur le point de désaccessionner {count} élément{s}. Cette action les retirera de votre collection active.",
+        onLoanWarning:
+          "Les éléments actuellement en prêt ne peuvent pas être désaccessionnés et seront ignorés.",
         label: "Raison de la Désaccession",
         placeholder: "Entrez la raison de la désaccession de ces éléments...",
         provideReason: "Veuillez fournir une raison pour la désaccession",
+        processing: "Traitement...",
+        deaccessionItems: "Désaccessionner les éléments",
         failed: "Échec de la désaccession des éléments",
       },
     },

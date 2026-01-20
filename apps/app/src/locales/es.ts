@@ -1056,6 +1056,7 @@ export default {
       itemsDeaccessioned: "{count} elemento(s) desaccesionado(s) exitosamente",
       someItemsSkipped:
         "{count} elemento(s) fueron omitidos (en préstamo activo)",
+      failedOnLoan: "{count} fallaron (pueden estar en préstamo)",
       itemsDeaccessionFailed: "Error al desaccesionar elementos",
       imageOrderUpdated: "Orden de imágenes actualizado",
       imageOrderUpdateFailed: "Error al actualizar orden de imágenes",
@@ -1132,9 +1133,13 @@ export default {
       },
       moveLocation: {
         title: "Mover a Ubicación",
+        description:
+          "Mover {count} elemento{s} seleccionado{s} a una nueva ubicación.",
         label: "Nueva Ubicación",
         placeholder: "Selecciona una ubicación",
         selectLocation: "Por favor selecciona una ubicación",
+        moving: "Moviendo...",
+        moveItems: "Mover elementos",
         failed: "Error al mover elementos",
       },
       export: {
@@ -1145,9 +1150,17 @@ export default {
         exportButton: "Exportar CSV",
       },
       deaccession: {
-        title: "Desaccesionar Objetos",
+        title: "Desaccesión en Masa",
         description:
-          "¿Estás seguro de que quieres desaccesionar {count} objeto{s}? Esto marcará {them} como desaccesionado{s} y {they} no podrán ser prestados o exhibidos.",
+          "Estás a punto de desaccesionar {count} elemento{s}. Esta acción los eliminará de tu colección activa.",
+        onLoanWarning:
+          "Los elementos actualmente en préstamo no pueden ser desaccesionados y serán omitidos.",
+        label: "Razón de la Desaccesión",
+        placeholder: "Ingresa la razón para desaccesionar estos elementos...",
+        provideReason: "Por favor proporciona una razón para la desaccesión",
+        processing: "Procesando...",
+        deaccessionItems: "Desaccesionar Elementos",
+        failed: "Error al desaccesionar elementos",
         deaccessioning: "Desaccesionando...",
         deaccessionButton: "Desaccesionar Objetos",
         selectReason: "Debes seleccionar una razón",

@@ -266,8 +266,8 @@ export default function LoanDetailPage() {
                       )}
                     >
                       {loan.type === "outgoing"
-                        ? "Outgoing Loan"
-                        : "Incoming Loan"}
+                        ? tActions("outgoingLoan")
+                        : tActions("incomingLoan")}
                     </div>
                     <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-secondary border border-border text-[11px] text-muted-foreground">
                       <span className="font-medium">International</span>
@@ -320,7 +320,7 @@ export default function LoanDetailPage() {
                               day: "numeric",
                               year: "numeric",
                             })
-                          : "Indefinite"}
+                          : tActions("indefinite")}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
