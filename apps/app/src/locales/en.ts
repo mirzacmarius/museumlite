@@ -978,6 +978,8 @@ export default {
         "Move this object to a different location. This will create a location history entry.",
       selectDestination: "Destination Location",
       selectDestinationPlaceholder: "Select a location",
+      selectLocationError: "Please select a location",
+      moveFailed: "Failed to move object",
       moving: "Moving...",
       moveObject: "Move Object",
     },

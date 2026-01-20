@@ -1038,6 +1038,8 @@ export default {
         "Déplacer cet objet vers un autre emplacement. Cela créera une entrée dans l'historique des emplacements.",
       selectDestination: "Emplacement de Destination",
       selectDestinationPlaceholder: "Sélectionnez un emplacement",
+      selectLocationError: "Veuillez sélectionner un emplacement",
+      moveFailed: "Échec du déplacement de l'objet",
       moving: "Déplacement...",
       moveObject: "Déplacer l'Objet",
     },

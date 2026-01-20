@@ -1011,6 +1011,8 @@ export default {
         "Flytt dette objektet til en annen plassering. Dette vil opprette en oppføring i plasseringshistorikken.",
       selectDestination: "Destinasjonsplassering",
       selectDestinationPlaceholder: "Velg en plassering",
+      selectLocationError: "Vennligst velg en plassering",
+      moveFailed: "Kunne ikke flytte objektet",
       moving: "Flytter...",
       moveObject: "Flytt Objekt",
     },

@@ -968,6 +968,8 @@ export default {
         "Mover este objeto a una ubicación diferente. Esto creará una entrada en el historial de ubicaciones.",
       selectDestination: "Ubicación de Destino",
       selectDestinationPlaceholder: "Seleccione una ubicación",
+      selectLocationError: "Por favor seleccione una ubicación",
+      moveFailed: "Error al mover el objeto",
       moving: "Moviendo...",
       moveObject: "Mover Objeto",
     },

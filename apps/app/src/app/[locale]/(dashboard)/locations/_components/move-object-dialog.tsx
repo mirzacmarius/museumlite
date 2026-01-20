@@ -67,7 +67,7 @@ export function MoveObjectDialog({
     e.preventDefault();
     setError(null);
     if (!toLocationId) {
-      setError("Please select a location");
+      setError(t("selectLocationError"));
       return;
     }
 
@@ -85,7 +85,7 @@ export function MoveObjectDialog({
       setNotes("");
       onSuccess?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to move object");
+      setError(err instanceof Error ? err.message : t("moveFailed"));
       setIsSubmitting(false);
     }
   };
