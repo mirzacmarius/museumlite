@@ -1408,10 +1408,19 @@ export default {
       errors: {
         titleRequired: "El título es obligatorio",
         saveFailed: "Error al guardar el objeto. Por favor intenta de nuevo.",
+        updateFailed:
+          "Error al actualizar el objeto. Por favor intenta de nuevo.",
         cannotDeaccession:
           "No se puede desaccesionar - el elemento está en préstamo activo",
         selectOrganization:
           "Por favor selecciona una organización para crear objetos.",
+        failedToProcessFile: "Error al procesar la selección de archivo",
+        failedToProcessDocument: "Error al procesar la selección de documento",
+        failedToCreateMedia: "Error al crear registros de medios",
+        failedToSetPrimary: "Error al establecer imagen principal",
+        failedToDeleteMedia: "Error al eliminar medio",
+        failedToUpdateMedia: "Error al actualizar medio",
+        failedToGenerateUploadUrl: "Error al generar URL de carga",
       },
       toasts: {
         noDataToExport: "No hay datos para exportar",

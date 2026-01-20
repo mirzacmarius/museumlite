@@ -67,6 +67,7 @@ export function MediaGallery({
   const t = useScopedI18n("common.toast");
   const common = useScopedI18n("common");
   const placeholders = useScopedI18n("objects.form.placeholders");
+  const formErrors = useScopedI18n("objects.form.errors");
   const media = useQuery(
     api.media.list,
     collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
@@ -126,9 +127,9 @@ export function MediaGallery({
       if (!result.uploadUrl) {
         updateUploadStatus(file.name, {
           status: "error",
-          error: "Failed to generate upload URL",
+          error: formErrors("failedToGenerateUploadUrl"),
         });
-        throw new Error(`Failed to generate upload URL for ${file.name}`);
+        throw new Error(formErrors("failedToGenerateUploadUrl"));
       }
 
       updateUploadStatus(file.name, { progress: 30 });
@@ -200,7 +201,7 @@ export function MediaGallery({
           setError(
             err instanceof Error
               ? err.message
-              : "Failed to create media records",
+              : formErrors("failedToCreateMedia"),
           );
         }
       },
@@ -251,7 +252,7 @@ export function MediaGallery({
       await setPrimary({ mediaId: mediaId as Id<"mediaFiles"> });
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to set primary image",
+        err instanceof Error ? err.message : formErrors("failedToSetPrimary"),
       );
     }
   };
@@ -262,7 +263,9 @@ export function MediaGallery({
       await deleteMedia({ mediaId: mediaId as Id<"mediaFiles"> });
       setDeleteConfirmOpen(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete media");
+      setError(
+        err instanceof Error ? err.message : formErrors("failedToDeleteMedia"),
+      );
     }
   };
 
@@ -526,7 +529,7 @@ export function MediaGallery({
                                     setError(
                                       err instanceof Error
                                         ? err.message
-                                        : "Failed to update media",
+                                        : formErrors("failedToUpdateMedia"),
                                     );
                                   }
                                 }}
@@ -656,7 +659,7 @@ export function MediaGallery({
                             setError(
                               err instanceof Error
                                 ? err.message
-                                : "Failed to update media",
+                                : formErrors("failedToUpdateMedia"),
                             );
                           }
                         }}

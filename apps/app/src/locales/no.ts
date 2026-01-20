@@ -1442,10 +1442,18 @@ export default {
       errors: {
         titleRequired: "Tittel er påkrevd",
         saveFailed: "Kunne ikke lagre objekt. Vennligst prøv igjen.",
+        updateFailed: "Kunne ikke oppdatere objekt. Vennligst prøv igjen.",
         cannotDeaccession:
           "Kan ikke fraregistrere - elementet er på aktivt utlån",
         selectOrganization:
           "Vennligst velg en organisasjon for å opprette objekter.",
+        failedToProcessFile: "Kunne ikke behandle filvalg",
+        failedToProcessDocument: "Kunne ikke behandle dokumentvalg",
+        failedToCreateMedia: "Kunne ikke opprette medieposter",
+        failedToSetPrimary: "Kunne ikke angi primærbilde",
+        failedToDeleteMedia: "Kunne ikke slette media",
+        failedToUpdateMedia: "Kunne ikke oppdatere media",
+        failedToGenerateUploadUrl: "Kunne ikke generere opplastings-URL",
       },
       toasts: {
         noDataToExport: "Ingen data å eksportere",

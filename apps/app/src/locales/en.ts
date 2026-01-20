@@ -1343,8 +1343,16 @@ export default {
       errors: {
         titleRequired: "Title is required",
         saveFailed: "Failed to save object. Please try again.",
+        updateFailed: "Failed to update object. Please try again.",
         cannotDeaccession: "Cannot deaccession - item is on active loan",
         selectOrganization: "Please select an organization to create objects.",
+        failedToProcessFile: "Failed to process file selection",
+        failedToProcessDocument: "Failed to process document selection",
+        failedToCreateMedia: "Failed to create media records",
+        failedToSetPrimary: "Failed to set primary image",
+        failedToDeleteMedia: "Failed to delete media",
+        failedToUpdateMedia: "Failed to update media",
+        failedToGenerateUploadUrl: "Failed to generate upload URL",
       },
       toasts: {
         noDataToExport: "No data to export",

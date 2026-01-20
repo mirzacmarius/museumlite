@@ -1411,10 +1411,20 @@ export default {
       errors: {
         titleRequired: "Le titre est requis",
         saveFailed: "Échec de l'enregistrement de l'objet. Veuillez réessayer.",
+        updateFailed: "Échec de la mise à jour de l'objet. Veuillez réessayer.",
         cannotDeaccession:
           "Impossible de désaccessionner - l'élément est sur un prêt actif",
         selectOrganization:
           "Veuillez sélectionner une organisation pour créer des objets.",
+        failedToProcessFile: "Échec du traitement de la sélection de fichier",
+        failedToProcessDocument:
+          "Échec du traitement de la sélection de document",
+        failedToCreateMedia: "Échec de la création des enregistrements média",
+        failedToSetPrimary: "Échec de la définition de l'image principale",
+        failedToDeleteMedia: "Échec de la suppression du média",
+        failedToUpdateMedia: "Échec de la mise à jour du média",
+        failedToGenerateUploadUrl:
+          "Échec de la génération de l'URL de téléchargement",
       },
       toasts: {
         noDataToExport: "Aucune donnée à exporter",

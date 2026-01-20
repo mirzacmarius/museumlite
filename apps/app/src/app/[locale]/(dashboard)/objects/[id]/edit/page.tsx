@@ -232,7 +232,7 @@ export default function CollectionEditPage() {
           setError(
             err instanceof Error
               ? err.message
-              : "Failed to create media records",
+              : t("form.errors.failedToCreateMedia"),
           );
         }
       },
@@ -427,7 +427,9 @@ export default function CollectionEditPage() {
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to process file selection",
+        err instanceof Error
+          ? err.message
+          : t("form.errors.failedToProcessFile"),
       );
     }
   };
@@ -457,7 +459,7 @@ export default function CollectionEditPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to process document selection",
+          : t("form.errors.failedToProcessDocument"),
       );
     }
   };
@@ -468,7 +470,9 @@ export default function CollectionEditPage() {
       await setPrimary({ mediaId: mediaId as Id<"mediaFiles"> });
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to set primary image",
+        err instanceof Error
+          ? err.message
+          : t("form.errors.failedToSetPrimary"),
       );
     }
   };
@@ -478,7 +482,11 @@ export default function CollectionEditPage() {
     try {
       await deleteMedia({ mediaId: mediaId as Id<"mediaFiles"> });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete media");
+      setError(
+        err instanceof Error
+          ? err.message
+          : t("form.errors.failedToDeleteMedia"),
+      );
     }
   };
 
@@ -525,9 +533,7 @@ export default function CollectionEditPage() {
     } catch (err) {
       console.error("Error updating collection:", err);
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to update object. Please try again.",
+        err instanceof Error ? err.message : t("form.errors.updateFailed"),
       );
       setIsSubmitting(false);
     }

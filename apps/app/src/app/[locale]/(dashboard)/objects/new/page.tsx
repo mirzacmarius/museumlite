@@ -156,7 +156,7 @@ export default function CollectionFormPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to process document selection",
+          : t("form.errors.failedToProcessDocument"),
       );
     }
   };
@@ -193,7 +193,9 @@ export default function CollectionFormPage() {
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to process file selection",
+        err instanceof Error
+          ? err.message
+          : t("form.errors.failedToProcessFile"),
       );
     }
   };
