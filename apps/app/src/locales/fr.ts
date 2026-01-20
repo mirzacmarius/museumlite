@@ -977,6 +977,8 @@ export default {
     deleteLocation: "Supprimer l'Emplacement",
     deleteConfirm:
       "Êtes-vous sûr de vouloir supprimer cet emplacement ? Cette action ne peut pas être annulée.",
+    deleteConfirmWithName:
+      "Êtes-vous sûr de vouloir supprimer {name} ? Cette action ne peut pas être annulée. Assurez-vous que cet emplacement n'a pas d'enfants ou d'objets.",
     cancel: "Annuler",
     locationName: "Nom de l'Emplacement",
     type: "Type",
@@ -1075,6 +1077,12 @@ export default {
       searchPlaceholder: "Rechercher des emplacements...",
       noLocations: "Aucun emplacement trouvé",
       createFirst: "Créez votre premier emplacement pour commencer",
+      addNewLocation: "Ajouter un Nouvel Emplacement",
+      edit: "Modifier",
+      addChild: "Ajouter un enfant",
+      move: "Déplacer",
+      delete: "Supprimer",
+      actions: "Actions",
     },
     placeholders: {
       notesPlaceholder: "Raison du déplacement de cet emplacement...",

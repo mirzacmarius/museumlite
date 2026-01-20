@@ -59,6 +59,7 @@ export function LoanItemsManager({
 }: LoanItemsManagerProps) {
   const tActions = useScopedI18n("loans.actions");
   const t = useScopedI18n("loans.placeholders");
+  const common = useScopedI18n("common");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
   const [selectedItemToReturn, setSelectedItemToReturn] = useState<{
@@ -179,7 +180,9 @@ export function LoanItemsManager({
       setIsReturnDialogOpen(false);
       setSelectedItemToReturn(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : tActions("failedToReturnItem"));
+      setError(
+        err instanceof Error ? err.message : tActions("failedToReturnItem"),
+      );
     }
   };
 
@@ -414,16 +417,17 @@ export function LoanItemsManager({
                             Remove Item from Loan
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            Are you sure you want to remove this item from the
-                            loan? This action cannot be undone.
+                            {tActions("removeItemConfirm")}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel>
+                            {common("cancel")}
+                          </AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => handleRemoveItem(item._id)}
                           >
-                            Remove Item
+                            {tActions("removeItem")}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -440,12 +444,8 @@ export function LoanItemsManager({
       <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Return Loan Item</DialogTitle>
-            <DialogDescription>
-              {loanType === "incoming"
-                ? tActions("returnLoanItem")
-                : tActions("returnLoanItem")}
-            </DialogDescription>
+            <DialogTitle>{tActions("returnLoanItem")}</DialogTitle>
+            <DialogDescription>{tActions("returnLoanItem")}</DialogDescription>
           </DialogHeader>
 
           {selectedItemToReturn && (
@@ -459,7 +459,9 @@ export function LoanItemsManager({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="conditionIn">Condition In (Optional)</Label>
+                <Label htmlFor="conditionIn">
+                  {tActions("conditionInLabel")}
+                </Label>
                 <Input
                   id="conditionIn"
                   value={conditionIn}
@@ -469,7 +471,7 @@ export function LoanItemsManager({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="returnNotes">Notes (Optional)</Label>
+                <Label htmlFor="returnNotes">{tActions("notesLabel")}</Label>
                 <Input
                   id="returnNotes"
                   value={returnNotes}
@@ -485,9 +487,11 @@ export function LoanItemsManager({
               variant="outline"
               onClick={() => setIsReturnDialogOpen(false)}
             >
-              Cancel
+              {common("cancel")}
             </Button>
-            <Button onClick={handleReturnItemConfirm}>Confirm Return</Button>
+            <Button onClick={handleReturnItemConfirm}>
+              {tActions("confirmReturn")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

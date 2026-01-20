@@ -1347,11 +1347,15 @@ export default function CollectionEditPage() {
 
                   <div className="flex gap-4 ml-auto">
                     <Button type="button" variant="outline" asChild>
-                      <Link href={`/objects/${collectionId}`}>Cancel</Link>
+                      <Link href={`/objects/${collectionId}`}>
+                        {common("cancel")}
+                      </Link>
                     </Button>
                     <Button type="submit" disabled={isSubmitting}>
                       <Save className="mr-2 h-4 w-4" />
-                      {isSubmitting ? "Updating..." : "Update Object"}
+                      {isSubmitting
+                        ? common("updating")
+                        : t("form.actions.updateObject")}
                     </Button>
                   </div>
                 </div>

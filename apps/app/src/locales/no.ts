@@ -948,6 +948,8 @@ export default {
     deleteLocation: "Slett Plassering",
     deleteConfirm:
       "Er du sikker på at du vil slette denne plasseringen? Denne handlingen kan ikke angres.",
+    deleteConfirmWithName:
+      "Er du sikker på at du vil slette {name}? Denne handlingen kan ikke angres. Kontroller at denne plasseringen ikke har underplasseringer eller objekter.",
     cancel: "Avbryt",
     locationName: "Plasseringsnavn",
     type: "Type",
@@ -1046,6 +1048,12 @@ export default {
       searchPlaceholder: "Søk i plasseringer...",
       noLocations: "Ingen plasseringer funnet",
       createFirst: "Opprett din første plassering for å komme i gang",
+      addNewLocation: "Legg til Ny Plassering",
+      edit: "Rediger",
+      addChild: "Legg til underplassering",
+      move: "Flytt",
+      delete: "Slett",
+      actions: "Handlinger",
     },
     placeholders: {
       notesPlaceholder: "Årsak til å flytte denne plasseringen...",

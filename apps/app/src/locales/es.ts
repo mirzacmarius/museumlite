@@ -907,6 +907,8 @@ export default {
     deleteLocation: "Eliminar Ubicación",
     deleteConfirm:
       "¿Está seguro de que desea eliminar esta ubicación? Esta acción no se puede deshacer.",
+    deleteConfirmWithName:
+      "¿Está seguro de que desea eliminar {name}? Esta acción no se puede deshacer. Asegúrese de que esta ubicación no tenga hijos ni objetos.",
     cancel: "Cancelar",
     locationName: "Nombre de Ubicación",
     type: "Tipo",
@@ -1005,6 +1007,12 @@ export default {
       searchPlaceholder: "Buscar ubicaciones...",
       noLocations: "No se encontraron ubicaciones",
       createFirst: "Cree su primera ubicación para comenzar",
+      addNewLocation: "Agregar Nueva Ubicación",
+      edit: "Editar",
+      addChild: "Agregar hijo",
+      move: "Mover",
+      delete: "Eliminar",
+      actions: "Acciones",
     },
     placeholders: {
       notesPlaceholder: "Razón para mover esta ubicación...",

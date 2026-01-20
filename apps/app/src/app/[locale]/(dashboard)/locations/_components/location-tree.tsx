@@ -401,7 +401,7 @@ function LocationTreeInner({
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
                       <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Actions</span>
+                      <span className="sr-only">{t("actions")}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
@@ -420,7 +420,7 @@ function LocationTreeInner({
                         }}
                       >
                         <Edit className="mr-2 h-4 w-4" />
-                        Edit
+                        {t("edit")}
                       </DropdownMenuItem>
                     </PermissionGate>
 
@@ -438,7 +438,7 @@ function LocationTreeInner({
                         }}
                       >
                         <Plus className="mr-2 h-4 w-4" />
-                        Add child
+                        {t("addChild")}
                       </DropdownMenuItem>
                     </PermissionGate>
 
@@ -454,7 +454,7 @@ function LocationTreeInner({
                         }}
                       >
                         <Move className="mr-2 h-4 w-4" />
-                        Move
+                        {t("move")}
                       </DropdownMenuItem>
                     </PermissionGate>
 
@@ -472,7 +472,7 @@ function LocationTreeInner({
                         }}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
+                        {t("delete")}
                       </DropdownMenuItem>
                     </PermissionGate>
                   </DropdownMenuContent>
@@ -488,6 +488,8 @@ function LocationTreeInner({
 
 // Outer component that manages dialogs and state
 export function LocationTree({ organizationId }: LocationTreeProps) {
+  const t = useScopedI18n("locations");
+  const tCommon = useScopedI18n("common");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [addChildDialogOpen, setAddChildDialogOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
@@ -561,7 +563,7 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
             }}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Add New Location
+            {t("tree.addNewLocation")}
           </Button>
         </PermissionGate>
       </div>
@@ -621,21 +623,20 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Location</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteLocation")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete{" "}
-              <span className="font-medium">{selectedLocation?.name}</span>?
-              This action cannot be undone. Make sure this location has no
-              children or objects.
+              {t("deleteConfirmWithName", {
+                name: selectedLocation?.name ?? "",
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {tCommon("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

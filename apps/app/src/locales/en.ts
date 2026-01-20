@@ -915,6 +915,8 @@ export default {
     deleteLocation: "Delete Location",
     deleteConfirm:
       "Are you sure you want to delete this location? This action cannot be undone.",
+    deleteConfirmWithName:
+      "Are you sure you want to delete {name}? This action cannot be undone. Make sure this location has no children or objects.",
     cancel: "Cancel",
     locationName: "Location Name",
     type: "Type",
@@ -1013,6 +1015,12 @@ export default {
       searchPlaceholder: "Search locations...",
       noLocations: "No locations found",
       createFirst: "Create your first location to get started",
+      addNewLocation: "Add New Location",
+      edit: "Edit",
+      addChild: "Add child",
+      move: "Move",
+      delete: "Delete",
+      actions: "Actions",
     },
     placeholders: {
       notesPlaceholder: "Reason for moving this location...",
