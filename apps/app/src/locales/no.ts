@@ -282,6 +282,38 @@ export default {
     noPermission:
       "Du har ikke tillatelse til å administrere moduler. Kontakt administratoren din.",
     selectOrganization: "Velg en organisasjon for å administrere moduler.",
+    accounts: {
+      name: "Kontoer og CRM",
+      description:
+        "Administrer givere, långivere, institusjoner, kontakter, dokumenter og relasjoner.",
+    },
+    fine_art: {
+      name: "Kunst",
+      description:
+        "Kunstkatalogisering med provenienssporing og kuratorarbeidsflyter.",
+    },
+    wine: {
+      name: "Vin",
+      description: "Vinsamlingsforvaltning med kjellersporing og smaksnotater.",
+    },
+    automotive: {
+      name: "Biler",
+      description: "Bilsamlinger med VIN-sporing og restaureringshistorikk.",
+    },
+    natural_history: {
+      name: "Naturhistorie",
+      description:
+        "Katalogisering av eksemplarer med taksonomisk klassifisering og samlingsdata.",
+    },
+    archive: {
+      name: "Arkiv",
+      description: "Arkivsamlinger med finnemidler og hierarkisk ordning.",
+    },
+    library: {
+      name: "Bibliotek",
+      description:
+        "Biblioteksforvaltning med lånere, sirkulasjon, reservasjoner og gebyrer.",
+    },
   },
   workflows: {
     title: "Arbeidsflytskonfigurasjon",

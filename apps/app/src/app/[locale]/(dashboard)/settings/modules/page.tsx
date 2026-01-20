@@ -24,64 +24,35 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-const MODULES = [
-  {
-    id: "accounts",
-    name: "Accounts & CRM",
-    description:
-      "Manage donors, lenders, institutions, contacts, documents, and relationships.",
-    icon: Users,
-  },
-  {
-    id: "fine_art",
-    name: "Fine Art",
-    description:
-      "Fine art cataloging with provenance tracking and curation workflows.",
-    icon: Palette,
-  },
-  {
-    id: "wine",
-    name: "Wine",
-    description:
-      "Wine collection management with cellar tracking and tasting notes.",
-    icon: Wine,
-  },
-  {
-    id: "automotive",
-    name: "Automotive",
-    description:
-      "Automotive collections with VIN tracking and restoration history.",
-    icon: Car,
-  },
-  {
-    id: "natural_history",
-    name: "Natural History",
-    description:
-      "Specimen cataloging with taxonomy classification and collection data.",
-    icon: Leaf,
-  },
-  {
-    id: "archive",
-    name: "Archive",
-    description:
-      "Archival collections with finding aids and hierarchical arrangement.",
-    icon: Archive,
-  },
-  {
-    id: "library",
-    name: "Library",
-    description:
-      "Library management with patrons, circulation, holds, and fines.",
-    icon: BookOpen,
-    requiresIntegration: "library",
-  },
+const MODULE_IDS = [
+  "accounts",
+  "fine_art",
+  "wine",
+  "automotive",
+  "natural_history",
+  "archive",
+  "library",
 ] as const;
 
-type ModuleId = (typeof MODULES)[number]["id"];
+type ModuleId = (typeof MODULE_IDS)[number];
+
+const MODULE_ICONS: Record<ModuleId, typeof Users> = {
+  accounts: Users,
+  fine_art: Palette,
+  wine: Wine,
+  automotive: Car,
+  natural_history: Leaf,
+  archive: Archive,
+  library: BookOpen,
+};
+
+const MODULE_INTEGRATIONS: Partial<Record<ModuleId, string>> = {
+  library: "library",
+};
 
 export default function ModulesSettingsPage() {
   const { currentOrganizationId } = useOrganization();
-  const t = useScopedI18n("settings.modules");
+  const t = useScopedI18n("modules");
   const tToast = useScopedI18n("common.toast");
   const canManage = usePermission(
     currentOrganizationId,
@@ -167,18 +138,17 @@ export default function ModulesSettingsPage() {
         </div>
       </div>
       <div className="flex w-full flex-col gap-4">
-        {MODULES.map((module) => {
-          const isEnabled = enabledModules.includes(module.id);
-          const isLoading = isSaving === module.id;
-          const requiredIntegration =
-            "requiresIntegration" in module ? module.requiresIntegration : null;
+        {MODULE_IDS.map((moduleId) => {
+          const isEnabled = enabledModules.includes(moduleId);
+          const isLoading = isSaving === moduleId;
+          const requiredIntegration = MODULE_INTEGRATIONS[moduleId] ?? null;
           const integrationLocked =
             requiredIntegration &&
             !enabledIntegrations.includes(requiredIntegration);
-          const Icon = module.icon;
+          const Icon = MODULE_ICONS[moduleId];
           return (
             <div
-              key={module.id}
+              key={moduleId}
               className="flex w-full flex-col rounded-lg border border-border bg-card"
             >
               <div className="flex w-full items-start justify-between p-6">
@@ -188,7 +158,9 @@ export default function ModulesSettingsPage() {
                   </div>
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-medium">{module.name}</h3>
+                      <h3 className="text-lg font-medium">
+                        {t(`${moduleId}.name` as const)}
+                      </h3>
                       {isEnabled && (
                         <Badge variant="secondary" className="text-xs">
                           <Check className="mr-1 h-3 w-3" />
@@ -197,7 +169,7 @@ export default function ModulesSettingsPage() {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {module.description}
+                      {t(`${moduleId}.description` as const)}
                     </p>
                     {integrationLocked && (
                       <p className="mt-1 text-xs text-muted-foreground">
@@ -216,7 +188,7 @@ export default function ModulesSettingsPage() {
                       checked={isEnabled}
                       disabled={!canManage || integrationLocked}
                       onCheckedChange={(checked) =>
-                        toggleModule(module.id, checked)
+                        toggleModule(moduleId, checked)
                       }
                     />
                   )}

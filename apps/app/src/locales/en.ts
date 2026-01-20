@@ -279,6 +279,41 @@ export default {
     noPermission:
       "You don't have permission to manage modules. Contact your administrator.",
     selectOrganization: "Please select an organization to manage modules.",
+    accounts: {
+      name: "Accounts & CRM",
+      description:
+        "Manage donors, lenders, institutions, contacts, documents, and relationships.",
+    },
+    fine_art: {
+      name: "Fine Art",
+      description:
+        "Fine art cataloging with provenance tracking and curation workflows.",
+    },
+    wine: {
+      name: "Wine",
+      description:
+        "Wine collection management with cellar tracking and tasting notes.",
+    },
+    automotive: {
+      name: "Automotive",
+      description:
+        "Automotive collections with VIN tracking and restoration history.",
+    },
+    natural_history: {
+      name: "Natural History",
+      description:
+        "Specimen cataloging with taxonomy classification and collection data.",
+    },
+    archive: {
+      name: "Archive",
+      description:
+        "Archival collections with finding aids and hierarchical arrangement.",
+    },
+    library: {
+      name: "Library",
+      description:
+        "Library management with patrons, circulation, holds, and fines.",
+    },
   },
   workflows: {
     title: "Workflow Configuration",

@@ -288,6 +288,41 @@ export default {
     noPermission:
       "No tiene permiso para administrar módulos. Contacte a su administrador.",
     selectOrganization: "Seleccione una organización para administrar módulos.",
+    accounts: {
+      name: "Cuentas y CRM",
+      description:
+        "Gestione donantes, prestamistas, instituciones, contactos, documentos y relaciones.",
+    },
+    fine_art: {
+      name: "Bellas Artes",
+      description:
+        "Catalogación de bellas artes con seguimiento de procedencia y flujos de curación.",
+    },
+    wine: {
+      name: "Vino",
+      description:
+        "Gestión de colección de vinos con seguimiento de bodega y notas de cata.",
+    },
+    automotive: {
+      name: "Automotriz",
+      description:
+        "Colecciones automotrices con seguimiento de VIN e historial de restauración.",
+    },
+    natural_history: {
+      name: "Historia Natural",
+      description:
+        "Catalogación de especímenes con clasificación taxonómica y datos de colección.",
+    },
+    archive: {
+      name: "Archivo",
+      description:
+        "Colecciones de archivo con instrumentos de búsqueda y organización jerárquica.",
+    },
+    library: {
+      name: "Biblioteca",
+      description:
+        "Gestión de biblioteca con usuarios, circulación, reservas y multas.",
+    },
   },
   workflows: {
     title: "Configuración de flujos de trabajo",
