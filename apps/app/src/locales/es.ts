@@ -588,10 +588,16 @@ export default {
     actions: {
       approveLoan: "Aprobar préstamo",
       cancelLoan: "Cancelar préstamo",
+      cancelLoanConfirm:
+        "¿Está seguro de que desea cancelar este préstamo? Esta acción no se puede deshacer.",
       dispatchLoan: "Enviar préstamo",
       markAsReturned: "Marcar como devuelto",
+      markAsReturnedConfirm:
+        "¿Está seguro de que desea marcar este préstamo como devuelto? Esto actualizará el estado de todos los elementos de la colección asociados.",
       returnLoanItems: "Devolver artículos del préstamo",
       selectItemsToReturn: "Seleccionar artículos a devolver",
+      selectItemsToReturnDesc:
+        'Seleccione los artículos a devolver. Si se devuelven todos los artículos, el estado del préstamo se actualizará a "Devuelto".',
       selectAllItems: "Seleccionar todo",
       someItemsReturned: "Algunos artículos ya han sido devueltos",
       returnedItemsInfo:
@@ -604,6 +610,7 @@ export default {
       loanActions: "Acciones de préstamo",
       selectAtLeastOne: "Por favor selecciona al menos un artículo a devolver.",
       keepLoan: "Mantener préstamo",
+      cancel: "Cancelar",
       removeLoanItem: "Eliminar artículo del préstamo",
       removeItemConfirm:
         "¿Estás seguro de que deseas eliminar este artículo del préstamo? Esta acción no se puede deshacer.",

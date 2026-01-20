@@ -1,8 +1,8 @@
 "use client";
 
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { pluralize } from "@/lib/utils/pluralize";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -111,7 +111,7 @@ export function LoanApprovalWorkflow({
           loanId: loanId as Id<"loans">,
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to approve loan");
+        setError(err instanceof Error ? err.message : t("failedToApprove"));
       } finally {
         setIsSubmitting(false);
       }
@@ -125,7 +125,7 @@ export function LoanApprovalWorkflow({
           loanId: loanId as Id<"loans">,
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to cancel loan");
+        setError(err instanceof Error ? err.message : t("failedToCancel"));
       } finally {
         setIsSubmitting(false);
       }
@@ -133,7 +133,7 @@ export function LoanApprovalWorkflow({
 
     return (
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">Loan Actions</h3>
+        <h3 className="text-lg font-medium">{t("loanActions")}</h3>
         {error && (
           <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
             {error}
@@ -147,7 +147,7 @@ export function LoanApprovalWorkflow({
               className="bg-green-600 hover:bg-green-700"
             >
               <CheckCircle className="mr-2 h-4 w-4" />
-              Approve Loan
+              {t("approveLoan")}
             </Button>
           </PermissionGate>
           <PermissionGate permission="loans.update">
@@ -155,21 +155,20 @@ export function LoanApprovalWorkflow({
               <AlertDialogTrigger asChild>
                 <Button disabled={isSubmitting} variant="destructive">
                   <XCircle className="mr-2 h-4 w-4" />
-                  Cancel Loan
+                  {t("cancelLoan")}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Cancel Loan</AlertDialogTitle>
+                  <AlertDialogTitle>{t("cancelLoan")}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to cancel this loan? This action
-                    cannot be undone.
+                    {t("cancelLoanConfirm")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Keep Loan</AlertDialogCancel>
+                  <AlertDialogCancel>{t("keepLoan")}</AlertDialogCancel>
                   <AlertDialogAction onClick={handleCancel}>
-                    Cancel Loan
+                    {t("cancelLoan")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -189,9 +188,7 @@ export function LoanApprovalWorkflow({
           loanId: loanId as Id<"loans">,
         });
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to dispatch loan",
-        );
+        setError(err instanceof Error ? err.message : t("failedToDispatch"));
       } finally {
         setIsSubmitting(false);
       }
@@ -246,7 +243,7 @@ export function LoanApprovalWorkflow({
         setPendingReturnItemIds([]);
         // The query will automatically refresh, and the useEffect will filter out returned items
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to return loan");
+        setError(err instanceof Error ? err.message : t("failedToReturn"));
         setIsConfirmDialogOpen(false);
       } finally {
         setIsSubmitting(false);
@@ -260,7 +257,7 @@ export function LoanApprovalWorkflow({
 
     return (
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">Loan Actions</h3>
+        <h3 className="text-lg font-medium">{t("loanActions")}</h3>
         {error && (
           <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
             {error}
@@ -274,7 +271,7 @@ export function LoanApprovalWorkflow({
               className="bg-cyan-600 hover:bg-cyan-700"
             >
               <Truck className="mr-2 h-4 w-4" />
-              Dispatch Loan
+              {t("dispatchLoan")}
             </Button>
           </PermissionGate>
           <PermissionGate permission="loans.update">
@@ -286,7 +283,7 @@ export function LoanApprovalWorkflow({
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   <CheckCircle className="mr-2 h-4 w-4" />
-                  Mark as Returned
+                  {t("markAsReturned")}
                 </Button>
                 <Dialog
                   open={isReturnDialogOpen}
@@ -294,17 +291,16 @@ export function LoanApprovalWorkflow({
                 >
                   <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                      <DialogTitle>Return Loan Items</DialogTitle>
+                      <DialogTitle>{t("returnLoanItems")}</DialogTitle>
                       <DialogDescription>
-                        Select which items to return. If all items are returned,
-                        the loan status will be updated to "Returned".
+                        {t("selectItemsToReturnDesc")}
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between mb-2">
                           <Label className="text-sm font-medium">
-                            Select Items to Return
+                            {t("selectItemsToReturn")}
                           </Label>
                           <Button
                             variant="ghost"
@@ -330,7 +326,7 @@ export function LoanApprovalWorkflow({
                               setSelectedItemIds(new Set(nonReturnedItems));
                             }}
                           >
-                            Select All
+                            {t("selectAllItems")}
                           </Button>
                         </div>
                         {loanItems.some(
@@ -342,12 +338,10 @@ export function LoanApprovalWorkflow({
                             <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                             <div className="flex-1 text-blue-800 dark:text-blue-200">
                               <p className="font-medium mb-1">
-                                Some items are already returned
+                                {t("someItemsReturned")}
                               </p>
                               <p className="text-xs">
-                                Items marked as "RETURNED" have already been
-                                returned and cannot be selected again. Only
-                                items that are still on loan can be returned.
+                                {t("returnedItemsInfo")}
                               </p>
                             </div>
                           </div>
@@ -418,7 +412,7 @@ export function LoanApprovalWorkflow({
                                       </span>
                                       {isReturned && (
                                         <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded">
-                                          RETURNED
+                                          {t("returned")}
                                         </span>
                                       )}
                                     </div>
@@ -434,7 +428,8 @@ export function LoanApprovalWorkflow({
                                     </div>
                                     {isReturned && item.conditionIn && (
                                       <div className="text-xs text-muted-foreground mt-1">
-                                        Condition In: {item.conditionIn}
+                                        {t("conditionInLabel")}:{" "}
+                                        {item.conditionIn}
                                       </div>
                                     )}
                                   </Label>
@@ -445,7 +440,7 @@ export function LoanApprovalWorkflow({
                         </div>
                         {selectedItemIds.size === 0 && (
                           <p className="text-sm text-destructive">
-                            Please select at least one item to return.
+                            {t("selectAtLeastOne")}
                           </p>
                         )}
                       </div>
@@ -458,14 +453,14 @@ export function LoanApprovalWorkflow({
                           setSelectedItemIds(new Set());
                         }}
                       >
-                        Cancel
+                        {t("cancel")}
                       </Button>
                       <Button
                         onClick={handleProceedToConfirm}
                         disabled={selectedItemIds.size === 0}
                         className="bg-blue-600 hover:bg-blue-700"
                       >
-                        Continue
+                        {t("continueAction")}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -533,7 +528,7 @@ export function LoanApprovalWorkflow({
                           setIsReturnDialogOpen(true);
                         }}
                       >
-                        Go Back
+                        {t("goBack")}
                       </AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => handleReturn(pendingReturnItemIds)}
@@ -557,21 +552,20 @@ export function LoanApprovalWorkflow({
                     className="bg-blue-600 hover:bg-blue-700"
                   >
                     <CheckCircle className="mr-2 h-4 w-4" />
-                    Mark as Returned
+                    {t("markAsReturned")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Mark Loan as Returned</AlertDialogTitle>
+                    <AlertDialogTitle>{t("markAsReturned")}</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to mark this loan as returned? This
-                      will update the status of all associated collection items.
+                      {t("markAsReturnedConfirm")}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
                     <AlertDialogAction onClick={() => handleReturn([])}>
-                      Mark as Returned
+                      {t("markAsReturned")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -633,7 +627,7 @@ export function LoanApprovalWorkflow({
         setPendingReturnItemIds([]);
         // The query will automatically refresh, and the useEffect will filter out returned items
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to return loan");
+        setError(err instanceof Error ? err.message : t("failedToReturn"));
         setIsConfirmDialogOpen(false);
       } finally {
         setIsSubmitting(false);

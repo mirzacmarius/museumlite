@@ -604,10 +604,16 @@ export default {
     actions: {
       approveLoan: "Approve Loan",
       cancelLoan: "Cancel Loan",
+      cancelLoanConfirm:
+        "Are you sure you want to cancel this loan? This action cannot be undone.",
       dispatchLoan: "Dispatch Loan",
       markAsReturned: "Mark as Returned",
+      markAsReturnedConfirm:
+        "Are you sure you want to mark this loan as returned? This will update the status of all associated collection items.",
       returnLoanItems: "Return Loan Items",
       selectItemsToReturn: "Select Items to Return",
+      selectItemsToReturnDesc:
+        'Select which items to return. If all items are returned, the loan status will be updated to "Returned".',
       selectAllItems: "Select All",
       someItemsReturned: "Some items are already returned",
       returnedItemsInfo:
@@ -620,6 +626,7 @@ export default {
       loanActions: "Loan Actions",
       selectAtLeastOne: "Please select at least one item to return.",
       keepLoan: "Keep Loan",
+      cancel: "Cancel",
       removeLoanItem: "Remove Item from Loan",
       removeItemConfirm:
         "Are you sure you want to remove this item from the loan? This action cannot be undone.",

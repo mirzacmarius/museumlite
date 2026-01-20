@@ -637,10 +637,16 @@ export default {
     actions: {
       approveLoan: "Godkjenn lån",
       cancelLoan: "Avbryt lån",
+      cancelLoanConfirm:
+        "Er du sikker på at du vil avbryte dette lånet? Denne handlingen kan ikke angres.",
       dispatchLoan: "Send lån",
       markAsReturned: "Merk som returnert",
+      markAsReturnedConfirm:
+        "Er du sikker på at du vil merke dette lånet som returnert? Dette vil oppdatere statusen for alle tilknyttede samlingselementer.",
       returnLoanItems: "Returner lånartikler",
       selectItemsToReturn: "Velg artikler å returnere",
+      selectItemsToReturnDesc:
+        'Velg hvilke artikler som skal returneres. Hvis alle artikler returneres, vil lånestatus oppdateres til "Returnert".',
       selectAllItems: "Velg alle",
       someItemsReturned: "Noen artikler er allerede returnert",
       returnedItemsInfo:
@@ -653,6 +659,7 @@ export default {
       loanActions: "Lånhandlinger",
       selectAtLeastOne: "Vennligst velg minst en artikkel å returnere.",
       keepLoan: "Behold lån",
+      cancel: "Avbryt",
       removeLoanItem: "Fjern artikkel fra lån",
       removeItemConfirm:
         "Er du sikker på at du vil fjerne denne artikkelen fra lånet? Denne handlingen kan ikke angres.",

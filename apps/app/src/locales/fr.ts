@@ -657,10 +657,16 @@ export default {
     actions: {
       approveLoan: "Approuver le prêt",
       cancelLoan: "Annuler le prêt",
+      cancelLoanConfirm:
+        "Êtes-vous sûr de vouloir annuler ce prêt ? Cette action est irréversible.",
       dispatchLoan: "Expédier le prêt",
       markAsReturned: "Marquer comme retourné",
+      markAsReturnedConfirm:
+        "Êtes-vous sûr de vouloir marquer ce prêt comme retourné ? Cela mettra à jour le statut de tous les éléments de la collection associés.",
       returnLoanItems: "Retourner les articles du prêt",
       selectItemsToReturn: "Sélectionner les articles à retourner",
+      selectItemsToReturnDesc:
+        'Sélectionnez les articles à retourner. Si tous les articles sont retournés, le statut du prêt sera mis à jour en "Retourné".',
       selectAllItems: "Sélectionner tout",
       someItemsReturned: "Certains articles ont déjà été retournés",
       returnedItemsInfo:
@@ -674,6 +680,7 @@ export default {
       selectAtLeastOne:
         "Veuillez sélectionner au moins un article à retourner.",
       keepLoan: "Conserver le prêt",
+      cancel: "Annuler",
       removeLoanItem: "Supprimer l'article du prêt",
       removeItemConfirm:
         "Êtes-vous sûr de vouloir supprimer cet article du prêt ? Cette action ne peut pas être annulée.",
