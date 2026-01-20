@@ -27,6 +27,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function EditLoanPage() {
+  const tActions = useScopedI18n("loans.actions");
   const params = useParams();
   const router = useRouter();
   const loanId = params.id as string;
@@ -120,7 +121,7 @@ export default function EditLoanPage() {
     e.preventDefault();
     setError(null);
     if (!formData.lenderBorrowerName.trim()) {
-      setError("Lender/Borrower name is required");
+      setError(tActions("lenderBorrowerRequired"));
       return;
     }
 
@@ -144,7 +145,7 @@ export default function EditLoanPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to update loan. Please try again.",
+          : tActions("failedToCreateLoan"),
       );
       setIsSubmitting(false);
     }
@@ -218,7 +219,7 @@ export default function EditLoanPage() {
                           : "bg-cyan-50 text-cyan-700 ring-cyan-600/20 dark:bg-cyan-900/20 dark:text-cyan-400",
                       )}
                     >
-                      {loan.type === "incoming" ? "Incoming" : "Outgoing"}
+                      {loan.type === "incoming" ? tActions("incomingLoan") : tActions("outgoingLoan")}
                     </span>
                     <Lock className="h-3 w-3 text-muted-foreground/50" />
                   </div>
@@ -228,7 +229,7 @@ export default function EditLoanPage() {
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="lenderBorrowerName">
-                    {loan.type === "incoming" ? "Lender" : "Borrower"} Name{" "}
+                    {loan.type === "incoming" ? tActions("lender") : tActions("borrower")} Name{" "}
                     <span className="text-destructive">*</span>
                   </Label>
                   <Input
@@ -382,7 +383,7 @@ export default function EditLoanPage() {
                 className="min-w-[140px]"
               >
                 <Save className="mr-2 h-4 w-4" />
-                {isSubmitting ? "Saving..." : "Save Changes"}
+                {isSubmitting ? tActions("saving") : tActions("saveChanges")}
               </Button>
             </PermissionGate>
           </div>

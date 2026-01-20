@@ -244,7 +244,12 @@ export default {
       addButton: "Ajouter un Webhook",
       noWebhooks: "Aucun webhook configuré",
       test: "Tester",
+      cancel: "Annuler",
+      delete: "Supprimer",
+      deleteWebhook: "Supprimer le webhook?",
+      deleteWebhookDesc: "Cela supprimera définitivement ce point de terminaison webhook.",
     },
+    
     placeholders: {
       searchUsers: "Rechercher des utilisateurs...",
       selectRole: "Sélectionner un rôle",

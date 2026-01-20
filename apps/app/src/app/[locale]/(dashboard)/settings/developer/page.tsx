@@ -575,19 +575,22 @@ function WebhooksTab({
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Webhook?</AlertDialogTitle>
+                            <AlertDialogTitle>
+                              {t("webhooks.deleteWebhook")}
+                            </AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will permanently delete this webhook
-                              endpoint.
+                              {t("webhooks.deleteWebhookDesc")}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel>
+                              {t("webhooks.cancel")}
+                            </AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => handleDelete(webhook._id)}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
-                              Delete
+                              {t("webhooks.delete")}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -789,9 +792,9 @@ function UtilitiesTab({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Developer Utilities</h2>
+        <h2 className="text-xl font-semibold">{t("developer.utilities")}</h2>
         <p className="text-sm text-muted-foreground">
-          Administrative tools for testing and development. Use with caution.
+          {t("developer.utilitiesDesc")}
         </p>
       </div>
 
@@ -802,29 +805,37 @@ function UtilitiesTab({
           </div>
           <div className="flex-1 space-y-2">
             <div>
-              <h3 className="text-lg font-semibold">Delete All Loans</h3>
+              <h3 className="text-lg font-semibold">
+                {t("developer.deleteAllLoans")}
+              </h3>
               <p className="text-sm text-muted-foreground">
-                Permanently delete all loans, loan items, and restore collection
-                statuses to "active". This action cannot be undone.
+                {t("developer.deleteLoansDesc")}
               </p>
             </div>
 
             {deleteResult && (
               <div className="rounded-md bg-muted p-4 space-y-1">
-                <p className="text-sm font-medium">Operation completed:</p>
+                <p className="text-sm font-medium">
+                  {t("developer.operationCompleted")}
+                </p>
                 <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                   <li>
-                    Deleted {deleteResult.deletedLoans} loan
-                    {deleteResult.deletedLoans !== 1 ? "s" : ""}
+                    {t("developer.deletedLoans", {
+                      count: deleteResult.deletedLoans,
+                      plural: deleteResult.deletedLoans !== 1 ? "s" : "",
+                    })}
                   </li>
                   <li>
-                    Deleted {deleteResult.deletedLoanItems} loan item
-                    {deleteResult.deletedLoanItems !== 1 ? "s" : ""}
+                    {t("developer.deletedLoanItems", {
+                      count: deleteResult.deletedLoanItems,
+                      plural: deleteResult.deletedLoanItems !== 1 ? "s" : "",
+                    })}
                   </li>
                   <li>
-                    Updated {deleteResult.updatedCollections} collection
-                    {deleteResult.updatedCollections !== 1 ? "s" : ""} status to
-                    active
+                    {t("developer.updatedCollections", {
+                      count: deleteResult.updatedCollections,
+                      plural: deleteResult.updatedCollections !== 1 ? "s" : "",
+                    })}
                   </li>
                 </ul>
               </div>
@@ -835,7 +846,9 @@ function UtilitiesTab({
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" disabled={isDeletingLoans}>
                     <Trash2 className="mr-2 h-4 w-4" />
-                    {isDeletingLoans ? "Deleting..." : "Delete All Loans"}
+                    {isDeletingLoans
+                      ? "Deleting..."
+                      : t("developer.deleteAllLoans")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>

@@ -105,6 +105,7 @@ type Loan = {
 };
 
 export default function LoanDetailPage() {
+  const tActions = useScopedI18n("loans.actions");
   const params = useParams();
   const loanId = params.id as string;
   const locale = useCurrentLocale();
@@ -183,7 +184,7 @@ export default function LoanDetailPage() {
               </span>
               <span className="text-muted-foreground/50">/</span>
               <span className="text-muted-foreground">
-                {loan.type === "incoming" ? "Incoming" : "Outgoing"}
+                {loan.type === "incoming" ? tActions("incoming") : tActions("outgoing")}
               </span>
               <span className="text-muted-foreground/50">/</span>
               <span className="font-medium text-foreground">
@@ -293,7 +294,7 @@ export default function LoanDetailPage() {
                       Loan {loan.loanNumber}
                     </h1>
                     <p className="text-muted-foreground text-sm">
-                      {loan.type === "outgoing" ? "Borrower" : "Lender"}:{" "}
+                      {loan.type === "outgoing" ? tActions("borrower") : tActions("lenderLabel")}:{" "}
                       {loan.lenderBorrowerName}
                     </p>
                   </div>
@@ -352,7 +353,7 @@ export default function LoanDetailPage() {
                       className="rounded-none border-b-2 border-transparent py-3 text-xs font-medium text-muted-foreground hover:text-foreground data-[state=active]:border-cyan-500 data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
                     >
                       Overview &{" "}
-                      {loan.type === "outgoing" ? "Borrower" : "Lender"}
+                      {loan.type === "outgoing" ? tActions("borrower") : tActions("lenderLabel")}
                     </TabsTrigger>
                     <TabsTrigger
                       value="objects"
@@ -831,7 +832,7 @@ function ObjectsTab({ loan }: { loan: Loan }) {
                     </p>
                     <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{" "}
-                      {item.conditionOut || "Stable"}
+                      {item.conditionOut || tActions("stable")}
                     </p>
                   </div>
                   <div>

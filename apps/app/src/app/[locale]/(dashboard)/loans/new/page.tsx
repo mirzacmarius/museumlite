@@ -117,6 +117,7 @@ function SelectedCollectionItem({
 }
 
 export default function NewLoanPage() {
+  const tActions = useScopedI18n("loans.actions");
   const router = useRouter();
   const locale = useCurrentLocale();
   const t = useScopedI18n("loans");
@@ -218,7 +219,7 @@ export default function NewLoanPage() {
     e.preventDefault();
     setError(null);
     if (!formData.lenderBorrowerName.trim()) {
-      setError("Lender/Borrower name is required");
+      setError(tActions("lenderBorrowerRequired"));
       return;
     }
 
@@ -237,7 +238,7 @@ export default function NewLoanPage() {
         return updated;
       });
       setError(
-        "Some selected collections are no longer available and have been removed. Please try again.",
+        tActions("someCollectionsNoLongerAvailable"),
       );
       return;
     }
@@ -288,19 +289,19 @@ export default function NewLoanPage() {
       router.push("/loans");
     } catch (err) {
       console.error("Error creating loan:", err);
-      let errorMessage = "Failed to create loan. Please try again.";
+      let errorMessage = tActions("failedToCreateLoan");
 
       if (err instanceof Error) {
         // Provide more user-friendly error messages
         if (err.message.includes("already in an active loan")) {
           errorMessage =
-            "One or more selected collections are already in an active or pending loan. Please remove them and try again.";
+            tActions("alreadyInActiveLoan");
         } else if (err.message.includes("does not belong to organization")) {
           errorMessage =
-            "One or more selected collections don't belong to this organization. Please refresh and try again.";
+            tActions("doesNotBelongToOrganization");
         } else if (err.message.includes("is not active")) {
           errorMessage =
-            "One or more selected collections are not active. Please select only active collections.";
+            tActions("notActive");
         } else {
           errorMessage = err.message;
         }
@@ -407,7 +408,7 @@ export default function NewLoanPage() {
                 <div className="space-y-4 rounded-lg bg-secondary/30 border border-border/50 p-4">
                   <div>
                     <Label className="mb-2 block">
-                      {formData.type === "incoming" ? "Lender" : "Borrower"}{" "}
+                      {formData.type === "incoming" ? tActions("lender") : tActions("borrower")}{" "}
                       Account
                     </Label>
                     <AccountCombobox
@@ -698,7 +699,7 @@ export default function NewLoanPage() {
                   className="min-w-[140px]"
                 >
                   <Save className="mr-2 h-4 w-4" />
-                  {isSubmitting ? "Creating..." : "Create Loan"}
+                  {isSubmitting ? tActions("saving") : tActions("createNewLoan")}
                 </Button>
               </PermissionGate>
             </div>
@@ -729,7 +730,7 @@ export default function NewLoanPage() {
 
                   <div className="pb-4 border-b border-border/50">
                     <span className="text-xs text-muted-foreground uppercase tracking-wide block mb-1">
-                      {formData.type === "incoming" ? "Lender" : "Borrower"}
+                      {formData.type === "incoming" ? tActions("lender") : tActions("borrower")}
                     </span>
                     <p className="text-sm font-medium text-foreground">
                       {formData.lenderBorrowerName || "—"}
@@ -753,7 +754,7 @@ export default function NewLoanPage() {
                       <span className="text-foreground">
                         {formData.endDate
                           ? formatDate(formData.endDate, locale)
-                          : "Indefinite"}
+                          : tActions("indefinite")}
                       </span>
                     </div>
                   </div>
