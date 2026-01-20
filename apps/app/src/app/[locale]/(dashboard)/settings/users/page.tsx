@@ -32,7 +32,8 @@ import { useState } from "react";
 
 export default function UsersSettingsPage() {
   const locale = useCurrentLocale();
-  const t = useScopedI18n("settings.placeholders");
+  const t = useScopedI18n("settings.users");
+  const tPlaceholders = useScopedI18n("settings.placeholders");
   const { currentOrganizationId } = useOrganization();
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -61,9 +62,7 @@ export default function UsersSettingsPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">
-          Please select an organization to manage users.
-        </p>
+        <p className="text-muted-foreground">{t("selectOrganization")}</p>
       </div>
     );
   }
@@ -73,12 +72,12 @@ export default function UsersSettingsPage() {
     setError(null);
 
     if (!inviteEmail.trim()) {
-      setError("Email is required");
+      setError(t("emailRequired"));
       return;
     }
 
     if (!selectedRoleId) {
-      setError("Role is required");
+      setError(t("roleRequired"));
       return;
     }
 
@@ -94,22 +93,14 @@ export default function UsersSettingsPage() {
       setInviteDialogOpen(false);
     } catch (err) {
       console.error("Error inviting user:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to invite user. Please try again.",
-      );
+      setError(err instanceof Error ? err.message : t("inviteFailed"));
     } finally {
       setIsInviting(false);
     }
   };
 
   const handleRemoveUser = async (userId: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to remove this user from the organization?",
-      )
-    ) {
+    if (!confirm(t("removeConfirm"))) {
       return;
     }
 
@@ -120,11 +111,7 @@ export default function UsersSettingsPage() {
       });
     } catch (err) {
       console.error("Error removing user:", err);
-      alert(
-        err instanceof Error
-          ? err.message
-          : "Failed to remove user. Please try again.",
-      );
+      alert(err instanceof Error ? err.message : t("removeFailed"));
     }
   };
 

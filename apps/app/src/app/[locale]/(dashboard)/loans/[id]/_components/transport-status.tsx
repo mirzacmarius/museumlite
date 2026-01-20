@@ -2,7 +2,7 @@
 
 import { PermissionGate } from "@/components/permission-gate";
 import { formatDate } from "@/lib/format-date";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Timeline } from "@v1/ui/timeline";
@@ -22,6 +22,7 @@ export function TransportStatus({ loanId }: TransportStatusProps) {
 
 function TransportStatusContent({ loanId }: TransportStatusProps) {
   const locale = useCurrentLocale();
+  const t = useScopedI18n("loans.actions");
   const transitRecords = useQuery(api.transit.getTransitForLoanWithHistory, {
     loanId,
     limit: 5,
@@ -35,9 +36,9 @@ function TransportStatusContent({ loanId }: TransportStatusProps) {
     return (
       <div className="rounded-lg border border-white/10 bg-black p-6">
         <h3 className="text-sm font-medium text-white/80 mb-4">
-          Transport Status
+          {t("transportStatus")}
         </h3>
-        <p className="text-xs text-white/60">No transport records</p>
+        <p className="text-xs text-white/60">{t("noTransportRecords")}</p>
       </div>
     );
   }
@@ -45,7 +46,7 @@ function TransportStatusContent({ loanId }: TransportStatusProps) {
   return (
     <div className="rounded-lg border border-white/10 bg-black p-6">
       <h3 className="text-sm font-medium text-white/80 mb-4">
-        Transport Status
+        {t("transportStatus")}
       </h3>
       <div className="space-y-6">
         {transitRecords.map((record) => (

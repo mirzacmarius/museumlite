@@ -81,7 +81,8 @@ type ModuleId = (typeof MODULES)[number]["id"];
 
 export default function ModulesSettingsPage() {
   const { currentOrganizationId } = useOrganization();
-  const t = useScopedI18n("common.toast");
+  const t = useScopedI18n("settings.modules");
+  const tToast = useScopedI18n("common.toast");
   const canManage = usePermission(
     currentOrganizationId,
     "organization.manage_settings",
@@ -125,11 +126,11 @@ export default function ModulesSettingsPage() {
         settings: { enabledModules: next },
       });
       toast.success(
-        t("moduleToggled", { action: enabled ? "enabled" : "disabled" }),
+        tToast("moduleToggled", { action: enabled ? "enabled" : "disabled" }),
       );
     } catch (error) {
       setEnabledModules(previous);
-      toast.error(t("moduleUpdateFailed"));
+      toast.error(tToast("moduleUpdateFailed"));
     } finally {
       setIsSaving(null);
     }
@@ -139,9 +140,7 @@ export default function ModulesSettingsPage() {
     return (
       <div className="flex h-full w-full flex-col gap-6">
         <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card p-6">
-          <p className="text-muted-foreground">
-            Please select an organization to manage modules.
-          </p>
+          <p className="text-muted-foreground">{t("selectOrganization")}</p>
         </div>
       </div>
     );
@@ -161,9 +160,9 @@ export default function ModulesSettingsPage() {
     <div className="flex h-full w-full flex-col gap-6">
       <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
         <div className="flex w-full flex-col gap-2 p-6">
-          <h2 className="text-xl font-medium text-primary">Modules</h2>
+          <h2 className="text-xl font-medium text-primary">{t("title")}</h2>
           <p className="text-sm font-normal text-primary/60">
-            Enable specialized modules tailored to your collection type.
+            {t("description")}
           </p>
         </div>
       </div>
@@ -193,7 +192,7 @@ export default function ModulesSettingsPage() {
                       {isEnabled && (
                         <Badge variant="secondary" className="text-xs">
                           <Check className="mr-1 h-3 w-3" />
-                          Enabled
+                          {t("enabled")}
                         </Badge>
                       )}
                     </div>
@@ -202,7 +201,9 @@ export default function ModulesSettingsPage() {
                     </p>
                     {integrationLocked && (
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Requires {requiredIntegration} integration subscription.
+                        {t("requiresIntegration", {
+                          integration: requiredIntegration,
+                        })}
                       </p>
                     )}
                   </div>
@@ -224,11 +225,14 @@ export default function ModulesSettingsPage() {
               {integrationLocked && (
                 <div className="flex items-center justify-between border-t border-border bg-secondary/50 px-6 py-3 dark:bg-card">
                   <p className="text-sm text-muted-foreground">
-                    Enable {requiredIntegration} integration to unlock this
-                    module.
+                    {t("unlockIntegration", {
+                      integration: requiredIntegration,
+                    })}
                   </p>
                   <Button variant="ghost" size="sm" asChild>
-                    <Link href="/settings/integrations">View Integrations</Link>
+                    <Link href="/settings/integrations">
+                      {t("viewIntegrations")}
+                    </Link>
                   </Button>
                 </div>
               )}
@@ -238,10 +242,7 @@ export default function ModulesSettingsPage() {
       </div>
       {!canManage && (
         <div className="rounded-lg border border-border bg-card p-6">
-          <p className="text-sm text-muted-foreground">
-            You don't have permission to manage modules. Contact your
-            administrator.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("noPermission")}</p>
         </div>
       )}
     </div>

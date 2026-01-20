@@ -5,6 +5,7 @@ import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDate as formatDateUtil } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
@@ -47,23 +48,24 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 
-const STATUS_FILTERS = [
-  { value: "all", label: "All Status" },
-  { value: "submitted", label: "Submitted" },
-  { value: "under_review", label: "Under Review" },
-  { value: "approved", label: "Approved" },
-  { value: "ordered", label: "Ordered" },
-  { value: "received", label: "Received" },
-  { value: "cataloged", label: "Cataloged" },
-  { value: "rejected", label: "Rejected" },
+// Status and priority filters will use i18n keys
+const STATUS_FILTER_VALUES = [
+  "all",
+  "submitted",
+  "under_review",
+  "approved",
+  "ordered",
+  "received",
+  "cataloged",
+  "rejected",
 ] as const;
 
-const PRIORITY_FILTERS = [
-  { value: "all", label: "All Priorities" },
-  { value: "urgent", label: "Urgent" },
-  { value: "high", label: "High" },
-  { value: "normal", label: "Normal" },
-  { value: "low", label: "Low" },
+const PRIORITY_FILTER_VALUES = [
+  "all",
+  "urgent",
+  "high",
+  "normal",
+  "low",
 ] as const;
 
 type RequestStatus =
@@ -83,6 +85,8 @@ export default function LibraryAcquisitionsPage() {
   const { hasModule } = useFeatureAccess();
   const locale = useCurrentLocale();
   const t = useScopedI18n("library.placeholders");
+  const tLib = useScopedI18n("library");
+  const tAcq = useScopedI18n("library.acquisitions");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
@@ -220,13 +224,13 @@ export default function LibraryAcquisitionsPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">No Organization Found</h3>
+            <h3 className="text-lg font-semibold">{tAcq("noOrganization")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You need to create an organization to manage acquisitions.
+              {tAcq("noOrganizationDescription")}
             </p>
           </div>
           <Button asChild>
-            <Link href="/organizations/new">Create Organization</Link>
+            <Link href="/organizations/new">{tLib("createOrganization")}</Link>
           </Button>
         </div>
       </div>
@@ -239,9 +243,11 @@ export default function LibraryAcquisitionsPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Library className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">Select an Organization</h3>
+            <h3 className="text-lg font-semibold">
+              {tAcq("selectOrganization")}
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select an organization from the dropdown above.
+              {tAcq("selectOrganizationDescription")}
             </p>
           </div>
         </div>
@@ -255,13 +261,15 @@ export default function LibraryAcquisitionsPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Library className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">Library Not Enabled</h3>
+            <h3 className="text-lg font-semibold">{tAcq("notEnabled")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              The Library integration is not enabled for this organization.
+              {tAcq("notEnabledDescription")}
             </p>
           </div>
           <Button asChild>
-            <Link href="/settings/integrations">Enable Integration</Link>
+            <Link href="/settings/integrations">
+              {tLib("enableIntegration")}
+            </Link>
           </Button>
         </div>
       </div>
@@ -272,65 +280,90 @@ export default function LibraryAcquisitionsPage() {
     return formatDateUtil(new Date(timestamp), locale);
   };
 
+  const getStatusLabel = (status: string): string => {
+    const statusMap: Record<string, string> = {
+      submitted: tAcq("status.submitted"),
+      under_review: tAcq("status.underReview"),
+      approved: tAcq("status.approved"),
+      ordered: tAcq("status.ordered"),
+      received: tAcq("status.received"),
+      cataloged: tAcq("status.cataloged"),
+      rejected: tAcq("status.rejected"),
+    };
+    return statusMap[status] || status;
+  };
+
   const getStatusBadge = (status: string) => {
+    const label = getStatusLabel(status);
     switch (status) {
       case "submitted":
-        return <Badge variant="secondary">Submitted</Badge>;
+        return <Badge variant="secondary">{label}</Badge>;
       case "under_review":
         return (
           <Badge variant="default" className="bg-blue-500">
-            Under Review
+            {label}
           </Badge>
         );
       case "approved":
         return (
           <Badge variant="default" className="bg-green-500">
-            Approved
+            {label}
           </Badge>
         );
       case "ordered":
         return (
           <Badge variant="default" className="bg-purple-500">
-            Ordered
+            {label}
           </Badge>
         );
       case "received":
         return (
           <Badge variant="default" className="bg-teal-500">
-            Received
+            {label}
           </Badge>
         );
       case "cataloged":
         return (
           <Badge variant="default" className="bg-green-600">
-            Cataloged
+            {label}
           </Badge>
         );
       case "rejected":
-        return <Badge variant="destructive">Rejected</Badge>;
+        return <Badge variant="destructive">{label}</Badge>;
       case "cancelled":
-        return <Badge variant="outline">Cancelled</Badge>;
+        return <Badge variant="outline">{label}</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        return <Badge variant="secondary">{label}</Badge>;
     }
   };
 
+  const getPriorityLabel = (priority: string): string => {
+    const priorityMap: Record<string, string> = {
+      urgent: tAcq("priority.urgent"),
+      high: tAcq("priority.high"),
+      normal: tAcq("priority.normal"),
+      low: tAcq("priority.low"),
+    };
+    return priorityMap[priority] || priority;
+  };
+
   const getPriorityBadge = (priority: string) => {
+    const label = getPriorityLabel(priority);
     switch (priority) {
       case "urgent":
-        return <Badge variant="destructive">Urgent</Badge>;
+        return <Badge variant="destructive">{label}</Badge>;
       case "high":
         return (
           <Badge variant="default" className="bg-orange-500">
-            High
+            {label}
           </Badge>
         );
       case "normal":
-        return <Badge variant="secondary">Normal</Badge>;
+        return <Badge variant="secondary">{label}</Badge>;
       case "low":
-        return <Badge variant="outline">Low</Badge>;
+        return <Badge variant="outline">{label}</Badge>;
       default:
-        return <Badge variant="secondary">{priority}</Badge>;
+        return <Badge variant="secondary">{label}</Badge>;
     }
   };
 
@@ -396,15 +429,15 @@ export default function LibraryAcquisitionsPage() {
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex flex-col gap-2">
               <h2 className="text-xl font-medium text-primary">
-                Acquisition Requests
+                {tAcq("title")}
               </h2>
               <p className="text-sm font-normal text-primary/60">
-                Manage purchase requests and orders
+                {tAcq("description")}
               </p>
             </div>
             <Button onClick={() => setIsNewRequestOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              New Request
+              {tAcq("newRequest")}
             </Button>
           </div>
           <div className="flex w-full px-6">
@@ -416,16 +449,20 @@ export default function LibraryAcquisitionsPage() {
             <div className="flex gap-4">
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Filters:</span>
+                <span className="text-sm text-muted-foreground">
+                  {tLib("filters")}:
+                </span>
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {STATUS_FILTERS.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
+                  {STATUS_FILTER_VALUES.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {value === "all"
+                        ? tAcq("filters.allStatus")
+                        : getStatusLabel(value)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -435,9 +472,11 @@ export default function LibraryAcquisitionsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {PRIORITY_FILTERS.map((priority) => (
-                    <SelectItem key={priority.value} value={priority.value}>
-                      {priority.label}
+                  {PRIORITY_FILTER_VALUES.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {value === "all"
+                        ? tAcq("filters.allPriorities")
+                        : getPriorityLabel(value)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -456,19 +495,19 @@ export default function LibraryAcquisitionsPage() {
               <div className="text-center">
                 <p className="font-medium">
                   {statusFilter !== "all" || priorityFilter !== "all"
-                    ? "No requests found"
-                    : "No acquisition requests"}
+                    ? tAcq("noRequestsFiltered")
+                    : tAcq("noRequests")}
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
                   {statusFilter !== "all" || priorityFilter !== "all"
-                    ? "Try adjusting your filters"
-                    : "Submit a request to add new items to the library"}
+                    ? tAcq("tryAdjustFilters")
+                    : tAcq("noRequestsDescription")}
                 </p>
               </div>
               {statusFilter === "all" && priorityFilter === "all" && (
                 <Button onClick={() => setIsNewRequestOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Create First Request
+                  {tAcq("createFirst")}
                 </Button>
               )}
             </div>
@@ -493,18 +532,20 @@ export default function LibraryAcquisitionsPage() {
                           </p>
                         )}
                         <p className="text-xs text-muted-foreground">
-                          Requested by{" "}
-                          {request.requestedByUser?.name || "Unknown"} on{" "}
-                          {formatDate(request.requestedAt)}
+                          {tAcq("labels.requestedBy")}{" "}
+                          {request.requestedByUser?.name || "Unknown"}{" "}
+                          {tAcq("labels.on")} {formatDate(request.requestedAt)}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <p className="text-sm">Qty: {request.quantity}</p>
+                        <p className="text-sm">
+                          {tAcq("labels.qty")} {request.quantity}
+                        </p>
                         {request.estimatedPrice && (
                           <p className="text-xs text-muted-foreground">
-                            Est:{" "}
+                            {tAcq("labels.est")}{" "}
                             {formatCurrency(
                               request.estimatedPrice,
                               locale,
@@ -522,7 +563,7 @@ export default function LibraryAcquisitionsPage() {
                             disabled={isProcessing}
                           >
                             <X className="mr-1 h-3 w-3" />
-                            Reject
+                            {tAcq("actions.reject")}
                           </Button>
                           <Button
                             size="sm"
@@ -530,7 +571,7 @@ export default function LibraryAcquisitionsPage() {
                             disabled={isProcessing}
                           >
                             <Check className="mr-1 h-3 w-3" />
-                            Review
+                            {tAcq("actions.review")}
                           </Button>
                         </>
                       )}
@@ -543,7 +584,7 @@ export default function LibraryAcquisitionsPage() {
                             disabled={isProcessing}
                           >
                             <X className="mr-1 h-3 w-3" />
-                            Reject
+                            {tAcq("actions.reject")}
                           </Button>
                           <Button
                             size="sm"
@@ -551,7 +592,7 @@ export default function LibraryAcquisitionsPage() {
                             disabled={isProcessing}
                           >
                             <Check className="mr-1 h-3 w-3" />
-                            Approve
+                            {tAcq("actions.approve")}
                           </Button>
                         </>
                       )}
@@ -564,7 +605,7 @@ export default function LibraryAcquisitionsPage() {
                           disabled={isProcessing}
                         >
                           <Truck className="mr-1 h-3 w-3" />
-                          Mark Ordered
+                          {tAcq("actions.markOrdered")}
                         </Button>
                       )}
                       {request.status === "ordered" && (
@@ -576,7 +617,7 @@ export default function LibraryAcquisitionsPage() {
                           disabled={isProcessing}
                         >
                           <Package className="mr-1 h-3 w-3" />
-                          Mark Received
+                          {tAcq("actions.markReceived")}
                         </Button>
                       )}
                       {request.status === "received" && (
@@ -588,7 +629,7 @@ export default function LibraryAcquisitionsPage() {
                           disabled={isProcessing}
                         >
                           <CheckCircle className="mr-1 h-3 w-3" />
-                          Cataloged
+                          {tAcq("actions.cataloged")}
                         </Button>
                       )}
                     </div>
@@ -603,14 +644,12 @@ export default function LibraryAcquisitionsPage() {
         <Dialog open={isNewRequestOpen} onOpenChange={setIsNewRequestOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>New Acquisition Request</DialogTitle>
-              <DialogDescription>
-                Request a new item to be added to the library collection
-              </DialogDescription>
+              <DialogTitle>{tAcq("form.title")}</DialogTitle>
+              <DialogDescription>{tAcq("form.description")}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Title *</Label>
+                <Label>{tAcq("form.titleLabel")}</Label>
                 <Input
                   value={newRequest.title}
                   onChange={(e) =>
@@ -623,7 +662,7 @@ export default function LibraryAcquisitionsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Authors</Label>
+                <Label>{tAcq("form.authors")}</Label>
                 <Input
                   value={newRequest.authors}
                   onChange={(e) =>
@@ -637,7 +676,7 @@ export default function LibraryAcquisitionsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>ISBN</Label>
+                  <Label>{tAcq("form.isbn")}</Label>
                   <Input
                     value={newRequest.isbn}
                     onChange={(e) =>
@@ -650,7 +689,7 @@ export default function LibraryAcquisitionsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Publisher</Label>
+                  <Label>{tAcq("form.publisher")}</Label>
                   <Input
                     value={newRequest.publisher}
                     onChange={(e) =>
@@ -665,7 +704,7 @@ export default function LibraryAcquisitionsPage() {
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Priority</Label>
+                  <Label>{tAcq("form.priority")}</Label>
                   <Select
                     value={newRequest.priority}
                     onValueChange={(value: Priority) =>
@@ -676,15 +715,23 @@ export default function LibraryAcquisitionsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="normal">Normal</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
+                      <SelectItem value="low">
+                        {tAcq("priority.low")}
+                      </SelectItem>
+                      <SelectItem value="normal">
+                        {tAcq("priority.normal")}
+                      </SelectItem>
+                      <SelectItem value="high">
+                        {tAcq("priority.high")}
+                      </SelectItem>
+                      <SelectItem value="urgent">
+                        {tAcq("priority.urgent")}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Quantity</Label>
+                  <Label>{tAcq("form.quantity")}</Label>
                   <Input
                     type="number"
                     min="1"
@@ -698,7 +745,7 @@ export default function LibraryAcquisitionsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Est. Price</Label>
+                  <Label>{tAcq("form.estPrice")}</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -709,12 +756,12 @@ export default function LibraryAcquisitionsPage() {
                         estimatedPrice: e.target.value,
                       }))
                     }
-                    placeholder="0.00"
+                    placeholder={tAcq("form.estPricePlaceholder")}
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Reason for Request</Label>
+                <Label>{tAcq("form.reason")}</Label>
                 <Textarea
                   value={newRequest.reason}
                   onChange={(e) =>
@@ -733,7 +780,7 @@ export default function LibraryAcquisitionsPage() {
                 variant="outline"
                 onClick={() => setIsNewRequestOpen(false)}
               >
-                Cancel
+                {tAcq("form.cancel")}
               </Button>
               <Button
                 onClick={handleCreateRequest}
@@ -742,7 +789,7 @@ export default function LibraryAcquisitionsPage() {
                 {isProcessing && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Submit Request
+                {tAcq("submitRequest")}
               </Button>
             </DialogFooter>
           </DialogContent>

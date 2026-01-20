@@ -727,10 +727,13 @@ function CollectionList({
   onLoadMore: () => void;
   onReset: () => void;
 }) {
+  const t = useScopedI18n("objects");
+  const common = useScopedI18n("common");
+
   if (collections === undefined) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{common("loading")}</p>
       </div>
     );
   }
@@ -738,12 +741,14 @@ function CollectionList({
   if (collections.page.length === 0) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">No objects found</p>
+        <p className="text-muted-foreground">
+          {t("emptyState.noObjectsFound")}
+        </p>
         <PermissionGate permission="collections.create">
           <Button asChild>
             <Link href="/objects/new">
               <Plus className="mr-2 h-4 w-4" />
-              Add Your First Object
+              {t("emptyState.addFirstObject")}
             </Link>
           </Button>
         </PermissionGate>
@@ -811,14 +816,16 @@ function CollectionList({
       {!collections.isDone && (
         <div className="mt-6 flex justify-center">
           <Button variant="outline" onClick={onLoadMore}>
-            Load More
+            {t("pagination.loadMore")}
           </Button>
         </div>
       )}
       {collections.page.length > 0 && (
         <div className="mt-4 text-center text-sm text-muted-foreground">
           Showing {collections.page.length}{" "}
-          {collections.isDone ? "items" : "items (more available)"}
+          {collections.isDone
+            ? t("pagination.items")
+            : t("pagination.itemsMore")}
         </div>
       )}
     </div>

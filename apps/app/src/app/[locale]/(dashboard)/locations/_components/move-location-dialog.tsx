@@ -79,7 +79,7 @@ export function MoveLocationDialog({
       onOpenChange(false);
       onSuccess?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to move location");
+      setError(err instanceof Error ? err.message : t("moveFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -146,8 +146,7 @@ export function MoveLocationDialog({
           <DialogHeader>
             <DialogTitle>{t("title")}</DialogTitle>
             <DialogDescription>
-              Move <span className="font-medium">{locationName}</span> to a new
-              parent location
+              {t("description", { name: locationName })}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -170,7 +169,7 @@ export function MoveLocationDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="root">
-                    <span className="font-medium">Root (No Parent)</span>
+                    <span className="font-medium">{t("rootOption")}</span>
                   </SelectItem>
                   {availableLocations.map((loc) => (
                     <SelectItem
@@ -187,7 +186,7 @@ export function MoveLocationDialog({
               </Select>
               {currentParentId && (
                 <p className="text-xs text-muted-foreground">
-                  Current parent is disabled in the list
+                  {t("currentParentDisabled")}
                 </p>
               )}
             </div>

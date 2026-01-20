@@ -50,7 +50,8 @@ interface WorkflowConfig {
 }
 
 export default function WorkflowsSettingsPage() {
-  const t = useScopedI18n("settings.placeholders");
+  const t = useScopedI18n("settings.workflows");
+  const tPlaceholders = useScopedI18n("settings.placeholders");
   const { currentOrganizationId } = useOrganization();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingWorkflow, setEditingWorkflow] = useState<WorkflowType | null>(
@@ -84,9 +85,7 @@ export default function WorkflowsSettingsPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">
-          Please select an organization to manage workflows.
-        </p>
+        <p className="text-muted-foreground">{t("selectOrganization")}</p>
       </div>
     );
   }
@@ -203,17 +202,17 @@ export default function WorkflowsSettingsPage() {
   const getWorkflowTitle = (type: WorkflowType | null): string => {
     switch (type) {
       case "accession":
-        return "Accession";
+        return t("accession");
       case "deaccession":
-        return "Deaccession";
+        return t("deaccession");
       case "loan":
-        return "Loan";
+        return t("loan");
       case "acquisition":
-        return "Acquisition";
+        return t("acquisition");
       case "exhibition":
-        return "Exhibition";
+        return t("exhibition");
       case "conservation":
-        return "Conservation";
+        return t("conservation");
       default:
         return "";
     }
@@ -230,7 +229,7 @@ export default function WorkflowsSettingsPage() {
           <div>
             <h3 className="text-lg font-medium text-foreground">{title}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Configure approval steps and initiation permissions.
+              {t("configureSteps")}
             </p>
           </div>
           <PermissionGate permission="settings.update">
@@ -241,7 +240,7 @@ export default function WorkflowsSettingsPage() {
               className="border-border bg-muted text-foreground/80 hover:bg-accent hover:text-white"
             >
               <Edit className="mr-2 h-4 w-4" />
-              Edit Workflow
+              {t("editWorkflow")}
             </Button>
           </PermissionGate>
         </div>
@@ -249,11 +248,11 @@ export default function WorkflowsSettingsPage() {
         <div className="space-y-6">
           <div>
             <h4 className="mb-3 text-sm font-medium text-foreground/80">
-              Approval Steps
+              {t("approvalSteps")}
             </h4>
             {stepCount === 0 ? (
               <div className="rounded-lg border border-dashed border-border bg-muted/20 p-4 text-center text-sm text-muted-foreground">
-                No approval steps configured. Workflow completes automatically.
+                {t("noStepsConfigured")}
               </div>
             ) : (
               <div className="space-y-3">
@@ -272,7 +271,7 @@ export default function WorkflowsSettingsPage() {
                           {step.name}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          Role: {role?.name || "Unknown Role"}
+                          Role: {role?.name || t("unknownRole")}
                         </div>
                       </div>
                     </div>
@@ -284,11 +283,11 @@ export default function WorkflowsSettingsPage() {
 
           <div>
             <h4 className="mb-3 text-sm font-medium text-foreground/80">
-              Can Initiate
+              {t("canInitiate")}
             </h4>
             {initiatorCount === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No specific roles assigned (admins only).
+                {t("noRolesAssigned")}
               </p>
             ) : (
               <div className="flex flex-wrap gap-2">
@@ -299,7 +298,7 @@ export default function WorkflowsSettingsPage() {
                       key={roleId}
                       className="rounded-md border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground"
                     >
-                      {role?.name || "Unknown Role"}
+                      {role?.name || t("unknownRole")}
                     </span>
                   );
                 })}
@@ -314,12 +313,8 @@ export default function WorkflowsSettingsPage() {
   return (
     <div className="flex w-full flex-col gap-8 bg-background">
       <div className="flex flex-col gap-2">
-        <h2 className="text-xl font-medium text-foreground">
-          Workflow Configuration
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Manage approval workflows for critical system actions.
-        </p>
+        <h2 className="text-xl font-medium text-foreground">{t("title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("description")}</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -335,18 +330,17 @@ export default function WorkflowsSettingsPage() {
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto bg-background border-border">
           <DialogHeader>
             <DialogTitle className="text-foreground">
-              Edit {getWorkflowTitle(editingWorkflow)} Workflow
+              Edit {getWorkflowTitle(editingWorkflow)} {t("title")}
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              Configure the approval steps and initiation permissions for this
-              workflow.
+              {t("configureSteps")}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSave} className="space-y-6 py-4">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label className="text-foreground">Approval Steps</Label>
+                <Label className="text-foreground">{t("approvalSteps")}</Label>
                 <Button
                   type="button"
                   onClick={addStep}
@@ -355,14 +349,13 @@ export default function WorkflowsSettingsPage() {
                   className="h-8 border-border bg-muted text-foreground/80 hover:bg-accent hover:text-white"
                 >
                   <Plus className="mr-2 h-3.5 w-3.5" />
-                  Add Step
+                  {t("addStep")}
                 </Button>
               </div>
 
               {formData.steps.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-border bg-muted/20 p-8 text-center text-sm text-muted-foreground">
-                  No steps defined. Click "Add Step" to create an approval
-                  process.
+                  {t("noStepsDefined")}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -378,7 +371,7 @@ export default function WorkflowsSettingsPage() {
                       <div className="flex-1 space-y-3">
                         <div>
                           <Label className="text-xs text-muted-foreground">
-                            Step Name
+                            {t("stepName")}
                           </Label>
                           <Input
                             value={step.name}
@@ -386,13 +379,13 @@ export default function WorkflowsSettingsPage() {
                               updateStep(index, "name", e.target.value)
                             }
                             className="mt-1 border-border bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
-                            placeholder={t("stepName")}
+                            placeholder={tPlaceholders("stepName")}
                           />
                         </div>
 
                         <div>
                           <Label className="text-xs text-muted-foreground">
-                            Assign Role
+                            {t("assignRole")}
                           </Label>
                           <Select
                             value={step.roleId}
@@ -401,7 +394,9 @@ export default function WorkflowsSettingsPage() {
                             }
                           >
                             <SelectTrigger className="mt-1 border-border bg-background text-foreground focus:ring-ring">
-                              <SelectValue placeholder={t("selectRole")} />
+                              <SelectValue
+                                placeholder={tPlaceholders("selectRole")}
+                              />
                             </SelectTrigger>
                             <SelectContent className="border-border bg-background text-foreground">
                               {roles?.map((role) => (
@@ -456,7 +451,9 @@ export default function WorkflowsSettingsPage() {
             </div>
 
             <div className="space-y-3 pt-2">
-              <Label className="text-foreground">Can Initiate Workflow</Label>
+              <Label className="text-foreground">
+                {t("canInitiateWorkflow")}
+              </Label>
               <div className="rounded-lg border border-border bg-muted/30 p-4">
                 <div className="grid grid-cols-2 gap-3">
                   {roles?.map((role) => (
@@ -486,14 +483,14 @@ export default function WorkflowsSettingsPage() {
                 onClick={() => setEditDialogOpen(false)}
                 className="border-border bg-muted text-foreground/80 hover:bg-accent hover:text-white"
               >
-                Cancel
+                {t("cancel")}
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
                 className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
               >
-                {isSubmitting ? "Saving..." : "Save Changes"}
+                {isSubmitting ? t("saving") : t("saveChanges")}
               </Button>
             </DialogFooter>
           </form>

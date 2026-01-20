@@ -248,7 +248,7 @@ export default function ObjectDetailPage() {
     return (
       <div className="flex h-full w-full items-center justify-center bg-background">
         <p className="text-muted-foreground">
-          Please select an organization to view collections.
+          {t("detail.selectOrganization")}
         </p>
       </div>
     );
@@ -289,7 +289,9 @@ export default function ObjectDetailPage() {
                   <ArrowLeft className="h-4 w-4 text-muted-foreground" />
                 </Link>
               </Button>
-              <span className="text-muted-foreground">Collections</span>
+              <span className="text-muted-foreground">
+                {t("detail.collections")}
+              </span>
               <span className="text-muted-foreground/50">/</span>
               {collectionGroup && (
                 <>
@@ -323,16 +325,18 @@ export default function ObjectDetailPage() {
                     ) : (
                       <Link2 className="mr-2 h-4 w-4" />
                     )}
-                    {linkCopied ? "Link Copied!" : "Copy Object Link"}
+                    {linkCopied
+                      ? t("detail.linkCopied")
+                      : t("detail.copyObjectLink")}
                   </DropdownMenuItem>
                   <DropdownMenuItem>
                     <FileDown className="mr-2 h-4 w-4" />
-                    Export to PDF
+                    {t("detail.exportToPdf")}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>
                     <Send className="mr-2 h-4 w-4" />
-                    Request Loan
+                    {t("detail.requestLoan")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -350,7 +354,7 @@ export default function ObjectDetailPage() {
                 <Button asChild>
                   <Link href={`/objects/${collectionId}/edit`}>
                     <Pencil className="mr-2 h-3.5 w-3.5" />
-                    Edit Object
+                    {t("detail.editObject")}
                   </Link>
                 </Button>
               </PermissionGate>
@@ -364,20 +368,23 @@ export default function ObjectDetailPage() {
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Object</AlertDialogTitle>
+                      <AlertDialogTitle>
+                        {t("detail.deleteTitle")}
+                      </AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to delete "{collection.title}"?
-                        This will mark the object as deaccessioned.
+                        {t("detail.deleteConfirm", { title: collection.title })}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>{common("cancel")}</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={handleDelete}
                         disabled={isDeleting}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
-                        {isDeleting ? "Deleting..." : "Delete Object"}
+                        {isDeleting
+                          ? t("detail.deleting")
+                          : t("detail.deleteObject")}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

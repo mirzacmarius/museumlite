@@ -54,7 +54,6 @@ export default async function AccessionsPage() {
   );
 }
 
-
 import { useScopedI18n } from "@/locales/client";
 
 function NoOrganizationState() {
