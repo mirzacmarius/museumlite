@@ -412,6 +412,33 @@ export default {
     unknownUser: "Utilisateur inconnu",
     loadMore: "Charger plus",
   },
+  billing: {
+    title: "Abonnement",
+    currentPlan: "Vous êtes actuellement sur le plan",
+    plan: "plan",
+    monthly: "Mensuel",
+    yearly: "Annuel",
+    free: "Gratuit",
+    freeDescription: "Certaines fonctionnalités, gratuites pour toujours.",
+    perMonth: "mois",
+    perYear: "an",
+    upgrade: "Passer à",
+    upgradeToPro: "Passer à PRO",
+    manage: "Gérer",
+    manageSubscription: "Gérer l'abonnement",
+    manageDescription:
+      "Mettez à jour votre mode de paiement, adresse de facturation, et plus.",
+    redirectPortal: "Vous serez redirigé vers le portail client Polar.",
+    managedByOrg:
+      "Les abonnements sont gérés par le propriétaire de l'organisation.",
+    nextBillingDate: "Prochaine date de facturation",
+    cancelSubscription: "Annuler l'abonnement",
+    expires: "Expire",
+    renews: "Renouvelle",
+    on: "le",
+    noChargeTest:
+      "Vous ne serez pas facturé pour tester la mise à niveau de l'abonnement.",
+  },
   developer: {
     utilities: "Utilitaires pour développeurs",
     utilitiesDesc:

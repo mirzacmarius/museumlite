@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDate } from "@/lib/format-date";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { CheckoutLink, CustomerPortalLink } from "@convex-dev/polar/react";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
@@ -16,6 +16,7 @@ const Plan = ({
   amount,
   interval,
   onChangeInterval,
+  t,
 }: {
   name: string;
   description: string | null;
@@ -23,6 +24,7 @@ const Plan = ({
   amount: number;
   interval?: "month" | "year";
   onChangeInterval?: () => void;
+  t: (key: string) => string;
 }) => {
   return (
     <div
@@ -35,7 +37,8 @@ const Plan = ({
           <span className="text-base font-medium text-primary">{name}</span>
           {Boolean(amount) && (
             <span className="flex items-center rounded-md bg-primary/10 px-1.5 text-sm font-medium text-primary/80">
-              ${amount / 100} / {interval === "month" ? "month" : "year"}
+              ${amount / 100} /{" "}
+              {interval === "month" ? t("perMonth") : t("perYear")}
             </span>
           )}
         </div>
@@ -44,14 +47,13 @@ const Plan = ({
         </p>
       </div>
 
-      {/* Billing Switch */}
       {Boolean(amount) && (
         <div className="flex items-center gap-2 px-4">
           <label
             htmlFor="interval-switch"
             className="text-start text-sm text-primary/60"
           >
-            {interval === "month" ? "Monthly" : "Yearly"}
+            {interval === "month" ? t("monthly") : t("yearly")}
           </label>
           <Switch
             id="interval-switch"
@@ -66,6 +68,7 @@ const Plan = ({
 
 export default function BillingSettings() {
   const locale = useCurrentLocale();
+  const t = useScopedI18n("settings.billing");
   const user = useQuery(api.users.getUser);
   const products = useQuery(api.subscriptions.listAllProducts);
 
@@ -105,26 +108,26 @@ export default function BillingSettings() {
         </p>
       </div>
 
-      {/* Plans */}
       <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
         <div className="flex flex-col gap-2 p-6">
-          <h2 className="text-xl font-medium text-primary">Plan</h2>
+          <h2 className="text-xl font-medium text-primary">{t("title")}</h2>
           <p className="flex items-start gap-1 text-sm font-normal text-primary/60">
-            You are currently on the{" "}
+            {t("currentPlan")}{" "}
             <span className="flex h-[18px] items-center rounded-md bg-primary/10 px-1.5 text-sm font-medium text-primary/80">
-              {user.subscription ? user.subscription.product.name : "Free"}
+              {user.subscription ? user.subscription.product.name : t("free")}
             </span>
-            plan.
+            {t("plan")}.
           </p>
         </div>
 
         {!user.subscription && (
           <div className="flex w-full flex-col items-center justify-evenly gap-2 border-border p-6 pt-0">
             <Plan
-              name="Free"
-              description="Some of the things, free forever."
+              name={t("free")}
+              description={t("freeDescription")}
               isCurrent={!user.subscription}
               amount={0}
+              t={t}
             />
             {selectedPlanInterval === "month" && monthlyProProduct && (
               <Plan
@@ -138,6 +141,7 @@ export default function BillingSettings() {
                     state === "month" ? "year" : "month",
                   );
                 }}
+                t={t}
               />
             )}
             {selectedPlanInterval === "year" && yearlyProProduct && (
@@ -152,6 +156,7 @@ export default function BillingSettings() {
                     state === "month" ? "year" : "month",
                   );
                 }}
+                t={t}
               />
             )}
           </div>
@@ -170,14 +175,14 @@ export default function BillingSettings() {
                     <p className="flex items-start gap-1 text-sm font-normal text-primary/60">
                       {user.subscription.cancelAtPeriodEnd === true ? (
                         <span className="flex h-[18px] items-center text-sm font-medium text-red-500">
-                          Expires
+                          {t("expires")}
                         </span>
                       ) : (
                         <span className="flex h-[18px] items-center text-sm font-medium text-green-500">
-                          Renews
+                          {t("renews")}
                         </span>
                       )}
-                      on:{" "}
+                      {t("on")}:{" "}
                       {formatDate(
                         new Date(
                           user.subscription.currentPeriodEnd ?? 0 * 1000,
@@ -198,7 +203,7 @@ export default function BillingSettings() {
         {!user.subscription && (
           <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 py-3 dark:bg-card">
             <p className="text-sm font-normal text-primary/60">
-              You will not be charged for testing the subscription upgrade.
+              {t("noChargeTest")}
             </p>
             {monthlyProProduct && yearlyProProduct && (
               <Button type="submit" size="sm" asChild>
@@ -210,7 +215,7 @@ export default function BillingSettings() {
                       : yearlyProProduct.id,
                   ]}
                 >
-                  Upgrade to PRO
+                  {t("upgradeToPro")}
                 </CheckoutLink>
               </Button>
             )}
@@ -218,26 +223,25 @@ export default function BillingSettings() {
         )}
       </div>
 
-      {/* Manage Subscription */}
       {user.subscription && (
         <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
           <div className="flex flex-col gap-2 p-6">
             <h2 className="text-xl font-medium text-primary">
-              Manage Subscription
+              {t("manageSubscription")}
             </h2>
             <p className="flex items-start gap-1 text-sm font-normal text-primary/60">
-              Update your payment method, billing address, and more.
+              {t("manageDescription")}
             </p>
           </div>
 
           <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 py-3 dark:bg-card">
             <p className="text-sm font-normal text-primary/60">
-              You will be redirected to the Polar Customer Portal.
+              {t("redirectPortal")}
             </p>
 
             <CustomerPortalLink polarApi={api.subscriptions}>
               <Button type="submit" size="sm">
-                Manage
+                {t("manage")}
               </Button>
             </CustomerPortalLink>
           </div>
