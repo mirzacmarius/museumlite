@@ -470,12 +470,12 @@ function CollectionFiltersAndList({
               onClick={() => setShowFilters(!showFilters)}
             >
               <Filter className="mr-2 h-4 w-4" />
-              Filters
+              {t("filters.title")}
             </Button>
             {hasActiveFilters && (
               <Button variant="ghost" onClick={clearFilters}>
                 <X className="mr-2 h-4 w-4" />
-                Clear
+                {t("filters.clear")}
               </Button>
             )}
           </div>
@@ -484,7 +484,7 @@ function CollectionFiltersAndList({
           {showFilters && (
             <div className="grid grid-cols-1 gap-4 border-t border-border/60 pt-4 md:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t("filters.status")}</Label>
                 <Select
                   value={filters.status}
                   onValueChange={(value) =>
@@ -498,14 +498,16 @@ function CollectionFiltersAndList({
                     <SelectValue placeholder={t("filters.allStatuses")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Active</SelectItem>
-                    <SelectItem value="deaccessioned">Deaccessioned</SelectItem>
+                    <SelectItem value="all">{t("filters.active")}</SelectItem>
+                    <SelectItem value="deaccessioned">
+                      {t("filters.deaccessioned")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="objectType">Object Type</Label>
+                <Label htmlFor="objectType">{t("filters.objectType")}</Label>
                 <Select
                   value={filters.objectType || "all"}
                   onValueChange={(value) =>
@@ -519,7 +521,7 @@ function CollectionFiltersAndList({
                     <SelectValue placeholder={t("filters.allTypes")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="all">{t("filters.allTypes")}</SelectItem>
                     {uniqueObjectTypes.map((type) => (
                       <SelectItem key={type} value={type}>
                         {type}
@@ -530,7 +532,7 @@ function CollectionFiltersAndList({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="culture">Culture</Label>
+                <Label htmlFor="culture">{t("filters.culture")}</Label>
                 <Input
                   id="culture"
                   placeholder={t("filters.filterByCulture")}
@@ -542,7 +544,7 @@ function CollectionFiltersAndList({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="period">Period</Label>
+                <Label htmlFor="period">{t("filters.period")}</Label>
                 <Input
                   id="period"
                   placeholder={t("filters.filterByPeriod")}
@@ -554,7 +556,7 @@ function CollectionFiltersAndList({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="materials">Materials</Label>
+                <Label htmlFor="materials">{t("filters.materials")}</Label>
                 <Input
                   id="materials"
                   placeholder={t("filters.filterByMaterials")}
@@ -566,7 +568,9 @@ function CollectionFiltersAndList({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="collectionGroup">Collection Group</Label>
+                <Label htmlFor="collectionGroup">
+                  {t("filters.collectionGroup")}
+                </Label>
                 <Select
                   value={filters.collectionGroupId || "all"}
                   onValueChange={(value) =>
@@ -580,7 +584,9 @@ function CollectionFiltersAndList({
                     <SelectValue placeholder={t("filters.allGroups")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Groups</SelectItem>
+                    <SelectItem value="all">
+                      {t("filters.allGroups")}
+                    </SelectItem>
                     {collectionGroups?.map((group) => (
                       <SelectItem key={group._id} value={group._id}>
                         {group.name}
@@ -591,7 +597,7 @@ function CollectionFiltersAndList({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
+                <Label htmlFor="location">{t("filters.location")}</Label>
                 <Select
                   value={filters.locationId || "all"}
                   onValueChange={(value) =>
@@ -605,7 +611,9 @@ function CollectionFiltersAndList({
                     <SelectValue placeholder={t("filters.allLocations")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Locations</SelectItem>
+                    <SelectItem value="all">
+                      {t("filters.allLocations")}
+                    </SelectItem>
                     {locations?.map((location) => (
                       <SelectItem key={location._id} value={location._id}>
                         {location.path.map((p) => p.name).join(" > ")}
@@ -616,7 +624,9 @@ function CollectionFiltersAndList({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="catalogedFrom">Date Acquired From</Label>
+                <Label htmlFor="catalogedFrom">
+                  {t("filters.dateAcquiredFrom")}
+                </Label>
                 <Input
                   id="catalogedFrom"
                   type="date"
@@ -628,7 +638,9 @@ function CollectionFiltersAndList({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="catalogedTo">Date Acquired To</Label>
+                <Label htmlFor="catalogedTo">
+                  {t("filters.dateAcquiredTo")}
+                </Label>
                 <Input
                   id="catalogedTo"
                   type="date"
@@ -826,7 +838,7 @@ function CollectionList({
       )}
       {collections.page.length > 0 && (
         <div className="mt-4 text-center text-sm text-muted-foreground">
-          Showing {collections.page.length}{" "}
+          {t("pagination.showing")} {collections.page.length}{" "}
           {collections.isDone
             ? t("pagination.items")
             : t("pagination.itemsMore")}

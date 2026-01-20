@@ -1286,6 +1286,7 @@ export default {
     },
     pagination: {
       loadMore: "Charger Plus",
+      showing: "Affichage",
       items: "éléments",
       itemsMore: "éléments (plus disponibles)",
     },

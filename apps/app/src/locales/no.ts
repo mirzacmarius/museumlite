@@ -1334,6 +1334,7 @@ export default {
     },
     pagination: {
       loadMore: "Last inn Mer",
+      showing: "Viser",
       items: "elementer",
       itemsMore: "elementer (flere tilgjengelig)",
     },

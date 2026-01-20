@@ -1220,6 +1220,7 @@ export default {
     },
     pagination: {
       loadMore: "Load More",
+      showing: "Showing",
       items: "items",
       itemsMore: "items (more available)",
     },

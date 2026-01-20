@@ -1300,6 +1300,7 @@ export default {
     },
     pagination: {
       loadMore: "Cargar Más",
+      showing: "Mostrando",
       items: "elementos",
       itemsMore: "elementos (más disponibles)",
     },
