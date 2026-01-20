@@ -240,10 +240,13 @@ export default {
       test: "Test",
       webhookCreated: "Webhook Created",
       addWebhook: "Add Webhook",
-      copySecret: "Copy your webhook secret now. You won't be able to see it again.",
-      configureWebhook: "Configure a webhook endpoint to receive event notifications.",
+      copySecret:
+        "Copy your webhook secret now. You won't be able to see it again.",
+      configureWebhook:
+        "Configure a webhook endpoint to receive event notifications.",
       signingSecret: "Signing Secret",
-      useSecret: "Use this secret to verify webhook signatures. Store it securely!",
+      useSecret:
+        "Use this secret to verify webhook signatures. Store it securely!",
       name: "Name",
       namePlaceholder: "e.g., Slack Notifications",
       endpointURL: "Endpoint URL",
@@ -258,7 +261,7 @@ export default {
       deleteWebhook: "Delete Webhook?",
       deleteWebhookDesc: "This will permanently delete this webhook endpoint.",
     },
-    
+
     placeholders: {
       searchUsers: "Search users...",
       selectRole: "Select a role",
@@ -794,6 +797,17 @@ export default {
   transit: {
     status: "Transport Status",
     noTransportRecords: "No transport records",
+    statusLabels: {
+      draft: "Draft",
+      scheduled: "Scheduled",
+      in_transit: "In Transit",
+      out_for_delivery: "Out for Delivery",
+      delivered: "Delivered",
+      delayed: "Delayed",
+      held: "Held",
+      returned: "Returned",
+      cancelled: "Cancelled",
+    },
   },
   locations: {
     timeline: "Location History",
@@ -936,6 +950,9 @@ export default {
   },
   common: {
     loading: "Loading...",
+    saving: "Saving...",
+    creating: "Creating...",
+    deleting: "Deleting...",
     save: "Save",
     cancel: "Cancel",
     delete: "Delete",

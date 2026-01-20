@@ -768,6 +768,7 @@ function UtilitiesTab({
   organizationId,
 }: { organizationId: Id<"organizations"> }) {
   const t = useScopedI18n("settings");
+  const common = useScopedI18n("common");
   const [isDeletingLoans, setIsDeletingLoans] = useState(false);
   const [deleteResult, setDeleteResult] = useState<{
     deletedLoans: number;
@@ -848,7 +849,7 @@ function UtilitiesTab({
                   <Button variant="destructive" disabled={isDeletingLoans}>
                     <Trash2 className="mr-2 h-4 w-4" />
                     {isDeletingLoans
-                      ? "Deleting..."
+                      ? common("deleting")
                       : t("developer.deleteAllLoans")}
                   </Button>
                 </AlertDialogTrigger>

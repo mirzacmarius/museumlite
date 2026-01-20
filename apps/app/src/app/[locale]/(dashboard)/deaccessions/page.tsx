@@ -440,6 +440,8 @@ function DeaccessionRow({
   };
 }) {
   const locale = useCurrentLocale();
+  const t = useScopedI18n("deaccessions");
+  const common = useScopedI18n("common");
   const collection = useQuery(api.collections.get, {
     collectionId: item.collectionId,
   });
@@ -447,13 +449,13 @@ function DeaccessionRow({
   const getMethodDisplay = (method: string) => {
     switch (method) {
       case "sale":
-        return "Sale / Auction";
+        return t("method.sale");
       case "donation":
-        return "Donation";
+        return t("method.donation");
       case "destruction":
-        return "Destruction (Witnessed)";
+        return t("method.destruction");
       case "transfer":
-        return "Transfer";
+        return t("method.transfer");
       default:
         return method;
     }
@@ -491,19 +493,19 @@ function DeaccessionRow({
       case "pending":
         return (
           <span className="rounded border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-amber-400">
-            Pending
+            {t("status.pending")}
           </span>
         );
       case "approved":
         return (
           <span className="rounded border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-emerald-400">
-            Approved
+            {t("status.approved")}
           </span>
         );
       case "rejected":
         return (
           <span className="rounded border border-rose-500/20 bg-rose-500/10 px-2 py-0.5 text-rose-400">
-            Rejected
+            {t("status.rejected")}
           </span>
         );
       default:
@@ -519,7 +521,7 @@ function DeaccessionRow({
             {collection?.title || item.deaccessionNumber}
           </div>
           <div className="text-[10px] text-muted-foreground">
-            {collection?.accessionNumber || "Loading..."}
+            {collection?.accessionNumber || common("loading")}
           </div>
         </Link>
       </td>

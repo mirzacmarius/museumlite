@@ -241,17 +241,21 @@ export default {
       test: "Test",
       webhookCreated: "Webhook opprettet",
       addWebhook: "Legg til webhook",
-      copySecret: "Kopier webhook-hemmeligheten din nå. Du vil ikke kunne se den igjen.",
-      configureWebhook: "Konfigurer et webhook-endepunkt for å motta hendelsesmeldinger.",
+      copySecret:
+        "Kopier webhook-hemmeligheten din nå. Du vil ikke kunne se den igjen.",
+      configureWebhook:
+        "Konfigurer et webhook-endepunkt for å motta hendelsesmeldinger.",
       signingSecret: "Signeringshemmelighet",
-      useSecret: "Bruk denne hemmeligheten til å verifisere webhook-signaturer. Lagre den sikkert!",
+      useSecret:
+        "Bruk denne hemmeligheten til å verifisere webhook-signaturer. Lagre den sikkert!",
       name: "Navn",
       namePlaceholder: "f.eks. Slack-meldinger",
       endpointURL: "Endepunkt-URL",
       urlPlaceholder: "https://eksempel.no/webhook",
       httpsRequired: "Må bruke HTTPS",
       events: "Hendelser",
-      selectEvents: "Velg hendelser som skal mottas. La stå tomt for alle hendelser.",
+      selectEvents:
+        "Velg hendelser som skal mottas. La stå tomt for alle hendelser.",
       done: "Ferdig",
       createWebhook: "Opprett webhook",
       cancel: "Avbryt",
@@ -829,6 +833,17 @@ export default {
   transit: {
     status: "Transportstatus",
     noTransportRecords: "Ingen transportregistre",
+    statusLabels: {
+      draft: "Utkast",
+      scheduled: "Planlagt",
+      in_transit: "Under Transport",
+      out_for_delivery: "Ute for Levering",
+      delivered: "Levert",
+      delayed: "Forsinket",
+      held: "Holdt Tilbake",
+      returned: "Returnert",
+      cancelled: "Kansellert",
+    },
   },
   locations: {
     timeline: "Plasseringshistorikk",
@@ -971,6 +986,9 @@ export default {
   },
   common: {
     loading: "Laster...",
+    saving: "Lagrer...",
+    creating: "Oppretter...",
+    deleting: "Sletter...",
     save: "Lagre",
     cancel: "Avbryt",
     delete: "Slett",

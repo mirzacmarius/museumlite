@@ -246,25 +246,30 @@ export default {
       test: "Tester",
       webhookCreated: "Webhook créé",
       addWebhook: "Ajouter un webhook",
-      copySecret: "Copiez votre secret webhook maintenant. Vous ne pourrez pas le voir à nouveau.",
-      configureWebhook: "Configurez un point de terminaison webhook pour recevoir les notifications d'événements.",
+      copySecret:
+        "Copiez votre secret webhook maintenant. Vous ne pourrez pas le voir à nouveau.",
+      configureWebhook:
+        "Configurez un point de terminaison webhook pour recevoir les notifications d'événements.",
       signingSecret: "Secret de signature",
-      useSecret: "Utilisez ce secret pour vérifier les signatures webhook. Stockez-le en toute sécurité!",
+      useSecret:
+        "Utilisez ce secret pour vérifier les signatures webhook. Stockez-le en toute sécurité!",
       name: "Nom",
       namePlaceholder: "par exemple, Notifications Slack",
       endpointURL: "URL du point de terminaison",
       urlPlaceholder: "https://exemple.com/webhook",
       httpsRequired: "Doit utiliser HTTPS",
       events: "Événements",
-      selectEvents: "Sélectionnez les événements à recevoir. Laissez vide pour tous les événements.",
+      selectEvents:
+        "Sélectionnez les événements à recevoir. Laissez vide pour tous les événements.",
       done: "Terminé",
       createWebhook: "Créer un webhook",
       cancel: "Annuler",
       delete: "Supprimer",
       deleteWebhook: "Supprimer le webhook?",
-      deleteWebhookDesc: "Cela supprimera définitivement ce point de terminaison webhook.",
+      deleteWebhookDesc:
+        "Cela supprimera définitivement ce point de terminaison webhook.",
     },
-    
+
     placeholders: {
       searchUsers: "Rechercher des utilisateurs...",
       selectRole: "Sélectionner un rôle",
@@ -850,6 +855,17 @@ export default {
   transit: {
     status: "Statut du Transport",
     noTransportRecords: "Aucun enregistrement de transport",
+    statusLabels: {
+      draft: "Brouillon",
+      scheduled: "Programmé",
+      in_transit: "En Transit",
+      out_for_delivery: "En Cours de Livraison",
+      delivered: "Livré",
+      delayed: "Retardé",
+      held: "En Attente",
+      returned: "Retourné",
+      cancelled: "Annulé",
+    },
   },
   locations: {
     timeline: "Historique des Emplacements",
@@ -994,6 +1010,9 @@ export default {
   },
   common: {
     loading: "Chargement...",
+    saving: "Enregistrement...",
+    creating: "Création...",
+    deleting: "Suppression...",
     save: "Enregistrer",
     cancel: "Annuler",
     delete: "Supprimer",

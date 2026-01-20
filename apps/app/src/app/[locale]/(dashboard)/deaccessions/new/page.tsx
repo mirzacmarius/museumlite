@@ -1,6 +1,6 @@
 "use client";
 
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useScopedI18n } from "@/locales/client";
 
 import { CollectionSelector } from "@/components/collection-selector";
 import { useOrganization } from "@/components/organization-provider";
@@ -27,7 +27,6 @@ import { useState } from "react";
 
 export default function NewDeaccessionPage() {
   const router = useRouter();
-  const locale = useCurrentLocale();
   const t = useScopedI18n("deaccessions");
   const { currentOrganizationId } = useOrganization();
   const createDeaccession = useMutation(api.deaccessions.create);
@@ -46,9 +45,7 @@ export default function NewDeaccessionPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">
-          Please select an organization to create deaccessions.
-        </p>
+        <p className="text-muted-foreground">{t("form.selectOrg")}</p>
       </div>
     );
   }
@@ -57,11 +54,11 @@ export default function NewDeaccessionPage() {
     e.preventDefault();
     setError(null);
     if (!formData.collectionId.trim()) {
-      setError("Collection is required");
+      setError(t("form.errors.collectionRequired"));
       return;
     }
     if (!formData.reason.trim()) {
-      setError("Reason is required");
+      setError(t("form.errors.reasonRequired"));
       return;
     }
 
@@ -81,9 +78,7 @@ export default function NewDeaccessionPage() {
     } catch (err) {
       console.error("Error creating deaccession:", err);
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to create deaccession. Please try again.",
+        err instanceof Error ? err.message : t("form.errors.createFailed"),
       );
       setIsSubmitting(false);
     }
@@ -97,7 +92,7 @@ export default function NewDeaccessionPage() {
             <Button variant="ghost" size="sm" asChild>
               <Link href="/deaccessions">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Deaccessions
+                {t("actions.backToDeaccessions")}
               </Link>
             </Button>
           </div>
@@ -115,14 +110,16 @@ export default function NewDeaccessionPage() {
                 onValueChange={(value) =>
                   setFormData({ ...formData, collectionId: value })
                 }
-                placeholder="Select a collection object"
-                label="Collection Object"
+                placeholder={t("form.collectionPlaceholder")}
+                label={t("form.collectionLabel")}
                 required
                 excludeDeaccessioned
               />
 
               <div className="space-y-2">
-                <Label htmlFor="deaccessionNumber">Deaccession Number</Label>
+                <Label htmlFor="deaccessionNumber">
+                  {t("form.deaccessionNumber")}
+                </Label>
                 <Input
                   id="deaccessionNumber"
                   value={formData.deaccessionNumber}
@@ -132,17 +129,17 @@ export default function NewDeaccessionPage() {
                       deaccessionNumber: e.target.value,
                     })
                   }
-                  placeholder={t("placeholders.deaccessionNumber")}
+                  placeholder={t("form.deaccessionNumberPlaceholder")}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Leave empty to auto-generate based on organization format
+                  {t("form.deaccessionNumberHint")}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="dateDeaccessioned">
-                    Date Deaccessioned *
+                    {t("form.dateDeaccessioned")}
                   </Label>
                   <DatePicker
                     id="dateDeaccessioned"
@@ -153,12 +150,12 @@ export default function NewDeaccessionPage() {
                         dateDeaccessioned: date || new Date(),
                       })
                     }
-                    placeholder="Select date deaccessioned"
+                    placeholder={t("form.dateDeaccessionedPlaceholder")}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="method">Method *</Label>
+                  <Label htmlFor="method">{t("form.methodLabel")}</Label>
                   <Select
                     value={formData.method}
                     onValueChange={(
@@ -169,30 +166,40 @@ export default function NewDeaccessionPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="sale">Sale</SelectItem>
-                      <SelectItem value="donation">Donation</SelectItem>
-                      <SelectItem value="destruction">Destruction</SelectItem>
-                      <SelectItem value="transfer">Transfer</SelectItem>
+                      <SelectItem value="sale">
+                        {t("form.methodSale")}
+                      </SelectItem>
+                      <SelectItem value="donation">
+                        {t("form.methodDonation")}
+                      </SelectItem>
+                      <SelectItem value="destruction">
+                        {t("form.methodDestruction")}
+                      </SelectItem>
+                      <SelectItem value="transfer">
+                        {t("form.methodTransfer")}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="reason">Reason *</Label>
+                <Label htmlFor="reason">{t("form.reasonLabel")}</Label>
                 <Input
                   id="reason"
                   value={formData.reason}
                   onChange={(e) =>
                     setFormData({ ...formData, reason: e.target.value })
                   }
-                  placeholder={t("placeholders.selectReason")}
+                  placeholder={t("form.reasonPlaceholder")}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="disposition">Disposition</Label>
+                <Label htmlFor="disposition">
+                  {t("form.dispositionLabel")}
+                </Label>
                 <Input
                   id="disposition"
                   value={formData.disposition}
@@ -202,19 +209,19 @@ export default function NewDeaccessionPage() {
                       disposition: e.target.value,
                     })
                   }
-                  placeholder={t("placeholders.selectDisposition")}
+                  placeholder={t("form.dispositionPlaceholder")}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">{t("form.notesLabel")}</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) =>
                     setFormData({ ...formData, notes: e.target.value })
                   }
-                  placeholder={t("placeholders.addNotes")}
+                  placeholder={t("form.notesPlaceholder")}
                   rows={4}
                 />
               </div>
@@ -225,12 +232,12 @@ export default function NewDeaccessionPage() {
                   variant="outline"
                   onClick={() => router.back()}
                 >
-                  Cancel
+                  {t("actions.cancel")}
                 </Button>
                 <PermissionGate permission="collections.create">
                   <Button type="submit" disabled={isSubmitting}>
                     <Save className="mr-2 h-4 w-4" />
-                    {isSubmitting ? "Creating..." : "Create Deaccession"}
+                    {isSubmitting ? t("actions.creating") : t("actions.create")}
                   </Button>
                 </PermissionGate>
               </div>

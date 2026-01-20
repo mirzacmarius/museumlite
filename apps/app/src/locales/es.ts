@@ -248,24 +248,28 @@ export default {
       webhookCreated: "Webhook creado",
       addWebhook: "Agregar webhook",
       copySecret: "Copie su secreto de webhook ahora. No podrá verlo de nuevo.",
-      configureWebhook: "Configure un punto final de webhook para recibir notificaciones de eventos.",
+      configureWebhook:
+        "Configure un punto final de webhook para recibir notificaciones de eventos.",
       signingSecret: "Secreto de firma",
-      useSecret: "Use este secreto para verificar firmas de webhook. ¡Guárdelo de forma segura!",
+      useSecret:
+        "Use este secreto para verificar firmas de webhook. ¡Guárdelo de forma segura!",
       name: "Nombre",
       namePlaceholder: "por ejemplo, Notificaciones de Slack",
       endpointURL: "URL del punto final",
       urlPlaceholder: "https://ejemplo.com/webhook",
       httpsRequired: "Debe usar HTTPS",
       events: "Eventos",
-      selectEvents: "Seleccione los eventos a recibir. Deje en blanco para todos los eventos.",
+      selectEvents:
+        "Seleccione los eventos a recibir. Deje en blanco para todos los eventos.",
       done: "Hecho",
       createWebhook: "Crear webhook",
       cancel: "Cancelar",
       delete: "Eliminar",
       deleteWebhook: "¿Eliminar webhook?",
-      deleteWebhookDesc: "Esto eliminará permanentemente este punto final de webhook.",
+      deleteWebhookDesc:
+        "Esto eliminará permanentemente este punto final de webhook.",
     },
-    
+
     placeholders: {
       searchUsers: "Buscar usuarios...",
       selectRole: "Seleccionar un rol",
@@ -783,6 +787,17 @@ export default {
   transit: {
     status: "Estado del Transporte",
     noTransportRecords: "No hay registros de transporte",
+    statusLabels: {
+      draft: "Borrador",
+      scheduled: "Programado",
+      in_transit: "En Tránsito",
+      out_for_delivery: "En Reparto",
+      delivered: "Entregado",
+      delayed: "Retrasado",
+      held: "Retenido",
+      returned: "Devuelto",
+      cancelled: "Cancelado",
+    },
   },
   locations: {
     timeline: "Historial de Ubicaciones",
@@ -925,6 +940,9 @@ export default {
   },
   common: {
     loading: "Cargando...",
+    saving: "Guardando...",
+    creating: "Creando...",
+    deleting: "Eliminando...",
     save: "Guardar",
     cancel: "Cancelar",
     delete: "Eliminar",

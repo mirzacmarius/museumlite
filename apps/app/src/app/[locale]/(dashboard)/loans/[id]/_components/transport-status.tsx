@@ -20,9 +20,21 @@ export function TransportStatus({ loanId }: TransportStatusProps) {
   );
 }
 
+type TransitStatus =
+  | "draft"
+  | "scheduled"
+  | "in_transit"
+  | "out_for_delivery"
+  | "delivered"
+  | "delayed"
+  | "held"
+  | "returned"
+  | "cancelled";
+
 function TransportStatusContent({ loanId }: TransportStatusProps) {
   const locale = useCurrentLocale();
   const t = useScopedI18n("loans.actions");
+  const transitT = useScopedI18n("transit.statusLabels");
   const transitRecords = useQuery(api.transit.getTransitForLoanWithHistory, {
     loanId,
     limit: 5,
@@ -60,7 +72,7 @@ function TransportStatusContent({ loanId }: TransportStatusProps) {
             {record.statusHistory.length > 0 && (
               <Timeline
                 items={record.statusHistory.map((update) => ({
-                  title: formatStatus(update.status),
+                  title: transitT(update.status as TransitStatus),
                   description: update.description,
                   date: formatDate(new Date(update.reportedAt), locale),
                   status: mapStatusToTimelineStatus(update.status),
@@ -87,43 +99,8 @@ function TransportStatusSkeleton() {
   );
 }
 
-function formatStatus(
-  status:
-    | "draft"
-    | "scheduled"
-    | "in_transit"
-    | "out_for_delivery"
-    | "delivered"
-    | "delayed"
-    | "held"
-    | "returned"
-    | "cancelled",
-): string {
-  const statusMap: Record<string, string> = {
-    draft: "Draft",
-    scheduled: "Scheduled",
-    in_transit: "In Transit",
-    out_for_delivery: "Out for Delivery",
-    delivered: "Delivered",
-    delayed: "Delayed",
-    held: "Held",
-    returned: "Returned",
-    cancelled: "Cancelled",
-  };
-  return statusMap[status] ?? status;
-}
-
 function mapStatusToTimelineStatus(
-  status:
-    | "draft"
-    | "scheduled"
-    | "in_transit"
-    | "out_for_delivery"
-    | "delivered"
-    | "delayed"
-    | "held"
-    | "returned"
-    | "cancelled",
+  status: TransitStatus,
 ): "pending" | "active" | "completed" | "overdue" | undefined {
   const statusMap: Record<
     string,
