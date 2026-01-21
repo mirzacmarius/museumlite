@@ -1916,7 +1916,45 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_organization", ["organizationId"])
-    .index("by_user_and_read", ["userId", "read"]),
+    .index("by_user_and_read", ["userId", "read"])
+    .index("by_user_and_organization", ["userId", "organizationId"]),
+
+  // User notification preferences
+  notificationPreferences: defineTable({
+    userId: v.id("users"),
+    organizationId: v.id("organizations"),
+
+    // Category preferences (enable/disable entire categories)
+    enableApprovals: v.optional(v.boolean()), // Default true
+    enableReminders: v.optional(v.boolean()), // Default true
+    enableAlerts: v.optional(v.boolean()), // Default true
+    enableAssignments: v.optional(v.boolean()), // Default true
+    enableSystem: v.optional(v.boolean()), // Default true
+
+    // Specific type overrides (takes precedence over category)
+    disabledTypes: v.optional(v.array(v.string())),
+
+    // Delivery preferences
+    emailEnabled: v.optional(v.boolean()), // Default false
+    emailDigestFrequency: v.optional(
+      v.union(
+        v.literal("instant"),
+        v.literal("daily"),
+        v.literal("weekly"),
+        v.literal("never"),
+      ),
+    ),
+
+    // Quiet hours (no notifications during these times)
+    quietHoursEnabled: v.optional(v.boolean()),
+    quietHoursStart: v.optional(v.string()), // "22:00"
+    quietHoursEnd: v.optional(v.string()), // "08:00"
+    timezone: v.optional(v.string()), // "America/New_York"
+
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_organization", ["userId", "organizationId"]),
 
   // Organization workflow configurations
   workflowConfigs: defineTable({

@@ -505,6 +505,17 @@ export const processBatchJob = internalMutation({
         jobId: args.jobId,
         startIndex: endIndex,
       });
+    } else {
+      // Send completion notification
+      await ctx.runMutation(internal.notifications.sendBatchJobCompleted, {
+        organizationId: job.organizationId,
+        userId: job.createdBy,
+        jobId: args.jobId,
+        jobType: job.jobType,
+        totalItems: job.totalItems,
+        successCount,
+        failureCount,
+      });
     }
 
     return null;

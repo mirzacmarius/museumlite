@@ -60,6 +60,7 @@ import type * as mediaImports from "../mediaImports.js";
 import type * as mediaThumbnails from "../mediaThumbnails.js";
 import type * as migrations from "../migrations.js";
 import type * as naturalHistoryDetails from "../naturalHistoryDetails.js";
+import type * as notifications from "../notifications.js";
 import type * as organizations from "../organizations.js";
 import type * as reporting from "../reporting.js";
 import type * as roles from "../roles.js";
@@ -142,6 +143,7 @@ declare const fullApi: ApiFromModules<{
   mediaThumbnails: typeof mediaThumbnails;
   migrations: typeof migrations;
   naturalHistoryDetails: typeof naturalHistoryDetails;
+  notifications: typeof notifications;
   organizations: typeof organizations;
   reporting: typeof reporting;
   roles: typeof roles;
