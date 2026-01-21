@@ -15,9 +15,10 @@ export function LanguageSwitcher() {
 
   const langs = [
     { text: "English", value: "en" },
-    { text: "French", value: "fr" },
-    { text: "Spanish", value: "es" },
+    { text: "Français", value: "fr" },
+    { text: "Español", value: "es" },
     { text: "Norsk", value: "no" },
+    { text: "Română", value: "ro" },
   ];
   const formatLanguage = (lng: string) => {
     return langs.find((lang) => lang.value === lng)?.text;
