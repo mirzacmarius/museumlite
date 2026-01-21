@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
@@ -80,16 +81,17 @@ function convertToCSV(
 
 export default function DataPage() {
   const { currentOrganizationId } = useOrganization();
+  const t = useScopedI18n("settings");
+  const tCommon = useScopedI18n("common");
   const [importType, setImportType] = useState<ImportType>("objects");
   const [importing, setImporting] = useState(false);
   const [exportType, setExportType] = useState<ImportType>("objects");
   const [exporting, setExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const template = useQuery(
-    api.imports.getImportTemplate,
-    { type: importType },
-  );
+  const template = useQuery(api.imports.getImportTemplate, {
+    type: importType,
+  });
 
   const importJobs = useQuery(
     api.imports.listImportJobs,
@@ -113,9 +115,10 @@ export default function DataPage() {
 
   const downloadTemplate = useCallback(() => {
     if (!template) return;
-    const csv = [template.headers.join(","), template.exampleRow.join(",")].join(
-      "\n",
-    );
+    const csv = [
+      template.headers.join(","),
+      template.exampleRow.join(","),
+    ].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -136,7 +139,9 @@ export default function DataPage() {
         const text = await file.text();
         const rows = parseCSV(text);
         const headers = rows[0];
-        const dataRows = rows.slice(1).filter((row) => row.some((cell) => cell));
+        const dataRows = rows
+          .slice(1)
+          .filter((row) => row.some((cell) => cell));
 
         if (dataRows.length === 0) {
           throw new Error("No data rows found in CSV");
@@ -168,7 +173,9 @@ export default function DataPage() {
               await importObjectsBatch({
                 organizationId: currentOrganizationId as Id<"organizations">,
                 jobId,
-                rows: batchData as Parameters<typeof importObjectsBatch>[0]["rows"],
+                rows: batchData as Parameters<
+                  typeof importObjectsBatch
+                >[0]["rows"],
                 batchIndex,
               });
               break;
@@ -176,7 +183,9 @@ export default function DataPage() {
               await importAccessionsBatch({
                 organizationId: currentOrganizationId as Id<"organizations">,
                 jobId,
-                rows: batchData as Parameters<typeof importAccessionsBatch>[0]["rows"],
+                rows: batchData as Parameters<
+                  typeof importAccessionsBatch
+                >[0]["rows"],
                 batchIndex,
               });
               break;
@@ -184,7 +193,9 @@ export default function DataPage() {
               await importLocationsBatch({
                 organizationId: currentOrganizationId as Id<"organizations">,
                 jobId,
-                rows: batchData as Parameters<typeof importLocationsBatch>[0]["rows"],
+                rows: batchData as Parameters<
+                  typeof importLocationsBatch
+                >[0]["rows"],
                 batchIndex,
               });
               break;
@@ -192,7 +203,9 @@ export default function DataPage() {
               await importAccountsBatch({
                 organizationId: currentOrganizationId as Id<"organizations">,
                 jobId,
-                rows: batchData as Parameters<typeof importAccountsBatch>[0]["rows"],
+                rows: batchData as Parameters<
+                  typeof importAccountsBatch
+                >[0]["rows"],
                 batchIndex,
               });
               break;
@@ -200,7 +213,9 @@ export default function DataPage() {
               await importLoansBatch({
                 organizationId: currentOrganizationId as Id<"organizations">,
                 jobId,
-                rows: batchData as Parameters<typeof importLoansBatch>[0]["rows"],
+                rows: batchData as Parameters<
+                  typeof importLoansBatch
+                >[0]["rows"],
                 batchIndex,
               });
               break;
@@ -373,7 +388,8 @@ export default function DataPage() {
       <div className="flex w-full flex-col gap-2">
         <h2 className="text-xl font-medium text-primary">Data Import/Export</h2>
         <p className="text-sm text-muted-foreground">
-          Import data from CSV files or export your data for backup and analysis.
+          Import data from CSV files or export your data for backup and
+          analysis.
         </p>
       </div>
 
@@ -408,20 +424,22 @@ export default function DataPage() {
                   onValueChange={(v) => setImportType(v as ImportType)}
                 >
                   <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder={t("selectType")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="objects">Objects</SelectItem>
-                    <SelectItem value="accessions">Accessions</SelectItem>
-                    <SelectItem value="locations">Locations</SelectItem>
-                    <SelectItem value="accounts">Accounts</SelectItem>
-                    <SelectItem value="loans">Loans</SelectItem>
+                    <SelectItem value="objects">{t("objects")}</SelectItem>
+                    <SelectItem value="accessions">
+                      {t("accessions")}
+                    </SelectItem>
+                    <SelectItem value="locations">{t("locations")}</SelectItem>
+                    <SelectItem value="accounts">{t("accounts")}</SelectItem>
+                    <SelectItem value="loans">{t("loans")}</SelectItem>
                   </SelectContent>
                 </Select>
 
                 <Button variant="outline" onClick={downloadTemplate}>
                   <Download className="mr-2 h-4 w-4" />
-                  Download Template
+                  {t("downloadTemplate")}
                 </Button>
               </div>
 
@@ -487,7 +505,9 @@ export default function DataPage() {
                           <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
                         )}
                         <div>
-                          <p className="font-medium capitalize">{job.type} Import</p>
+                          <p className="font-medium capitalize">
+                            {job.type} Import
+                          </p>
                           <p className="text-sm text-muted-foreground">
                             {job.processedItems} / {job.totalItems} items
                           </p>
@@ -523,7 +543,8 @@ export default function DataPage() {
                 CSV Export
               </CardTitle>
               <CardDescription>
-                Export your data to a CSV file for backup, analysis, or migration.
+                Export your data to a CSV file for backup, analysis, or
+                migration.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -533,14 +554,16 @@ export default function DataPage() {
                   onValueChange={(v) => setExportType(v as ImportType)}
                 >
                   <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder={t("selectType")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="objects">Objects</SelectItem>
-                    <SelectItem value="accessions">Accessions</SelectItem>
-                    <SelectItem value="locations">Locations</SelectItem>
-                    <SelectItem value="accounts">Accounts</SelectItem>
-                    <SelectItem value="loans">Loans</SelectItem>
+                    <SelectItem value="objects">{t("objects")}</SelectItem>
+                    <SelectItem value="accessions">
+                      {t("accessions")}
+                    </SelectItem>
+                    <SelectItem value="locations">{t("locations")}</SelectItem>
+                    <SelectItem value="accounts">{t("accounts")}</SelectItem>
+                    <SelectItem value="loans">{t("loans")}</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -548,12 +571,12 @@ export default function DataPage() {
                   {exporting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Exporting...
+                      {t("exporting")}
                     </>
                   ) : (
                     <>
                       <Download className="mr-2 h-4 w-4" />
-                      Export to CSV
+                      {t("exportToCsv")}
                     </>
                   )}
                 </Button>
