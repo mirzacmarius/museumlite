@@ -35,6 +35,7 @@ interface OrganizationContextType {
         | "automotive"
         | "natural_history"
         | "archive"
+        | "accounts"
       >;
     };
     subscriptionTier?: "free" | "pro" | "enterprise";
@@ -60,6 +61,7 @@ interface OrganizationContextType {
         | "automotive"
         | "natural_history"
         | "archive"
+        | "accounts"
       >;
     };
     subscriptionTier?: "free" | "pro" | "enterprise";
