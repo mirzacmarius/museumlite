@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
+import { auditLogChanges } from "./schema";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -27,7 +28,7 @@ export const listOrganizationActivity = query({
         action: v.string(),
         entityType: v.string(),
         entityId: v.string(),
-        changes: v.optional(v.any()),
+        changes: v.optional(auditLogChanges),
         timestamp: v.number(),
       }),
     ),
@@ -122,7 +123,7 @@ export const logAction = internalMutation({
     action: v.string(),
     entityType: v.string(),
     entityId: v.string(),
-    changes: v.optional(v.any()),
+    changes: v.optional(auditLogChanges),
   },
   returns: v.null(),
   handler: async (ctx, args) => {

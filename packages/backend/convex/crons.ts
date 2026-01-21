@@ -39,4 +39,11 @@ crons.interval(
   internal.conservationTreatments.checkAssessmentsDueInternal,
 );
 
+// Loan return reminders - check daily for loans due soon or overdue
+crons.interval(
+  "check-loan-reminders",
+  { hours: 24 },
+  internal.loans.checkLoanRemindersInternal,
+);
+
 export default crons;

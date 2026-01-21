@@ -1628,6 +1628,705 @@ export const checkMissingCoverageInternal = internalMutation({
   },
 });
 
+// ============================================================================
+// Dispute Workflow
+// ============================================================================
+
+const disputeStatusValidator = v.union(
+  v.literal("pending"),
+  v.literal("in_review"),
+  v.literal("resolved"),
+  v.literal("escalated"),
+);
+
+/**
+ * Open a dispute on a claim
+ */
+export const openDispute = mutation({
+  args: {
+    claimId: v.id("insuranceClaims"),
+    reason: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const claim = await ctx.db.get(args.claimId);
+    if (!claim) {
+      throw new Error("Claim not found");
+    }
+
+    await requirePermission(ctx, claim.organizationId, "organization.manage");
+
+    if (claim.status !== "denied" && claim.status !== "approved" && claim.status !== "settled") {
+      throw new Error("Can only dispute claims that have been decided");
+    }
+
+    if (claim.isDisputed) {
+      throw new Error("Claim already has an open dispute");
+    }
+
+    await ctx.db.patch(args.claimId, {
+      status: "appealed",
+      isDisputed: true,
+      disputeReason: args.reason,
+      disputeDate: Date.now(),
+      disputeStatus: "pending",
+      lastModifiedBy: userId,
+      lastModifiedAt: Date.now(),
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: claim.organizationId,
+      userId,
+      action: "opened_dispute",
+      entityType: "insuranceClaim",
+      entityId: args.claimId,
+      changes: { reason: args.reason },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Update dispute status
+ */
+export const updateDisputeStatus = mutation({
+  args: {
+    claimId: v.id("insuranceClaims"),
+    disputeStatus: disputeStatusValidator,
+    notes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const claim = await ctx.db.get(args.claimId);
+    if (!claim) {
+      throw new Error("Claim not found");
+    }
+
+    await requirePermission(ctx, claim.organizationId, "organization.manage");
+
+    if (!claim.isDisputed) {
+      throw new Error("Claim does not have an open dispute");
+    }
+
+    const updates: Record<string, unknown> = {
+      disputeStatus: args.disputeStatus,
+      lastModifiedBy: userId,
+      lastModifiedAt: Date.now(),
+    };
+
+    if (args.notes) {
+      updates.internalNotes = claim.internalNotes
+        ? `${claim.internalNotes}\n\n[${new Date().toISOString()}] Dispute update: ${args.notes}`
+        : `[${new Date().toISOString()}] Dispute update: ${args.notes}`;
+    }
+
+    await ctx.db.patch(args.claimId, updates);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: claim.organizationId,
+      userId,
+      action: "updated_dispute",
+      entityType: "insuranceClaim",
+      entityId: args.claimId,
+      changes: { disputeStatus: args.disputeStatus },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Resolve a dispute
+ */
+export const resolveDispute = mutation({
+  args: {
+    claimId: v.id("insuranceClaims"),
+    resolution: v.string(),
+    newStatus: v.optional(claimStatusValidator),
+    settledAmount: v.optional(v.number()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const claim = await ctx.db.get(args.claimId);
+    if (!claim) {
+      throw new Error("Claim not found");
+    }
+
+    await requirePermission(ctx, claim.organizationId, "organization.manage");
+
+    if (!claim.isDisputed) {
+      throw new Error("Claim does not have an open dispute");
+    }
+
+    const now = Date.now();
+    const updates: Record<string, unknown> = {
+      disputeStatus: "resolved",
+      disputeResolution: args.resolution,
+      disputeResolvedDate: now,
+      lastModifiedBy: userId,
+      lastModifiedAt: now,
+    };
+
+    if (args.newStatus) {
+      updates.status = args.newStatus;
+      if (args.newStatus === "settled") {
+        updates.settlementDate = now;
+      }
+    }
+
+    if (args.settledAmount !== undefined) {
+      updates.settledAmount = args.settledAmount;
+    }
+
+    await ctx.db.patch(args.claimId, updates);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: claim.organizationId,
+      userId,
+      action: "resolved_dispute",
+      entityType: "insuranceClaim",
+      entityId: args.claimId,
+      changes: {
+        resolution: args.resolution,
+        newStatus: args.newStatus,
+        settledAmount: args.settledAmount,
+      },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Upload dispute documents
+ */
+export const uploadDisputeDocument = mutation({
+  args: {
+    claimId: v.id("insuranceClaims"),
+    storageId: v.id("_storage"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const claim = await ctx.db.get(args.claimId);
+    if (!claim) {
+      throw new Error("Claim not found");
+    }
+
+    await requirePermission(ctx, claim.organizationId, "organization.manage");
+
+    if (!claim.isDisputed) {
+      throw new Error("Claim does not have an open dispute");
+    }
+
+    const documentIds = claim.disputeDocumentIds ?? [];
+    documentIds.push(args.storageId);
+
+    await ctx.db.patch(args.claimId, {
+      disputeDocumentIds: documentIds,
+      lastModifiedBy: userId,
+      lastModifiedAt: Date.now(),
+    });
+
+    return null;
+  },
+});
+
+// ============================================================================
+// Auto-Claim on Transit Damage
+// ============================================================================
+
+/**
+ * Create auto-claim draft for transit damage
+ */
+export const createAutoClaimForTransitDamage = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    loanId: v.id("loans"),
+    collectionIds: v.array(v.id("collections")),
+    incidentDescription: v.string(),
+    conditionDisputeId: v.optional(v.id("conditionDisputes")),
+  },
+  returns: v.union(v.id("insuranceClaims"), v.null()),
+  handler: async (ctx, args) => {
+    // Find active transit or loan policy
+    const policies = await ctx.db
+      .query("insurancePolicies")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", args.organizationId).eq("status", "active"),
+      )
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("policyType"), "transit"),
+          q.eq(q.field("policyType"), "loan"),
+          q.eq(q.field("policyType"), "blanket"),
+        ),
+      )
+      .collect();
+
+    if (policies.length === 0) {
+      return null;
+    }
+
+    // Use the first matching policy
+    const policy = policies[0]!;
+
+    // Calculate claimed amount from active coverages
+    let claimedAmount = 0;
+    for (const collectionId of args.collectionIds) {
+      // Look up active coverage for this collection
+      const coverage = await ctx.db
+        .query("insuranceCoverages")
+        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+        .filter((q) => q.eq(q.field("status"), "active"))
+        .first();
+      if (coverage) {
+        claimedAmount += coverage.coveredValue;
+      }
+    }
+
+    const claimNumber = await generateClaimNumber(ctx, args.organizationId);
+    const now = Date.now();
+
+    const claimId = await ctx.db.insert("insuranceClaims", {
+      organizationId: args.organizationId,
+      policyId: policy._id,
+      claimNumber,
+      collectionIds: args.collectionIds,
+      loanId: args.loanId,
+      incidentDate: now,
+      incidentType: "transit",
+      incidentDescription: args.incidentDescription,
+      claimedAmount,
+      status: "draft",
+      reportedDate: now,
+      isAutoClaim: true,
+      autoClaimSource: "loan_return_damage",
+      conditionDisputeId: args.conditionDisputeId,
+      internalNotes:
+        "Auto-generated claim based on condition change detected during loan return.",
+      createdBy: (await ctx.db.query("users").first())?._id as Id<"users">,
+      createdAt: now,
+    });
+
+    // Notify insurance coordinators
+    const userOrgs = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    for (const userOrg of userOrgs) {
+      const role = await ctx.db.get(userOrg.roleId);
+      if (!role) continue;
+
+      const rolePermissions = await ctx.db
+        .query("rolePermissions")
+        .withIndex("by_role", (q) => q.eq("roleId", role._id))
+        .collect();
+
+      const permissions = await Promise.all(
+        rolePermissions.map((rp) => ctx.db.get(rp.permissionId)),
+      );
+
+      const permissionNames = permissions
+        .filter((p): p is NonNullable<typeof p> => p !== null)
+        .map((p) => p.name);
+
+      if (permissionNames.includes("organization.manage")) {
+        await ctx.runMutation(internal.audit.createNotificationInternal, {
+          organizationId: args.organizationId,
+          userId: userOrg.userId,
+          type: "insurance_auto_claim",
+          title: "Auto-Generated Insurance Claim",
+          message: `A draft insurance claim (${claimNumber}) has been created for transit damage detected during loan return. Please review and submit.`,
+          relatedEntityType: "insuranceClaim",
+          relatedEntityId: claimId,
+        });
+      }
+    }
+
+    return claimId;
+  },
+});
+
+// ============================================================================
+// Appraisal Enforcement
+// ============================================================================
+
+/**
+ * Link appraisal to coverage
+ */
+export const linkAppraisalToCoverage = mutation({
+  args: {
+    coverageId: v.id("insuranceCoverages"),
+    appraisalId: v.id("appraisals"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const coverage = await ctx.db.get(args.coverageId);
+    if (!coverage) {
+      throw new Error("Coverage not found");
+    }
+
+    await requirePermission(ctx, coverage.organizationId, "organization.manage");
+
+    const appraisal = await ctx.db.get(args.appraisalId);
+    if (!appraisal) {
+      throw new Error("Appraisal not found");
+    }
+
+    // Update coverage with appraisal info
+    await ctx.db.patch(args.coverageId, {
+      appraisalId: args.appraisalId,
+      appraisalDate: appraisal.appraisalDate,
+      appraisalWarning: undefined, // Clear any warning
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: coverage.organizationId,
+      userId,
+      action: "linked_appraisal",
+      entityType: "insuranceCoverage",
+      entityId: args.coverageId,
+      changes: { appraisalId: args.appraisalId },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Check appraisal status for coverage
+ */
+export const checkAppraisalForCoverage = query({
+  args: {
+    collectionId: v.id("collections"),
+  },
+  returns: v.object({
+    hasAppraisal: v.boolean(),
+    appraisalValid: v.boolean(),
+    appraisalId: v.optional(v.id("appraisals")),
+    appraisalDate: v.optional(v.number()),
+    appraisalValue: v.optional(v.number()),
+    appraisalAgeDays: v.optional(v.number()),
+    warning: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      return { hasAppraisal: false, appraisalValid: false, warning: "Collection not found" };
+    }
+
+    // Find most recent appraisal
+    const appraisals = await ctx.db
+      .query("appraisals")
+      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .collect();
+
+    if (appraisals.length === 0) {
+      return {
+        hasAppraisal: false,
+        appraisalValid: false,
+        warning: "No appraisal on file",
+      };
+    }
+
+    // Sort by date and get most recent
+    const sortedAppraisals = appraisals.sort(
+      (a, b) => b.appraisalDate - a.appraisalDate,
+    );
+    const latestAppraisal = sortedAppraisals[0]!;
+
+    const now = Date.now();
+    const ageDays = Math.floor(
+      (now - latestAppraisal.appraisalDate) / (24 * 60 * 60 * 1000),
+    );
+    const threeYearsInDays = 3 * 365;
+
+    let warning: string | undefined;
+    let appraisalValid = true;
+
+    if (ageDays > threeYearsInDays) {
+      warning = `Appraisal is ${Math.floor(ageDays / 365)} years old and may be stale`;
+      appraisalValid = false;
+    } else if (ageDays > 2 * 365) {
+      warning = `Appraisal is over 2 years old and should be updated soon`;
+    }
+
+    return {
+      hasAppraisal: true,
+      appraisalValid,
+      appraisalId: latestAppraisal._id,
+      appraisalDate: latestAppraisal.appraisalDate,
+      appraisalValue: latestAppraisal.value,
+      appraisalAgeDays: ageDays,
+      warning,
+    };
+  },
+});
+
+/**
+ * Get coverages with stale appraisals
+ */
+export const getCoveragesWithStaleAppraisals = query({
+  args: {
+    organizationId: v.id("organizations"),
+    appraisalMaxAgeDays: v.optional(v.number()),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("insuranceCoverages"),
+      policyId: v.id("insurancePolicies"),
+      policyNumber: v.string(),
+      collectionId: v.optional(v.id("collections")),
+      collectionTitle: v.optional(v.string()),
+      coveredValue: v.number(),
+      appraisalId: v.optional(v.id("appraisals")),
+      appraisalDate: v.optional(v.number()),
+      appraisalAgeDays: v.optional(v.number()),
+      issue: v.string(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "loans.read");
+
+    const maxAgeDays = args.appraisalMaxAgeDays ?? 3 * 365; // Default 3 years
+    const now = Date.now();
+
+    const coverages = await ctx.db
+      .query("insuranceCoverages")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", args.organizationId).eq("status", "active"),
+      )
+      .filter((q) => q.neq(q.field("collectionId"), undefined))
+      .collect();
+
+    const results: Array<{
+      _id: Id<"insuranceCoverages">;
+      policyId: Id<"insurancePolicies">;
+      policyNumber: string;
+      collectionId?: Id<"collections">;
+      collectionTitle?: string;
+      coveredValue: number;
+      appraisalId?: Id<"appraisals">;
+      appraisalDate?: number;
+      appraisalAgeDays?: number;
+      issue: string;
+    }> = [];
+
+    for (const coverage of coverages) {
+      if (!coverage.collectionId) continue;
+
+      const policy = await ctx.db.get(coverage.policyId);
+      const collection = await ctx.db.get(coverage.collectionId);
+
+      // Check for linked appraisal
+      if (coverage.appraisalId) {
+        const appraisal = await ctx.db.get(coverage.appraisalId);
+        if (appraisal) {
+          const ageDays = Math.floor(
+            (now - appraisal.appraisalDate) / (24 * 60 * 60 * 1000),
+          );
+          if (ageDays > maxAgeDays) {
+            results.push({
+              _id: coverage._id,
+              policyId: coverage.policyId,
+              policyNumber: policy?.policyNumber ?? "Unknown",
+              collectionId: coverage.collectionId,
+              collectionTitle: collection?.title,
+              coveredValue: coverage.coveredValue,
+              appraisalId: coverage.appraisalId,
+              appraisalDate: appraisal.appraisalDate,
+              appraisalAgeDays: ageDays,
+              issue: `Appraisal is ${Math.floor(ageDays / 365)} years old`,
+            });
+          }
+        }
+      } else {
+        // No linked appraisal - check if collection has one
+        const appraisals = await ctx.db
+          .query("appraisals")
+          .withIndex("by_collection", (q) =>
+            q.eq("collectionId", coverage.collectionId!),
+          )
+          .collect();
+
+        if (appraisals.length === 0) {
+          results.push({
+            _id: coverage._id,
+            policyId: coverage.policyId,
+            policyNumber: policy?.policyNumber ?? "Unknown",
+            collectionId: coverage.collectionId,
+            collectionTitle: collection?.title,
+            coveredValue: coverage.coveredValue,
+            issue: "No appraisal on file",
+          });
+        } else {
+          // Has appraisal but not linked
+          const latest = appraisals.sort(
+            (a, b) => b.appraisalDate - a.appraisalDate,
+          )[0]!;
+          const ageDays = Math.floor(
+            (now - latest.appraisalDate) / (24 * 60 * 60 * 1000),
+          );
+
+          if (ageDays > maxAgeDays) {
+            results.push({
+              _id: coverage._id,
+              policyId: coverage.policyId,
+              policyNumber: policy?.policyNumber ?? "Unknown",
+              collectionId: coverage.collectionId,
+              collectionTitle: collection?.title,
+              coveredValue: coverage.coveredValue,
+              appraisalDate: latest.appraisalDate,
+              appraisalAgeDays: ageDays,
+              issue: `Appraisal is ${Math.floor(ageDays / 365)} years old (not linked)`,
+            });
+          }
+        }
+      }
+    }
+
+    return results;
+  },
+});
+
+/**
+ * Add coverage with appraisal verification
+ */
+export const addCoverageWithAppraisalCheck = mutation({
+  args: {
+    policyId: v.id("insurancePolicies"),
+    collectionId: v.id("collections"),
+    coveredValue: v.number(),
+    requireAppraisal: v.optional(v.boolean()),
+    skipAppraisalWarning: v.optional(v.boolean()),
+    notes: v.optional(v.string()),
+  },
+  returns: v.object({
+    coverageId: v.optional(v.id("insuranceCoverages")),
+    warning: v.optional(v.string()),
+    blocked: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const policy = await ctx.db.get(args.policyId);
+    if (!policy) {
+      throw new Error("Policy not found");
+    }
+
+    await requirePermission(ctx, policy.organizationId, "organization.manage");
+
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection || collection.organizationId !== policy.organizationId) {
+      throw new Error("Collection not found or belongs to different org");
+    }
+
+    // Check appraisal status
+    const appraisals = await ctx.db
+      .query("appraisals")
+      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .collect();
+
+    let warning: string | undefined;
+    let appraisalId: Id<"appraisals"> | undefined;
+    let appraisalDate: number | undefined;
+
+    if (appraisals.length === 0) {
+      if (args.requireAppraisal && !args.skipAppraisalWarning) {
+        return {
+          blocked: true,
+          warning: "Appraisal required before adding insurance coverage",
+        };
+      }
+      warning = "No appraisal on file for this object";
+    } else {
+      const latest = appraisals.sort(
+        (a, b) => b.appraisalDate - a.appraisalDate,
+      )[0]!;
+      appraisalId = latest._id;
+      appraisalDate = latest.appraisalDate;
+
+      const now = Date.now();
+      const ageDays = Math.floor(
+        (now - latest.appraisalDate) / (24 * 60 * 60 * 1000),
+      );
+      const threeYearsInDays = 3 * 365;
+
+      if (ageDays > threeYearsInDays) {
+        if (args.requireAppraisal && !args.skipAppraisalWarning) {
+          return {
+            blocked: true,
+            warning: `Appraisal is ${Math.floor(ageDays / 365)} years old. Updated appraisal required.`,
+          };
+        }
+        warning = `Appraisal is ${Math.floor(ageDays / 365)} years old`;
+      }
+    }
+
+    const coverageId = await ctx.db.insert("insuranceCoverages", {
+      organizationId: policy.organizationId,
+      policyId: args.policyId,
+      collectionId: args.collectionId,
+      coveredValue: args.coveredValue,
+      status: "active",
+      appraisalId,
+      appraisalDate,
+      appraisalRequired: args.requireAppraisal,
+      appraisalWarning: warning,
+      notes: args.notes,
+      createdBy: userId,
+      createdAt: Date.now(),
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: policy.organizationId,
+      userId,
+      action: "created",
+      entityType: "insuranceCoverage",
+      entityId: coverageId,
+      changes: {
+        policyId: args.policyId,
+        coveredValue: args.coveredValue,
+        appraisalWarning: warning,
+      },
+    });
+
+    return { coverageId, warning, blocked: false };
+  },
+});
+
 export const getCoverageAlerts = query({
   args: {
     organizationId: v.id("organizations"),
@@ -1657,6 +2356,8 @@ export const getCoverageAlerts = query({
     }),
     expiredPoliciesCount: v.number(),
     pendingClaimsCount: v.number(),
+    staleAppraisalCount: v.number(),
+    disputedClaimsCount: v.number(),
   }),
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "loans.read");
@@ -1762,6 +2463,28 @@ export const getCoverageAlerts = query({
       )
       .collect();
 
+    // Count stale appraisals (older than 3 years)
+    const threeYearsAgo = now - 3 * 365 * 24 * 60 * 60 * 1000;
+    const appraisals = await ctx.db
+      .query("appraisals")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+    const staleAppraisalCount = appraisals.filter(
+      (a) => a.appraisalDate < threeYearsAgo,
+    ).length;
+
+    // Count disputed claims
+    const disputedClaimsCount = await ctx.db
+      .query("insuranceClaims")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => q.eq(q.field("disputeStatus"), "open"))
+      .collect()
+      .then((claims) => claims.length);
+
     return {
       expiringPolicies: enrichedExpiringPolicies.sort(
         (a, b) => a.daysUntilExpiry - b.daysUntilExpiry,
@@ -1774,6 +2497,8 @@ export const getCoverageAlerts = query({
       },
       expiredPoliciesCount,
       pendingClaimsCount: pendingClaims.length,
+      staleAppraisalCount,
+      disputedClaimsCount,
     };
   },
 });

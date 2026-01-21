@@ -42,8 +42,9 @@ export const processThumbnail = internalAction({
         .toBuffer();
 
       // Upload thumbnail to storage
+      // Convert Buffer to Uint8Array for Blob compatibility
       const thumbnailStorageId = await ctx.storage.store(
-        new Blob([thumbnailBuffer], { type: "image/jpeg" }),
+        new Blob([new Uint8Array(thumbnailBuffer)], { type: "image/jpeg" }),
       );
 
       return thumbnailStorageId;

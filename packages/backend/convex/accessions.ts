@@ -606,6 +606,38 @@ export const approve = mutation({
         throw new Error("Permission denied: cannot approve at this step");
       }
 
+      // Check source verification requirement
+      if (workflowConfig.requireSourceVerification && !accession.sourceVerified) {
+        throw new Error("Source verification is required before approval");
+      }
+
+      // Check required documents for this step
+      const currentStepConfig = workflowConfig.steps.find(
+        (s) => s.stepNumber === currentStep,
+      );
+      if (currentStepConfig?.requiredDocuments?.length) {
+        const checklist = accession.documentChecklist ?? [];
+        for (const requiredDoc of currentStepConfig.requiredDocuments) {
+          const doc = checklist.find((d) => d.documentType === requiredDoc);
+          if (!doc?.uploaded) {
+            throw new Error(`Required document "${requiredDoc}" must be uploaded before approval`);
+          }
+        }
+      }
+
+      // Check global required documents for this step
+      if (workflowConfig.requiredDocuments?.length) {
+        const checklist = accession.documentChecklist ?? [];
+        for (const reqDoc of workflowConfig.requiredDocuments) {
+          if (reqDoc.requiredAtStep !== undefined && reqDoc.requiredAtStep <= currentStep) {
+            const doc = checklist.find((d) => d.documentType === reqDoc.documentType);
+            if (!doc?.uploaded) {
+              throw new Error(`Required document "${reqDoc.documentType}" must be uploaded before step ${currentStep} approval`);
+            }
+          }
+        }
+      }
+
       // Add to workflow history
       const history = accession.workflowHistory ?? [];
       history.push({
@@ -1092,5 +1124,720 @@ export const listMyAssigned = query({
         workflowStep: a.workflowStep,
         dateReceived: a.dateReceived,
       }));
+  },
+});
+
+// ============================================
+// Source Verification
+// ============================================
+
+/**
+ * Verify the source/donor of an accession
+ */
+export const verifySource = mutation({
+  args: {
+    accessionId: v.id("accessions"),
+    verificationNotes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const accession = await ctx.db.get(args.accessionId);
+    if (!accession) {
+      throw new Error("Accession not found");
+    }
+
+    await requirePermission(
+      ctx,
+      accession.organizationId,
+      "collections.update",
+    );
+
+    await ctx.db.patch(args.accessionId, {
+      sourceVerified: true,
+      sourceVerifiedBy: userId,
+      sourceVerifiedAt: Date.now(),
+      sourceVerificationNotes: args.verificationNotes,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: accession.organizationId,
+      userId,
+      action: "source_verified",
+      entityType: "accession",
+      entityId: args.accessionId,
+      changes: { sourceVerified: true },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Unverify the source (e.g., if new information comes to light)
+ */
+export const unverifySource = mutation({
+  args: {
+    accessionId: v.id("accessions"),
+    reason: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const accession = await ctx.db.get(args.accessionId);
+    if (!accession) {
+      throw new Error("Accession not found");
+    }
+
+    await requirePermission(
+      ctx,
+      accession.organizationId,
+      "collections.update",
+    );
+
+    await ctx.db.patch(args.accessionId, {
+      sourceVerified: false,
+      sourceVerificationNotes: `Unverified: ${args.reason}`,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: accession.organizationId,
+      userId,
+      action: "source_unverified",
+      entityType: "accession",
+      entityId: args.accessionId,
+      changes: { reason: args.reason },
+    });
+
+    return null;
+  },
+});
+
+// ============================================
+// Document Checklist
+// ============================================
+
+/**
+ * Initialize document checklist from workflow config
+ */
+export const initializeDocumentChecklist = mutation({
+  args: {
+    accessionId: v.id("accessions"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const accession = await ctx.db.get(args.accessionId);
+    if (!accession) {
+      throw new Error("Accession not found");
+    }
+
+    await requirePermission(
+      ctx,
+      accession.organizationId,
+      "collections.update",
+    );
+
+    // Get workflow config to determine required documents
+    const workflowConfig = await ctx.db
+      .query("workflowConfigs")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", accession.organizationId),
+      )
+      .filter((q) => q.eq(q.field("workflowType"), "accession"))
+      .first();
+
+    if (!workflowConfig?.requiredDocuments) {
+      return null;
+    }
+
+    const checklist = workflowConfig.requiredDocuments.map((doc) => ({
+      documentType: doc.documentType,
+      required: true,
+      uploaded: false,
+    }));
+
+    await ctx.db.patch(args.accessionId, {
+      documentChecklist: checklist,
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Upload document to checklist
+ */
+export const uploadChecklistDocument = mutation({
+  args: {
+    accessionId: v.id("accessions"),
+    documentType: v.string(),
+    storageId: v.id("_storage"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const accession = await ctx.db.get(args.accessionId);
+    if (!accession) {
+      throw new Error("Accession not found");
+    }
+
+    await requirePermission(
+      ctx,
+      accession.organizationId,
+      "collections.update",
+    );
+
+    const checklist = accession.documentChecklist ?? [];
+    const updatedChecklist = checklist.map((item) => {
+      if (item.documentType === args.documentType) {
+        return {
+          ...item,
+          uploaded: true,
+          storageId: args.storageId,
+          uploadedAt: Date.now(),
+          uploadedBy: userId,
+        };
+      }
+      return item;
+    });
+
+    // If document type wasn't in checklist, add it
+    const found = checklist.some(
+      (item) => item.documentType === args.documentType,
+    );
+    if (!found) {
+      updatedChecklist.push({
+        documentType: args.documentType,
+        required: false,
+        uploaded: true,
+        storageId: args.storageId,
+        uploadedAt: Date.now(),
+        uploadedBy: userId,
+      });
+    }
+
+    // Also add to the main documents array
+    const documents = accession.documents ?? [];
+    if (!documents.includes(args.storageId)) {
+      documents.push(args.storageId);
+    }
+
+    await ctx.db.patch(args.accessionId, {
+      documentChecklist: updatedChecklist,
+      documents,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: accession.organizationId,
+      userId,
+      action: "document_uploaded",
+      entityType: "accession",
+      entityId: args.accessionId,
+      changes: { documentType: args.documentType },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Remove document from checklist
+ */
+export const removeChecklistDocument = mutation({
+  args: {
+    accessionId: v.id("accessions"),
+    documentType: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const accession = await ctx.db.get(args.accessionId);
+    if (!accession) {
+      throw new Error("Accession not found");
+    }
+
+    await requirePermission(
+      ctx,
+      accession.organizationId,
+      "collections.update",
+    );
+
+    const checklist = accession.documentChecklist ?? [];
+    const item = checklist.find((i) => i.documentType === args.documentType);
+
+    const updatedChecklist = checklist.map((i) => {
+      if (i.documentType === args.documentType) {
+        return {
+          ...i,
+          uploaded: false,
+          storageId: undefined,
+          uploadedAt: undefined,
+          uploadedBy: undefined,
+        };
+      }
+      return i;
+    });
+
+    // Remove from main documents array
+    const documents = accession.documents ?? [];
+    const filteredDocs = item?.storageId
+      ? documents.filter((d) => d !== item.storageId)
+      : documents;
+
+    await ctx.db.patch(args.accessionId, {
+      documentChecklist: updatedChecklist,
+      documents: filteredDocs,
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Get document checklist status
+ */
+export const getDocumentChecklist = query({
+  args: {
+    accessionId: v.id("accessions"),
+  },
+  returns: v.object({
+    checklist: v.array(
+      v.object({
+        documentType: v.string(),
+        required: v.boolean(),
+        uploaded: v.boolean(),
+        storageId: v.optional(v.id("_storage")),
+        uploadedAt: v.optional(v.number()),
+        uploadedBy: v.optional(v.id("users")),
+        uploaderName: v.optional(v.string()),
+        url: v.optional(v.string()),
+      }),
+    ),
+    allRequiredUploaded: v.boolean(),
+    totalRequired: v.number(),
+    totalUploaded: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const accession = await ctx.db.get(args.accessionId);
+    if (!accession) {
+      throw new Error("Accession not found");
+    }
+
+    await requirePermission(ctx, accession.organizationId, "collections.read");
+
+    const checklist = accession.documentChecklist ?? [];
+
+    // Enrich with uploader names and URLs
+    const enrichedChecklist = await Promise.all(
+      checklist.map(async (item) => {
+        let uploaderName: string | undefined;
+        let url: string | undefined;
+
+        if (item.uploadedBy) {
+          const user = await ctx.db.get(item.uploadedBy);
+          uploaderName = user?.name || user?.email || undefined;
+        }
+
+        if (item.storageId) {
+          url = await ctx.storage.getUrl(item.storageId) ?? undefined;
+        }
+
+        return {
+          ...item,
+          uploaderName,
+          url,
+        };
+      }),
+    );
+
+    const required = checklist.filter((i) => i.required);
+    const uploaded = checklist.filter((i) => i.uploaded);
+    const requiredUploaded = required.filter((i) => i.uploaded);
+
+    return {
+      checklist: enrichedChecklist,
+      allRequiredUploaded: requiredUploaded.length === required.length,
+      totalRequired: required.length,
+      totalUploaded: uploaded.length,
+    };
+  },
+});
+
+// ============================================
+// Bulk Import
+// ============================================
+
+/**
+ * Validate bulk import data before processing
+ */
+export const validateBulkImport = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    items: v.array(
+      v.object({
+        accessionNumber: v.optional(v.string()),
+        dateReceived: v.string(), // ISO date string
+        source: v.string(),
+        method: v.string(),
+        cost: v.optional(v.string()),
+        notes: v.optional(v.string()),
+      }),
+    ),
+  },
+  returns: v.object({
+    valid: v.boolean(),
+    validCount: v.number(),
+    errorCount: v.number(),
+    errors: v.array(
+      v.object({
+        row: v.number(),
+        field: v.string(),
+        message: v.string(),
+      }),
+    ),
+    preview: v.array(
+      v.object({
+        row: v.number(),
+        accessionNumber: v.string(),
+        dateReceived: v.number(),
+        source: v.string(),
+        method: v.string(),
+        cost: v.optional(v.number()),
+        notes: v.optional(v.string()),
+        isValid: v.boolean(),
+      }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(ctx, args.organizationId, "collections.create");
+
+    const validMethods = [
+      "purchase",
+      "gift",
+      "loan",
+      "transfer",
+      "donation",
+      "other",
+      "bequest",
+    ];
+
+    const errors: { row: number; field: string; message: string }[] = [];
+    const preview: {
+      row: number;
+      accessionNumber: string;
+      dateReceived: number;
+      source: string;
+      method: string;
+      cost?: number;
+      notes?: string;
+      isValid: boolean;
+    }[] = [];
+
+    // Check for auto-generate setting
+    const org = await ctx.db.get(args.organizationId);
+    const autoGenerate = org?.settings?.autoGenerateAccessionNumbers ?? false;
+
+    for (let i = 0; i < args.items.length; i++) {
+      const item = args.items[i];
+      if (!item) continue;
+
+      const rowNumber = i + 1;
+      let isValid = true;
+
+      // Validate accession number (required if not auto-generating)
+      let accessionNumber = item.accessionNumber?.trim() || "";
+      if (!autoGenerate && !accessionNumber) {
+        errors.push({
+          row: rowNumber,
+          field: "accessionNumber",
+          message: "Accession number is required",
+        });
+        isValid = false;
+        accessionNumber = `INVALID-${rowNumber}`;
+      }
+
+      // Validate date
+      let dateReceived = 0;
+      try {
+        dateReceived = new Date(item.dateReceived).getTime();
+        if (Number.isNaN(dateReceived)) {
+          throw new Error("Invalid date");
+        }
+      } catch {
+        errors.push({
+          row: rowNumber,
+          field: "dateReceived",
+          message: "Invalid date format",
+        });
+        isValid = false;
+        dateReceived = Date.now();
+      }
+
+      // Validate source
+      if (!item.source?.trim()) {
+        errors.push({
+          row: rowNumber,
+          field: "source",
+          message: "Source is required",
+        });
+        isValid = false;
+      }
+
+      // Validate method
+      const method = item.method?.toLowerCase().trim();
+      if (!validMethods.includes(method)) {
+        errors.push({
+          row: rowNumber,
+          field: "method",
+          message: `Invalid method. Must be one of: ${validMethods.join(", ")}`,
+        });
+        isValid = false;
+      }
+
+      // Validate cost (optional)
+      let cost: number | undefined;
+      if (item.cost) {
+        cost = Number.parseFloat(item.cost);
+        if (Number.isNaN(cost)) {
+          errors.push({
+            row: rowNumber,
+            field: "cost",
+            message: "Invalid cost value",
+          });
+          isValid = false;
+        }
+      }
+
+      preview.push({
+        row: rowNumber,
+        accessionNumber: accessionNumber || `[Auto-generated]`,
+        dateReceived,
+        source: item.source,
+        method: validMethods.includes(method) ? method : "other",
+        cost,
+        notes: item.notes,
+        isValid,
+      });
+    }
+
+    const validCount = preview.filter((p) => p.isValid).length;
+    const errorCount = preview.filter((p) => !p.isValid).length;
+
+    return {
+      valid: errors.length === 0,
+      validCount,
+      errorCount,
+      errors,
+      preview,
+    };
+  },
+});
+
+/**
+ * Process bulk import
+ */
+export const processBulkImport = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    items: v.array(
+      v.object({
+        accessionNumber: v.optional(v.string()),
+        dateReceived: v.number(),
+        source: v.string(),
+        method: v.union(
+          v.literal("purchase"),
+          v.literal("gift"),
+          v.literal("loan"),
+          v.literal("transfer"),
+          v.literal("donation"),
+          v.literal("other"),
+          v.literal("bequest"),
+        ),
+        cost: v.optional(v.number()),
+        notes: v.optional(v.string()),
+      }),
+    ),
+    skipValidationErrors: v.optional(v.boolean()),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    imported: v.number(),
+    failed: v.number(),
+    accessionIds: v.array(v.id("accessions")),
+    errors: v.array(
+      v.object({
+        row: v.number(),
+        message: v.string(),
+      }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(ctx, args.organizationId, "collections.create");
+
+    // Get workflow config
+    const workflowConfig = await ctx.db
+      .query("workflowConfigs")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => q.eq(q.field("workflowType"), "accession"))
+      .first();
+
+    const accessionIds: Id<"accessions">[] = [];
+    const errors: { row: number; message: string }[] = [];
+    let imported = 0;
+    let failed = 0;
+
+    for (let i = 0; i < args.items.length; i++) {
+      const item = args.items[i];
+      if (!item) continue;
+
+      try {
+        // Generate accession number if not provided
+        let accessionNumber = item.accessionNumber?.trim();
+        if (!accessionNumber) {
+          accessionNumber = await generateAccessionNumber(
+            ctx,
+            args.organizationId,
+          );
+        }
+
+        // Check for duplicate accession number
+        const existing = await ctx.db
+          .query("accessions")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .filter((q) => q.eq(q.field("accessionNumber"), accessionNumber))
+          .first();
+
+        if (existing) {
+          throw new Error(`Duplicate accession number: ${accessionNumber}`);
+        }
+
+        // Create workflow history
+        const workflowHistory = workflowConfig
+          ? [
+              {
+                step: 0,
+                approvedBy: userId,
+                approvedAt: Date.now(),
+                comment: "Bulk import",
+              },
+            ]
+          : [];
+
+        const accessionId = await ctx.db.insert("accessions", {
+          organizationId: args.organizationId,
+          accessionNumber,
+          dateReceived: item.dateReceived,
+          source: item.source,
+          method: item.method,
+          cost: item.cost,
+          notes: item.notes,
+          status: workflowConfig ? "pending" : "approved",
+          workflowStep: workflowConfig ? 0 : undefined,
+          workflowHistory,
+        });
+
+        accessionIds.push(accessionId);
+        imported++;
+
+        // If no workflow, auto-create collection
+        if (!workflowConfig) {
+          await ctx.runMutation(
+            internal.accessions.createCollectionFromAccession,
+            { accessionId },
+          );
+        }
+      } catch (error) {
+        if (!args.skipValidationErrors) {
+          throw error;
+        }
+        errors.push({
+          row: i + 1,
+          message: error instanceof Error ? error.message : "Unknown error",
+        });
+        failed++;
+      }
+    }
+
+    // Log audit action
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "bulk_import",
+      entityType: "accession",
+      entityId: accessionIds[0] || ("bulk" as Id<"accessions">),
+      changes: { imported, failed, total: args.items.length },
+    });
+
+    return {
+      success: failed === 0,
+      imported,
+      failed,
+      accessionIds,
+      errors,
+    };
+  },
+});
+
+/**
+ * Get CSV template for bulk import
+ */
+export const getBulkImportTemplate = query({
+  args: {},
+  returns: v.string(),
+  handler: async () => {
+    const headers = [
+      "accessionNumber",
+      "dateReceived",
+      "source",
+      "method",
+      "cost",
+      "notes",
+    ];
+
+    const exampleRow = [
+      "2024.001",
+      "2024-01-15",
+      "John Smith Estate",
+      "bequest",
+      "5000",
+      "Part of the Smith Collection",
+    ];
+
+    return `${headers.join(",")}\n${exampleRow.join(",")}`;
   },
 });

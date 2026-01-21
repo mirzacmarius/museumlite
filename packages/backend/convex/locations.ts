@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
+import { customFieldValue } from "./schema";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -23,7 +24,7 @@ export const create = mutation({
     ),
     notes: v.optional(v.string()),
     capacity: v.optional(v.number()),
-    customFields: v.optional(v.record(v.string(), v.any())),
+    customFields: v.optional(v.record(v.string(), customFieldValue)),
   },
   returns: v.id("locations"),
   handler: async (ctx, args) => {
@@ -244,7 +245,7 @@ export const get = query({
       notes: v.optional(v.string()),
       isActive: v.boolean(),
       capacity: v.optional(v.number()),
-      customFields: v.optional(v.record(v.string(), v.any())),
+      customFields: v.optional(v.record(v.string(), customFieldValue)),
       children: v.array(
         v.object({
           _id: v.id("locations"),
@@ -320,7 +321,7 @@ export const update = mutation({
     ),
     notes: v.optional(v.string()),
     capacity: v.optional(v.number()),
-    customFields: v.optional(v.record(v.string(), v.any())),
+    customFields: v.optional(v.record(v.string(), customFieldValue)),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -553,6 +554,8 @@ export const moveObject = mutation({
     toLocationId: v.id("locations"),
     reason: v.optional(v.string()),
     notes: v.optional(v.string()),
+    overrideCapacity: v.optional(v.boolean()),
+    overrideStatus: v.optional(v.boolean()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -579,8 +582,44 @@ export const moveObject = mutation({
       throw new Error("Location belongs to different organization");
     }
 
-    if (!toLocation.isActive) {
-      throw new Error("Target location is not active");
+    // Check location status
+    const locationStatus = toLocation.status ?? "active";
+    if (!toLocation.isActive || locationStatus === "closed") {
+      if (!args.overrideStatus) {
+        throw new Error("Target location is closed and cannot receive objects");
+      }
+    }
+
+    if (locationStatus === "renovation") {
+      if (!args.overrideStatus) {
+        throw new Error("Target location is under renovation");
+      }
+    }
+
+    if (locationStatus === "restricted") {
+      if (!args.overrideStatus) {
+        throw new Error(
+          "Target location is restricted. Use override to move objects here.",
+        );
+      }
+    }
+
+    // Check capacity
+    if (toLocation.capacity) {
+      const objectsAtLocation = await ctx.db
+        .query("collections")
+        .withIndex("by_currentLocation", (q) =>
+          q.eq("currentLocationId", args.toLocationId),
+        )
+        .collect();
+
+      if (objectsAtLocation.length >= toLocation.capacity) {
+        if (!args.overrideCapacity) {
+          throw new Error(
+            `Target location is at capacity (${objectsAtLocation.length}/${toLocation.capacity})`,
+          );
+        }
+      }
     }
 
     const fromLocationId = collection.currentLocationId;
@@ -601,6 +640,632 @@ export const moveObject = mutation({
       currentLocationId: args.toLocationId,
       lastModifiedBy: userId,
       lastModifiedAt: Date.now(),
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Check if a move is allowed (capacity and status)
+ */
+export const checkMoveAllowed = query({
+  args: {
+    collectionId: v.id("collections"),
+    toLocationId: v.id("locations"),
+  },
+  returns: v.object({
+    allowed: v.boolean(),
+    requiresOverride: v.boolean(),
+    issues: v.array(
+      v.object({
+        type: v.string(),
+        message: v.string(),
+        canOverride: v.boolean(),
+      }),
+    ),
+    targetLocation: v.optional(
+      v.object({
+        name: v.string(),
+        status: v.optional(v.string()),
+        capacity: v.optional(v.number()),
+        currentCount: v.number(),
+      }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      return {
+        allowed: false,
+        requiresOverride: false,
+        issues: [{ type: "error", message: "Collection not found", canOverride: false }],
+      };
+    }
+
+    const toLocation = await ctx.db.get(args.toLocationId);
+    if (!toLocation) {
+      return {
+        allowed: false,
+        requiresOverride: false,
+        issues: [{ type: "error", message: "Location not found", canOverride: false }],
+      };
+    }
+
+    const issues: Array<{ type: string; message: string; canOverride: boolean }> = [];
+
+    // Check location status
+    const locationStatus = toLocation.status ?? "active";
+    if (!toLocation.isActive || locationStatus === "closed") {
+      issues.push({
+        type: "status_closed",
+        message: "Location is closed",
+        canOverride: true,
+      });
+    } else if (locationStatus === "renovation") {
+      issues.push({
+        type: "status_renovation",
+        message: "Location is under renovation",
+        canOverride: true,
+      });
+    } else if (locationStatus === "restricted") {
+      issues.push({
+        type: "status_restricted",
+        message: "Location is restricted",
+        canOverride: true,
+      });
+    }
+
+    // Check capacity
+    let currentCount = 0;
+    if (toLocation.capacity) {
+      const objectsAtLocation = await ctx.db
+        .query("collections")
+        .withIndex("by_currentLocation", (q) =>
+          q.eq("currentLocationId", args.toLocationId),
+        )
+        .collect();
+
+      currentCount = objectsAtLocation.length;
+
+      if (currentCount >= toLocation.capacity) {
+        issues.push({
+          type: "capacity_exceeded",
+          message: `Location is at capacity (${currentCount}/${toLocation.capacity})`,
+          canOverride: true,
+        });
+      }
+    }
+
+    return {
+      allowed: issues.length === 0,
+      requiresOverride: issues.length > 0 && issues.every((i) => i.canOverride),
+      issues,
+      targetLocation: {
+        name: toLocation.name,
+        status: locationStatus,
+        capacity: toLocation.capacity,
+        currentCount,
+      },
+    };
+  },
+});
+
+// ============================================================================
+// Move Request Workflow
+// ============================================================================
+
+/**
+ * Create a move request (for approval workflow)
+ */
+export const createMoveRequest = mutation({
+  args: {
+    collectionId: v.id("collections"),
+    toLocationId: v.id("locations"),
+    reason: v.string(),
+    scheduledDate: v.optional(v.number()),
+    priority: v.optional(
+      v.union(v.literal("low"), v.literal("normal"), v.literal("high")),
+    ),
+    notes: v.optional(v.string()),
+  },
+  returns: v.id("locationMoveRequests"),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      throw new Error("Collection not found");
+    }
+
+    const toLocation = await ctx.db.get(args.toLocationId);
+    if (!toLocation) {
+      throw new Error("Target location not found");
+    }
+
+    await requirePermission(ctx, collection.organizationId, "locations.update");
+
+    if (toLocation.organizationId !== collection.organizationId) {
+      throw new Error("Location belongs to different organization");
+    }
+
+    // Check for pending requests for same object
+    const existingRequest = await ctx.db
+      .query("locationMoveRequests")
+      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("status"), "pending"),
+          q.eq(q.field("status"), "approved"),
+        ),
+      )
+      .first();
+
+    if (existingRequest) {
+      throw new Error("Object already has a pending move request");
+    }
+
+    const requestId = await ctx.db.insert("locationMoveRequests", {
+      organizationId: collection.organizationId,
+      collectionId: args.collectionId,
+      fromLocationId: collection.currentLocationId,
+      toLocationId: args.toLocationId,
+      reason: args.reason,
+      scheduledDate: args.scheduledDate,
+      priority: args.priority ?? "normal",
+      status: "pending",
+      requestedBy: userId,
+      requestedAt: Date.now(),
+      notes: args.notes,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: collection.organizationId,
+      userId,
+      action: "created_move_request",
+      entityType: "collection",
+      entityId: args.collectionId,
+      changes: {
+        toLocationId: args.toLocationId,
+        reason: args.reason,
+      },
+    });
+
+    return requestId;
+  },
+});
+
+/**
+ * Approve a move request
+ */
+export const approveMoveRequest = mutation({
+  args: {
+    requestId: v.id("locationMoveRequests"),
+    reviewNotes: v.optional(v.string()),
+    overrideCapacity: v.optional(v.boolean()),
+    overrideStatus: v.optional(v.boolean()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const request = await ctx.db.get(args.requestId);
+    if (!request) {
+      throw new Error("Move request not found");
+    }
+
+    await requirePermission(ctx, request.organizationId, "locations.update");
+
+    if (request.status !== "pending") {
+      throw new Error(`Request is already ${request.status}`);
+    }
+
+    await ctx.db.patch(args.requestId, {
+      status: "approved",
+      reviewedBy: userId,
+      reviewedAt: Date.now(),
+      reviewNotes: args.reviewNotes,
+      capacityOverride: args.overrideCapacity,
+      statusOverride: args.overrideStatus,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: request.organizationId,
+      userId,
+      action: "approved_move_request",
+      entityType: "collection",
+      entityId: request.collectionId,
+      changes: { requestId: args.requestId },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Reject a move request
+ */
+export const rejectMoveRequest = mutation({
+  args: {
+    requestId: v.id("locationMoveRequests"),
+    reviewNotes: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const request = await ctx.db.get(args.requestId);
+    if (!request) {
+      throw new Error("Move request not found");
+    }
+
+    await requirePermission(ctx, request.organizationId, "locations.update");
+
+    if (request.status !== "pending") {
+      throw new Error(`Request is already ${request.status}`);
+    }
+
+    await ctx.db.patch(args.requestId, {
+      status: "rejected",
+      reviewedBy: userId,
+      reviewedAt: Date.now(),
+      reviewNotes: args.reviewNotes,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: request.organizationId,
+      userId,
+      action: "rejected_move_request",
+      entityType: "collection",
+      entityId: request.collectionId,
+      changes: { requestId: args.requestId, reason: args.reviewNotes },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Execute an approved move request
+ */
+export const executeMoveRequest = mutation({
+  args: {
+    requestId: v.id("locationMoveRequests"),
+    executionNotes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const request = await ctx.db.get(args.requestId);
+    if (!request) {
+      throw new Error("Move request not found");
+    }
+
+    await requirePermission(ctx, request.organizationId, "locations.update");
+
+    if (request.status !== "approved") {
+      throw new Error("Move request must be approved before execution");
+    }
+
+    const collection = await ctx.db.get(request.collectionId);
+    if (!collection) {
+      throw new Error("Collection not found");
+    }
+
+    const toLocation = await ctx.db.get(request.toLocationId);
+    if (!toLocation) {
+      throw new Error("Target location not found");
+    }
+
+    // Check capacity (unless override approved)
+    if (!request.capacityOverride && toLocation.capacity) {
+      const objectsAtLocation = await ctx.db
+        .query("collections")
+        .withIndex("by_currentLocation", (q) =>
+          q.eq("currentLocationId", request.toLocationId),
+        )
+        .collect();
+
+      if (objectsAtLocation.length >= toLocation.capacity) {
+        throw new Error("Target location is now at capacity");
+      }
+    }
+
+    // Check status (unless override approved)
+    const locationStatus = toLocation.status ?? "active";
+    if (
+      !request.statusOverride &&
+      (!toLocation.isActive || locationStatus !== "active")
+    ) {
+      throw new Error(`Target location status is ${locationStatus}`);
+    }
+
+    // Execute the move
+    const now = Date.now();
+
+    await ctx.db.insert("locationHistory", {
+      collectionId: request.collectionId,
+      fromLocationId: request.fromLocationId,
+      toLocationId: request.toLocationId,
+      movedBy: userId,
+      movedAt: now,
+      reason: request.reason,
+      notes: args.executionNotes,
+    });
+
+    await ctx.db.patch(request.collectionId, {
+      currentLocationId: request.toLocationId,
+      lastModifiedBy: userId,
+      lastModifiedAt: now,
+    });
+
+    await ctx.db.patch(args.requestId, {
+      status: "executed",
+      executedBy: userId,
+      executedAt: now,
+      executionNotes: args.executionNotes,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: request.organizationId,
+      userId,
+      action: "executed_move_request",
+      entityType: "collection",
+      entityId: request.collectionId,
+      changes: {
+        requestId: args.requestId,
+        fromLocationId: request.fromLocationId,
+        toLocationId: request.toLocationId,
+      },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Cancel a move request
+ */
+export const cancelMoveRequest = mutation({
+  args: {
+    requestId: v.id("locationMoveRequests"),
+    reason: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const request = await ctx.db.get(args.requestId);
+    if (!request) {
+      throw new Error("Move request not found");
+    }
+
+    await requirePermission(ctx, request.organizationId, "locations.update");
+
+    if (request.status === "executed" || request.status === "cancelled") {
+      throw new Error(`Cannot cancel ${request.status} request`);
+    }
+
+    await ctx.db.patch(args.requestId, {
+      status: "cancelled",
+      notes: args.reason
+        ? `${request.notes || ""} Cancelled: ${args.reason}`
+        : request.notes,
+    });
+
+    return null;
+  },
+});
+
+/**
+ * List move requests for an organization
+ */
+export const listMoveRequests = query({
+  args: {
+    organizationId: v.id("organizations"),
+    status: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("approved"),
+        v.literal("rejected"),
+        v.literal("executed"),
+        v.literal("cancelled"),
+      ),
+    ),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("locationMoveRequests"),
+      collectionId: v.id("collections"),
+      collectionTitle: v.string(),
+      accessionNumber: v.string(),
+      fromLocationId: v.optional(v.id("locations")),
+      fromLocationName: v.optional(v.string()),
+      toLocationId: v.id("locations"),
+      toLocationName: v.string(),
+      reason: v.string(),
+      scheduledDate: v.optional(v.number()),
+      priority: v.optional(v.string()),
+      status: v.string(),
+      requestedBy: v.id("users"),
+      requestedByName: v.optional(v.string()),
+      requestedAt: v.number(),
+      reviewedByName: v.optional(v.string()),
+      reviewedAt: v.optional(v.number()),
+      reviewNotes: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "locations.read");
+
+    const query = args.status
+      ? ctx.db
+          .query("locationMoveRequests")
+          .withIndex("by_organization_and_status", (q) =>
+            q
+              .eq("organizationId", args.organizationId)
+              .eq("status", args.status!),
+          )
+      : ctx.db
+          .query("locationMoveRequests")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          );
+
+    const requests = await query.collect();
+
+    const enriched = await Promise.all(
+      requests.map(async (req) => {
+        const collection = await ctx.db.get(req.collectionId);
+        const fromLocation = req.fromLocationId
+          ? await ctx.db.get(req.fromLocationId)
+          : null;
+        const toLocation = await ctx.db.get(req.toLocationId);
+        const requestedBy = await ctx.db.get(req.requestedBy);
+        const reviewedBy = req.reviewedBy
+          ? await ctx.db.get(req.reviewedBy)
+          : null;
+
+        return {
+          _id: req._id,
+          collectionId: req.collectionId,
+          collectionTitle: collection?.title ?? "Unknown",
+          accessionNumber: collection?.accessionNumber ?? "Unknown",
+          fromLocationId: req.fromLocationId,
+          fromLocationName: fromLocation?.name,
+          toLocationId: req.toLocationId,
+          toLocationName: toLocation?.name ?? "Unknown",
+          reason: req.reason,
+          scheduledDate: req.scheduledDate,
+          priority: req.priority,
+          status: req.status,
+          requestedBy: req.requestedBy,
+          requestedByName: requestedBy?.name ?? requestedBy?.username,
+          requestedAt: req.requestedAt,
+          reviewedByName: reviewedBy?.name ?? reviewedBy?.username,
+          reviewedAt: req.reviewedAt,
+          reviewNotes: req.reviewNotes,
+        };
+      }),
+    );
+
+    return enriched.sort((a, b) => b.requestedAt - a.requestedAt);
+  },
+});
+
+/**
+ * Get move request by ID
+ */
+export const getMoveRequest = query({
+  args: {
+    requestId: v.id("locationMoveRequests"),
+  },
+  handler: async (ctx, args) => {
+    const request = await ctx.db.get(args.requestId);
+    if (!request) {
+      return null;
+    }
+
+    await requirePermission(ctx, request.organizationId, "locations.read");
+
+    const collection = await ctx.db.get(request.collectionId);
+    const fromLocation = request.fromLocationId
+      ? await ctx.db.get(request.fromLocationId)
+      : null;
+    const toLocation = await ctx.db.get(request.toLocationId);
+    const requestedBy = await ctx.db.get(request.requestedBy);
+    const reviewedBy = request.reviewedBy
+      ? await ctx.db.get(request.reviewedBy)
+      : null;
+    const executedBy = request.executedBy
+      ? await ctx.db.get(request.executedBy)
+      : null;
+
+    return {
+      ...request,
+      collection,
+      fromLocation,
+      toLocation,
+      requestedByUser: requestedBy,
+      reviewedByUser: reviewedBy,
+      executedByUser: executedBy,
+    };
+  },
+});
+
+/**
+ * Update location status
+ */
+export const updateStatus = mutation({
+  args: {
+    locationId: v.id("locations"),
+    status: v.union(
+      v.literal("active"),
+      v.literal("closed"),
+      v.literal("renovation"),
+      v.literal("restricted"),
+    ),
+    notes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const location = await ctx.db.get(args.locationId);
+    if (!location) {
+      throw new Error("Location not found");
+    }
+
+    await requirePermission(ctx, location.organizationId, "locations.update");
+
+    // Check if there are objects at this location when closing
+    if (args.status === "closed") {
+      const objectsAtLocation = await ctx.db
+        .query("collections")
+        .withIndex("by_currentLocation", (q) =>
+          q.eq("currentLocationId", args.locationId),
+        )
+        .first();
+
+      if (objectsAtLocation) {
+        throw new Error(
+          "Cannot close location with objects. Move objects first.",
+        );
+      }
+    }
+
+    await ctx.db.patch(args.locationId, {
+      status: args.status,
+      isActive: args.status !== "closed",
+      notes: args.notes ?? location.notes,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: location.organizationId,
+      userId,
+      action: "updated_location_status",
+      entityType: "location",
+      entityId: args.locationId,
+      changes: { status: args.status },
     });
 
     return null;
@@ -1515,7 +2180,7 @@ export const getLocationsWithEnvironment = query({
       sortOrder: v.number(),
       isActive: v.boolean(),
       notes: v.optional(v.string()),
-      customFields: v.optional(v.record(v.string(), v.any())),
+      customFields: v.optional(v.record(v.string(), customFieldValue)),
     }),
   ),
   handler: async (ctx, args) => {

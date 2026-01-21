@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { metadataRecord } from "./schema";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
@@ -36,7 +37,7 @@ export const list = query({
       startDate: v.number(),
       endDate: v.optional(v.number()),
       notes: v.optional(v.string()),
-      metadata: v.optional(v.any()),
+      metadata: v.optional(metadataRecord),
       createdAt: v.number(),
     }),
   ),
@@ -75,7 +76,7 @@ export const listByEntity = query({
       startDate: v.number(),
       endDate: v.optional(v.number()),
       notes: v.optional(v.string()),
-      metadata: v.optional(v.any()),
+      metadata: v.optional(metadataRecord),
       createdAt: v.number(),
     }),
   ),
@@ -227,7 +228,7 @@ export const create = mutation({
     startDate: v.number(),
     endDate: v.optional(v.number()),
     notes: v.optional(v.string()),
-    metadata: v.optional(v.any()),
+    metadata: v.optional(metadataRecord),
   },
   returns: v.id("accountRelationships"),
   handler: async (ctx, args) => {
@@ -268,7 +269,7 @@ export const update = mutation({
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
     notes: v.optional(v.string()),
-    metadata: v.optional(v.any()),
+    metadata: v.optional(metadataRecord),
   },
   returns: v.null(),
   handler: async (ctx, args) => {

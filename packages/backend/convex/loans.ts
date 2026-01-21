@@ -3,7 +3,12 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { type MutationCtx, mutation, query } from "./_generated/server";
+import {
+  type MutationCtx,
+  internalMutation,
+  mutation,
+  query,
+} from "./_generated/server";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
@@ -2275,5 +2280,1064 @@ export const bulkCancel = mutation({
     }
 
     return { cancelled, skipped, errors };
+  },
+});
+
+// =============================================================================
+// LOAN EXTENSION REQUESTS
+// =============================================================================
+
+/**
+ * Request an extension for a loan
+ */
+export const requestExtension = mutation({
+  args: {
+    loanId: v.id("loans"),
+    newEndDate: v.number(),
+    reason: v.optional(v.string()),
+  },
+  returns: v.id("loanExtensionRequests"),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const loan = await ctx.db.get(args.loanId);
+    if (!loan) {
+      throw new Error("Loan not found");
+    }
+
+    // Verify permission
+    await requirePermission(ctx, loan.organizationId, "loans.update");
+
+    // Can only extend active or dispatched loans
+    if (loan.status !== "active" && loan.status !== "dispatched") {
+      throw new Error("Can only request extension for active or dispatched loans");
+    }
+
+    // New end date must be after current end date
+    if (loan.endDate && args.newEndDate <= loan.endDate) {
+      throw new Error("New end date must be after current end date");
+    }
+
+    // Check for existing pending request
+    const existingRequest = await ctx.db
+      .query("loanExtensionRequests")
+      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .first();
+
+    if (existingRequest) {
+      throw new Error("An extension request is already pending for this loan");
+    }
+
+    const requestId = await ctx.db.insert("loanExtensionRequests", {
+      loanId: args.loanId,
+      organizationId: loan.organizationId,
+      requestedBy: userId,
+      requestedAt: Date.now(),
+      originalEndDate: loan.endDate ?? Date.now(),
+      newRequestedEndDate: args.newEndDate,
+      reason: args.reason,
+      status: "pending",
+    });
+
+    // Create notification for approvers
+    const approvers = await getUsersToNotifyForWorkflowStep(
+      ctx,
+      loan.organizationId,
+      "loan",
+      1,
+    );
+
+    for (const approverId of approvers) {
+      await ctx.runMutation(internal.audit.createNotificationInternal, {
+        organizationId: loan.organizationId,
+        userId: approverId,
+        type: "loan_extension_requested",
+        title: "Loan Extension Requested",
+        message: `Extension requested for loan ${loan.loanNumber}`,
+        relatedEntityType: "loan",
+        relatedEntityId: args.loanId,
+      });
+    }
+
+    // Log audit action
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: loan.organizationId,
+      userId,
+      action: "extension_requested",
+      entityType: "loan",
+      entityId: args.loanId,
+      changes: {
+        originalEndDate: loan.endDate,
+        newRequestedEndDate: args.newEndDate,
+        reason: args.reason,
+      },
+    });
+
+    return requestId;
+  },
+});
+
+/**
+ * Approve a loan extension request
+ */
+export const approveExtension = mutation({
+  args: {
+    requestId: v.id("loanExtensionRequests"),
+    comment: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const request = await ctx.db.get(args.requestId);
+    if (!request) {
+      throw new Error("Extension request not found");
+    }
+
+    if (request.status !== "pending") {
+      throw new Error("Extension request is not pending");
+    }
+
+    // Verify permission
+    await requirePermission(ctx, request.organizationId, "loans.approve");
+
+    const loan = await ctx.db.get(request.loanId);
+    if (!loan) {
+      throw new Error("Loan not found");
+    }
+
+    // Update the request
+    await ctx.db.patch(args.requestId, {
+      status: "approved",
+      approvedBy: userId,
+      approvedAt: Date.now(),
+      approvalComment: args.comment,
+    });
+
+    // Update the loan end date
+    await ctx.db.patch(request.loanId, {
+      endDate: request.newRequestedEndDate,
+    });
+
+    // Notify the requester
+    await ctx.runMutation(internal.audit.createNotificationInternal, {
+      organizationId: request.organizationId,
+      userId: request.requestedBy,
+      type: "loan_extension_approved",
+      title: "Loan Extension Approved",
+      message: `Extension approved for loan ${loan.loanNumber}`,
+      relatedEntityType: "loan",
+      relatedEntityId: request.loanId,
+    });
+
+    // Log audit action
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: request.organizationId,
+      userId,
+      action: "extension_approved",
+      entityType: "loan",
+      entityId: request.loanId,
+      changes: {
+        previousEndDate: request.originalEndDate,
+        newEndDate: request.newRequestedEndDate,
+      },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Reject a loan extension request
+ */
+export const rejectExtension = mutation({
+  args: {
+    requestId: v.id("loanExtensionRequests"),
+    reason: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const request = await ctx.db.get(args.requestId);
+    if (!request) {
+      throw new Error("Extension request not found");
+    }
+
+    if (request.status !== "pending") {
+      throw new Error("Extension request is not pending");
+    }
+
+    // Verify permission
+    await requirePermission(ctx, request.organizationId, "loans.approve");
+
+    const loan = await ctx.db.get(request.loanId);
+    if (!loan) {
+      throw new Error("Loan not found");
+    }
+
+    // Update the request
+    await ctx.db.patch(args.requestId, {
+      status: "rejected",
+      rejectionReason: args.reason,
+    });
+
+    // Notify the requester
+    await ctx.runMutation(internal.audit.createNotificationInternal, {
+      organizationId: request.organizationId,
+      userId: request.requestedBy,
+      type: "loan_extension_rejected",
+      title: "Loan Extension Rejected",
+      message: `Extension rejected for loan ${loan.loanNumber}: ${args.reason}`,
+      relatedEntityType: "loan",
+      relatedEntityId: request.loanId,
+    });
+
+    // Log audit action
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: request.organizationId,
+      userId,
+      action: "extension_rejected",
+      entityType: "loan",
+      entityId: request.loanId,
+      changes: { rejectionReason: args.reason },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * List extension requests for a loan
+ */
+export const listExtensionRequests = query({
+  args: {
+    loanId: v.id("loans"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("loanExtensionRequests"),
+      _creationTime: v.number(),
+      loanId: v.id("loans"),
+      organizationId: v.id("organizations"),
+      requestedBy: v.id("users"),
+      requestedByName: v.optional(v.string()),
+      requestedAt: v.number(),
+      originalEndDate: v.number(),
+      newRequestedEndDate: v.number(),
+      reason: v.optional(v.string()),
+      status: v.union(
+        v.literal("pending"),
+        v.literal("approved"),
+        v.literal("rejected"),
+      ),
+      approvedBy: v.optional(v.id("users")),
+      approvedByName: v.optional(v.string()),
+      approvedAt: v.optional(v.number()),
+      approvalComment: v.optional(v.string()),
+      rejectionReason: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const loan = await ctx.db.get(args.loanId);
+    if (!loan) {
+      return [];
+    }
+
+    await requirePermission(ctx, loan.organizationId, "loans.view");
+
+    const requests = await ctx.db
+      .query("loanExtensionRequests")
+      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+      .order("desc")
+      .collect();
+
+    // Enrich with user names
+    return await Promise.all(
+      requests.map(async (request) => {
+        const requester = await ctx.db.get(request.requestedBy);
+        const approver = request.approvedBy
+          ? await ctx.db.get(request.approvedBy)
+          : null;
+
+        return {
+          ...request,
+          requestedByName: requester?.name ?? requester?.email,
+          approvedByName: approver?.name ?? approver?.email,
+        };
+      }),
+    );
+  },
+});
+
+// =============================================================================
+// LOAN RETURN REMINDERS (Internal functions for cron)
+// =============================================================================
+
+/**
+ * Check for loans due soon or overdue and send reminders
+ * Called by cron job
+ */
+export const checkLoanRemindersInternal = internalMutation({
+  args: {},
+  returns: v.object({
+    remindersCreated: v.number(),
+    loansChecked: v.number(),
+  }),
+  handler: async (ctx) => {
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    // Thresholds for reminders (in days before due date)
+    const thresholds = [
+      { days: 30, type: "due_soon_30" as const },
+      { days: 14, type: "due_soon_14" as const },
+      { days: 7, type: "due_soon_7" as const },
+      { days: 1, type: "due_soon_1" as const },
+      { days: 0, type: "overdue" as const },
+    ];
+
+    let remindersCreated = 0;
+    let loansChecked = 0;
+
+    // Get all active/dispatched loans with end dates
+    const activeLoans = await ctx.db
+      .query("loans")
+      .filter((q) =>
+        q.and(
+          q.or(
+            q.eq(q.field("status"), "active"),
+            q.eq(q.field("status"), "dispatched"),
+          ),
+          q.neq(q.field("endDate"), undefined),
+        ),
+      )
+      .collect();
+
+    for (const loan of activeLoans) {
+      if (!loan.endDate) continue;
+      loansChecked++;
+
+      const daysUntilDue = Math.floor((loan.endDate - now) / oneDay);
+
+      for (const threshold of thresholds) {
+        // Check if we should send this type of reminder
+        const shouldSend =
+          threshold.type === "overdue"
+            ? daysUntilDue < 0
+            : daysUntilDue <= threshold.days && daysUntilDue > (thresholds[thresholds.indexOf(threshold) + 1]?.days ?? -1);
+
+        if (!shouldSend) continue;
+
+        // Check if reminder already sent
+        const existingReminder = await ctx.db
+          .query("loanReminders")
+          .withIndex("by_loan_and_type", (q) =>
+            q.eq("loanId", loan._id).eq("reminderType", threshold.type),
+          )
+          .first();
+
+        if (existingReminder) continue;
+
+        // Create reminder record
+        await ctx.db.insert("loanReminders", {
+          loanId: loan._id,
+          organizationId: loan.organizationId,
+          reminderType: threshold.type,
+          sentAt: now,
+          dueDate: loan.endDate,
+        });
+
+        // Get users to notify (loan creator and org admins)
+        const orgMembers = await ctx.db
+          .query("userOrganizations")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", loan.organizationId),
+          )
+          .collect();
+
+        const notificationTitle =
+          threshold.type === "overdue"
+            ? "Loan Overdue"
+            : `Loan Due in ${threshold.days} ${threshold.days === 1 ? "Day" : "Days"}`;
+
+        const notificationMessage =
+          threshold.type === "overdue"
+            ? `Loan ${loan.loanNumber} is overdue for return`
+            : `Loan ${loan.loanNumber} is due in ${threshold.days} ${threshold.days === 1 ? "day" : "days"}`;
+
+        for (const member of orgMembers) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: loan.organizationId,
+            userId: member.userId,
+            type:
+              threshold.type === "overdue"
+                ? "loan_overdue"
+                : "loan_return_due_soon",
+            title: notificationTitle,
+            message: notificationMessage,
+            relatedEntityType: "loan",
+            relatedEntityId: loan._id,
+          });
+        }
+
+        remindersCreated++;
+        break; // Only send one reminder type per loan per cron run
+      }
+    }
+
+    return { remindersCreated, loansChecked };
+  },
+});
+
+// ============================================
+// Condition Dispute Workflow
+// ============================================
+
+const conditionDisputeStatusValidator = v.union(
+  v.literal("reported"),
+  v.literal("investigating"),
+  v.literal("resolved_in_favor_lender"),
+  v.literal("resolved_in_favor_borrower"),
+  v.literal("resolved_compromise"),
+  v.literal("withdrawn"),
+);
+
+export const createConditionDispute = mutation({
+  args: {
+    loanId: v.id("loans"),
+    collectionId: v.id("collections"),
+    conditionBefore: v.string(),
+    conditionBeforeNotes: v.optional(v.string()),
+    conditionBeforePhotos: v.optional(v.array(v.id("_storage"))),
+    conditionAfter: v.string(),
+    conditionAfterNotes: v.optional(v.string()),
+    conditionAfterPhotos: v.optional(v.array(v.id("_storage"))),
+    disputeDescription: v.string(),
+    claimAmount: v.optional(v.number()),
+  },
+  returns: v.id("conditionDisputes"),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const loan = await ctx.db.get(args.loanId);
+    if (!loan) {
+      throw new Error("Loan not found");
+    }
+
+    await requirePermission(ctx, loan.organizationId, "loans.write");
+
+    // Verify the collection item is part of this loan
+    const loanItem = await ctx.db
+      .query("loanItems")
+      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+      .filter((q) => q.eq(q.field("collectionId"), args.collectionId))
+      .first();
+
+    if (!loanItem) {
+      throw new Error("Item is not part of this loan");
+    }
+
+    const disputeId = await ctx.db.insert("conditionDisputes", {
+      loanId: args.loanId,
+      organizationId: loan.organizationId,
+      collectionId: args.collectionId,
+      conditionBefore: args.conditionBefore,
+      conditionBeforeNotes: args.conditionBeforeNotes,
+      conditionBeforePhotos: args.conditionBeforePhotos,
+      conditionAfter: args.conditionAfter,
+      conditionAfterNotes: args.conditionAfterNotes,
+      conditionAfterPhotos: args.conditionAfterPhotos,
+      disputeDescription: args.disputeDescription,
+      reportedBy: userId,
+      reportedAt: Date.now(),
+      status: "reported",
+      claimAmount: args.claimAmount,
+    });
+
+    // Log the action
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: loan.organizationId,
+      userId,
+      action: "created",
+      entityType: "conditionDispute",
+      entityId: disputeId,
+      changes: { loanId: args.loanId, collectionId: args.collectionId },
+    });
+
+    // Notify relevant users
+    const orgMembers = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", loan.organizationId),
+      )
+      .collect();
+
+    for (const member of orgMembers) {
+      if (member.userId !== userId) {
+        await ctx.runMutation(internal.audit.createNotificationInternal, {
+          organizationId: loan.organizationId,
+          userId: member.userId,
+          type: "condition_dispute_created",
+          title: "Condition Dispute Reported",
+          message: `A condition dispute has been reported for loan ${loan.loanNumber}`,
+          relatedEntityType: "loan",
+          relatedEntityId: args.loanId,
+        });
+      }
+    }
+
+    return disputeId;
+  },
+});
+
+export const startDisputeInvestigation = mutation({
+  args: {
+    disputeId: v.id("conditionDisputes"),
+    investigationNotes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const dispute = await ctx.db.get(args.disputeId);
+    if (!dispute) {
+      throw new Error("Dispute not found");
+    }
+
+    await requirePermission(ctx, dispute.organizationId, "loans.write");
+
+    if (dispute.status !== "reported") {
+      throw new Error("Dispute is not in reported status");
+    }
+
+    await ctx.db.patch(args.disputeId, {
+      status: "investigating",
+      investigatorId: userId,
+      investigationStartedAt: Date.now(),
+      investigationNotes: args.investigationNotes,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: dispute.organizationId,
+      userId,
+      action: "updated",
+      entityType: "conditionDispute",
+      entityId: args.disputeId,
+      changes: { status: "investigating" },
+    });
+
+    // Notify the reporter
+    if (dispute.reportedBy !== userId) {
+      await ctx.runMutation(internal.audit.createNotificationInternal, {
+        organizationId: dispute.organizationId,
+        userId: dispute.reportedBy,
+        type: "condition_dispute_investigating",
+        title: "Dispute Under Investigation",
+        message: "Your condition dispute is now under investigation",
+        relatedEntityType: "loan",
+        relatedEntityId: dispute.loanId,
+      });
+    }
+
+    return null;
+  },
+});
+
+export const updateDisputeInvestigation = mutation({
+  args: {
+    disputeId: v.id("conditionDisputes"),
+    investigationNotes: v.optional(v.string()),
+    investigationPhotos: v.optional(v.array(v.id("_storage"))),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const dispute = await ctx.db.get(args.disputeId);
+    if (!dispute) {
+      throw new Error("Dispute not found");
+    }
+
+    await requirePermission(ctx, dispute.organizationId, "loans.write");
+
+    if (dispute.status !== "investigating") {
+      throw new Error("Dispute is not under investigation");
+    }
+
+    const updates: Record<string, unknown> = {};
+    if (args.investigationNotes !== undefined) {
+      updates.investigationNotes = args.investigationNotes;
+    }
+    if (args.investigationPhotos !== undefined) {
+      updates.investigationPhotos = args.investigationPhotos;
+    }
+
+    await ctx.db.patch(args.disputeId, updates);
+
+    return null;
+  },
+});
+
+export const resolveConditionDispute = mutation({
+  args: {
+    disputeId: v.id("conditionDisputes"),
+    resolution: v.union(
+      v.literal("resolved_in_favor_lender"),
+      v.literal("resolved_in_favor_borrower"),
+      v.literal("resolved_compromise"),
+    ),
+    resolutionNotes: v.string(),
+    settlementAmount: v.optional(v.number()),
+    createInsuranceClaim: v.optional(v.boolean()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const dispute = await ctx.db.get(args.disputeId);
+    if (!dispute) {
+      throw new Error("Dispute not found");
+    }
+
+    await requirePermission(ctx, dispute.organizationId, "loans.write");
+
+    if (
+      dispute.status !== "reported" &&
+      dispute.status !== "investigating"
+    ) {
+      throw new Error("Dispute cannot be resolved in current status");
+    }
+
+    const updates: Record<string, unknown> = {
+      status: args.resolution,
+      resolvedBy: userId,
+      resolvedAt: Date.now(),
+      resolutionNotes: args.resolutionNotes,
+    };
+
+    if (args.settlementAmount !== undefined) {
+      updates.settlementAmount = args.settlementAmount;
+    }
+
+    // Create insurance claim if requested and damage was confirmed
+    if (
+      args.createInsuranceClaim &&
+      args.resolution === "resolved_in_favor_borrower"
+    ) {
+      const loan = await ctx.db.get(dispute.loanId);
+      if (loan) {
+        // Find active coverage for this collection to get the policy
+        const coverage = await ctx.db
+          .query("insuranceCoverages")
+          .withIndex("by_collection", (q) =>
+            q.eq("collectionId", dispute.collectionId),
+          )
+          .filter((q) => q.eq(q.field("status"), "active"))
+          .first();
+
+        if (coverage) {
+          const claimId = await ctx.db.insert("insuranceClaims", {
+            organizationId: dispute.organizationId,
+            collectionIds: [dispute.collectionId],
+            policyId: coverage.policyId,
+            loanId: dispute.loanId,
+            claimNumber: `CLM-${Date.now()}`,
+            incidentDate: dispute.reportedAt,
+            incidentType: "damage",
+            incidentDescription: `Damage during loan ${loan.loanNumber}: ${dispute.disputeDescription}`,
+            claimedAmount: dispute.claimAmount ?? coverage.coveredValue,
+            status: "draft",
+            reportedDate: Date.now(),
+            createdAt: Date.now(),
+            createdBy: userId,
+          });
+          updates.insuranceClaimId = claimId;
+        }
+      }
+    }
+
+    await ctx.db.patch(args.disputeId, updates);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: dispute.organizationId,
+      userId,
+      action: "resolved",
+      entityType: "conditionDispute",
+      entityId: args.disputeId,
+      changes: { status: args.resolution, resolutionNotes: args.resolutionNotes },
+    });
+
+    // Notify the reporter
+    if (dispute.reportedBy !== userId) {
+      await ctx.runMutation(internal.audit.createNotificationInternal, {
+        organizationId: dispute.organizationId,
+        userId: dispute.reportedBy,
+        type: "condition_dispute_resolved",
+        title: "Dispute Resolved",
+        message: `Your condition dispute has been resolved`,
+        relatedEntityType: "loan",
+        relatedEntityId: dispute.loanId,
+      });
+    }
+
+    return null;
+  },
+});
+
+export const withdrawConditionDispute = mutation({
+  args: {
+    disputeId: v.id("conditionDisputes"),
+    reason: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const dispute = await ctx.db.get(args.disputeId);
+    if (!dispute) {
+      throw new Error("Dispute not found");
+    }
+
+    await requirePermission(ctx, dispute.organizationId, "loans.write");
+
+    // Only the reporter or admins can withdraw
+    if (dispute.reportedBy !== userId) {
+      await requirePermission(ctx, dispute.organizationId, "loans.approve");
+    }
+
+    if (
+      dispute.status === "resolved_in_favor_lender" ||
+      dispute.status === "resolved_in_favor_borrower" ||
+      dispute.status === "resolved_compromise" ||
+      dispute.status === "withdrawn"
+    ) {
+      throw new Error("Dispute is already resolved or withdrawn");
+    }
+
+    await ctx.db.patch(args.disputeId, {
+      status: "withdrawn",
+      resolvedBy: userId,
+      resolvedAt: Date.now(),
+      resolutionNotes: args.reason ?? "Dispute withdrawn",
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: dispute.organizationId,
+      userId,
+      action: "withdrawn",
+      entityType: "conditionDispute",
+      entityId: args.disputeId,
+      changes: { reason: args.reason },
+    });
+
+    return null;
+  },
+});
+
+export const listConditionDisputes = query({
+  args: {
+    loanId: v.optional(v.id("loans")),
+    organizationId: v.optional(v.id("organizations")),
+    status: v.optional(conditionDisputeStatusValidator),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: v.object({
+    page: v.array(
+      v.object({
+        _id: v.id("conditionDisputes"),
+        _creationTime: v.number(),
+        loanId: v.id("loans"),
+        organizationId: v.id("organizations"),
+        collectionId: v.id("collections"),
+        conditionBefore: v.string(),
+        conditionAfter: v.string(),
+        disputeDescription: v.string(),
+        reportedBy: v.id("users"),
+        reportedAt: v.number(),
+        status: conditionDisputeStatusValidator,
+        investigatorId: v.optional(v.id("users")),
+        resolvedAt: v.optional(v.number()),
+        claimAmount: v.optional(v.number()),
+        settlementAmount: v.optional(v.number()),
+        loan: v.optional(
+          v.object({
+            loanNumber: v.string(),
+            type: v.union(v.literal("incoming"), v.literal("outgoing")),
+          }),
+        ),
+        collection: v.optional(
+          v.object({
+            title: v.string(),
+            accessionNumber: v.optional(v.string()),
+          }),
+        ),
+        reporter: v.optional(
+          v.object({
+            name: v.optional(v.string()),
+            email: v.optional(v.string()),
+          }),
+        ),
+      }),
+    ),
+    isDone: v.boolean(),
+    continueCursor: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    let query;
+
+    if (args.loanId) {
+      const loan = await ctx.db.get(args.loanId);
+      if (!loan) {
+        throw new Error("Loan not found");
+      }
+      await requirePermission(ctx, loan.organizationId, "loans.read");
+      query = ctx.db
+        .query("conditionDisputes")
+        .withIndex("by_loan", (q) => q.eq("loanId", args.loanId!));
+    } else if (args.organizationId) {
+      await requirePermission(ctx, args.organizationId, "loans.read");
+      if (args.status) {
+        query = ctx.db
+          .query("conditionDisputes")
+          .withIndex("by_organization_and_status", (q) =>
+            q
+              .eq("organizationId", args.organizationId!)
+              .eq("status", args.status!),
+          );
+      } else {
+        query = ctx.db
+          .query("conditionDisputes")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId!),
+          );
+      }
+    } else {
+      throw new Error("Either loanId or organizationId is required");
+    }
+
+    const result = await query.paginate(args.paginationOpts);
+
+    const enrichedDisputes = await Promise.all(
+      result.page.map(async (dispute) => {
+        const loan = await ctx.db.get(dispute.loanId);
+        const collection = await ctx.db.get(dispute.collectionId);
+        const reporter = await ctx.db.get(dispute.reportedBy);
+
+        return {
+          _id: dispute._id,
+          _creationTime: dispute._creationTime,
+          loanId: dispute.loanId,
+          organizationId: dispute.organizationId,
+          collectionId: dispute.collectionId,
+          conditionBefore: dispute.conditionBefore,
+          conditionAfter: dispute.conditionAfter,
+          disputeDescription: dispute.disputeDescription,
+          reportedBy: dispute.reportedBy,
+          reportedAt: dispute.reportedAt,
+          status: dispute.status,
+          investigatorId: dispute.investigatorId,
+          resolvedAt: dispute.resolvedAt,
+          claimAmount: dispute.claimAmount,
+          settlementAmount: dispute.settlementAmount,
+          loan: loan
+            ? { loanNumber: loan.loanNumber, type: loan.type }
+            : undefined,
+          collection: collection
+            ? {
+                title: collection.title,
+                accessionNumber: collection.accessionNumber,
+              }
+            : undefined,
+          reporter: reporter
+            ? { name: reporter.name, email: reporter.email }
+            : undefined,
+        };
+      }),
+    );
+
+    return {
+      page: enrichedDisputes,
+      isDone: result.isDone,
+      continueCursor: result.continueCursor,
+    };
+  },
+});
+
+export const getConditionDispute = query({
+  args: {
+    disputeId: v.id("conditionDisputes"),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id("conditionDisputes"),
+      _creationTime: v.number(),
+      loanId: v.id("loans"),
+      organizationId: v.id("organizations"),
+      collectionId: v.id("collections"),
+      conditionBefore: v.string(),
+      conditionBeforeNotes: v.optional(v.string()),
+      conditionBeforePhotos: v.optional(v.array(v.id("_storage"))),
+      conditionAfter: v.string(),
+      conditionAfterNotes: v.optional(v.string()),
+      conditionAfterPhotos: v.optional(v.array(v.id("_storage"))),
+      disputeDescription: v.string(),
+      reportedBy: v.id("users"),
+      reportedAt: v.number(),
+      status: conditionDisputeStatusValidator,
+      investigatorId: v.optional(v.id("users")),
+      investigationStartedAt: v.optional(v.number()),
+      investigationNotes: v.optional(v.string()),
+      investigationPhotos: v.optional(v.array(v.id("_storage"))),
+      resolvedBy: v.optional(v.id("users")),
+      resolvedAt: v.optional(v.number()),
+      resolutionNotes: v.optional(v.string()),
+      claimAmount: v.optional(v.number()),
+      settlementAmount: v.optional(v.number()),
+      insuranceClaimId: v.optional(v.id("insuranceClaims")),
+      loan: v.optional(
+        v.object({
+          loanNumber: v.string(),
+          type: v.union(v.literal("incoming"), v.literal("outgoing")),
+          lenderBorrowerName: v.optional(v.string()),
+        }),
+      ),
+      collection: v.optional(
+        v.object({
+          title: v.string(),
+          accessionNumber: v.optional(v.string()),
+          primaryImageUrl: v.optional(v.string()),
+        }),
+      ),
+      reporter: v.optional(
+        v.object({
+          name: v.optional(v.string()),
+          email: v.optional(v.string()),
+        }),
+      ),
+      investigator: v.optional(
+        v.object({
+          name: v.optional(v.string()),
+          email: v.optional(v.string()),
+        }),
+      ),
+      resolver: v.optional(
+        v.object({
+          name: v.optional(v.string()),
+          email: v.optional(v.string()),
+        }),
+      ),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const dispute = await ctx.db.get(args.disputeId);
+    if (!dispute) {
+      return null;
+    }
+
+    await requirePermission(ctx, dispute.organizationId, "loans.read");
+
+    const loan = await ctx.db.get(dispute.loanId);
+    const collection = await ctx.db.get(dispute.collectionId);
+    const reporter = await ctx.db.get(dispute.reportedBy);
+    const investigator = dispute.investigatorId
+      ? await ctx.db.get(dispute.investigatorId)
+      : null;
+    const resolver = dispute.resolvedBy
+      ? await ctx.db.get(dispute.resolvedBy)
+      : null;
+
+    // Get primary image URL for the collection item
+    let primaryImageUrl: string | undefined;
+    if (collection) {
+      const primaryMedia = await ctx.db
+        .query("mediaFiles")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", collection._id),
+        )
+        .filter((q) => q.eq(q.field("isPrimary"), true))
+        .first();
+
+      if (primaryMedia?.storageId) {
+        primaryImageUrl = await ctx.storage.getUrl(primaryMedia.storageId) ?? undefined;
+      }
+    }
+
+    return {
+      _id: dispute._id,
+      _creationTime: dispute._creationTime,
+      loanId: dispute.loanId,
+      organizationId: dispute.organizationId,
+      collectionId: dispute.collectionId,
+      conditionBefore: dispute.conditionBefore,
+      conditionBeforeNotes: dispute.conditionBeforeNotes,
+      conditionBeforePhotos: dispute.conditionBeforePhotos,
+      conditionAfter: dispute.conditionAfter,
+      conditionAfterNotes: dispute.conditionAfterNotes,
+      conditionAfterPhotos: dispute.conditionAfterPhotos,
+      disputeDescription: dispute.disputeDescription,
+      reportedBy: dispute.reportedBy,
+      reportedAt: dispute.reportedAt,
+      status: dispute.status,
+      investigatorId: dispute.investigatorId,
+      investigationStartedAt: dispute.investigationStartedAt,
+      investigationNotes: dispute.investigationNotes,
+      investigationPhotos: dispute.investigationPhotos,
+      resolvedBy: dispute.resolvedBy,
+      resolvedAt: dispute.resolvedAt,
+      resolutionNotes: dispute.resolutionNotes,
+      claimAmount: dispute.claimAmount,
+      settlementAmount: dispute.settlementAmount,
+      insuranceClaimId: dispute.insuranceClaimId,
+      loan: loan
+        ? {
+            loanNumber: loan.loanNumber,
+            type: loan.type,
+            lenderBorrowerName: loan.lenderBorrowerName,
+          }
+        : undefined,
+      collection: collection
+        ? {
+            title: collection.title,
+            accessionNumber: collection.accessionNumber,
+            primaryImageUrl,
+          }
+        : undefined,
+      reporter: reporter
+        ? { name: reporter.name, email: reporter.email }
+        : undefined,
+      investigator: investigator
+        ? { name: investigator.name, email: investigator.email }
+        : undefined,
+      resolver: resolver
+        ? { name: resolver.name, email: resolver.email }
+        : undefined,
+    };
   },
 });

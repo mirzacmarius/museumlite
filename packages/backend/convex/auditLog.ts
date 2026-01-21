@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import { auditLogChanges } from "./schema";
 import { requirePermission } from "./utils/permissions";
 
 const ENTITY_TYPES = [
@@ -42,7 +43,7 @@ export const list = query({
         userName: v.optional(v.string()),
         userEmail: v.optional(v.string()),
         userImage: v.optional(v.string()),
-        changes: v.optional(v.any()),
+        changes: v.optional(auditLogChanges),
       }),
     ),
     nextCursor: v.optional(v.string()),
@@ -216,7 +217,7 @@ export const getByEntity = query({
       action: v.string(),
       timestamp: v.number(),
       userName: v.optional(v.string()),
-      changes: v.optional(v.any()),
+      changes: v.optional(auditLogChanges),
     }),
   ),
   handler: async (ctx, args) => {

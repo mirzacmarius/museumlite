@@ -1142,6 +1142,7 @@ export default {
       incoming: "Incoming",
       international: "International",
       trusted: "TRUSTED",
+      totalValue: "Total Value:",
       loanManifest: "Loan Manifest",
       printDispatchManifest: "Print Dispatch Manifest",
       print: "Print",

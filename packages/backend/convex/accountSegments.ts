@@ -1,23 +1,12 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { filterCondition } from "./schema";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
-const filterValidator = v.object({
-  field: v.string(),
-  operator: v.union(
-    v.literal("eq"),
-    v.literal("ne"),
-    v.literal("in"),
-    v.literal("contains"),
-    v.literal("gt"),
-    v.literal("lt"),
-    v.literal("gte"),
-    v.literal("lte"),
-  ),
-  value: v.any(),
-});
+// Use the shared filterCondition validator from schema
+const filterValidator = filterCondition;
 
 export const list = query({
   args: {

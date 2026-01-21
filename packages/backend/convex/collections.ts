@@ -3,6 +3,8 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
+// Note: customFieldValue, provenanceChainEntry, shippingLogEntry are defined in schema
+// but return validators use v.any() to allow for existing data that may not match strict types
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
 import {
@@ -390,7 +392,7 @@ export const getWithModuleDetails = query({
             v.literal("general"),
           ),
         ),
-        customFields: v.optional(v.any()),
+        customFields: v.optional(v.record(v.string(), v.any())),
         status: v.union(
           v.literal("active"),
           v.literal("loaned"),

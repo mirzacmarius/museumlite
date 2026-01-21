@@ -1780,3 +1780,714 @@ export const checkAssessmentsDueInternal = internalMutation({
     return null;
   },
 });
+
+// ============================================
+// COST TRACKING FUNCTIONS
+// ============================================
+
+export const updateTreatmentCosts = mutation({
+  args: {
+    treatmentId: v.id("conservationTreatments"),
+    laborHours: v.optional(v.number()),
+    laborRate: v.optional(v.number()),
+    materialsCost: v.optional(v.number()),
+    materials: v.optional(
+      v.array(
+        v.object({
+          name: v.string(),
+          quantity: v.optional(v.number()),
+          unitCost: v.optional(v.number()),
+          totalCost: v.number(),
+          notes: v.optional(v.string()),
+        }),
+      ),
+    ),
+    externalServicesCost: v.optional(v.number()),
+    currency: v.optional(v.string()),
+    costNotes: v.optional(v.string()),
+  },
+  returns: v.object({
+    totalCost: v.number(),
+    laborCost: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const treatment = await ctx.db.get(args.treatmentId);
+    if (!treatment) {
+      throw new Error("Treatment not found");
+    }
+
+    await requirePermission(
+      ctx,
+      treatment.organizationId,
+      "collections.update",
+    );
+
+    // Calculate costs
+    const laborCost =
+      args.laborHours && args.laborRate
+        ? args.laborHours * args.laborRate
+        : treatment.laborCost ?? 0;
+
+    const materialsCost =
+      args.materialsCost ??
+      (args.materials
+        ? args.materials.reduce((sum, m) => sum + m.totalCost, 0)
+        : treatment.materialsCost ?? 0);
+
+    const externalServicesCost =
+      args.externalServicesCost ?? treatment.externalServicesCost ?? 0;
+
+    const totalCost = laborCost + materialsCost + externalServicesCost;
+
+    const updates: Record<string, unknown> = {
+      totalCost,
+      laborCost,
+    };
+
+    if (args.laborHours !== undefined) updates.laborHours = args.laborHours;
+    if (args.laborRate !== undefined) updates.laborRate = args.laborRate;
+    if (args.materialsCost !== undefined)
+      updates.materialsCost = args.materialsCost;
+    if (args.materials !== undefined) updates.materials = args.materials;
+    if (args.externalServicesCost !== undefined)
+      updates.externalServicesCost = args.externalServicesCost;
+    if (args.currency !== undefined) updates.currency = args.currency;
+    if (args.costNotes !== undefined) updates.costNotes = args.costNotes;
+
+    await ctx.db.patch(args.treatmentId, updates);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: treatment.organizationId,
+      userId,
+      action: "costs_updated",
+      entityType: "conservationTreatment",
+      entityId: args.treatmentId,
+      changes: { totalCost, laborCost, materialsCost },
+    });
+
+    return { totalCost, laborCost };
+  },
+});
+
+export const getCostSummary = query({
+  args: {
+    organizationId: v.id("organizations"),
+    dateFrom: v.optional(v.number()),
+    dateTo: v.optional(v.number()),
+  },
+  returns: v.object({
+    totalCost: v.number(),
+    laborCost: v.number(),
+    materialsCost: v.number(),
+    externalServicesCost: v.number(),
+    treatmentCount: v.number(),
+    averageCostPerTreatment: v.number(),
+    byType: v.array(
+      v.object({
+        treatmentType: v.string(),
+        count: v.number(),
+        totalCost: v.number(),
+      }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    await requireConservationAccess(ctx, args.organizationId);
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
+    let treatments = await ctx.db
+      .query("conservationTreatments")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    // Filter by date range
+    if (args.dateFrom) {
+      treatments = treatments.filter((t) => t.performedAt >= args.dateFrom!);
+    }
+    if (args.dateTo) {
+      treatments = treatments.filter((t) => t.performedAt <= args.dateTo!);
+    }
+
+    // Calculate totals
+    let totalCost = 0;
+    let laborCost = 0;
+    let materialsCost = 0;
+    let externalServicesCost = 0;
+
+    const byType: Record<string, { count: number; totalCost: number }> = {};
+
+    for (const treatment of treatments) {
+      totalCost += treatment.totalCost ?? 0;
+      laborCost += treatment.laborCost ?? 0;
+      materialsCost += treatment.materialsCost ?? 0;
+      externalServicesCost += treatment.externalServicesCost ?? 0;
+
+      if (!byType[treatment.treatmentType]) {
+        byType[treatment.treatmentType] = { count: 0, totalCost: 0 };
+      }
+      byType[treatment.treatmentType]!.count++;
+      byType[treatment.treatmentType]!.totalCost += treatment.totalCost ?? 0;
+    }
+
+    return {
+      totalCost,
+      laborCost,
+      materialsCost,
+      externalServicesCost,
+      treatmentCount: treatments.length,
+      averageCostPerTreatment:
+        treatments.length > 0 ? totalCost / treatments.length : 0,
+      byType: Object.entries(byType).map(([treatmentType, data]) => ({
+        treatmentType,
+        count: data.count,
+        totalCost: data.totalCost,
+      })),
+    };
+  },
+});
+
+// ============================================
+// ASSESSMENT SCHEDULING FUNCTIONS
+// ============================================
+
+export const createAssessmentSchedule = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    collectionId: v.optional(v.id("collections")),
+    name: v.string(),
+    description: v.optional(v.string()),
+    intervalDays: v.number(),
+    assessmentType: v.union(
+      v.literal("full"),
+      v.literal("spot_check"),
+      v.literal("environmental"),
+      v.literal("condition"),
+    ),
+    assignedTo: v.optional(v.id("users")),
+    assignedRoleId: v.optional(v.id("roles")),
+    reminderDaysBefore: v.optional(v.number()),
+  },
+  returns: v.id("assessmentSchedules"),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requireConservationAccess(ctx, args.organizationId);
+    await requirePermission(ctx, args.organizationId, "collections.update");
+
+    const nextDueDate = Date.now() + args.intervalDays * 24 * 60 * 60 * 1000;
+
+    const scheduleId = await ctx.db.insert("assessmentSchedules", {
+      organizationId: args.organizationId,
+      collectionId: args.collectionId,
+      name: args.name,
+      description: args.description,
+      intervalDays: args.intervalDays,
+      assessmentType: args.assessmentType,
+      nextDueDate,
+      isActive: true,
+      assignedTo: args.assignedTo,
+      assignedRoleId: args.assignedRoleId,
+      reminderDaysBefore: args.reminderDaysBefore,
+      createdBy: userId,
+      createdAt: Date.now(),
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "created",
+      entityType: "assessmentSchedule",
+      entityId: scheduleId,
+      changes: { name: args.name, intervalDays: args.intervalDays },
+    });
+
+    return scheduleId;
+  },
+});
+
+export const updateAssessmentSchedule = mutation({
+  args: {
+    scheduleId: v.id("assessmentSchedules"),
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    intervalDays: v.optional(v.number()),
+    assessmentType: v.optional(
+      v.union(
+        v.literal("full"),
+        v.literal("spot_check"),
+        v.literal("environmental"),
+        v.literal("condition"),
+      ),
+    ),
+    assignedTo: v.optional(v.id("users")),
+    assignedRoleId: v.optional(v.id("roles")),
+    reminderDaysBefore: v.optional(v.number()),
+    isActive: v.optional(v.boolean()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const schedule = await ctx.db.get(args.scheduleId);
+    if (!schedule) {
+      throw new Error("Schedule not found");
+    }
+
+    await requireConservationAccess(ctx, schedule.organizationId);
+    await requirePermission(ctx, schedule.organizationId, "collections.update");
+
+    const { scheduleId, ...updates } = args;
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined),
+    );
+
+    await ctx.db.patch(args.scheduleId, filteredUpdates);
+
+    return null;
+  },
+});
+
+export const completeScheduledAssessment = mutation({
+  args: {
+    scheduleId: v.id("assessmentSchedules"),
+    treatmentId: v.id("conservationTreatments"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const schedule = await ctx.db.get(args.scheduleId);
+    if (!schedule) {
+      throw new Error("Schedule not found");
+    }
+
+    await requireConservationAccess(ctx, schedule.organizationId);
+    await requirePermission(ctx, schedule.organizationId, "collections.update");
+
+    // Calculate next due date
+    const nextDueDate =
+      Date.now() + schedule.intervalDays * 24 * 60 * 60 * 1000;
+
+    await ctx.db.patch(args.scheduleId, {
+      lastCompletedDate: Date.now(),
+      lastCompletedBy: userId,
+      lastTreatmentId: args.treatmentId,
+      nextDueDate,
+    });
+
+    return null;
+  },
+});
+
+export const listAssessmentSchedules = query({
+  args: {
+    organizationId: v.id("organizations"),
+    collectionId: v.optional(v.id("collections")),
+    activeOnly: v.optional(v.boolean()),
+    dueSoon: v.optional(v.boolean()), // Filter to show schedules due within 30 days
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("assessmentSchedules"),
+      name: v.string(),
+      description: v.optional(v.string()),
+      collectionId: v.optional(v.id("collections")),
+      collectionTitle: v.optional(v.string()),
+      intervalDays: v.number(),
+      assessmentType: v.string(),
+      nextDueDate: v.optional(v.number()),
+      lastCompletedDate: v.optional(v.number()),
+      isActive: v.boolean(),
+      daysUntilDue: v.optional(v.number()),
+      isOverdue: v.boolean(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    await requireConservationAccess(ctx, args.organizationId);
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
+    let schedules;
+
+    if (args.collectionId) {
+      schedules = await ctx.db
+        .query("assessmentSchedules")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .collect();
+    } else if (args.activeOnly) {
+      schedules = await ctx.db
+        .query("assessmentSchedules")
+        .withIndex("by_organization_and_active", (q) =>
+          q.eq("organizationId", args.organizationId).eq("isActive", true),
+        )
+        .collect();
+    } else {
+      schedules = await ctx.db
+        .query("assessmentSchedules")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect();
+    }
+
+    const now = Date.now();
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+
+    let enrichedSchedules = await Promise.all(
+      schedules.map(async (schedule) => {
+        const collection = schedule.collectionId
+          ? await ctx.db.get(schedule.collectionId)
+          : null;
+
+        const daysUntilDue = schedule.nextDueDate
+          ? Math.floor((schedule.nextDueDate - now) / (24 * 60 * 60 * 1000))
+          : undefined;
+
+        const isOverdue = schedule.nextDueDate ? schedule.nextDueDate < now : false;
+
+        return {
+          _id: schedule._id,
+          name: schedule.name,
+          description: schedule.description,
+          collectionId: schedule.collectionId,
+          collectionTitle: collection?.title,
+          intervalDays: schedule.intervalDays,
+          assessmentType: schedule.assessmentType,
+          nextDueDate: schedule.nextDueDate,
+          lastCompletedDate: schedule.lastCompletedDate,
+          isActive: schedule.isActive,
+          daysUntilDue,
+          isOverdue,
+        };
+      }),
+    );
+
+    // Filter for due soon if requested
+    if (args.dueSoon) {
+      enrichedSchedules = enrichedSchedules.filter(
+        (s) =>
+          s.nextDueDate &&
+          (s.nextDueDate < now || s.nextDueDate - now <= thirtyDaysMs),
+      );
+    }
+
+    // Sort by due date
+    return enrichedSchedules.sort((a, b) => {
+      if (!a.nextDueDate) return 1;
+      if (!b.nextDueDate) return -1;
+      return a.nextDueDate - b.nextDueDate;
+    });
+  },
+});
+
+// ============================================
+// ENVIRONMENTAL MONITORING FUNCTIONS
+// ============================================
+
+export const recordEnvironmentalReading = mutation({
+  args: {
+    locationId: v.id("locations"),
+    temperature: v.optional(v.number()),
+    humidity: v.optional(v.number()),
+    lightLevel: v.optional(v.number()),
+    uvLevel: v.optional(v.number()),
+    source: v.union(
+      v.literal("manual"),
+      v.literal("sensor"),
+      v.literal("imported"),
+    ),
+    sensorId: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  returns: v.object({
+    readingId: v.id("environmentalReadings"),
+    alertTriggered: v.boolean(),
+    alertId: v.optional(v.id("conservationAlerts")),
+    violations: v.array(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId && args.source !== "sensor") {
+      throw new Error("Not authenticated");
+    }
+
+    const location = await ctx.db.get(args.locationId);
+    if (!location) {
+      throw new Error("Location not found");
+    }
+
+    if (userId) {
+      await requirePermission(ctx, location.organizationId, "collections.update");
+    }
+
+    // Check thresholds and generate violations
+    const violations: string[] = [];
+    const thresholds = location.environmentalThresholds;
+
+    if (thresholds) {
+      if (
+        args.temperature !== undefined &&
+        thresholds.temperatureMin !== undefined &&
+        args.temperature < thresholds.temperatureMin
+      ) {
+        violations.push(
+          `Temperature ${args.temperature}°C below minimum ${thresholds.temperatureMin}°C`,
+        );
+      }
+      if (
+        args.temperature !== undefined &&
+        thresholds.temperatureMax !== undefined &&
+        args.temperature > thresholds.temperatureMax
+      ) {
+        violations.push(
+          `Temperature ${args.temperature}°C above maximum ${thresholds.temperatureMax}°C`,
+        );
+      }
+      if (
+        args.humidity !== undefined &&
+        thresholds.humidityMin !== undefined &&
+        args.humidity < thresholds.humidityMin
+      ) {
+        violations.push(
+          `Humidity ${args.humidity}% below minimum ${thresholds.humidityMin}%`,
+        );
+      }
+      if (
+        args.humidity !== undefined &&
+        thresholds.humidityMax !== undefined &&
+        args.humidity > thresholds.humidityMax
+      ) {
+        violations.push(
+          `Humidity ${args.humidity}% above maximum ${thresholds.humidityMax}%`,
+        );
+      }
+      if (
+        args.lightLevel !== undefined &&
+        thresholds.lightLevelMax !== undefined &&
+        args.lightLevel > thresholds.lightLevelMax
+      ) {
+        violations.push(
+          `Light level ${args.lightLevel} lux exceeds maximum ${thresholds.lightLevelMax} lux`,
+        );
+      }
+      if (
+        args.uvLevel !== undefined &&
+        thresholds.uvLevelMax !== undefined &&
+        args.uvLevel > thresholds.uvLevelMax
+      ) {
+        violations.push(`UV level ${args.uvLevel} exceeds maximum ${thresholds.uvLevelMax}`);
+      }
+    }
+
+    const alertTriggered = violations.length > 0;
+    let alertId: Id<"conservationAlerts"> | undefined;
+
+    // Create alert if thresholds exceeded
+    if (alertTriggered) {
+      alertId = await ctx.db.insert("conservationAlerts", {
+        organizationId: location.organizationId,
+        alertType: "environmental_alert",
+        title: `Environmental Alert: ${location.name}`,
+        description: violations.join(". "),
+        priority: violations.length >= 2 ? "high" : "medium",
+        status: "active",
+        createdAt: Date.now(),
+      });
+    }
+
+    const readingId = await ctx.db.insert("environmentalReadings", {
+      organizationId: location.organizationId,
+      locationId: args.locationId,
+      temperature: args.temperature,
+      humidity: args.humidity,
+      lightLevel: args.lightLevel,
+      uvLevel: args.uvLevel,
+      recordedAt: Date.now(),
+      recordedBy: userId ?? undefined,
+      source: args.source,
+      sensorId: args.sensorId,
+      notes: args.notes,
+      alertTriggered,
+      alertId,
+    });
+
+    return {
+      readingId,
+      alertTriggered,
+      alertId,
+      violations,
+    };
+  },
+});
+
+export const getEnvironmentalReadings = query({
+  args: {
+    locationId: v.id("locations"),
+    limit: v.optional(v.number()),
+    dateFrom: v.optional(v.number()),
+    dateTo: v.optional(v.number()),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("environmentalReadings"),
+      temperature: v.optional(v.number()),
+      humidity: v.optional(v.number()),
+      lightLevel: v.optional(v.number()),
+      uvLevel: v.optional(v.number()),
+      recordedAt: v.number(),
+      source: v.string(),
+      alertTriggered: v.optional(v.boolean()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const location = await ctx.db.get(args.locationId);
+    if (!location) {
+      return [];
+    }
+
+    await requirePermission(ctx, location.organizationId, "collections.read");
+
+    let readings = await ctx.db
+      .query("environmentalReadings")
+      .withIndex("by_location_and_time", (q) =>
+        q.eq("locationId", args.locationId),
+      )
+      .order("desc")
+      .collect();
+
+    // Filter by date range
+    if (args.dateFrom) {
+      readings = readings.filter((r) => r.recordedAt >= args.dateFrom!);
+    }
+    if (args.dateTo) {
+      readings = readings.filter((r) => r.recordedAt <= args.dateTo!);
+    }
+
+    // Apply limit
+    if (args.limit) {
+      readings = readings.slice(0, args.limit);
+    }
+
+    return readings.map((r) => ({
+      _id: r._id,
+      temperature: r.temperature,
+      humidity: r.humidity,
+      lightLevel: r.lightLevel,
+      uvLevel: r.uvLevel,
+      recordedAt: r.recordedAt,
+      source: r.source,
+      alertTriggered: r.alertTriggered,
+    }));
+  },
+});
+
+export const getEnvironmentalSummary = query({
+  args: {
+    locationId: v.id("locations"),
+    periodDays: v.optional(v.number()), // Default 30 days
+  },
+  returns: v.object({
+    temperature: v.object({
+      min: v.optional(v.number()),
+      max: v.optional(v.number()),
+      avg: v.optional(v.number()),
+      current: v.optional(v.number()),
+    }),
+    humidity: v.object({
+      min: v.optional(v.number()),
+      max: v.optional(v.number()),
+      avg: v.optional(v.number()),
+      current: v.optional(v.number()),
+    }),
+    lightLevel: v.object({
+      min: v.optional(v.number()),
+      max: v.optional(v.number()),
+      avg: v.optional(v.number()),
+      current: v.optional(v.number()),
+    }),
+    readingCount: v.number(),
+    alertCount: v.number(),
+    thresholds: v.optional(
+      v.object({
+        temperatureMin: v.optional(v.number()),
+        temperatureMax: v.optional(v.number()),
+        humidityMin: v.optional(v.number()),
+        humidityMax: v.optional(v.number()),
+        lightLevelMax: v.optional(v.number()),
+        uvLevelMax: v.optional(v.number()),
+      }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    const location = await ctx.db.get(args.locationId);
+    if (!location) {
+      throw new Error("Location not found");
+    }
+
+    await requirePermission(ctx, location.organizationId, "collections.read");
+
+    const periodMs = (args.periodDays ?? 30) * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - periodMs;
+
+    const readings = await ctx.db
+      .query("environmentalReadings")
+      .withIndex("by_location_and_time", (q) =>
+        q.eq("locationId", args.locationId),
+      )
+      .filter((q) => q.gte(q.field("recordedAt"), cutoff))
+      .collect();
+
+    // Calculate stats
+    const temps = readings.filter((r) => r.temperature !== undefined).map((r) => r.temperature!);
+    const humids = readings.filter((r) => r.humidity !== undefined).map((r) => r.humidity!);
+    const lights = readings.filter((r) => r.lightLevel !== undefined).map((r) => r.lightLevel!);
+
+    const calcStats = (values: number[]) => {
+      if (values.length === 0) return { min: undefined, max: undefined, avg: undefined };
+      return {
+        min: Math.min(...values),
+        max: Math.max(...values),
+        avg: values.reduce((a, b) => a + b, 0) / values.length,
+      };
+    };
+
+    // Get most recent reading for current values
+    const latest = readings.sort((a, b) => b.recordedAt - a.recordedAt)[0];
+
+    const alertCount = readings.filter((r) => r.alertTriggered).length;
+
+    return {
+      temperature: {
+        ...calcStats(temps),
+        current: latest?.temperature,
+      },
+      humidity: {
+        ...calcStats(humids),
+        current: latest?.humidity,
+      },
+      lightLevel: {
+        ...calcStats(lights),
+        current: latest?.lightLevel,
+      },
+      readingCount: readings.length,
+      alertCount,
+      thresholds: location.environmentalThresholds,
+    };
+  },
+});

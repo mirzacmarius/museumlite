@@ -1078,3 +1078,523 @@ export const listForExport = query({
     };
   },
 });
+
+// ============================================
+// Proceeds Accountability
+// ============================================
+
+/**
+ * Record sale proceeds with receipt
+ */
+export const recordProceeds = mutation({
+  args: {
+    deaccessionId: v.id("deaccessions"),
+    amount: v.number(),
+    currency: v.string(),
+    recipient: v.string(),
+    date: v.number(),
+    notes: v.optional(v.string()),
+    receiptDocument: v.optional(v.id("_storage")),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const deaccession = await ctx.db.get(args.deaccessionId);
+    if (!deaccession) {
+      throw new Error("Deaccession not found");
+    }
+
+    await requirePermission(
+      ctx,
+      deaccession.organizationId,
+      "collections.update",
+    );
+
+    await ctx.db.patch(args.deaccessionId, {
+      proceedsAmount: args.amount,
+      proceedsCurrency: args.currency,
+      proceedsRecipient: args.recipient,
+      proceedsDate: args.date,
+      proceedsNotes: args.notes,
+      proceedsReceiptDocument: args.receiptDocument,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: deaccession.organizationId,
+      userId,
+      action: "proceeds_recorded",
+      entityType: "deaccession",
+      entityId: args.deaccessionId,
+      changes: { amount: args.amount, currency: args.currency },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Verify proceeds have been received and documented
+ */
+export const verifyProceeds = mutation({
+  args: {
+    deaccessionId: v.id("deaccessions"),
+    notes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const deaccession = await ctx.db.get(args.deaccessionId);
+    if (!deaccession) {
+      throw new Error("Deaccession not found");
+    }
+
+    await requirePermission(
+      ctx,
+      deaccession.organizationId,
+      "collections.update",
+    );
+
+    // Verify required fields are present for sales
+    if (deaccession.method === "sale") {
+      if (!deaccession.proceedsAmount) {
+        throw new Error("Proceeds amount is required for sale deaccessions");
+      }
+      if (!deaccession.proceedsReceiptDocument) {
+        throw new Error("Receipt document is required for sale deaccessions");
+      }
+    }
+
+    await ctx.db.patch(args.deaccessionId, {
+      proceedsVerified: true,
+      proceedsVerifiedBy: userId,
+      proceedsVerifiedAt: Date.now(),
+      proceedsNotes: args.notes
+        ? `${deaccession.proceedsNotes || ""}\nVerification: ${args.notes}`.trim()
+        : deaccession.proceedsNotes,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: deaccession.organizationId,
+      userId,
+      action: "proceeds_verified",
+      entityType: "deaccession",
+      entityId: args.deaccessionId,
+      changes: { verified: true },
+    });
+
+    return null;
+  },
+});
+
+// ============================================
+// Regulatory Approval
+// ============================================
+
+/**
+ * Request regulatory approval from external approver
+ */
+export const requestRegulatoryApproval = mutation({
+  args: {
+    deaccessionId: v.id("deaccessions"),
+    approverEmail: v.string(),
+    approverName: v.string(),
+    message: v.optional(v.string()),
+  },
+  returns: v.object({
+    token: v.string(),
+    approvalUrl: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const deaccession = await ctx.db.get(args.deaccessionId);
+    if (!deaccession) {
+      throw new Error("Deaccession not found");
+    }
+
+    await requirePermission(
+      ctx,
+      deaccession.organizationId,
+      "collections.update",
+    );
+
+    // Generate unique token for approval link
+    const token = `reg-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+
+    await ctx.db.patch(args.deaccessionId, {
+      regulatoryApprovalRequired: true,
+      regulatoryApprovalStatus: "requested",
+      regulatoryApproverEmail: args.approverEmail,
+      regulatoryApproverName: args.approverName,
+      regulatoryApprovalRequestedAt: Date.now(),
+      regulatoryApprovalToken: token,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: deaccession.organizationId,
+      userId,
+      action: "regulatory_approval_requested",
+      entityType: "deaccession",
+      entityId: args.deaccessionId,
+      changes: { approverEmail: args.approverEmail, approverName: args.approverName },
+    });
+
+    // Note: In production, this URL would be your actual domain
+    const approvalUrl = `/api/regulatory-approval/${token}`;
+
+    return { token, approvalUrl };
+  },
+});
+
+/**
+ * Record regulatory approval (can be called via external link or internally)
+ */
+export const recordRegulatoryApproval = mutation({
+  args: {
+    deaccessionId: v.optional(v.id("deaccessions")),
+    token: v.optional(v.string()),
+    approved: v.boolean(),
+    notes: v.optional(v.string()),
+    documents: v.optional(v.array(v.id("_storage"))),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    let deaccession;
+
+    if (args.deaccessionId) {
+      deaccession = await ctx.db.get(args.deaccessionId);
+    } else if (args.token) {
+      // Find by token for external approval
+      deaccession = await ctx.db
+        .query("deaccessions")
+        .withIndex("by_regulatory_token", (q) =>
+          q.eq("regulatoryApprovalToken", args.token),
+        )
+        .first();
+    } else {
+      throw new Error("Either deaccessionId or token is required");
+    }
+
+    if (!deaccession) {
+      throw new Error("Deaccession not found");
+    }
+
+    // If authenticated, check permission
+    const userId = await getAuthUserId(ctx);
+    if (userId) {
+      await requirePermission(
+        ctx,
+        deaccession.organizationId,
+        "collections.update",
+      );
+    }
+
+    await ctx.db.patch(deaccession._id, {
+      regulatoryApprovalStatus: args.approved ? "approved" : "rejected",
+      regulatoryApprovalReceivedAt: Date.now(),
+      regulatoryApprovalNotes: args.notes,
+      regulatoryApprovalDocuments: args.documents,
+      regulatoryApprovalToken: undefined, // Clear token after use
+    });
+
+    if (userId) {
+      await ctx.runMutation(internal.audit.logAction, {
+        organizationId: deaccession.organizationId,
+        userId,
+        action: args.approved
+          ? "regulatory_approval_granted"
+          : "regulatory_approval_denied",
+        entityType: "deaccession",
+        entityId: deaccession._id,
+        changes: { approved: args.approved, notes: args.notes },
+      });
+    }
+
+    // Notify organization users about the decision
+    const userOrgs = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", deaccession.organizationId),
+      )
+      .collect();
+
+    for (const userOrg of userOrgs) {
+      await ctx.runMutation(internal.audit.createNotificationInternal, {
+        organizationId: deaccession.organizationId,
+        userId: userOrg.userId,
+        type: args.approved
+          ? "regulatory_approval_granted"
+          : "regulatory_approval_denied",
+        title: args.approved
+          ? "Regulatory Approval Granted"
+          : "Regulatory Approval Denied",
+        message: `Regulatory approval for deaccession ${deaccession.deaccessionNumber} has been ${args.approved ? "granted" : "denied"}`,
+        relatedEntityType: "deaccession",
+        relatedEntityId: deaccession._id,
+      });
+    }
+
+    return null;
+  },
+});
+
+// ============================================
+// Valuation/Appraisal Verification
+// ============================================
+
+/**
+ * Link an appraisal to a deaccession and verify it meets requirements
+ */
+export const linkAppraisal = mutation({
+  args: {
+    deaccessionId: v.id("deaccessions"),
+    appraisalId: v.id("appraisals"),
+  },
+  returns: v.object({
+    valid: v.boolean(),
+    message: v.string(),
+    appraisalAge: v.optional(v.number()), // Age in days
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const deaccession = await ctx.db.get(args.deaccessionId);
+    if (!deaccession) {
+      throw new Error("Deaccession not found");
+    }
+
+    await requirePermission(
+      ctx,
+      deaccession.organizationId,
+      "collections.update",
+    );
+
+    const appraisal = await ctx.db.get(args.appraisalId);
+    if (!appraisal) {
+      throw new Error("Appraisal not found");
+    }
+
+    // Verify appraisal belongs to same collection
+    if (appraisal.collectionId !== deaccession.collectionId) {
+      throw new Error("Appraisal does not belong to the deaccessioned item");
+    }
+
+    // Check appraisal age (max 2 years = 730 days)
+    const maxAgeMs = 730 * 24 * 60 * 60 * 1000; // 2 years in ms
+    const appraisalAge = Date.now() - appraisal.appraisalDate;
+    const ageDays = Math.floor(appraisalAge / (24 * 60 * 60 * 1000));
+
+    const isValid = appraisalAge <= maxAgeMs;
+
+    await ctx.db.patch(args.deaccessionId, {
+      appraisalId: args.appraisalId,
+      appraisalValue: appraisal.value,
+      appraisalDate: appraisal.appraisalDate,
+      appraisalVerified: isValid,
+      appraisalVerifiedBy: userId,
+      appraisalVerifiedAt: Date.now(),
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: deaccession.organizationId,
+      userId,
+      action: "appraisal_linked",
+      entityType: "deaccession",
+      entityId: args.deaccessionId,
+      changes: {
+        appraisalId: args.appraisalId,
+        value: appraisal.value,
+        ageDays,
+        valid: isValid,
+      },
+    });
+
+    return {
+      valid: isValid,
+      message: isValid
+        ? `Appraisal is valid (${ageDays} days old)`
+        : `Appraisal is too old (${ageDays} days). Maximum age is 730 days (2 years).`,
+      appraisalAge: ageDays,
+    };
+  },
+});
+
+/**
+ * Get current appraisal for an item
+ */
+export const getCurrentAppraisal = query({
+  args: {
+    collectionId: v.id("collections"),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id("appraisals"),
+      appraisalDate: v.number(),
+      appraiserName: v.string(),
+      appraiserCompany: v.optional(v.string()),
+      appraisalType: v.string(),
+      value: v.number(),
+      currency: v.string(),
+      ageDays: v.number(),
+      isValid: v.boolean(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      return null;
+    }
+
+    await requirePermission(ctx, collection.organizationId, "collections.read");
+
+    // Get most recent appraisal
+    const appraisals = await ctx.db
+      .query("appraisals")
+      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .collect();
+
+    if (appraisals.length === 0) {
+      return null;
+    }
+
+    // Sort by date descending and get most recent
+    appraisals.sort((a, b) => b.appraisalDate - a.appraisalDate);
+    const current = appraisals[0];
+    if (!current) {
+      return null;
+    }
+
+    const maxAgeMs = 730 * 24 * 60 * 60 * 1000;
+    const appraisalAge = Date.now() - current.appraisalDate;
+    const ageDays = Math.floor(appraisalAge / (24 * 60 * 60 * 1000));
+
+    return {
+      _id: current._id,
+      appraisalDate: current.appraisalDate,
+      appraiserName: current.appraiserName,
+      appraiserCompany: current.appraiserCompany,
+      appraisalType: current.appraisalType,
+      value: current.value,
+      currency: current.currency,
+      ageDays,
+      isValid: appraisalAge <= maxAgeMs,
+    };
+  },
+});
+
+/**
+ * Check deaccession readiness - validates all requirements are met
+ */
+export const checkReadiness = query({
+  args: {
+    deaccessionId: v.id("deaccessions"),
+  },
+  returns: v.object({
+    ready: v.boolean(),
+    checks: v.array(
+      v.object({
+        name: v.string(),
+        passed: v.boolean(),
+        message: v.string(),
+        required: v.boolean(),
+      }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    const deaccession = await ctx.db.get(args.deaccessionId);
+    if (!deaccession) {
+      throw new Error("Deaccession not found");
+    }
+
+    await requirePermission(
+      ctx,
+      deaccession.organizationId,
+      "collections.read",
+    );
+
+    const checks: {
+      name: string;
+      passed: boolean;
+      message: string;
+      required: boolean;
+    }[] = [];
+
+    // Check 1: Appraisal verification (required)
+    const hasValidAppraisal = deaccession.appraisalVerified === true;
+    checks.push({
+      name: "Appraisal Verification",
+      passed: hasValidAppraisal,
+      message: hasValidAppraisal
+        ? "Valid appraisal linked"
+        : "Requires valid appraisal (less than 2 years old)",
+      required: true,
+    });
+
+    // Check 2: Proceeds documentation (required for sales)
+    const isSale = deaccession.method === "sale";
+    const hasProceedsDoc = isSale
+      ? deaccession.proceedsVerified === true ||
+        (deaccession.proceedsAmount != null &&
+          deaccession.proceedsReceiptDocument != null)
+      : true;
+    checks.push({
+      name: "Proceeds Documentation",
+      passed: hasProceedsDoc,
+      message: isSale
+        ? hasProceedsDoc
+          ? "Proceeds documented with receipt"
+          : "Sale requires proceeds amount and receipt document"
+        : "Not required (not a sale)",
+      required: isSale,
+    });
+
+    // Check 3: Regulatory approval (if required)
+    const needsRegulatory = deaccession.regulatoryApprovalRequired === true;
+    const hasRegulatory = needsRegulatory
+      ? deaccession.regulatoryApprovalStatus === "approved"
+      : true;
+    checks.push({
+      name: "Regulatory Approval",
+      passed: hasRegulatory,
+      message: needsRegulatory
+        ? hasRegulatory
+          ? "Regulatory approval received"
+          : "Awaiting regulatory approval"
+        : "Not required",
+      required: needsRegulatory,
+    });
+
+    // Check 4: Basic information
+    const hasBasicInfo =
+      deaccession.reason?.length > 0 && deaccession.disposition != null;
+    checks.push({
+      name: "Basic Information",
+      passed: hasBasicInfo,
+      message: hasBasicInfo
+        ? "All required fields completed"
+        : "Missing reason or disposition",
+      required: true,
+    });
+
+    const requiredChecks = checks.filter((c) => c.required);
+    const passedRequired = requiredChecks.filter((c) => c.passed);
+    const ready = passedRequired.length === requiredChecks.length;
+
+    return { ready, checks };
+  },
+});

@@ -200,7 +200,7 @@ export default function LoanDetailPage() {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded text-[10px] font-medium text-amber-600 dark:text-amber-500">
                 <AlertCircle className="h-3 w-3" />
-                Pending Facility Report Approval
+                {tActions("pendingFacilityReportApproval")}
               </div>
               <div className="h-4 w-px bg-border" />
               <LoanAgreement
@@ -253,7 +253,7 @@ export default function LoanDetailPage() {
                     </span>
                   </div>
                   <div className="absolute -bottom-2 -right-2 bg-green-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border-2 border-background">
-                    TRUSTED
+                    {tActions("trusted")}
                   </div>
                 </div>
 
@@ -273,7 +273,7 @@ export default function LoanDetailPage() {
                         : tActions("incomingLoan")}
                     </div>
                     <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-secondary border border-border text-[11px] text-muted-foreground">
-                      <span className="font-medium">International</span>
+                      <span className="font-medium">{tActions("international")}</span>
                     </div>
 
                     {/* Loan ID */}
@@ -336,7 +336,7 @@ export default function LoanDetailPage() {
                       <div className="flex items-center gap-2 text-xs">
                         <Banknote className="h-4 w-4 text-muted-foreground" />
                         <span className="text-muted-foreground">
-                          Total Value:{" "}
+                          {tActions("totalValue")}{" "}
                           {formatCurrency(loan.insuranceValue, locale, "USD")}
                         </span>
                       </div>
@@ -374,20 +374,20 @@ export default function LoanDetailPage() {
                       value="facility"
                       className="rounded-none border-b-2 border-transparent py-3 text-xs font-medium text-muted-foreground hover:text-foreground data-[state=active]:border-cyan-500 data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none flex items-center gap-1.5"
                     >
-                      Facility Report
+                      {tActions("facilityTab")}
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                     </TabsTrigger>
                     <TabsTrigger
                       value="logistics"
                       className="rounded-none border-b-2 border-transparent py-3 text-xs font-medium text-muted-foreground hover:text-foreground data-[state=active]:border-cyan-500 data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
                     >
-                      Crating & Shipping
+                      {tActions("logisticsTab")}
                     </TabsTrigger>
                     <TabsTrigger
                       value="activity"
                       className="rounded-none border-b-2 border-transparent py-3 text-xs font-medium text-muted-foreground hover:text-foreground data-[state=active]:border-cyan-500 data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
                     >
-                      Activity Log
+                      {tActions("activityLog")}
                     </TabsTrigger>
                   </TabsList>
                 </div>
@@ -776,7 +776,7 @@ function OverviewTab({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground italic">
-                  Upload Facility Report...
+                  {tActions("uploadFacilityReport")}
                 </p>
               </div>
             </button>

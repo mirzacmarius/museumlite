@@ -100,6 +100,8 @@ export const get = query({
           v.literal("active"),
           v.literal("closed"),
           v.literal("rejected"),
+          v.literal("installing"),
+          v.literal("deinstalling"),
         ),
       ),
       workflowStep: v.optional(v.number()),
@@ -692,6 +694,7 @@ export const reject = mutation({
 export const activate = mutation({
   args: {
     exhibitionId: v.id("exhibitions"),
+    skipInstallationCheck: v.optional(v.boolean()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -717,9 +720,49 @@ export const activate = mutation({
       "collections.update",
     );
 
+    // Check if all required installation tasks are complete
+    if (!args.skipInstallationCheck) {
+      const checklist = exhibition.installationChecklist ?? [];
+      const incompleteRequired = checklist.filter(
+        (t) => t.required && !t.completed,
+      );
+
+      if (incompleteRequired.length > 0) {
+        throw new Error(
+          `Cannot activate: ${incompleteRequired.length} required installation tasks remain`,
+        );
+      }
+    }
+
+    // Move all exhibition objects to installed status and update their locations
+    const exhibitionObjects = await ctx.db
+      .query("exhibitionObjects")
+      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .collect();
+
+    for (const obj of exhibitionObjects) {
+      const newLocationId = obj.exhibitionLocationId ?? exhibition.locationId;
+
+      await ctx.db.patch(obj._id, {
+        status: "installed",
+        installedAt: Date.now(),
+        installedBy: userId,
+      });
+
+      if (newLocationId) {
+        await ctx.db.patch(obj.collectionId, {
+          currentLocationId: newLocationId,
+        });
+      }
+    }
+
     await ctx.db.patch(args.exhibitionId, {
       status: "active",
       isCurrent: true,
+      activatedAt: Date.now(),
+      activatedBy: userId,
+      installationCompletedAt: exhibition.installationCompletedAt ?? Date.now(),
     });
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -728,7 +771,7 @@ export const activate = mutation({
       action: "activated",
       entityType: "exhibition",
       entityId: args.exhibitionId,
-      changes: { status: "active" },
+      changes: { status: "active", objectsInstalled: exhibitionObjects.length },
     });
 
     return null;
@@ -738,6 +781,8 @@ export const activate = mutation({
 export const close = mutation({
   args: {
     exhibitionId: v.id("exhibitions"),
+    skipDeinstallationCheck: v.optional(v.boolean()),
+    returnObjectsToOriginalLocations: v.optional(v.boolean()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -753,8 +798,8 @@ export const close = mutation({
 
     await requireExhibitionAccess(ctx, exhibition.organizationId);
 
-    if (exhibition.status !== "active") {
-      throw new Error("Exhibition must be active to close");
+    if (exhibition.status !== "active" && exhibition.status !== "deinstalling") {
+      throw new Error("Exhibition must be active or deinstalling to close");
     }
 
     await requirePermission(
@@ -763,10 +808,68 @@ export const close = mutation({
       "collections.update",
     );
 
+    // Check if all required deinstallation tasks are complete
+    if (!args.skipDeinstallationCheck) {
+      const checklist = exhibition.deinstallationChecklist ?? [];
+      const incompleteRequired = checklist.filter(
+        (t) => t.required && !t.completed,
+      );
+
+      if (incompleteRequired.length > 0) {
+        throw new Error(
+          `Cannot close: ${incompleteRequired.length} required deinstallation tasks remain`,
+        );
+      }
+    }
+
+    // Handle objects - return them to original locations if requested
+    const exhibitionObjects = await ctx.db
+      .query("exhibitionObjects")
+      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .collect();
+
+    const notReturnedObjects = exhibitionObjects.filter(
+      (obj) => obj.status !== "returned",
+    );
+
+    if (args.returnObjectsToOriginalLocations !== false) {
+      // Return all objects that haven't been returned yet
+      for (const obj of notReturnedObjects) {
+        // Deinstall if still installed
+        if (obj.status === "installed") {
+          await ctx.db.patch(obj._id, {
+            status: "deinstalled",
+            deinstalledAt: Date.now(),
+            deinstalledBy: userId,
+          });
+        }
+
+        // Return to original location
+        if (obj.originalLocationId) {
+          await ctx.db.patch(obj.collectionId, {
+            currentLocationId: obj.originalLocationId,
+          });
+        }
+
+        await ctx.db.patch(obj._id, {
+          status: "returned",
+          returnedToOriginalLocation: true,
+          returnedAt: Date.now(),
+        });
+      }
+    } else if (notReturnedObjects.length > 0 && !args.skipDeinstallationCheck) {
+      throw new Error(
+        `Cannot close: ${notReturnedObjects.length} objects have not been returned`,
+      );
+    }
+
     await ctx.db.patch(args.exhibitionId, {
       status: "closed",
       isCurrent: false,
       endDate: Date.now(),
+      deinstallationCompletedAt: Date.now(),
+      closedAt: Date.now(),
+      closedBy: userId,
     });
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -775,7 +878,10 @@ export const close = mutation({
       action: "closed",
       entityType: "exhibition",
       entityId: args.exhibitionId,
-      changes: { status: "closed" },
+      changes: {
+        status: "closed",
+        objectsReturned: notReturnedObjects.length,
+      },
     });
 
     return null;
@@ -1105,5 +1211,1217 @@ export const generateUploadUrl = mutation({
       throw new Error("Not authenticated");
     }
     return await ctx.storage.generateUploadUrl();
+  },
+});
+
+// ============================================================================
+// Installation Phase Management
+// ============================================================================
+
+const installationTaskValidator = v.object({
+  taskId: v.string(),
+  task: v.string(),
+  required: v.boolean(),
+  completed: v.boolean(),
+  completedBy: v.optional(v.id("users")),
+  completedAt: v.optional(v.number()),
+  notes: v.optional(v.string()),
+});
+
+/**
+ * Initialize or update installation checklist for an exhibition
+ */
+export const setInstallationChecklist = mutation({
+  args: {
+    exhibitionId: v.id("exhibitions"),
+    checklist: v.array(
+      v.object({
+        taskId: v.string(),
+        task: v.string(),
+        required: v.boolean(),
+      }),
+    ),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const exhibition = await ctx.db.get(args.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
+
+    if (exhibition.status !== "proposed" && exhibition.status !== "approved") {
+      throw new Error("Cannot modify checklist after installation has started");
+    }
+
+    const checklistItems = args.checklist.map((item) => ({
+      taskId: item.taskId,
+      task: item.task,
+      required: item.required,
+      completed: false,
+      completedBy: undefined,
+      completedAt: undefined,
+      notes: undefined,
+    }));
+
+    await ctx.db.patch(args.exhibitionId, {
+      installationChecklist: checklistItems,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "set_installation_checklist",
+      entityType: "exhibition",
+      entityId: args.exhibitionId,
+      changes: { taskCount: args.checklist.length },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Start the installation phase for an approved exhibition
+ */
+export const startInstallation = mutation({
+  args: {
+    exhibitionId: v.id("exhibitions"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const exhibition = await ctx.db.get(args.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
+
+    if (exhibition.status !== "approved") {
+      throw new Error("Exhibition must be approved before starting installation");
+    }
+
+    await ctx.db.patch(args.exhibitionId, {
+      status: "installing",
+      installationStartedAt: Date.now(),
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "started_installation",
+      entityType: "exhibition",
+      entityId: args.exhibitionId,
+      changes: { status: "installing" },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Complete an installation checklist task
+ */
+export const completeInstallationTask = mutation({
+  args: {
+    exhibitionId: v.id("exhibitions"),
+    taskId: v.string(),
+    notes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const exhibition = await ctx.db.get(args.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
+
+    if (exhibition.status !== "installing" && exhibition.status !== "approved") {
+      throw new Error("Exhibition is not in installation phase");
+    }
+
+    const checklist = exhibition.installationChecklist ?? [];
+    const taskIndex = checklist.findIndex((t) => t.taskId === args.taskId);
+
+    if (taskIndex === -1) {
+      throw new Error("Task not found in installation checklist");
+    }
+
+    const existingTask = checklist[taskIndex];
+    if (!existingTask) {
+      throw new Error("Task not found");
+    }
+
+    checklist[taskIndex] = {
+      taskId: existingTask.taskId,
+      task: existingTask.task,
+      required: existingTask.required,
+      completed: true,
+      completedBy: userId,
+      completedAt: Date.now(),
+      notes: args.notes,
+    };
+
+    await ctx.db.patch(args.exhibitionId, {
+      installationChecklist: checklist,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "completed_installation_task",
+      entityType: "exhibition",
+      entityId: args.exhibitionId,
+      changes: { taskId: args.taskId, task: existingTask.task },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Uncomplete an installation checklist task
+ */
+export const uncompleteInstallationTask = mutation({
+  args: {
+    exhibitionId: v.id("exhibitions"),
+    taskId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const exhibition = await ctx.db.get(args.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
+
+    if (exhibition.status !== "installing" && exhibition.status !== "approved") {
+      throw new Error("Exhibition is not in installation phase");
+    }
+
+    const checklist = exhibition.installationChecklist ?? [];
+    const taskIndex = checklist.findIndex((t) => t.taskId === args.taskId);
+
+    if (taskIndex === -1) {
+      throw new Error("Task not found in installation checklist");
+    }
+
+    const existingTask = checklist[taskIndex];
+    if (!existingTask) {
+      throw new Error("Task not found");
+    }
+
+    checklist[taskIndex] = {
+      taskId: existingTask.taskId,
+      task: existingTask.task,
+      required: existingTask.required,
+      completed: false,
+      completedBy: undefined,
+      completedAt: undefined,
+      notes: undefined,
+    };
+
+    await ctx.db.patch(args.exhibitionId, {
+      installationChecklist: checklist,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "uncompleted_installation_task",
+      entityType: "exhibition",
+      entityId: args.exhibitionId,
+      changes: { taskId: args.taskId },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Check if all required installation tasks are complete
+ */
+export const checkInstallationReadiness = query({
+  args: {
+    exhibitionId: v.id("exhibitions"),
+  },
+  returns: v.object({
+    isReady: v.boolean(),
+    totalTasks: v.number(),
+    completedTasks: v.number(),
+    requiredTasksRemaining: v.number(),
+    checklist: v.array(
+      v.object({
+        taskId: v.string(),
+        task: v.string(),
+        required: v.boolean(),
+        completed: v.boolean(),
+        completedBy: v.optional(v.id("users")),
+        completedAt: v.optional(v.number()),
+        completedByName: v.optional(v.string()),
+        notes: v.optional(v.string()),
+      }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    const exhibition = await ctx.db.get(args.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(ctx, exhibition.organizationId, "collections.read");
+
+    const checklist = exhibition.installationChecklist ?? [];
+    const totalTasks = checklist.length;
+    const completedTasks = checklist.filter((t) => t.completed).length;
+    const requiredTasksRemaining = checklist.filter(
+      (t) => t.required && !t.completed,
+    ).length;
+
+    const enrichedChecklist = await Promise.all(
+      checklist.map(async (task) => {
+        const completer = task.completedBy
+          ? await ctx.db.get(task.completedBy)
+          : null;
+        return {
+          taskId: task.taskId,
+          task: task.task,
+          required: task.required,
+          completed: task.completed,
+          completedBy: task.completedBy,
+          completedAt: task.completedAt,
+          completedByName:
+            completer?.name ?? completer?.username ?? undefined,
+          notes: task.notes,
+        };
+      }),
+    );
+
+    return {
+      isReady: requiredTasksRemaining === 0,
+      totalTasks,
+      completedTasks,
+      requiredTasksRemaining,
+      checklist: enrichedChecklist,
+    };
+  },
+});
+
+/**
+ * Complete installation and mark ready for activation
+ */
+export const completeInstallation = mutation({
+  args: {
+    exhibitionId: v.id("exhibitions"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const exhibition = await ctx.db.get(args.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
+
+    if (exhibition.status !== "installing") {
+      throw new Error("Exhibition is not in installation phase");
+    }
+
+    // Check if all required tasks are complete
+    const checklist = exhibition.installationChecklist ?? [];
+    const incompleteRequired = checklist.filter(
+      (t) => t.required && !t.completed,
+    );
+
+    if (incompleteRequired.length > 0) {
+      throw new Error(
+        `Cannot complete installation: ${incompleteRequired.length} required tasks remain`,
+      );
+    }
+
+    await ctx.db.patch(args.exhibitionId, {
+      status: "approved", // Back to approved, ready for activation
+      installationCompletedAt: Date.now(),
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "completed_installation",
+      entityType: "exhibition",
+      entityId: args.exhibitionId,
+      changes: { status: "approved" },
+    });
+
+    return null;
+  },
+});
+
+// ============================================================================
+// Deinstallation Workflow
+// ============================================================================
+
+/**
+ * Initialize or update deinstallation checklist for an exhibition
+ */
+export const setDeinstallationChecklist = mutation({
+  args: {
+    exhibitionId: v.id("exhibitions"),
+    checklist: v.array(
+      v.object({
+        taskId: v.string(),
+        task: v.string(),
+        required: v.boolean(),
+      }),
+    ),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const exhibition = await ctx.db.get(args.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
+
+    const checklistItems = args.checklist.map((item) => ({
+      taskId: item.taskId,
+      task: item.task,
+      required: item.required,
+      completed: false,
+      completedBy: undefined,
+      completedAt: undefined,
+      notes: undefined,
+    }));
+
+    await ctx.db.patch(args.exhibitionId, {
+      deinstallationChecklist: checklistItems,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "set_deinstallation_checklist",
+      entityType: "exhibition",
+      entityId: args.exhibitionId,
+      changes: { taskCount: args.checklist.length },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Start the deinstallation phase for an active exhibition
+ */
+export const startDeinstallation = mutation({
+  args: {
+    exhibitionId: v.id("exhibitions"),
+    notes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const exhibition = await ctx.db.get(args.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
+
+    if (exhibition.status !== "active") {
+      throw new Error("Exhibition must be active to start deinstallation");
+    }
+
+    await ctx.db.patch(args.exhibitionId, {
+      status: "deinstalling",
+      deinstallationStartedAt: Date.now(),
+      deinstallationNotes: args.notes,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "started_deinstallation",
+      entityType: "exhibition",
+      entityId: args.exhibitionId,
+      changes: { status: "deinstalling" },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Complete a deinstallation checklist task
+ */
+export const completeDeinstallationTask = mutation({
+  args: {
+    exhibitionId: v.id("exhibitions"),
+    taskId: v.string(),
+    notes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const exhibition = await ctx.db.get(args.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
+
+    if (exhibition.status !== "deinstalling") {
+      throw new Error("Exhibition is not in deinstallation phase");
+    }
+
+    const checklist = exhibition.deinstallationChecklist ?? [];
+    const taskIndex = checklist.findIndex((t) => t.taskId === args.taskId);
+
+    if (taskIndex === -1) {
+      throw new Error("Task not found in deinstallation checklist");
+    }
+
+    const existingTask = checklist[taskIndex];
+    if (!existingTask) {
+      throw new Error("Task not found");
+    }
+
+    checklist[taskIndex] = {
+      taskId: existingTask.taskId,
+      task: existingTask.task,
+      required: existingTask.required,
+      completed: true,
+      completedBy: userId,
+      completedAt: Date.now(),
+      notes: args.notes,
+    };
+
+    await ctx.db.patch(args.exhibitionId, {
+      deinstallationChecklist: checklist,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "completed_deinstallation_task",
+      entityType: "exhibition",
+      entityId: args.exhibitionId,
+      changes: { taskId: args.taskId, task: existingTask.task },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Check deinstallation readiness
+ */
+export const checkDeinstallationReadiness = query({
+  args: {
+    exhibitionId: v.id("exhibitions"),
+  },
+  returns: v.object({
+    isReady: v.boolean(),
+    totalTasks: v.number(),
+    completedTasks: v.number(),
+    requiredTasksRemaining: v.number(),
+    objectsNotReturned: v.number(),
+    checklist: v.array(
+      v.object({
+        taskId: v.string(),
+        task: v.string(),
+        required: v.boolean(),
+        completed: v.boolean(),
+        completedBy: v.optional(v.id("users")),
+        completedAt: v.optional(v.number()),
+        completedByName: v.optional(v.string()),
+        notes: v.optional(v.string()),
+      }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    const exhibition = await ctx.db.get(args.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(ctx, exhibition.organizationId, "collections.read");
+
+    const checklist = exhibition.deinstallationChecklist ?? [];
+    const totalTasks = checklist.length;
+    const completedTasks = checklist.filter((t) => t.completed).length;
+    const requiredTasksRemaining = checklist.filter(
+      (t) => t.required && !t.completed,
+    ).length;
+
+    // Check if all objects have been returned
+    const exhibitionObjects = await ctx.db
+      .query("exhibitionObjects")
+      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .collect();
+
+    const objectsNotReturned = exhibitionObjects.filter(
+      (obj) => obj.status !== "returned",
+    ).length;
+
+    const enrichedChecklist = await Promise.all(
+      checklist.map(async (task) => {
+        const completer = task.completedBy
+          ? await ctx.db.get(task.completedBy)
+          : null;
+        return {
+          taskId: task.taskId,
+          task: task.task,
+          required: task.required,
+          completed: task.completed,
+          completedBy: task.completedBy,
+          completedAt: task.completedAt,
+          completedByName:
+            completer?.name ?? completer?.username ?? undefined,
+          notes: task.notes,
+        };
+      }),
+    );
+
+    return {
+      isReady: requiredTasksRemaining === 0 && objectsNotReturned === 0,
+      totalTasks,
+      completedTasks,
+      requiredTasksRemaining,
+      objectsNotReturned,
+      checklist: enrichedChecklist,
+    };
+  },
+});
+
+// ============================================================================
+// Exhibition Object Location Tracking
+// ============================================================================
+
+/**
+ * Add an object to an exhibition
+ */
+export const addExhibitionObject = mutation({
+  args: {
+    exhibitionId: v.id("exhibitions"),
+    collectionId: v.id("collections"),
+    originalLocationId: v.optional(v.id("locations")),
+    exhibitionLocationId: v.optional(v.id("locations")),
+  },
+  returns: v.id("exhibitionObjects"),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const exhibition = await ctx.db.get(args.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
+
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      throw new Error("Collection object not found");
+    }
+
+    if (collection.organizationId !== exhibition.organizationId) {
+      throw new Error("Object does not belong to the same organization");
+    }
+
+    // Check if object is already in this exhibition
+    const existingEntry = await ctx.db
+      .query("exhibitionObjects")
+      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .filter((q) => q.eq(q.field("collectionId"), args.collectionId))
+      .first();
+
+    if (existingEntry) {
+      throw new Error("Object is already added to this exhibition");
+    }
+
+    // Get current location from collection if not provided
+    const originalLocation =
+      args.originalLocationId ?? collection.currentLocationId ?? undefined;
+
+    const objectId = await ctx.db.insert("exhibitionObjects", {
+      exhibitionId: args.exhibitionId,
+      organizationId: exhibition.organizationId,
+      collectionId: args.collectionId,
+      originalLocationId: originalLocation,
+      exhibitionLocationId: args.exhibitionLocationId ?? exhibition.locationId,
+      status: "pending",
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "added_exhibition_object",
+      entityType: "exhibition",
+      entityId: args.exhibitionId,
+      changes: { collectionId: args.collectionId },
+    });
+
+    return objectId;
+  },
+});
+
+/**
+ * Remove an object from an exhibition (before installation)
+ */
+export const removeExhibitionObject = mutation({
+  args: {
+    exhibitionObjectId: v.id("exhibitionObjects"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const exhibitionObject = await ctx.db.get(args.exhibitionObjectId);
+    if (!exhibitionObject) {
+      throw new Error("Exhibition object not found");
+    }
+
+    const exhibition = await ctx.db.get(exhibitionObject.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
+
+    if (exhibitionObject.status !== "pending") {
+      throw new Error("Cannot remove object that has been installed");
+    }
+
+    await ctx.db.delete(args.exhibitionObjectId);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "removed_exhibition_object",
+      entityType: "exhibition",
+      entityId: exhibitionObject.exhibitionId,
+      changes: { collectionId: exhibitionObject.collectionId },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Install an object in the exhibition (mark as placed and update location)
+ */
+export const installObject = mutation({
+  args: {
+    exhibitionObjectId: v.id("exhibitionObjects"),
+    conditionNotes: v.optional(v.string()),
+    exhibitionLocationId: v.optional(v.id("locations")),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const exhibitionObject = await ctx.db.get(args.exhibitionObjectId);
+    if (!exhibitionObject) {
+      throw new Error("Exhibition object not found");
+    }
+
+    const exhibition = await ctx.db.get(exhibitionObject.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
+
+    if (exhibitionObject.status !== "pending") {
+      throw new Error("Object is not in pending status");
+    }
+
+    // Update exhibition object status
+    await ctx.db.patch(args.exhibitionObjectId, {
+      status: "installed",
+      installedAt: Date.now(),
+      installedBy: userId,
+      conditionAtInstallation: args.conditionNotes,
+      exhibitionLocationId:
+        args.exhibitionLocationId ??
+        exhibitionObject.exhibitionLocationId ??
+        exhibition.locationId,
+    });
+
+    // Update the collection object's location to the exhibition location
+    const newLocationId =
+      args.exhibitionLocationId ??
+      exhibitionObject.exhibitionLocationId ??
+      exhibition.locationId;
+
+    if (newLocationId) {
+      await ctx.db.patch(exhibitionObject.collectionId, {
+        currentLocationId: newLocationId,
+      });
+    }
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "installed_exhibition_object",
+      entityType: "exhibition",
+      entityId: exhibitionObject.exhibitionId,
+      changes: {
+        collectionId: exhibitionObject.collectionId,
+        currentLocationId: newLocationId,
+      },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Deinstall an object from the exhibition
+ */
+export const deinstallObject = mutation({
+  args: {
+    exhibitionObjectId: v.id("exhibitionObjects"),
+    conditionNotes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const exhibitionObject = await ctx.db.get(args.exhibitionObjectId);
+    if (!exhibitionObject) {
+      throw new Error("Exhibition object not found");
+    }
+
+    const exhibition = await ctx.db.get(exhibitionObject.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
+
+    if (exhibitionObject.status !== "installed") {
+      throw new Error("Object is not installed");
+    }
+
+    await ctx.db.patch(args.exhibitionObjectId, {
+      status: "deinstalled",
+      deinstalledAt: Date.now(),
+      deinstalledBy: userId,
+      conditionAtDeinstallation: args.conditionNotes,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "deinstalled_exhibition_object",
+      entityType: "exhibition",
+      entityId: exhibitionObject.exhibitionId,
+      changes: {
+        collectionId: exhibitionObject.collectionId,
+        conditionNotes: args.conditionNotes,
+      },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Return an object to its original location after exhibition
+ */
+export const returnObjectToOriginalLocation = mutation({
+  args: {
+    exhibitionObjectId: v.id("exhibitionObjects"),
+    overrideLocationId: v.optional(v.id("locations")),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const exhibitionObject = await ctx.db.get(args.exhibitionObjectId);
+    if (!exhibitionObject) {
+      throw new Error("Exhibition object not found");
+    }
+
+    const exhibition = await ctx.db.get(exhibitionObject.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
+
+    if (
+      exhibitionObject.status !== "deinstalled" &&
+      exhibitionObject.status !== "installed"
+    ) {
+      throw new Error("Object must be installed or deinstalled before returning");
+    }
+
+    const returnLocation =
+      args.overrideLocationId ?? exhibitionObject.originalLocationId;
+
+    // Update collection object's location back to original
+    if (returnLocation) {
+      await ctx.db.patch(exhibitionObject.collectionId, {
+        currentLocationId: returnLocation,
+      });
+    }
+
+    await ctx.db.patch(args.exhibitionObjectId, {
+      status: "returned",
+      returnedToOriginalLocation: true,
+      returnedAt: Date.now(),
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "returned_exhibition_object",
+      entityType: "exhibition",
+      entityId: exhibitionObject.exhibitionId,
+      changes: {
+        collectionId: exhibitionObject.collectionId,
+        returnedToLocationId: returnLocation,
+      },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * List objects in an exhibition
+ */
+export const listExhibitionObjects = query({
+  args: {
+    exhibitionId: v.id("exhibitions"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("exhibitionObjects"),
+      collectionId: v.id("collections"),
+      collectionTitle: v.optional(v.string()),
+      collectionAccessionNumber: v.optional(v.string()),
+      originalLocationId: v.optional(v.id("locations")),
+      originalLocationName: v.optional(v.string()),
+      exhibitionLocationId: v.optional(v.id("locations")),
+      exhibitionLocationName: v.optional(v.string()),
+      status: v.union(
+        v.literal("pending"),
+        v.literal("installed"),
+        v.literal("deinstalled"),
+        v.literal("returned"),
+      ),
+      installedAt: v.optional(v.number()),
+      installedByName: v.optional(v.string()),
+      conditionAtInstallation: v.optional(v.string()),
+      deinstalledAt: v.optional(v.number()),
+      deinstalledByName: v.optional(v.string()),
+      conditionAtDeinstallation: v.optional(v.string()),
+      returnedAt: v.optional(v.number()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const exhibition = await ctx.db.get(args.exhibitionId);
+    if (!exhibition) {
+      return [];
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(ctx, exhibition.organizationId, "collections.read");
+
+    const exhibitionObjects = await ctx.db
+      .query("exhibitionObjects")
+      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .collect();
+
+    const results = await Promise.all(
+      exhibitionObjects.map(async (obj) => {
+        const collection = await ctx.db.get(obj.collectionId);
+        const originalLocation = obj.originalLocationId
+          ? await ctx.db.get(obj.originalLocationId)
+          : null;
+        const exhibitionLocation = obj.exhibitionLocationId
+          ? await ctx.db.get(obj.exhibitionLocationId)
+          : null;
+        const installer = obj.installedBy
+          ? await ctx.db.get(obj.installedBy)
+          : null;
+        const deinstaller = obj.deinstalledBy
+          ? await ctx.db.get(obj.deinstalledBy)
+          : null;
+
+        return {
+          _id: obj._id,
+          collectionId: obj.collectionId,
+          collectionTitle: collection?.title,
+          collectionAccessionNumber: collection?.accessionNumber,
+          originalLocationId: obj.originalLocationId,
+          originalLocationName: originalLocation?.name,
+          exhibitionLocationId: obj.exhibitionLocationId,
+          exhibitionLocationName: exhibitionLocation?.name,
+          status: obj.status,
+          installedAt: obj.installedAt,
+          installedByName: installer?.name ?? installer?.username ?? undefined,
+          conditionAtInstallation: obj.conditionAtInstallation,
+          deinstalledAt: obj.deinstalledAt,
+          deinstalledByName:
+            deinstaller?.name ?? deinstaller?.username ?? undefined,
+          conditionAtDeinstallation: obj.conditionAtDeinstallation,
+          returnedAt: obj.returnedAt,
+        };
+      }),
+    );
+
+    return results;
+  },
+});
+
+/**
+ * Bulk install all pending objects in an exhibition
+ */
+export const bulkInstallObjects = mutation({
+  args: {
+    exhibitionId: v.id("exhibitions"),
+  },
+  returns: v.object({
+    installedCount: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const exhibition = await ctx.db.get(args.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
+
+    const pendingObjects = await ctx.db
+      .query("exhibitionObjects")
+      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .collect();
+
+    for (const obj of pendingObjects) {
+      const newLocationId = obj.exhibitionLocationId ?? exhibition.locationId;
+
+      await ctx.db.patch(obj._id, {
+        status: "installed",
+        installedAt: Date.now(),
+        installedBy: userId,
+      });
+
+      if (newLocationId) {
+        await ctx.db.patch(obj.collectionId, {
+          currentLocationId: newLocationId,
+        });
+      }
+    }
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "bulk_installed_exhibition_objects",
+      entityType: "exhibition",
+      entityId: args.exhibitionId,
+      changes: { count: pendingObjects.length },
+    });
+
+    return { installedCount: pendingObjects.length };
+  },
+});
+
+/**
+ * Bulk return all deinstalled objects in an exhibition
+ */
+export const bulkReturnObjects = mutation({
+  args: {
+    exhibitionId: v.id("exhibitions"),
+  },
+  returns: v.object({
+    returnedCount: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const exhibition = await ctx.db.get(args.exhibitionId);
+    if (!exhibition) {
+      throw new Error("Exhibition not found");
+    }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
+
+    const deinstalledObjects = await ctx.db
+      .query("exhibitionObjects")
+      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .filter((q) => q.eq(q.field("status"), "deinstalled"))
+      .collect();
+
+    for (const obj of deinstalledObjects) {
+      if (obj.originalLocationId) {
+        await ctx.db.patch(obj.collectionId, {
+          currentLocationId: obj.originalLocationId,
+        });
+      }
+
+      await ctx.db.patch(obj._id, {
+        status: "returned",
+        returnedToOriginalLocation: true,
+        returnedAt: Date.now(),
+      });
+    }
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "bulk_returned_exhibition_objects",
+      entityType: "exhibition",
+      entityId: args.exhibitionId,
+      changes: { count: deinstalledObjects.length },
+    });
+
+    return { returnedCount: deinstalledObjects.length };
   },
 });

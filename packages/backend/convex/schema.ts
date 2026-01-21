@@ -2,6 +2,100 @@ import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+// Type-safe validators for flexible data structures
+
+/**
+ * Custom field value - union of allowed types for user-defined fields
+ * Supports strings, numbers, booleans, dates (as numbers), and arrays of strings
+ */
+export const customFieldValue = v.union(
+  v.string(),
+  v.number(),
+  v.boolean(),
+  v.null(),
+  v.array(v.string()),
+);
+
+/**
+ * Audit log changes - flexible type for tracking various change formats
+ * Supports: { reason }, { field, oldValue, newValue }, { previousStatus }, complex nested objects, etc.
+ * Using v.any() because audit logs can contain diverse data structures
+ */
+export const auditLogChanges = v.any();
+
+/**
+ * Filter condition for dynamic queries (account segments, saved searches)
+ */
+export const filterCondition = v.object({
+  field: v.string(),
+  operator: v.union(
+    v.literal("eq"),
+    v.literal("ne"),
+    v.literal("in"),
+    v.literal("contains"),
+    v.literal("gt"),
+    v.literal("lt"),
+    v.literal("gte"),
+    v.literal("lte"),
+  ),
+  value: v.union(
+    v.string(),
+    v.number(),
+    v.boolean(),
+    v.null(),
+    v.array(v.string()),
+    v.array(v.number()),
+  ),
+});
+
+/**
+ * Metadata record - generic key-value store for external integrations
+ */
+export const metadataRecord = v.record(
+  v.string(),
+  v.union(v.string(), v.number(), v.boolean(), v.null()),
+);
+
+/**
+ * Provenance chain entry - tracks ownership history for fine art
+ */
+export const provenanceChainEntry = v.object({
+  eventType: v.union(
+    v.literal("sale"),
+    v.literal("auction"),
+    v.literal("inheritance"),
+    v.literal("gift"),
+    v.literal("commission"),
+    v.literal("acquisition"),
+    v.literal("other"),
+  ),
+  owner: v.string(),
+  startYear: v.optional(v.string()),
+  endYear: v.optional(v.string()),
+  location: v.optional(v.string()),
+  salePrice: v.optional(v.number()),
+  currency: v.optional(v.string()),
+  auctionHouse: v.optional(v.string()),
+  documentIds: v.optional(v.array(v.id("_storage"))),
+  notes: v.optional(v.string()),
+  verified: v.optional(v.boolean()),
+});
+
+/**
+ * Shipping log entry - tracks transportation history
+ */
+export const shippingLogEntry = v.object({
+  fromLocation: v.string(),
+  toLocation: v.string(),
+  carrier: v.optional(v.string()),
+  trackingNumber: v.optional(v.string()),
+  departedAt: v.optional(v.number()),
+  arrivedAt: v.optional(v.number()),
+  conditionBefore: v.optional(v.string()),
+  conditionAfter: v.optional(v.string()),
+  notes: v.optional(v.string()),
+});
+
 export default defineSchema({
   ...authTables,
   users: defineTable({
@@ -260,7 +354,7 @@ export default defineSchema({
         v.literal("general"),
       ),
     ),
-    customFields: v.optional(v.record(v.string(), v.any())),
+    customFields: v.optional(v.record(v.string(), customFieldValue)),
     catalogedBy: v.id("users"),
     catalogedAt: v.number(),
     lastModifiedBy: v.optional(v.id("users")),
@@ -391,11 +485,103 @@ export default defineSchema({
       v.literal("failed"),
     ),
     chunkedUploadId: v.optional(v.string()),
+
+    // Duplicate detection (2.9.2)
+    contentHash: v.optional(v.string()), // SHA-256 hash of file content
+    isDuplicate: v.optional(v.boolean()),
+    duplicateOfMediaId: v.optional(v.id("mediaFiles")),
+
+    // EXIF/IPTC Metadata (2.9.1)
+    metadata: v.optional(
+      v.object({
+        // EXIF camera data
+        camera: v.optional(v.string()),
+        lens: v.optional(v.string()),
+        exposureTime: v.optional(v.string()),
+        aperture: v.optional(v.string()),
+        iso: v.optional(v.number()),
+        focalLength: v.optional(v.string()),
+        dateTimeOriginal: v.optional(v.number()),
+        // GPS data
+        gpsLatitude: v.optional(v.number()),
+        gpsLongitude: v.optional(v.number()),
+        // IPTC data
+        headline: v.optional(v.string()),
+        description: v.optional(v.string()),
+        creator: v.optional(v.string()),
+        city: v.optional(v.string()),
+        country: v.optional(v.string()),
+        keywords: v.optional(v.array(v.string())),
+        // Image dimensions
+        width: v.optional(v.number()),
+        height: v.optional(v.number()),
+        colorSpace: v.optional(v.string()),
+        orientation: v.optional(v.number()),
+      }),
+    ),
+    metadataExtracted: v.optional(v.boolean()),
+
+    // Rights Management (2.9.3)
+    rightsStatus: v.optional(
+      v.union(
+        v.literal("owned"), // Organization owns full rights
+        v.literal("licensed"), // Licensed for specific use
+        v.literal("public_domain"), // No copyright restrictions
+        v.literal("orphan_work"), // Rights holder unknown
+        v.literal("restricted"), // Special restrictions apply
+        v.literal("unknown"), // Rights not yet determined
+      ),
+    ),
+    licenseType: v.optional(
+      v.union(
+        v.literal("creative_commons_by"),
+        v.literal("creative_commons_by_sa"),
+        v.literal("creative_commons_by_nc"),
+        v.literal("creative_commons_by_nd"),
+        v.literal("creative_commons_zero"),
+        v.literal("editorial_only"),
+        v.literal("commercial"),
+        v.literal("internal_only"),
+        v.literal("custom"),
+      ),
+    ),
+    licenseExpiry: v.optional(v.number()),
+    rightsHolder: v.optional(v.string()),
+    usageRestrictions: v.optional(v.string()),
+    requiresAcknowledgment: v.optional(v.boolean()),
+    acknowledgmentText: v.optional(v.string()),
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
     .index("by_uploadStatus", ["uploadStatus"])
-    .index("by_collection_and_category", ["collectionId", "mediaCategory"]),
+    .index("by_collection_and_category", ["collectionId", "mediaCategory"])
+    .index("by_content_hash", ["organizationId", "contentHash"])
+    .index("by_rights_status", ["organizationId", "rightsStatus"]),
+
+  // Media download tracking for rights management (2.9.3)
+  mediaDownloads: defineTable({
+    mediaId: v.id("mediaFiles"),
+    organizationId: v.id("organizations"),
+    userId: v.id("users"),
+    downloadedAt: v.number(),
+    purpose: v.optional(
+      v.union(
+        v.literal("internal_use"),
+        v.literal("publication"),
+        v.literal("exhibition"),
+        v.literal("loan"),
+        v.literal("research"),
+        v.literal("marketing"),
+        v.literal("other"),
+      ),
+    ),
+    purposeDetails: v.optional(v.string()),
+    acknowledgedRights: v.boolean(),
+    ipAddress: v.optional(v.string()),
+  })
+    .index("by_media", ["mediaId"])
+    .index("by_user", ["userId"])
+    .index("by_organization", ["organizationId"]),
 
   // Fine Art module details (provenance, insurance, valuation)
   fineArtDetails: defineTable({
@@ -726,6 +912,24 @@ export default defineSchema({
         }),
       ),
     ),
+    // Source verification fields
+    sourceVerified: v.optional(v.boolean()),
+    sourceVerifiedBy: v.optional(v.id("users")),
+    sourceVerifiedAt: v.optional(v.number()),
+    sourceVerificationNotes: v.optional(v.string()),
+    // Document checklist - tracks which required documents have been uploaded
+    documentChecklist: v.optional(
+      v.array(
+        v.object({
+          documentType: v.string(),
+          required: v.boolean(),
+          uploaded: v.boolean(),
+          storageId: v.optional(v.id("_storage")),
+          uploadedAt: v.optional(v.number()),
+          uploadedBy: v.optional(v.id("users")),
+        }),
+      ),
+    ),
   })
     .index("by_organization", ["organizationId"])
     .index("by_collection", ["collectionId"])
@@ -767,16 +971,76 @@ export default defineSchema({
         }),
       ),
     ),
+    // Proceeds fields
     proceedsAmount: v.optional(v.number()),
     proceedsCurrency: v.optional(v.string()),
     proceedsRecipient: v.optional(v.string()),
     proceedsDate: v.optional(v.number()),
     proceedsNotes: v.optional(v.string()),
+    proceedsReceiptDocument: v.optional(v.id("_storage")), // Receipt for sale proceeds
+    proceedsVerified: v.optional(v.boolean()),
+    proceedsVerifiedBy: v.optional(v.id("users")),
+    proceedsVerifiedAt: v.optional(v.number()),
+    // Regulatory approval fields
+    regulatoryApprovalRequired: v.optional(v.boolean()),
+    regulatoryApprovalStatus: v.optional(
+      v.union(
+        v.literal("not_required"),
+        v.literal("pending"),
+        v.literal("requested"),
+        v.literal("approved"),
+        v.literal("rejected"),
+      ),
+    ),
+    regulatoryApproverEmail: v.optional(v.string()),
+    regulatoryApproverName: v.optional(v.string()),
+    regulatoryApprovalRequestedAt: v.optional(v.number()),
+    regulatoryApprovalReceivedAt: v.optional(v.number()),
+    regulatoryApprovalToken: v.optional(v.string()), // Unique token for external approval link
+    regulatoryApprovalDocuments: v.optional(v.array(v.id("_storage"))),
+    regulatoryApprovalNotes: v.optional(v.string()),
+    // Valuation/Appraisal verification
+    appraisalId: v.optional(v.id("appraisals")), // Link to appraisal record
+    appraisalVerified: v.optional(v.boolean()),
+    appraisalVerifiedBy: v.optional(v.id("users")),
+    appraisalVerifiedAt: v.optional(v.number()),
+    appraisalValue: v.optional(v.number()),
+    appraisalDate: v.optional(v.number()),
   })
     .index("by_organization", ["organizationId"])
     .index("by_collection", ["collectionId"])
     .index("by_status", ["status"])
-    .index("by_organization_and_status", ["organizationId", "status"]),
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_regulatory_token", ["regulatoryApprovalToken"]),
+
+  // Appraisals for collection items
+  appraisals: defineTable({
+    organizationId: v.id("organizations"),
+    collectionId: v.id("collections"),
+    appraisalDate: v.number(),
+    appraiserName: v.string(),
+    appraiserCompany: v.optional(v.string()),
+    appraiserCredentials: v.optional(v.string()),
+    appraisalType: v.union(
+      v.literal("insurance"),
+      v.literal("market"),
+      v.literal("fair_market"),
+      v.literal("replacement"),
+      v.literal("liquidation"),
+    ),
+    value: v.number(),
+    currency: v.string(),
+    notes: v.optional(v.string()),
+    documents: v.optional(v.array(v.id("_storage"))),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    // Validity tracking
+    validUntil: v.optional(v.number()), // Typically 2-3 years from appraisal date
+    isCurrentAppraisal: v.optional(v.boolean()), // Mark as the current/active appraisal
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_collection", ["collectionId"])
+    .index("by_collection_and_date", ["collectionId", "appraisalDate"]),
 
   // Hierarchical location structure
   locations: defineTable({
@@ -796,7 +1060,27 @@ export default defineSchema({
     isActive: v.boolean(),
     // Capacity tracking for storage locations
     capacity: v.optional(v.number()), // Max number of objects this location can hold
-    customFields: v.optional(v.record(v.string(), v.any())),
+    customFields: v.optional(v.record(v.string(), customFieldValue)),
+    // Environmental thresholds for conservation monitoring
+    environmentalThresholds: v.optional(
+      v.object({
+        temperatureMin: v.optional(v.number()), // Celsius
+        temperatureMax: v.optional(v.number()),
+        humidityMin: v.optional(v.number()), // Percentage
+        humidityMax: v.optional(v.number()),
+        lightLevelMax: v.optional(v.number()), // Lux
+        uvLevelMax: v.optional(v.number()), // UV index
+      }),
+    ),
+    // Location status for workflow control
+    status: v.optional(
+      v.union(
+        v.literal("active"),
+        v.literal("closed"),
+        v.literal("renovation"),
+        v.literal("restricted"),
+      ),
+    ),
   })
     .index("by_organization", ["organizationId"])
     .index("by_parentLocation", ["parentLocationId"])
@@ -818,6 +1102,53 @@ export default defineSchema({
     .index("by_movedAt", ["movedAt"])
     .index("by_toLocation_and_movedAt", ["toLocationId", "movedAt"])
     .index("by_fromLocation_and_movedAt", ["fromLocationId", "movedAt"]),
+
+  // Move Requests - Approval workflow for sensitive object moves
+  locationMoveRequests: defineTable({
+    organizationId: v.id("organizations"),
+    collectionId: v.id("collections"),
+    fromLocationId: v.optional(v.id("locations")),
+    toLocationId: v.id("locations"),
+
+    // Request details
+    reason: v.string(),
+    scheduledDate: v.optional(v.number()), // When the move should happen
+    priority: v.optional(
+      v.union(v.literal("low"), v.literal("normal"), v.literal("high")),
+    ),
+
+    // Status
+    status: v.union(
+      v.literal("pending"), // Awaiting approval
+      v.literal("approved"), // Approved, ready to execute
+      v.literal("rejected"), // Rejected
+      v.literal("executed"), // Move completed
+      v.literal("cancelled"), // Request cancelled
+    ),
+
+    // Approval tracking
+    requestedBy: v.id("users"),
+    requestedAt: v.number(),
+    reviewedBy: v.optional(v.id("users")),
+    reviewedAt: v.optional(v.number()),
+    reviewNotes: v.optional(v.string()),
+
+    // Execution tracking
+    executedBy: v.optional(v.id("users")),
+    executedAt: v.optional(v.number()),
+    executionNotes: v.optional(v.string()),
+
+    // Override tracking (if capacity/status was overridden)
+    capacityOverride: v.optional(v.boolean()),
+    statusOverride: v.optional(v.boolean()),
+
+    notes: v.optional(v.string()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_collection", ["collectionId"])
+    .index("by_status", ["status"])
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_toLocation", ["toLocationId"]),
 
   // Unified accounts (museum lenders/borrowers + library patrons)
   accounts: defineTable({
@@ -926,6 +1257,9 @@ export default defineSchema({
       }),
     ),
     totalCheckouts: v.optional(v.number()),
+
+    // Auto-renewal preference (for library patrons)
+    autoRenewalEnabled: v.optional(v.boolean()),
 
     // Link to user account (for self-service portal)
     userId: v.optional(v.id("users")),
@@ -1073,6 +1407,92 @@ export default defineSchema({
     uploadedAt: v.number(),
   }).index("by_loan", ["loanId"]),
 
+  // Loan extension requests
+  loanExtensionRequests: defineTable({
+    loanId: v.id("loans"),
+    organizationId: v.id("organizations"),
+    requestedBy: v.id("users"),
+    requestedAt: v.number(),
+    originalEndDate: v.number(),
+    newRequestedEndDate: v.number(),
+    reason: v.optional(v.string()),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected"),
+    ),
+    approvedBy: v.optional(v.id("users")),
+    approvedAt: v.optional(v.number()),
+    approvalComment: v.optional(v.string()),
+    rejectionReason: v.optional(v.string()),
+  })
+    .index("by_loan", ["loanId"])
+    .index("by_organization", ["organizationId"])
+    .index("by_status", ["status"])
+    .index("by_organization_and_status", ["organizationId", "status"]),
+
+  // Loan return reminders (tracks sent reminders to avoid duplicates)
+  loanReminders: defineTable({
+    loanId: v.id("loans"),
+    organizationId: v.id("organizations"),
+    reminderType: v.union(
+      v.literal("due_soon_30"),
+      v.literal("due_soon_14"),
+      v.literal("due_soon_7"),
+      v.literal("due_soon_1"),
+      v.literal("overdue"),
+    ),
+    sentAt: v.number(),
+    dueDate: v.number(),
+  })
+    .index("by_loan", ["loanId"])
+    .index("by_loan_and_type", ["loanId", "reminderType"]),
+
+  // Condition disputes for loan returns
+  conditionDisputes: defineTable({
+    loanId: v.id("loans"),
+    organizationId: v.id("organizations"),
+    collectionId: v.id("collections"), // The item in dispute
+    // Condition as recorded before loan
+    conditionBefore: v.string(),
+    conditionBeforeNotes: v.optional(v.string()),
+    conditionBeforePhotos: v.optional(v.array(v.id("_storage"))),
+    // Condition as observed on return
+    conditionAfter: v.string(),
+    conditionAfterNotes: v.optional(v.string()),
+    conditionAfterPhotos: v.optional(v.array(v.id("_storage"))),
+    // Dispute details
+    disputeDescription: v.string(),
+    reportedBy: v.id("users"),
+    reportedAt: v.number(),
+    status: v.union(
+      v.literal("reported"),
+      v.literal("investigating"),
+      v.literal("resolved_in_favor_lender"), // Damage was pre-existing
+      v.literal("resolved_in_favor_borrower"), // Damage occurred during loan
+      v.literal("resolved_compromise"), // Both parties agree to split responsibility
+      v.literal("withdrawn"), // Dispute was withdrawn
+    ),
+    // Investigation
+    investigatorId: v.optional(v.id("users")),
+    investigationStartedAt: v.optional(v.number()),
+    investigationNotes: v.optional(v.string()),
+    investigationPhotos: v.optional(v.array(v.id("_storage"))),
+    // Resolution
+    resolvedBy: v.optional(v.id("users")),
+    resolvedAt: v.optional(v.number()),
+    resolutionNotes: v.optional(v.string()),
+    // Financial impact (if any)
+    claimAmount: v.optional(v.number()),
+    settlementAmount: v.optional(v.number()),
+    insuranceClaimId: v.optional(v.id("insuranceClaims")),
+  })
+    .index("by_loan", ["loanId"])
+    .index("by_organization", ["organizationId"])
+    .index("by_collection", ["collectionId"])
+    .index("by_status", ["status"])
+    .index("by_organization_and_status", ["organizationId", "status"]),
+
   // Conservation treatments for objects
   conservationTreatments: defineTable({
     collectionId: v.id("collections"),
@@ -1115,11 +1535,93 @@ export default defineSchema({
     approvedBy: v.optional(v.id("users")),
     approvedAt: v.optional(v.number()),
     createdBy: v.optional(v.id("users")),
+    // Cost tracking fields
+    laborHours: v.optional(v.number()),
+    laborRate: v.optional(v.number()), // Per hour rate
+    laborCost: v.optional(v.number()), // Total labor cost (can be calculated or set)
+    materialsCost: v.optional(v.number()),
+    materials: v.optional(
+      v.array(
+        v.object({
+          name: v.string(),
+          quantity: v.optional(v.number()),
+          unitCost: v.optional(v.number()),
+          totalCost: v.number(),
+          notes: v.optional(v.string()),
+        }),
+      ),
+    ),
+    externalServicesCost: v.optional(v.number()),
+    totalCost: v.optional(v.number()),
+    currency: v.optional(v.string()),
+    estimatedCost: v.optional(v.number()), // Initial estimate for budgeting
+    costNotes: v.optional(v.string()),
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
     .index("by_performedAt", ["performedAt"])
     .index("by_organization_and_status", ["organizationId", "status"]),
+
+  // Assessment schedules for periodic condition checks
+  assessmentSchedules: defineTable({
+    organizationId: v.id("organizations"),
+    collectionId: v.optional(v.id("collections")), // Can be per-item or organization-wide
+    name: v.string(),
+    description: v.optional(v.string()),
+    // Schedule configuration
+    intervalDays: v.number(), // How often to assess (e.g., 365 for annual)
+    assessmentType: v.union(
+      v.literal("full"),
+      v.literal("spot_check"),
+      v.literal("environmental"),
+      v.literal("condition"),
+    ),
+    // Next scheduled date
+    nextDueDate: v.optional(v.number()),
+    lastCompletedDate: v.optional(v.number()),
+    lastCompletedBy: v.optional(v.id("users")),
+    lastTreatmentId: v.optional(v.id("conservationTreatments")),
+    // Status
+    isActive: v.boolean(),
+    // Assignment
+    assignedTo: v.optional(v.id("users")),
+    assignedRoleId: v.optional(v.id("roles")),
+    // Notifications
+    reminderDaysBefore: v.optional(v.number()), // Send reminder N days before due
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_collection", ["collectionId"])
+    .index("by_next_due", ["nextDueDate"])
+    .index("by_organization_and_active", ["organizationId", "isActive"]),
+
+  // Environmental readings for locations
+  environmentalReadings: defineTable({
+    organizationId: v.id("organizations"),
+    locationId: v.id("locations"),
+    // Reading data
+    temperature: v.optional(v.number()), // Celsius
+    humidity: v.optional(v.number()), // Percentage
+    lightLevel: v.optional(v.number()), // Lux
+    uvLevel: v.optional(v.number()), // UV index or µW/lumen
+    // Metadata
+    recordedAt: v.number(),
+    recordedBy: v.optional(v.id("users")), // If manual entry
+    source: v.union(
+      v.literal("manual"),
+      v.literal("sensor"),
+      v.literal("imported"),
+    ),
+    sensorId: v.optional(v.string()), // External sensor identifier
+    notes: v.optional(v.string()),
+    // Alert tracking
+    alertTriggered: v.optional(v.boolean()),
+    alertId: v.optional(v.id("conservationAlerts")),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_location", ["locationId"])
+    .index("by_location_and_time", ["locationId", "recordedAt"]),
 
   // Conservation treatment attachments (before/after photos, reports)
   conservationAttachments: defineTable({
@@ -1260,6 +1762,7 @@ export default defineSchema({
     organizationId: v.id("organizations"),
     title: v.string(),
     location: v.optional(v.string()),
+    locationId: v.optional(v.id("locations")), // Link to actual location for object tracking
     startDate: v.number(),
     endDate: v.optional(v.number()),
     isCurrent: v.boolean(),
@@ -1270,7 +1773,9 @@ export default defineSchema({
       v.union(
         v.literal("proposed"),
         v.literal("approved"),
+        v.literal("installing"), // Phase between approved and active
         v.literal("active"),
+        v.literal("deinstalling"), // Phase between active and closed
         v.literal("closed"),
         v.literal("rejected"),
       ),
@@ -1289,12 +1794,81 @@ export default defineSchema({
     approvedBy: v.optional(v.id("users")),
     approvedAt: v.optional(v.number()),
     createdBy: v.optional(v.id("users")),
+    // Installation checklist
+    installationChecklist: v.optional(
+      v.array(
+        v.object({
+          taskId: v.string(),
+          task: v.string(),
+          required: v.boolean(),
+          completed: v.boolean(),
+          completedBy: v.optional(v.id("users")),
+          completedAt: v.optional(v.number()),
+          notes: v.optional(v.string()),
+        }),
+      ),
+    ),
+    installationStartedAt: v.optional(v.number()),
+    installationCompletedAt: v.optional(v.number()),
+    activatedAt: v.optional(v.number()),
+    activatedBy: v.optional(v.id("users")),
+    // Deinstallation tracking
+    deinstallationStartedAt: v.optional(v.number()),
+    deinstallationCompletedAt: v.optional(v.number()),
+    deinstallationNotes: v.optional(v.string()),
+    deinstallationChecklist: v.optional(
+      v.array(
+        v.object({
+          taskId: v.string(),
+          task: v.string(),
+          required: v.boolean(),
+          completed: v.boolean(),
+          completedBy: v.optional(v.id("users")),
+          completedAt: v.optional(v.number()),
+          notes: v.optional(v.string()),
+        }),
+      ),
+    ),
+    closedAt: v.optional(v.number()),
+    closedBy: v.optional(v.id("users")),
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
     .index("by_startDate", ["startDate"])
     .index("by_organization_and_status", ["organizationId", "status"])
-    .index("by_organization_and_startDate", ["organizationId", "startDate"]),
+    .index("by_organization_and_startDate", ["organizationId", "startDate"])
+    .index("by_location", ["locationId"]),
+
+  // Track objects in exhibitions and their original locations
+  exhibitionObjects: defineTable({
+    exhibitionId: v.id("exhibitions"),
+    organizationId: v.id("organizations"),
+    collectionId: v.id("collections"), // The object being exhibited
+    originalLocationId: v.optional(v.id("locations")), // Where the object was before
+    exhibitionLocationId: v.optional(v.id("locations")), // Where it is in the exhibition
+    // Installation tracking
+    installedAt: v.optional(v.number()),
+    installedBy: v.optional(v.id("users")),
+    installationNotes: v.optional(v.string()),
+    conditionAtInstallation: v.optional(v.string()),
+    // Deinstallation tracking
+    deinstalledAt: v.optional(v.number()),
+    deinstalledBy: v.optional(v.id("users")),
+    deinstallationNotes: v.optional(v.string()),
+    conditionAtDeinstallation: v.optional(v.string()),
+    returnedToOriginalLocation: v.optional(v.boolean()),
+    returnedAt: v.optional(v.number()),
+    // Status
+    status: v.union(
+      v.literal("pending"),
+      v.literal("installed"),
+      v.literal("deinstalled"),
+      v.literal("returned"),
+    ),
+  })
+    .index("by_exhibition", ["exhibitionId"])
+    .index("by_collection", ["collectionId"])
+    .index("by_organization", ["organizationId"]),
 
   exhibitionDocuments: defineTable({
     exhibitionId: v.id("exhibitions"),
@@ -1318,7 +1892,7 @@ export default defineSchema({
     action: v.string(),
     entityType: v.string(),
     entityId: v.string(),
-    changes: v.optional(v.any()),
+    changes: v.optional(auditLogChanges),
     ipAddress: v.optional(v.string()),
     userAgent: v.optional(v.string()),
     timestamp: v.number(),
@@ -1360,9 +1934,23 @@ export default defineSchema({
         stepNumber: v.number(),
         roleId: v.id("roles"),
         name: v.string(),
+        // Documents required to complete this step
+        requiredDocuments: v.optional(v.array(v.string())),
       }),
     ),
     canInitiateRoles: v.array(v.id("roles")),
+    // Global required documents for this workflow type
+    requiredDocuments: v.optional(
+      v.array(
+        v.object({
+          documentType: v.string(),
+          description: v.optional(v.string()),
+          requiredAtStep: v.optional(v.number()), // If specified, required before this step can be approved
+        }),
+      ),
+    ),
+    // Whether source verification is required before approval
+    requireSourceVerification: v.optional(v.boolean()),
   })
     .index("by_organization", ["organizationId"])
     .index("by_workflowType", ["workflowType"]),
@@ -1686,6 +2274,18 @@ export default defineSchema({
     checkedOutBy: v.id("users"),
     checkedInBy: v.optional(v.id("users")),
 
+    // Recall tracking
+    isRecalled: v.optional(v.boolean()),
+    recalledAt: v.optional(v.number()),
+    recalledBy: v.optional(v.id("users")),
+    recallReason: v.optional(v.string()),
+    originalDueDate: v.optional(v.number()), // Stored when due date is shortened
+
+    // Auto-renewal tracking
+    autoRenewed: v.optional(v.boolean()),
+    lastAutoRenewalAttempt: v.optional(v.number()),
+    autoRenewalFailureReason: v.optional(v.string()),
+
     notes: v.optional(v.string()),
   })
     .index("by_organization", ["organizationId"])
@@ -1695,7 +2295,8 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_dueDate", ["dueDate"])
-    .index("by_account_and_status", ["accountId", "status"]),
+    .index("by_account_and_status", ["accountId", "status"])
+    .index("by_organization_and_dueDate", ["organizationId", "dueDate"]),
 
   // Holds - Reservations queue
   libraryHolds: defineTable({
@@ -1735,6 +2336,48 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_item_and_status", ["itemId", "status"]),
+
+  // Recalls - Request early return of checked-out items
+  libraryRecalls: defineTable({
+    organizationId: v.id("organizations"),
+    circulationId: v.id("circulations"),
+    itemId: v.id("libraryItems"),
+    copyId: v.id("itemCopies"),
+    accountId: v.id("accounts"), // Current borrower
+
+    // Recall details
+    reason: v.string(),
+    recalledByAccountId: v.optional(v.id("accounts")), // Patron who needs the item
+    recalledByHoldId: v.optional(v.id("libraryHolds")), // Hold that triggered recall
+
+    // Status
+    status: v.union(
+      v.literal("pending"), // Recall requested
+      v.literal("notified"), // Borrower notified
+      v.literal("returned"), // Item returned
+      v.literal("expired"), // Not returned in time
+      v.literal("cancelled"), // Recall cancelled
+    ),
+
+    // Dates
+    recallDate: v.number(),
+    originalDueDate: v.number(),
+    newDueDate: v.number(),
+    notifiedAt: v.optional(v.number()),
+    returnedAt: v.optional(v.number()),
+
+    // Staff
+    createdBy: v.id("users"),
+    processedBy: v.optional(v.id("users")),
+
+    notes: v.optional(v.string()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_circulation", ["circulationId"])
+    .index("by_account", ["accountId"])
+    .index("by_item", ["itemId"])
+    .index("by_status", ["status"])
+    .index("by_organization_and_status", ["organizationId", "status"]),
 
   // Fines - Fee tracking
   libraryFines: defineTable({
@@ -1987,6 +2630,16 @@ export default defineSchema({
     gracePeriodDays: v.number(),
     fineThresholdForBlock: v.optional(v.number()),
 
+    // Patron blocks
+    overdueItemsThresholdForBlock: v.optional(v.number()), // Block when overdue items exceed this count
+
+    // Auto-renewal settings
+    autoRenewalEnabled: v.optional(v.boolean()), // Organization-wide default
+    autoRenewalDaysBeforeDue: v.optional(v.number()), // Days before due date to auto-renew
+
+    // Recall settings
+    recallShortenedDueDays: v.optional(v.number()), // Days to shorten due date on recall
+
     // Holds
     holdExpirationDays: v.number(),
     maxHoldsPerPatron: v.number(),
@@ -2139,6 +2792,12 @@ export default defineSchema({
     verifiedBy: v.optional(v.id("users")),
     verifiedAt: v.optional(v.number()),
 
+    // Appraisal linkage for value verification
+    appraisalId: v.optional(v.id("appraisals")), // Link to current appraisal
+    appraisalDate: v.optional(v.number()), // Date of linked appraisal
+    appraisalRequired: v.optional(v.boolean()), // Whether appraisal is required before coverage
+    appraisalWarning: v.optional(v.string()), // Warning about stale/missing appraisal
+
     notes: v.optional(v.string()),
     createdBy: v.id("users"),
     createdAt: v.number(),
@@ -2149,7 +2808,8 @@ export default defineSchema({
     .index("by_exhibition", ["exhibitionId"])
     .index("by_loan", ["loanId"])
     .index("by_policy_and_status", ["policyId", "status"])
-    .index("by_organization_and_status", ["organizationId", "status"]),
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_appraisal", ["appraisalId"]),
 
   // Insurance Claims - Track incidents and claims
   insuranceClaims: defineTable({
@@ -2225,6 +2885,27 @@ export default defineSchema({
     ),
     payoutDate: v.optional(v.number()),
     payoutReference: v.optional(v.string()),
+
+    // Auto-claim tracking
+    isAutoClaim: v.optional(v.boolean()), // True if auto-generated from loan return damage
+    autoClaimSource: v.optional(v.string()), // "loan_return_damage", etc.
+    conditionDisputeId: v.optional(v.id("conditionDisputes")), // Link to condition dispute if applicable
+
+    // Dispute tracking
+    isDisputed: v.optional(v.boolean()),
+    disputeReason: v.optional(v.string()),
+    disputeDate: v.optional(v.number()),
+    disputeStatus: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("in_review"),
+        v.literal("resolved"),
+        v.literal("escalated"),
+      ),
+    ),
+    disputeResolution: v.optional(v.string()),
+    disputeResolvedDate: v.optional(v.number()),
+    disputeDocumentIds: v.optional(v.array(v.id("_storage"))),
 
     // Notes and audit
     internalNotes: v.optional(v.string()),
@@ -2603,7 +3284,7 @@ export default defineSchema({
     currentPeriodEnd: v.number(), // Unix timestamp
 
     // Metadata from checkout
-    metadata: v.optional(v.any()),
+    metadata: v.optional(metadataRecord),
 
     // Audit
     createdAt: v.number(),
@@ -2666,7 +3347,7 @@ export default defineSchema({
     startDate: v.number(),
     endDate: v.optional(v.number()),
     notes: v.optional(v.string()),
-    metadata: v.optional(v.any()),
+    metadata: v.optional(metadataRecord),
     createdAt: v.number(),
   })
     .index("by_organization", ["organizationId"])
@@ -2706,11 +3387,230 @@ export default defineSchema({
     organizationId: v.id("organizations"),
     name: v.string(),
     description: v.optional(v.string()),
-    filters: v.any(),
+    filters: v.array(filterCondition),
     createdBy: v.id("users"),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   })
     .index("by_organization", ["organizationId"])
     .index("by_organization_and_name", ["organizationId", "name"]),
+
+  // ============================================
+  // SCHEDULED REPORTS (2.10.1)
+  // ============================================
+
+  scheduledReports: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    description: v.optional(v.string()),
+
+    // Report type and configuration
+    reportType: v.union(
+      v.literal("collection_health"),
+      v.literal("conservation_status"),
+      v.literal("insurance_coverage"),
+      v.literal("location_utilization"),
+      v.literal("loan_performance"),
+      v.literal("accession_activity"),
+      v.literal("deaccession_activity"),
+      v.literal("media_rights"),
+      v.literal("compliance_audit"),
+      v.literal("operational_kpis"),
+      v.literal("custom"),
+    ),
+    reportConfig: v.optional(
+      v.object({
+        dateRange: v.optional(
+          v.union(
+            v.literal("last_7_days"),
+            v.literal("last_30_days"),
+            v.literal("last_90_days"),
+            v.literal("last_year"),
+            v.literal("year_to_date"),
+            v.literal("custom"),
+          ),
+        ),
+        customStartDate: v.optional(v.number()),
+        customEndDate: v.optional(v.number()),
+        includeComparison: v.optional(v.boolean()),
+        comparisonPeriod: v.optional(
+          v.union(
+            v.literal("previous_period"),
+            v.literal("same_period_last_year"),
+          ),
+        ),
+        filters: v.optional(
+          v.object({
+            locationIds: v.optional(v.array(v.id("locations"))),
+            collectionGroupIds: v.optional(v.array(v.id("collectionGroups"))),
+            objectTypes: v.optional(v.array(v.string())),
+          }),
+        ),
+      }),
+    ),
+
+    // Schedule configuration
+    schedule: v.union(
+      v.literal("daily"),
+      v.literal("weekly"),
+      v.literal("monthly"),
+      v.literal("quarterly"),
+      v.literal("on_demand"),
+    ),
+    scheduledDay: v.optional(v.number()), // Day of week (0-6) or day of month (1-31)
+    scheduledTime: v.optional(v.string()), // HH:MM in 24hr format
+    timezone: v.optional(v.string()),
+
+    // Email delivery
+    emailRecipients: v.optional(v.array(v.string())),
+    emailSubject: v.optional(v.string()),
+    includeAttachment: v.optional(v.boolean()),
+    attachmentFormat: v.optional(
+      v.union(v.literal("pdf"), v.literal("csv"), v.literal("excel")),
+    ),
+
+    // Status
+    isActive: v.boolean(),
+    lastRunAt: v.optional(v.number()),
+    nextRunAt: v.optional(v.number()),
+    lastRunStatus: v.optional(
+      v.union(
+        v.literal("success"),
+        v.literal("failed"),
+        v.literal("partial"),
+      ),
+    ),
+    lastRunError: v.optional(v.string()),
+
+    // Metadata
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_next_run", ["isActive", "nextRunAt"])
+    .index("by_report_type", ["organizationId", "reportType"]),
+
+  // Report run history
+  reportRuns: defineTable({
+    organizationId: v.id("organizations"),
+    scheduledReportId: v.optional(v.id("scheduledReports")),
+    reportType: v.string(),
+    reportName: v.string(),
+
+    // Run details
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+    status: v.union(
+      v.literal("running"),
+      v.literal("success"),
+      v.literal("failed"),
+      v.literal("cancelled"),
+    ),
+    errorMessage: v.optional(v.string()),
+
+    // Report data
+    reportData: v.optional(v.any()), // JSON blob of report results
+    storageId: v.optional(v.id("_storage")), // For PDF/Excel exports
+
+    // Delivery
+    emailsSent: v.optional(v.array(v.string())),
+    emailSentAt: v.optional(v.number()),
+
+    // Metadata
+    triggeredBy: v.union(v.literal("schedule"), v.literal("manual")),
+    triggeredByUserId: v.optional(v.id("users")),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_scheduled_report", ["scheduledReportId"])
+    .index("by_status", ["organizationId", "status"]),
+
+  // ============================================
+  // Batch Operations
+  // ============================================
+
+  // Batch job tracking for bulk operations
+  batchJobs: defineTable({
+    organizationId: v.id("organizations"),
+
+    // Job type
+    jobType: v.union(
+      v.literal("bulk_edit"),
+      v.literal("bulk_move"),
+      v.literal("bulk_status_change"),
+      v.literal("bulk_delete"),
+      v.literal("bulk_export"),
+    ),
+
+    // Job configuration
+    targetIds: v.array(v.id("collections")), // IDs being processed
+    totalItems: v.number(),
+
+    // For bulk_edit: fields to update
+    editPayload: v.optional(
+      v.object({
+        collectionGroupId: v.optional(v.id("collectionGroups")),
+        currentLocationId: v.optional(v.id("locations")),
+        condition: v.optional(v.string()),
+        displayStatus: v.optional(v.string()),
+        isPubliclyVisible: v.optional(v.boolean()),
+        isSearchable: v.optional(v.boolean()),
+        tags: v.optional(v.array(v.string())),
+        customFields: v.optional(v.record(v.string(), customFieldValue)),
+      }),
+    ),
+
+    // For bulk_move: target location
+    movePayload: v.optional(
+      v.object({
+        toLocationId: v.id("locations"),
+        reason: v.optional(v.string()),
+        overrideCapacity: v.optional(v.boolean()),
+        overrideStatus: v.optional(v.boolean()),
+      }),
+    ),
+
+    // For bulk_status_change
+    statusPayload: v.optional(
+      v.object({
+        newStatus: v.union(
+          v.literal("active"),
+          v.literal("archived"),
+          v.literal("deleted"),
+        ),
+        reason: v.optional(v.string()),
+      }),
+    ),
+
+    // Progress tracking
+    processedItems: v.number(),
+    successCount: v.number(),
+    failureCount: v.number(),
+    errors: v.optional(
+      v.array(
+        v.object({
+          itemId: v.id("collections"),
+          error: v.string(),
+        }),
+      ),
+    ),
+
+    // Status
+    status: v.union(
+      v.literal("pending"),
+      v.literal("processing"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("cancelled"),
+    ),
+
+    // Timestamps
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    startedAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_created_at", ["organizationId", "createdAt"]),
 });
