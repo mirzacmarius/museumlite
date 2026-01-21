@@ -3341,3 +3341,126 @@ export const getConditionDispute = query({
     };
   },
 });
+
+// ============================================
+// BULK EXPORT
+// ============================================
+
+/**
+ * Bulk export loans data for CSV/Excel export
+ */
+export const bulkExport = query({
+  args: {
+    loanIds: v.array(v.id("loans")),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("loans"),
+      loanNumber: v.string(),
+      type: v.string(),
+      status: v.string(),
+      lenderBorrowerName: v.string(),
+      lenderBorrowerContact: v.optional(v.string()),
+      startDate: v.number(),
+      endDate: v.optional(v.number()),
+      insuranceValue: v.optional(v.number()),
+      terms: v.optional(v.string()),
+      notes: v.optional(v.string()),
+      itemCount: v.number(),
+      itemAccessionNumbers: v.string(),
+      approvedByName: v.optional(v.string()),
+      approvedAt: v.optional(v.number()),
+      accountName: v.optional(v.string()),
+      workflowStep: v.optional(v.number()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const results: Array<{
+      _id: Id<"loans">;
+      loanNumber: string;
+      type: string;
+      status: string;
+      lenderBorrowerName: string;
+      lenderBorrowerContact?: string;
+      startDate: number;
+      endDate?: number;
+      insuranceValue?: number;
+      terms?: string;
+      notes?: string;
+      itemCount: number;
+      itemAccessionNumbers: string;
+      approvedByName?: string;
+      approvedAt?: number;
+      accountName?: string;
+      workflowStep?: number;
+    }> = [];
+
+    for (const loanId of args.loanIds) {
+      const loan = await ctx.db.get(loanId);
+      if (!loan) continue;
+
+      await requirePermission(ctx, loan.organizationId, "loans.read");
+
+      // Get loan items
+      const loanItems = await ctx.db
+        .query("loanItems")
+        .withIndex("by_loan", (q) => q.eq("loanId", loanId))
+        .collect();
+
+      // Get accession numbers for items
+      const accessionNumbers: string[] = [];
+      for (const item of loanItems) {
+        const collection = await ctx.db.get(item.collectionId);
+        if (collection) {
+          accessionNumbers.push(collection.accessionNumber);
+        }
+      }
+
+      // Get approver name
+      let approvedByName: string | undefined;
+      if (loan.approvedBy) {
+        const approver = await ctx.db.get(loan.approvedBy);
+        approvedByName = approver?.name ?? approver?.username;
+      }
+
+      // Get account name
+      let accountName: string | undefined;
+      if (loan.accountId) {
+        const account = await ctx.db.get(loan.accountId);
+        if (account) {
+          accountName =
+            account.businessName ??
+            [account.firstName, account.lastName].filter(Boolean).join(" ") ??
+            undefined;
+        }
+      }
+
+      results.push({
+        _id: loan._id,
+        loanNumber: loan.loanNumber,
+        type: loan.type,
+        status: loan.status,
+        lenderBorrowerName: loan.lenderBorrowerName,
+        lenderBorrowerContact: loan.lenderBorrowerContact,
+        startDate: loan.startDate,
+        endDate: loan.endDate,
+        insuranceValue: loan.insuranceValue,
+        terms: loan.terms,
+        notes: loan.notes,
+        itemCount: loanItems.length,
+        itemAccessionNumbers: accessionNumbers.join(", "),
+        approvedByName,
+        approvedAt: loan.approvedAt,
+        accountName,
+        workflowStep: loan.workflowStep,
+      });
+    }
+
+    return results;
+  },
+});

@@ -1841,3 +1841,126 @@ export const getBulkImportTemplate = query({
     return `${headers.join(",")}\n${exampleRow.join(",")}`;
   },
 });
+
+// ============================================
+// BULK EXPORT
+// ============================================
+
+/**
+ * Bulk export accessions data for CSV/Excel export
+ */
+export const bulkExport = query({
+  args: {
+    accessionIds: v.array(v.id("accessions")),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("accessions"),
+      accessionNumber: v.string(),
+      dateReceived: v.number(),
+      source: v.string(),
+      method: v.string(),
+      status: v.string(),
+      cost: v.optional(v.number()),
+      notes: v.optional(v.string()),
+      collectionTitle: v.optional(v.string()),
+      collectionAccessionNumber: v.optional(v.string()),
+      donorName: v.optional(v.string()),
+      assignedToName: v.optional(v.string()),
+      approvedByName: v.optional(v.string()),
+      approvedAt: v.optional(v.number()),
+      workflowStep: v.optional(v.number()),
+      sourceVerified: v.optional(v.boolean()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const results: Array<{
+      _id: Id<"accessions">;
+      accessionNumber: string;
+      dateReceived: number;
+      source: string;
+      method: string;
+      status: string;
+      cost?: number;
+      notes?: string;
+      collectionTitle?: string;
+      collectionAccessionNumber?: string;
+      donorName?: string;
+      assignedToName?: string;
+      approvedByName?: string;
+      approvedAt?: number;
+      workflowStep?: number;
+      sourceVerified?: boolean;
+    }> = [];
+
+    for (const accessionId of args.accessionIds) {
+      const accession = await ctx.db.get(accessionId);
+      if (!accession) continue;
+
+      await requirePermission(ctx, accession.organizationId, "accessions.read");
+
+      // Get collection info
+      let collectionTitle: string | undefined;
+      let collectionAccessionNumber: string | undefined;
+      if (accession.collectionId) {
+        const collection = await ctx.db.get(accession.collectionId);
+        if (collection) {
+          collectionTitle = collection.title;
+          collectionAccessionNumber = collection.accessionNumber;
+        }
+      }
+
+      // Get donor account name
+      let donorName: string | undefined;
+      if (accession.donorAccountId) {
+        const donor = await ctx.db.get(accession.donorAccountId);
+        if (donor) {
+          donorName =
+            donor.businessName ??
+            [donor.firstName, donor.lastName].filter(Boolean).join(" ") ??
+            undefined;
+        }
+      }
+
+      // Get assigned user name
+      let assignedToName: string | undefined;
+      if (accession.assignedTo) {
+        const assignee = await ctx.db.get(accession.assignedTo);
+        assignedToName = assignee?.name ?? assignee?.username;
+      }
+
+      // Get approver name
+      let approvedByName: string | undefined;
+      if (accession.approvedBy) {
+        const approver = await ctx.db.get(accession.approvedBy);
+        approvedByName = approver?.name ?? approver?.username;
+      }
+
+      results.push({
+        _id: accession._id,
+        accessionNumber: accession.accessionNumber,
+        dateReceived: accession.dateReceived,
+        source: accession.source,
+        method: accession.method,
+        status: accession.status,
+        cost: accession.cost,
+        notes: accession.notes,
+        collectionTitle,
+        collectionAccessionNumber,
+        donorName,
+        assignedToName,
+        approvedByName,
+        approvedAt: accession.approvedAt,
+        workflowStep: accession.workflowStep,
+        sourceVerified: accession.sourceVerified,
+      });
+    }
+
+    return results;
+  },
+});

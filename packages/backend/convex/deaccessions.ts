@@ -1598,3 +1598,114 @@ export const checkReadiness = query({
     return { ready, checks };
   },
 });
+
+// ============================================
+// BULK EXPORT
+// ============================================
+
+/**
+ * Bulk export deaccessions data for CSV/Excel export
+ */
+export const bulkExport = query({
+  args: {
+    deaccessionIds: v.array(v.id("deaccessions")),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("deaccessions"),
+      deaccessionNumber: v.string(),
+      dateDeaccessioned: v.number(),
+      reason: v.string(),
+      method: v.string(),
+      status: v.string(),
+      disposition: v.optional(v.string()),
+      notes: v.optional(v.string()),
+      collectionTitle: v.optional(v.string()),
+      collectionAccessionNumber: v.optional(v.string()),
+      approvedByName: v.optional(v.string()),
+      approvedAt: v.optional(v.number()),
+      workflowStep: v.optional(v.number()),
+      proceedsAmount: v.optional(v.number()),
+      proceedsCurrency: v.optional(v.string()),
+      proceedsRecipient: v.optional(v.string()),
+      proceedsVerified: v.optional(v.boolean()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const results: Array<{
+      _id: Id<"deaccessions">;
+      deaccessionNumber: string;
+      dateDeaccessioned: number;
+      reason: string;
+      method: string;
+      status: string;
+      disposition?: string;
+      notes?: string;
+      collectionTitle?: string;
+      collectionAccessionNumber?: string;
+      approvedByName?: string;
+      approvedAt?: number;
+      workflowStep?: number;
+      proceedsAmount?: number;
+      proceedsCurrency?: string;
+      proceedsRecipient?: string;
+      proceedsVerified?: boolean;
+    }> = [];
+
+    for (const deaccessionId of args.deaccessionIds) {
+      const deaccession = await ctx.db.get(deaccessionId);
+      if (!deaccession) continue;
+
+      await requirePermission(
+        ctx,
+        deaccession.organizationId,
+        "deaccessions.read",
+      );
+
+      // Get collection info
+      let collectionTitle: string | undefined;
+      let collectionAccessionNumber: string | undefined;
+      if (deaccession.collectionId) {
+        const collection = await ctx.db.get(deaccession.collectionId);
+        if (collection) {
+          collectionTitle = collection.title;
+          collectionAccessionNumber = collection.accessionNumber;
+        }
+      }
+
+      // Get approver name
+      let approvedByName: string | undefined;
+      if (deaccession.approvedBy) {
+        const approver = await ctx.db.get(deaccession.approvedBy);
+        approvedByName = approver?.name ?? approver?.username;
+      }
+
+      results.push({
+        _id: deaccession._id,
+        deaccessionNumber: deaccession.deaccessionNumber,
+        dateDeaccessioned: deaccession.dateDeaccessioned,
+        reason: deaccession.reason,
+        method: deaccession.method,
+        status: deaccession.status,
+        disposition: deaccession.disposition,
+        notes: deaccession.notes,
+        collectionTitle,
+        collectionAccessionNumber,
+        approvedByName,
+        approvedAt: deaccession.approvedAt,
+        workflowStep: deaccession.workflowStep,
+        proceedsAmount: deaccession.proceedsAmount,
+        proceedsCurrency: deaccession.proceedsCurrency,
+        proceedsRecipient: deaccession.proceedsRecipient,
+        proceedsVerified: deaccession.proceedsVerified,
+      });
+    }
+
+    return results;
+  },
+});
