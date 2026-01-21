@@ -574,8 +574,8 @@ export default function DeaccessionDetailPage() {
                           <div className="flex-1">
                             <p className="font-medium text-black">
                               {entry.step === 0
-                                ? "Created"
-                                : `Step ${entry.step} Approved`}
+                                ? t("detail.created")
+                                : t("detail.step", { step: entry.step })}
                             </p>
                             <p className="text-xs text-gray-500">
                               {entry.approverName} •{" "}

@@ -106,6 +106,7 @@ type Loan = {
 
 export default function LoanDetailPage() {
   const tActions = useScopedI18n("loans.actions");
+  const tLoans = useScopedI18n("loans");
   const params = useParams();
   const loanId = params.id as string;
   const locale = useCurrentLocale();
@@ -136,7 +137,7 @@ export default function LoanDetailPage() {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <p className="text-muted-foreground">
-          Please select an organization to view loans.
+          {tLoans("selectOrg.description")}
         </p>
       </div>
     );
@@ -145,7 +146,7 @@ export default function LoanDetailPage() {
   if (loan === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{common("loading")}</p>
       </div>
     );
   }
@@ -153,7 +154,9 @@ export default function LoanDetailPage() {
   if (loan === null) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loan not found</p>
+        <p className="text-muted-foreground">
+          {tLoans("emptyState.noLoansFound")}
+        </p>
       </div>
     );
   }
@@ -786,6 +789,7 @@ function OverviewTab({
 
 function ObjectsTab({ loan }: { loan: Loan }) {
   const t = useScopedI18n("loans.placeholders");
+  const tActions = useScopedI18n("loans.actions");
   return (
     <>
       <div className="flex items-center justify-between">

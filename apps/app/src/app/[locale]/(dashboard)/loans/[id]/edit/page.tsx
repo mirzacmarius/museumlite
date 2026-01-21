@@ -28,6 +28,8 @@ import { useEffect, useState } from "react";
 
 export default function EditLoanPage() {
   const tActions = useScopedI18n("loans.actions");
+  const tLoans = useScopedI18n("loans");
+  const tCommon = useScopedI18n("common");
   const params = useParams();
   const router = useRouter();
   const loanId = params.id as string;
@@ -70,7 +72,7 @@ export default function EditLoanPage() {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <p className="text-muted-foreground">
-          Please select an organization to edit loans.
+          {tActions("pleaseSelectOrgToEdit")}
         </p>
       </div>
     );
@@ -79,15 +81,17 @@ export default function EditLoanPage() {
   if (loan === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
   }
 
   if (loan === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background">
-        <p className="text-muted-foreground">Loan not found</p>
+      <div className="flex h-full w-full bg-background">
+        <p className="text-muted-foreground">
+          {tLoans("emptyState.loanNotFound")}
+        </p>
       </div>
     );
   }
@@ -143,9 +147,7 @@ export default function EditLoanPage() {
     } catch (err) {
       console.error("Error updating loan:", err);
       setError(
-        err instanceof Error
-          ? err.message
-          : tActions("failedToCreateLoan"),
+        err instanceof Error ? err.message : tActions("failedToCreateLoan"),
       );
       setIsSubmitting(false);
     }
@@ -219,7 +221,9 @@ export default function EditLoanPage() {
                           : "bg-cyan-50 text-cyan-700 ring-cyan-600/20 dark:bg-cyan-900/20 dark:text-cyan-400",
                       )}
                     >
-                      {loan.type === "incoming" ? tActions("incomingLoan") : tActions("outgoingLoan")}
+                      {loan.type === "incoming"
+                        ? tActions("incomingLoan")
+                        : tActions("outgoingLoan")}
                     </span>
                     <Lock className="h-3 w-3 text-muted-foreground/50" />
                   </div>
@@ -229,8 +233,10 @@ export default function EditLoanPage() {
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="lenderBorrowerName">
-                    {loan.type === "incoming" ? tActions("lender") : tActions("borrower")} Name{" "}
-                    <span className="text-destructive">*</span>
+                    {loan.type === "incoming"
+                      ? tActions("lender")
+                      : tActions("borrower")}{" "}
+                    Name <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="lenderBorrowerName"

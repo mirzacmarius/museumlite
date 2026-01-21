@@ -44,6 +44,7 @@ import { useEffect, useMemo, useState } from "react";
 
 export default function OrganizationSettingsPage() {
   const t = useScopedI18n("settings");
+  const tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -255,7 +256,7 @@ export default function OrganizationSettingsPage() {
   if (organization === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
   }
@@ -263,7 +264,7 @@ export default function OrganizationSettingsPage() {
   if (organization === null) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Organization not found</p>
+        <p className="text-muted-foreground">{tCommon("noResults")}</p>
       </div>
     );
   }

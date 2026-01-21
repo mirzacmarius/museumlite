@@ -274,12 +274,12 @@ function DeaccessionTable({
                     {exportData.organization.name}
                   </p>
                   <h1 className="text-xl font-bold text-black">
-                    Deaccessions Report
+                    {t("report.deaccessionReport")}
                   </h1>
                   <p className="text-sm text-gray-600">
                     {status !== "all"
-                      ? `${status.charAt(0).toUpperCase() + status.slice(1)} deaccessions`
-                      : "All deaccessions"}
+                      ? `${t(`filters.${status}`)} ${t("title").toLowerCase()}`
+                      : t("report.allDeaccessions")}
                   </p>
                 </div>
 
@@ -288,19 +288,23 @@ function DeaccessionTable({
                     <p className="text-2xl font-bold text-black">
                       {exportData.totals.count}
                     </p>
-                    <p className="text-xs text-gray-500">Total</p>
+                    <p className="text-xs text-gray-500">{t("report.total")}</p>
                   </div>
                   <div className="rounded border border-gray-200 p-3 text-center">
                     <p className="text-2xl font-bold text-amber-600">
                       {exportData.totals.pendingCount}
                     </p>
-                    <p className="text-xs text-gray-500">Pending</p>
+                    <p className="text-xs text-gray-500">
+                      {t("report.pending")}
+                    </p>
                   </div>
                   <div className="rounded border border-gray-200 p-3 text-center">
                     <p className="text-2xl font-bold text-green-600">
                       {exportData.totals.approvedCount}
                     </p>
-                    <p className="text-xs text-gray-500">Approved</p>
+                    <p className="text-xs text-gray-500">
+                      {t("report.approved")}
+                    </p>
                   </div>
                   <div className="rounded border border-gray-200 p-3 text-center">
                     <p className="text-2xl font-bold text-black">
@@ -310,31 +314,33 @@ function DeaccessionTable({
                         "USD",
                       ).replace(/\.\d+$/, "")}
                     </p>
-                    <p className="text-xs text-gray-500">Total Proceeds</p>
+                    <p className="text-xs text-gray-500">
+                      {t("report.totalProceeds")}
+                    </p>
                   </div>
                 </div>
 
                 <div>
                   <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-                    Deaccession Records
+                    {t("report.records")}
                   </h2>
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b border-gray-200">
                         <th className="py-2 text-left font-medium text-gray-500">
-                          Object
+                          {t("table.object")}
                         </th>
                         <th className="py-2 text-left font-medium text-gray-500">
-                          Date
+                          {t("report.date")}
                         </th>
                         <th className="py-2 text-left font-medium text-gray-500">
-                          Method
+                          {t("report.method")}
                         </th>
                         <th className="py-2 text-right font-medium text-gray-500">
-                          Proceeds
+                          {t("report.proceeds")}
                         </th>
                         <th className="py-2 text-right font-medium text-gray-500">
-                          Status
+                          {t("report.status")}
                         </th>
                       </tr>
                     </thead>
@@ -378,8 +384,7 @@ function DeaccessionTable({
                                     : "bg-amber-100 text-amber-700"
                               }`}
                             >
-                              {item.status.charAt(0).toUpperCase() +
-                                item.status.slice(1)}
+                              {t(`status.${item.status}`)}
                             </span>
                           </td>
                         </tr>
@@ -390,7 +395,7 @@ function DeaccessionTable({
 
                 <div className="border-t border-gray-200 pt-3 text-[10px] text-gray-400">
                   <p>
-                    Generated on{" "}
+                    {t("report.generatedOn")}{" "}
                     {formatDateFns(
                       new Date(),
                       "MMMM d, yyyy 'at' h:mm a",

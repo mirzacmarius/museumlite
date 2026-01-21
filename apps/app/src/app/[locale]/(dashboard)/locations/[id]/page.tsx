@@ -72,9 +72,7 @@ export default function LocationDetailPage() {
       await deleteLocation({ locationId: locationId as Id<"locations"> });
       router.push("/locations");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to delete location",
-      );
+      setError(err instanceof Error ? err.message : t("deleteFailed"));
     }
   };
 

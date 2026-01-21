@@ -72,6 +72,8 @@ export default function LibraryCirculationPage() {
   const { hasModule } = useFeatureAccess();
   const locale = useCurrentLocale();
   const t = useScopedI18n("library.placeholders");
+  const tCirc = useScopedI18n("library.circulation");
+  const tLib = useScopedI18n("library");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPatron, setSelectedPatron] = useState<SelectedPatron | null>(
     null,
@@ -222,13 +224,13 @@ export default function LibraryCirculationPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">No Organization Found</h3>
+            <h3 className="text-lg font-semibold">{tCirc("noOrganization")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You need to create an organization to manage circulation.
+              {tCirc("noOrganizationDescription")}
             </p>
           </div>
           <Button asChild>
-            <Link href="/organizations/new">Create Organization</Link>
+            <Link href="/organizations/new">{tLib("createOrganization")}</Link>
           </Button>
         </div>
       </div>
@@ -241,9 +243,11 @@ export default function LibraryCirculationPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Library className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">Select an Organization</h3>
+            <h3 className="text-lg font-semibold">
+              {tCirc("selectOrganization")}
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select an organization from the dropdown above.
+              {tCirc("selectOrganizationDescription")}
             </p>
           </div>
         </div>
@@ -257,13 +261,15 @@ export default function LibraryCirculationPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Library className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">Library Not Enabled</h3>
+            <h3 className="text-lg font-semibold">{tCirc("notEnabled")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              The Library integration is not enabled for this organization.
+              {tCirc("notEnabledDescription")}
             </p>
           </div>
           <Button asChild>
-            <Link href="/settings/integrations">Enable Integration</Link>
+            <Link href="/settings/integrations">
+              {tLib("enableIntegration")}
+            </Link>
           </Button>
         </div>
       </div>
@@ -283,7 +289,7 @@ export default function LibraryCirculationPage() {
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <BookOpen className="h-4 w-4" />
-                <span className="text-sm">Active</span>
+                <span className="text-sm">{tCirc("stats.active")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
                 {statistics.activeCheckouts}
@@ -292,7 +298,7 @@ export default function LibraryCirculationPage() {
             <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
               <div className="flex items-center gap-2 text-destructive">
                 <AlertTriangle className="h-4 w-4" />
-                <span className="text-sm">Overdue</span>
+                <span className="text-sm">{tCirc("stats.overdue")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium text-destructive">
                 {statistics.overdueItems}
@@ -301,14 +307,14 @@ export default function LibraryCirculationPage() {
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Clock className="h-4 w-4" />
-                <span className="text-sm">Due Soon</span>
+                <span className="text-sm">{tCirc("stats.dueSoon")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">{statistics.dueSoon}</p>
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <ArrowUpFromLine className="h-4 w-4" />
-                <span className="text-sm">Today Out</span>
+                <span className="text-sm">{tCirc("stats.todayOut")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
                 {statistics.checkoutsToday}
@@ -317,7 +323,7 @@ export default function LibraryCirculationPage() {
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <ArrowDownToLine className="h-4 w-4" />
-                <span className="text-sm">Today In</span>
+                <span className="text-sm">{tCirc("stats.todayIn")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
                 {statistics.returnsToday}
@@ -326,7 +332,7 @@ export default function LibraryCirculationPage() {
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <AlertTriangle className="h-4 w-4" />
-                <span className="text-sm">Lost</span>
+                <span className="text-sm">{tCirc("stats.lost")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
                 {statistics.lostItems}
@@ -340,10 +346,10 @@ export default function LibraryCirculationPage() {
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex flex-col gap-2">
               <h2 className="text-xl font-medium text-primary">
-                Circulation Desk
+                {tCirc("title")}
               </h2>
               <p className="text-sm font-normal text-primary/60">
-                Check out, return, and renew library items
+                {tCirc("description")}
               </p>
             </div>
           </div>
@@ -354,7 +360,7 @@ export default function LibraryCirculationPage() {
           {/* Quick Scan */}
           <div className="border-b border-border px-6 py-4">
             <Label className="mb-2 block text-sm font-medium">
-              Scan Barcode
+              {tCirc("scanBarcode")}
             </Label>
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -370,7 +376,7 @@ export default function LibraryCirculationPage() {
               </div>
               <Button onClick={handleScan} disabled={!searchQuery.trim()}>
                 <Search className="mr-2 h-4 w-4" />
-                Lookup
+                {tCirc("lookup")}
               </Button>
             </div>
           </div>
@@ -379,10 +385,11 @@ export default function LibraryCirculationPage() {
           <Tabs defaultValue="overdue" className="p-6">
             <TabsList>
               <TabsTrigger value="overdue">
-                Overdue ({overdueItems?.page.length ?? 0})
+                {tCirc("tabs.overdue")} ({overdueItems?.page.length ?? 0})
               </TabsTrigger>
               <TabsTrigger value="active">
-                Active Checkouts ({activeCheckouts?.page.length ?? 0})
+                {tCirc("tabs.activeCheckouts")} (
+                {activeCheckouts?.page.length ?? 0})
               </TabsTrigger>
             </TabsList>
 
@@ -394,7 +401,9 @@ export default function LibraryCirculationPage() {
               ) : overdueItems.page.length === 0 ? (
                 <div className="flex h-32 flex-col items-center justify-center gap-2">
                   <CheckCircle className="h-8 w-8 text-green-500" />
-                  <p className="text-muted-foreground">No overdue items</p>
+                  <p className="text-muted-foreground">
+                    {tCirc("emptyState.noOverdue")}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -415,10 +424,12 @@ export default function LibraryCirculationPage() {
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           <Badge variant="destructive">
-                            {item.daysOverdue} days overdue
+                            {tCirc("labels.daysOverdue", {
+                              count: item.daysOverdue,
+                            })}
                           </Badge>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            Due: {formatDate(item.dueDate)}
+                            {tCirc("labels.due")} {formatDate(item.dueDate)}
                           </p>
                         </div>
                         <Button
@@ -428,7 +439,7 @@ export default function LibraryCirculationPage() {
                           disabled={isProcessing}
                         >
                           <RefreshCw className="mr-2 h-4 w-4" />
-                          Renew
+                          {tCirc("actions.renew")}
                         </Button>
                       </div>
                     </div>
@@ -445,7 +456,9 @@ export default function LibraryCirculationPage() {
               ) : activeCheckouts.page.length === 0 ? (
                 <div className="flex h-32 flex-col items-center justify-center gap-2">
                   <BookOpen className="h-8 w-8 text-muted-foreground" />
-                  <p className="text-muted-foreground">No active checkouts</p>
+                  <p className="text-muted-foreground">
+                    {tCirc("emptyState.noActiveCheckouts")}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -466,11 +479,14 @@ export default function LibraryCirculationPage() {
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           <p className="text-sm">
-                            Due: {formatDate(item.dueDate)}
+                            {tCirc("labels.due")} {formatDate(item.dueDate)}
                           </p>
                           {item.renewalCount > 0 && (
                             <p className="text-xs text-muted-foreground">
-                              Renewed {item.renewalCount}x
+                              {tCirc("labels.renewed")}{" "}
+                              {tCirc("labels.renewedTimes", {
+                                count: item.renewalCount,
+                              })}
                             </p>
                           )}
                         </div>
@@ -481,7 +497,7 @@ export default function LibraryCirculationPage() {
                           disabled={isProcessing}
                         >
                           <RefreshCw className="mr-2 h-4 w-4" />
-                          Renew
+                          {tCirc("actions.renew")}
                         </Button>
                         <Button
                           size="sm"
@@ -489,7 +505,7 @@ export default function LibraryCirculationPage() {
                           disabled={isProcessing}
                         >
                           <ArrowDownToLine className="mr-2 h-4 w-4" />
-                          Check In
+                          {tCirc("actions.checkIn")}
                         </Button>
                       </div>
                     </div>
@@ -507,8 +523,10 @@ export default function LibraryCirculationPage() {
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Check Out Item</DialogTitle>
-              <DialogDescription>Confirm checkout details</DialogDescription>
+              <DialogTitle>{tCirc("dialogs.checkoutTitle")}</DialogTitle>
+              <DialogDescription>
+                {tCirc("dialogs.checkoutDescription")}
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               {selectedPatron && (
@@ -532,7 +550,7 @@ export default function LibraryCirculationPage() {
                     <BookOpen className="h-8 w-8 text-muted-foreground" />
                     <div>
                       <p className="font-medium">
-                        {selectedCopy.item?.title || "Unknown Item"}
+                        {selectedCopy.item?.title || tLib("unknownItem")}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {selectedCopy.copy.barcode}
@@ -551,7 +569,7 @@ export default function LibraryCirculationPage() {
                   setSelectedCopy(null);
                 }}
               >
-                Cancel
+                {tLib("cancel")}
               </Button>
               <Button
                 onClick={() => {
@@ -566,7 +584,7 @@ export default function LibraryCirculationPage() {
                 {isProcessing && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Confirm Checkout
+                {tCirc("actions.confirmCheckout")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -579,11 +597,11 @@ export default function LibraryCirculationPage() {
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Check In Item</DialogTitle>
+              <DialogTitle>{tCirc("dialogs.checkinTitle")}</DialogTitle>
               <DialogDescription>
                 {checkinResult
-                  ? "Item checked in successfully"
-                  : "Confirm checkin details"}
+                  ? tCirc("dialogs.checkinSuccess")
+                  : tCirc("dialogs.checkinDescription")}
               </DialogDescription>
             </DialogHeader>
             {checkinResult ? (
@@ -591,11 +609,11 @@ export default function LibraryCirculationPage() {
                 <div className="flex items-center justify-center gap-2 py-4">
                   <CheckCircle className="h-12 w-12 text-green-500" />
                 </div>
-                <p className="text-center">Item returned successfully!</p>
+                <p className="text-center">{tCirc("dialogs.returnSuccess")}</p>
                 {checkinResult.fineCreated && (
                   <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
                     <p className="text-center text-destructive">
-                      Overdue fine created: $
+                      {tCirc("dialogs.fineCreated")} $
                       {checkinResult.fineAmount?.toFixed(2)}
                     </p>
                   </div>
@@ -610,19 +628,20 @@ export default function LibraryCirculationPage() {
                         {selectedCopy.circulation.item?.title}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Barcode: {selectedCopy.copy.barcode}
+                        {tCirc("labels.barcode")} {selectedCopy.copy.barcode}
                       </p>
                     </div>
                     <div className="rounded-lg border border-border p-4">
                       <p className="text-sm text-muted-foreground">
-                        Checked out to
+                        {tCirc("dialogs.checkedOutTo")}
                       </p>
                       <p className="font-medium">
                         {selectedCopy.circulation.account?.firstName}{" "}
                         {selectedCopy.circulation.account?.lastName}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Due: {formatDate(selectedCopy.circulation.dueDate)}
+                        {tCirc("labels.due")}{" "}
+                        {formatDate(selectedCopy.circulation.dueDate)}
                       </p>
                     </div>
                   </>
@@ -639,7 +658,7 @@ export default function LibraryCirculationPage() {
                     setSearchQuery("");
                   }}
                 >
-                  Done
+                  {tCirc("actions.done")}
                 </Button>
               ) : (
                 <>
@@ -650,7 +669,7 @@ export default function LibraryCirculationPage() {
                       setSelectedCopy(null);
                     }}
                   >
-                    Cancel
+                    {tLib("cancel")}
                   </Button>
                   <Button
                     onClick={() => {
@@ -663,7 +682,7 @@ export default function LibraryCirculationPage() {
                     {isProcessing && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
-                    Confirm Check In
+                    {tCirc("actions.confirmCheckin")}
                   </Button>
                 </>
               )}

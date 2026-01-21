@@ -403,7 +403,7 @@ export default function ObjectDetailPage() {
                   type="button"
                   className="group relative shrink-0 cursor-zoom-in"
                   onClick={() => heroImage?.url && setIsHeroLightboxOpen(true)}
-                  aria-label="View full size image"
+                  aria-label={t("detail.viewFullSize")}
                 >
                   {heroImage?.url ? (
                     <img

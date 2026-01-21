@@ -381,8 +381,10 @@ export default function ExhibitionDetailPage() {
             </p>
             {exhibition.workflowStep && exhibition.totalWorkflowSteps && (
               <p className="text-xs text-muted-foreground">
-                Step {exhibition.workflowStep} of{" "}
-                {exhibition.totalWorkflowSteps}
+                {t("detail.step", {
+                  step: exhibition.workflowStep.toString(),
+                  total: exhibition.totalWorkflowSteps.toString(),
+                })}
               </p>
             )}
           </div>
@@ -673,7 +675,9 @@ export default function ExhibitionDetailPage() {
                             ? t("detail.created")
                             : item.comment?.startsWith("Rejected")
                               ? t("status.rejected")
-                              : `Step ${item.step} Approved`}
+                              : t("detail.stepApproved", {
+                                  step: item.step.toString(),
+                                })}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {item.approverName ?? t("detail.unknownUser")} •{" "}

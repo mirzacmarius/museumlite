@@ -108,7 +108,7 @@ export function BulkAddToGroupDialog({
               <SelectContent>
                 {collectionGroups === undefined ? (
                   <SelectItem value="loading" disabled>
-                    Loading...
+                    {common("loading")}
                   </SelectItem>
                 ) : collectionGroups.length === 0 ? (
                   <SelectItem value="none" disabled>

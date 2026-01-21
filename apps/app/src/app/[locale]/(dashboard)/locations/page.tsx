@@ -343,7 +343,7 @@ function LocationLayout({
                   humidity={
                     (selectedLocation.customFields?.humidity as number) ?? 45
                   }
-                  status="Active"
+                  status={t("active")}
                 />
               </div>
             </div>

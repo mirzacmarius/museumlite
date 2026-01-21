@@ -789,7 +789,7 @@ function CollectionList({
           <Checkbox
             checked={allSelected || (someSelected ? "indeterminate" : false)}
             onCheckedChange={(checked) => onSelectAll(checked === true)}
-            aria-label="Select all items"
+            aria-label={common("selectAllItems")}
           />
           <span className="text-sm text-muted-foreground">
             {allSelected

@@ -36,16 +36,16 @@ interface AddChildLocationDialogProps {
   onSuccess?: () => void;
 }
 
-const LOCATION_TYPES = [
-  "Building",
-  "Room",
-  "Gallery",
-  "Storage",
-  "Cabinet",
-  "Shelf",
-  "Vault",
-  "Other",
-];
+const LOCATION_TYPE_KEYS = [
+  "building",
+  "room",
+  "gallery",
+  "storage",
+  "cabinet",
+  "shelf",
+  "vault",
+  "other",
+] as const;
 
 export function AddChildLocationDialog({
   parentLocationId,
@@ -162,14 +162,20 @@ export function AddChildLocationDialog({
             </div>
             <div className="space-y-2">
               <Label htmlFor="type">{t("typeLabel")}</Label>
-              <Select value={type} onValueChange={setType} required>
+              <Select
+                value={type.toLowerCase()}
+                onValueChange={(val) =>
+                  setType(val.charAt(0).toUpperCase() + val.slice(1))
+                }
+                required
+              >
                 <SelectTrigger id="type">
                   <SelectValue placeholder={t("typePlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {LOCATION_TYPES.map((locationType) => (
-                    <SelectItem key={locationType} value={locationType}>
-                      {locationType}
+                  {LOCATION_TYPE_KEYS.map((typeKey) => (
+                    <SelectItem key={typeKey} value={typeKey}>
+                      {t(`locationTypes.${typeKey}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>

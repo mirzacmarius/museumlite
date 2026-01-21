@@ -104,6 +104,10 @@ function LocationTreeInner({
 
   const reorderLocation = useMutation(api.locations.reorder);
 
+  // Memoize translated strings for use in useMemo
+  const allLocationsLabel = t("allLocations");
+  const unknownLabel = t("unknown");
+
   // Build items map for tree - memoized to rebuild when allLocations changes
   const { items, rootChildren, dataVersion } = useMemo(() => {
     const itemsMap: Record<string, LocationItem> = {};
@@ -147,7 +151,7 @@ function LocationTreeInner({
     // Add virtual root
     itemsMap.root = {
       _id: "root",
-      name: "All Locations",
+      name: allLocationsLabel,
       type: "root",
       sortOrder: 0,
       isActive: true,
@@ -165,7 +169,7 @@ function LocationTreeInner({
         .join("|") || "";
 
     return { items: itemsMap, rootChildren: roots, dataVersion: structureHash };
-  }, [allLocations]);
+  }, [allLocations, allLocationsLabel]);
 
   // Create tree instance at top level (hooks can't be called in useMemo)
   const tree = useTree<LocationItem>({
@@ -181,10 +185,9 @@ function LocationTreeInner({
       getItem: (itemId) => {
         const item = items[itemId];
         if (!item) {
-          // Fallback for undefined items
           return {
             _id: itemId,
-            name: "Unknown",
+            name: unknownLabel,
             type: "unknown",
             sortOrder: 0,
             isActive: false,

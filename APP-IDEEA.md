@@ -467,7 +467,7 @@ Missing from routes but present in design:
 - Group-level access control (optional).
 - **Interoperability**: Link to Objects (assigned to group), Exhibitions (featuring group objects), Conservation (treatments on group objects), Loans (outgoing from group).
 
-## Epic 5 — Object Catalog (List/Grid, Filters, Bulk Ops)
+## Epic 5 — Object Catalog (List/Grid, Filters, **Bulk** Ops)
 - List/grid toggle parity with saved views.
 - Filters: group, status, location, period, culture, material, date acquired.
 - Bulk actions: move, add to exhibition/loan, export, deaccession.

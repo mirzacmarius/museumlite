@@ -51,13 +51,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 
-const CONDITION_OPTIONS = [
-  { value: "new", label: "New" },
-  { value: "excellent", label: "Excellent" },
-  { value: "good", label: "Good" },
-  { value: "fair", label: "Fair" },
-  { value: "poor", label: "Poor" },
-] as const;
+const CONDITION_VALUES = ["new", "excellent", "good", "fair", "poor"] as const;
 
 type Condition = (typeof CONDITION_OPTIONS)[number]["value"];
 
@@ -67,6 +61,13 @@ export default function CatalogItemDetailPage() {
   const itemId = params.id as Id<"libraryItems">;
   const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("library.placeholders");
+  const tDetail = useScopedI18n("library.catalog.detail");
+  const tCommon = useScopedI18n("common");
+  const tLib = useScopedI18n("library");
+
+  const getConditionLabel = (value: string) => {
+    return tLib(`conditionOptions.${value}` as "conditionOptions.good");
+  };
 
   const [isAddCopyOpen, setIsAddCopyOpen] = useState(false);
   const [newCopyBarcode, setNewCopyBarcode] = useState("");
@@ -140,9 +141,9 @@ export default function CatalogItemDetailPage() {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <div className="text-center">
-          <p className="text-muted-foreground">Item not found</p>
+          <p className="text-muted-foreground">{tDetail("itemNotFound")}</p>
           <Button asChild className="mt-4">
-            <Link href="/library/catalog">Back to Catalog</Link>
+            <Link href="/library/catalog">{tDetail("backToCatalog")}</Link>
           </Button>
         </div>
       </div>
@@ -152,15 +153,19 @@ export default function CatalogItemDetailPage() {
   const getStatusBadge = () => {
     switch (item.catalogStatus) {
       case "draft":
-        return <Badge variant="secondary">Draft</Badge>;
+        return (
+          <Badge variant="secondary">{tDetail("catalogStatus.draft")}</Badge>
+        );
       case "published":
         return (
           <Badge variant="default" className="bg-green-500">
-            Published
+            {tDetail("catalogStatus.published")}
           </Badge>
         );
       case "archived":
-        return <Badge variant="outline">Archived</Badge>;
+        return (
+          <Badge variant="outline">{tDetail("catalogStatus.archived")}</Badge>
+        );
       default:
         return null;
     }
@@ -171,27 +176,33 @@ export default function CatalogItemDetailPage() {
       case "available":
         return (
           <Badge variant="default" className="bg-green-500">
-            Available
+            {tDetail("copyStatus.available")}
           </Badge>
         );
       case "checked_out":
-        return <Badge variant="secondary">Checked Out</Badge>;
+        return (
+          <Badge variant="secondary">{tDetail("copyStatus.checkedOut")}</Badge>
+        );
       case "on_hold":
         return (
           <Badge variant="default" className="bg-blue-500">
-            On Hold
+            {tDetail("copyStatus.onHold")}
           </Badge>
         );
       case "lost":
-        return <Badge variant="destructive">Lost</Badge>;
+        return (
+          <Badge variant="destructive">{tDetail("copyStatus.lost")}</Badge>
+        );
       case "damaged":
         return (
           <Badge variant="default" className="bg-orange-500">
-            Damaged
+            {tDetail("copyStatus.damaged")}
           </Badge>
         );
       case "withdrawn":
-        return <Badge variant="outline">Withdrawn</Badge>;
+        return (
+          <Badge variant="outline">{tDetail("copyStatus.withdrawn")}</Badge>
+        );
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -206,7 +217,7 @@ export default function CatalogItemDetailPage() {
             <Button variant="ghost" size="sm" asChild>
               <Link href="/library/catalog">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
+                {tLib("back")}
               </Link>
             </Button>
             <div>
@@ -223,7 +234,7 @@ export default function CatalogItemDetailPage() {
             {item.catalogStatus === "draft" && (
               <Button variant="outline" onClick={handlePublish}>
                 <Check className="mr-2 h-4 w-4" />
-                Publish
+                {tDetail("publish")}
               </Button>
             )}
             {item.catalogStatus === "published" && (
@@ -231,21 +242,22 @@ export default function CatalogItemDetailPage() {
                 <AlertDialogTrigger asChild>
                   <Button variant="outline">
                     <Archive className="mr-2 h-4 w-4" />
-                    Archive
+                    {tDetail("archive")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Archive Item</AlertDialogTitle>
+                    <AlertDialogTitle>
+                      {tDetail("archiveTitle")}
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to archive this item? It will no
-                      longer appear in the catalog.
+                      {tDetail("archiveDescription")}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
                     <AlertDialogAction onClick={handleArchive}>
-                      Archive
+                      {tDetail("archive")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -254,28 +266,27 @@ export default function CatalogItemDetailPage() {
             <Button variant="outline" asChild>
               <Link href={`/library/catalog/${itemId}/edit`}>
                 <Edit className="mr-2 h-4 w-4" />
-                Edit
+                {tDetail("edit")}
               </Link>
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive">
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+                  {tCommon("delete")}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Item</AlertDialogTitle>
+                  <AlertDialogTitle>{tDetail("deleteTitle")}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete this item? This action
-                    cannot be undone.
+                    {tDetail("deleteDescription")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
                   <AlertDialogAction onClick={handleDelete}>
-                    Delete
+                    {tCommon("delete")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -289,32 +300,42 @@ export default function CatalogItemDetailPage() {
             {/* Basic Details */}
             <div className="rounded-lg border border-border bg-card">
               <div className="border-b border-border p-6">
-                <h2 className="text-lg font-medium">Details</h2>
+                <h2 className="text-lg font-medium">{tDetail("details")}</h2>
               </div>
               <div className="grid grid-cols-2 gap-4 p-6">
                 <div>
-                  <p className="text-sm text-muted-foreground">Type</p>
+                  <p className="text-sm text-muted-foreground">
+                    {tDetail("type")}
+                  </p>
                   <p className="font-medium capitalize">{item.itemType}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Language</p>
+                  <p className="text-sm text-muted-foreground">
+                    {tDetail("language")}
+                  </p>
                   <p className="font-medium">{item.language}</p>
                 </div>
                 {item.authors.length > 0 && (
                   <div className="col-span-2">
-                    <p className="text-sm text-muted-foreground">Authors</p>
+                    <p className="text-sm text-muted-foreground">
+                      {tDetail("authors")}
+                    </p>
                     <p className="font-medium">{item.authors.join(", ")}</p>
                   </div>
                 )}
                 {item.publisher && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Publisher</p>
+                    <p className="text-sm text-muted-foreground">
+                      {tDetail("publisher")}
+                    </p>
                     <p className="font-medium">{item.publisher}</p>
                   </div>
                 )}
                 {item.publicationYear && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Year</p>
+                    <p className="text-sm text-muted-foreground">
+                      {tDetail("year")}
+                    </p>
                     <p className="font-medium">{item.publicationYear}</p>
                   </div>
                 )}
@@ -332,25 +353,33 @@ export default function CatalogItemDetailPage() {
                 )}
                 {item.callNumber && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Call Number</p>
+                    <p className="text-sm text-muted-foreground">
+                      {tDetail("callNumber")}
+                    </p>
                     <p className="font-medium font-mono">{item.callNumber}</p>
                   </div>
                 )}
                 {item.pages && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Pages</p>
+                    <p className="text-sm text-muted-foreground">
+                      {tDetail("pages")}
+                    </p>
                     <p className="font-medium">{item.pages}</p>
                   </div>
                 )}
                 {item.edition && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Edition</p>
+                    <p className="text-sm text-muted-foreground">
+                      {tDetail("edition")}
+                    </p>
                     <p className="font-medium">{item.edition}</p>
                   </div>
                 )}
                 {item.series && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Series</p>
+                    <p className="text-sm text-muted-foreground">
+                      {tDetail("series")}
+                    </p>
                     <p className="font-medium">
                       {item.series}
                       {item.seriesNumber && ` #${item.seriesNumber}`}
@@ -364,7 +393,9 @@ export default function CatalogItemDetailPage() {
             {item.description && (
               <div className="rounded-lg border border-border bg-card">
                 <div className="border-b border-border p-6">
-                  <h2 className="text-lg font-medium">Description</h2>
+                  <h2 className="text-lg font-medium">
+                    {tDetail("description")}
+                  </h2>
                 </div>
                 <div className="p-6">
                   <p className="whitespace-pre-wrap text-sm">
@@ -378,7 +409,7 @@ export default function CatalogItemDetailPage() {
             {(item.subjects?.length ?? 0) > 0 && (
               <div className="rounded-lg border border-border bg-card">
                 <div className="border-b border-border p-6">
-                  <h2 className="text-lg font-medium">Subjects</h2>
+                  <h2 className="text-lg font-medium">{tDetail("subjects")}</h2>
                 </div>
                 <div className="flex flex-wrap gap-2 p-6">
                   {item.subjects?.map((subject) => (
@@ -394,14 +425,17 @@ export default function CatalogItemDetailPage() {
             <div className="rounded-lg border border-border bg-card">
               <div className="flex items-center justify-between border-b border-border p-6">
                 <div>
-                  <h2 className="text-lg font-medium">Copies</h2>
+                  <h2 className="text-lg font-medium">{tDetail("copies")}</h2>
                   <p className="text-sm text-muted-foreground">
-                    {item.totalCopies} total, {item.availableCopies} available
+                    {tDetail("totalAvailable", {
+                      total: item.totalCopies,
+                      available: item.availableCopies,
+                    })}
                   </p>
                 </div>
                 <Button onClick={() => setIsAddCopyOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Copy
+                  {tDetail("addCopy")}
                 </Button>
               </div>
               <div className="p-6">
@@ -413,7 +447,7 @@ export default function CatalogItemDetailPage() {
                   <div className="flex flex-col items-center justify-center py-8">
                     <Copy className="h-12 w-12 text-muted-foreground" />
                     <p className="mt-4 text-muted-foreground">
-                      No copies added yet
+                      {tDetail("noCopiesYet")}
                     </p>
                     <Button
                       variant="outline"
@@ -421,7 +455,7 @@ export default function CatalogItemDetailPage() {
                       onClick={() => setIsAddCopyOpen(true)}
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Add First Copy
+                      {tDetail("addFirstCopy")}
                     </Button>
                   </div>
                 ) : (
@@ -437,10 +471,13 @@ export default function CatalogItemDetailPage() {
                               {copy.barcode}
                             </p>
                             <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-                              <span>Copy #{copy.copyNumber}</span>
+                              <span>
+                                {tDetail("copyNumber")}
+                                {copy.copyNumber}
+                              </span>
                               <span>|</span>
                               <span className="capitalize">
-                                {copy.condition}
+                                {getConditionLabel(copy.condition)}
                               </span>
                               {copy.shelfLocation && (
                                 <>
@@ -466,18 +503,23 @@ export default function CatalogItemDetailPage() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Copy</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  {tDetail("deleteCopyTitle")}
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete copy{" "}
-                                  {copy.barcode}?
+                                  {tDetail("deleteCopyDescription", {
+                                    barcode: copy.barcode,
+                                  })}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel>
+                                  {tCommon("cancel")}
+                                </AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => handleDeleteCopy(copy._id)}
                                 >
-                                  Delete
+                                  {tCommon("delete")}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -513,25 +555,35 @@ export default function CatalogItemDetailPage() {
             {/* Circulation Info */}
             <div className="rounded-lg border border-border bg-card">
               <div className="border-b border-border p-6">
-                <h2 className="text-lg font-medium">Circulation</h2>
+                <h2 className="text-lg font-medium">
+                  {tDetail("circulation")}
+                </h2>
               </div>
               <div className="space-y-4 p-6">
                 <div>
-                  <p className="text-sm text-muted-foreground">Can Circulate</p>
+                  <p className="text-sm text-muted-foreground">
+                    {tDetail("canCirculate")}
+                  </p>
                   <p className="font-medium">
-                    {item.isCirculating ? "Yes" : "No (Reference Only)"}
+                    {item.isCirculating
+                      ? tDetail("canCirculateYes")
+                      : tDetail("canCirculateNo")}
                   </p>
                 </div>
                 {item.loanPeriodDays && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Loan Period</p>
-                    <p className="font-medium">{item.loanPeriodDays} days</p>
+                    <p className="text-sm text-muted-foreground">
+                      {tDetail("loanPeriod")}
+                    </p>
+                    <p className="font-medium">
+                      {tDetail("loanPeriodDays", { days: item.loanPeriodDays })}
+                    </p>
                   </div>
                 )}
                 {item.maxRenewals && (
                   <div>
                     <p className="text-sm text-muted-foreground">
-                      Max Renewals
+                      {tDetail("maxRenewals")}
                     </p>
                     <p className="font-medium">{item.maxRenewals}</p>
                   </div>
@@ -543,13 +595,13 @@ export default function CatalogItemDetailPage() {
             {(item.notes || item.internalNotes) && (
               <div className="rounded-lg border border-border bg-card">
                 <div className="border-b border-border p-6">
-                  <h2 className="text-lg font-medium">Notes</h2>
+                  <h2 className="text-lg font-medium">{tDetail("notes")}</h2>
                 </div>
                 <div className="space-y-4 p-6">
                   {item.notes && (
                     <div>
                       <p className="text-sm text-muted-foreground">
-                        Public Notes
+                        {tDetail("publicNotes")}
                       </p>
                       <p className="text-sm">{item.notes}</p>
                     </div>
@@ -557,7 +609,7 @@ export default function CatalogItemDetailPage() {
                   {item.internalNotes && (
                     <div>
                       <p className="text-sm text-muted-foreground">
-                        Internal Notes
+                        {tDetail("internalNotes")}
                       </p>
                       <p className="text-sm">{item.internalNotes}</p>
                     </div>
@@ -572,14 +624,16 @@ export default function CatalogItemDetailPage() {
         <Dialog open={isAddCopyOpen} onOpenChange={setIsAddCopyOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add New Copy</DialogTitle>
+              <DialogTitle>{tDetail("addCopyDialog.title")}</DialogTitle>
               <DialogDescription>
-                Add a new physical copy of this item to the library
+                {tDetail("addCopyDialog.description")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="barcode">Barcode *</Label>
+                <Label htmlFor="barcode">
+                  {tDetail("addCopyDialog.barcodeLabel")}
+                </Label>
                 <div className="flex gap-2">
                   <Input
                     id="barcode"
@@ -596,12 +650,14 @@ export default function CatalogItemDetailPage() {
                       }
                     }}
                   >
-                    Generate
+                    {tLib("generate")}
                   </Button>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="condition">Condition *</Label>
+                <Label htmlFor="condition">
+                  {tDetail("addCopyDialog.conditionLabel")}
+                </Label>
                 <Select
                   value={newCopyCondition}
                   onValueChange={(value: Condition) =>
@@ -609,30 +665,36 @@ export default function CatalogItemDetailPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue>
+                      {getConditionLabel(newCopyCondition)}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {CONDITION_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                    {CONDITION_VALUES.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {getConditionLabel(value)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="shelfLocation">Shelf Location</Label>
+                <Label htmlFor="shelfLocation">
+                  {tDetail("addCopyDialog.shelfLocationLabel")}
+                </Label>
                 <Input
                   id="shelfLocation"
                   value={newCopyShelfLocation}
                   onChange={(e) => setNewCopyShelfLocation(e.target.value)}
-                  placeholder="e.g., A-12-3"
+                  placeholder={tDetail(
+                    "addCopyDialog.shelfLocationPlaceholder",
+                  )}
                 />
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsAddCopyOpen(false)}>
-                Cancel
+                {tLib("cancel")}
               </Button>
               <Button
                 onClick={handleAddCopy}
@@ -643,7 +705,7 @@ export default function CatalogItemDetailPage() {
                 ) : (
                   <Plus className="mr-2 h-4 w-4" />
                 )}
-                Add Copy
+                {tDetail("addCopyDialog.addCopyButton")}
               </Button>
             </DialogFooter>
           </DialogContent>

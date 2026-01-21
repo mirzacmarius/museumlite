@@ -107,7 +107,7 @@ export default function ExhibitionsPage() {
 
   return (
     <FeatureGuard
-      featureName="Exhibitions"
+      featureName={t("title")}
       isLocked={!hasFeature("exhibitions")}
       tierNeeded="pro"
     >

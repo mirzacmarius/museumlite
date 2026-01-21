@@ -175,7 +175,7 @@ export default function UsersSettingsPage() {
                       onChange={(e) => setInviteEmail(e.target.value)}
                       placeholder={t("emailPlaceholder")}
                       required
-                      aria-label="Email address"
+                      aria-label={t("emailAddress")}
                     />
                   </div>
                   <div className="space-y-2">

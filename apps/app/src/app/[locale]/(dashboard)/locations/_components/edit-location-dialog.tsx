@@ -26,16 +26,16 @@ import { useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-const LOCATION_TYPES = [
-  "Building",
-  "Room",
-  "Gallery",
-  "Storage",
-  "Cabinet",
-  "Shelf",
-  "Vault",
-  "Other",
-];
+const LOCATION_TYPE_KEYS = [
+  "building",
+  "room",
+  "gallery",
+  "storage",
+  "cabinet",
+  "shelf",
+  "vault",
+  "other",
+] as const;
 
 interface EditLocationDialogProps {
   locationId: string;
@@ -144,14 +144,20 @@ export function EditLocationDialog({
 
               <div className="grid gap-2">
                 <Label htmlFor="type">{t("typeLabel")}</Label>
-                <Select value={type} onValueChange={setType} required>
+                <Select
+                  value={type.toLowerCase()}
+                  onValueChange={(val) =>
+                    setType(val.charAt(0).toUpperCase() + val.slice(1))
+                  }
+                  required
+                >
                   <SelectTrigger id="type">
                     <SelectValue placeholder={t("typePlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {LOCATION_TYPES.map((locationType) => (
-                      <SelectItem key={locationType} value={locationType}>
-                        {locationType}
+                    {LOCATION_TYPE_KEYS.map((typeKey) => (
+                      <SelectItem key={typeKey} value={typeKey}>
+                        {t(`locationTypes.${typeKey}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>

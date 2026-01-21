@@ -43,12 +43,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 
-const STATUS_FILTERS = [
-  { value: "all", label: "All Status" },
-  { value: "outstanding", label: "Outstanding" },
-  { value: "paid", label: "Paid" },
-  { value: "waived", label: "Waived" },
-] as const;
+const STATUS_FILTER_VALUES = ["all", "outstanding", "paid", "waived"] as const;
 
 type FineStatus = "outstanding" | "paid" | "waived" | "forgiven" | "refunded";
 type PaymentMethod = "cash" | "card" | "check" | "online" | "other";
@@ -203,17 +198,19 @@ export default function LibraryFinesPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "outstanding":
-        return <Badge variant="destructive">Outstanding</Badge>;
+        return (
+          <Badge variant="destructive">{tFines("status.outstanding")}</Badge>
+        );
       case "paid":
         return (
           <Badge variant="default" className="bg-green-500">
-            Paid
+            {tFines("status.paid")}
           </Badge>
         );
       case "waived":
-        return <Badge variant="secondary">Waived</Badge>;
+        return <Badge variant="secondary">{tFines("status.waived")}</Badge>;
       case "forgiven":
-        return <Badge variant="outline">Forgiven</Badge>;
+        return <Badge variant="outline">{tFines("status.forgiven")}</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -222,17 +219,34 @@ export default function LibraryFinesPage() {
   const getFineTypeBadge = (type: string) => {
     switch (type) {
       case "overdue":
-        return <Badge variant="outline">Overdue</Badge>;
+        return <Badge variant="outline">{tFines("fineTypes.overdue")}</Badge>;
       case "lost_item":
-        return <Badge variant="destructive">Lost Item</Badge>;
+        return (
+          <Badge variant="destructive">{tFines("fineTypes.lostItem")}</Badge>
+        );
       case "damaged_item":
         return (
           <Badge variant="default" className="bg-orange-500">
-            Damaged
+            {tFines("fineTypes.damaged")}
           </Badge>
         );
       default:
         return <Badge variant="secondary">{type}</Badge>;
+    }
+  };
+
+  const getStatusFilterLabel = (value: string) => {
+    switch (value) {
+      case "all":
+        return tFines("filters.allStatus");
+      case "outstanding":
+        return tFines("status.outstanding");
+      case "paid":
+        return tFines("status.paid");
+      case "waived":
+        return tFines("status.waived");
+      default:
+        return value;
     }
   };
 
@@ -245,49 +259,49 @@ export default function LibraryFinesPage() {
             <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
               <div className="flex items-center gap-2 text-destructive">
                 <AlertTriangle className="h-4 w-4" />
-                <span className="text-sm">Outstanding</span>
+                <span className="text-sm">{tFines("stats.outstanding")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium text-destructive">
                 {formatCurrency(statistics.totalOutstanding, locale, "USD")}
               </p>
               <p className="text-xs text-muted-foreground">
-                {statistics.outstandingCount} fines
+                {statistics.outstandingCount} {tFines("stats.fines")}
               </p>
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-green-500">
                 <CheckCircle className="h-4 w-4" />
-                <span className="text-sm">Collected</span>
+                <span className="text-sm">{tFines("stats.collected")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
                 {formatCurrency(statistics.totalCollected, locale, "USD")}
               </p>
               <p className="text-xs text-muted-foreground">
-                {statistics.paidCount} paid
+                {statistics.paidCount} {tFines("stats.paid")}
               </p>
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <X className="h-4 w-4" />
-                <span className="text-sm">Waived</span>
+                <span className="text-sm">{tFines("stats.waived")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
                 {formatCurrency(statistics.totalWaived, locale, "USD")}
               </p>
               <p className="text-xs text-muted-foreground">
-                {statistics.waivedCount} waived
+                {statistics.waivedCount} {tFines("stats.waivedCount")}
               </p>
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <CreditCard className="h-4 w-4" />
-                <span className="text-sm">Today</span>
+                <span className="text-sm">{tFines("stats.today")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
                 {formatCurrency(statistics.collectedToday, locale, "USD")}
               </p>
               <p className="text-xs text-muted-foreground">
-                {statistics.createdToday} new fines
+                {statistics.createdToday} {tFines("stats.createdToday")}
               </p>
             </div>
           </div>
@@ -320,12 +334,14 @@ export default function LibraryFinesPage() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-40">
-                  <SelectValue />
+                  <SelectValue>
+                    {getStatusFilterLabel(statusFilter)}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {STATUS_FILTERS.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
+                  {STATUS_FILTER_VALUES.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {getStatusFilterLabel(value)}
                     </SelectItem>
                   ))}
                 </SelectContent>

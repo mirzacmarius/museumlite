@@ -37,11 +37,23 @@ interface ParsedRow {
   notes?: string;
 }
 
+interface ParseError {
+  type:
+    | "csvMustHaveRows"
+    | "missingHeaderRow"
+    | "missingRequiredColumns"
+    | "nameRequired"
+    | "typeRequired";
+  row?: number;
+  columns?: string;
+}
+
 interface ImportState {
   step: "upload" | "preview" | "importing" | "complete";
   file: File | null;
   rows: ParsedRow[];
-  errors: string[];
+  parseErrors: ParseError[];
+  runtimeErrors: string[];
   jobId: Id<"importJobs"> | null;
 }
 
@@ -49,18 +61,18 @@ const REQUIRED_COLUMNS = ["name", "type"];
 const OPTIONAL_COLUMNS = ["parentLocation", "address", "capacity", "notes"];
 const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
 
-function parseCSV(text: string): { rows: ParsedRow[]; errors: string[] } {
+function parseCSV(text: string): { rows: ParsedRow[]; errors: ParseError[] } {
   const lines = text.split(/\r?\n/).filter((line) => line.trim());
   if (lines.length < 2) {
     return {
       rows: [],
-      errors: ["CSV must have a header row and at least one data row"],
+      errors: [{ type: "csvMustHaveRows" }],
     };
   }
 
   const headerLine = lines[0];
   if (!headerLine) {
-    return { rows: [], errors: ["Missing header row"] };
+    return { rows: [], errors: [{ type: "missingHeaderRow" }] };
   }
 
   const headers = headerLine
@@ -74,7 +86,9 @@ function parseCSV(text: string): { rows: ParsedRow[]; errors: string[] } {
   if (missingRequired.length > 0) {
     return {
       rows: [],
-      errors: [`Missing required columns: ${missingRequired.join(", ")}`],
+      errors: [
+        { type: "missingRequiredColumns", columns: missingRequired.join(", ") },
+      ],
     };
   }
 
@@ -87,7 +101,7 @@ function parseCSV(text: string): { rows: ParsedRow[]; errors: string[] } {
   }
 
   const rows: ParsedRow[] = [];
-  const errors: string[] = [];
+  const errors: ParseError[] = [];
 
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
@@ -105,12 +119,12 @@ function parseCSV(text: string): { rows: ParsedRow[]; errors: string[] } {
     const type = getValue("type");
 
     if (!name) {
-      errors.push(`Row ${i + 1}: Name is required`);
+      errors.push({ type: "nameRequired", row: i + 1 });
       continue;
     }
 
     if (!type) {
-      errors.push(`Row ${i + 1}: Type is required`);
+      errors.push({ type: "typeRequired", row: i + 1 });
       continue;
     }
 
@@ -154,8 +168,31 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
+function useTranslatedParseError() {
+  const t = useScopedI18n("locations.importErrors");
+
+  return (error: ParseError): string => {
+    const rowPrefix = error.row ? `Row ${error.row}: ` : "";
+    switch (error.type) {
+      case "csvMustHaveRows":
+        return t("csvMustHaveRows");
+      case "missingHeaderRow":
+        return t("missingHeaderRow");
+      case "missingRequiredColumns":
+        return t("missingRequiredColumns", { columns: error.columns ?? "" });
+      case "nameRequired":
+        return `${rowPrefix}${t("nameRequired")}`;
+      case "typeRequired":
+        return `${rowPrefix}${t("typeRequired")}`;
+      default:
+        return "Unknown error";
+    }
+  };
+}
+
 export default function ImportLocationsPage() {
   const t = useScopedI18n("locations");
+  const translateParseError = useTranslatedParseError();
   const { currentOrganizationId } = useOrganization();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -163,7 +200,8 @@ export default function ImportLocationsPage() {
     step: "upload",
     file: null,
     rows: [],
-    errors: [],
+    parseErrors: [],
+    runtimeErrors: [],
     jobId: null,
   });
 
@@ -189,7 +227,8 @@ export default function ImportLocationsPage() {
           step: "preview",
           file,
           rows,
-          errors,
+          parseErrors: errors,
+          runtimeErrors: [],
           jobId: null,
         });
       };
@@ -238,25 +277,26 @@ export default function ImportLocationsPage() {
       setState((prev) => ({
         ...prev,
         step: "complete",
-        errors: [...prev.errors, ...allErrors],
+        runtimeErrors: [...prev.runtimeErrors, ...allErrors],
       }));
     } catch (err) {
       setState((prev) => ({
         ...prev,
-        errors: [
-          ...prev.errors,
-          err instanceof Error ? err.message : "Import failed",
+        runtimeErrors: [
+          ...prev.runtimeErrors,
+          err instanceof Error ? err.message : t("importFailed"),
         ],
       }));
     }
-  }, [currentOrganizationId, state.rows, createImportJob, importBatch]);
+  }, [currentOrganizationId, state.rows, createImportJob, importBatch, t]);
 
   const handleReset = useCallback(() => {
     setState({
       step: "upload",
       file: null,
       rows: [],
-      errors: [],
+      parseErrors: [],
+      runtimeErrors: [],
       jobId: null,
     });
   }, []);
@@ -397,22 +437,28 @@ export default function ImportLocationsPage() {
                   </div>
                 </div>
 
-                {state.errors.length > 0 && (
+                {state.parseErrors.length > 0 && (
                   <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
                     <div className="flex items-center gap-2 text-destructive">
                       <AlertCircle className="h-4 w-4" />
                       <span className="font-medium">
                         {t("validationErrors", {
-                          count: state.errors.length.toString(),
+                          count: state.parseErrors.length.toString(),
                         })}
                       </span>
                     </div>
                     <ul className="mt-2 space-y-1 text-sm text-destructive">
-                      {state.errors.slice(0, 5).map((error) => (
-                        <li key={error}>{error}</li>
+                      {state.parseErrors.slice(0, 5).map((error, index) => (
+                        <li key={`${error.type}-${error.row ?? index}`}>
+                          {translateParseError(error)}
+                        </li>
                       ))}
-                      {state.errors.length > 5 && (
-                        <li>... and {state.errors.length - 5} more</li>
+                      {state.parseErrors.length > 5 && (
+                        <li>
+                          {t("importErrors.andMore", {
+                            count: (state.parseErrors.length - 5).toString(),
+                          })}
+                        </li>
                       )}
                     </ul>
                   </div>
@@ -423,12 +469,14 @@ export default function ImportLocationsPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-12">#</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Parent Location</TableHead>
-                        <TableHead>Address</TableHead>
-                        <TableHead>Capacity</TableHead>
-                        <TableHead>Notes</TableHead>
+                        <TableHead>{t("tableHeaders.name")}</TableHead>
+                        <TableHead>{t("tableHeaders.type")}</TableHead>
+                        <TableHead>
+                          {t("tableHeaders.parentLocation")}
+                        </TableHead>
+                        <TableHead>{t("tableHeaders.address")}</TableHead>
+                        <TableHead>{t("tableHeaders.capacity")}</TableHead>
+                        <TableHead>{t("tableHeaders.notes")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -451,7 +499,10 @@ export default function ImportLocationsPage() {
                   </Table>
                   {state.rows.length > 20 && (
                     <div className="border-t border-border p-3 text-center text-sm text-muted-foreground">
-                      Showing 20 of {state.rows.length} rows
+                      {t("importErrors.showingRows", {
+                        shown: "20",
+                        total: state.rows.length.toString(),
+                      })}
                     </div>
                   )}
                 </div>
@@ -493,22 +544,26 @@ export default function ImportLocationsPage() {
                   })}
                 </p>
 
-                {state.errors.length > 0 && (
+                {state.runtimeErrors.length > 0 && (
                   <div className="mt-6 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 text-left">
                     <div className="flex items-center gap-2 text-amber-600">
                       <AlertCircle className="h-4 w-4" />
                       <span className="font-medium">
                         {t("rowsHadIssues", {
-                          count: state.errors.length.toString(),
+                          count: state.runtimeErrors.length.toString(),
                         })}
                       </span>
                     </div>
                     <ul className="mt-2 space-y-1 text-sm text-amber-600">
-                      {state.errors.slice(0, 5).map((error) => (
+                      {state.runtimeErrors.slice(0, 5).map((error) => (
                         <li key={error}>{error}</li>
                       ))}
-                      {state.errors.length > 5 && (
-                        <li>... and {state.errors.length - 5} more</li>
+                      {state.runtimeErrors.length > 5 && (
+                        <li>
+                          {t("importErrors.andMore", {
+                            count: (state.runtimeErrors.length - 5).toString(),
+                          })}
+                        </li>
                       )}
                     </ul>
                   </div>

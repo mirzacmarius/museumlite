@@ -4,7 +4,7 @@ import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -28,6 +28,7 @@ export default function AccessionDetailPage() {
   const accessionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
   const locale = useCurrentLocale();
+  const tCommon = useScopedI18n("common");
 
   const accession = useQuery(
     api.accessions.get,
@@ -47,7 +48,7 @@ export default function AccessionDetailPage() {
   if (accession === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
   }

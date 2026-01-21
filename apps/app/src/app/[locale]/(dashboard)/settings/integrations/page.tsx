@@ -44,7 +44,9 @@ const INTEGRATION_ICONS: Record<string, React.ReactNode> = {
 
 export default function IntegrationsSettingsPage() {
   const { currentOrganizationId } = useOrganization();
-  const t = useScopedI18n("common.toast");
+  const tToast = useScopedI18n("common.toast");
+  const t = useScopedI18n("settings.integrations");
+  const tCommon = useScopedI18n("common");
   const searchParams = useSearchParams();
   const router = useRouter();
   const [disableDialogOpen, setDisableDialogOpen] = useState(false);
@@ -81,7 +83,7 @@ export default function IntegrationsSettingsPage() {
       newParams.delete("subscribed");
       router.replace(`?${newParams.toString()}`);
       setPendingEnableIntegration(subscribedIntegrationId);
-      toast.info(t("waitingSubscription"));
+      toast.info(tToast("waitingSubscription"));
     }
   }, [searchParams, currentOrganizationId, availableIntegrations, router]);
 
@@ -98,18 +100,18 @@ export default function IntegrationsSettingsPage() {
         });
 
         if (result.ok) {
-          toast.success(t("integrationEnabled"));
+          toast.success(tToast("integrationEnabled"));
         } else if (result.reason === "already_enabled") {
-          toast.info(t("integrationAlreadyEnabled"));
+          toast.info(tToast("integrationAlreadyEnabled"));
         } else if (result.reason === "subscription_required") {
-          toast.error(t("subscriptionNotActive"));
+          toast.error(tToast("subscriptionNotActive"));
           return;
         }
 
         setPendingEnableIntegration(null);
       } catch (error) {
         console.error("Failed to auto-enable integration:", error);
-        toast.error(t("integrationEnableFailed"));
+        toast.error(tToast("integrationEnableFailed"));
       }
     };
 
@@ -180,9 +182,7 @@ export default function IntegrationsSettingsPage() {
     return (
       <div className="flex h-full w-full flex-col gap-6">
         <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card p-6">
-          <p className="text-muted-foreground">
-            Please select an organization to manage integrations.
-          </p>
+          <p className="text-muted-foreground">{t("selectOrganization")}</p>
         </div>
       </div>
     );
@@ -206,10 +206,9 @@ export default function IntegrationsSettingsPage() {
       {/* Header */}
       <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
         <div className="flex w-full flex-col gap-2 p-6">
-          <h2 className="text-xl font-medium text-primary">Integrations</h2>
+          <h2 className="text-xl font-medium text-primary">{t("title")}</h2>
           <p className="text-sm font-normal text-primary/60">
-            Enable additional features and modules for your organization.
-            Integrations add new capabilities tailored to specific use cases.
+            {t("description")}
           </p>
         </div>
       </div>
@@ -241,7 +240,7 @@ export default function IntegrationsSettingsPage() {
                       {isEnabled && (
                         <Badge variant="secondary" className="text-xs">
                           <Check className="mr-1 h-3 w-3" />
-                          Enabled
+                          {t("enabled")}
                         </Badge>
                       )}
                     </div>
@@ -250,7 +249,7 @@ export default function IntegrationsSettingsPage() {
                     </p>
                     {requiresSubscription && (
                       <p className="mt-1 text-xs font-medium text-muted-foreground">
-                        Requires active subscription.
+                        {t("requiresSubscription")}
                       </p>
                     )}
                   </div>
@@ -272,7 +271,7 @@ export default function IntegrationsSettingsPage() {
               {/* Features */}
               <div className="border-t border-border px-6 py-4">
                 <h4 className="mb-3 text-sm font-medium text-muted-foreground">
-                  Features included:
+                  {t("featuresIncluded")}
                 </h4>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {integration.features.map((feature) => (
@@ -291,11 +290,13 @@ export default function IntegrationsSettingsPage() {
               {isEnabled && (
                 <div className="flex items-center justify-between border-t border-border bg-secondary/50 px-6 py-3 dark:bg-card">
                   <p className="text-sm text-muted-foreground">
-                    Configure {integration.name.toLowerCase()} settings
+                    {t("configureSettings", {
+                      name: integration.name.toLowerCase(),
+                    })}
                   </p>
                   <Button variant="ghost" size="sm" asChild>
                     <Link href={`/settings/integrations/${integration.id}`}>
-                      Settings
+                      {t("settings")}
                       <ChevronRight className="ml-1 h-4 w-4" />
                     </Link>
                   </Button>
@@ -310,17 +311,15 @@ export default function IntegrationsSettingsPage() {
       <AlertDialog open={disableDialogOpen} onOpenChange={setDisableDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Disable Integration</AlertDialogTitle>
+            <AlertDialogTitle>{t("disableIntegration")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to disable this integration? The data will
-              be preserved, but the features will no longer be accessible until
-              re-enabled.
+              {t("disableDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDisable}>
-              Disable
+              {t("disable")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -330,34 +329,28 @@ export default function IntegrationsSettingsPage() {
       <Dialog open={subscribeDialogOpen} onOpenChange={setSubscribeDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Subscribe to Enable</DialogTitle>
-            <DialogDescription>
-              This integration requires an active subscription. Subscribe now to
-              unlock all features.
-            </DialogDescription>
+            <DialogTitle>{t("subscribeToEnable")}</DialogTitle>
+            <DialogDescription>{t("subscribeDescription")}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-4">
-            <p className="text-sm text-muted-foreground">
-              You&apos;ll be redirected to our secure checkout page to complete
-              your subscription.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("redirectInfo")}</p>
           </div>
           <div className="flex justify-end gap-2">
             <Button
               variant="outline"
               onClick={() => setSubscribeDialogOpen(false)}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button onClick={handleSubscribe} disabled={isCreatingCheckout}>
               {isCreatingCheckout ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Redirecting...
+                  {t("redirecting")}
                 </>
               ) : (
                 <>
-                  Subscribe
+                  {t("subscribe")}
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </>
               )}

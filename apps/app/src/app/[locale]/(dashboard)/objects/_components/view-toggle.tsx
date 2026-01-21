@@ -1,8 +1,9 @@
 "use client";
 
+import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
-import { LayoutGrid, List } from "lucide-react";
 import { cn } from "@v1/ui/utils";
+import { LayoutGrid, List } from "lucide-react";
 
 export type ViewMode = "list" | "grid";
 
@@ -13,6 +14,7 @@ interface ViewToggleProps {
 }
 
 export function ViewToggle({ value, onChange, className }: ViewToggleProps) {
+  const tCommon = useScopedI18n("common");
   return (
     <div
       className={cn("inline-flex rounded-md border border-border", className)}
@@ -25,7 +27,7 @@ export function ViewToggle({ value, onChange, className }: ViewToggleProps) {
           value === "list" && "bg-accent text-accent-foreground",
         )}
         onClick={() => onChange("list")}
-        aria-label="List view"
+        aria-label={tCommon("listView")}
       >
         <List className="h-4 w-4" />
       </Button>
@@ -37,7 +39,7 @@ export function ViewToggle({ value, onChange, className }: ViewToggleProps) {
           value === "grid" && "bg-accent text-accent-foreground",
         )}
         onClick={() => onChange("grid")}
-        aria-label="Grid view"
+        aria-label={tCommon("gridView")}
       >
         <LayoutGrid className="h-4 w-4" />
       </Button>

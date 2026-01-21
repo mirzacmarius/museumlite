@@ -30,24 +30,19 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 
-const ITEM_TYPES = [
-  { value: "all", label: "All Types" },
-  { value: "book", label: "Book" },
-  { value: "ebook", label: "E-Book" },
-  { value: "audiobook", label: "Audiobook" },
-  { value: "periodical", label: "Periodical" },
-  { value: "newspaper", label: "Newspaper" },
-  { value: "dvd", label: "DVD" },
-  { value: "cd", label: "CD" },
-  { value: "other", label: "Other" },
+const ITEM_TYPE_VALUES = [
+  "all",
+  "book",
+  "ebook",
+  "audiobook",
+  "periodical",
+  "newspaper",
+  "dvd",
+  "cd",
+  "other",
 ] as const;
 
-const STATUS_FILTERS = [
-  { value: "all", label: "All Status" },
-  { value: "published", label: "Published" },
-  { value: "draft", label: "Draft" },
-  { value: "archived", label: "Archived" },
-] as const;
+const STATUS_FILTER_VALUES = ["all", "published", "draft", "archived"] as const;
 
 type ItemType =
   | "book"
@@ -69,6 +64,16 @@ export default function LibraryCatalogPage() {
   const t = useScopedI18n("library.placeholders");
   const tLib = useScopedI18n("library");
   const tCat = useScopedI18n("library.catalog");
+
+  const getItemTypeLabel = (value: string) => {
+    if (value === "all") return tLib("itemTypes.all");
+    return tLib(`itemTypes.${value}` as "itemTypes.book");
+  };
+
+  const getStatusFilterLabel = (value: string) => {
+    if (value === "all") return tLib("statusFilters.all");
+    return tLib(`statusFilters.${value}` as "statusFilters.published");
+  };
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -160,15 +165,15 @@ export default function LibraryCatalogPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "draft":
-        return <Badge variant="secondary">Draft</Badge>;
+        return <Badge variant="secondary">{tCat("status.draft")}</Badge>;
       case "published":
         return (
           <Badge variant="default" className="bg-green-500">
-            Published
+            {tCat("status.published")}
           </Badge>
         );
       case "archived":
-        return <Badge variant="outline">Archived</Badge>;
+        return <Badge variant="outline">{tCat("status.archived")}</Badge>;
       default:
         return null;
     }
@@ -219,24 +224,26 @@ export default function LibraryCatalogPage() {
               </div>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="w-40">
-                  <SelectValue />
+                  <SelectValue>{getItemTypeLabel(typeFilter)}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {ITEM_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
+                  {ITEM_TYPE_VALUES.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {getItemTypeLabel(value)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-40">
-                  <SelectValue />
+                  <SelectValue>
+                    {getStatusFilterLabel(statusFilter)}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {STATUS_FILTERS.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
+                  {STATUS_FILTER_VALUES.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {getStatusFilterLabel(value)}
                     </SelectItem>
                   ))}
                 </SelectContent>

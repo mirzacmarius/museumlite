@@ -26,25 +26,25 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const ITEM_TYPES = [
-  { value: "book", label: "Book" },
-  { value: "ebook", label: "E-Book" },
-  { value: "audiobook", label: "Audiobook" },
-  { value: "periodical", label: "Periodical" },
-  { value: "newspaper", label: "Newspaper" },
-  { value: "dvd", label: "DVD" },
-  { value: "cd", label: "CD" },
-  { value: "map", label: "Map" },
-  { value: "manuscript", label: "Manuscript" },
-  { value: "thesis", label: "Thesis" },
-  { value: "other", label: "Other" },
+const ITEM_TYPE_VALUES = [
+  "book",
+  "ebook",
+  "audiobook",
+  "periodical",
+  "newspaper",
+  "dvd",
+  "cd",
+  "map",
+  "manuscript",
+  "thesis",
+  "other",
 ] as const;
 
-const TARGET_AUDIENCES = [
-  { value: "children", label: "Children" },
-  { value: "young_adult", label: "Young Adult" },
-  { value: "adult", label: "Adult" },
-  { value: "all_ages", label: "All Ages" },
+const TARGET_AUDIENCE_VALUES = [
+  "children",
+  "young_adult",
+  "adult",
+  "all_ages",
 ] as const;
 
 type ItemType = (typeof ITEM_TYPES)[number]["value"];
@@ -57,6 +57,25 @@ export default function EditCatalogItemPage() {
   const { currentOrganizationId } = useOrganization();
   const { hasModule } = useFeatureAccess();
   const t = useScopedI18n("library.placeholders");
+  const tEdit = useScopedI18n("library.catalog.edit");
+  const tNew = useScopedI18n("library.catalog.new");
+  const tLib = useScopedI18n("library");
+
+  const getItemTypeLabel = (value: string) => {
+    return tLib(`itemTypes.${value}` as "itemTypes.book");
+  };
+
+  const getAudienceLabel = (value: string) => {
+    const audienceMap: Record<string, string> = {
+      children: "children",
+      young_adult: "youngAdult",
+      adult: "adult",
+      all_ages: "allAges",
+    };
+    return tLib(
+      `targetAudiences.${audienceMap[value] ?? value}` as "targetAudiences.children",
+    );
+  };
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -270,7 +289,7 @@ export default function EditCatalogItemPage() {
 
       router.push(`/library/catalog/${itemId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update item");
+      setError(err instanceof Error ? err.message : tEdit("updateFailed"));
     } finally {
       setIsSaving(false);
     }
@@ -279,7 +298,7 @@ export default function EditCatalogItemPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Please select an organization.</p>
+        <p className="text-muted-foreground">{tEdit("selectOrganization")}</p>
       </div>
     );
   }
@@ -288,11 +307,11 @@ export default function EditCatalogItemPage() {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <div className="text-center">
-          <p className="text-muted-foreground">
-            Library integration is not enabled.
-          </p>
+          <p className="text-muted-foreground">{tEdit("notEnabled")}</p>
           <Button asChild className="mt-4">
-            <Link href="/settings/integrations">Enable Integration</Link>
+            <Link href="/settings/integrations">
+              {tLib("enableIntegration")}
+            </Link>
           </Button>
         </div>
       </div>
@@ -311,9 +330,9 @@ export default function EditCatalogItemPage() {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <div className="text-center">
-          <p className="text-muted-foreground">Item not found</p>
+          <p className="text-muted-foreground">{tEdit("itemNotFound")}</p>
           <Button asChild className="mt-4">
-            <Link href="/library/catalog">Back to Catalog</Link>
+            <Link href="/library/catalog">{tEdit("backToCatalog")}</Link>
           </Button>
         </div>
       </div>
@@ -329,13 +348,13 @@ export default function EditCatalogItemPage() {
             <Button variant="ghost" size="sm" asChild>
               <Link href={`/library/catalog/${itemId}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
+                {tEdit("back")}
               </Link>
             </Button>
             <div>
-              <h1 className="text-xl font-medium">Edit Catalog Item</h1>
+              <h1 className="text-xl font-medium">{tEdit("pageTitle")}</h1>
               <p className="text-sm text-muted-foreground">
-                Update catalog item information
+                {tEdit("pageDescription")}
               </p>
             </div>
           </div>
@@ -364,11 +383,11 @@ export default function EditCatalogItemPage() {
           {/* Basic Information */}
           <div className="rounded-lg border border-border bg-card">
             <div className="border-b border-border p-6">
-              <h2 className="text-lg font-medium">Basic Information</h2>
+              <h2 className="text-lg font-medium">{tNew("basicInfo")}</h2>
             </div>
             <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="itemType">Item Type *</Label>
+                <Label htmlFor="itemType">{tNew("itemType")}</Label>
                 <Select
                   value={formData.itemType}
                   onValueChange={(value: ItemType) =>
@@ -376,12 +395,14 @@ export default function EditCatalogItemPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue>
+                      {getItemTypeLabel(formData.itemType)}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {ITEM_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
+                    {ITEM_TYPE_VALUES.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {getItemTypeLabel(value)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -389,7 +410,7 @@ export default function EditCatalogItemPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="language">Language *</Label>
+                <Label htmlFor="language">{tNew("language")}</Label>
                 <Input
                   id="language"
                   value={formData.language}
@@ -405,7 +426,7 @@ export default function EditCatalogItemPage() {
               </div>
 
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="title">Title *</Label>
+                <Label htmlFor="title">{tNew("titleLabel")}</Label>
                 <Input
                   id="title"
                   value={formData.title}
@@ -418,7 +439,7 @@ export default function EditCatalogItemPage() {
               </div>
 
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="subtitle">Subtitle</Label>
+                <Label htmlFor="subtitle">{tNew("subtitle")}</Label>
                 <Input
                   id="subtitle"
                   value={formData.subtitle}
@@ -433,14 +454,16 @@ export default function EditCatalogItemPage() {
               </div>
 
               <div className="space-y-2 sm:col-span-2">
-                <Label>Authors</Label>
+                <Label>{tNew("authors")}</Label>
                 {formData.authors.map((author, index) => (
                   // biome-ignore lint/suspicious/noArrayIndexKey: Index needed for editable form array
                   <div key={index} className="flex gap-2">
                     <Input
                       value={author}
                       onChange={(e) => updateAuthor(index, e.target.value)}
-                      placeholder={`Author ${index + 1}`}
+                      placeholder={tNew("authorPlaceholder", {
+                        number: index + 1,
+                      })}
                     />
                     {formData.authors.length > 1 && (
                       <Button
@@ -461,7 +484,7 @@ export default function EditCatalogItemPage() {
                   onClick={addAuthor}
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Author
+                  {tNew("addAuthor")}
                 </Button>
               </div>
             </div>
@@ -470,11 +493,11 @@ export default function EditCatalogItemPage() {
           {/* Identifiers */}
           <div className="rounded-lg border border-border bg-card">
             <div className="border-b border-border p-6">
-              <h2 className="text-lg font-medium">Identifiers</h2>
+              <h2 className="text-lg font-medium">{tNew("identifiers")}</h2>
             </div>
             <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="isbn">ISBN-10</Label>
+                <Label htmlFor="isbn">{tNew("isbn10")}</Label>
                 <Input
                   id="isbn"
                   value={formData.isbn}
@@ -485,7 +508,7 @@ export default function EditCatalogItemPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="isbn13">ISBN-13</Label>
+                <Label htmlFor="isbn13">{tNew("isbn13")}</Label>
                 <Input
                   id="isbn13"
                   value={formData.isbn13}
@@ -496,7 +519,7 @@ export default function EditCatalogItemPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="issn">ISSN</Label>
+                <Label htmlFor="issn">{tNew("issn")}</Label>
                 <Input
                   id="issn"
                   value={formData.issn}
@@ -507,7 +530,7 @@ export default function EditCatalogItemPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="barcode">Barcode</Label>
+                <Label htmlFor="barcode">{tNew("barcode")}</Label>
                 <Input
                   id="barcode"
                   value={formData.barcode}
@@ -521,7 +544,7 @@ export default function EditCatalogItemPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="callNumber">Call Number</Label>
+                <Label htmlFor="callNumber">{tNew("callNumber")}</Label>
                 <Input
                   id="callNumber"
                   value={formData.callNumber}
@@ -535,7 +558,9 @@ export default function EditCatalogItemPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="accessionNumber">Accession Number</Label>
+                <Label htmlFor="accessionNumber">
+                  {tNew("accessionNumber")}
+                </Label>
                 <Input
                   id="accessionNumber"
                   value={formData.accessionNumber}
@@ -554,11 +579,13 @@ export default function EditCatalogItemPage() {
           {/* Publication Details */}
           <div className="rounded-lg border border-border bg-card">
             <div className="border-b border-border p-6">
-              <h2 className="text-lg font-medium">Publication Details</h2>
+              <h2 className="text-lg font-medium">
+                {tNew("publicationDetails")}
+              </h2>
             </div>
             <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="publisher">Publisher</Label>
+                <Label htmlFor="publisher">{tNew("publisher")}</Label>
                 <Input
                   id="publisher"
                   value={formData.publisher}
@@ -572,7 +599,9 @@ export default function EditCatalogItemPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="publicationYear">Publication Year</Label>
+                <Label htmlFor="publicationYear">
+                  {tNew("publicationYear")}
+                </Label>
                 <Input
                   id="publicationYear"
                   type="number"
@@ -587,7 +616,9 @@ export default function EditCatalogItemPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="publicationPlace">Publication Place</Label>
+                <Label htmlFor="publicationPlace">
+                  {tNew("publicationPlace")}
+                </Label>
                 <Input
                   id="publicationPlace"
                   value={formData.publicationPlace}
@@ -601,7 +632,7 @@ export default function EditCatalogItemPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edition">Edition</Label>
+                <Label htmlFor="edition">{tNew("edition")}</Label>
                 <Input
                   id="edition"
                   value={formData.edition}
@@ -615,7 +646,7 @@ export default function EditCatalogItemPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="pages">Pages</Label>
+                <Label htmlFor="pages">{tNew("pages")}</Label>
                 <Input
                   id="pages"
                   type="number"
@@ -627,7 +658,7 @@ export default function EditCatalogItemPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="format">Format</Label>
+                <Label htmlFor="format">{tNew("format")}</Label>
                 <Input
                   id="format"
                   value={formData.format}
@@ -643,11 +674,11 @@ export default function EditCatalogItemPage() {
           {/* Classification */}
           <div className="rounded-lg border border-border bg-card">
             <div className="border-b border-border p-6">
-              <h2 className="text-lg font-medium">Classification</h2>
+              <h2 className="text-lg font-medium">{tNew("classification")}</h2>
             </div>
             <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="deweyDecimal">Dewey Decimal</Label>
+                <Label htmlFor="deweyDecimal">{tNew("deweyDecimal")}</Label>
                 <Input
                   id="deweyDecimal"
                   value={formData.deweyDecimal}
@@ -661,7 +692,9 @@ export default function EditCatalogItemPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lcClassification">Library of Congress</Label>
+                <Label htmlFor="lcClassification">
+                  {tNew("lcClassification")}
+                </Label>
                 <Input
                   id="lcClassification"
                   value={formData.lcClassification}
@@ -675,7 +708,7 @@ export default function EditCatalogItemPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="categories">Categories</Label>
+                <Label htmlFor="categories">{tNew("categories")}</Label>
                 <Input
                   id="categories"
                   value={formData.categories}
@@ -689,7 +722,7 @@ export default function EditCatalogItemPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="genres">Genres</Label>
+                <Label htmlFor="genres">{tNew("genres")}</Label>
                 <Input
                   id="genres"
                   value={formData.genres}
@@ -700,7 +733,7 @@ export default function EditCatalogItemPage() {
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="subjects">Subjects</Label>
+                <Label htmlFor="subjects">{tNew("subjects")}</Label>
                 <Input
                   id="subjects"
                   value={formData.subjects}
@@ -714,7 +747,7 @@ export default function EditCatalogItemPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="targetAudience">Target Audience</Label>
+                <Label htmlFor="targetAudience">{tNew("targetAudience")}</Label>
                 <Select
                   value={formData.targetAudience}
                   onValueChange={(value: TargetAudience) =>
@@ -725,16 +758,16 @@ export default function EditCatalogItemPage() {
                     <SelectValue placeholder={t("selectAudience")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {TARGET_AUDIENCES.map((audience) => (
-                      <SelectItem key={audience.value} value={audience.value}>
-                        {audience.label}
+                    {TARGET_AUDIENCE_VALUES.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {getAudienceLabel(value)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="series">Series</Label>
+                <Label htmlFor="series">{tNew("series")}</Label>
                 <Input
                   id="series"
                   value={formData.series}
@@ -750,11 +783,13 @@ export default function EditCatalogItemPage() {
           {/* Description */}
           <div className="rounded-lg border border-border bg-card">
             <div className="border-b border-border p-6">
-              <h2 className="text-lg font-medium">Description</h2>
+              <h2 className="text-lg font-medium">
+                {tNew("descriptionLabel")}
+              </h2>
             </div>
             <div className="space-y-6 p-6">
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{tNew("descriptionLabel")}</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
@@ -769,7 +804,7 @@ export default function EditCatalogItemPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="coverImageUrl">Cover Image URL</Label>
+                <Label htmlFor="coverImageUrl">{tNew("coverImageUrl")}</Label>
                 <Input
                   id="coverImageUrl"
                   value={formData.coverImageUrl}
@@ -800,11 +835,11 @@ export default function EditCatalogItemPage() {
           {/* Notes */}
           <div className="rounded-lg border border-border bg-card">
             <div className="border-b border-border p-6">
-              <h2 className="text-lg font-medium">Notes</h2>
+              <h2 className="text-lg font-medium">{tNew("notes")}</h2>
             </div>
             <div className="space-y-6 p-6">
               <div className="space-y-2">
-                <Label htmlFor="notes">Public Notes</Label>
+                <Label htmlFor="notes">{tNew("publicNotes")}</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
@@ -816,7 +851,7 @@ export default function EditCatalogItemPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="internalNotes">Internal Notes</Label>
+                <Label htmlFor="internalNotes">{tNew("internalNotes")}</Label>
                 <Textarea
                   id="internalNotes"
                   value={formData.internalNotes}
@@ -836,7 +871,7 @@ export default function EditCatalogItemPage() {
           {/* Submit */}
           <div className="flex justify-end gap-4">
             <Button type="button" variant="outline" asChild>
-              <Link href={`/library/catalog/${itemId}`}>Cancel</Link>
+              <Link href={`/library/catalog/${itemId}`}>{tEdit("cancel")}</Link>
             </Button>
             <Button type="submit" disabled={isSaving || !formData.title.trim()}>
               {isSaving ? (
@@ -844,7 +879,7 @@ export default function EditCatalogItemPage() {
               ) : (
                 <Save className="mr-2 h-4 w-4" />
               )}
-              Save Changes
+              {tEdit("saveChanges")}
             </Button>
           </div>
         </form>

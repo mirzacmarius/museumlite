@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -35,6 +36,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function AccountDetailPage() {
+  const t = useScopedI18n("accounts");
+  const tCommon = useScopedI18n("common");
   const params = useParams();
   const router = useRouter();
   const accountId = params.id as Id<"accounts">;
@@ -55,7 +58,7 @@ export default function AccountDetailPage() {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <p className="text-muted-foreground">
-          Please select an organization to view accounts.
+          {t("selectOrganizationDescription")}
         </p>
       </div>
     );
@@ -64,7 +67,7 @@ export default function AccountDetailPage() {
   if (account === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
   }
@@ -72,7 +75,7 @@ export default function AccountDetailPage() {
   if (account === null) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Account not found</p>
+        <p className="text-muted-foreground">{t("accountNotFound")}</p>
       </div>
     );
   }

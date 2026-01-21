@@ -172,10 +172,10 @@ export default function EditExhibitionPage() {
                 <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-amber-400">
-                    Schedule Conflict Detected
+                    {t("form.scheduleConflict")}
                   </p>
                   <p className="text-xs text-amber-400/80">
-                    This object is already scheduled during the selected dates:
+                    {t("form.scheduleConflictDescription")}
                   </p>
                   <ul className="text-xs text-amber-400/80 space-y-1 ml-4 list-disc">
                     {conflicts.conflicts.map((c) => (
@@ -184,14 +184,13 @@ export default function EditExhibitionPage() {
                         {" — "}
                         {formatDate(new Date(c.startDate), locale)}
                         {c.endDate &&
-                          ` to ${formatDate(new Date(c.endDate), locale)}`}{" "}
+                          ` — ${formatDate(new Date(c.endDate), locale)}`}{" "}
                         <span className="capitalize">({c.status})</span>
                       </li>
                     ))}
                   </ul>
                   <p className="text-xs text-amber-400/60 mt-2">
-                    You can still save changes, but consider adjusting dates to
-                    avoid overlap.
+                    {t("form.scheduleConflictHint")}
                   </p>
                 </div>
               </div>
@@ -200,13 +199,13 @@ export default function EditExhibitionPage() {
 
           <div className="rounded-xl border border-border bg-muted/20 p-6 shadow-sm">
             <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6">
-              Exhibition Details
+              {t("form.exhibitionDetails")}
             </h2>
 
             <div className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="title" className="text-muted-foreground">
-                  Exhibition Title <span className="text-red-500">*</span>
+                  {t("form.titleLabel")} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="title"
@@ -221,7 +220,7 @@ export default function EditExhibitionPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="location" className="text-muted-foreground">
-                  Location / Gallery
+                  {t("form.locationLabel")}
                 </Label>
                 <Input
                   id="location"
@@ -237,7 +236,8 @@ export default function EditExhibitionPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">
-                    Start Date <span className="text-red-500">*</span>
+                    {t("form.startDateLabel")}{" "}
+                    <span className="text-red-500">*</span>
                   </Label>
                   <DatePicker
                     date={formData.startDate}
@@ -250,7 +250,9 @@ export default function EditExhibitionPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-muted-foreground">End Date</Label>
+                  <Label className="text-muted-foreground">
+                    {t("form.endDateLabel")}
+                  </Label>
                   <DatePicker
                     date={formData.endDate}
                     onSelect={(date) =>
@@ -273,11 +275,10 @@ export default function EditExhibitionPage() {
                     htmlFor="isCurrent"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground"
                   >
-                    Currently on Display?
+                    {t("form.currentlyOnDisplay")}
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Marking this as current will update the object's display
-                    status.
+                    {t("form.displayStatusHint")}
                   </p>
                 </div>
               </div>
@@ -286,7 +287,7 @@ export default function EditExhibitionPage() {
 
           <div className="rounded-xl border border-border bg-muted/20 p-6 shadow-sm">
             <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6">
-              Loan Information
+              {t("form.loanInfo")}
             </h2>
 
             <div className="space-y-6">
@@ -299,14 +300,14 @@ export default function EditExhibitionPage() {
                   }
                 />
                 <Label htmlFor="isLoan" className="text-foreground">
-                  Is this a loan exhibition?
+                  {t("form.isLoanExhibition")}
                 </Label>
               </div>
 
               {formData.isLoan && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
                   <Label htmlFor="loanVenue" className="text-muted-foreground">
-                    Loan Venue
+                    {t("form.loanVenueLabel")}
                   </Label>
                   <Input
                     id="loanVenue"
@@ -324,7 +325,7 @@ export default function EditExhibitionPage() {
 
           <div className="rounded-xl border border-border bg-muted/20 p-6 shadow-sm">
             <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6">
-              Notes
+              {t("form.notesLabel")}
             </h2>
             <div className="space-y-2">
               <Textarea
@@ -345,7 +346,7 @@ export default function EditExhibitionPage() {
               onClick={() => router.back()}
               className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
             >
-              Cancel
+              {t("actions.cancel")}
             </Button>
             <PermissionGate permission="collections.update">
               <Button
