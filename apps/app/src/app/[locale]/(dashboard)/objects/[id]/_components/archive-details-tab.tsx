@@ -349,7 +349,7 @@ export function ArchiveDetailsTab({
                 Legal Hold
               </div>
               <div className="text-sm font-medium text-foreground">
-                {details.legalHold ? "Yes" : "No"}
+                {details.legalHold ? common("yes") : common("no")}
               </div>
             </div>
           </div>
@@ -446,7 +446,7 @@ export function ArchiveDetailsTab({
                     OCR Processed
                   </div>
                   <div className="text-sm font-medium text-foreground">
-                    {details.ocrProcessed ? "Yes" : "No"}
+                    {details.ocrProcessed ? common("yes") : common("no")}
                   </div>
                 </div>
               </div>

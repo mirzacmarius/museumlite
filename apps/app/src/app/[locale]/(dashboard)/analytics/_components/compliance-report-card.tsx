@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDate } from "@/lib/format-date";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 import { Badge } from "@v1/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import {
@@ -80,12 +80,12 @@ function formatDateShort(timestamp: number, locale: string): string {
   });
 }
 
-function formatRelativeTime(timestamp: number): string {
+function formatRelativeTime(timestamp: number, todayLabel: string): string {
   const now = Date.now();
   const diff = now - timestamp;
   const days = Math.floor(diff / (24 * 60 * 60 * 1000));
 
-  if (days === 0) return "Today";
+  if (days === 0) return todayLabel;
   if (days === 1) return "1d ago";
   if (days < 30) return `${days}d ago`;
   if (days < 365) return `${Math.floor(days / 30)}mo ago`;
@@ -94,6 +94,7 @@ function formatRelativeTime(timestamp: number): string {
 
 export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
   const locale = useCurrentLocale();
+  const t = useI18n();
   const totalPending = data.accessions.pending + data.deaccessions.pending;
   const totalApproved = data.accessions.approved + data.deaccessions.approved;
   const totalRejected = data.accessions.rejected + data.deaccessions.rejected;
@@ -103,7 +104,7 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
           <FileCheck className="w-4 h-4" />
-          Compliance & Approvals
+          {t("analytics.compliance.title")}
         </CardTitle>
         <div className="grid grid-cols-3 gap-2 mt-4">
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-md p-2 text-center group hover:bg-amber-500/20 transition-colors cursor-default">
@@ -112,7 +113,7 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
               {totalPending}
             </div>
             <div className="text-[10px] text-amber-400 uppercase tracking-wider">
-              Pending
+              {t("analytics.compliance.pending")}
             </div>
           </div>
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-md p-2 text-center group hover:bg-emerald-500/20 transition-colors cursor-default">
@@ -121,7 +122,7 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
               {totalApproved}
             </div>
             <div className="text-[10px] text-emerald-400 uppercase tracking-wider">
-              Approved
+              {t("analytics.compliance.status.approved")}
             </div>
           </div>
           <div className="bg-red-500/10 border border-red-500/20 rounded-md p-2 text-center group hover:bg-red-500/20 transition-colors cursor-default">
@@ -130,7 +131,7 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
               {totalRejected}
             </div>
             <div className="text-[10px] text-red-400 uppercase tracking-wider">
-              Rejected
+              {t("analytics.compliance.status.rejected")}
             </div>
           </div>
         </div>
@@ -140,7 +141,7 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
           <TabsList className="grid w-full grid-cols-2 h-8 bg-muted/50">
             <TabsTrigger value="accessions" className="text-xs h-7 gap-1">
               <ScrollText className="w-3 h-3" />
-              Accessions
+              {t("analytics.compliance.accessions")}
               {data.accessions.pending > 0 && (
                 <Badge
                   variant="secondary"
@@ -152,7 +153,7 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
             </TabsTrigger>
             <TabsTrigger value="deaccessions" className="text-xs h-7 gap-1">
               <ScrollText className="w-3 h-3" />
-              Deaccessions
+              {t("analytics.compliance.deaccessions")}
               {data.deaccessions.pending > 0 && (
                 <Badge
                   variant="secondary"
@@ -170,20 +171,21 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
                 <div>
                   <h4 className="text-xs font-semibold text-amber-500 mb-2 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    Pending Approval ({data.accessions.pending})
+                    {t("analytics.compliance.pending")} (
+                    {data.accessions.pending})
                   </h4>
                   <div className="rounded-md border border-amber-500/20 bg-amber-500/5 overflow-hidden">
                     <Table>
                       <TableHeader>
                         <TableRow className="hover:bg-transparent border-amber-500/10 bg-amber-500/10">
                           <TableHead className="h-7 text-[10px] uppercase font-semibold text-amber-400">
-                            Acc. #
+                            {t("analytics.compliance.accessionNumber")}
                           </TableHead>
                           <TableHead className="h-7 text-[10px] uppercase font-semibold text-amber-400">
-                            Source
+                            {t("analytics.compliance.source")}
                           </TableHead>
                           <TableHead className="h-7 text-[10px] uppercase font-semibold text-amber-400 text-right">
-                            Received
+                            {t("analytics.compliance.received")}
                           </TableHead>
                         </TableRow>
                       </TableHeader>
@@ -218,20 +220,20 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
               <div>
                 <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" />
-                  Recent Activity
+                  {t("analytics.compliance.recentActivity")}
                 </h4>
                 <div className="rounded-md border border-border bg-background/50 overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent border-border bg-muted/30">
                         <TableHead className="h-7 text-[10px] uppercase font-semibold">
-                          Acc. #
+                          {t("analytics.compliance.accessionNumber")}
                         </TableHead>
                         <TableHead className="h-7 text-[10px] uppercase font-semibold">
-                          By
+                          {t("analytics.compliance.by")}
                         </TableHead>
                         <TableHead className="h-7 text-[10px] uppercase font-semibold text-right">
-                          Status
+                          {t("common.status")}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -242,7 +244,7 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
                             colSpan={3}
                             className="h-16 text-center text-xs text-muted-foreground"
                           >
-                            No recent approvals
+                            {t("analytics.compliance.noRecentApprovals")}
                           </TableCell>
                         </TableRow>
                       ) : (
@@ -273,8 +275,8 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
                                   )}
                                 >
                                   {item.status === "approved"
-                                    ? "Approved"
-                                    : "Rejected"}
+                                    ? t("analytics.compliance.status.approved")
+                                    : t("analytics.compliance.status.rejected")}
                                 </Badge>
                               </TableCell>
                             </TableRow>
@@ -293,20 +295,21 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
                 <div>
                   <h4 className="text-xs font-semibold text-amber-500 mb-2 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    Pending Approval ({data.deaccessions.pending})
+                    {t("analytics.compliance.pending")} (
+                    {data.deaccessions.pending})
                   </h4>
                   <div className="rounded-md border border-amber-500/20 bg-amber-500/5 overflow-hidden">
                     <Table>
                       <TableHeader>
                         <TableRow className="hover:bg-transparent border-amber-500/10 bg-amber-500/10">
                           <TableHead className="h-7 text-[10px] uppercase font-semibold text-amber-400">
-                            Deacc. #
+                            {t("analytics.compliance.deaccessionNumber")}
                           </TableHead>
                           <TableHead className="h-7 text-[10px] uppercase font-semibold text-amber-400">
-                            Reason
+                            {t("analytics.compliance.reason")}
                           </TableHead>
                           <TableHead className="h-7 text-[10px] uppercase font-semibold text-amber-400 text-right">
-                            Date
+                            {t("analytics.compliance.received")}
                           </TableHead>
                         </TableRow>
                       </TableHeader>
@@ -344,20 +347,20 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
               <div>
                 <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" />
-                  Recent Activity
+                  {t("analytics.compliance.recentActivity")}
                 </h4>
                 <div className="rounded-md border border-border bg-background/50 overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent border-border bg-muted/30">
                         <TableHead className="h-7 text-[10px] uppercase font-semibold">
-                          Deacc. #
+                          {t("analytics.compliance.deaccessionNumber")}
                         </TableHead>
                         <TableHead className="h-7 text-[10px] uppercase font-semibold">
-                          By
+                          {t("analytics.compliance.by")}
                         </TableHead>
                         <TableHead className="h-7 text-[10px] uppercase font-semibold text-right">
-                          Status
+                          {t("common.status")}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -368,7 +371,7 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
                             colSpan={3}
                             className="h-16 text-center text-xs text-muted-foreground"
                           >
-                            No recent approvals
+                            {t("analytics.compliance.noRecentApprovals")}
                           </TableCell>
                         </TableRow>
                       ) : (
@@ -399,8 +402,8 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
                                   )}
                                 >
                                   {item.status === "approved"
-                                    ? "Approved"
-                                    : "Rejected"}
+                                    ? t("analytics.compliance.status.approved")
+                                    : t("analytics.compliance.status.rejected")}
                                 </Badge>
                               </TableCell>
                             </TableRow>

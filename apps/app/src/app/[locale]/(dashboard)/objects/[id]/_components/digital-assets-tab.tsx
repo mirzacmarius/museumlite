@@ -1,5 +1,6 @@
 "use client";
 
+import { useScopedI18n } from "@/locales/client";
 import { Box, ExternalLink, Globe, Link as LinkIcon } from "lucide-react";
 import type { CollectionData } from "./types";
 
@@ -8,11 +9,12 @@ interface DigitalAssetsTabProps {
 }
 
 export function DigitalAssetsTab({ collection }: DigitalAssetsTabProps) {
+  const t = useScopedI18n("objects.digitalAssetsTab");
   return (
     <div className="space-y-6">
       <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
         <LinkIcon className="h-4 w-4 text-sky-500" />
-        Digital Resources
+        {t("title")}
       </h3>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {collection.links && collection.links.length > 0 ? (
@@ -36,7 +38,7 @@ export function DigitalAssetsTab({ collection }: DigitalAssetsTabProps) {
                 </div>
                 <div className="flex-1">
                   <p className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
-                    {link.label || "External Link"}
+                    {link.label || t("externalLink")}
                   </p>
                   <p className="truncate text-[10px] text-muted-foreground">
                     {link.url}
@@ -48,9 +50,7 @@ export function DigitalAssetsTab({ collection }: DigitalAssetsTabProps) {
           ))
         ) : (
           <div className="col-span-2 flex h-32 items-center justify-center rounded-xl border border-dashed border-border">
-            <p className="text-sm text-muted-foreground">
-              No digital assets linked
-            </p>
+            <p className="text-sm text-muted-foreground">{t("noAssets")}</p>
           </div>
         )}
       </div>

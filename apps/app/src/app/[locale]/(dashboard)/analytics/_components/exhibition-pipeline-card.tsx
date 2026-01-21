@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDate } from "@/lib/format-date";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 import { Badge } from "@v1/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import { Calendar, MapPin, Presentation } from "lucide-react";
@@ -34,11 +34,28 @@ interface ExhibitionPipelineCardProps {
 
 export function ExhibitionPipelineCard({ data }: ExhibitionPipelineCardProps) {
   const locale = useCurrentLocale();
+  const t = useI18n();
   const chartData = [
-    { label: "Active", value: data.active, color: "bg-emerald-500" },
-    { label: "Approved", value: data.approved, color: "bg-blue-500" },
-    { label: "Proposed", value: data.proposed, color: "bg-amber-500" },
-    { label: "Closed", value: data.closed, color: "bg-muted-foreground/30" },
+    {
+      label: t("analytics.exhibitions.active"),
+      value: data.active,
+      color: "bg-emerald-500",
+    },
+    {
+      label: t("analytics.exhibitions.approved"),
+      value: data.approved,
+      color: "bg-blue-500",
+    },
+    {
+      label: t("analytics.exhibitions.proposed"),
+      value: data.proposed,
+      color: "bg-amber-500",
+    },
+    {
+      label: t("analytics.exhibitions.closed"),
+      value: data.closed,
+      color: "bg-muted-foreground/30",
+    },
   ];
 
   return (
@@ -46,7 +63,7 @@ export function ExhibitionPipelineCard({ data }: ExhibitionPipelineCardProps) {
       <CardHeader>
         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
           <Presentation className="w-4 h-4" />
-          Exhibition Pipeline
+          {t("analytics.exhibitions.title")}
         </CardTitle>
         <div className="mt-4 space-y-3">
           <StackedBar data={chartData} height="h-2" />
@@ -56,21 +73,21 @@ export function ExhibitionPipelineCard({ data }: ExhibitionPipelineCardProps) {
               className="text-[10px] bg-emerald-500/10 text-emerald-500 border-emerald-500/20 gap-1 hover:bg-emerald-500/20"
             >
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              {data.active} Active
+              {data.active} {t("analytics.exhibitions.active")}
             </Badge>
             <Badge
               variant="outline"
               className="text-[10px] bg-blue-500/10 text-blue-500 border-blue-500/20 gap-1 hover:bg-blue-500/20"
             >
               <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-              {data.approved} Approved
+              {data.approved} {t("analytics.exhibitions.approved")}
             </Badge>
             <Badge
               variant="outline"
               className="text-[10px] bg-amber-500/10 text-amber-500 border-amber-500/20 gap-1 hover:bg-amber-500/20"
             >
               <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-              {data.proposed} Proposed
+              {data.proposed} {t("analytics.exhibitions.proposed")}
             </Badge>
           </div>
         </div>
@@ -83,7 +100,7 @@ export function ExhibitionPipelineCard({ data }: ExhibitionPipelineCardProps) {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
-              Active Now
+              {t("analytics.exhibitions.activeNow")}
             </h4>
             <div className="space-y-3">
               {data.activeNow.map((exh) => (
@@ -109,12 +126,12 @@ export function ExhibitionPipelineCard({ data }: ExhibitionPipelineCardProps) {
 
         <div>
           <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-            Upcoming Starts
+            {t("analytics.exhibitions.upcomingStarts")}
           </h4>
           <div className="space-y-3">
             {data.upcomingStarts.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                No upcoming exhibitions
+                {t("analytics.exhibitions.noUpcoming")}
               </p>
             ) : (
               data.upcomingStarts.map((exh) => (
@@ -138,7 +155,8 @@ export function ExhibitionPipelineCard({ data }: ExhibitionPipelineCardProps) {
                     variant="outline"
                     className="shrink-0 font-mono text-[10px] bg-blue-500/5 border-blue-500/20 text-blue-500 whitespace-nowrap"
                   >
-                    In {exh.daysUntilStart}d
+                    {t("analytics.exhibitions.startsIn")} {exh.daysUntilStart}
+                    {t("analytics.exhibitions.days").charAt(0)}
                   </Badge>
                 </div>
               ))

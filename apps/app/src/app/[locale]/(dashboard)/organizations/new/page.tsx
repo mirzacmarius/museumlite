@@ -57,7 +57,7 @@ export default function NewOrganizationPage() {
       router.push("/collections");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to create organization",
+        err instanceof Error ? err.message : t("organizationsNew.createFailed"),
       );
     } finally {
       setIsSubmitting(false);

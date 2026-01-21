@@ -168,7 +168,9 @@ function ApiKeysTab({
     try {
       await revokeKey({ organizationId, keyId });
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to revoke key");
+      alert(
+        error instanceof Error ? error.message : t("errors.failedToRevokeKey"),
+      );
     }
   };
 
@@ -176,7 +178,9 @@ function ApiKeysTab({
     try {
       await deleteKey({ organizationId, keyId });
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to delete key");
+      alert(
+        error instanceof Error ? error.message : t("errors.failedToDeleteKey"),
+      );
     }
   };
 
@@ -432,7 +436,9 @@ function WebhooksTab({
       setCreatedSecret(result.secret);
     } catch (error) {
       alert(
-        error instanceof Error ? error.message : "Failed to create webhook",
+        error instanceof Error
+          ? error.message
+          : t("errors.failedToCreateWebhook"),
       );
     } finally {
       setIsCreating(false);
@@ -447,7 +453,9 @@ function WebhooksTab({
       await updateWebhook({ webhookId, isActive: !isActive });
     } catch (error) {
       alert(
-        error instanceof Error ? error.message : "Failed to update webhook",
+        error instanceof Error
+          ? error.message
+          : t("errors.failedToUpdateWebhook"),
       );
     }
   };
@@ -457,7 +465,9 @@ function WebhooksTab({
       await deleteWebhook({ webhookId });
     } catch (error) {
       alert(
-        error instanceof Error ? error.message : "Failed to delete webhook",
+        error instanceof Error
+          ? error.message
+          : t("errors.failedToDeleteWebhook"),
       );
     }
   };
@@ -471,14 +481,14 @@ function WebhooksTab({
         id: webhookId,
         success: result.success,
         message: result.success
-          ? `Success (${result.statusCode})`
-          : result.error || "Failed",
+          ? t("webhooks.testSuccess", { statusCode: result.statusCode })
+          : result.error || t("webhooks.testFailed"),
       });
     } catch (error) {
       setTestResult({
         id: webhookId,
         success: false,
-        message: error instanceof Error ? error.message : "Test failed",
+        message: error instanceof Error ? error.message : t("testError"),
       });
     } finally {
       setTestingId(null);
@@ -565,7 +575,9 @@ function WebhooksTab({
                           handleToggleActive(webhook._id, webhook.isActive)
                         }
                       >
-                        {webhook.isActive ? "Disable" : "Enable"}
+                        {webhook.isActive
+                          ? t("webhooks.disable")
+                          : t("webhooks.enable")}
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -785,7 +797,11 @@ function UtilitiesTab({
       const result = await deleteAllLoans({ organizationId });
       setDeleteResult(result);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to create key");
+      alert(
+        error instanceof Error
+          ? error.message
+          : t("developer.errors.failedToCreateKey"),
+      );
     } finally {
       setIsCreating(false);
     }

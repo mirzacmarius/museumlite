@@ -237,9 +237,7 @@ export default function NewLoanPage() {
         });
         return updated;
       });
-      setError(
-        tActions("someCollectionsNoLongerAvailable"),
-      );
+      setError(tActions("someCollectionsNoLongerAvailable"));
       return;
     }
 
@@ -294,14 +292,11 @@ export default function NewLoanPage() {
       if (err instanceof Error) {
         // Provide more user-friendly error messages
         if (err.message.includes("already in an active loan")) {
-          errorMessage =
-            tActions("alreadyInActiveLoan");
+          errorMessage = tActions("alreadyInActiveLoan");
         } else if (err.message.includes("does not belong to organization")) {
-          errorMessage =
-            tActions("doesNotBelongToOrganization");
+          errorMessage = tActions("doesNotBelongToOrganization");
         } else if (err.message.includes("is not active")) {
-          errorMessage =
-            tActions("notActive");
+          errorMessage = tActions("notActive");
         } else {
           errorMessage = err.message;
         }
@@ -370,13 +365,13 @@ export default function NewLoanPage() {
                         <SelectItem value="incoming">
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 rounded-full bg-purple-500" />
-                            Incoming Loan
+                            {tActions("incomingLoan")}
                           </div>
                         </SelectItem>
                         <SelectItem value="outgoing">
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 rounded-full bg-cyan-500" />
-                            Outgoing Loan
+                            {tActions("outgoingLoan")}
                           </div>
                         </SelectItem>
                       </SelectContent>
@@ -385,9 +380,9 @@ export default function NewLoanPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="loanNumber">
-                      Loan Number{" "}
+                      {tActions("loanNumberLabel")}{" "}
                       <span className="text-muted-foreground font-normal text-xs">
-                        (Optional)
+                        {tActions("optional")}
                       </span>
                     </Label>
                     <Input
@@ -408,8 +403,9 @@ export default function NewLoanPage() {
                 <div className="space-y-4 rounded-lg bg-secondary/30 border border-border/50 p-4">
                   <div>
                     <Label className="mb-2 block">
-                      {formData.type === "incoming" ? tActions("lender") : tActions("borrower")}{" "}
-                      Account
+                      {formData.type === "incoming"
+                        ? tActions("lenderName")
+                        : tActions("borrowerName")}
                     </Label>
                     <AccountCombobox
                       organizationId={currentOrganizationId}
@@ -440,8 +436,10 @@ export default function NewLoanPage() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="lenderBorrowerName" className="text-xs">
-                        Name / Institution{" "}
-                        <span className="text-destructive">*</span>
+                        {tActions("nameInstitution")}{" "}
+                        <span className="text-destructive">
+                          {tActions("required")}
+                        </span>
                       </Label>
                       <Input
                         id="lenderBorrowerName"
@@ -462,7 +460,7 @@ export default function NewLoanPage() {
                         htmlFor="lenderBorrowerContact"
                         className="text-xs"
                       >
-                        Contact Details
+                        {tActions("contactInformation")}
                       </Label>
                       <Input
                         id="lenderBorrowerContact"
@@ -699,7 +697,9 @@ export default function NewLoanPage() {
                   className="min-w-[140px]"
                 >
                   <Save className="mr-2 h-4 w-4" />
-                  {isSubmitting ? tActions("saving") : tActions("createNewLoan")}
+                  {isSubmitting
+                    ? tActions("saving")
+                    : tActions("createNewLoan")}
                 </Button>
               </PermissionGate>
             </div>
@@ -724,13 +724,17 @@ export default function NewLoanPage() {
                           : "bg-cyan-50 text-cyan-700 ring-cyan-600/20 dark:bg-cyan-900/20 dark:text-cyan-400",
                       )}
                     >
-                      {formData.type === "incoming" ? "Incoming" : "Outgoing"}
+                      {formData.type === "incoming"
+                        ? t("filters.incoming")
+                        : t("filters.outgoing")}
                     </span>
                   </div>
 
                   <div className="pb-4 border-b border-border/50">
                     <span className="text-xs text-muted-foreground uppercase tracking-wide block mb-1">
-                      {formData.type === "incoming" ? tActions("lender") : tActions("borrower")}
+                      {formData.type === "incoming"
+                        ? tActions("lender")
+                        : tActions("borrower")}
                     </span>
                     <p className="text-sm font-medium text-foreground">
                       {formData.lenderBorrowerName || "—"}

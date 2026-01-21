@@ -1,7 +1,7 @@
 "use client";
 
 import { formatCurrency as formatCurrencyUtil } from "@/lib/format-number";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import { Separator } from "@v1/ui/separator";
 import { Car, DollarSign, Palette, Wine } from "lucide-react";
@@ -18,18 +18,23 @@ interface InventoryValuationCardProps {
 
 export function InventoryValuationCard({ data }: InventoryValuationCardProps) {
   const locale = useCurrentLocale();
+  const t = useI18n();
   const formatCurrency = (value: number) =>
     formatCurrencyUtil(value, locale, "USD").replace(/\.\d+$/, "");
 
   const chartData = [
     {
-      label: "Fine Art",
+      label: t("analytics.inventory.fineArt"),
       value: data.fineArt.totalValue,
       color: "bg-indigo-500",
     },
-    { label: "Wine", value: data.wine.totalValue, color: "bg-amber-500" },
     {
-      label: "Vehicles",
+      label: t("analytics.inventory.wine"),
+      value: data.wine.totalValue,
+      color: "bg-amber-500",
+    },
+    {
+      label: t("analytics.inventory.vehicles"),
       value: data.vehicles.totalValue,
       color: "bg-emerald-500",
     },
@@ -40,7 +45,7 @@ export function InventoryValuationCard({ data }: InventoryValuationCardProps) {
       <CardHeader>
         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
           <DollarSign className="w-4 h-4" />
-          Inventory Valuation
+          {t("analytics.inventory.title")}
         </CardTitle>
         <div className="mt-2">
           <div className="text-3xl font-bold text-foreground">

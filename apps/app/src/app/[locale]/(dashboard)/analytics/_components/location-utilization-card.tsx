@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/locales/client";
 import { Badge } from "@v1/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import {
@@ -85,12 +86,13 @@ function getProgressColor(percentage: number): string {
 export function LocationUtilizationCard({
   data,
 }: LocationUtilizationCardProps) {
+  const t = useI18n();
   return (
     <Card className="bg-muted/30 border-white/10 backdrop-blur-sm h-full flex flex-col col-span-1 lg:col-span-2">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
           <MapPin className="w-4 h-4" />
-          Location Utilization
+          {t("analytics.locations.title")}
         </CardTitle>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
           <div className="bg-muted/50 border border-border rounded-md p-2 text-center">
@@ -151,7 +153,7 @@ export function LocationUtilizationCard({
         <Tabs defaultValue="overview" className="h-full flex flex-col">
           <TabsList className="grid w-full grid-cols-4 h-8 bg-muted/50">
             <TabsTrigger value="overview" className="text-xs h-7">
-              Overview
+              {t("analytics.locations.overview")}
             </TabsTrigger>
             <TabsTrigger value="high" className="text-xs h-7 gap-1">
               <ArrowUp className="w-3 h-3" />

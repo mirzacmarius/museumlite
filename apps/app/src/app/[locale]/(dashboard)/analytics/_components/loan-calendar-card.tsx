@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/locales/client";
 import { Badge } from "@v1/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import {
@@ -32,18 +33,19 @@ interface LoanCalendarCardProps {
 }
 
 export function LoanCalendarCard({ data }: LoanCalendarCardProps) {
+  const t = useI18n();
   return (
     <Card className="bg-muted/30 border-white/10 backdrop-blur-sm h-full flex flex-col col-span-1 lg:col-span-2 xl:col-span-1">
       <CardHeader>
         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
           <CalendarClock className="w-4 h-4" />
-          Loan Calendar
+          {t("analytics.loanCalendar.title")}
         </CardTitle>
         <div className="grid grid-cols-4 gap-2 mt-4">
           <div className="bg-red-500/10 border border-red-500/20 rounded-md p-2 text-center group hover:bg-red-500/20 transition-colors cursor-default">
             <div className="text-lg font-bold text-red-500">{data.overdue}</div>
             <div className="text-[10px] text-red-400 uppercase tracking-wider">
-              Overdue
+              {t("analytics.loanCalendar.overdue")}
             </div>
           </div>
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-md p-2 text-center group hover:bg-amber-500/20 transition-colors cursor-default">
@@ -51,7 +53,7 @@ export function LoanCalendarCard({ data }: LoanCalendarCardProps) {
               {data.dueToday}
             </div>
             <div className="text-[10px] text-amber-400 uppercase tracking-wider">
-              Today
+              {t("analytics.loanCalendar.today")}
             </div>
           </div>
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-md p-2 text-center group hover:bg-blue-500/20 transition-colors cursor-default">
@@ -59,7 +61,7 @@ export function LoanCalendarCard({ data }: LoanCalendarCardProps) {
               {data.dueNext7Days}
             </div>
             <div className="text-[10px] text-blue-400 uppercase tracking-wider">
-              7 Days
+              {t("analytics.loanCalendar.dueSoon")}
             </div>
           </div>
           <div className="bg-muted border border-border rounded-md p-2 text-center group hover:bg-muted/80 transition-colors cursor-default">
@@ -67,14 +69,14 @@ export function LoanCalendarCard({ data }: LoanCalendarCardProps) {
               {data.dueNext30Days}
             </div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-              30 Days
+              {t("analytics.loanCalendar.upcoming")}
             </div>
           </div>
         </div>
       </CardHeader>
       <CardContent className="flex-1 overflow-auto">
         <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-          Upcoming Returns
+          {t("analytics.loanCalendar.upcoming")}
         </h4>
         <div className="rounded-md border border-border bg-background/50 overflow-hidden">
           <Table>
@@ -98,7 +100,7 @@ export function LoanCalendarCard({ data }: LoanCalendarCardProps) {
                     colSpan={3}
                     className="h-24 text-center text-xs text-muted-foreground"
                   >
-                    No upcoming returns
+                    {t("analytics.loanCalendar.noUpcoming")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -138,7 +140,7 @@ export function LoanCalendarCard({ data }: LoanCalendarCardProps) {
                         {loan.daysRemaining < 0
                           ? `${Math.abs(loan.daysRemaining)}d ago`
                           : loan.daysRemaining === 0
-                            ? "Today"
+                            ? t("analytics.loanCalendar.today")
                             : `${loan.daysRemaining}d`}
                       </Badge>
                     </TableCell>

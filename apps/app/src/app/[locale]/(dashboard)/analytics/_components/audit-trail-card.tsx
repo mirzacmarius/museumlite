@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDate } from "@/lib/format-date";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 import { Badge } from "@v1/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import {
@@ -38,14 +38,18 @@ interface AuditTrailCardProps {
   };
 }
 
-function formatRelativeTime(timestamp: number, locale: string): string {
+function formatRelativeTime(
+  timestamp: number,
+  locale: string,
+  justNowText: string,
+): string {
   const now = Date.now();
   const diff = now - timestamp;
   const minutes = Math.floor(diff / (60 * 1000));
   const hours = Math.floor(diff / (60 * 60 * 1000));
   const days = Math.floor(diff / (24 * 60 * 60 * 1000));
 
-  if (minutes < 1) return "Just now";
+  if (minutes < 1) return justNowText;
   if (minutes < 60) return `${minutes}m ago`;
   if (hours < 24) return `${hours}h ago`;
   if (days === 1) return "1d ago";
@@ -80,6 +84,7 @@ function formatEntityType(type: string): string {
 
 export function AuditTrailCard({ data }: AuditTrailCardProps) {
   const locale = useCurrentLocale();
+  const t = useI18n();
   const maxTypeCount = Math.max(...data.eventsByType.map((e) => e.count), 1);
 
   return (
@@ -87,7 +92,7 @@ export function AuditTrailCard({ data }: AuditTrailCardProps) {
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
           <History className="w-4 h-4" />
-          Audit Trail
+          {t("analytics.auditTrail.title")}
         </CardTitle>
         <div className="flex items-center gap-4 mt-4">
           <div className="flex-1 bg-muted/50 border border-border rounded-md p-3 text-center">
@@ -95,7 +100,7 @@ export function AuditTrailCard({ data }: AuditTrailCardProps) {
               {data.totalEvents}
             </div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-              Events (30d)
+              {t("analytics.auditTrail.totalEvents")} (30d)
             </div>
           </div>
           <div className="flex-1 bg-muted/50 border border-border rounded-md p-3 text-center">
@@ -103,7 +108,7 @@ export function AuditTrailCard({ data }: AuditTrailCardProps) {
               {data.eventsByUser.length}
             </div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-              Active Users
+              {t("analytics.auditTrail.byUser")}
             </div>
           </div>
         </div>
@@ -112,7 +117,7 @@ export function AuditTrailCard({ data }: AuditTrailCardProps) {
         <div>
           <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
             <Activity className="w-3 h-3" />
-            Recent Activity
+            {t("analytics.auditTrail.recentActivity")}
           </h4>
           <div className="rounded-md border border-border bg-background/50 overflow-hidden">
             <Table>
@@ -168,7 +173,11 @@ export function AuditTrailCard({ data }: AuditTrailCardProps) {
                         {event.userName}
                       </TableCell>
                       <TableCell className="text-xs text-right text-muted-foreground">
-                        {formatRelativeTime(event.timestamp, locale)}
+                        {formatRelativeTime(
+                          event.timestamp,
+                          locale,
+                          t("analytics.auditTrail.justNow"),
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -182,7 +191,7 @@ export function AuditTrailCard({ data }: AuditTrailCardProps) {
           <div>
             <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
               <FileText className="w-3 h-3" />
-              By Entity Type
+              {t("analytics.auditTrail.byType")}
             </h4>
             <div className="space-y-1.5">
               {data.eventsByType.slice(0, 5).map((item) => (
@@ -214,7 +223,7 @@ export function AuditTrailCard({ data }: AuditTrailCardProps) {
           <div>
             <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
               <User className="w-3 h-3" />
-              Most Active Users
+              {t("analytics.auditTrail.byUser")}
             </h4>
             <div className="flex flex-wrap gap-1.5">
               {data.eventsByUser.slice(0, 5).map((user) => (

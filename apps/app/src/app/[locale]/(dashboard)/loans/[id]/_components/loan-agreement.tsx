@@ -2,7 +2,7 @@
 
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -65,6 +65,7 @@ export function LoanAgreement({
   const [dialogOpen, setDialogOpen] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   const locale = useCurrentLocale();
+  const tActions = useScopedI18n("loans.actions");
 
   const formatLoanDate = (timestamp: number) => {
     return formatDate(new Date(timestamp), locale, {
@@ -153,14 +154,14 @@ ${organizationName}`,
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <FileText className="mr-2 h-4 w-4" />
-          Loan Agreement
+          {tActions("loanAgreement")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Loan Agreement</DialogTitle>
+          <DialogTitle>{tActions("loanAgreement")}</DialogTitle>
           <DialogDescription>
-            Preview, print, or email the loan agreement document.
+            {tActions("loanAgreementPreview")}
           </DialogDescription>
         </DialogHeader>
 

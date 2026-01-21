@@ -181,6 +181,7 @@ function LoanList({
 }) {
   const t = useScopedI18n("loans");
   const tToast = useScopedI18n("common.toast");
+  const tBulk = useScopedI18n("loans.bulkActions");
   const locale = useCurrentLocale();
   const [selectedIds, setSelectedIds] = useState<Set<Id<"loans">>>(new Set());
   const bulkApprove = useMutation(api.loans.bulkApprove);
@@ -346,13 +347,13 @@ function LoanList({
     );
     const csvContent = [
       [
-        "Loan Number",
-        "Type",
-        "Partner",
-        "Start Date",
-        "End Date",
-        "Status",
-        "Items",
+        tBulk("csvHeaders.loanNumber"),
+        tBulk("csvHeaders.type"),
+        tBulk("csvHeaders.partner"),
+        tBulk("csvHeaders.startDate"),
+        tBulk("csvHeaders.endDate"),
+        tBulk("csvHeaders.status"),
+        tBulk("csvHeaders.items"),
       ].join(","),
       ...selectedLoans.map((loan) =>
         [
@@ -377,7 +378,10 @@ function LoanList({
     a.click();
     URL.revokeObjectURL(url);
     toast.success(
-      `Exported ${selectedLoans.length} loan${selectedLoans.length !== 1 ? "s" : ""}`,
+      t("actions.exportedLoans", {
+        count: selectedLoans.length,
+        plural: selectedLoans.length !== 1 ? "s" : "",
+      }),
     );
   };
 

@@ -114,7 +114,7 @@ export default function ActivityPage() {
 
   return (
     <FeatureGuard
-      featureName="Compliance & Audit Log"
+      featureName={t("featureName")}
       isLocked={!hasFeature("compliance")}
       tierNeeded="enterprise"
     >
@@ -339,7 +339,9 @@ export default function ActivityPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm">
-                          {entry.userName || entry.userEmail || "Unknown user"}
+                          {entry.userName ||
+                            entry.userEmail ||
+                            t("unknownUser")}
                         </span>
                         <span className="text-muted-foreground text-sm">
                           {entry.action}

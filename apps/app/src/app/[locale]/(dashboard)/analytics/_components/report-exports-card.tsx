@@ -184,6 +184,7 @@ export function ReportExportsCard({
 }: ReportExportsCardProps) {
   const locale = useCurrentLocale();
   const t = useScopedI18n("analytics.reportExports");
+  const csv = useScopedI18n("analytics.reportExports.csv");
   const [exporting, setExporting] = useState<string | null>(null);
   const hasCompliance = Boolean(compliance);
 
@@ -191,63 +192,70 @@ export function ReportExportsCard({
     setExporting("inventory");
     try {
       const rows = [
-        ["Inventory Valuation Report"],
-        [`Generated: ${formatDate(kpis.generatedAt, locale)}`],
+        [csv("inventory.title")],
+        [`${csv("generated")}: ${formatDate(kpis.generatedAt, locale)}`],
         [],
-        ["Category", "Item Count", "Valued Items", "Total Value"],
         [
-          "Fine Art",
+          csv("inventory.category"),
+          csv("inventory.itemCount"),
+          csv("inventory.valuedItems"),
+          csv("inventory.totalValue"),
+        ],
+        [
+          csv("inventory.fineArt"),
           kpis.inventory.fineArt.itemCount,
           kpis.inventory.fineArt.valuedCount,
           kpis.inventory.fineArt.totalValue,
         ],
         [
-          "Wine & Spirits",
+          csv("inventory.wineSpirits"),
           kpis.inventory.wine.itemCount,
           kpis.inventory.wine.valuedCount,
           kpis.inventory.wine.totalValue,
         ],
         [
-          "Vehicles",
+          csv("inventory.vehicles"),
           kpis.inventory.vehicles.itemCount,
           kpis.inventory.vehicles.valuedCount,
           kpis.inventory.vehicles.totalValue,
         ],
         [],
-        ["TOTAL", "", "", kpis.inventory.totalValue],
+        [csv("total"), "", "", kpis.inventory.totalValue],
       ];
 
-      const csv = rows.map((row) => row.map(escapeCSV).join(",")).join("\n");
+      const csvContent = rows
+        .map((row) => row.map(escapeCSV).join(","))
+        .join("\n");
       downloadCSV(
         `inventory-valuation-${new Date().toISOString().split("T")[0]}.csv`,
-        csv,
+        csvContent,
       );
     } finally {
       setExporting(null);
     }
-  }, [kpis]);
+  }, [kpis, csv, locale]);
 
   const exportLoanReport = useCallback(() => {
     setExporting("loans");
     try {
       const rows = [
-        ["Loan Status Report"],
-        [`Generated: ${formatDate(kpis.generatedAt, locale)}`],
+        [csv("loans.title")],
+        [`${csv("generated")}: ${formatDate(kpis.generatedAt, locale)}`],
         [],
-        ["Status Summary"],
-        ["Overdue", kpis.loans.overdue],
-        ["Due Today", kpis.loans.dueToday],
-        ["Due in 7 Days", kpis.loans.dueNext7Days],
-        ["Due in 30 Days", kpis.loans.dueNext30Days],
+        [csv("loans.statusSummary")],
+        [csv("loans.overdue"), kpis.loans.overdue],
+        [csv("loans.dueToday"), kpis.loans.dueToday],
+        [csv("loans.dueIn7Days"), kpis.loans.dueNext7Days],
+        [csv("loans.dueIn30Days"), kpis.loans.dueNext30Days],
         [],
-        ["Upcoming Returns"],
+        [csv("loans.upcomingReturns")],
         [
-          "Loan Number",
-          "Partner",
-          "Type",
-          "End Date",
-          "Days Remaining",
-          "Status",
+          csv("loans.loanNumber"),
+          csv("loans.partner"),
+          csv("loans.type"),
+          csv("loans.endDate"),
+          csv("loans.daysRemaining"),
+          csv("loans.status"),
         ],
         ...kpis.loans.upcomingReturns.map((loan) => [
           loan.loanNumber,
@@ -259,15 +267,17 @@ export function ReportExportsCard({
         ]),
       ];
 
-      const csv = rows.map((row) => row.map(escapeCSV).join(",")).join("\n");
+      const csvContent = rows
+        .map((row) => row.map(escapeCSV).join(","))
+        .join("\n");
       downloadCSV(
         `loan-report-${new Date().toISOString().split("T")[0]}.csv`,
-        csv,
+        csvContent,
       );
     } finally {
       setExporting(null);
     }
-  }, [kpis]);
+  }, [kpis, csv, locale]);
 
   const exportComplianceReport = useCallback(() => {
     if (!compliance) return;
@@ -275,17 +285,22 @@ export function ReportExportsCard({
     setExporting("compliance");
     try {
       const rows = [
-        ["Compliance & Audit Report"],
-        [`Generated: ${formatDate(kpis.generatedAt, locale)}`],
+        [csv("compliance.title")],
+        [`${csv("generated")}: ${formatDate(kpis.generatedAt, locale)}`],
         [],
-        ["Accession Summary"],
-        ["Total", compliance.accessions.total],
-        ["Pending", compliance.accessions.pending],
-        ["Approved", compliance.accessions.approved],
-        ["Rejected", compliance.accessions.rejected],
+        [csv("compliance.accessionSummary")],
+        [csv("compliance.total"), compliance.accessions.total],
+        [csv("compliance.pending"), compliance.accessions.pending],
+        [csv("compliance.approved"), compliance.accessions.approved],
+        [csv("compliance.rejected"), compliance.accessions.rejected],
         [],
-        ["Pending Accession Approvals"],
-        ["Accession #", "Source", "Date Received", "Method"],
+        [csv("compliance.pendingAccessionApprovals")],
+        [
+          csv("compliance.accessionNumber"),
+          csv("compliance.source"),
+          csv("compliance.dateReceived"),
+          csv("compliance.method"),
+        ],
         ...compliance.accessions.pendingApprovals.map((a) => [
           a.accessionNumber,
           a.source,
@@ -293,8 +308,14 @@ export function ReportExportsCard({
           a.method,
         ]),
         [],
-        ["Recent Accession Activity"],
-        ["Accession #", "Source", "Approved At", "Approved By", "Status"],
+        [csv("compliance.recentAccessionActivity")],
+        [
+          csv("compliance.accessionNumber"),
+          csv("compliance.source"),
+          csv("compliance.approvedAt"),
+          csv("compliance.approvedBy"),
+          csv("compliance.status"),
+        ],
         ...compliance.accessions.recentApprovals.map((a) => [
           a.accessionNumber,
           a.source,
@@ -303,20 +324,20 @@ export function ReportExportsCard({
           a.status,
         ]),
         [],
-        ["Deaccession Summary"],
-        ["Total", compliance.deaccessions.total],
-        ["Pending", compliance.deaccessions.pending],
-        ["Approved", compliance.deaccessions.approved],
-        ["Rejected", compliance.deaccessions.rejected],
+        [csv("compliance.deaccessionSummary")],
+        [csv("compliance.total"), compliance.deaccessions.total],
+        [csv("compliance.pending"), compliance.deaccessions.pending],
+        [csv("compliance.approved"), compliance.deaccessions.approved],
+        [csv("compliance.rejected"), compliance.deaccessions.rejected],
         [],
-        ["Recent Deaccession Activity"],
+        [csv("compliance.recentDeaccessionActivity")],
         [
-          "Deaccession #",
-          "Reason",
-          "Approved At",
-          "Approved By",
-          "Status",
-          "Proceeds",
+          csv("compliance.deaccessionNumber"),
+          csv("compliance.reason"),
+          csv("compliance.approvedAt"),
+          csv("compliance.approvedBy"),
+          csv("compliance.status"),
+          csv("compliance.proceeds"),
         ],
         ...compliance.deaccessions.recentApprovals.map((d) => [
           d.deaccessionNumber,
@@ -327,8 +348,13 @@ export function ReportExportsCard({
           d.proceedsAmount ?? "",
         ]),
         [],
-        ["Audit Trail (Recent Events)"],
-        ["Action", "Entity Type", "User", "Timestamp"],
+        [csv("compliance.auditTrail")],
+        [
+          csv("compliance.action"),
+          csv("compliance.entityType"),
+          csv("compliance.user"),
+          csv("compliance.timestamp"),
+        ],
         ...compliance.auditTrail.recentEvents.map((e) => [
           e.action,
           e.entityType,
@@ -337,48 +363,72 @@ export function ReportExportsCard({
         ]),
       ];
 
-      const csv = rows.map((row) => row.map(escapeCSV).join(",")).join("\n");
+      const csvContent = rows
+        .map((row) => row.map(escapeCSV).join(","))
+        .join("\n");
       downloadCSV(
         `compliance-report-${new Date().toISOString().split("T")[0]}.csv`,
-        csv,
+        csvContent,
       );
     } finally {
       setExporting(null);
     }
-  }, [compliance, kpis.generatedAt]);
+  }, [compliance, kpis.generatedAt, csv, locale]);
 
   const exportLocationReport = useCallback(() => {
     setExporting("locations");
     try {
       const rows = [
-        ["Location Utilization Report"],
-        [`Generated: ${formatDate(kpis.generatedAt, locale)}`],
+        [csv("location.title")],
+        [`${csv("generated")}: ${formatDate(kpis.generatedAt, locale)}`],
         [],
-        ["Summary"],
-        ["Total Locations", locationUtilization.summary.totalLocations],
+        [csv("location.summary")],
         [
-          "Locations with Capacity Tracking",
+          csv("location.totalLocations"),
+          locationUtilization.summary.totalLocations,
+        ],
+        [
+          csv("location.locationsWithCapacity"),
           locationUtilization.summary.locationsWithCapacity,
         ],
-        ["Total Capacity", locationUtilization.summary.totalCapacity],
-        ["Total Occupied", locationUtilization.summary.totalOccupied],
         [
-          "Overall Utilization",
+          csv("location.totalCapacity"),
+          locationUtilization.summary.totalCapacity,
+        ],
+        [
+          csv("location.totalOccupied"),
+          locationUtilization.summary.totalOccupied,
+        ],
+        [
+          csv("location.overallUtilization"),
           `${locationUtilization.summary.utilizationPercentage}%`,
         ],
         [],
-        ["Utilization by Type"],
-        ["Type", "Count", "Capacity", "Occupied", "Utilization %"],
-        ...locationUtilization.byType.map((t) => [
-          t.type,
-          t.count,
-          t.totalCapacity,
-          t.totalOccupied,
-          `${t.utilizationPercentage}%`,
+        [csv("location.utilizationByType")],
+        [
+          csv("location.type"),
+          csv("location.count"),
+          csv("location.capacity"),
+          csv("location.occupied"),
+          csv("location.utilizationPercent"),
+        ],
+        ...locationUtilization.byType.map((item) => [
+          item.type,
+          item.count,
+          item.totalCapacity,
+          item.totalOccupied,
+          `${item.utilizationPercentage}%`,
         ]),
         [],
-        ["Top Utilized Locations"],
-        ["Name", "Type", "Path", "Capacity", "Occupied", "Utilization %"],
+        [csv("location.topUtilizedLocations")],
+        [
+          csv("location.name"),
+          csv("location.type"),
+          csv("location.path"),
+          csv("location.capacity"),
+          csv("location.occupied"),
+          csv("location.utilizationPercent"),
+        ],
         ...locationUtilization.topUtilized.map((loc) => [
           loc.name,
           loc.type,
@@ -388,8 +438,14 @@ export function ReportExportsCard({
           `${loc.utilizationPercentage}%`,
         ]),
         [],
-        ["Locations at Capacity"],
-        ["Name", "Type", "Path", "Capacity", "Occupied"],
+        [csv("location.locationsAtCapacity")],
+        [
+          csv("location.name"),
+          csv("location.type"),
+          csv("location.path"),
+          csv("location.capacity"),
+          csv("location.occupied"),
+        ],
         ...locationUtilization.atCapacity.map((loc) => [
           loc.name,
           loc.type,
@@ -399,15 +455,17 @@ export function ReportExportsCard({
         ]),
       ];
 
-      const csv = rows.map((row) => row.map(escapeCSV).join(",")).join("\n");
+      const csvContent = rows
+        .map((row) => row.map(escapeCSV).join(","))
+        .join("\n");
       downloadCSV(
         `location-utilization-${new Date().toISOString().split("T")[0]}.csv`,
-        csv,
+        csvContent,
       );
     } finally {
       setExporting(null);
     }
-  }, [locationUtilization, kpis.generatedAt]);
+  }, [locationUtilization, kpis.generatedAt, csv, locale]);
 
   const exportAllReports = useCallback(() => {
     exportInventoryValuation();
@@ -426,82 +484,102 @@ export function ReportExportsCard({
     try {
       const complianceRows = compliance
         ? [
-            ["ACCESSION/DEACCESSION ACTIVITY"],
-            ["Total Accessions", compliance.accessions.total],
-            ["Pending Approval", compliance.accessions.pending],
-            ["Total Deaccessions", compliance.deaccessions.total],
-            ["Pending Approval", compliance.deaccessions.pending],
+            [csv("board.accessionDeaccessionActivity")],
+            [csv("board.totalAccessions"), compliance.accessions.total],
+            [csv("board.pendingApproval"), compliance.accessions.pending],
+            [csv("board.totalDeaccessions"), compliance.deaccessions.total],
+            [csv("board.pendingApproval"), compliance.deaccessions.pending],
             [],
           ]
-        : [["ACCESSION/DEACCESSION ACTIVITY"], ["Upgrade to Enterprise"], []];
+        : [
+            [csv("board.accessionDeaccessionActivity")],
+            [csv("upgradeToEnterprise")],
+            [],
+          ];
 
       const rows = [
-        ["Board Summary Report"],
-        [`Generated: ${formatDate(kpis.generatedAt, locale)}`],
+        [csv("board.title")],
+        [`${csv("generated")}: ${formatDate(kpis.generatedAt, locale)}`],
         [],
-        ["COLLECTION VALUATION"],
-        ["Category", "Items", "Total Value"],
+        [csv("board.collectionValuation")],
+        [csv("board.category"), csv("board.items"), csv("board.totalValue")],
         [
-          "Fine Art",
+          csv("board.fineArt"),
           kpis.inventory.fineArt.itemCount.toString(),
           formatCurrency(kpis.inventory.fineArt.totalValue, locale),
         ],
         [
-          "Wine",
+          csv("board.wine"),
           kpis.inventory.wine.itemCount.toString(),
           formatCurrency(kpis.inventory.wine.totalValue, locale),
         ],
         [
-          "Vehicles",
+          csv("board.vehicles"),
           kpis.inventory.vehicles.itemCount.toString(),
           formatCurrency(kpis.inventory.vehicles.totalValue, locale),
         ],
-        ["TOTAL", "", formatCurrency(kpis.inventory.totalValue, locale)],
+        [csv("total"), "", formatCurrency(kpis.inventory.totalValue, locale)],
         [],
-        ["LOAN STATUS"],
-        ["Overdue Loans", kpis.loans.overdue],
-        ["Due Today", kpis.loans.dueToday],
-        ["Due Next 7 Days", kpis.loans.dueNext7Days],
-        ["Due Next 30 Days", kpis.loans.dueNext30Days],
+        [csv("board.loanStatus")],
+        [csv("board.overdueLoans"), kpis.loans.overdue],
+        [csv("board.dueToday"), kpis.loans.dueToday],
+        [csv("board.dueNext7Days"), kpis.loans.dueNext7Days],
+        [csv("board.dueNext30Days"), kpis.loans.dueNext30Days],
         [],
-        ["EXHIBITION STATUS"],
-        ["Proposed", kpis.exhibitions.proposed],
-        ["Approved", kpis.exhibitions.approved],
-        ["Active", kpis.exhibitions.active],
-        ["Closed", kpis.exhibitions.closed],
+        [csv("board.exhibitionStatus")],
+        [csv("board.proposed"), kpis.exhibitions.proposed],
+        [csv("board.approved"), kpis.exhibitions.approved],
+        [csv("board.active"), kpis.exhibitions.active],
+        [csv("board.closed"), kpis.exhibitions.closed],
         [],
         ...complianceRows,
-        ["STORAGE UTILIZATION"],
-        ["Total Capacity", locationUtilization.summary.totalCapacity],
-        ["Currently Occupied", locationUtilization.summary.totalOccupied],
+        [csv("board.storageUtilization")],
         [
-          "Utilization Rate",
+          csv("location.totalCapacity"),
+          locationUtilization.summary.totalCapacity,
+        ],
+        [
+          csv("board.currentlyOccupied"),
+          locationUtilization.summary.totalOccupied,
+        ],
+        [
+          csv("board.utilizationRate"),
           `${locationUtilization.summary.utilizationPercentage}%`,
         ],
-        ["Locations at Capacity", locationUtilization.atCapacity.length],
+        [
+          csv("board.locationsAtCapacity"),
+          locationUtilization.atCapacity.length,
+        ],
       ];
 
-      const csv = rows.map((row) => row.map(escapeCSV).join(",")).join("\n");
+      const csvContent = rows
+        .map((row) => row.map(escapeCSV).join(","))
+        .join("\n");
       downloadCSV(
         `board-summary-${new Date().toISOString().split("T")[0]}.csv`,
-        csv,
+        csvContent,
       );
     } finally {
       setExporting(null);
     }
-  }, [kpis, compliance, locationUtilization]);
+  }, [kpis, compliance, locationUtilization, csv, locale]);
 
   const exportInsuranceReport = useCallback(() => {
     setExporting("insurance");
     try {
       const rows = [
-        ["Insurance Valuation Report"],
-        [`Generated: ${formatDate(kpis.generatedAt, locale)}`],
+        [csv("insurance.title")],
+        [`${csv("generated")}: ${formatDate(kpis.generatedAt, locale)}`],
         [],
-        ["COLLECTION VALUATION SUMMARY"],
-        ["Category", "Item Count", "Valued Items", "Insurance Value"],
+        [csv("insurance.collectionValuationSummary")],
         [
-          "Fine Art",
+          csv("insurance.category"),
+          csv("insurance.itemCount"),
+          csv("insurance.valuedItems"),
+          csv("insurance.insuranceValue"),
+        ],
+        [
+          csv("insurance.fineArt"),
           kpis.inventory.fineArt.itemCount,
           kpis.inventory.fineArt.valuedCount,
           formatCurrency(
@@ -510,7 +588,7 @@ export function ReportExportsCard({
           ),
         ],
         [
-          "Wine & Spirits",
+          csv("insurance.wineSpirits"),
           kpis.inventory.wine.itemCount,
           kpis.inventory.wine.valuedCount,
           formatCurrency(
@@ -519,7 +597,7 @@ export function ReportExportsCard({
           ),
         ],
         [
-          "Vehicles",
+          csv("insurance.vehicles"),
           kpis.inventory.vehicles.itemCount,
           kpis.inventory.vehicles.valuedCount,
           formatCurrency(
@@ -529,7 +607,7 @@ export function ReportExportsCard({
         ],
         [],
         [
-          "TOTAL INSURABLE VALUE",
+          csv("insurance.totalInsurableValue"),
           "",
           "",
           formatCurrency(
@@ -538,8 +616,14 @@ export function ReportExportsCard({
           ),
         ],
         [],
-        ["ITEMS ON LOAN (POTENTIAL EXPOSURE)"],
-        ["Loan #", "Partner", "Type", "End Date", "Status"],
+        [csv("insurance.itemsOnLoan")],
+        [
+          csv("insurance.loanNumber"),
+          csv("insurance.partner"),
+          csv("insurance.type"),
+          csv("insurance.endDate"),
+          csv("insurance.status"),
+        ],
         ...kpis.loans.upcomingReturns.map((loan) => [
           loan.loanNumber,
           loan.lenderBorrowerName,
@@ -548,25 +632,32 @@ export function ReportExportsCard({
           loan.status,
         ]),
         [],
-        ["STORAGE CONDITIONS"],
-        ["Location Type", "Total Capacity", "Current Occupancy", "Utilization"],
-        ...locationUtilization.byType.map((t) => [
-          t.type,
-          t.totalCapacity,
-          t.totalOccupied,
-          `${t.utilizationPercentage}%`,
+        [csv("insurance.storageConditions")],
+        [
+          csv("insurance.locationType"),
+          csv("insurance.totalCapacity"),
+          csv("insurance.currentOccupancy"),
+          csv("insurance.utilization"),
+        ],
+        ...locationUtilization.byType.map((item) => [
+          item.type,
+          item.totalCapacity,
+          item.totalOccupied,
+          `${item.utilizationPercentage}%`,
         ]),
       ];
 
-      const csv = rows.map((row) => row.map(escapeCSV).join(",")).join("\n");
+      const csvContent = rows
+        .map((row) => row.map(escapeCSV).join(","))
+        .join("\n");
       downloadCSV(
         `insurance-report-${new Date().toISOString().split("T")[0]}.csv`,
-        csv,
+        csvContent,
       );
     } finally {
       setExporting(null);
     }
-  }, [kpis, locationUtilization]);
+  }, [kpis, locationUtilization, csv, locale]);
 
   return (
     <Card className="bg-muted/30 border-white/10 backdrop-blur-sm">

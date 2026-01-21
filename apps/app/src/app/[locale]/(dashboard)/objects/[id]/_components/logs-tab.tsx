@@ -1,6 +1,7 @@
 "use client";
 
 import { formatDate } from "@/lib/format-date";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
@@ -12,7 +13,12 @@ interface LogsTabProps {
   locale: string;
 }
 
-export function LogsTab({ collectionId, organizationId, locale }: LogsTabProps) {
+export function LogsTab({
+  collectionId,
+  organizationId,
+  locale,
+}: LogsTabProps) {
+  const tCommon = useScopedI18n("modules.common");
   const auditLogs = useQuery(api.auditLog.getByEntity, {
     organizationId,
     entityType: "collection",
@@ -74,7 +80,7 @@ export function LogsTab({ collectionId, organizationId, locale }: LogsTabProps) 
                         {log.userName?.charAt(0) || "?"}
                       </div>
                       <span className="text-xs text-muted-foreground">
-                        {log.userName || "Unknown"}
+                        {log.userName || tCommon("unknown")}
                       </span>
                     </div>
                   </td>

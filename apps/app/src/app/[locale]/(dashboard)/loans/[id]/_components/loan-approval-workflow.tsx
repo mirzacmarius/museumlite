@@ -481,42 +481,39 @@ export function LoanApprovalWorkflow({
                           {isFullReturn ? (
                             <>
                               <div className="font-medium">
-                                You are about to return all {loanItems.length}{" "}
-                                {pluralize(loanItems.length, "item")} from this
-                                loan.
+                                {t("fullReturnTitle", {
+                                  count: loanItems.length,
+                                  items: pluralize(loanItems.length, "item"),
+                                })}
                               </div>
-                              <div>
-                                This will mark the loan as{" "}
-                                <strong>"Returned"</strong> and update the
-                                status of all collection items back to "active".
-                              </div>
+                              <div>{t("fullReturnDescription")}</div>
                             </>
                           ) : (
                             <>
                               <div className="font-medium">
-                                You are about to return{" "}
-                                {pendingReturnItemIds.length} of{" "}
-                                {loanItems.length}{" "}
-                                {pluralize(loanItems.length, "item")} from this
-                                loan.
+                                {t("partialReturnTitle", {
+                                  returnCount: pendingReturnItemIds.length,
+                                  totalCount: loanItems.length,
+                                  items: pluralize(loanItems.length, "item"),
+                                })}
                               </div>
                               <div>
-                                This is a <strong>partial return</strong>. The
-                                loan will remain <strong>"{loanStatus}"</strong>{" "}
-                                and only the selected items will be marked as
-                                returned. The remaining{" "}
-                                {loanItems.length - pendingReturnItemIds.length}{" "}
-                                {pluralize(
-                                  loanItems.length -
+                                {t("partialReturnDescription")}{" "}
+                                {t("remainingItems", {
+                                  count:
+                                    loanItems.length -
                                     pendingReturnItemIds.length,
-                                  "item",
-                                )}{" "}
-                                will stay on loan.
+                                  items: pluralize(
+                                    loanItems.length -
+                                      pendingReturnItemIds.length,
+                                    "item",
+                                  ),
+                                })}
                               </div>
                             </>
                           )}
                           <div className="pt-2 text-sm text-muted-foreground">
-                            Are you sure you want to proceed?
+                            {t("confirmProceed")}
                           </div>
                         </div>
                       </AlertDialogDescription>
@@ -851,41 +848,39 @@ export function LoanApprovalWorkflow({
                         {isFullReturn ? (
                           <>
                             <div className="font-medium">
-                              You are about to return all {loanItems.length}{" "}
-                              {pluralize(loanItems.length, "item")} from this
-                              loan.
+                              {t("fullReturnTitle", {
+                                count: loanItems.length,
+                                items: pluralize(loanItems.length, "item"),
+                              })}
                             </div>
-                            <div>
-                              This will mark the loan as{" "}
-                              <strong>"Returned"</strong> and update the status
-                              of all collection items back to "active".
-                            </div>
+                            <div>{t("fullReturnDescription")}</div>
                           </>
                         ) : (
                           <>
                             <div className="font-medium">
-                              You are about to return{" "}
-                              {pendingReturnItemIds.length} of{" "}
-                              {loanItems.length}{" "}
-                              {pluralize(loanItems.length, "item")} from this
-                              loan.
+                              {t("partialReturnTitle", {
+                                returnCount: pendingReturnItemIds.length,
+                                totalCount: loanItems.length,
+                                items: pluralize(loanItems.length, "item"),
+                              })}
                             </div>
                             <div>
-                              This is a <strong>partial return</strong>. The
-                              loan will remain <strong>"{loanStatus}"</strong>{" "}
-                              and only the selected items will be marked as
-                              returned. The remaining{" "}
-                              {loanItems.length - pendingReturnItemIds.length}{" "}
-                              {pluralize(
-                                loanItems.length - pendingReturnItemIds.length,
-                                "item",
-                              )}{" "}
-                              will stay on loan.
+                              {t("partialReturnDescription")}{" "}
+                              {t("remainingItems", {
+                                count:
+                                  loanItems.length -
+                                  pendingReturnItemIds.length,
+                                items: pluralize(
+                                  loanItems.length -
+                                    pendingReturnItemIds.length,
+                                  "item",
+                                ),
+                              })}
                             </div>
                           </>
                         )}
                         <div className="pt-2 text-sm text-muted-foreground">
-                          Are you sure you want to proceed?
+                          {t("confirmProceed")}
                         </div>
                       </div>
                     </AlertDialogDescription>
