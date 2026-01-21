@@ -282,6 +282,8 @@ export default {
     noPermission:
       "You don't have permission to manage modules. Contact your administrator.",
     selectOrganization: "Please select an organization to manage modules.",
+    moduleDisabled: "This module is not enabled for your organization.",
+    enableModule: "Enable Module",
     accounts: {
       name: "Accounts & CRM",
       description:
@@ -2048,6 +2050,8 @@ export default {
     selectOrganizationImport:
       "Please select an organization to import accounts.",
     accountNotFound: "Account not found",
+    moduleDisabled: "The Accounts module is not enabled for your organization.",
+    enableModule: "Enable Accounts Module",
     emptyState: {
       noAccountsFound: "No accounts found",
       noSearchResults: "No accounts found matching your search",

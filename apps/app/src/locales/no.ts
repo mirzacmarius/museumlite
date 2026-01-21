@@ -285,6 +285,8 @@ export default {
     noPermission:
       "Du har ikke tillatelse til å administrere moduler. Kontakt administratoren din.",
     selectOrganization: "Velg en organisasjon for å administrere moduler.",
+    moduleDisabled: "Denne modulen er ikke aktivert for din organisasjon.",
+    enableModule: "Aktiver modul",
     accounts: {
       name: "Kontoer og CRM",
       description:
@@ -2573,6 +2575,8 @@ export default {
     selectOrganizationImport:
       "Vennligst velg en organisasjon for å importere kontoer.",
     accountNotFound: "Konto ikke funnet",
+    moduleDisabled: "Kontoer-modulen er ikke aktivert for din organisasjon.",
+    enableModule: "Aktiver Kontoer-modul",
     emptyState: {
       noAccountsFound: "Ingen kontoer funnet",
       noSearchResults: "Ingen kontoer funnet som matcher søket ditt",

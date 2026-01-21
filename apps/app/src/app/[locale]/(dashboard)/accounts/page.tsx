@@ -23,6 +23,7 @@ import {
   FileUp,
   Plus,
   Search,
+  Settings,
   User,
   Users,
 } from "lucide-react";
@@ -98,6 +99,33 @@ export default function AccountsPage() {
               {t("selectOrganizationDescription")}
             </p>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if accounts module is enabled
+  const isAccountsEnabled = organizations
+    .find((org) => org._id === currentOrganizationId)
+    ?.settings?.enabledModules?.includes("accounts");
+
+  if (!isAccountsEnabled) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
+          <Users className="h-12 w-12 text-muted-foreground" />
+          <div className="text-center">
+            <h3 className="text-lg font-semibold">{t("description")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t("moduleDisabled")}
+            </p>
+          </div>
+          <Button asChild>
+            <Link href="/settings/modules">
+              <Settings className="mr-2 h-4 w-4" />
+              {t("enableModule")}
+            </Link>
+          </Button>
         </div>
       </div>
     );

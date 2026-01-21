@@ -4,7 +4,8 @@ export default {
     description:
       "Construiește-ți aplicația pe platforma Convex SaaS, explorează documentația și începe călătoria.",
     bodyTitle: "Începe",
-    bodyDescription: "Explorează Tabloul de Bord și începe cu prima ta aplicație.",
+    bodyDescription:
+      "Explorează Tabloul de Bord și începe cu prima ta aplicație.",
     bodyTip: "SUGESTIE: Încearcă să schimbi limba!",
     headerTitle: "Tablou de Bord",
     headerDescription: "Gestionează aplicațiile tale și vezi utilizarea.",
@@ -37,26 +38,30 @@ export default {
     avatar: {
       title: "Avatarul Tău",
       description: "Acesta este avatarul tău. Va fi afișat pe profilul tău.",
-      uploadHint: "Click pe avatar pentru a încărca unul personalizat din fișierele tale.",
+      uploadHint:
+        "Click pe avatar pentru a încărca unul personalizat din fișierele tale.",
       resetButton: "Resetează",
     },
     name: {
       title: "Numele Tău",
-      description: "Acesta este numele tău de afișare. Va fi afișat altor utilizatori din organizație.",
+      description:
+        "Acesta este numele tău de afișare. Va fi afișat altor utilizatori din organizație.",
       placeholder: "Numele tău",
       hint: "Te rugăm să folosești maximum 64 de caractere.",
       save: "Salvează",
     },
     username: {
       title: "Numele Tău de Utilizator",
-      description: "Acesta este numele tău de utilizator. Va fi afișat pe profilul tău.",
+      description:
+        "Acesta este numele tău de utilizator. Va fi afișat pe profilul tău.",
       placeholder: "Nume de utilizator",
       hint: "Te rugăm să folosești maximum 32 de caractere.",
       save: "Salvează",
     },
     deleteAccount: {
       title: "Șterge Contul",
-      description: "Șterge permanent contul tău Convex SaaS, toate proiectele tale, link-urile și statisticile lor.",
+      description:
+        "Șterge permanent contul tău Convex SaaS, toate proiectele tale, link-urile și statisticile lor.",
       warning: "Această acțiune nu poate fi anulată, procedează cu atenție.",
       deleteButton: "Șterge Contul",
       confirmButton: "Ești Sigur?",
@@ -75,10 +80,12 @@ export default {
     },
     roles: {
       title: "Gestionare Roluri",
-      description: "Creează și gestionează roluri personalizate cu permisiuni specifice",
+      description:
+        "Creează și gestionează roluri personalizate cu permisiuni specifice",
       rolesLabel: "Roluri",
       createNewRole: "Creează Rol Nou",
-      createDescription: "Creează un rol personalizat cu permisiuni specifice pentru organizația ta.",
+      createDescription:
+        "Creează un rol personalizat cu permisiuni specifice pentru organizația ta.",
       editRole: "Editează Rol",
       editDescription: "Actualizează detaliile și permisiunile rolului.",
       roleNameLabel: "Nume Rol *",
@@ -94,9 +101,11 @@ export default {
       nameRequired: "Numele rolului este obligatoriu",
       permissionsRequired: "Trebuie selectată cel puțin o permisiune",
       createFailed: "Nu s-a putut crea rolul. Te rugăm să încerci din nou.",
-      updateFailed: "Nu s-a putut actualiza rolul. Te rugăm să încerci din nou.",
+      updateFailed:
+        "Nu s-a putut actualiza rolul. Te rugăm să încerci din nou.",
       deleteFailed: "Nu s-a putut șterge rolul. Te rugăm să încerci din nou.",
-      deleteConfirm: "Ești sigur că vrei să ștergi acest rol? Utilizatorii cu acest rol vor trebui să fie reatribuiți.",
+      deleteConfirm:
+        "Ești sigur că vrei să ștergi acest rol? Utilizatorii cu acest rol vor trebui să fie reatribuiți.",
       systemBadge: "Sistem",
       permissionsCount: "Permisiuni ({count})",
       morePermissions: "mai multe",
@@ -124,32 +133,42 @@ export default {
       locationTypes: "Tipuri de Locații",
       customLocationTypes: "Tipuri de Locații Personalizate",
       addLocationType: "Adaugă Tip Locație",
-      locationTypeHint: "Definește tipuri de locații personalizate pentru organizația ta (ex: Galeri, Seif, Vitrină)",
+      locationTypeHint:
+        "Definește tipuri de locații personalizate pentru organizația ta (ex: Galeri, Seif, Vitrină)",
       conditionOptions: "Opțiuni Stare",
       organizationConditions: "Condiții Organizație",
-      conditionHint: "Condițiile personalizate pot fi adăugate direct din meniul derulant când creezi sau editezi colecții.",
+      conditionHint:
+        "Condițiile personalizate pot fi adăugate direct din meniul derulant când creezi sau editezi colecții.",
       yourCustomConditions: "Condițiile Tale Personalizate:",
-      conditionTip: '💡 Sfat: Deschide meniul derulant pentru condiții în orice formă de colecție și click pe "Nou" pentru a adăuga condiții personalizate din mers.',
-      standardConditions: "Condițiile standard (Excelentă, Foarte Bună, Bună, Slabă) sunt întotdeauna disponibile.",
+      conditionTip:
+        '💡 Sfat: Deschide meniul derulant pentru condiții în orice formă de colecție și click pe "Nou" pentru a adăuga condiții personalizate din mers.',
+      standardConditions:
+        "Condițiile standard (Excelentă, Foarte Bună, Bună, Slabă) sunt întotdeauna disponibile.",
       materialOptions: "Opțiuni Materiale",
       organizationMaterials: "Materiale Organizație",
-      materialHint: "Materialele pot fi adăugate direct din câmpul de materiale când creezi sau editezi colecții.",
+      materialHint:
+        "Materialele pot fi adăugate direct din câmpul de materiale când creezi sau editezi colecții.",
       yourMaterials: "Materialele Tale:",
-      materialTip: '💡 Sfat: Deschide meniul derulant pentru materiale în orice formă de colecție și click pe "Nou" pentru a adăuga materiale din mers.',
+      materialTip:
+        '💡 Sfat: Deschide meniul derulant pentru materiale în orice formă de colecție și click pe "Nou" pentru a adăuga materiale din mers.',
       loanSettings: "Setări Împrumut",
       enableDetailedConditionReports: "Activează Rapoarte Detaliate de Stare",
-      detailedConditionReportsHint: "Solicită rapoarte detaliate de stare cu fotografii pentru articolele împrumutate",
+      detailedConditionReportsHint:
+        "Solicită rapoarte detaliate de stare cu fotografii pentru articolele împrumutate",
       saveChanges: "Salvează Modificările",
       saving: "Se salvează...",
       organizationNameRequired: "Numele organizației este obligatoriu",
       invalidAccessionFormat: "Format de accesie invalid: {error}",
       updateSuccess: "Organizație actualizată cu succes",
-      updateError: "Nu s-a putut actualiza organizația. Te rugăm să încerci din nou.",
+      updateError:
+        "Nu s-a putut actualiza organizația. Te rugăm să încerci din nou.",
       templateDialog: {
         updateTemplate: "Actualizează Șablon",
         saveTemplate: "Salvează Șablon",
-        updateDescription: "Actualizează șablonul personalizat cu formatul, numele și descrierea curente.",
-        saveDescription: "Salvează formatul curent al numărului de accesie ca șablon reutilizabil.",
+        updateDescription:
+          "Actualizează șablonul personalizat cu formatul, numele și descrierea curente.",
+        saveDescription:
+          "Salvează formatul curent al numărului de accesie ca șablon reutilizabil.",
         templateName: "Nume Șablon *",
         templateNamePlaceholder: "ex: Format Lunar",
         description: "Descriere (opțional)",
@@ -160,19 +179,22 @@ export default {
         update: "Actualizează Șablon",
         save: "Salvează Șablon",
         templateNameRequired: "Numele șablonului este obligatoriu",
-        validTemplateRequired: "Te rugăm să introduci mai întâi un șablon valid",
+        validTemplateRequired:
+          "Te rugăm să introduci mai întâi un șablon valid",
         saveError: "Nu s-a putut salva șablonul",
         deleteError: "Nu s-a putut șterge șablonul",
       },
       deleteTemplateDialog: {
         title: "Șterge Șablon",
-        description: "Ești sigur că vrei să ștergi acest șablon? Această acțiune nu poate fi anulată.",
+        description:
+          "Ești sigur că vrei să ștergi acest șablon? Această acțiune nu poate fi anulată.",
         cancel: "Anulează",
         delete: "Șterge",
       },
     },
     developer: {
-      selectOrganization: "Te rugăm să selectezi o organizație pentru a vedea setările de dezvoltator",
+      selectOrganization:
+        "Te rugăm să selectezi o organizație pentru a vedea setările de dezvoltator",
       title: "Setări Dezvoltator",
       description: "Gestionează cheile API, webhook-urile și utilitarele",
     },
@@ -192,13 +214,15 @@ export default {
       revokeButton: "Revocă",
       revokeDialog: {
         title: "Revocă Cheia API",
-        description: "Aceasta va invalida imediat cheia API. Orice aplicații care o folosesc vor pierde accesul.",
+        description:
+          "Aceasta va invalida imediat cheia API. Orice aplicații care o folosesc vor pierde accesul.",
         cancel: "Anulează",
         confirm: "Revocă Cheia",
       },
       deleteDialog: {
         title: "Șterge Cheia API",
-        description: "Aceasta va șterge permanent înregistrarea cheii API. Această acțiune nu poate fi anulată.",
+        description:
+          "Aceasta va șterge permanent înregistrarea cheii API. Această acțiune nu poate fi anulată.",
         cancel: "Anulează",
         confirm: "Șterge",
       },
@@ -206,7 +230,8 @@ export default {
         title: "Creează Cheie API",
         description: "Introdu un nume pentru noua ta cheie API",
         createdTitle: "Cheie API Creată",
-        createdDescription: "Copiază cheia ta acum. Nu o vei mai putea vedea niciodată.",
+        createdDescription:
+          "Copiază cheia ta acum. Nu o vei mai putea vedea niciodată.",
         warning: "Salvează această cheie în siguranță. Nu va mai fi afișată.",
         nameLabel: "Nume Cheie",
         namePlaceholder: "ex: Cheie API Producție",
@@ -217,7 +242,8 @@ export default {
     },
     webhooks: {
       title: "Webhook-uri",
-      description: "Configurează webhook-uri pentru a primi notificări în timp real despre evenimentele din organizația ta",
+      description:
+        "Configurează webhook-uri pentru a primi notificări în timp real despre evenimentele din organizația ta",
       createButton: "Creează Webhook",
       noWebhooks: "Nu s-au găsit webhook-uri",
       urlLabel: "URL Webhook",
@@ -227,9 +253,12 @@ export default {
       eventsLabel: "Evenimente",
       selectEvents: "Selectează evenimentele...",
       urlRequired: "URL-ul este obligatoriu",
-      createFailed: "Nu s-a putut crea webhook-ul. Te rugăm să încerci din nou.",
-      updateFailed: "Nu s-a putut actualiza webhook-ul. Te rugăm să încerci din nou.",
-      deleteFailed: "Nu s-a putut șterge webhook-ul. Te rugăm să încerci din nou.",
+      createFailed:
+        "Nu s-a putut crea webhook-ul. Te rugăm să încerci din nou.",
+      updateFailed:
+        "Nu s-a putut actualiza webhook-ul. Te rugăm să încerci din nou.",
+      deleteFailed:
+        "Nu s-a putut șterge webhook-ul. Te rugăm să încerci din nou.",
       testSuccess: "Test reușit! Webhook-ul a primit cererea.",
       testFailed: "Test eșuat. Verifică URL-ul și încearcă din nou.",
       lastTriggered: "Ultima declanșare",
@@ -254,7 +283,8 @@ export default {
         },
         delete: {
           title: "Șterge Webhook",
-          description: "Acest webhook va fi șters definitiv. Această acțiune nu poate fi anulată.",
+          description:
+            "Acest webhook va fi șters definitiv. Această acțiune nu poate fi anulată.",
           cancel: "Anulează",
           confirm: "Șterge",
         },
@@ -270,16 +300,34 @@ export default {
       moduleInfo: "Informații Modul",
       comingSoon: "În curând",
       locked: "Blocat",
-      lockedDescription: "Activează modulul {module} pentru a debloca această funcționalitate",
+      lockedDescription:
+        "Activează modulul {module} pentru a debloca această funcționalitate",
+      enabled: "Activat",
+      requiresIntegration: "Necesită integrarea {integration}.",
+      unlockIntegration:
+        "Activează integrarea {integration} pentru a debloca acest modul.",
+      viewIntegrations: "Vezi Integrările",
+      noPermission:
+        "Nu ai permisiunea de a gestiona modulele. Contactează administratorul.",
+      selectOrganization:
+        "Selectează o organizație pentru a gestiona modulele.",
+      moduleDisabled: "Acest modul nu este activat pentru organizația ta.",
+      accounts: {
+        name: "Conturi și CRM",
+        description:
+          "Gestionează donatori, creditori, instituții, contacte, documente și relații.",
+      },
       library: {
         title: "Bibliotecă",
         description: "Gestionează catalogul bibliotecii, membrii și circulația",
-        longDescription: "Modulul de bibliotecă oferă instrumente complete pentru gestionarea colecțiilor de cărți și resurse media.",
+        longDescription:
+          "Modulul de bibliotecă oferă instrumente complete pentru gestionarea colecțiilor de cărți și resurse media.",
       },
       conservation: {
         title: "Conservare",
         description: "Planifică și documentează lucrările de conservare",
-        longDescription: "Modulul de conservare ajută la planificarea, executarea și documentarea tuturor activităților de conservare și restaurare.",
+        longDescription:
+          "Modulul de conservare ajută la planificarea, executarea și documentarea tuturor activităților de conservare și restaurare.",
       },
     },
     billing: {
@@ -305,7 +353,8 @@ export default {
       inviteUser: "Invită Utilizator",
       inviteDialog: {
         title: "Invită Utilizator Nou",
-        description: "Introdu adresa de email a utilizatorului pe care doriți să-l invitați.",
+        description:
+          "Introdu adresa de email a utilizatorului pe care doriți să-l invitați.",
         emailLabel: "Adresă Email",
         emailPlaceholder: "email@exemplu.com",
         roleLabel: "Rol",
@@ -336,12 +385,15 @@ export default {
       disconnect: "Deconectează",
       enableIntegration: "Activează Integrarea",
       enableSuccess: "Integrare activată cu succes",
-      enableError: "Nu s-a putut activa integrarea. Te rugăm să încerci din nou.",
+      enableError:
+        "Nu s-a putut activa integrarea. Te rugăm să încerci din nou.",
       disableSuccess: "Integrare dezactivată cu succes",
-      disableError: "Nu s-a putut dezactiva integrarea. Te rugăm să încerci din nou.",
+      disableError:
+        "Nu s-a putut dezactiva integrarea. Te rugăm să încerci din nou.",
       library: {
         title: "Bibliotecă",
-        description: "Activează modulul de bibliotecă pentru a gestiona cărțile și resursele media",
+        description:
+          "Activează modulul de bibliotecă pentru a gestiona cărțile și resursele media",
       },
     },
     activity: {
@@ -379,7 +431,8 @@ export default {
       },
       import: {
         title: "Importă Date",
-        description: "Importă date dintr-un fișier CSV pentru a crea sau actualiza înregistrări",
+        description:
+          "Importă date dintr-un fișier CSV pentru a crea sau actualiza înregistrări",
         selectType: "Selectează tipul",
         upload: "Încarcă Fișier",
         dropZone: "Trage și aruncă fișierul CSV aici sau click pentru a naviga",
@@ -446,13 +499,15 @@ export default {
     discardChanges: "Renunță la Modificări",
     discardChangesDialog: {
       title: "Renunță la Modificări",
-      description: "Ai modificări nesalvate. Ești sigur că vrei să renunți la ele?",
+      description:
+        "Ai modificări nesalvate. Ești sigur că vrei să renunți la ele?",
       cancel: "Anulează",
       discard: "Renunță",
     },
     deleteDialog: {
       title: "Confirmă Ștergerea",
-      description: "Ești sigur că vrei să ștergi acest element? Această acțiune nu poate fi anulată.",
+      description:
+        "Ești sigur că vrei să ștergi acest element? Această acțiune nu poate fi anulată.",
       cancel: "Anulează",
       delete: "Șterge",
     },
@@ -733,7 +788,8 @@ export default {
       error: "Eroare la salvarea locației",
       notFound: "Locația nu a fost găsită",
       confirmDelete: "Ești sigur că vrei să ștergi această locație?",
-      cannotEditNotPending: "Nu se poate edita o locație care nu este în așteptare",
+      cannotEditNotPending:
+        "Nu se poate edita o locație care nu este în așteptare",
     },
   },
   exhibitions: {
@@ -797,11 +853,14 @@ export default {
     quickActions: "Acțiuni Rapide",
     configuration: "Configurare Bibliotecă",
     noOrganizationTitle: "Nu s-a Găsit Organizație",
-    noOrganizationDescription: "Trebuie să creezi o organizație pentru a folosi funcționalitățile bibliotecii.",
+    noOrganizationDescription:
+      "Trebuie să creezi o organizație pentru a folosi funcționalitățile bibliotecii.",
     selectOrganization: "Selectează o Organizație",
-    selectOrganizationDescription: "Te rugăm să selectezi o organizație din meniul de mai sus.",
+    selectOrganizationDescription:
+      "Te rugăm să selectezi o organizație din meniul de mai sus.",
     notEnabled: "Biblioteca Nu Este Activată",
-    notEnabledDescription: "Integrarea Bibliotecii nu este activată pentru această organizație.",
+    notEnabledDescription:
+      "Integrarea Bibliotecii nu este activată pentru această organizație.",
     enableIntegration: "Activează Integrarea",
     createOrganization: "Creează Organizație",
     manageSettings: "Gestionează Setările",
@@ -898,15 +957,19 @@ export default {
       submitRequest: "Trimite Cererea",
       createFirst: "Creează Prima Cerere",
       noRequests: "Nu există cereri de achiziție",
-      noRequestsDescription: "Trimite o cerere pentru a adăuga elemente noi în bibliotecă",
+      noRequestsDescription:
+        "Trimite o cerere pentru a adăuga elemente noi în bibliotecă",
       noRequestsFiltered: "Nu s-au găsit cereri",
       tryAdjustFilters: "Încearcă să ajustezi filtrele",
       noOrganization: "Nu s-a Găsit Organizație",
-      noOrganizationDescription: "Trebuie să creezi o organizație pentru a gestiona achizițiile.",
+      noOrganizationDescription:
+        "Trebuie să creezi o organizație pentru a gestiona achizițiile.",
       selectOrganization: "Selectează o Organizație",
-      selectOrganizationDescription: "Te rugăm să selectezi o organizație din meniul de mai sus.",
+      selectOrganizationDescription:
+        "Te rugăm să selectezi o organizație din meniul de mai sus.",
       notEnabled: "Biblioteca Nu Este Activată",
-      notEnabledDescription: "Integrarea Bibliotecii nu este activată pentru această organizație.",
+      notEnabledDescription:
+        "Integrarea Bibliotecii nu este activată pentru această organizație.",
       stats: {
         pending: "În Așteptare",
         approved: "Aprobat",
@@ -936,7 +999,8 @@ export default {
       },
       form: {
         title: "Cerere de Achiziție Nouă",
-        description: "Solicită un element nou pentru a fi adăugat în colecția bibliotecii",
+        description:
+          "Solicită un element nou pentru a fi adăugat în colecția bibliotecii",
         titleLabel: "Titlu *",
         titlePlaceholder: "Titlu carte",
         authors: "Autori",
@@ -976,11 +1040,14 @@ export default {
       addFirstItem: "Adaugă Primul Element",
       searchPlaceholder: "Caută după titlu, autor, ISBN sau cod de bare...",
       noOrganization: "Nu s-a Găsit Organizație",
-      noOrganizationDescription: "Trebuie să creezi o organizație pentru a folosi funcționalitățile bibliotecii.",
+      noOrganizationDescription:
+        "Trebuie să creezi o organizație pentru a folosi funcționalitățile bibliotecii.",
       selectOrganization: "Selectează o Organizație",
-      selectOrganizationDescription: "Te rugăm să selectezi o organizație din meniul de mai sus.",
+      selectOrganizationDescription:
+        "Te rugăm să selectezi o organizație din meniul de mai sus.",
       notEnabled: "Biblioteca Nu Este Activată",
-      notEnabledDescription: "Integrarea Bibliotecii nu este activată pentru această organizație.",
+      notEnabledDescription:
+        "Integrarea Bibliotecii nu este activată pentru această organizație.",
       filters: {
         allTypes: "Toate Tipurile",
         allStatus: "Toate Stările",
@@ -1051,7 +1118,8 @@ export default {
         accounts: "Conturi",
         loans: "Împrumuturi",
         downloadTemplate: "Descarcă Șablon",
-        createFailed: "Nu s-a putut crea elementul. Te rugăm să încerci din nou.",
+        createFailed:
+          "Nu s-a putut crea elementul. Te rugăm să încerci din nou.",
       },
     },
     circulation: {
@@ -1229,6 +1297,8 @@ export default {
     editAccount: "Editează Cont",
     deleteAccount: "Șterge Cont",
     accountDetails: "Detalii Cont",
+    moduleDisabled: "Modulul Conturi nu este activat pentru organizația ta.",
+    enableModule: "Activează Modulul Conturi",
     tabs: {
       details: "Detalii",
       loans: "Împrumuturi",

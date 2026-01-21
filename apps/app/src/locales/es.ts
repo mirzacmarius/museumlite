@@ -291,6 +291,8 @@ export default {
     noPermission:
       "No tiene permiso para administrar módulos. Contacte a su administrador.",
     selectOrganization: "Seleccione una organización para administrar módulos.",
+    moduleDisabled: "Este módulo no está habilitado para su organización.",
+    enableModule: "Habilitar módulo",
     accounts: {
       name: "Cuentas y CRM",
       description:
@@ -2580,6 +2582,9 @@ export default {
     selectOrganizationImport:
       "Por favor selecciona una organización para importar cuentas.",
     accountNotFound: "Cuenta no encontrada",
+    moduleDisabled:
+      "El módulo de Cuentas no está habilitado para tu organización.",
+    enableModule: "Habilitar Módulo de Cuentas",
     emptyState: {
       noAccountsFound: "No se encontraron cuentas",
       noSearchResults:

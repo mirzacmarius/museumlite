@@ -293,6 +293,8 @@ export default {
       "Vous n'avez pas la permission de gérer les modules. Contactez votre administrateur.",
     selectOrganization:
       "Veuillez sélectionner une organisation pour gérer les modules.",
+    moduleDisabled: "Ce module n'est pas activé pour votre organisation.",
+    enableModule: "Activer le module",
     accounts: {
       name: "Comptes & CRM",
       description:
@@ -2600,6 +2602,9 @@ export default {
     selectOrganizationImport:
       "Veuillez sélectionner une organisation pour importer des comptes.",
     accountNotFound: "Compte non trouvé",
+    moduleDisabled:
+      "Le module Comptes n'est pas activé pour votre organisation.",
+    enableModule: "Activer le Module Comptes",
     emptyState: {
       noAccountsFound: "Aucun compte trouvé",
       noSearchResults: "Aucun compte trouvé correspondant à votre recherche",
