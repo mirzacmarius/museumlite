@@ -376,7 +376,7 @@ export default function LibraryAcquisitionsPage() {
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Clock className="h-4 w-4" />
-                <span className="text-sm">Pending</span>
+                <span className="text-sm">{tAcq("stats.pending")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
                 {statistics.submitted + statistics.underReview}
@@ -385,28 +385,28 @@ export default function LibraryAcquisitionsPage() {
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-green-500">
                 <Check className="h-4 w-4" />
-                <span className="text-sm">Approved</span>
+                <span className="text-sm">{tAcq("stats.approved")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">{statistics.approved}</p>
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-purple-500">
                 <Truck className="h-4 w-4" />
-                <span className="text-sm">Ordered</span>
+                <span className="text-sm">{tAcq("stats.ordered")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">{statistics.ordered}</p>
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-teal-500">
                 <Package className="h-4 w-4" />
-                <span className="text-sm">Received</span>
+                <span className="text-sm">{tAcq("stats.received")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">{statistics.received}</p>
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <DollarSign className="h-4 w-4" />
-                <span className="text-sm">Spent</span>
+                <span className="text-sm">{tAcq("stats.spent")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
                 {formatCurrency(statistics.totalSpent, locale, "USD")}
@@ -415,7 +415,7 @@ export default function LibraryAcquisitionsPage() {
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <AlertTriangle className="h-4 w-4" />
-                <span className="text-sm">Pending Budget</span>
+                <span className="text-sm">{tAcq("stats.pendingBudget")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
                 {formatCurrency(statistics.pendingBudget, locale, "USD")}
