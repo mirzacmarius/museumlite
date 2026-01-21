@@ -220,7 +220,11 @@ export default function OrganizationSettingsPage() {
       setSaveTemplateName("");
       setSaveTemplateDesc("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save template");
+      setError(
+        err instanceof Error
+          ? err.message
+          : t("organization.templateDialog.saveError"),
+      );
     }
   };
 
@@ -238,7 +242,9 @@ export default function OrganizationSettingsPage() {
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to delete template",
+        err instanceof Error
+          ? err.message
+          : t("organization.templateDialog.deleteError"),
       );
     }
   };

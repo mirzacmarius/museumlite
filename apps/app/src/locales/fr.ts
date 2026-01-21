@@ -180,6 +180,8 @@ export default {
         save: "Enregistrer le Modèle",
         templateNameRequired: "Le nom du modèle est requis",
         validTemplateRequired: "Veuillez d'abord entrer un modèle valide",
+        saveError: "Échec de l'enregistrement du modèle",
+        deleteError: "Échec de la suppression du modèle",
       },
       deleteTemplateDialog: {
         title: "Supprimer le Modèle",

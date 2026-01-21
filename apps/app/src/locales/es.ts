@@ -182,6 +182,8 @@ export default {
         save: "Guardar Plantilla",
         templateNameRequired: "El nombre de la plantilla es obligatorio",
         validTemplateRequired: "Por favor ingresa una plantilla válida primero",
+        saveError: "Error al guardar la plantilla",
+        deleteError: "Error al eliminar la plantilla",
       },
       deleteTemplateDialog: {
         title: "Eliminar Plantilla",

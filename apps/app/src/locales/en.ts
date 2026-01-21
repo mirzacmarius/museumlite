@@ -176,6 +176,8 @@ export default {
         save: "Save Template",
         templateNameRequired: "Template name is required",
         validTemplateRequired: "Please enter a valid template first",
+        saveError: "Failed to save template",
+        deleteError: "Failed to delete template",
       },
       deleteTemplateDialog: {
         title: "Delete Template",

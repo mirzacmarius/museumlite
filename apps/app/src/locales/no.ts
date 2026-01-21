@@ -176,6 +176,8 @@ export default {
         save: "Lagre Mal",
         templateNameRequired: "Malnavn er påkrevd",
         validTemplateRequired: "Vennligst skriv inn en gyldig mal først",
+        saveError: "Kunne ikke lagre malen",
+        deleteError: "Kunne ikke slette malen",
       },
       deleteTemplateDialog: {
         title: "Slett Mal",
