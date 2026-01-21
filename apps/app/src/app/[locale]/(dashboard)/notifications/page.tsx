@@ -5,24 +5,44 @@ import { formatDistanceLocale } from "@/lib/format-date";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@v1/ui/tabs";
 import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
 import {
+  AlertTriangle,
   ArrowRight,
   Bell,
+  CalendarClock,
   Check,
   CheckCheck,
+  ClipboardCheck,
   FileText,
   Inbox,
   MapPin,
   Package,
+  Settings,
   Truck,
+  UserCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 type FilterType = "all" | "unread";
+type CategoryType = "all" | "approvals" | "reminders" | "alerts" | "assignments" | "system";
+
+interface NotificationItem {
+  _id: Id<"notifications">;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  relatedEntityType?: string;
+  relatedEntityId?: string;
+  createdAt: number;
+  category?: string;
+}
 
 function getNotificationIcon(type: string) {
   switch (type) {
@@ -72,10 +92,20 @@ export default function NotificationsPage() {
   const locale = useCurrentLocale();
   const { currentOrganizationId, isLoading } = useOrganization();
   const [filter, setFilter] = useState<FilterType>("all");
+  const [category, setCategory] = useState<CategoryType>("all");
 
+  // Use enhanced notification center API
+  const notificationCenter = useQuery(
+    api.notifications.getNotificationCenter,
+    currentOrganizationId
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
+  );
+
+  // Fallback to audit API if enhanced not available
   const notificationsData = useQuery(
     api.audit.listNotifications,
-    currentOrganizationId
+    currentOrganizationId && !notificationCenter
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
           unreadOnly: filter === "unread",
@@ -125,8 +155,23 @@ export default function NotificationsPage() {
     );
   }
 
-  const notifications = notificationsData?.notifications ?? [];
-  const unreadCount = notificationsData?.unreadCount ?? 0;
+  // Get notifications from enhanced API or fallback
+  const allNotifications = notificationCenter?.notifications ?? notificationsData?.notifications ?? [];
+  const unreadCount = notificationCenter?.unreadCount ?? notificationsData?.unreadCount ?? 0;
+  const unreadByCategory = notificationCenter?.unreadByCategory ?? {
+    approvals: 0,
+    reminders: 0,
+    alerts: 0,
+    assignments: 0,
+    system: 0,
+  };
+
+  // Filter notifications by category and read status
+  const notifications = allNotifications.filter((n: NotificationItem) => {
+    const matchesCategory = category === "all" || n.category === category;
+    const matchesFilter = filter === "all" || !n.read;
+    return matchesCategory && matchesFilter;
+  });
 
   return (
     <div className="flex h-full w-full flex-col gap-6">
@@ -138,6 +183,66 @@ export default function NotificationsPage() {
           {t("notificationsPage.description")}
         </p>
       </div>
+
+      {/* Category tabs */}
+      <Tabs value={category} onValueChange={(v) => setCategory(v as CategoryType)} className="w-full">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="all" className="gap-2">
+            <Bell className="h-4 w-4" />
+            <span className="hidden sm:inline">All</span>
+            {unreadCount > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                {unreadCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="approvals" className="gap-2">
+            <ClipboardCheck className="h-4 w-4" />
+            <span className="hidden sm:inline">Approvals</span>
+            {unreadByCategory.approvals > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                {unreadByCategory.approvals}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="reminders" className="gap-2">
+            <CalendarClock className="h-4 w-4" />
+            <span className="hidden sm:inline">Reminders</span>
+            {unreadByCategory.reminders > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                {unreadByCategory.reminders}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="alerts" className="gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            <span className="hidden sm:inline">Alerts</span>
+            {unreadByCategory.alerts > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-xs">
+                {unreadByCategory.alerts}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="assignments" className="gap-2">
+            <UserCheck className="h-4 w-4" />
+            <span className="hidden sm:inline">Tasks</span>
+            {unreadByCategory.assignments > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                {unreadByCategory.assignments}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="system" className="gap-2">
+            <Settings className="h-4 w-4" />
+            <span className="hidden sm:inline">System</span>
+            {unreadByCategory.system > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                {unreadByCategory.system}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -206,7 +311,7 @@ export default function NotificationsPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {notifications.map((notification) => {
+            {notifications.map((notification: NotificationItem) => {
               const Icon = getNotificationIcon(notification.type);
               const link = getNotificationLink(
                 notification.relatedEntityType,
