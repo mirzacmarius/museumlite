@@ -77,6 +77,7 @@ export default {
       billing: "Facturación",
       activity: "Actividad",
       developer: "Desarrollador",
+      data: "Importar/Exportar datos",
     },
     roles: {
       title: "Gestión de Roles",
@@ -1013,6 +1014,7 @@ export default {
         on: "el",
         qty: "Cant.:",
         est: "Est.:",
+        unknownUser: "Desconocido",
       },
     },
     catalog: {
@@ -1105,6 +1107,7 @@ export default {
         selectOrganization: "Por favor seleccione una organización.",
         notEnabled: "La integración de la biblioteca no está habilitada.",
         createFailed: "Error al crear el artículo",
+        coverPreview: "Vista previa de portada",
       },
       edit: {
         pageTitle: "Editar Artículo del Catálogo",
@@ -1117,6 +1120,7 @@ export default {
         selectOrganization: "Por favor seleccione una organización.",
         notEnabled: "La integración de la biblioteca no está habilitada.",
         updateFailed: "Error al actualizar el artículo",
+        coverPreview: "Vista previa de portada",
       },
       detail: {
         itemNotFound: "Artículo no encontrado",
@@ -2899,6 +2903,39 @@ export default {
       description:
         "Por favor seleccione una organización del menú desplegable arriba para ver sus asignaciones.",
     },
+    title: "Mis Asignaciones",
+    stats: {
+      pending: "pendiente",
+      cataloged: "catalogado",
+      thisWeek: "esta semana",
+      total: "total",
+    },
+    sections: {
+      pendingApproval: "Pendiente de Su Aprobación",
+      recentlyModified: "Modificado Recientemente por Usted",
+      catalogedByYou: "Catalogado por Usted",
+    },
+    links: {
+      viewAllActivity: "Ver toda la actividad",
+      viewAllObjects: "Ver todos los objetos",
+    },
+    empty: {
+      title: "Sin asignaciones aún",
+      description:
+        "Los objetos que catalogue o pendientes de aprobación aparecerán aquí",
+      catalogNew: "Catalogar Nuevo Objeto",
+    },
+    card: {
+      urgent: "Urgente",
+      step: "Paso",
+    },
+    status: {
+      active: "activo",
+      loaned: "prestado",
+      deaccessioned: "dado de baja",
+      archived: "archivado",
+      deleted: "eliminado",
+    },
   },
   notificationsPage: {
     title: "Notificaciones",
@@ -2914,6 +2951,14 @@ export default {
     filters: {
       all: "Todos",
       unread: "No leídos",
+    },
+    categories: {
+      all: "Todos",
+      approvals: "Aprobaciones",
+      reminders: "Recordatorios",
+      alerts: "Alertas",
+      assignments: "Tareas",
+      system: "Sistema",
     },
     markAllRead: "Marcar todo como leído",
     empty: {

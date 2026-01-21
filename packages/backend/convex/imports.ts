@@ -1,20 +1,9 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { enforceExportQuota, recordExportUsage } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
-
-const accessionMethodValidator = v.union(
-  v.literal("purchase"),
-  v.literal("gift"),
-  v.literal("loan"),
-  v.literal("transfer"),
-  v.literal("donation"),
-  v.literal("other"),
-  v.literal("bequest"),
-);
 
 type AccessionMethod =
   | "purchase"
@@ -1067,5 +1056,307 @@ export const importObjectsBatch = mutation({
     });
 
     return { processed, errors };
+  },
+});
+
+export const importLoansBatch = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    jobId: v.id("importJobs"),
+    rows: v.array(
+      v.object({
+        loanNumber: v.optional(v.string()),
+        type: v.string(),
+        lenderBorrowerName: v.string(),
+        lenderBorrowerContact: v.optional(v.string()),
+        startDate: v.string(),
+        endDate: v.optional(v.string()),
+        terms: v.optional(v.string()),
+        insuranceValue: v.optional(v.string()),
+        notes: v.optional(v.string()),
+      }),
+    ),
+    batchIndex: v.number(),
+  },
+  returns: v.object({
+    processed: v.number(),
+    errors: v.array(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(ctx, args.organizationId, "loans.create");
+
+    const job = await ctx.db.get(args.jobId);
+    if (!job || job.organizationId !== args.organizationId) {
+      throw new Error("Import job not found");
+    }
+
+    await ctx.db.patch(args.jobId, { status: "processing" });
+
+    const validTypes = ["incoming", "outgoing"];
+
+    const errors: string[] = [];
+    let processed = 0;
+
+    for (let i = 0; i < args.rows.length; i++) {
+      const row = args.rows[i];
+      if (!row) continue;
+
+      const rowNum = args.batchIndex * 50 + i + 2;
+
+      try {
+        const loanType = row.type?.toLowerCase().trim();
+        if (!loanType || !validTypes.includes(loanType)) {
+          errors.push(
+            `Row ${rowNum}: Invalid type "${row.type}". Use: incoming or outgoing`,
+          );
+          continue;
+        }
+
+        if (!row.lenderBorrowerName || row.lenderBorrowerName.trim() === "") {
+          errors.push(`Row ${rowNum}: Lender/Borrower name is required`);
+          continue;
+        }
+
+        const startDate = parseDate(row.startDate);
+        const endDate = row.endDate ? parseDate(row.endDate) : undefined;
+        const insuranceValue = parseCost(row.insuranceValue || "");
+
+        const loanNumber =
+          row.loanNumber || `LN-${Date.now()}-${args.batchIndex}-${i}`;
+
+        await ctx.db.insert("loans", {
+          organizationId: args.organizationId,
+          loanNumber,
+          type: loanType as "incoming" | "outgoing",
+          lenderBorrowerName: row.lenderBorrowerName.trim(),
+          lenderBorrowerContact: row.lenderBorrowerContact?.trim(),
+          startDate,
+          endDate,
+          terms: row.terms?.trim(),
+          insuranceValue,
+          notes: row.notes?.trim(),
+          status: "pending",
+          workflowStep: 0,
+          workflowHistory: [
+            {
+              step: 0,
+              approvedBy: userId,
+              approvedAt: Date.now(),
+              comment: "Imported via CSV",
+            },
+          ],
+        });
+
+        processed++;
+      } catch (err) {
+        errors.push(
+          `Row ${rowNum}: ${err instanceof Error ? err.message : "Unknown error"}`,
+        );
+      }
+    }
+
+    const newProcessedItems = job.processedItems + processed;
+    const newProgress = Math.round((newProcessedItems / job.totalItems) * 100);
+    const allErrors = [...(job.errors || []), ...errors];
+
+    await ctx.db.patch(args.jobId, {
+      processedItems: newProcessedItems,
+      progress: newProgress,
+      errors: allErrors.slice(-100),
+      status: newProcessedItems >= job.totalItems ? "completed" : "processing",
+    });
+
+    return { processed, errors };
+  },
+});
+
+// ============================================
+// CSV TEMPLATES
+// ============================================
+
+export const getImportTemplate = query({
+  args: {
+    type: v.union(
+      v.literal("objects"),
+      v.literal("accessions"),
+      v.literal("locations"),
+      v.literal("accounts"),
+      v.literal("loans"),
+    ),
+  },
+  returns: v.object({
+    headers: v.array(v.string()),
+    exampleRow: v.array(v.string()),
+    requiredFields: v.array(v.string()),
+    description: v.string(),
+  }),
+  handler: async (_ctx, args) => {
+    type TemplateType = "objects" | "accessions" | "locations" | "accounts" | "loans";
+    const templates: Record<
+      TemplateType,
+      {
+        headers: string[];
+        exampleRow: string[];
+        requiredFields: string[];
+        description: string;
+      }
+    > = {
+      objects: {
+        headers: [
+          "accessionNumber",
+          "title",
+          "alternativeTitle",
+          "creator",
+          "objectType",
+          "objectName",
+          "culture",
+          "period",
+          "dateCreated",
+          "materials",
+          "technique",
+          "dimensions",
+          "description",
+          "condition",
+          "provenance",
+          "location",
+          "collectionGroup",
+        ],
+        exampleRow: [
+          "2024.001",
+          "Untitled Landscape",
+          "Landscape Study",
+          "John Smith",
+          "Painting",
+          "Oil on canvas",
+          "American",
+          "19th Century",
+          "1850",
+          "Oil, Canvas",
+          "Oil painting",
+          "24 x 36 inches",
+          "A landscape painting depicting...",
+          "Good",
+          "Gift from the Smith Estate",
+          "Gallery A",
+          "American Art",
+        ],
+        requiredFields: ["title"],
+        description:
+          "Import collection objects. Location and collectionGroup must match existing names.",
+      },
+      accessions: {
+        headers: [
+          "accessionNumber",
+          "dateReceived",
+          "source",
+          "method",
+          "cost",
+          "notes",
+        ],
+        exampleRow: [
+          "2024.001",
+          "2024-01-15",
+          "John Smith Estate",
+          "bequest",
+          "5000",
+          "Part of the Smith Collection",
+        ],
+        requiredFields: ["source"],
+        description:
+          "Import accession records. Method must be: purchase, gift, loan, transfer, donation, bequest, or other.",
+      },
+      locations: {
+        headers: [
+          "name",
+          "type",
+          "parentLocation",
+          "address",
+          "capacity",
+          "notes",
+        ],
+        exampleRow: [
+          "Gallery A",
+          "Gallery",
+          "Main Building",
+          "123 Museum St",
+          "50",
+          "Main exhibition gallery",
+        ],
+        requiredFields: ["name", "type"],
+        description:
+          "Import locations. Parent location must match an existing location name.",
+      },
+      accounts: {
+        headers: [
+          "accountNumber",
+          "accountType",
+          "businessName",
+          "firstName",
+          "lastName",
+          "email",
+          "phone",
+          "address",
+          "city",
+          "zipCode",
+          "country",
+          "contactPerson",
+          "contactEmail",
+          "notes",
+        ],
+        exampleRow: [
+          "ACC-001",
+          "lender",
+          "Smith Gallery",
+          "",
+          "",
+          "info@smithgallery.com",
+          "555-0100",
+          "456 Art Lane",
+          "New York",
+          "10001",
+          "USA",
+          "Jane Smith",
+          "jane@smithgallery.com",
+          "Major lender",
+        ],
+        requiredFields: ["accountType"],
+        description:
+          "Import accounts. Type must be: lender, borrower, both, institution, or patron.",
+      },
+      loans: {
+        headers: [
+          "loanNumber",
+          "type",
+          "lenderBorrowerName",
+          "lenderBorrowerContact",
+          "startDate",
+          "endDate",
+          "terms",
+          "insuranceValue",
+          "notes",
+        ],
+        exampleRow: [
+          "LN-2024-001",
+          "incoming",
+          "Smith Gallery",
+          "jane@smithgallery.com",
+          "2024-01-15",
+          "2024-06-15",
+          "Standard loan agreement",
+          "50000",
+          "Five paintings for summer exhibition",
+        ],
+        requiredFields: ["type", "lenderBorrowerName", "startDate"],
+        description:
+          "Import loans. Type must be: incoming or outgoing. Dates in YYYY-MM-DD format.",
+      },
+    };
+
+    return templates[args.type] ?? templates.objects;
   },
 });

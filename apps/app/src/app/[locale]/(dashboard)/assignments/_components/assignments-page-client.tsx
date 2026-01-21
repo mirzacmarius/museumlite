@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDistanceLocale } from "@/lib/format-date";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
@@ -71,6 +71,7 @@ export function AssignmentsPageClient({
   assignments,
 }: AssignmentsPageClientProps) {
   const locale = useCurrentLocale();
+  const t = useI18n();
   const { pendingApprovals, recentlyModified, myCatalogedItems, stats } =
     assignments;
 
@@ -79,7 +80,9 @@ export function AssignmentsPageClient({
       <header className="h-14 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="flex items-center gap-3">
           <ClipboardList className="h-5 w-5 text-indigo-400" />
-          <h1 className="text-lg font-semibold text-white">My Assignments</h1>
+          <h1 className="text-lg font-semibold text-white">
+            {t("assignmentsPage.title")}
+          </h1>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-6 text-xs">
@@ -88,7 +91,8 @@ export function AssignmentsPageClient({
                 <Clock className="h-3.5 w-3.5" />
               </div>
               <span className="text-muted-foreground">
-                {stats.totalPendingApprovals} pending
+                {stats.totalPendingApprovals}{" "}
+                {t("assignmentsPage.stats.pending")}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -96,7 +100,8 @@ export function AssignmentsPageClient({
                 <CheckCircle2 className="h-3.5 w-3.5" />
               </div>
               <span className="text-muted-foreground">
-                {stats.totalCatalogedItems} cataloged
+                {stats.totalCatalogedItems}{" "}
+                {t("assignmentsPage.stats.cataloged")}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -104,7 +109,8 @@ export function AssignmentsPageClient({
                 <History className="h-3.5 w-3.5" />
               </div>
               <span className="text-muted-foreground">
-                {stats.itemsModifiedThisWeek} this week
+                {stats.itemsModifiedThisWeek}{" "}
+                {t("assignmentsPage.stats.thisWeek")}
               </span>
             </div>
           </div>
@@ -119,7 +125,7 @@ export function AssignmentsPageClient({
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 text-amber-400" />
                   <h2 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-                    Pending Your Approval
+                    {t("assignmentsPage.sections.pendingApproval")}
                   </h2>
                   <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-400">
                     {pendingApprovals.length}
@@ -141,14 +147,14 @@ export function AssignmentsPageClient({
                 <div className="flex items-center gap-2">
                   <History className="h-4 w-4 text-blue-400" />
                   <h2 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-                    Recently Modified by You
+                    {t("assignmentsPage.sections.recentlyModified")}
                   </h2>
                 </div>
                 <Link
                   href="/activity"
                   className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground/80 transition-colors"
                 >
-                  View all activity
+                  {t("assignmentsPage.links.viewAllActivity")}
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
@@ -171,17 +177,18 @@ export function AssignmentsPageClient({
                 <div className="flex items-center gap-2">
                   <LayoutGrid className="h-4 w-4 text-emerald-400" />
                   <h2 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-                    Cataloged by You
+                    {t("assignmentsPage.sections.catalogedByYou")}
                   </h2>
                   <span className="text-xs text-muted-foreground">
-                    ({stats.totalCatalogedItems} total)
+                    ({stats.totalCatalogedItems}{" "}
+                    {t("assignmentsPage.stats.total")})
                   </span>
                 </div>
                 <Link
                   href="/objects"
                   className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground/80 transition-colors"
                 >
-                  View all objects
+                  {t("assignmentsPage.links.viewAllObjects")}
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
@@ -212,14 +219,16 @@ export function AssignmentsPageClient({
                 <Inbox className="h-12 w-12 text-muted-foreground" />
                 <div className="text-center">
                   <h3 className="text-sm font-medium text-muted-foreground">
-                    No assignments yet
+                    {t("assignmentsPage.empty.title")}
                   </h3>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Items you catalog or have pending approvals will appear here
+                    {t("assignmentsPage.empty.description")}
                   </p>
                 </div>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href="/objects/new">Catalog New Object</Link>
+                  <Link href="/objects/new">
+                    {t("assignmentsPage.empty.catalogNew")}
+                  </Link>
                 </Button>
               </div>
             )}
@@ -231,6 +240,7 @@ export function AssignmentsPageClient({
 
 function PendingApprovalCard({ item }: { item: PendingApproval }) {
   const locale = useCurrentLocale();
+  const t = useI18n();
   const typeConfig = {
     accession: {
       icon: FileCheck,
@@ -295,7 +305,7 @@ function PendingApprovalCard({ item }: { item: PendingApproval }) {
               </span>
               {item.urgency === "high" && (
                 <span className="rounded bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-medium text-rose-400">
-                  Urgent
+                  {t("assignmentsPage.card.urgent")}
                 </span>
               )}
             </div>
@@ -320,7 +330,7 @@ function PendingApprovalCard({ item }: { item: PendingApproval }) {
           </span>
           {item.workflowStep !== undefined && (
             <span className="text-muted-foreground">
-              Step {item.workflowStep}
+              {t("assignmentsPage.card.step")} {item.workflowStep}
             </span>
           )}
         </div>
@@ -338,6 +348,7 @@ function CollectionCard({
   subtitle?: string;
   status?: "active" | "loaned" | "deaccessioned" | "archived" | "deleted";
 }) {
+  const t = useI18n();
   const statusColors: Record<string, string> = {
     active: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
     loaned: "bg-purple-500/10 text-purple-400 border-purple-500/30",
@@ -371,7 +382,9 @@ function CollectionCard({
                   statusColors[status],
                 )}
               >
-                {status}
+                {t(
+                  `assignmentsPage.status.${status}` as "assignmentsPage.status.active",
+                )}
               </span>
             </div>
           )}

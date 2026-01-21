@@ -75,6 +75,7 @@ export default {
       billing: "Billing",
       activity: "Activity",
       developer: "Developer",
+      data: "Data Import/Export",
     },
     roles: {
       title: "Role Management",
@@ -2355,7 +2356,6 @@ export default {
       newExhibitionTitle: "Create Exhibition Record",
       newExhibitionSubtitle: "Record a new exhibition history for an object.",
       loanInfo: "Loan Information",
-      createError: "Failed to create exhibition. Please try again.",
     },
     documentUpload: {
       typeLabel: "Document Type",
@@ -2574,6 +2574,7 @@ export default {
         on: "on",
         qty: "Qty:",
         est: "Est:",
+        unknownUser: "Unknown",
       },
     },
     catalog: {
@@ -2665,6 +2666,7 @@ export default {
         selectOrganization: "Please select an organization.",
         notEnabled: "Library integration is not enabled.",
         createFailed: "Failed to create item",
+        coverPreview: "Cover preview",
       },
       edit: {
         pageTitle: "Edit Catalog Item",
@@ -2677,6 +2679,7 @@ export default {
         selectOrganization: "Please select an organization.",
         notEnabled: "Library integration is not enabled.",
         updateFailed: "Failed to update item",
+        coverPreview: "Cover preview",
       },
       detail: {
         itemNotFound: "Item not found",
@@ -2898,6 +2901,39 @@ export default {
       description:
         "Please select an organization from the dropdown above to view your assignments.",
     },
+    title: "My Assignments",
+    stats: {
+      pending: "pending",
+      cataloged: "cataloged",
+      thisWeek: "this week",
+      total: "total",
+    },
+    sections: {
+      pendingApproval: "Pending Your Approval",
+      recentlyModified: "Recently Modified by You",
+      catalogedByYou: "Cataloged by You",
+    },
+    links: {
+      viewAllActivity: "View all activity",
+      viewAllObjects: "View all objects",
+    },
+    empty: {
+      title: "No assignments yet",
+      description:
+        "Items you catalog or have pending approvals will appear here",
+      catalogNew: "Catalog New Object",
+    },
+    card: {
+      urgent: "Urgent",
+      step: "Step",
+    },
+    status: {
+      active: "active",
+      loaned: "loaned",
+      deaccessioned: "deaccessioned",
+      archived: "archived",
+      deleted: "deleted",
+    },
   },
   notificationsPage: {
     title: "Notifications",
@@ -2912,6 +2948,14 @@ export default {
     filters: {
       all: "All",
       unread: "Unread",
+    },
+    categories: {
+      all: "All",
+      approvals: "Approvals",
+      reminders: "Reminders",
+      alerts: "Alerts",
+      assignments: "Tasks",
+      system: "System",
     },
     markAllRead: "Mark all as read",
     empty: {

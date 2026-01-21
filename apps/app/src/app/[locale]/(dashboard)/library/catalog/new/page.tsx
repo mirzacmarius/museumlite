@@ -47,8 +47,8 @@ const TARGET_AUDIENCE_VALUES = [
   "all_ages",
 ] as const;
 
-type ItemType = (typeof ITEM_TYPES)[number]["value"];
-type TargetAudience = (typeof TARGET_AUDIENCES)[number]["value"];
+type ItemType = (typeof ITEM_TYPE_VALUES)[number];
+type TargetAudience = (typeof TARGET_AUDIENCE_VALUES)[number];
 
 export default function NewCatalogItemPage() {
   const router = useRouter();
@@ -748,7 +748,7 @@ export default function NewCatalogItemPage() {
                   <div className="mt-2">
                     <img
                       src={formData.coverImageUrl}
-                      alt="Cover preview"
+                      alt={tNew("coverPreview")}
                       className="h-40 w-auto rounded border object-cover"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = "none";

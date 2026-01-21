@@ -533,7 +533,8 @@ export default function LibraryAcquisitionsPage() {
                         )}
                         <p className="text-xs text-muted-foreground">
                           {tAcq("labels.requestedBy")}{" "}
-                          {request.requestedByUser?.name || "Unknown"}{" "}
+                          {request.requestedByUser?.name ||
+                            tAcq("labels.unknownUser")}{" "}
                           {tAcq("labels.on")} {formatDate(request.requestedAt)}
                         </p>
                       </div>

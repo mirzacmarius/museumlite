@@ -74,6 +74,7 @@ export default {
       billing: "Fakturering",
       activity: "Aktivitet",
       developer: "Utvikler",
+      data: "Dataimport/-eksport",
     },
     roles: {
       title: "Rollehåndtering",
@@ -992,6 +993,7 @@ export default {
         on: "den",
         qty: "Ant.:",
         est: "Est.:",
+        unknownUser: "Ukjent",
       },
     },
     catalog: {
@@ -1084,6 +1086,7 @@ export default {
         selectOrganization: "Vennligst velg en organisasjon.",
         notEnabled: "Bibliotekintegrasjonen er ikke aktivert.",
         createFailed: "Kunne ikke opprette gjenstand",
+        coverPreview: "Forhåndsvisning av omslag",
       },
       edit: {
         pageTitle: "Rediger Katalogartikkel",
@@ -1096,6 +1099,7 @@ export default {
         selectOrganization: "Vennligst velg en organisasjon.",
         notEnabled: "Bibliotekintegrasjonen er ikke aktivert.",
         updateFailed: "Kunne ikke oppdatere gjenstand",
+        coverPreview: "Forhåndsvisning av omslag",
       },
       detail: {
         itemNotFound: "Gjenstand ikke funnet",
@@ -2908,6 +2912,39 @@ export default {
       description:
         "Vennligst velg en organisasjon fra rullegardinmenyen ovenfor for å se dine tildelinger.",
     },
+    title: "Mine Tildelinger",
+    stats: {
+      pending: "ventende",
+      cataloged: "katalogisert",
+      thisWeek: "denne uken",
+      total: "totalt",
+    },
+    sections: {
+      pendingApproval: "Venter på Din Godkjenning",
+      recentlyModified: "Nylig Endret av Deg",
+      catalogedByYou: "Katalogisert av Deg",
+    },
+    links: {
+      viewAllActivity: "Vis all aktivitet",
+      viewAllObjects: "Vis alle objekter",
+    },
+    empty: {
+      title: "Ingen tildelinger ennå",
+      description:
+        "Objekter du katalogiserer eller har ventende godkjenninger vil vises her",
+      catalogNew: "Katalogiser Nytt Objekt",
+    },
+    card: {
+      urgent: "Haster",
+      step: "Trinn",
+    },
+    status: {
+      active: "aktiv",
+      loaned: "utlånt",
+      deaccessioned: "avhendet",
+      archived: "arkivert",
+      deleted: "slettet",
+    },
   },
   notificationsPage: {
     title: "Varsler",
@@ -2922,6 +2959,14 @@ export default {
     filters: {
       all: "Alle",
       unread: "Ulest",
+    },
+    categories: {
+      all: "Alle",
+      approvals: "Godkjenninger",
+      reminders: "Påminnelser",
+      alerts: "Varsler",
+      assignments: "Oppgaver",
+      system: "System",
     },
     markAllRead: "Merk alle som lest",
     empty: {

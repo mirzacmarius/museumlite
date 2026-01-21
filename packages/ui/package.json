@@ -35,6 +35,7 @@
     "./logo": "./src/components/logo.tsx",
     "./popover": "./src/components/popover.tsx",
     "./postcss": "./postcss.config.js",
+    "./progress": "./src/components/progress.tsx",
     "./scroll-area": "./src/components/scroll-area.tsx",
     "./select": "./src/components/select.tsx",
     "./separator": "./src/components/separator.tsx",

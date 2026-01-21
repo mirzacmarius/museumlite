@@ -491,7 +491,7 @@ export const notifyUsersWithPermission = internalMutation({
   handler: async (ctx, args) => {
     // Get all organization members
     const members = await ctx.db
-      .query("organizationMembers")
+      .query("userOrganizations")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
@@ -504,10 +504,22 @@ export const notifyUsersWithPermission = internalMutation({
         continue;
       }
 
-      // Get role and check permission
-      const role = await ctx.db.get(member.roleId);
-      if (role && role.permissions.includes(args.permission)) {
-        userIds.push(member.userId);
+      // Get role and check permissions through rolePermissions join table
+      const rolePerms = await ctx.db
+        .query("rolePermissions")
+        .withIndex("by_role", (q) => q.eq("roleId", member.roleId))
+        .collect();
+
+      // Get the permission IDs for this role
+      const permissionIds = rolePerms.map((rp) => rp.permissionId);
+
+      // Check if any of the role's permissions match the required permission
+      for (const permId of permissionIds) {
+        const permission = await ctx.db.get(permId);
+        if (permission && permission.name === args.permission) {
+          userIds.push(member.userId);
+          break;
+        }
       }
     }
 
@@ -515,15 +527,26 @@ export const notifyUsersWithPermission = internalMutation({
       return 0;
     }
 
-    return await ctx.runMutation(internal.notifications.sendNotificationToUsers, {
-      organizationId: args.organizationId,
-      userIds,
-      type: args.type,
-      title: args.title,
-      message: args.message,
-      relatedEntityType: args.relatedEntityType,
-      relatedEntityId: args.relatedEntityId,
-    });
+    // Inline notification creation to avoid circular type reference
+    const now = Date.now();
+    let count = 0;
+
+    for (const userId of userIds) {
+      await ctx.db.insert("notifications", {
+        organizationId: args.organizationId,
+        userId,
+        type: args.type,
+        title: args.title,
+        message: args.message,
+        read: false,
+        relatedEntityType: args.relatedEntityType,
+        relatedEntityId: args.relatedEntityId,
+        createdAt: now,
+      });
+      count++;
+    }
+
+    return count;
   },
 });
 

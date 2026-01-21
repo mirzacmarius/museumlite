@@ -30,7 +30,13 @@ import Link from "next/link";
 import { useState } from "react";
 
 type FilterType = "all" | "unread";
-type CategoryType = "all" | "approvals" | "reminders" | "alerts" | "assignments" | "system";
+type CategoryType =
+  | "all"
+  | "approvals"
+  | "reminders"
+  | "alerts"
+  | "assignments"
+  | "system";
 
 interface NotificationItem {
   _id: Id<"notifications">;
@@ -156,8 +162,10 @@ export default function NotificationsPage() {
   }
 
   // Get notifications from enhanced API or fallback
-  const allNotifications = notificationCenter?.notifications ?? notificationsData?.notifications ?? [];
-  const unreadCount = notificationCenter?.unreadCount ?? notificationsData?.unreadCount ?? 0;
+  const allNotifications =
+    notificationCenter?.notifications ?? notificationsData?.notifications ?? [];
+  const unreadCount =
+    notificationCenter?.unreadCount ?? notificationsData?.unreadCount ?? 0;
   const unreadByCategory = notificationCenter?.unreadByCategory ?? {
     approvals: 0,
     reminders: 0,
@@ -185,11 +193,17 @@ export default function NotificationsPage() {
       </div>
 
       {/* Category tabs */}
-      <Tabs value={category} onValueChange={(v) => setCategory(v as CategoryType)} className="w-full">
+      <Tabs
+        value={category}
+        onValueChange={(v) => setCategory(v as CategoryType)}
+        className="w-full"
+      >
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="all" className="gap-2">
             <Bell className="h-4 w-4" />
-            <span className="hidden sm:inline">All</span>
+            <span className="hidden sm:inline">
+              {t("notificationsPage.categories.all")}
+            </span>
             {unreadCount > 0 && (
               <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                 {unreadCount}
@@ -198,7 +212,9 @@ export default function NotificationsPage() {
           </TabsTrigger>
           <TabsTrigger value="approvals" className="gap-2">
             <ClipboardCheck className="h-4 w-4" />
-            <span className="hidden sm:inline">Approvals</span>
+            <span className="hidden sm:inline">
+              {t("notificationsPage.categories.approvals")}
+            </span>
             {unreadByCategory.approvals > 0 && (
               <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                 {unreadByCategory.approvals}
@@ -207,7 +223,9 @@ export default function NotificationsPage() {
           </TabsTrigger>
           <TabsTrigger value="reminders" className="gap-2">
             <CalendarClock className="h-4 w-4" />
-            <span className="hidden sm:inline">Reminders</span>
+            <span className="hidden sm:inline">
+              {t("notificationsPage.categories.reminders")}
+            </span>
             {unreadByCategory.reminders > 0 && (
               <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                 {unreadByCategory.reminders}
@@ -216,7 +234,9 @@ export default function NotificationsPage() {
           </TabsTrigger>
           <TabsTrigger value="alerts" className="gap-2">
             <AlertTriangle className="h-4 w-4" />
-            <span className="hidden sm:inline">Alerts</span>
+            <span className="hidden sm:inline">
+              {t("notificationsPage.categories.alerts")}
+            </span>
             {unreadByCategory.alerts > 0 && (
               <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-xs">
                 {unreadByCategory.alerts}
@@ -225,7 +245,9 @@ export default function NotificationsPage() {
           </TabsTrigger>
           <TabsTrigger value="assignments" className="gap-2">
             <UserCheck className="h-4 w-4" />
-            <span className="hidden sm:inline">Tasks</span>
+            <span className="hidden sm:inline">
+              {t("notificationsPage.categories.assignments")}
+            </span>
             {unreadByCategory.assignments > 0 && (
               <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                 {unreadByCategory.assignments}
@@ -234,7 +256,9 @@ export default function NotificationsPage() {
           </TabsTrigger>
           <TabsTrigger value="system" className="gap-2">
             <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">System</span>
+            <span className="hidden sm:inline">
+              {t("notificationsPage.categories.system")}
+            </span>
             {unreadByCategory.system > 0 && (
               <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                 {unreadByCategory.system}

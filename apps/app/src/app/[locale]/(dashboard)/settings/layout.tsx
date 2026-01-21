@@ -18,6 +18,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const isModulesPath = pathname === "/settings/modules";
   const isActivityPath = pathname === "/settings/activity";
   const isDeveloperPath = pathname === "/settings/developer";
+  const isDataPath = pathname === "/settings/data";
   return (
     <div className="flex h-full w-full px-6 py-8">
       <div className="mx-auto flex h-full w-full max-w-screen-xl gap-12">
@@ -147,6 +148,20 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
               )}
             >
               {t("developer")}
+            </span>
+          </Link>
+          <Link
+            href="/settings/data"
+            className={cn(
+              `${buttonVariants({ variant: "ghost" })} ${isDataPath && "bg-primary/5"} justify-start rounded-md`,
+            )}
+          >
+            <span
+              className={cn(
+                `text-sm text-primary/80 ${isDataPath && "font-medium text-primary"}`,
+              )}
+            >
+              {t("data")}
             </span>
           </Link>
         </div>
