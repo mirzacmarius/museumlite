@@ -4,7 +4,7 @@
  * Import `modules` from this file in all test files:
  *
  * ```typescript
- * import { modules } from "./test-setup";
+ * import { modules } from "./_testSetup";
  * import schema from "./schema";
  *
  * test("example", async () => {
