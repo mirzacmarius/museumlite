@@ -42,7 +42,6 @@ export function AutoSaveIndicator({
           text: error || "Save failed",
           color: "text-red-400",
         };
-      case "idle":
       default:
         if (isDirty) {
           return {

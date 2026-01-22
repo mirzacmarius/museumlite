@@ -72,8 +72,11 @@ function EntityPreview({
 
       {metadata && metadata.length > 0 && (
         <div className="space-y-1 border-t border-border pt-2">
-          {metadata.map((item, index) => (
-            <div key={index} className="flex justify-between text-xs">
+          {metadata.map((item) => (
+            <div
+              key={`${item.label}-${item.value}`}
+              className="flex justify-between text-xs"
+            >
               <span className="text-muted-foreground">{item.label}</span>
               <span className="font-medium">{item.value}</span>
             </div>

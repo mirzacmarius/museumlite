@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
 import { cn } from "@v1/ui/utils";
+import * as React from "react";
 
 interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {
   value?: number;
@@ -21,7 +21,7 @@ const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
         aria-valuenow={value}
         className={cn(
           "relative h-2 w-full overflow-hidden rounded-full bg-primary/20",
-          className
+          className,
         )}
         {...props}
       >
@@ -31,7 +31,7 @@ const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
         />
       </div>
     );
-  }
+  },
 );
 Progress.displayName = "Progress";
 

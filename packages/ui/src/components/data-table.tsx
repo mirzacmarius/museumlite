@@ -2,7 +2,7 @@ import Link from "next/link";
 import type * as React from "react";
 import { cn } from "../utils";
 
-export interface DataTableProps<T = any> {
+export interface DataTableProps<T = Record<string, unknown>> {
   columns: {
     key: string;
     label: string;
@@ -19,7 +19,7 @@ export interface DataTableProps<T = any> {
   className?: string;
 }
 
-export function DataTable<T extends Record<string, any>>({
+export function DataTable<T extends Record<string, unknown>>({
   columns,
   data,
   loading,
@@ -51,8 +51,8 @@ export function DataTable<T extends Record<string, any>>({
           ))}
         </div>
         <div>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="border-b border-border/50 px-4 py-3">
+          {["sk-1", "sk-2", "sk-3", "sk-4", "sk-5"].map((key) => (
+            <div key={key} className="border-b border-border/50 px-4 py-3">
               <div className="h-10 bg-card/40 animate-pulse rounded w-full" />
             </div>
           ))}
@@ -112,18 +112,22 @@ export function DataTable<T extends Record<string, any>>({
           const href = rowHref?.(row);
           const ariaLabel = rowAriaLabel?.(row);
           const isClickable = href || onRowClick;
+          const rowKey =
+            (row as { _id?: string; id?: string })?._id ??
+            (row as { _id?: string; id?: string })?.id ??
+            `row-${rowIndex}`;
 
           const rowContent = (
             <>
               {columns.map((col) => (
                 <div
-                  key={`${rowIndex}-${col.key}`}
+                  key={`${rowKey}-${col.key}`}
                   className={cn(
                     "text-xs text-foreground/80 px-4 py-3 flex-1 flex items-center",
                     col.className,
                   )}
                 >
-                  {col.render ? col.render(row) : row[col.key]}
+                  {col.render ? col.render(row) : String(row[col.key] ?? "")}
                 </div>
               ))}
             </>
@@ -132,7 +136,7 @@ export function DataTable<T extends Record<string, any>>({
           if (href) {
             return (
               <Link
-                key={rowIndex}
+                key={rowKey}
                 href={href}
                 aria-label={ariaLabel}
                 className={cn(
@@ -148,7 +152,7 @@ export function DataTable<T extends Record<string, any>>({
 
           return (
             <div
-              key={rowIndex}
+              key={rowKey}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
               onKeyDown={
                 onRowClick

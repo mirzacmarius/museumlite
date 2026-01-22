@@ -21,8 +21,8 @@ const Timeline = React.forwardRef<HTMLDivElement, TimelineProps>(
         <div className="absolute left-1.5 w-px bg-zinc-800 top-2 bottom-2" />
 
         <div className="space-y-6">
-          {items.map((item, index) => (
-            <div key={index} className="relative pl-4">
+          {items.map((item) => (
+            <div key={`${item.title}-${item.date}`} className="relative pl-4">
               <div
                 className={cn(
                   "absolute -left-4 top-1 w-3 h-3 rounded-full border-2 border-zinc-950",

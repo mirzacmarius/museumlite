@@ -33,8 +33,7 @@ export function NavigationProgress() {
       const target = e.target as HTMLElement;
       const anchor = target.closest("a");
       if (
-        anchor &&
-        anchor.href &&
+        anchor?.href &&
         !anchor.target &&
         !anchor.href.startsWith("#") &&
         anchor.origin === window.location.origin &&

@@ -525,7 +525,11 @@ function LoanList({
                 const loanId = loan._id as Id<"loans">;
                 const isSelected = selectedIds.has(loanId);
                 return (
-                  <div onClick={(e) => e.stopPropagation()}>
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    role="presentation"
+                  >
                     <Checkbox
                       checked={isSelected}
                       onCheckedChange={() => toggleSelection(loanId)}

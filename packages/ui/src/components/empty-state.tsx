@@ -131,9 +131,9 @@ export function EmptyState({
 
       {tips && tips.length > 0 && (
         <div className="mt-4 space-y-1">
-          {tips.map((tip, index) => (
+          {tips.map((tip) => (
             <p
-              key={index}
+              key={tip}
               className="text-xs text-muted-foreground flex items-start gap-2"
             >
               <span className="text-primary">•</span>
