@@ -64,6 +64,7 @@ import type * as notifications from "../notifications.js";
 import type * as organizations from "../organizations.js";
 import type * as reporting from "../reporting.js";
 import type * as roles from "../roles.js";
+import type * as savedViews from "../savedViews.js";
 import type * as search from "../search.js";
 import type * as seed from "../seed.js";
 import type * as seedFresh from "../seedFresh.js";
@@ -148,6 +149,7 @@ declare const fullApi: ApiFromModules<{
   organizations: typeof organizations;
   reporting: typeof reporting;
   roles: typeof roles;
+  savedViews: typeof savedViews;
   search: typeof search;
   seed: typeof seed;
   seedFresh: typeof seedFresh;
