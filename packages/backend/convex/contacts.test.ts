@@ -4,6 +4,8 @@ import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 
+const modules = import.meta.glob("./**/*.ts");
+
 describe("contacts", () => {
   let t: ReturnType<typeof convexTest>;
   let organizationId: Id<"organizations">;
@@ -12,7 +14,7 @@ describe("contacts", () => {
   let accountId: Id<"accounts">;
 
   beforeEach(async () => {
-    t = convexTest(schema);
+    t = convexTest(schema, modules);
 
     organizationId = await t.run(async (ctx) => {
       return await ctx.db.insert("organizations", {

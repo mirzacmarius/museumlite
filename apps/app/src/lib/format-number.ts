@@ -5,17 +5,19 @@
  * type-safe formatting functions.
  */
 
-type Locale = "en" | "fr" | "es" | "no";
+type Locale = "en" | "fr" | "es" | "no" | "ro";
 
 /**
  * Maps app locale codes to Intl API locale strings.
  * Norwegian "no" -> "nb-NO" (Norwegian Bokmål)
+ * Romanian "ro" -> "ro-RO"
  */
 const LOCALE_MAP: Record<Locale, string> = {
   en: "en-US",
   fr: "fr-FR",
   es: "es-ES",
   no: "nb-NO", // Norwegian Bokmål
+  ro: "ro-RO", // Romanian
 };
 
 /**

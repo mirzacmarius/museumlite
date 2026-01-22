@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { filterCondition } from "./schema";
 import { requireModuleEnabled } from "./utils/featureGates";
@@ -183,6 +184,15 @@ export const create = mutation({
       createdAt: Date.now(),
     });
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "created_account_segment",
+      entityType: "accountSegment",
+      entityId: segmentId,
+      changes: { name: args.name.trim() },
+    });
+
     return segmentId;
   },
 });
@@ -220,6 +230,15 @@ export const update = mutation({
 
     await ctx.db.patch(args.segmentId, updates);
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: segment.organizationId,
+      userId,
+      action: "updated_account_segment",
+      entityType: "accountSegment",
+      entityId: args.segmentId,
+      changes: updates,
+    });
+
     return null;
   },
 });
@@ -244,6 +263,15 @@ export const remove = mutation({
     await requirePermission(ctx, segment.organizationId, "accounts.manage");
 
     await ctx.db.delete(args.segmentId);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: segment.organizationId,
+      userId,
+      action: "deleted_account_segment",
+      entityType: "accountSegment",
+      entityId: args.segmentId,
+      changes: { name: segment.name },
+    });
 
     return null;
   },

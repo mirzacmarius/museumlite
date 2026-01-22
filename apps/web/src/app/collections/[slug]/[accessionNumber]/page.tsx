@@ -45,10 +45,19 @@ export default function PublicObjectPage() {
     );
   }
 
-  const primaryImage = object.images.find((img) => img.isPrimary);
+  const primaryImage = object.images.find(
+    (img: { _id: string; url: string; isPrimary: boolean; caption?: string }) =>
+      img.isPrimary,
+  );
   const sortedImages = [
-    ...object.images.filter((img) => img.isPrimary),
-    ...object.images.filter((img) => !img.isPrimary),
+    ...object.images.filter(
+      (img: { _id: string; url: string; isPrimary: boolean; caption?: string }) =>
+        img.isPrimary,
+    ),
+    ...object.images.filter(
+      (img: { _id: string; url: string; isPrimary: boolean; caption?: string }) =>
+        !img.isPrimary,
+    ),
   ];
   const currentImage = sortedImages[selectedImageIndex];
 
@@ -313,7 +322,7 @@ export default function PublicObjectPage() {
 
             {object.tags && object.tags.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {object.tags.map((tag) => (
+                {object.tags.map((tag: string) => (
                   <span
                     key={tag}
                     className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/10 text-white/80 text-sm"

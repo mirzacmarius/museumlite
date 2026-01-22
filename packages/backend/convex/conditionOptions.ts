@@ -1,7 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -70,7 +71,7 @@ export const create = mutation({
       throw new Error("A condition with this name already exists");
     }
 
-    return await ctx.db.insert("conditionOptions", {
+    const conditionId = await ctx.db.insert("conditionOptions", {
       organizationId: args.organizationId,
       name: args.name,
       description: args.description,
@@ -78,6 +79,17 @@ export const create = mutation({
       createdAt: Date.now(),
       usageCount: 0,
     });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "created_condition_option",
+      entityType: "conditionOption",
+      entityId: conditionId,
+      changes: { name: args.name },
+    });
+
+    return conditionId;
   },
 });
 
@@ -137,6 +149,16 @@ export const update = mutation({
     }
 
     await ctx.db.patch(args.conditionId, updates);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: condition.organizationId,
+      userId,
+      action: "updated_condition_option",
+      entityType: "conditionOption",
+      entityId: args.conditionId,
+      changes: updates,
+    });
+
     return null;
   },
 });
@@ -207,6 +229,16 @@ export const remove = mutation({
     );
 
     await ctx.db.delete(args.conditionId);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: condition.organizationId,
+      userId,
+      action: "deleted_condition_option",
+      entityType: "conditionOption",
+      entityId: args.conditionId,
+      changes: { name: condition.name },
+    });
+
     return null;
   },
 });

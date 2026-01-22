@@ -149,7 +149,7 @@ function ApiKeysTab({
       setNewKeyName("");
     } catch (error) {
       alert(
-        error instanceof Error ? error.message : t("developer.createKeyFailed"),
+        error instanceof Error ? error.message : t("errors.failedToCreateKey"),
       );
     } finally {
       setIsCreating(false);
@@ -488,7 +488,7 @@ function WebhooksTab({
       setTestResult({
         id: webhookId,
         success: false,
-        message: error instanceof Error ? error.message : t("testError"),
+        message: error instanceof Error ? error.message : t("webhooks.testFailed"),
       });
     } finally {
       setTestingId(null);
@@ -779,7 +779,7 @@ function WebhooksTab({
 function UtilitiesTab({
   organizationId,
 }: { organizationId: Id<"organizations"> }) {
-  const t = useScopedI18n("settings");
+  const t = useScopedI18n("settings.developer");
   const common = useScopedI18n("common");
   const [isDeletingLoans, setIsDeletingLoans] = useState(false);
   const [deleteResult, setDeleteResult] = useState<{
@@ -800,19 +800,19 @@ function UtilitiesTab({
       alert(
         error instanceof Error
           ? error.message
-          : t("developer.errors.failedToCreateKey"),
+          : "Failed to delete loans",
       );
     } finally {
-      setIsCreating(false);
+      setIsDeletingLoans(false);
     }
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">{t("developer.utilities")}</h2>
+        <h2 className="text-xl font-semibold">{t("utilities")}</h2>
         <p className="text-sm text-muted-foreground">
-          {t("developer.utilitiesDesc")}
+          {t("utilitiesDesc")}
         </p>
       </div>
 
@@ -824,33 +824,33 @@ function UtilitiesTab({
           <div className="flex-1 space-y-2">
             <div>
               <h3 className="text-lg font-semibold">
-                {t("developer.deleteAllLoans")}
+                {t("deleteAllLoans")}
               </h3>
               <p className="text-sm text-muted-foreground">
-                {t("developer.deleteLoansDesc")}
+                {t("deleteLoansDesc")}
               </p>
             </div>
 
             {deleteResult && (
               <div className="rounded-md bg-muted p-4 space-y-1">
                 <p className="text-sm font-medium">
-                  {t("developer.operationCompleted")}
+                  {t("operationCompleted")}
                 </p>
                 <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                   <li>
-                    {t("developer.deletedLoans", {
+                    {t("deletedLoans", {
                       count: deleteResult.deletedLoans,
                       plural: deleteResult.deletedLoans !== 1 ? "s" : "",
                     })}
                   </li>
                   <li>
-                    {t("developer.deletedLoanItems", {
+                    {t("deletedLoanItems", {
                       count: deleteResult.deletedLoanItems,
                       plural: deleteResult.deletedLoanItems !== 1 ? "s" : "",
                     })}
                   </li>
                   <li>
-                    {t("developer.updatedCollections", {
+                    {t("updatedCollections", {
                       count: deleteResult.updatedCollections,
                       plural: deleteResult.updatedCollections !== 1 ? "s" : "",
                     })}
@@ -866,36 +866,36 @@ function UtilitiesTab({
                     <Trash2 className="mr-2 h-4 w-4" />
                     {isDeletingLoans
                       ? common("deleting")
-                      : t("developer.deleteAllLoans")}
+                      : t("deleteAllLoans")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle className="flex items-center gap-2">
                       <AlertTriangle className="h-5 w-5 text-destructive" />
-                      {t("developer.deleteLoansDialog")}
+                      {t("deleteLoansDialog")}
                     </AlertDialogTitle>
                     <AlertDialogDescription className="space-y-2">
-                      <p className="font-medium">{t("developer.willDelete")}</p>
+                      <p className="font-medium">{t("willDelete")}</p>
                       <ul className="list-disc list-inside space-y-1 text-sm">
-                        <li>{t("developer.allLoans")}</li>
-                        <li>{t("developer.allLoanItems")}</li>
-                        <li>{t("developer.restoreActive")}</li>
+                        <li>{t("allLoans")}</li>
+                        <li>{t("allLoanItems")}</li>
+                        <li>{t("restoreActive")}</li>
                       </ul>
                       <p className="pt-2 font-semibold text-destructive">
-                        {t("developer.cannotUndo")}
+                        {t("cannotUndo")}
                       </p>
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>
-                      {t("developer.cancel")}
+                      {t("cancel")}
                     </AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleDeleteAllLoans}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                      {t("developer.confirmDelete")}
+                      {t("confirmDelete")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

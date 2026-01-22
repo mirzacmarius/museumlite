@@ -151,7 +151,7 @@ function formatDate(timestamp: number, locale: string): string {
 
 function formatCurrency(
   value: number,
-  locale: "en" | "fr" | "es" | "no",
+  locale: "en" | "fr" | "es" | "no" | "ro",
 ): string {
   return formatCurrencyUtil(value, locale, "USD").replace(/\.\d+$/, "");
 }

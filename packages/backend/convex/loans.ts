@@ -5,16 +5,25 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
   type MutationCtx,
+  type QueryCtx,
   internalMutation,
   mutation,
   query,
 } from "./_generated/server";
+import { requireFeatureAccess } from "./utils/featureGates";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
   getUsersToNotifyForWorkflowStep,
   requirePermission,
 } from "./utils/permissions";
+
+async function requireLoansAccess(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+) {
+  await requireFeatureAccess(ctx, organizationId, "loans");
+}
 
 /**
  * Generate loan number
@@ -91,7 +100,7 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Check permission
+    await requireLoansAccess(ctx, args.organizationId);
     await requirePermission(ctx, args.organizationId, "loans.create");
 
     // Validate account if provided
@@ -317,7 +326,7 @@ export const addItems = mutation({
       throw new Error("Loan not found");
     }
 
-    // Check permission
+    await requireLoansAccess(ctx, loan.organizationId);
     await requirePermission(ctx, loan.organizationId, "loans.update");
 
     if (loan.status !== "pending" && loan.status !== "active") {
@@ -404,7 +413,7 @@ export const removeItems = mutation({
       throw new Error("Loan not found");
     }
 
-    // Check permission
+    await requireLoansAccess(ctx, loan.organizationId);
     await requirePermission(ctx, loan.organizationId, "loans.update");
 
     if (loan.status !== "pending") {
@@ -474,6 +483,7 @@ export const list = query({
     continueCursor: v.string(),
   }),
   handler: async (ctx, args) => {
+    await requireLoansAccess(ctx, args.organizationId);
     await requirePermission(ctx, args.organizationId, "loans.read");
 
     let query = ctx.db
@@ -651,6 +661,7 @@ export const get = query({
       return null;
     }
 
+    await requireLoansAccess(ctx, loan.organizationId);
     await requirePermission(ctx, loan.organizationId, "loans.read");
 
     let account:
@@ -780,7 +791,7 @@ export const update = mutation({
       throw new Error("Loan not found");
     }
 
-    // Check permission
+    await requireLoansAccess(ctx, loan.organizationId);
     await requirePermission(ctx, loan.organizationId, "loans.update");
 
     if (loan.status !== "pending") {
@@ -831,6 +842,7 @@ export const approve = mutation({
       throw new Error("Loan not found");
     }
 
+    await requireLoansAccess(ctx, loan.organizationId);
     await requirePermission(ctx, loan.organizationId, "loans.approve");
 
     if (loan.status !== "pending") {
@@ -993,6 +1005,8 @@ export const reject = mutation({
       throw new Error("Loan not found");
     }
 
+    await requireLoansAccess(ctx, loan.organizationId);
+
     if (loan.status !== "pending") {
       throw new Error("Loan is not pending approval");
     }
@@ -1053,7 +1067,7 @@ export const returnLoan = mutation({
   args: {
     loanId: v.id("loans"),
     conditionIn: v.optional(v.string()),
-    loanItemIds: v.optional(v.array(v.id("loanItems"))), // Optional: return specific items (partial return)
+    loanItemIds: v.optional(v.array(v.id("loanItems"))),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -1067,7 +1081,7 @@ export const returnLoan = mutation({
       throw new Error("Loan not found");
     }
 
-    // Check permission
+    await requireLoansAccess(ctx, loan.organizationId);
     await requirePermission(ctx, loan.organizationId, "loans.update");
 
     if (loan.status !== "active" && loan.status !== "dispatched") {
@@ -1238,7 +1252,7 @@ export const dispatch = mutation({
       throw new Error("Loan not found");
     }
 
-    // Check permission
+    await requireLoansAccess(ctx, loan.organizationId);
     await requirePermission(ctx, loan.organizationId, "loans.update");
 
     if (loan.status !== "active") {
@@ -1318,7 +1332,7 @@ export const cancel = mutation({
       throw new Error("Loan not found");
     }
 
-    // Check permission
+    await requireLoansAccess(ctx, loan.organizationId);
     await requirePermission(ctx, loan.organizationId, "loans.update");
 
     if (
@@ -1406,11 +1420,12 @@ export const returnItem = mutation({
       throw new Error("Loan not found");
     }
 
+    await requireLoansAccess(ctx, loan.organizationId);
+
     if (loan.status !== "active") {
       throw new Error("Loan is not active");
     }
 
-    // Check permission
     await requirePermission(ctx, loan.organizationId, "loans.update");
 
     // Find loan item
@@ -1518,12 +1533,12 @@ export const createConditionReport = mutation({
       throw new Error("Loan not found");
     }
 
-    // Check if loan uses detailed condition reports
+    await requireLoansAccess(ctx, loan.organizationId);
+
     if (!loan.useDetailedConditionReports) {
       throw new Error("Loan does not use detailed condition reports");
     }
 
-    // Check permission
     await requirePermission(ctx, loan.organizationId, "loans.update");
 
     const reportId = await ctx.db.insert("conditionReports", {
@@ -1586,7 +1601,7 @@ export const updateConditionReport = mutation({
       throw new Error("Loan not found");
     }
 
-    // Check permission
+    await requireLoansAccess(ctx, loan.organizationId);
     await requirePermission(ctx, loan.organizationId, "loans.update");
 
     const updates: {
@@ -1658,16 +1673,15 @@ export const getConditionReport = query({
       return null;
     }
 
+    await requireLoansAccess(ctx, loan.organizationId);
     await requirePermission(ctx, loan.organizationId, "loans.read");
 
-    // Get photo URLs
     const photoUrls = report.photos
       ? await Promise.all(
           report.photos.map(async (photoId) => ctx.storage.getUrl(photoId)),
         )
       : undefined;
 
-    // Get assessor name
     const assessor = await ctx.db.get(report.assessedBy);
 
     return {
@@ -1685,9 +1699,6 @@ export const getConditionReport = query({
   },
 });
 
-/**
- * Upload loan document
- */
 export const uploadLoanDocument = mutation({
   args: {
     loanId: v.id("loans"),
@@ -1711,7 +1722,7 @@ export const uploadLoanDocument = mutation({
       throw new Error("Loan not found");
     }
 
-    // Check permission
+    await requireLoansAccess(ctx, loan.organizationId);
     await requirePermission(ctx, loan.organizationId, "loans.update");
 
     const documentId = await ctx.db.insert("loanDocuments", {
@@ -1727,9 +1738,6 @@ export const uploadLoanDocument = mutation({
   },
 });
 
-/**
- * List loan documents
- */
 export const listLoanDocuments = query({
   args: {
     loanId: v.id("loans"),
@@ -1756,6 +1764,7 @@ export const listLoanDocuments = query({
       throw new Error("Loan not found");
     }
 
+    await requireLoansAccess(ctx, loan.organizationId);
     await requirePermission(ctx, loan.organizationId, "loans.read");
 
     const documents = await ctx.db
@@ -2313,7 +2322,9 @@ export const requestExtension = mutation({
 
     // Can only extend active or dispatched loans
     if (loan.status !== "active" && loan.status !== "dispatched") {
-      throw new Error("Can only request extension for active or dispatched loans");
+      throw new Error(
+        "Can only request extension for active or dispatched loans",
+      );
     }
 
     // New end date must be after current end date
@@ -2635,7 +2646,9 @@ export const checkLoanRemindersInternal = internalMutation({
         const shouldSend =
           threshold.type === "overdue"
             ? daysUntilDue < 0
-            : daysUntilDue <= threshold.days && daysUntilDue > (thresholds[thresholds.indexOf(threshold) + 1]?.days ?? -1);
+            : daysUntilDue <= threshold.days &&
+              daysUntilDue >
+                (thresholds[thresholds.indexOf(threshold) + 1]?.days ?? -1);
 
         if (!shouldSend) continue;
 
@@ -2924,10 +2937,7 @@ export const resolveConditionDispute = mutation({
 
     await requirePermission(ctx, dispute.organizationId, "loans.write");
 
-    if (
-      dispute.status !== "reported" &&
-      dispute.status !== "investigating"
-    ) {
+    if (dispute.status !== "reported" && dispute.status !== "investigating") {
       throw new Error("Dispute cannot be resolved in current status");
     }
 
@@ -2987,7 +2997,10 @@ export const resolveConditionDispute = mutation({
       action: "resolved",
       entityType: "conditionDispute",
       entityId: args.disputeId,
-      changes: { status: args.resolution, resolutionNotes: args.resolutionNotes },
+      changes: {
+        status: args.resolution,
+        resolutionNotes: args.resolutionNotes,
+      },
     });
 
     // Notify the reporter
@@ -3278,14 +3291,13 @@ export const getConditionDispute = query({
     if (collection) {
       const primaryMedia = await ctx.db
         .query("mediaFiles")
-        .withIndex("by_collection", (q) =>
-          q.eq("collectionId", collection._id),
-        )
+        .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
         .filter((q) => q.eq(q.field("isPrimary"), true))
         .first();
 
       if (primaryMedia?.storageId) {
-        primaryImageUrl = await ctx.storage.getUrl(primaryMedia.storageId) ?? undefined;
+        primaryImageUrl =
+          (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined;
       }
     }
 

@@ -186,7 +186,7 @@ export default function ModulesSettingsPage() {
                   ) : (
                     <Switch
                       checked={isEnabled}
-                      disabled={!canManage || integrationLocked}
+                      disabled={!canManage || !!integrationLocked}
                       onCheckedChange={(checked) =>
                         toggleModule(moduleId, checked)
                       }

@@ -24,7 +24,7 @@ const Plan = ({
   amount: number;
   interval?: "month" | "year";
   onChangeInterval?: () => void;
-  t: (key: string) => string;
+  t: (key: "perMonth" | "perYear" | "monthly" | "yearly") => string;
 }) => {
   return (
     <div
@@ -68,7 +68,7 @@ const Plan = ({
 
 export default function BillingSettings() {
   const locale = useCurrentLocale();
-  const t = useScopedI18n("settings.billing");
+  const t = useScopedI18n("billing");
   const user = useQuery(api.users.getUser);
   const products = useQuery(api.subscriptions.listAllProducts);
 
@@ -127,7 +127,7 @@ export default function BillingSettings() {
               description={t("freeDescription")}
               isCurrent={!user.subscription}
               amount={0}
-              t={t}
+              t={t as unknown as (key: "monthly" | "yearly" | "perMonth" | "perYear") => string}
             />
             {selectedPlanInterval === "month" && monthlyProProduct && (
               <Plan
@@ -141,7 +141,7 @@ export default function BillingSettings() {
                     state === "month" ? "year" : "month",
                   );
                 }}
-                t={t}
+                t={t as unknown as (key: "monthly" | "yearly" | "perMonth" | "perYear") => string}
               />
             )}
             {selectedPlanInterval === "year" && yearlyProProduct && (
@@ -156,7 +156,7 @@ export default function BillingSettings() {
                     state === "month" ? "year" : "month",
                   );
                 }}
-                t={t}
+                t={t as unknown as (key: "monthly" | "yearly" | "perMonth" | "perYear") => string}
               />
             )}
           </div>

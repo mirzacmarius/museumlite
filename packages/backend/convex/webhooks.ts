@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import {
   action,
   internalMutation,
@@ -7,7 +8,6 @@ import {
   mutation,
   query,
 } from "./_generated/server";
-import { internal } from "./_generated/api";
 import { requirePermission } from "./utils/permissions";
 
 const WEBHOOK_EVENTS = [
@@ -174,6 +174,19 @@ export const create = mutation({
       createdAt: Date.now(),
     });
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "created_webhook",
+      entityType: "webhook",
+      entityId: id,
+      changes: {
+        name: args.name,
+        url: args.url,
+        events: args.events,
+      },
+    });
+
     return { id, secret };
   },
 });
@@ -220,6 +233,20 @@ export const update = mutation({
       ...(args.isActive !== undefined && { isActive: args.isActive }),
     });
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: webhook.organizationId,
+      userId,
+      action: "updated_webhook",
+      entityType: "webhook",
+      entityId: args.webhookId,
+      changes: {
+        name: args.name,
+        url: args.url,
+        events: args.events,
+        isActive: args.isActive,
+      },
+    });
+
     return null;
   },
 });
@@ -247,6 +274,17 @@ export const rotateSecret = mutation({
     const secret = generateSecret();
     await ctx.db.patch(args.webhookId, { secret });
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: webhook.organizationId,
+      userId,
+      action: "rotated_webhook_secret",
+      entityType: "webhook",
+      entityId: args.webhookId,
+      changes: {
+        name: webhook.name,
+      },
+    });
+
     return { secret };
   },
 });
@@ -270,6 +308,19 @@ export const deleteWebhook = mutation({
     );
 
     await ctx.db.delete(args.webhookId);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: webhook.organizationId,
+      userId,
+      action: "deleted_webhook",
+      entityType: "webhook",
+      entityId: args.webhookId,
+      changes: {
+        name: webhook.name,
+        url: webhook.url,
+      },
+    });
+
     return null;
   },
 });

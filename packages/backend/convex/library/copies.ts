@@ -373,6 +373,59 @@ export const withdraw = mutation({
 });
 
 /**
+ * Remove (delete) a copy permanently
+ */
+export const remove = mutation({
+  args: {
+    copyId: v.id("itemCopies"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const copy = await ctx.db.get(args.copyId);
+    if (!copy) {
+      throw new Error("Copy not found");
+    }
+
+    await requireModuleEnabled(ctx, copy.organizationId, "library");
+
+    // Check for active circulations
+    const activeCirculation = await ctx.db
+      .query("circulations")
+      .withIndex("by_copy", (q) => q.eq("copyId", args.copyId))
+      .filter((q) => q.eq(q.field("status"), "active"))
+      .first();
+
+    if (activeCirculation) {
+      throw new Error("Cannot delete copy that is currently checked out");
+    }
+
+    const wasAvailable = copy.status === "available";
+
+    // Update item counts before deletion
+    const item = await ctx.db.get(copy.itemId);
+    if (item) {
+      const updates: Record<string, number> = {
+        totalCopies: Math.max(0, item.totalCopies - 1),
+      };
+      if (wasAvailable) {
+        updates.availableCopies = Math.max(0, item.availableCopies - 1);
+      }
+      await ctx.db.patch(copy.itemId, updates);
+    }
+
+    // Delete the copy
+    await ctx.db.delete(args.copyId);
+
+    return null;
+  },
+});
+
+/**
  * Generate a unique barcode for a new copy
  */
 export const generateBarcode = query({

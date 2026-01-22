@@ -1,7 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -86,7 +87,7 @@ export const create = mutation({
       );
     }
 
-    return await ctx.db.insert("donors", {
+    const donorId = await ctx.db.insert("donors", {
       organizationId: args.organizationId,
       name: args.name,
       email: args.email,
@@ -94,6 +95,17 @@ export const create = mutation({
       createdAt: Date.now(),
       usageCount: 0,
     });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "created_donor",
+      entityType: "donor",
+      entityId: donorId,
+      changes: { name: args.name, email: args.email },
+    });
+
+    return donorId;
   },
 });
 
@@ -174,6 +186,16 @@ export const remove = mutation({
     );
 
     await ctx.db.delete(args.donorId);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: donor.organizationId,
+      userId,
+      action: "deleted_donor",
+      entityType: "donor",
+      entityId: args.donorId,
+      changes: { name: donor.name },
+    });
+
     return null;
   },
 });

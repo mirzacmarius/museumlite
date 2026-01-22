@@ -126,7 +126,7 @@ export default function PublicCollectionPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  {filters.objectTypes.map((type) => (
+                  {filters.objectTypes.map((type: string) => (
                     <SelectItem key={type} value={type}>
                       {type}
                     </SelectItem>
@@ -142,7 +142,7 @@ export default function PublicCollectionPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Cultures</SelectItem>
-                  {filters.cultures.map((c) => (
+                  {filters.cultures.map((c: string) => (
                     <SelectItem key={c} value={c}>
                       {c}
                     </SelectItem>
@@ -158,7 +158,7 @@ export default function PublicCollectionPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Periods</SelectItem>
-                  {filters.periods.map((p) => (
+                  {filters.periods.map((p: string) => (
                     <SelectItem key={p} value={p}>
                       {p}
                     </SelectItem>
@@ -196,12 +196,20 @@ export default function PublicCollectionPage() {
           </div>
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {collections.items.map((item) => (
-              <Link
-                key={item._id}
-                href={`/collections/${slug}/${encodeURIComponent(item.accessionNumber)}`}
-                className="group block"
-              >
+            {collections.items.map(
+              (item: {
+                _id: string;
+                accessionNumber: string;
+                title: string;
+                creator?: string;
+                objectType?: string;
+                primaryImageUrl?: string;
+              }) => (
+                <Link
+                  key={item._id}
+                  href={`/collections/${slug}/${encodeURIComponent(item.accessionNumber)}`}
+                  className="group block"
+                >
                 <div className="aspect-square relative rounded-lg overflow-hidden bg-white/5 border border-white/10 mb-3">
                   {item.primaryImageUrl ? (
                     <Image
@@ -226,11 +234,21 @@ export default function PublicCollectionPage() {
                   {item.accessionNumber}
                 </p>
               </Link>
-            ))}
+              ),
+            )}
           </div>
         ) : (
           <div className="space-y-4">
-            {collections.items.map((item) => (
+            {collections.items.map(
+              (item: {
+                _id: string;
+                accessionNumber: string;
+                title: string;
+                creator?: string;
+                objectType?: string;
+                dateCreated?: string;
+                primaryImageUrl?: string;
+              }) => (
               <Link
                 key={item._id}
                 href={`/collections/${slug}/${encodeURIComponent(item.accessionNumber)}`}
@@ -265,7 +283,8 @@ export default function PublicCollectionPage() {
                 </div>
                 <ChevronRight className="h-5 w-5 text-white/40 self-center flex-shrink-0" />
               </Link>
-            ))}
+              ),
+            )}
           </div>
         )}
       </div>

@@ -89,8 +89,14 @@ export function EditLocationDialog({
 
     setIsSubmitting(true);
     try {
-      const customFields: Record<string, unknown> = {
-        ...(location.customFields || {}),
+      const customFields: Record<
+        string,
+        string | number | boolean | string[] | null
+      > = {
+        ...((location.customFields || {}) as Record<
+          string,
+          string | number | boolean | string[] | null
+        >),
       };
       if (temperature) {
         customFields.temperature = Number.parseFloat(temperature);

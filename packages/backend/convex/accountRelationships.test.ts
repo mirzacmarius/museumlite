@@ -3,8 +3,10 @@ import { expect, test } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
 
+const modules = import.meta.glob("./**/*.ts");
+
 test("accountRelationships: create and list", async () => {
-  const t = convexTest(schema);
+  const t = convexTest(schema, modules);
 
   const orgId = await t.run(async (ctx) => {
     return await ctx.db.insert("organizations", {
@@ -95,7 +97,7 @@ test("accountRelationships: create and list", async () => {
 });
 
 test("accountRelationships: listByEntity", async () => {
-  const t = convexTest(schema);
+  const t = convexTest(schema, modules);
 
   const orgId = await t.run(async (ctx) => {
     return await ctx.db.insert("organizations", {
@@ -176,7 +178,7 @@ test("accountRelationships: listByEntity", async () => {
 });
 
 test("accountRelationships: timeline", async () => {
-  const t = convexTest(schema);
+  const t = convexTest(schema, modules);
 
   const orgId = await t.run(async (ctx) => {
     return await ctx.db.insert("organizations", {
@@ -256,7 +258,7 @@ test("accountRelationships: timeline", async () => {
 });
 
 test("accountRelationships: update and remove", async () => {
-  const t = convexTest(schema);
+  const t = convexTest(schema, modules);
 
   const orgId = await t.run(async (ctx) => {
     return await ctx.db.insert("organizations", {

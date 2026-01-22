@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import {
@@ -56,6 +57,18 @@ export const createRole = mutation({
         permissionId,
       });
     }
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "created_role",
+      entityType: "role",
+      entityId: roleId,
+      changes: {
+        name: args.name,
+        permissionCount: args.permissionIds.length,
+      },
+    });
 
     return roleId;
   },
@@ -143,6 +156,18 @@ export const updateRole = mutation({
       }
     }
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: role.organizationId,
+      userId,
+      action: "updated_role",
+      entityType: "role",
+      entityId: args.roleId,
+      changes: {
+        name: args.name ?? role.name,
+        permissionCount: args.permissionIds?.length,
+      },
+    });
+
     return null;
   },
 });
@@ -200,6 +225,17 @@ export const deleteRole = mutation({
 
     // Delete role
     await ctx.db.delete(args.roleId);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: role.organizationId,
+      userId,
+      action: "deleted_role",
+      entityType: "role",
+      entityId: args.roleId,
+      changes: {
+        name: role.name,
+      },
+    });
 
     return null;
   },

@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, query } from "./_generated/server";
 import { requireModuleEnabled } from "./utils/featureGates";
@@ -248,6 +249,20 @@ export const create = mutation({
       updatedAt: Date.now(),
     });
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: account.organizationId,
+      userId,
+      action: "created_contact",
+      entityType: "contact",
+      entityId: contactId,
+      changes: {
+        firstName: args.firstName.trim(),
+        lastName: args.lastName.trim(),
+        role: args.role,
+        accountId: args.accountId,
+      },
+    });
+
     return contactId;
   },
 });
@@ -330,6 +345,15 @@ export const update = mutation({
 
     await ctx.db.patch(args.contactId, updates);
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: account.organizationId,
+      userId,
+      action: "updated_contact",
+      entityType: "contact",
+      entityId: args.contactId,
+      changes: updates,
+    });
+
     return null;
   },
 });
@@ -363,6 +387,19 @@ export const remove = mutation({
     await requirePermission(ctx, account.organizationId, "accounts.delete");
 
     await ctx.db.delete(args.contactId);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: account.organizationId,
+      userId,
+      action: "deleted_contact",
+      entityType: "contact",
+      entityId: args.contactId,
+      changes: {
+        firstName: contact.firstName,
+        lastName: contact.lastName,
+        accountId: contact.accountId,
+      },
+    });
 
     return null;
   },
@@ -415,6 +452,18 @@ export const setPrimary = mutation({
     await ctx.db.patch(args.contactId, {
       isPrimary: true,
       updatedAt: Date.now(),
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: account.organizationId,
+      userId,
+      action: "set_primary_contact",
+      entityType: "contact",
+      entityId: args.contactId,
+      changes: {
+        isPrimary: true,
+        accountId: contact.accountId,
+      },
     });
 
     return null;

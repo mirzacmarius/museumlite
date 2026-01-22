@@ -18,8 +18,10 @@ import { expect, test } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
 
+const modules = import.meta.glob("./**/*.ts");
+
 test("should approve pending loan and change status to active", async () => {
-  const t = convexTest(schema);
+  const t = convexTest(schema, modules);
 
   // 1. Create a pending loan
   // const loanId = await t.mutation(api.loans.create, {
@@ -44,7 +46,7 @@ test("should approve pending loan and change status to active", async () => {
 });
 
 test("should dispatch active loan and change status to dispatched", async () => {
-  const t = convexTest(schema);
+  const t = convexTest(schema, modules);
 
   // 1. Create and approve loan (setup)
   // const loanId = await t.mutation(api.loans.create, { /* ... */ });
@@ -61,7 +63,7 @@ test("should dispatch active loan and change status to dispatched", async () => 
 });
 
 test("should return dispatched loan and change status to returned", async () => {
-  const t = convexTest(schema);
+  const t = convexTest(schema, modules);
 
   // 1. Create, approve, and dispatch loan (setup)
   // const loanId = await t.mutation(api.loans.create, { /* ... */ });
@@ -79,7 +81,7 @@ test("should return dispatched loan and change status to returned", async () => 
 });
 
 test("should return active loan directly (without dispatch)", async () => {
-  const t = convexTest(schema);
+  const t = convexTest(schema, modules);
 
   // 1. Create and approve loan
   // const loanId = await t.mutation(api.loans.create, { /* ... */ });
@@ -96,7 +98,7 @@ test("should return active loan directly (without dispatch)", async () => {
 });
 
 test("should prevent invalid status transitions", async () => {
-  const t = convexTest(schema);
+  const t = convexTest(schema, modules);
 
   // 1. Create and approve loan
   // const loanId = await t.mutation(api.loans.create, { /* ... */ });
@@ -112,7 +114,7 @@ test("should prevent invalid status transitions", async () => {
 });
 
 test("should enforce permissions", async () => {
-  const t = convexTest(schema);
+  const t = convexTest(schema, modules);
 
   // Test that users without loans.update permission cannot dispatch
   // Test that users without loans.approve permission cannot approve

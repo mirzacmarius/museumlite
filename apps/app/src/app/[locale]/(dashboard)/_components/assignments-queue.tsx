@@ -65,7 +65,7 @@ export function AssignmentsQueue() {
           <div key={type}>
             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
               {t(
-                `typeLabels.${type as "loan" | "accession" | "exhibition" | "conservation"}`,
+                `typeLabels.${type as "loan" | "accession" | "deaccession" | "exhibition" | "conservation"}`,
               )}
             </h4>
             <div className="space-y-2">

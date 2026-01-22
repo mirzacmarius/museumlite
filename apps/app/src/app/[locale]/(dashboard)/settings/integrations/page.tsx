@@ -45,7 +45,7 @@ const INTEGRATION_ICONS: Record<string, React.ReactNode> = {
 export default function IntegrationsSettingsPage() {
   const { currentOrganizationId } = useOrganization();
   const tToast = useScopedI18n("common.toast");
-  const t = useScopedI18n("settings.integrations");
+  const t = useScopedI18n("integrations");
   const tCommon = useScopedI18n("common");
   const searchParams = useSearchParams();
   const router = useRouter();

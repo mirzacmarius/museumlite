@@ -81,7 +81,7 @@ function convertToCSV(
 
 export default function DataPage() {
   const { currentOrganizationId } = useOrganization();
-  const t = useScopedI18n("settings");
+  const t = useScopedI18n("settings.data");
   const tCommon = useScopedI18n("common");
   const [importType, setImportType] = useState<ImportType>("objects");
   const [importing, setImporting] = useState(false);

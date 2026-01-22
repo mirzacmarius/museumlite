@@ -17,16 +17,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const collections = await fetchQuery(api.collections.listPublicForSitemap);
 
-    const collectionRoutes: MetadataRoute.Sitemap = collections.map((item) => ({
+    const collectionRoutes: MetadataRoute.Sitemap = collections.map(
+      (item: {
+        organizationSlug: string;
+        urlSlug: string;
+        title: string;
+        lastModifiedAt?: number;
+      }) => ({
       url: `${BASE_URL}/collections/${item.organizationSlug}/${encodeURIComponent(item.urlSlug)}`,
       lastModified: item.lastModifiedAt
         ? new Date(item.lastModifiedAt)
         : new Date(),
       changeFrequency: "monthly" as const,
       priority: 0.6,
-    }));
+      }),
+    );
 
-    const orgSlugs = [...new Set(collections.map((c) => c.organizationSlug))];
+    const orgSlugs = [
+      ...new Set(
+        collections.map(
+          (c: {
+            organizationSlug: string;
+            urlSlug: string;
+            title: string;
+            lastModifiedAt?: number;
+          }) => c.organizationSlug,
+        ),
+      ),
+    ];
     const collectionListRoutes: MetadataRoute.Sitemap = orgSlugs.map(
       (slug) => ({
         url: `${BASE_URL}/collections/${slug}`,

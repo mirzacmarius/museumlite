@@ -143,6 +143,19 @@ export const create = mutation({
       uploadedAt: Date.now(),
     });
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: account.organizationId,
+      userId,
+      action: "uploaded_account_document",
+      entityType: "accountDocument",
+      entityId: documentId,
+      changes: {
+        filename: args.filename.trim(),
+        documentType: args.documentType,
+        accountId: args.accountId,
+      },
+    });
+
     return documentId;
   },
 });
@@ -172,6 +185,18 @@ export const remove = mutation({
     await requirePermission(ctx, account.organizationId, "accounts.delete");
 
     await ctx.db.delete(args.documentId);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: account.organizationId,
+      userId,
+      action: "deleted_account_document",
+      entityType: "accountDocument",
+      entityId: args.documentId,
+      changes: {
+        filename: document.filename,
+        accountId: document.accountId,
+      },
+    });
 
     return null;
   },

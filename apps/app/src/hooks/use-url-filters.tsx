@@ -341,3 +341,75 @@ export function useAccountFilters() {
     setRole,
   };
 }
+
+type LocationType = "all" | string;
+
+export function useLocationFilters() {
+  const [search, setSearch] = useQueryState(
+    "search",
+    parseAsString.withDefault(""),
+  );
+  const [type, setType] = useQueryState(
+    "type",
+    parseAsString.withDefault("all"),
+  );
+  const [parentId, setParentId] = useQueryState(
+    "parentId",
+    parseAsString.withDefault(""),
+  );
+  const [status, setStatus] = useQueryState(
+    "status",
+    parseAsStringLiteral([
+      "all",
+      "active",
+      "closed",
+      "renovation",
+      "restricted",
+    ] as const).withDefault("all"),
+  );
+
+  const filters = useMemo(
+    () => ({
+      search,
+      type: type as LocationType,
+      parentId,
+      status,
+    }),
+    [search, type, parentId, status],
+  );
+
+  const setFilters = useCallback(
+    (newFilters: Partial<typeof filters>) => {
+      if (newFilters.search !== undefined) setSearch(newFilters.search || null);
+      if (newFilters.type !== undefined) setType(newFilters.type || null);
+      if (newFilters.parentId !== undefined)
+        setParentId(newFilters.parentId || null);
+      if (newFilters.status !== undefined) setStatus(newFilters.status || null);
+    },
+    [setSearch, setType, setParentId, setStatus],
+  );
+
+  const resetFilters = useCallback(() => {
+    setSearch(null);
+    setType(null);
+    setParentId(null);
+    setStatus(null);
+  }, [setSearch, setType, setParentId, setStatus]);
+
+  const hasActiveFilters = useMemo(() => {
+    return (
+      search !== "" || type !== "all" || parentId !== "" || status !== "all"
+    );
+  }, [search, type, parentId, status]);
+
+  return {
+    filters,
+    setFilters,
+    resetFilters,
+    hasActiveFilters,
+    setSearch,
+    setType,
+    setParentId,
+    setStatus,
+  };
+}

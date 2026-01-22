@@ -45,7 +45,7 @@ export const DEFAULT_COLUMN_CONFIG: Record<
   status: { visible: true },
 };
 
-const COLUMN_LABEL_KEYS: Record<ColumnId, string> = {
+const COLUMN_LABEL_KEYS = {
   checkbox: "select",
   image: "image",
   title: "titleColumn",
@@ -53,7 +53,7 @@ const COLUMN_LABEL_KEYS: Record<ColumnId, string> = {
   location: "location",
   objectType: "objectType",
   status: "status",
-};
+} as const;
 
 export function useDefaultColumns(): ColumnConfig[] {
   const t = useScopedI18n("objects.columnConfig");

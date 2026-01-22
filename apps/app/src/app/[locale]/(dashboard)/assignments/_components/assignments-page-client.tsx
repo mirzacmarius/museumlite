@@ -13,6 +13,7 @@ import {
   Clock,
   ExternalLink,
   FileCheck,
+  FileX,
   History,
   Inbox,
   LayoutGrid,
@@ -25,13 +26,15 @@ import Link from "next/link";
 
 interface PendingApproval {
   _id: string;
-  type: "accession" | "loan" | "exhibition" | "conservation";
+  type: "accession" | "deaccession" | "loan" | "exhibition" | "conservation";
   title: string;
   subtitle?: string;
   status: string;
   workflowStep?: number;
   createdAt: number;
   urgency: "low" | "medium" | "high";
+  slaDueAt?: number;
+  slaBreached?: boolean;
 }
 
 interface RecentlyModified {
@@ -246,6 +249,11 @@ function PendingApprovalCard({ item }: { item: PendingApproval }) {
       icon: FileCheck,
       color: "indigo",
       href: "/accessions",
+    },
+    deaccession: {
+      icon: FileX,
+      color: "rose",
+      href: "/deaccessions",
     },
     loan: {
       icon: Truck,

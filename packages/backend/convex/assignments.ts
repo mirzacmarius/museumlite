@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
+import { query } from "./_generated/server";
 import { canApproveAtStep } from "./utils/permissions";
 
 /**
@@ -19,6 +19,7 @@ export const listMyAssignments = query({
         _id: v.string(),
         type: v.union(
           v.literal("accession"),
+          v.literal("deaccession"),
           v.literal("loan"),
           v.literal("exhibition"),
           v.literal("conservation"),
@@ -33,6 +34,8 @@ export const listMyAssignments = query({
           v.literal("medium"),
           v.literal("high"),
         ),
+        slaDueAt: v.optional(v.number()),
+        slaBreached: v.optional(v.boolean()),
       }),
     ),
     myAssignedAccessions: v.array(
@@ -93,14 +96,42 @@ export const listMyAssignments = query({
     // Collect pending approvals the user can act on
     const pendingApprovals: Array<{
       _id: string;
-      type: "accession" | "loan" | "exhibition" | "conservation";
+      type:
+        | "accession"
+        | "deaccession"
+        | "loan"
+        | "exhibition"
+        | "conservation";
       title: string;
       subtitle?: string;
       status: string;
       workflowStep?: number;
       createdAt: number;
       urgency: "low" | "medium" | "high";
+      slaDueAt?: number;
+      slaBreached?: boolean;
     }> = [];
+
+    // Get SLA configs for this organization
+    const slaConfigs = await ctx.db
+      .query("workflowSlaConfigs")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const getSlaConfig = (workflowType: string) =>
+      slaConfigs.find((c) => c.workflowType === workflowType);
+
+    const calculateSlaDue = (
+      createdAt: number,
+      workflowType: string,
+    ): { slaDueAt?: number; slaBreached?: boolean } => {
+      const config = getSlaConfig(workflowType);
+      if (!config?.slaDays) return {};
+      const slaDueAt = createdAt + config.slaDays * 24 * 60 * 60 * 1000;
+      return { slaDueAt, slaBreached: Date.now() > slaDueAt };
+    };
 
     // Check accessions
     const pendingAccessions = await ctx.db
@@ -120,10 +151,11 @@ export const listMyAssignments = query({
       );
 
       if (canApprove) {
-        // Calculate urgency based on age
+        const slaInfo = calculateSlaDue(accession.dateReceived, "accession");
         const age = Date.now() - accession.dateReceived;
-        const urgency: "low" | "medium" | "high" =
-          age > 7 * 24 * 60 * 60 * 1000
+        const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
+          ? "high"
+          : age > 7 * 24 * 60 * 60 * 1000
             ? "high"
             : age > 3 * 24 * 60 * 60 * 1000
               ? "medium"
@@ -138,6 +170,52 @@ export const listMyAssignments = query({
           workflowStep: currentStep,
           createdAt: accession.dateReceived,
           urgency,
+          ...slaInfo,
+        });
+      }
+    }
+
+    // Check deaccessions
+    const pendingDeaccessions = await ctx.db
+      .query("deaccessions")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", args.organizationId).eq("status", "pending"),
+      )
+      .collect();
+
+    for (const deaccession of pendingDeaccessions) {
+      const currentStep = deaccession.workflowStep ?? 1;
+      const canApprove = await canApproveAtStep(
+        ctx,
+        args.organizationId,
+        "deaccession",
+        currentStep,
+      );
+
+      if (canApprove) {
+        const slaInfo = calculateSlaDue(
+          deaccession.dateDeaccessioned,
+          "deaccession",
+        );
+        const age = Date.now() - deaccession.dateDeaccessioned;
+        const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
+          ? "high"
+          : age > 7 * 24 * 60 * 60 * 1000
+            ? "high"
+            : age > 3 * 24 * 60 * 60 * 1000
+              ? "medium"
+              : "low";
+
+        pendingApprovals.push({
+          _id: deaccession._id,
+          type: "deaccession",
+          title: `Deaccession ${deaccession.deaccessionNumber}`,
+          subtitle: deaccession.reason,
+          status: "pending",
+          workflowStep: currentStep,
+          createdAt: deaccession.dateDeaccessioned,
+          urgency,
+          ...slaInfo,
         });
       }
     }
@@ -160,9 +238,11 @@ export const listMyAssignments = query({
       );
 
       if (canApprove) {
+        const slaInfo = calculateSlaDue(loan.startDate, "loan");
         const age = Date.now() - loan.startDate;
-        const urgency: "low" | "medium" | "high" =
-          age > 7 * 24 * 60 * 60 * 1000
+        const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
+          ? "high"
+          : age > 7 * 24 * 60 * 60 * 1000
             ? "high"
             : age > 3 * 24 * 60 * 60 * 1000
               ? "medium"
@@ -177,6 +257,7 @@ export const listMyAssignments = query({
           workflowStep: currentStep,
           createdAt: loan.startDate,
           urgency,
+          ...slaInfo,
         });
       }
     }
@@ -199,9 +280,11 @@ export const listMyAssignments = query({
       );
 
       if (canApprove) {
+        const slaInfo = calculateSlaDue(exhibition.startDate, "exhibition");
         const age = Date.now() - exhibition.startDate;
-        const urgency: "low" | "medium" | "high" =
-          age > 7 * 24 * 60 * 60 * 1000
+        const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
+          ? "high"
+          : age > 7 * 24 * 60 * 60 * 1000
             ? "high"
             : age > 3 * 24 * 60 * 60 * 1000
               ? "medium"
@@ -216,6 +299,7 @@ export const listMyAssignments = query({
           workflowStep: currentStep,
           createdAt: exhibition.startDate,
           urgency,
+          ...slaInfo,
         });
       }
     }
@@ -238,9 +322,11 @@ export const listMyAssignments = query({
       );
 
       if (canApprove) {
+        const slaInfo = calculateSlaDue(treatment.performedAt, "conservation");
         const age = Date.now() - treatment.performedAt;
-        const urgency: "low" | "medium" | "high" =
-          age > 7 * 24 * 60 * 60 * 1000
+        const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
+          ? "high"
+          : age > 7 * 24 * 60 * 60 * 1000
             ? "high"
             : age > 3 * 24 * 60 * 60 * 1000
               ? "medium"
@@ -255,12 +341,16 @@ export const listMyAssignments = query({
           workflowStep: currentStep,
           createdAt: treatment.performedAt,
           urgency,
+          ...slaInfo,
         });
       }
     }
 
-    // Sort by urgency (high first) then by age (oldest first)
+    // Sort by: SLA breached first, then urgency (high first), then age (oldest first)
     pendingApprovals.sort((a, b) => {
+      if (a.slaBreached !== b.slaBreached) {
+        return a.slaBreached ? -1 : 1;
+      }
       const urgencyOrder = { high: 0, medium: 1, low: 2 };
       if (urgencyOrder[a.urgency] !== urgencyOrder[b.urgency]) {
         return urgencyOrder[a.urgency] - urgencyOrder[b.urgency];

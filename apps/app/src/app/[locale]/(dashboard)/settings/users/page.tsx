@@ -32,7 +32,7 @@ import { useState } from "react";
 
 export default function UsersSettingsPage() {
   const locale = useCurrentLocale();
-  const t = useScopedI18n("settings.users");
+  const t = useScopedI18n("users");
   const tPlaceholders = useScopedI18n("settings.placeholders");
   const { currentOrganizationId } = useOrganization();
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);

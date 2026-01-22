@@ -936,7 +936,11 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_donor_account", ["donorAccountId"])
-    .index("by_assigned_to", ["assignedTo"]),
+    .index("by_assigned_to", ["assignedTo"])
+    .searchIndex("search_accessions", {
+      searchField: "accessionNumber",
+      filterFields: ["organizationId", "status"],
+    }),
 
   // Deaccession workflow records
   deaccessions: defineTable({
@@ -971,7 +975,7 @@ export default defineSchema({
         }),
       ),
     ),
-    // Proceeds fields
+    assignedTo: v.optional(v.id("users")),
     proceedsAmount: v.optional(v.number()),
     proceedsCurrency: v.optional(v.string()),
     proceedsRecipient: v.optional(v.string()),
@@ -1011,7 +1015,8 @@ export default defineSchema({
     .index("by_collection", ["collectionId"])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
-    .index("by_regulatory_token", ["regulatoryApprovalToken"]),
+    .index("by_regulatory_token", ["regulatoryApprovalToken"])
+    .index("by_assigned_to", ["assignedTo"]),
 
   // Appraisals for collection items
   appraisals: defineTable({
@@ -1084,7 +1089,11 @@ export default defineSchema({
   })
     .index("by_organization", ["organizationId"])
     .index("by_parentLocation", ["parentLocationId"])
-    .index("by_organization_and_type", ["organizationId", "type"]),
+    .index("by_organization_and_type", ["organizationId", "type"])
+    .searchIndex("search_locations", {
+      searchField: "name",
+      filterFields: ["organizationId", "type"],
+    }),
 
   // Movement tracking
   locationHistory: defineTable({
@@ -1351,6 +1360,7 @@ export default defineSchema({
         }),
       ),
     ),
+    assignedTo: v.optional(v.id("users")),
     useDetailedConditionReports: v.optional(v.boolean()),
   })
     .index("by_organization", ["organizationId"])
@@ -1359,7 +1369,12 @@ export default defineSchema({
     .index("by_type", ["type"])
     .index("by_organization_and_type", ["organizationId", "type"])
     .index("by_account", ["accountId"])
-    .index("by_organization_and_endDate", ["organizationId", "endDate"]),
+    .index("by_organization_and_endDate", ["organizationId", "endDate"])
+    .index("by_assigned_to", ["assignedTo"])
+    .searchIndex("search_loans", {
+      searchField: "lenderBorrowerName",
+      filterFields: ["organizationId", "status", "type"],
+    }),
 
   // Items included in loans
   loanItems: defineTable({
@@ -1974,6 +1989,20 @@ export default defineSchema({
         name: v.string(),
         // Documents required to complete this step
         requiredDocuments: v.optional(v.array(v.string())),
+        // Epic 24: Approval mode for this step
+        approvalMode: v.optional(
+          v.union(
+            v.literal("single"), // Default: one approver needed
+            v.literal("multi"), // Multiple approvers, threshold-based
+            v.literal("unanimous"), // All approvers with role must approve
+          ),
+        ),
+        // Number of approvals required (for multi mode)
+        requiredApprovals: v.optional(v.number()),
+        // Allowed transitions from this step (empty = next step only)
+        allowedNextSteps: v.optional(v.array(v.number())),
+        // Can this step be skipped? (e.g., for expedited workflows)
+        canSkip: v.optional(v.boolean()),
       }),
     ),
     canInitiateRoles: v.array(v.id("roles")),
@@ -1989,9 +2018,137 @@ export default defineSchema({
     ),
     // Whether source verification is required before approval
     requireSourceVerification: v.optional(v.boolean()),
+    // Epic 24: Template this config was instantiated from
+    templateId: v.optional(v.id("workflowTemplates")),
   })
     .index("by_organization", ["organizationId"])
     .index("by_workflowType", ["workflowType"]),
+
+  // Epic 24: Unified workflow history table (queryable across all workflow types)
+  workflowHistory: defineTable({
+    organizationId: v.id("organizations"),
+    workflowType: v.union(
+      v.literal("accession"),
+      v.literal("deaccession"),
+      v.literal("loan"),
+      v.literal("acquisition"),
+      v.literal("exhibition"),
+      v.literal("conservation"),
+    ),
+    entityId: v.string(),
+    fromStep: v.number(),
+    toStep: v.number(),
+    action: v.union(
+      v.literal("created"),
+      v.literal("submitted"),
+      v.literal("approved"),
+      v.literal("rejected"),
+      v.literal("reassigned"),
+      v.literal("returned"),
+      v.literal("completed"),
+      v.literal("cancelled"),
+    ),
+    performedBy: v.id("users"),
+    performedAt: v.number(),
+    comment: v.optional(v.string()),
+    assignedTo: v.optional(v.id("users")),
+    previousAssignee: v.optional(v.id("users")),
+    metadata: v.optional(v.record(v.string(), v.string())),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_entity", ["workflowType", "entityId"])
+    .index("by_user", ["performedBy"])
+    .index("by_organization_and_type", ["organizationId", "workflowType"])
+    .index("by_timestamp", ["performedAt"]),
+
+  // Epic 24: Predefined workflow templates
+  workflowTemplates: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    workflowType: v.union(
+      v.literal("accession"),
+      v.literal("deaccession"),
+      v.literal("loan"),
+      v.literal("acquisition"),
+      v.literal("exhibition"),
+      v.literal("conservation"),
+    ),
+    isSystem: v.boolean(),
+    steps: v.array(
+      v.object({
+        stepNumber: v.number(),
+        name: v.string(),
+        roleName: v.string(),
+        approvalMode: v.optional(
+          v.union(
+            v.literal("single"),
+            v.literal("multi"),
+            v.literal("unanimous"),
+          ),
+        ),
+        requiredApprovals: v.optional(v.number()),
+        allowedNextSteps: v.optional(v.array(v.number())),
+        canSkip: v.optional(v.boolean()),
+        requiredDocuments: v.optional(v.array(v.string())),
+      }),
+    ),
+    requiredDocuments: v.optional(
+      v.array(
+        v.object({
+          documentType: v.string(),
+          description: v.optional(v.string()),
+          requiredAtStep: v.optional(v.number()),
+        }),
+      ),
+    ),
+    requireSourceVerification: v.optional(v.boolean()),
+    createdAt: v.number(),
+    createdBy: v.optional(v.id("users")),
+  })
+    .index("by_workflowType", ["workflowType"])
+    .index("by_isSystem", ["isSystem"]),
+
+  // Epic 24: Step approvals tracking (for multi-approver workflows)
+  workflowStepApprovals: defineTable({
+    organizationId: v.id("organizations"),
+    workflowType: v.union(
+      v.literal("accession"),
+      v.literal("deaccession"),
+      v.literal("loan"),
+      v.literal("acquisition"),
+      v.literal("exhibition"),
+      v.literal("conservation"),
+    ),
+    entityId: v.string(),
+    stepNumber: v.number(),
+    approvedBy: v.id("users"),
+    approvedAt: v.number(),
+    comment: v.optional(v.string()),
+  })
+    .index("by_entity_and_step", ["workflowType", "entityId", "stepNumber"])
+    .index("by_user", ["approvedBy"]),
+
+  // SLA configurations for workflow types (Task 5)
+  workflowSlaConfigs: defineTable({
+    organizationId: v.id("organizations"),
+    workflowType: v.union(
+      v.literal("accession"),
+      v.literal("deaccession"),
+      v.literal("loan"),
+      v.literal("acquisition"),
+      v.literal("exhibition"),
+      v.literal("conservation"),
+    ),
+    slaDays: v.number(),
+    warningDays: v.optional(v.number()),
+    escalateToRoleId: v.optional(v.id("roles")),
+    isActive: v.optional(v.boolean()),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_type", ["organizationId", "workflowType"]),
 
   // Webhook endpoints for external integrations
   webhooks: defineTable({
@@ -3512,11 +3669,7 @@ export default defineSchema({
     lastRunAt: v.optional(v.number()),
     nextRunAt: v.optional(v.number()),
     lastRunStatus: v.optional(
-      v.union(
-        v.literal("success"),
-        v.literal("failed"),
-        v.literal("partial"),
-      ),
+      v.union(v.literal("success"), v.literal("failed"), v.literal("partial")),
     ),
     lastRunError: v.optional(v.string()),
 
@@ -3651,4 +3804,29 @@ export default defineSchema({
     .index("by_organization", ["organizationId"])
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_created_at", ["organizationId", "createdAt"]),
+
+  // Saved search/filter views per user
+  savedViews: defineTable({
+    organizationId: v.id("organizations"),
+    userId: v.id("users"),
+    name: v.string(),
+    // Module this view applies to
+    module: v.union(
+      v.literal("objects"),
+      v.literal("loans"),
+      v.literal("accounts"),
+      v.literal("locations"),
+      v.literal("accessions"),
+    ),
+    // Serialized filter state (JSON string of filter key-value pairs)
+    filters: v.string(),
+    // Whether this is the user's default view for this module
+    isDefault: v.optional(v.boolean()),
+    createdAt: v.number(),
+    lastUsedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_module", ["userId", "module"])
+    .index("by_organization_and_user", ["organizationId", "userId"])
+    .index("by_organization_and_module", ["organizationId", "module"]),
 });

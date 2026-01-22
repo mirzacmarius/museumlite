@@ -1,9 +1,10 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { requirePermission } from "./utils/permissions";
+import { mutation, query } from "./_generated/server";
 import { accessionParser } from "./utils/accessionNumberParser";
+import { requirePermission } from "./utils/permissions";
 
 /**
  * List all custom templates for an organization
@@ -85,7 +86,7 @@ export const create = mutation({
       throw new Error("Template already exists");
     }
 
-    return await ctx.db.insert("accessionTemplates", {
+    const templateId = await ctx.db.insert("accessionTemplates", {
       organizationId: args.organizationId,
       name: args.name,
       template: args.template,
@@ -95,6 +96,21 @@ export const create = mutation({
       createdAt: Date.now(),
       usageCount: 0,
     });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "created_accession_template",
+      entityType: "accessionTemplate",
+      entityId: templateId,
+      changes: {
+        name: args.name,
+        template: args.template,
+        description: args.description,
+      },
+    });
+
+    return templateId;
   },
 });
 
@@ -158,6 +174,20 @@ export const update = mutation({
     }
 
     await ctx.db.patch(args.templateId, updates);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: template.organizationId,
+      userId,
+      action: "updated_accession_template",
+      entityType: "accessionTemplate",
+      entityId: args.templateId,
+      changes: {
+        name: args.name,
+        description: args.description,
+        template: args.template,
+      },
+    });
+
     return null;
   },
 });
@@ -188,6 +218,19 @@ export const remove = mutation({
     );
 
     await ctx.db.delete(args.templateId);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: template.organizationId,
+      userId,
+      action: "deleted_accession_template",
+      entityType: "accessionTemplate",
+      entityId: args.templateId,
+      changes: {
+        name: template.name,
+        template: template.template,
+      },
+    });
+
     return null;
   },
 });
@@ -231,6 +274,18 @@ export const setDefault = mutation({
 
     // Set this template as default
     await ctx.db.patch(args.templateId, { isDefault: true });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: template.organizationId,
+      userId,
+      action: "set_default_accession_template",
+      entityType: "accessionTemplate",
+      entityId: args.templateId,
+      changes: {
+        name: template.name,
+        template: template.template,
+      },
+    });
 
     return null;
   },

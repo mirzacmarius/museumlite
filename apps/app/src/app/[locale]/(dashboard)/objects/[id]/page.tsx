@@ -19,6 +19,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
 import { Button } from "@v1/ui/button";
 import { ImageLightbox, type LightboxImage } from "@v1/ui/image-lightbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@v1/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { SidebarProvider } from "@v1/ui/sidebar";
 import {
@@ -35,12 +42,16 @@ import {
   Calendar,
   Check,
   Copy,
+  FileDown,
   Image as ImageIcon,
   Info,
+  Link2,
   MapPin,
   Maximize2,
   Pencil,
   Printer,
+  Send,
+  Share2,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";

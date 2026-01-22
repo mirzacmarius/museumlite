@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { metadataRecord } from "./schema";
 import { requireModuleEnabled } from "./utils/featureGates";
@@ -258,6 +259,19 @@ export const create = mutation({
       createdAt: Date.now(),
     });
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: account.organizationId,
+      userId,
+      action: "created_account_relationship",
+      entityType: "accountRelationship",
+      entityId: relationshipId,
+      changes: {
+        relatedEntityType: args.relatedEntityType,
+        relatedEntityId: args.relatedEntityId,
+        relationshipType: args.relationshipType,
+      },
+    });
+
     return relationshipId;
   },
 });
@@ -297,6 +311,15 @@ export const update = mutation({
 
     await ctx.db.patch(args.relationshipId, updates);
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: relationship.organizationId,
+      userId,
+      action: "updated_account_relationship",
+      entityType: "accountRelationship",
+      entityId: args.relationshipId,
+      changes: updates,
+    });
+
     return null;
   },
 });
@@ -325,6 +348,18 @@ export const remove = mutation({
     );
 
     await ctx.db.delete(args.relationshipId);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: relationship.organizationId,
+      userId,
+      action: "deleted_account_relationship",
+      entityType: "accountRelationship",
+      entityId: args.relationshipId,
+      changes: {
+        relatedEntityType: relationship.relatedEntityType,
+        relatedEntityId: relationship.relatedEntityId,
+      },
+    });
 
     return null;
   },

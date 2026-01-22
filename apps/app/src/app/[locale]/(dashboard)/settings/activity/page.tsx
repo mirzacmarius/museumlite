@@ -26,7 +26,7 @@ export default function ActivityPage() {
   const { currentOrganizationId, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
   const locale = useCurrentLocale();
-  const t = useScopedI18n("settings.activityLog");
+  const t = useScopedI18n("activityLog");
 
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedEntityType, setSelectedEntityType] = useState<string>("");

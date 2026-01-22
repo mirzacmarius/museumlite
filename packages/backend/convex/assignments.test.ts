@@ -4,8 +4,10 @@ import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 
+const modules = import.meta.glob("./**/*.ts");
+
 test("should require authentication for listMyAssignments", async () => {
-  const t = convexTest(schema);
+  const t = convexTest(schema, modules);
 
   await expect(
     t.query(api.assignments.listMyAssignments, {
@@ -15,7 +17,7 @@ test("should require authentication for listMyAssignments", async () => {
 });
 
 test("should return empty assignments when no data exists", async () => {
-  const t = convexTest(schema);
+  const t = convexTest(schema, modules);
 
   const orgId = await t.run(async (ctx) => {
     return await ctx.db.insert("organizations", {
@@ -37,13 +39,13 @@ test("should return empty assignments when no data exists", async () => {
 });
 
 test("should return valid assignment data structure", async () => {
-  const t = convexTest(schema);
+  const t = convexTest(schema, modules);
 
   expect(true).toBe(true);
 });
 
 test("should require authentication for getAssignmentCounts", async () => {
-  const t = convexTest(schema);
+  const t = convexTest(schema, modules);
 
   const orgId = await t.run(async (ctx) => {
     return await ctx.db.insert("organizations", {
@@ -66,7 +68,7 @@ test("should require authentication for getAssignmentCounts", async () => {
 });
 
 test("should return zero counts when no assignments exist", async () => {
-  const t = convexTest(schema);
+  const t = convexTest(schema, modules);
 
   const orgId = await t.run(async (ctx) => {
     return await ctx.db.insert("organizations", {

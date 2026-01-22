@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
@@ -105,6 +106,20 @@ export const create = mutation({
       createdAt: Date.now(),
     });
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "created_api_key",
+      entityType: "apiKey",
+      entityId: id,
+      changes: {
+        name: args.name,
+        prefix,
+        permissions: args.permissions,
+        expiresAt: args.expiresAt,
+      },
+    });
+
     return { id, key: apiKey };
   },
 });
@@ -131,6 +146,19 @@ export const revoke = mutation({
     }
 
     await ctx.db.patch(args.keyId, { isRevoked: true });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "revoked_api_key",
+      entityType: "apiKey",
+      entityId: args.keyId,
+      changes: {
+        name: key.name,
+        prefix: key.prefix,
+      },
+    });
+
     return null;
   },
 });
@@ -157,6 +185,19 @@ export const deleteKey = mutation({
     }
 
     await ctx.db.delete(args.keyId);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "deleted_api_key",
+      entityType: "apiKey",
+      entityId: args.keyId,
+      changes: {
+        name: key.name,
+        prefix: key.prefix,
+      },
+    });
+
     return null;
   },
 });

@@ -53,7 +53,7 @@ import { useState } from "react";
 
 const CONDITION_VALUES = ["new", "excellent", "good", "fair", "poor"] as const;
 
-type Condition = (typeof CONDITION_OPTIONS)[number]["value"];
+type Condition = (typeof CONDITION_VALUES)[number];
 
 export default function CatalogItemDetailPage() {
   const params = useParams();

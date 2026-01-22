@@ -34,6 +34,14 @@ export const globalSearch = query({
         status: v.string(),
       }),
     ),
+    accounts: v.array(
+      v.object({
+        _id: v.id("accounts"),
+        accountNumber: v.string(),
+        displayName: v.string(),
+        accountType: v.optional(v.string()),
+      }),
+    ),
     accessions: v.array(
       v.object({
         _id: v.id("accessions"),
@@ -52,7 +60,7 @@ export const globalSearch = query({
   }),
   handler: async (ctx, args) => {
     const searchLimit = args.limit ?? 5;
-    const searchQuery = args.query.toLowerCase().trim();
+    const searchQuery = args.query.trim();
 
     const emptyResults = {
       objects: [] as Array<{
@@ -73,6 +81,12 @@ export const globalSearch = query({
         type: string;
         status: string;
       }>,
+      accounts: [] as Array<{
+        _id: Id<"accounts">;
+        accountNumber: string;
+        displayName: string;
+        accountType?: string;
+      }>,
       accessions: [] as Array<{
         _id: Id<"accessions">;
         accessionNumber: string;
@@ -92,26 +106,19 @@ export const globalSearch = query({
 
     const results = { ...emptyResults };
 
-    const canReadCollections = await hasPermission(
-      ctx,
-      args.organizationId,
-      "collections.read",
-    );
-    const canReadLoans = await hasPermission(
-      ctx,
-      args.organizationId,
-      "loans.read",
-    );
-    const canReadAccessions = await hasPermission(
-      ctx,
-      args.organizationId,
-      "accessions.read",
-    );
-    const canReadLocations = await hasPermission(
-      ctx,
-      args.organizationId,
-      "locations.read",
-    );
+    const [
+      canReadCollections,
+      canReadLoans,
+      canReadAccounts,
+      canReadAccessions,
+      canReadLocations,
+    ] = await Promise.all([
+      hasPermission(ctx, args.organizationId, "collections.read"),
+      hasPermission(ctx, args.organizationId, "loans.read"),
+      hasPermission(ctx, args.organizationId, "accounts.read"),
+      hasPermission(ctx, args.organizationId, "accessions.read"),
+      hasPermission(ctx, args.organizationId, "locations.read"),
+    ]);
 
     if (canReadCollections) {
       const objectResults = await ctx.db
@@ -147,22 +154,16 @@ export const globalSearch = query({
     }
 
     if (canReadLoans) {
-      const allLoans = await ctx.db
+      const loanResults = await ctx.db
         .query("loans")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
+        .withSearchIndex("search_loans", (q) =>
+          q
+            .search("lenderBorrowerName", searchQuery)
+            .eq("organizationId", args.organizationId),
         )
-        .collect();
+        .take(searchLimit);
 
-      const filteredLoans = allLoans
-        .filter(
-          (loan) =>
-            loan.loanNumber.toLowerCase().includes(searchQuery) ||
-            loan.lenderBorrowerName.toLowerCase().includes(searchQuery),
-        )
-        .slice(0, searchLimit);
-
-      results.loans = filteredLoans.map((loan) => ({
+      results.loans = loanResults.map((loan) => ({
         _id: loan._id,
         loanNumber: loan.loanNumber,
         lenderBorrowerName: loan.lenderBorrowerName,
@@ -171,21 +172,53 @@ export const globalSearch = query({
       }));
     }
 
+    if (canReadAccounts) {
+      const businessResults = await ctx.db
+        .query("accounts")
+        .withSearchIndex("search_accounts", (q) =>
+          q
+            .search("businessName", searchQuery)
+            .eq("organizationId", args.organizationId),
+        )
+        .take(searchLimit);
+
+      const nameResults = await ctx.db
+        .query("accounts")
+        .withSearchIndex("search_accounts_by_name", (q) =>
+          q
+            .search("lastName", searchQuery)
+            .eq("organizationId", args.organizationId),
+        )
+        .take(searchLimit);
+
+      const seen = new Set<string>();
+      const allAccounts = [...businessResults, ...nameResults].filter((acc) => {
+        if (seen.has(acc._id)) return false;
+        seen.add(acc._id);
+        return true;
+      });
+
+      results.accounts = allAccounts.slice(0, searchLimit).map((acc) => ({
+        _id: acc._id,
+        accountNumber: acc.accountNumber,
+        displayName:
+          acc.businessName ??
+          `${acc.firstName ?? ""} ${acc.lastName ?? ""}`.trim(),
+        accountType: acc.accountType,
+      }));
+    }
+
     if (canReadAccessions) {
-      const allAccessions = await ctx.db
+      const accessionResults = await ctx.db
         .query("accessions")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
+        .withSearchIndex("search_accessions", (q) =>
+          q
+            .search("accessionNumber", searchQuery)
+            .eq("organizationId", args.organizationId),
         )
-        .collect();
+        .take(searchLimit);
 
-      const filteredAccessions = allAccessions
-        .filter((acc) =>
-          acc.accessionNumber.toLowerCase().includes(searchQuery),
-        )
-        .slice(0, searchLimit);
-
-      results.accessions = filteredAccessions.map((acc) => ({
+      results.accessions = accessionResults.map((acc) => ({
         _id: acc._id,
         accessionNumber: acc.accessionNumber,
         method: acc.method,
@@ -194,18 +227,16 @@ export const globalSearch = query({
     }
 
     if (canReadLocations) {
-      const allLocations = await ctx.db
+      const locationResults = await ctx.db
         .query("locations")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
+        .withSearchIndex("search_locations", (q) =>
+          q
+            .search("name", searchQuery)
+            .eq("organizationId", args.organizationId),
         )
-        .collect();
+        .take(searchLimit);
 
-      const filteredLocations = allLocations
-        .filter((loc) => loc.name.toLowerCase().includes(searchQuery))
-        .slice(0, searchLimit);
-
-      results.locations = filteredLocations.map((loc) => ({
+      results.locations = locationResults.map((loc) => ({
         _id: loc._id,
         name: loc.name,
         type: loc.type,

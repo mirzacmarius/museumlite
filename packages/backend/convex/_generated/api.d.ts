@@ -82,6 +82,7 @@ import type * as vehicleDetails from "../vehicleDetails.js";
 import type * as web from "../web.js";
 import type * as webhooks from "../webhooks.js";
 import type * as wineDetails from "../wineDetails.js";
+import type * as workflowSla from "../workflowSla.js";
 import type * as workflows from "../workflows.js";
 
 import type {
@@ -165,6 +166,7 @@ declare const fullApi: ApiFromModules<{
   web: typeof web;
   webhooks: typeof webhooks;
   wineDetails: typeof wineDetails;
+  workflowSla: typeof workflowSla;
   workflows: typeof workflows;
 }>;
 

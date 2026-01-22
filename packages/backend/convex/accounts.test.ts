@@ -4,6 +4,8 @@ import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 
+const modules = import.meta.glob("./**/*.ts");
+
 describe("Accounts CRUD", () => {
   let organizationId: Id<"organizations">;
   let userId: Id<"users">;
@@ -14,7 +16,7 @@ describe("Accounts CRUD", () => {
   let accountsManagePermissionId: Id<"permissions">;
 
   beforeEach(async () => {
-    const t = convexTest(schema);
+    const t = convexTest(schema, modules);
 
     organizationId = await t.run(async (ctx) => {
       return await ctx.db.insert("organizations", {
@@ -103,7 +105,7 @@ describe("Accounts CRUD", () => {
   });
 
   test("should create account with auto-generated account number", async () => {
-    const t = convexTest(schema);
+    const t = convexTest(schema, modules);
 
     const accountId = await t.mutation(api.accounts.create, {
       organizationId,
@@ -122,7 +124,7 @@ describe("Accounts CRUD", () => {
   });
 
   test("should list accounts with pagination", async () => {
-    const t = convexTest(schema);
+    const t = convexTest(schema, modules);
 
     await t.mutation(api.accounts.create, {
       organizationId,
@@ -146,7 +148,7 @@ describe("Accounts CRUD", () => {
   });
 
   test("should filter accounts by type", async () => {
-    const t = convexTest(schema);
+    const t = convexTest(schema, modules);
 
     await t.mutation(api.accounts.create, {
       organizationId,
@@ -171,7 +173,7 @@ describe("Accounts CRUD", () => {
   });
 
   test("should search accounts by name", async () => {
-    const t = convexTest(schema);
+    const t = convexTest(schema, modules);
 
     await t.mutation(api.accounts.create, {
       organizationId,
@@ -196,7 +198,7 @@ describe("Accounts CRUD", () => {
   });
 
   test("should update account", async () => {
-    const t = convexTest(schema);
+    const t = convexTest(schema, modules);
 
     const accountId = await t.mutation(api.accounts.create, {
       organizationId,
@@ -216,7 +218,7 @@ describe("Accounts CRUD", () => {
   });
 
   test("should archive account", async () => {
-    const t = convexTest(schema);
+    const t = convexTest(schema, modules);
 
     const accountId = await t.mutation(api.accounts.create, {
       organizationId,
@@ -231,7 +233,7 @@ describe("Accounts CRUD", () => {
   });
 
   test("should restore archived account", async () => {
-    const t = convexTest(schema);
+    const t = convexTest(schema, modules);
 
     const accountId = await t.mutation(api.accounts.create, {
       organizationId,
@@ -247,7 +249,7 @@ describe("Accounts CRUD", () => {
   });
 
   test("should update account status", async () => {
-    const t = convexTest(schema);
+    const t = convexTest(schema, modules);
 
     const accountId = await t.mutation(api.accounts.create, {
       organizationId,
@@ -266,7 +268,7 @@ describe("Accounts CRUD", () => {
   });
 
   test("should get account by name", async () => {
-    const t = convexTest(schema);
+    const t = convexTest(schema, modules);
 
     await t.mutation(api.accounts.create, {
       organizationId,
@@ -284,7 +286,7 @@ describe("Accounts CRUD", () => {
   });
 
   test("should enforce module gating", async () => {
-    const t = convexTest(schema);
+    const t = convexTest(schema, modules);
 
     const orgWithoutModule = await t.run(async (ctx) => {
       return await ctx.db.insert("organizations", {
@@ -306,7 +308,7 @@ describe("Accounts CRUD", () => {
   });
 
   test("should enforce multi-tenant isolation", async () => {
-    const t = convexTest(schema);
+    const t = convexTest(schema, modules);
 
     const org2Id = await t.run(async (ctx) => {
       return await ctx.db.insert("organizations", {
@@ -331,7 +333,7 @@ describe("Accounts CRUD", () => {
   });
 
   test("should prevent deletion of account used in loans", async () => {
-    const t = convexTest(schema);
+    const t = convexTest(schema, modules);
 
     const accountId = await t.mutation(api.accounts.create, {
       organizationId,
@@ -357,7 +359,7 @@ describe("Accounts CRUD", () => {
   });
 
   test("should create patron account with required fields", async () => {
-    const t = convexTest(schema);
+    const t = convexTest(schema, modules);
 
     const accountId = await t.mutation(api.accounts.create, {
       organizationId,
@@ -376,7 +378,7 @@ describe("Accounts CRUD", () => {
   });
 
   test("should validate patron account requires name", async () => {
-    const t = convexTest(schema);
+    const t = convexTest(schema, modules);
 
     await expect(
       t.mutation(api.accounts.create, {
@@ -390,7 +392,7 @@ describe("Accounts CRUD", () => {
   });
 
   test("should validate non-patron account requires business name", async () => {
-    const t = convexTest(schema);
+    const t = convexTest(schema, modules);
 
     await expect(
       t.mutation(api.accounts.create, {

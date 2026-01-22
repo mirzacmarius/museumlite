@@ -1,7 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -68,13 +69,24 @@ export const create = mutation({
       throw new Error("A type with this name already exists");
     }
 
-    return await ctx.db.insert("typeOptions", {
+    const typeId = await ctx.db.insert("typeOptions", {
       organizationId: args.organizationId,
       name: args.name,
       createdBy: userId,
       createdAt: Date.now(),
       usageCount: 0,
     });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "created_type_option",
+      entityType: "typeOption",
+      entityId: typeId,
+      changes: { name: args.name },
+    });
+
+    return typeId;
   },
 });
 
@@ -169,6 +181,16 @@ export const remove = mutation({
     );
 
     await ctx.db.delete(args.typeId);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: type.organizationId,
+      userId,
+      action: "deleted_type_option",
+      entityType: "typeOption",
+      entityId: args.typeId,
+      changes: { name: type.name },
+    });
+
     return null;
   },
 });

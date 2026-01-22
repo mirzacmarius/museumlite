@@ -910,9 +910,9 @@ export default function CollectionFormPage() {
                     <Save className="mr-2 h-4 w-4" />
                     {isSubmitting
                       ? selectedFiles.length > 0
-                        ? t("form.creatingAndUploading")
+                        ? t("form.actions.creatingAndUploading")
                         : common("creating")
-                      : t("form.createObject")}
+                      : t("form.actions.createObject")}
                   </Button>
                 </div>
               </div>

@@ -205,6 +205,20 @@ export const create = mutation({
       });
     }
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "uploaded_media",
+      entityType: "media",
+      entityId: mediaId,
+      changes: {
+        fileName: args.fileName,
+        fileType: fileCategory,
+        fileSize: args.fileSize,
+        collectionId: args.collectionId,
+      },
+    });
+
     return mediaId;
   },
 });
@@ -356,6 +370,15 @@ export const update = mutation({
 
     await ctx.db.patch(args.mediaId, updates);
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: media.organizationId,
+      userId,
+      action: "updated_media",
+      entityType: "media",
+      entityId: args.mediaId,
+      changes: updates,
+    });
+
     return null;
   },
 });
@@ -390,6 +413,19 @@ export const deleteMedia = mutation({
 
     // Delete record
     await ctx.db.delete(args.mediaId);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: media.organizationId,
+      userId,
+      action: "deleted_media",
+      entityType: "media",
+      entityId: args.mediaId,
+      changes: {
+        fileName: media.fileName,
+        fileType: media.fileType,
+        collectionId: media.collectionId,
+      },
+    });
 
     return null;
   },
@@ -786,6 +822,18 @@ export const updateOrder = mutation({
       }
     }
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: firstMedia.organizationId,
+      userId,
+      action: "reordered_media",
+      entityType: "media",
+      entityId: args.mediaIds[0] as Id<"mediaFiles">,
+      changes: {
+        mediaCount: args.mediaIds.length,
+        collectionId: firstMedia.collectionId,
+      },
+    });
+
     return null;
   },
 });
@@ -1013,6 +1061,18 @@ export const updateMetadata = mutation({
       metadata: updatedMetadata,
     });
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: media.organizationId,
+      userId,
+      action: "updated_media_metadata",
+      entityType: "media",
+      entityId: args.mediaId,
+      changes: {
+        fileName: media.fileName,
+        metadataFields: Object.keys(args.metadata),
+      },
+    });
+
     return null;
   },
 });
@@ -1045,7 +1105,9 @@ export const checkDuplicate = query({
     const existing = await ctx.db
       .query("mediaFiles")
       .withIndex("by_content_hash", (q) =>
-        q.eq("organizationId", args.organizationId).eq("contentHash", args.contentHash),
+        q
+          .eq("organizationId", args.organizationId)
+          .eq("contentHash", args.contentHash),
       )
       .first();
 
@@ -1236,10 +1298,13 @@ export const updateRights = mutation({
     await requirePermission(ctx, media.organizationId, "media.upload");
 
     const updates: Record<string, unknown> = {};
-    if (args.rightsStatus !== undefined) updates.rightsStatus = args.rightsStatus;
+    if (args.rightsStatus !== undefined)
+      updates.rightsStatus = args.rightsStatus;
     if (args.licenseType !== undefined) updates.licenseType = args.licenseType;
-    if (args.licenseExpiry !== undefined) updates.licenseExpiry = args.licenseExpiry;
-    if (args.rightsHolder !== undefined) updates.rightsHolder = args.rightsHolder;
+    if (args.licenseExpiry !== undefined)
+      updates.licenseExpiry = args.licenseExpiry;
+    if (args.rightsHolder !== undefined)
+      updates.rightsHolder = args.rightsHolder;
     if (args.usageRestrictions !== undefined)
       updates.usageRestrictions = args.usageRestrictions;
     if (args.requiresAcknowledgment !== undefined)
@@ -1248,6 +1313,15 @@ export const updateRights = mutation({
       updates.acknowledgmentText = args.acknowledgmentText;
 
     await ctx.db.patch(args.mediaId, updates);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: media.organizationId,
+      userId,
+      action: "updated_media_rights",
+      entityType: "media",
+      entityId: args.mediaId,
+      changes: updates,
+    });
 
     return null;
   },
@@ -1287,7 +1361,9 @@ export const trackDownload = mutation({
 
     // Check for restricted or licensed content
     if (media.rightsStatus === "restricted") {
-      throw new Error("This media has restricted rights and cannot be downloaded");
+      throw new Error(
+        "This media has restricted rights and cannot be downloaded",
+      );
     }
 
     // Check license expiry

@@ -3,13 +3,14 @@ import {
   format as dateFnsFormat,
   formatDistanceToNow,
 } from "date-fns";
-import { enUS, es, fr, nb } from "date-fns/locale";
+import { enUS, es, fr, nb, ro } from "date-fns/locale";
 
 const localeMap: Record<string, Locale> = {
   en: enUS,
   es,
   fr,
   no: nb,
+  ro,
 };
 
 export function formatDate(

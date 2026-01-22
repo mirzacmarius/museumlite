@@ -50,7 +50,7 @@ interface WorkflowConfig {
 }
 
 export default function WorkflowsSettingsPage() {
-  const t = useScopedI18n("settings.workflows");
+  const t = useScopedI18n("workflows");
   const tPlaceholders = useScopedI18n("settings.placeholders");
   const { currentOrganizationId } = useOrganization();
   const [editDialogOpen, setEditDialogOpen] = useState(false);

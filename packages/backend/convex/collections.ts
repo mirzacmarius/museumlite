@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 // Note: customFieldValue, provenanceChainEntry, shippingLogEntry are defined in schema
@@ -256,6 +257,19 @@ export const create = mutation({
         });
       }
     }
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "created_collection",
+      entityType: "collection",
+      entityId: collectionId,
+      changes: {
+        accessionNumber,
+        title: args.title,
+        collectionType: args.collectionType,
+      },
+    });
 
     return collectionId;
   },
@@ -1292,6 +1306,15 @@ export const update = mutation({
       }
     }
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: collection.organizationId,
+      userId,
+      action: "updated_collection",
+      entityType: "collection",
+      entityId: args.collectionId,
+      changes: updates,
+    });
+
     return null;
   },
 });
@@ -1327,6 +1350,19 @@ export const deleteCollection = mutation({
       status: "deaccessioned",
       lastModifiedBy: userId,
       lastModifiedAt: Date.now(),
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: collection.organizationId,
+      userId,
+      action: "deaccessioned_collection",
+      entityType: "collection",
+      entityId: args.collectionId,
+      changes: {
+        accessionNumber: collection.accessionNumber,
+        title: collection.title,
+        previousStatus: collection.status,
+      },
     });
 
     return null;
@@ -1372,14 +1408,17 @@ export const archiveCollection = mutation({
       lastModifiedAt: Date.now(),
     });
 
-    await ctx.db.insert("auditLog", {
+    await ctx.runMutation(internal.audit.logAction, {
       organizationId: collection.organizationId,
       userId,
-      action: "archived",
+      action: "archived_collection",
       entityType: "collection",
       entityId: args.collectionId,
-      changes: { reason: args.reason },
-      timestamp: Date.now(),
+      changes: {
+        reason: args.reason,
+        accessionNumber: collection.accessionNumber,
+        title: collection.title,
+      },
     });
 
     return null;
@@ -1425,14 +1464,17 @@ export const softDeleteCollection = mutation({
       lastModifiedAt: Date.now(),
     });
 
-    await ctx.db.insert("auditLog", {
+    await ctx.runMutation(internal.audit.logAction, {
       organizationId: collection.organizationId,
       userId,
-      action: "deleted",
+      action: "deleted_collection",
       entityType: "collection",
       entityId: args.collectionId,
-      changes: { reason: args.reason },
-      timestamp: Date.now(),
+      changes: {
+        reason: args.reason,
+        accessionNumber: collection.accessionNumber,
+        title: collection.title,
+      },
     });
 
     return null;
@@ -1480,14 +1522,17 @@ export const restoreCollection = mutation({
       lastModifiedAt: Date.now(),
     });
 
-    await ctx.db.insert("auditLog", {
+    await ctx.runMutation(internal.audit.logAction, {
       organizationId: collection.organizationId,
       userId,
-      action: "restored",
+      action: "restored_collection",
       entityType: "collection",
       entityId: args.collectionId,
-      changes: { previousStatus: collection.status },
-      timestamp: Date.now(),
+      changes: {
+        previousStatus: collection.status,
+        accessionNumber: collection.accessionNumber,
+        title: collection.title,
+      },
     });
 
     return null;
@@ -1603,6 +1648,18 @@ export const addAlternateAccessionNumber = mutation({
       lastModifiedAt: Date.now(),
     });
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: collection.organizationId,
+      userId,
+      action: "added_alternate_accession_number",
+      entityType: "collection",
+      entityId: args.collectionId,
+      changes: {
+        addedNumber: args.accessionNumber,
+        primaryAccessionNumber: collection.accessionNumber,
+      },
+    });
+
     return null;
   },
 });
@@ -1643,6 +1700,18 @@ export const removeAlternateAccessionNumber = mutation({
       alternateAccessionNumbers: updated,
       lastModifiedBy: userId,
       lastModifiedAt: Date.now(),
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: collection.organizationId,
+      userId,
+      action: "removed_alternate_accession_number",
+      entityType: "collection",
+      entityId: args.collectionId,
+      changes: {
+        removedNumber: args.accessionNumber,
+        primaryAccessionNumber: collection.accessionNumber,
+      },
     });
 
     return null;

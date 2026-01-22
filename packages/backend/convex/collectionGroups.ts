@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
@@ -59,6 +60,20 @@ export const create = mutation({
       createdAt: Date.now(),
       createdBy: userId,
       itemsCount: 0,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "created_collection_group",
+      entityType: "collectionGroup",
+      entityId: groupId,
+      changes: {
+        name: args.name,
+        description: args.description,
+        curatorId: args.curatorId,
+        managedByRoleId: args.managedByRoleId,
+      },
     });
 
     return groupId;
@@ -246,6 +261,20 @@ export const update = mutation({
 
     await ctx.db.patch(args.groupId, updates);
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: group.organizationId,
+      userId,
+      action: "updated_collection_group",
+      entityType: "collectionGroup",
+      entityId: args.groupId,
+      changes: {
+        name: args.name,
+        description: args.description,
+        curatorId: args.curatorId,
+        managedByRoleId: args.managedByRoleId,
+      },
+    });
+
     return null;
   },
 });
@@ -294,6 +323,19 @@ export const deleteGroup = mutation({
     }
 
     await ctx.db.delete(args.groupId);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: group.organizationId,
+      userId,
+      action: "deleted_collection_group",
+      entityType: "collectionGroup",
+      entityId: args.groupId,
+      changes: {
+        name: group.name,
+        itemsRemoved: groupItems.length,
+        collectionsUnlinked: items.length,
+      },
+    });
 
     return null;
   },
@@ -359,6 +401,18 @@ export const addItems = mutation({
         lastModifiedAt: Date.now(),
         lastModifiedBy: userId,
       });
+
+      await ctx.runMutation(internal.audit.logAction, {
+        organizationId: group.organizationId,
+        userId,
+        action: "added_items_to_collection_group",
+        entityType: "collectionGroup",
+        entityId: args.groupId,
+        changes: {
+          collectionIds: args.collectionIds,
+          addedCount,
+        },
+      });
     }
 
     return null;
@@ -409,6 +463,18 @@ export const removeItems = mutation({
         itemsCount: Math.max(0, (group.itemsCount || 0) - removedCount),
         lastModifiedAt: Date.now(),
         lastModifiedBy: userId,
+      });
+
+      await ctx.runMutation(internal.audit.logAction, {
+        organizationId: group.organizationId,
+        userId,
+        action: "removed_items_from_collection_group",
+        entityType: "collectionGroup",
+        entityId: args.groupId,
+        changes: {
+          collectionIds: args.collectionIds,
+          removedCount,
+        },
       });
     }
 

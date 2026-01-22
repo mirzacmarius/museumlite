@@ -246,6 +246,19 @@ export const create = mutation({
       });
     }
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId,
+      userId,
+      action: "created_organization",
+      entityType: "organization",
+      entityId: organizationId,
+      changes: {
+        name: args.name,
+        slug: args.slug,
+        type: args.type,
+      },
+    });
+
     return organizationId;
   },
 });
@@ -428,6 +441,16 @@ export const update = mutation({
     }
 
     await ctx.db.patch(args.organizationId, updates);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "updated_organization",
+      entityType: "organization",
+      entityId: args.organizationId,
+      changes: updates,
+    });
+
     return null;
   },
 });
@@ -559,6 +582,18 @@ export const updateWorkflowConfig = mutation({
       });
     }
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "updated_workflow_config",
+      entityType: "workflowConfig",
+      entityId: existing?._id ?? args.organizationId,
+      changes: {
+        workflowType: args.workflowType,
+        stepsCount: args.steps.length,
+      },
+    });
+
     return null;
   },
 });
@@ -596,6 +631,18 @@ export const updateAccessionNumberFormat = mutation({
         ...org.settings,
         accessionNumberFormat: args.format,
         autoGenerateAccessionNumbers: args.autoGenerate,
+      },
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "updated_accession_format",
+      entityType: "organization",
+      entityId: args.organizationId,
+      changes: {
+        format: args.format,
+        autoGenerate: args.autoGenerate,
       },
     });
 
@@ -737,6 +784,18 @@ export const inviteUser = mutation({
       joinedAt: Date.now(),
     });
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "invited_user",
+      entityType: "user",
+      entityId: user._id,
+      changes: {
+        email: args.email,
+        roleId: args.roleId,
+      },
+    });
+
     return null;
   },
 });
@@ -772,6 +831,18 @@ export const removeUser = mutation({
     }
 
     await ctx.db.delete(userOrganization._id);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId: currentUserId,
+      action: "removed_user",
+      entityType: "user",
+      entityId: args.userId,
+      changes: {
+        removedUserId: args.userId,
+      },
+    });
+
     return null;
   },
 });
@@ -809,6 +880,18 @@ export const updateUserRole = mutation({
 
     await ctx.db.patch(userOrganization._id, {
       roleId: args.roleId,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId: currentUserId,
+      action: "updated_user_role",
+      entityType: "user",
+      entityId: args.userId,
+      changes: {
+        previousRoleId: userOrganization.roleId,
+        newRoleId: args.roleId,
+      },
     });
 
     return null;

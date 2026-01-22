@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, query } from "./_generated/server";
 import { requireModuleEnabled } from "./utils/featureGates";
@@ -318,6 +319,21 @@ export const create = mutation({
       }
     }
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "created_account",
+      entityType: "account",
+      entityId: accountId,
+      changes: {
+        accountType: args.accountType,
+        accountNumber,
+        businessName: args.businessName?.trim() || undefined,
+        firstName: args.firstName?.trim() || undefined,
+        lastName: args.lastName?.trim() || undefined,
+      },
+    });
+
     return accountId;
   },
 });
@@ -454,6 +470,15 @@ export const update = mutation({
       }
     }
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: account.organizationId,
+      userId,
+      action: "updated_account",
+      entityType: "account",
+      entityId: args.accountId,
+      changes: updates,
+    });
+
     return null;
   },
 });
@@ -503,6 +528,14 @@ export const remove = mutation({
     }
 
     await ctx.db.delete(args.accountId);
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: account.organizationId,
+      userId,
+      action: "deleted_account",
+      entityType: "account",
+      entityId: args.accountId,
+    });
 
     return null;
   },
@@ -628,6 +661,15 @@ export const archive = mutation({
       lastModifiedAt: Date.now(),
     });
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: account.organizationId,
+      userId,
+      action: "archived_account",
+      entityType: "account",
+      entityId: args.accountId,
+      changes: { status: "archived" },
+    });
+
     return null;
   },
 });
@@ -664,6 +706,15 @@ export const restore = mutation({
       lastModifiedAt: Date.now(),
     });
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: account.organizationId,
+      userId,
+      action: "restored_account",
+      entityType: "account",
+      entityId: args.accountId,
+      changes: { status: "active" },
+    });
+
     return null;
   },
 });
@@ -692,6 +743,15 @@ export const updateStatus = mutation({
       status: args.status,
       lastModifiedBy: userId,
       lastModifiedAt: Date.now(),
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: account.organizationId,
+      userId,
+      action: "updated_account_status",
+      entityType: "account",
+      entityId: args.accountId,
+      changes: { status: args.status },
     });
 
     return null;
@@ -724,6 +784,95 @@ export const updateNotes = mutation({
       lastModifiedAt: Date.now(),
     });
 
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: account.organizationId,
+      userId,
+      action: "updated_account_notes",
+      entityType: "account",
+      entityId: args.accountId,
+      changes: { notes: args.notes.trim() || undefined },
+    });
+
     return null;
+  },
+});
+
+export const bulkExport = query({
+  args: {
+    accountIds: v.array(v.id("accounts")),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("accounts"),
+      accountNumber: v.string(),
+      accountType: v.optional(v.string()),
+      businessName: v.optional(v.string()),
+      firstName: v.optional(v.string()),
+      lastName: v.optional(v.string()),
+      contactPerson: v.optional(v.string()),
+      email: v.optional(v.string()),
+      phone: v.optional(v.string()),
+      address: v.optional(v.string()),
+      city: v.optional(v.string()),
+      country: v.optional(v.string()),
+      status: v.optional(v.string()),
+      cardNumber: v.optional(v.string()),
+      membershipType: v.optional(v.string()),
+      createdAt: v.number(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const results: Array<{
+      _id: Id<"accounts">;
+      accountNumber: string;
+      accountType?: string;
+      businessName?: string;
+      firstName?: string;
+      lastName?: string;
+      contactPerson?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      city?: string;
+      country?: string;
+      status?: string;
+      cardNumber?: string;
+      membershipType?: string;
+      createdAt: number;
+    }> = [];
+
+    for (const accountId of args.accountIds) {
+      const account = await ctx.db.get(accountId);
+      if (!account) continue;
+
+      await requireModuleEnabled(ctx, account.organizationId, "accounts");
+      await requirePermission(ctx, account.organizationId, "accounts.read");
+
+      results.push({
+        _id: account._id,
+        accountNumber: account.accountNumber,
+        accountType: account.accountType,
+        businessName: account.businessName,
+        firstName: account.firstName,
+        lastName: account.lastName,
+        contactPerson: account.contactPerson,
+        email: account.email ?? account.contactEmail,
+        phone: account.phone ?? account.contactPhone,
+        address: account.address,
+        city: account.city,
+        country: account.country,
+        status: account.status,
+        cardNumber: account.cardNumber,
+        membershipType: account.membershipType,
+        createdAt: account.createdAt,
+      });
+    }
+
+    return results;
   },
 });

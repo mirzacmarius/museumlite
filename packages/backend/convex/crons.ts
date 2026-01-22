@@ -46,4 +46,11 @@ crons.interval(
   internal.loans.checkLoanRemindersInternal,
 );
 
+// SLA breach detection - check twice daily for workflow items exceeding SLA
+crons.interval(
+  "check-sla-breaches",
+  { hours: 12 },
+  internal.workflowSla.checkAllOrganizationsSla,
+);
+
 export default crons;

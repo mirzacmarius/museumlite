@@ -1,17 +1,17 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import {
-  requirePermission,
-  canInitiateWorkflow,
-  canApproveAtStep,
-  getUsersToNotifyForWorkflowStep,
-} from "./utils/permissions";
-import { accessionParser } from "./utils/accessionNumberParser";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { getNextCounterValue } from "./utils/accessionCounter";
+import { accessionParser } from "./utils/accessionNumberParser";
+import {
+  canApproveAtStep,
+  canInitiateWorkflow,
+  getUsersToNotifyForWorkflowStep,
+  requirePermission,
+} from "./utils/permissions";
 
 /**
  * Generate accession number based on organization format template
@@ -292,7 +292,7 @@ export const list = query({
 
     // Handle pagination manually
     const cursor = args.paginationOpts.cursor
-      ? parseInt(args.paginationOpts.cursor, 10)
+      ? Number.parseInt(args.paginationOpts.cursor, 10)
       : 0;
     const startIndex = cursor;
     const endIndex = Math.min(
@@ -552,9 +552,6 @@ export const submitForApproval = mutation({
   },
 });
 
-/**
- * Approve accession at current step
- */
 export const approve = mutation({
   args: {
     accessionId: v.id("accessions"),
@@ -572,7 +569,6 @@ export const approve = mutation({
       throw new Error("Accession not found");
     }
 
-    // Check permission
     await requirePermission(
       ctx,
       accession.organizationId,
@@ -583,7 +579,6 @@ export const approve = mutation({
       throw new Error("Accession is not pending");
     }
 
-    // Get workflow config
     const workflowConfig = await ctx.db
       .query("workflowConfigs")
       .withIndex("by_organization", (q) =>
@@ -593,7 +588,6 @@ export const approve = mutation({
       .first();
 
     if (workflowConfig) {
-      // Multi-step workflow
       const currentStep = accession.workflowStep ?? 1;
       const canApprove = await canApproveAtStep(
         ctx,
@@ -606,12 +600,13 @@ export const approve = mutation({
         throw new Error("Permission denied: cannot approve at this step");
       }
 
-      // Check source verification requirement
-      if (workflowConfig.requireSourceVerification && !accession.sourceVerified) {
+      if (
+        workflowConfig.requireSourceVerification &&
+        !accession.sourceVerified
+      ) {
         throw new Error("Source verification is required before approval");
       }
 
-      // Check required documents for this step
       const currentStepConfig = workflowConfig.steps.find(
         (s) => s.stepNumber === currentStep,
       );
@@ -620,25 +615,114 @@ export const approve = mutation({
         for (const requiredDoc of currentStepConfig.requiredDocuments) {
           const doc = checklist.find((d) => d.documentType === requiredDoc);
           if (!doc?.uploaded) {
-            throw new Error(`Required document "${requiredDoc}" must be uploaded before approval`);
+            throw new Error(
+              `Required document "${requiredDoc}" must be uploaded before approval`,
+            );
           }
         }
       }
 
-      // Check global required documents for this step
       if (workflowConfig.requiredDocuments?.length) {
         const checklist = accession.documentChecklist ?? [];
         for (const reqDoc of workflowConfig.requiredDocuments) {
-          if (reqDoc.requiredAtStep !== undefined && reqDoc.requiredAtStep <= currentStep) {
-            const doc = checklist.find((d) => d.documentType === reqDoc.documentType);
+          if (
+            reqDoc.requiredAtStep !== undefined &&
+            reqDoc.requiredAtStep <= currentStep
+          ) {
+            const doc = checklist.find(
+              (d) => d.documentType === reqDoc.documentType,
+            );
             if (!doc?.uploaded) {
-              throw new Error(`Required document "${reqDoc.documentType}" must be uploaded before step ${currentStep} approval`);
+              throw new Error(
+                `Required document "${reqDoc.documentType}" must be uploaded before step ${currentStep} approval`,
+              );
             }
           }
         }
       }
 
-      // Add to workflow history
+      const approvalMode = currentStepConfig?.approvalMode ?? "single";
+      const requiredApprovals = currentStepConfig?.requiredApprovals ?? 1;
+
+      let shouldAdvance = false;
+
+      if (approvalMode === "single") {
+        shouldAdvance = true;
+      } else {
+        const approvalStatus = await ctx.runQuery(
+          internal.workflows.checkStepApprovalStatus,
+          {
+            organizationId: accession.organizationId,
+            workflowType: "accession",
+            entityId: args.accessionId,
+            stepNumber: currentStep,
+            userId,
+          },
+        );
+
+        if (approvalStatus.userHasApproved) {
+          throw new Error("You have already approved this step");
+        }
+
+        await ctx.runMutation(internal.workflows.recordStepApproval, {
+          organizationId: accession.organizationId,
+          workflowType: "accession",
+          entityId: args.accessionId,
+          stepNumber: currentStep,
+          approvedBy: userId,
+          comment: args.comment,
+        });
+
+        const newApprovalCount = approvalStatus.currentApprovals + 1;
+
+        if (approvalMode === "multi") {
+          shouldAdvance = newApprovalCount >= requiredApprovals;
+        } else if (approvalMode === "unanimous") {
+          shouldAdvance = newApprovalCount >= approvalStatus.requiredApprovals;
+        }
+
+        if (!shouldAdvance) {
+          await ctx.runMutation(internal.workflows.recordWorkflowHistory, {
+            organizationId: accession.organizationId,
+            workflowType: "accession",
+            entityId: args.accessionId,
+            fromStep: currentStep,
+            toStep: currentStep,
+            action: "approved",
+            performedBy: userId,
+            comment: args.comment,
+            metadata: {
+              approvalMode,
+              currentApprovals: String(newApprovalCount),
+              requiredApprovals: String(
+                approvalMode === "multi"
+                  ? requiredApprovals
+                  : approvalStatus.requiredApprovals,
+              ),
+            },
+          });
+
+          await ctx.runMutation(internal.audit.logAction, {
+            organizationId: accession.organizationId,
+            userId,
+            action: "partial_approval",
+            entityType: "accession",
+            entityId: args.accessionId,
+            changes: {
+              step: currentStep,
+              approvalMode,
+              currentApprovals: newApprovalCount,
+              requiredApprovals:
+                approvalMode === "multi"
+                  ? requiredApprovals
+                  : approvalStatus.requiredApprovals,
+            },
+          });
+
+          return null;
+        }
+      }
+
       const history = accession.workflowHistory ?? [];
       history.push({
         step: currentStep,
@@ -647,11 +731,9 @@ export const approve = mutation({
         comment: args.comment,
       });
 
-      // Check if this is the last step
       const isLastStep = currentStep >= workflowConfig.steps.length;
 
       if (isLastStep) {
-        // Approve and create collection
         await ctx.db.patch(args.accessionId, {
           status: "approved",
           approvedBy: userId,
@@ -659,7 +741,17 @@ export const approve = mutation({
           workflowHistory: history,
         });
 
-        // Log audit action
+        await ctx.runMutation(internal.workflows.recordWorkflowHistory, {
+          organizationId: accession.organizationId,
+          workflowType: "accession",
+          entityId: args.accessionId,
+          fromStep: currentStep,
+          toStep: -1,
+          action: "completed",
+          performedBy: userId,
+          comment: args.comment,
+        });
+
         await ctx.runMutation(internal.audit.logAction, {
           organizationId: accession.organizationId,
           userId,
@@ -669,8 +761,6 @@ export const approve = mutation({
           changes: { status: "approved", step: currentStep },
         });
 
-        // Notify users who were involved in the workflow (from history)
-        // The creator is in history[0] (step 0) if it exists
         const creatorEntry = history.find((h) => h.step === 0);
         const creatorId = creatorEntry?.approvedBy;
         if (creatorId && creatorId !== userId) {
@@ -685,7 +775,6 @@ export const approve = mutation({
           });
         }
 
-        // Create collection object
         await ctx.runMutation(
           internal.accessions.createCollectionFromAccession,
           {
@@ -693,28 +782,60 @@ export const approve = mutation({
           },
         );
       } else {
-        // Move to next step
+        const nextStep = currentStep + 1;
+
+        const transitionValid = await ctx.runQuery(
+          internal.workflows.validateTransition,
+          {
+            organizationId: accession.organizationId,
+            workflowType: "accession",
+            fromStep: currentStep,
+            toStep: nextStep,
+          },
+        );
+
+        if (!transitionValid.valid) {
+          throw new Error(transitionValid.reason ?? "Invalid transition");
+        }
+
         await ctx.db.patch(args.accessionId, {
-          workflowStep: currentStep + 1,
+          workflowStep: nextStep,
           workflowHistory: history,
         });
 
-        // Log audit action
+        if (approvalMode !== "single") {
+          await ctx.runMutation(internal.workflows.clearStepApprovals, {
+            workflowType: "accession",
+            entityId: args.accessionId,
+            stepNumber: currentStep,
+          });
+        }
+
+        await ctx.runMutation(internal.workflows.recordWorkflowHistory, {
+          organizationId: accession.organizationId,
+          workflowType: "accession",
+          entityId: args.accessionId,
+          fromStep: currentStep,
+          toStep: nextStep,
+          action: "approved",
+          performedBy: userId,
+          comment: args.comment,
+        });
+
         await ctx.runMutation(internal.audit.logAction, {
           organizationId: accession.organizationId,
           userId,
           action: "step_approved",
           entityType: "accession",
           entityId: args.accessionId,
-          changes: { step: currentStep, nextStep: currentStep + 1 },
+          changes: { step: currentStep, nextStep },
         });
 
-        // Notify users who can approve the next step
         const usersToNotify = await getUsersToNotifyForWorkflowStep(
           ctx,
           accession.organizationId,
           "accession",
-          currentStep + 1,
+          nextStep,
         );
 
         for (const approverId of usersToNotify) {
@@ -724,7 +845,7 @@ export const approve = mutation({
               userId: approverId,
               type: "workflow_pending",
               title: "Accession Requires Your Approval",
-              message: `Accession ${accession.accessionNumber} is pending your approval at step ${currentStep + 1}.`,
+              message: `Accession ${accession.accessionNumber} is pending your approval at step ${nextStep}.`,
               relatedEntityType: "accession",
               relatedEntityId: args.accessionId,
             });
@@ -732,14 +853,23 @@ export const approve = mutation({
         }
       }
     } else {
-      // Single-step approval
       await ctx.db.patch(args.accessionId, {
         status: "approved",
         approvedBy: userId,
         approvedAt: Date.now(),
       });
 
-      // Log audit action
+      await ctx.runMutation(internal.workflows.recordWorkflowHistory, {
+        organizationId: accession.organizationId,
+        workflowType: "accession",
+        entityId: args.accessionId,
+        fromStep: 0,
+        toStep: -1,
+        action: "completed",
+        performedBy: userId,
+        comment: args.comment,
+      });
+
       await ctx.runMutation(internal.audit.logAction, {
         organizationId: accession.organizationId,
         userId,
@@ -749,7 +879,6 @@ export const approve = mutation({
         changes: { status: "approved" },
       });
 
-      // Notify all users with read access (optional - can be removed if too noisy)
       const userOrgs = await ctx.db
         .query("userOrganizations")
         .withIndex("by_organization", (q) =>
@@ -771,7 +900,6 @@ export const approve = mutation({
         }
       }
 
-      // Create collection object
       await ctx.runMutation(internal.accessions.createCollectionFromAccession, {
         accessionId: args.accessionId,
       });
@@ -1460,7 +1588,7 @@ export const getDocumentChecklist = query({
         }
 
         if (item.storageId) {
-          url = await ctx.storage.getUrl(item.storageId) ?? undefined;
+          url = (await ctx.storage.getUrl(item.storageId)) ?? undefined;
         }
 
         return {
