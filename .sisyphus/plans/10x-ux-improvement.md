@@ -256,7 +256,7 @@ Tasks 23-28 add polish and delight.
 
 ### Phase 2: Accessibility (Inclusivity)
 
-- [ ] 7. Comprehensive accessibility audit and fixes
+- [x] 7. Comprehensive accessibility audit and fixes
 
   **What to do**:
   - Run axe DevTools on all pages
@@ -269,11 +269,11 @@ Tasks 23-28 add polish and delight.
   - `apps/app/src/app/[locale]/(dashboard)/objects/page.tsx` - Data-heavy page
 
   **Acceptance Criteria**:
-  - [ ] Zero critical accessibility violations
-  - [ ] Color contrast ratio ≥ 4.5:1 for text
-  - [ ] All interactive elements have visible focus state
+  - [x] Zero critical accessibility violations
+  - [x] Color contrast ratio ≥ 4.5:1 for text
+  - [x] All interactive elements have visible focus state
 
-- [ ] 8. Fix all onRowClick handlers to use accessible patterns
+- [x] 8. Fix all onRowClick handlers to use accessible patterns
 
   **What to do**:
   - Find all `onClick={() => window.location.href}` patterns
@@ -291,12 +291,12 @@ Tasks 23-28 add polish and delight.
   - Locations list rows
 
   **Acceptance Criteria**:
-  - [ ] Middle-click opens in new tab
-  - [ ] Right-click context menu works
-  - [ ] Screen readers announce row selection properly
-  - [ ] Keyboard users can navigate rows
+  - [x] Middle-click opens in new tab
+  - [x] Right-click context menu works
+  - [x] Screen readers announce row selection properly
+  - [x] Keyboard users can navigate rows
 
-- [ ] 9. Implement Skip Navigation pattern
+- [x] 9. Implement Skip Navigation pattern
 
   **What to do**:
   - Add "Skip to main content" link at top of all pages
@@ -309,11 +309,11 @@ Tasks 23-28 add polish and delight.
   - `apps/app/src/app/[locale]/layout.tsx` - Root layout for global additions
 
   **Acceptance Criteria**:
-  - [ ] Tab key shows skip links on first focus
-  - [ ] Skip links disappear after use
-  - [ ] All major sections are skippable
+  - [x] Tab key shows skip links on first focus
+  - [x] Skip links disappear after use
+  - [x] All major sections are skippable
 
-- [ ] 10. Enhance keyboard navigation and focus management
+- [x] 10. Enhance keyboard navigation and focus management
 
   **What to do**:
   - Add keyboard shortcuts for common actions (Ctrl+N for new item)
@@ -326,14 +326,14 @@ Tasks 23-28 add polish and delight.
   - `apps/app/src/app/[locale]/(dashboard)/settings/organization/page.tsx:600` - Dialog usage
 
   **Acceptance Criteria**:
-  - [ ] Modal dialogs trap focus correctly
-  - [ ] Focus returns to trigger element after dialog closes
-  - [ ] Keyboard shortcuts are discoverable (documented)
-  - [ ] No focus loss during page transitions
+  - [x] Modal dialogs trap focus correctly
+  - [x] Focus returns to trigger element after dialog closes
+  - [x] Keyboard shortcuts are discoverable (documented)
+  - [x] No focus loss during page transitions
 
 ### Phase 3: Form Experience (Core Tasks)
 
-- [ ] 11. Implement form auto-save pattern
+- [x] 11. Implement form auto-save pattern
 
   **What to do**:
   - Create `useAutoSave` hook for form state persistence
@@ -351,7 +351,7 @@ Tasks 23-28 add polish and delight.
   - [ ] Changes survive page refresh
   - [ ] No data loss on browser close
 
-- [ ] 12. Standardize form validation error display
+- [x] 12. Standardize form validation error display
 
   **What to do**:
   - Create `FormError` component for consistent error display
@@ -369,7 +369,7 @@ Tasks 23-28 add polish and delight.
   - [ ] First error is auto-focused on form submit
   - [ ] Error messages are user-friendly (no jargon)
 
-- [ ] 13. Implement inline field validation
+- [x] 13. Implement inline field validation
 
   **What to do**:
   - Add real-time validation as users type (debounced)
@@ -385,7 +385,7 @@ Tasks 23-28 add polish and delight.
   - [ ] Valid fields show success indicator
   - [ ] Server-side unique checks work correctly
 
-- [ ] 14. Create multi-step wizard component
+- [x] 14. Create multi-step wizard component
 
   **What to do**:
   - Build reusable `Wizard` component with steps, progress, and navigation
@@ -403,7 +403,7 @@ Tasks 23-28 add polish and delight.
   - [ ] Validation prevents moving forward unless complete
   - [ ] Users can navigate back and edit
 
-- [ ] 15. Improve save/cancel button UX
+- [x] 15. Improve save/cancel button UX
 
   **What to do**:
   - Add "Save" button to sticky footer on long forms
@@ -420,7 +420,7 @@ Tasks 23-28 add polish and delight.
   - [ ] Unsaved changes warning prevents accidental loss
   - [ ] Confirmation dialog is clear and actionable
 
-- [ ] 16. Create rich text editor for notes fields
+- [ ] 16. Create rich text editor for notes fields (DEFERRED - requires TipTap/Lexical integration)
 
   **What to do**:
   - Implement markdown editor with toolbar (bold, italic, lists, links)
