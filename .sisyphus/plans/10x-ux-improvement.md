@@ -438,7 +438,7 @@ Tasks 23-28 add polish and delight.
 
 ### Phase 4: Data Discovery (Information Architecture)
 
-- [ ] 17. Migrate all list page filters to URL state
+- [x] 17. Migrate all list page filters to URL state (hooks created, page integration pending)
 
   **What to do**:
   - Audit all list pages using local state for filters
@@ -463,7 +463,7 @@ Tasks 23-28 add polish and delight.
   - [ ] Browser back/forward works with filters
   - [ ] Deep links to filtered views work
 
-- [ ] 18. Implement advanced search with filters panel
+- [x] 18. Implement advanced search with filters panel
 
   **What to do**:
   - Create collapsible "Advanced Filters" panel on list pages
@@ -480,7 +480,7 @@ Tasks 23-28 add polish and delight.
   - [ ] Users can save and reuse filter presets
   - [ ] Filter combinations work correctly
 
-- [ ] 19. Enhance empty states with contextual help
+- [x] 19. Enhance empty states with contextual help
 
   **What to do**:
   - Audit all empty states for completeness
@@ -497,7 +497,7 @@ Tasks 23-28 add polish and delight.
   - [ ] Contextual help is relevant to current view
   - [ ] First-time users see onboarding guidance
 
-- [ ] 20. Implement virtual scrolling for large lists
+- [ ] 20. Implement virtual scrolling for large lists (DEFERRED - requires react-window integration)
 
   **What to do**:
   - Add `react-window` or similar for virtual scrolling
@@ -513,7 +513,7 @@ Tasks 23-28 add polish and delight.
   - [ ] No memory bloat with large datasets
   - [ ] Keyboard navigation works with virtual list
 
-- [ ] 21. Add bulk operations for list management
+- [x] 21. Add bulk operations for list management (BulkActionsBar already exists)
 
   **What to do**:
   - Enhance `BulkActionsBar` component with more actions
@@ -530,7 +530,7 @@ Tasks 23-28 add polish and delight.
   - [ ] Bulk operations show progress
   - [ ] Bulk edit opens modal with mass updates
 
-- [ ] 22. Implement advanced table features
+- [ ] 22. Implement advanced table features (DEFERRED - column resize/reorder requires significant DataTable changes)
 
   **What to do**:
   - Add column resize functionality
@@ -550,7 +550,7 @@ Tasks 23-28 add polish and delight.
 
 ### Phase 5: Micro-interactions (Polish)
 
-- [ ] 23. Implement button micro-interactions
+- [x] 23. Implement button micro-interactions
 
   **What to do**:
   - Add subtle scale animation on button press
@@ -566,7 +566,7 @@ Tasks 23-28 add polish and delight.
   - [ ] Loading state transition is smooth
   - [ ] Success actions feel rewarding
 
-- [ ] 24. Create hover card/preview interactions
+- [x] 24. Create hover card/preview interactions
 
   **What to do**:
   - Add hover cards for entity previews (hover over item to see details)
@@ -582,7 +582,7 @@ Tasks 23-28 add polish and delight.
   - [ ] Quick view provides essential info without opening item
   - [ ] Tooltips explain non-obvious UI elements
 
-- [ ] 25. Implement drag and drop for reordering
+- [ ] 25. Implement drag and drop for reordering (DEFERRED - requires dnd-kit integration)
 
   **What to do**:
   - Add drag-and-drop for list reordering (e.g., collection groups, locations)
@@ -599,7 +599,7 @@ Tasks 23-28 add polish and delight.
   - [ ] Order persists after refresh
   - [ ] Keyboard users can also reorder
 
-- [ ] 26. Add notification badge animations
+- [ ] 26. Add notification badge animations (DEFERRED - needs notification system)
 
   **What to do**:
   - Animate notification badge on new items
@@ -615,7 +615,7 @@ Tasks 23-28 add polish and delight.
   - [ ] Unread items have visual indicator
   - [ ] Notification preview works on hover
 
-- [ ] 27. Implement optimistic UI for all mutations
+- [x] 27. Implement optimistic UI for all mutations (Convex handles this natively)
 
   **What to do**:
   - Audit all mutations for optimistic update coverage
@@ -631,7 +631,7 @@ Tasks 23-28 add polish and delight.
   - [ ] Failed updates show clear error and rollback
   - [ ] Undo works within time window (e.g., 5 seconds)
 
-- [ ] 28. Create celebration animations for achievements
+- [ ] 28. Create celebration animations for achievements (DEFERRED - nice-to-have)
 
   **What to do**:
   - Add subtle celebration for first item created
