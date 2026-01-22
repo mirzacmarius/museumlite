@@ -1,6 +1,7 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { CommandPalette } from "@/components/command-palette";
 import { CommandPaletteProvider } from "@/components/command-palette-provider";
+import { NavigationProgress } from "@/components/navigation-progress";
 import { NotificationBell } from "@/components/notification-bell";
 import { OrganizationProvider } from "@/components/organization-provider";
 import { PermissionProvider } from "@/components/permission-gate";
@@ -45,6 +46,7 @@ export default async function Layout({
         <PermissionProvider>
           <CommandPaletteProvider>
             <SidebarProvider>
+              <NavigationProgress />
               <AppSidebar
                 preloadedUser={preloadedUser}
                 preloadedProducts={preloadedProducts}
