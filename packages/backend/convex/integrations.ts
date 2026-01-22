@@ -436,7 +436,7 @@ export const createCheckoutLink = action({
   },
   returns: v.object({ url: v.string() }),
   handler: async (_ctx, args) => {
-    const productIdMap: Record<string, string> = {
+    const productIdMap: Record<string, string | undefined> = {
       library: env.INTEGRATION_PRODUCT_LIBRARY,
     };
     const productId = productIdMap[args.integrationId];
