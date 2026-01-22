@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
 import { Settings2 } from "lucide-react";
+import { useMemo } from "react";
 
 export interface ColumnConfig {
   id: string;
@@ -56,12 +57,16 @@ const COLUMN_LABEL_KEYS: Record<ColumnId, string> = {
 
 export function useDefaultColumns(): ColumnConfig[] {
   const t = useScopedI18n("objects.columnConfig");
-  return COLUMN_IDS.map((id) => ({
-    id,
-    label: t(COLUMN_LABEL_KEYS[id]),
-    visible: DEFAULT_COLUMN_CONFIG[id].visible,
-    required: DEFAULT_COLUMN_CONFIG[id].required,
-  }));
+  return useMemo(
+    () =>
+      COLUMN_IDS.map((id) => ({
+        id,
+        label: t(COLUMN_LABEL_KEYS[id]),
+        visible: DEFAULT_COLUMN_CONFIG[id].visible,
+        required: DEFAULT_COLUMN_CONFIG[id].required,
+      })),
+    [t],
+  );
 }
 
 interface ColumnConfigDropdownProps {
