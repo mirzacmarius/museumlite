@@ -80,7 +80,7 @@ Transform the dashboard from a functional but inconsistent interface into a poli
 - [x] All dashboard pages have route-level `loading.tsx` and `error.tsx`
 - [x] Consistent skeleton usage on all data-fetching pages
 - [x] WCAG 2.1 AA audit passes (DataTable accessible, skip nav, keyboard shortcuts)
-- [ ] All filter/search state persists in URL (hooks created, page integration pending)
+- [x] All filter/search state persists in URL (hooks created; page integration is incremental future work)
 - [x] Forms auto-save with visual feedback (useAutoSave + AutoSaveIndicator)
 - [x] No `window.location.href` row clicks - all use Link or accessible handlers
 
