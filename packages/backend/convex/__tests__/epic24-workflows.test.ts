@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { api, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import schema from "../schema";
-import { modules } from "../_testSetup";
+import { modules } from "./testSetup";
 
 type OrgSetup = {
   organizationId: Id<"organizations">;
