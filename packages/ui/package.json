@@ -23,6 +23,7 @@
     "./dropdown-menu": "./src/components/dropdown-menu.tsx",
     "./empty-state": "./src/components/empty-state.tsx",
     "./feature-guard": "./src/components/feature-guard.tsx",
+    "./field-status-indicator": "./src/components/field-status-indicator.tsx",
     "./form-field": "./src/components/form-field.tsx",
     "./form-message": "./src/components/form-message.tsx",
     "./globals.css": "./src/globals.css",
