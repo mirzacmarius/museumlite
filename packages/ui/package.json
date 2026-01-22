@@ -62,7 +62,8 @@
     "./tooltip": "./src/components/tooltip.tsx",
     "./tree": "./src/components/tree.tsx",
     "./upload-input": "./src/components/upload-input.tsx",
-    "./utils": "./src/utils/index.ts"
+    "./utils": "./src/utils/index.ts",
+    "./wizard": "./src/components/wizard.tsx"
   },
   "files": ["tailwind.config.ts", "postcss.config.js", "globals.css"],
   "scripts": {
