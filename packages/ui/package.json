@@ -50,6 +50,7 @@
     "./skeleton": "./src/components/skeleton.tsx",
     "./skeleton-variants": "./src/components/skeleton-variants.tsx",
     "./status-badge": "./src/components/status-badge.tsx",
+    "./sticky-form-footer": "./src/components/sticky-form-footer.tsx",
     "./hooks/use-mobile": "./src/hooks/use-mobile.tsx",
     "./switch": "./src/components/switch.tsx",
     "./table": "./src/components/table.tsx",
