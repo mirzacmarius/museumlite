@@ -64,7 +64,9 @@ export function AssignmentsQueue() {
         {Object.entries(grouped).map(([type, items]) => (
           <div key={type}>
             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              {t(`typeLabels.${type}` as any)}
+              {t(
+                `typeLabels.${type as "loan" | "accession" | "exhibition" | "conservation"}`,
+              )}
             </h4>
             <div className="space-y-2">
               {items.map((item) => {

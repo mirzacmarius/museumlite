@@ -1032,7 +1032,7 @@ function RelationshipsTab({
   relationships,
 }: {
   accountId: Id<"accounts">;
-  relationships: any;
+  relationships: Relationship[] | undefined;
 }) {
   const locale = useCurrentLocale();
   const t = useScopedI18n("accounts.detail");
@@ -1054,7 +1054,7 @@ function RelationshipsTab({
         </div>
       ) : (
         <div className="space-y-3">
-          {relationships.map((rel: any) => (
+          {relationships.map((rel) => (
             <div
               key={rel._id}
               className="flex items-center justify-between rounded-lg border border-border p-4"

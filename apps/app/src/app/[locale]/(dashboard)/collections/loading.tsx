@@ -22,9 +22,9 @@ export default function CollectionsLoading() {
             </div>
 
             <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
+              {["sk-1", "sk-2", "sk-3", "sk-4", "sk-5"].map((id) => (
                 <div
-                  key={`skeleton-${i}`}
+                  key={id}
                   className="flex items-center gap-4 rounded-lg border border-border/60 bg-card p-4"
                 >
                   <div className="h-16 w-16 animate-pulse rounded bg-muted/60" />
