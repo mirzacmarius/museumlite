@@ -601,9 +601,8 @@ function LoanList({
               ),
             },
           ]}
-          onRowClick={(loan) => {
-            window.location.href = `/loans/${loan._id}`;
-          }}
+          rowHref={(loan) => `/loans/${loan._id}`}
+          rowAriaLabel={(loan) => `View loan ${loan.loanNumber ?? loan._id}`}
           emptyState={
             <div className="flex flex-col items-center justify-center gap-4 py-8">
               <Handshake className="h-12 w-12 text-muted-foreground/50" />

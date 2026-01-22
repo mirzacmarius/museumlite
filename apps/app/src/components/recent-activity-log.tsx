@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export type RecentActivityItem = {
   type: "collection" | "loan" | "accession" | "deaccession";
   id: string;
@@ -135,34 +137,24 @@ export function RecentActivityLog({
               </tr>
             ) : (
               activities.map((activity) => {
-                const handleNavigate = () => {
-                  window.location.href = getActivityLink(
-                    activity.type,
-                    activity.id,
-                  );
-                };
+                const href = getActivityLink(activity.type, activity.id);
 
                 return (
                   <tr
                     key={`${activity.type}-${activity.id}`}
-                    className="hover:bg-muted/40 transition-colors cursor-pointer"
-                    onClick={handleNavigate}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        handleNavigate();
-                      }
-                    }}
-                    tabIndex={0}
-                    role="button"
+                    className="hover:bg-muted/40 transition-colors group"
                   >
-                    <td className="px-4 py-3 text-foreground/80">
-                      <div className="flex items-center gap-2">
+                    <td className="p-0">
+                      <Link
+                        href={href}
+                        className="flex items-center gap-2 px-4 py-3 text-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                        aria-label={`View ${activity.type}: ${activity.title}`}
+                      >
                         <div className="w-6 h-6 rounded bg-muted flex items-center justify-center text-[10px] text-muted-foreground">
                           {getInitials(activity.type)}
                         </div>
                         {activity.title}
-                      </div>
+                      </Link>
                     </td>
                     <td className="px-4 py-3">
                       <span

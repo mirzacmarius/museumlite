@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type * as React from "react";
 import { cn } from "../utils";
 
@@ -11,7 +12,10 @@ export interface DataTableProps<T = any> {
   data: T[];
   loading?: boolean;
   emptyState?: React.ReactNode;
+  /** @deprecated Use rowHref for accessible navigation */
   onRowClick?: (row: T) => void;
+  rowHref?: (row: T) => string;
+  rowAriaLabel?: (row: T) => string;
   className?: string;
 }
 
@@ -21,6 +25,8 @@ export function DataTable<T extends Record<string, any>>({
   loading,
   emptyState,
   onRowClick,
+  rowHref,
+  rowAriaLabel,
   className,
 }: DataTableProps<T>) {
   if (loading) {
@@ -101,29 +107,73 @@ export function DataTable<T extends Record<string, any>>({
           </div>
         ))}
       </div>
-      <div>
-        {data.map((row, rowIndex) => (
-          <div
-            key={rowIndex}
-            onClick={() => onRowClick?.(row)}
-            className={cn(
-              "border-b border-border/50 flex transition-colors",
-              onRowClick ? "cursor-pointer hover:bg-card/20" : "",
-            )}
-          >
-            {columns.map((col) => (
-              <div
-                key={`${rowIndex}-${col.key}`}
+      <div role="list">
+        {data.map((row, rowIndex) => {
+          const href = rowHref?.(row);
+          const ariaLabel = rowAriaLabel?.(row);
+          const isClickable = href || onRowClick;
+
+          const rowContent = (
+            <>
+              {columns.map((col) => (
+                <div
+                  key={`${rowIndex}-${col.key}`}
+                  className={cn(
+                    "text-xs text-foreground/80 px-4 py-3 flex-1 flex items-center",
+                    col.className,
+                  )}
+                >
+                  {col.render ? col.render(row) : row[col.key]}
+                </div>
+              ))}
+            </>
+          );
+
+          if (href) {
+            return (
+              <Link
+                key={rowIndex}
+                href={href}
+                aria-label={ariaLabel}
                 className={cn(
-                  "text-xs text-foreground/80 px-4 py-3 flex-1 flex items-center",
-                  col.className,
+                  "border-b border-border/50 flex transition-colors",
+                  "cursor-pointer hover:bg-card/20 focus-visible:bg-card/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                 )}
+                role="listitem"
               >
-                {col.render ? col.render(row) : row[col.key]}
-              </div>
-            ))}
-          </div>
-        ))}
+                {rowContent}
+              </Link>
+            );
+          }
+
+          return (
+            <div
+              key={rowIndex}
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+              onKeyDown={
+                onRowClick
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onRowClick(row);
+                      }
+                    }
+                  : undefined
+              }
+              tabIndex={onRowClick ? 0 : undefined}
+              role={onRowClick ? "button" : "listitem"}
+              aria-label={ariaLabel}
+              className={cn(
+                "border-b border-border/50 flex transition-colors",
+                isClickable
+                  ? "cursor-pointer hover:bg-card/20 focus-visible:bg-card/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                  : "",
+              )}
+            >
+              {rowContent}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
