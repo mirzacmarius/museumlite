@@ -1,7 +1,11 @@
 "use client";
 
+import { AutoSaveIndicator } from "@/components/auto-save-indicator";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
+import { useAutoSave } from "@/hooks/use-auto-save";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -31,7 +35,7 @@ import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export default function EditCollectionPage() {
   const t = useScopedI18n("collections");
@@ -55,26 +59,87 @@ export default function EditCollectionPage() {
     currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
   );
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(
+    null,
+  );
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     curatorId: "" as string | Id<"users">,
     managedByRoleId: "" as string | Id<"roles">,
   });
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    if (group) {
+    if (group && !isInitialized) {
       setFormData({
         name: group.name || "",
         description: group.description || "",
         curatorId: group.curatorId || "",
         managedByRoleId: group.managedByRoleId || "",
       });
+      setIsInitialized(true);
     }
-  }, [group]);
+  }, [group, isInitialized]);
+
+  const handleAutoSave = useCallback(
+    async (data: typeof formData) => {
+      if (!data.name.trim()) return;
+
+      await updateGroup({
+        groupId,
+        name: data.name,
+        description: data.description || undefined,
+        curatorId: data.curatorId ? (data.curatorId as Id<"users">) : null,
+        managedByRoleId: data.managedByRoleId
+          ? (data.managedByRoleId as Id<"roles">)
+          : null,
+      });
+    },
+    [groupId, updateGroup],
+  );
+
+  const { status, lastSaved, isDirty, save } = useAutoSave({
+    data: formData,
+    onSave: handleAutoSave,
+    enabled: isInitialized && !!formData.name.trim(),
+    debounceMs: 2000,
+    onError: (err) => setError(err.message),
+  });
+
+  useBeforeUnload(isDirty);
+
+  const handleNavigate = useCallback(
+    (href: string) => {
+      if (isDirty) {
+        setPendingNavigation(href);
+        setShowUnsavedDialog(true);
+      } else {
+        router.push(href);
+      }
+    },
+    [isDirty, router],
+  );
+
+  const handleDiscardAndNavigate = useCallback(() => {
+    if (pendingNavigation) {
+      router.push(pendingNavigation);
+    }
+    setShowUnsavedDialog(false);
+    setPendingNavigation(null);
+  }, [pendingNavigation, router]);
+
+  const handleSaveAndNavigate = useCallback(async () => {
+    await save();
+    if (pendingNavigation) {
+      router.push(pendingNavigation);
+    }
+    setShowUnsavedDialog(false);
+    setPendingNavigation(null);
+  }, [pendingNavigation, router, save]);
 
   if (!currentOrganizationId) {
     return (
@@ -111,35 +176,6 @@ export default function EditCollectionPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    if (!formData.name.trim()) {
-      setError(t("form.nameError"));
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await updateGroup({
-        groupId,
-        name: formData.name,
-        description: formData.description || undefined,
-        curatorId: formData.curatorId
-          ? (formData.curatorId as Id<"users">)
-          : null,
-        managedByRoleId: formData.managedByRoleId
-          ? (formData.managedByRoleId as Id<"roles">)
-          : null,
-      });
-      router.push(`/collections/${groupId}`);
-    } catch (err) {
-      console.error("Error updating collection:", err);
-      setError(err instanceof Error ? err.message : t("form.updateError"));
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <div className="flex h-full w-full bg-background px-6">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
@@ -153,13 +189,21 @@ export default function EditCollectionPage() {
             </Button>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6">
+          <div className="p-6">
             {error && (
               <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
             <div className="mx-auto max-w-2xl space-y-6">
+              <div className="flex items-center justify-end">
+                <AutoSaveIndicator
+                  status={status}
+                  lastSaved={lastSaved}
+                  isDirty={isDirty}
+                  error={error}
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="name">
                   {t("form.nameLabel")}{" "}
@@ -252,14 +296,23 @@ export default function EditCollectionPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.back()}
+                  onClick={() => handleNavigate(`/collections/${groupId}`)}
                 >
                   {common("cancel")}
                 </Button>
                 <PermissionGate permission="collections.update">
-                  <Button type="submit" disabled={isSubmitting}>
+                  <Button
+                    type="button"
+                    onClick={async () => {
+                      await save();
+                      router.push(`/collections/${groupId}`);
+                    }}
+                    disabled={status === "saving"}
+                  >
                     <Save className="mr-2 h-4 w-4" />
-                    {isSubmitting ? t("form.updating") : t("form.updateButton")}
+                    {status === "saving"
+                      ? t("form.updating")
+                      : t("form.updateButton")}
                   </Button>
                 </PermissionGate>
               </div>
@@ -316,7 +369,15 @@ export default function EditCollectionPage() {
                 </div>
               </div>
             </div>
-          </form>
+          </div>
+
+          <UnsavedChangesDialog
+            open={showUnsavedDialog}
+            onOpenChange={setShowUnsavedDialog}
+            onDiscard={handleDiscardAndNavigate}
+            onSave={handleSaveAndNavigate}
+            isSaving={status === "saving"}
+          />
         </div>
       </div>
     </div>
