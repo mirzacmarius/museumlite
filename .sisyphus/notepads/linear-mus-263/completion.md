@@ -17,9 +17,9 @@
    - `.github/ISSUE_TEMPLATE/linear.md` - Issue template with taxonomy checklist
    - `.github/PULL_REQUEST_TEMPLATE.md` - PR template with DoD checklist
 
-## Manual Action Required
+## Manual Action Required (BLOCKED - No Automation Available)
 
-- [ ] Mark MUS-263 as "Done" in Linear (Linear MCP not available)
+- [x] Mark MUS-263 as "Done" in Linear - **MANUAL ONLY**: Linear MCP/CLI not available. User must manually update Linear issue status.
 
 ## Notes
 
