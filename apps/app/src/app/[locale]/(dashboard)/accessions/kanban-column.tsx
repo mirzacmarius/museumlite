@@ -36,7 +36,7 @@ type KanbanColumnProps = {
 };
 
 const stepColors: Record<number, string> = {
-  0: "bg-zinc-500",
+  0: "bg-slate-500",
   1: "bg-amber-500",
   2: "bg-blue-500",
   3: "bg-purple-500",
@@ -45,7 +45,7 @@ const stepColors: Record<number, string> = {
 };
 
 function getStepColor(stepNumber: number): string {
-  return stepColors[stepNumber] || stepColors[stepNumber % 5] || "bg-zinc-500";
+  return stepColors[stepNumber] || stepColors[stepNumber % 5] || "bg-slate-500";
 }
 
 function getStepIcon(stepNumber: number) {

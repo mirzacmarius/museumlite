@@ -885,7 +885,7 @@ function CollectionListItem({
   return (
     <>
       <div
-        className={`group relative flex items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-accent ${
+        className={`group relative flex items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-muted/40 ${
           isSelected
             ? "border-primary ring-2 ring-primary/20"
             : "border-border/60"
@@ -977,14 +977,14 @@ function CollectionListItem({
               )}
               {isColumnVisible("status") &&
                 (item.status === "deaccessioned" ? (
-                  <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-600">
+                  <span className="inline-flex items-center rounded-full bg-red-500/10 border border-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400">
                     <Archive className="mr-1 h-3 w-3" />
                     Deaccessioned
                   </span>
                 ) : (
-                  <p className="text-xs text-muted-foreground capitalize">
+                  <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-400 capitalize">
                     {item.status}
-                  </p>
+                  </span>
                 ))}
             </div>
           </div>

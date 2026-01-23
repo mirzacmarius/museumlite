@@ -159,21 +159,25 @@ export default function DashboardPage() {
             title={kpi("totalObjects")}
             value={formatNumber(analytics.objects.total, locale)}
             icon={Package}
+            accentColor="indigo"
           />
           <KpiCard
             title={kpi("objectsOnLoan")}
             value={formatNumber(analytics.objects.loaned, locale)}
             icon={ArrowLeftRight}
+            accentColor="emerald"
           />
           <KpiCard
             title={kpi("activeLoans")}
             value={formatNumber(analytics.loans.active, locale)}
             icon={ArrowLeftRight}
+            accentColor="blue"
           />
           <KpiCard
             title={kpi("pendingAccessions")}
             value={formatNumber(analytics.accessions.pending, locale)}
             icon={FileClock}
+            accentColor="amber"
           />
         </div>
       </div>
@@ -234,6 +238,18 @@ export default function DashboardPage() {
                       </span>
                     </div>
                   </div>
+
+                  <button
+                    type="button"
+                    className="hover-target absolute top-2 right-2 z-20 p-1.5 bg-background/80 backdrop-blur-md rounded-lg border border-border shadow-sm opacity-0 transition-opacity"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log("Settings clicked for:", group.name);
+                    }}
+                  >
+                    <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
 
                   <div className="absolute bottom-3 left-3 right-3 z-20">
                     <h3 className="text-sm font-semibold text-foreground tracking-tight leading-snug drop-shadow-md line-clamp-1">
