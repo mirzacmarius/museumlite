@@ -42,7 +42,7 @@ export function DataTable<T extends Record<string, unknown>>({
             <div
               key={col.key}
               className={cn(
-                "text-xs text-muted-foreground font-medium px-4 py-3 flex-1",
+                "text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 flex-1",
                 col.className,
               )}
             >
@@ -74,7 +74,7 @@ export function DataTable<T extends Record<string, unknown>>({
             <div
               key={col.key}
               className={cn(
-                "text-xs text-muted-foreground font-medium px-4 py-3 flex-1",
+                "text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 flex-1",
                 col.className,
               )}
             >
@@ -141,7 +141,7 @@ export function DataTable<T extends Record<string, unknown>>({
                 aria-label={ariaLabel}
                 className={cn(
                   "border-b border-border/50 flex transition-colors",
-                  "cursor-pointer hover:bg-card/20 focus-visible:bg-card/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                  "cursor-pointer hover:bg-muted/50 focus-visible:bg-card/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                 )}
                 role="listitem"
               >

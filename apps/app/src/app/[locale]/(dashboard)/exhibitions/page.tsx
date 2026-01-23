@@ -291,8 +291,14 @@ function ExhibitionList({
 
   return (
     <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2 lg:grid-cols-3">
-      {filteredExhibitions.map((ex) => (
-        <ExhibitionCard key={ex._id} exhibition={ex} />
+      {filteredExhibitions.map((ex, index) => (
+        <div
+          key={ex._id}
+          className="animate-enter"
+          style={{ animationDelay: `${Math.min(index * 100, 500)}ms` }}
+        >
+          <ExhibitionCard exhibition={ex} />
+        </div>
       ))}
     </div>
   );
@@ -329,7 +335,7 @@ function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
   return (
     <Link
       href={`/exhibitions/${exhibition._id}`}
-      className="group flex flex-col justify-between rounded-xl border border-border bg-card p-5 transition-all hover:bg-muted/80 hover:border-border hover:shadow-lg hover:shadow-black/30"
+      className="group flex flex-col justify-between rounded-xl border border-border bg-card p-5 transition-all duration-300 hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/30 hover:shadow-xl hover:shadow-indigo-900/10"
     >
       <div className="space-y-4">
         <div className="flex items-start justify-between">

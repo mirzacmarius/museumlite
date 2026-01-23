@@ -124,36 +124,39 @@ export function KanbanColumn({
                 </p>
               </div>
             ) : (
-              filteredAccessions.map((accession: AccessionItem) => (
-                <Link
-                  key={accession._id}
-                  href={`/accessions/${accession._id}`}
-                  className="group rounded-lg border border-border/60 bg-muted p-3 transition-all hover:border-border/60 hover:bg-accent/50"
-                >
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {accession.accessionNumber}
-                    </span>
-                    <div className={`h-2 w-2 rounded-full ${color}`} />
-                  </div>
-                  <p className="mb-2 text-sm font-medium text-foreground line-clamp-2">
-                    {accession.source || t("kanban.unknownSource")}
-                  </p>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <span className="capitalize">{accession.method}</span>
+              filteredAccessions.map(
+                (accession: AccessionItem, index: number) => (
+                  <Link
+                    key={accession._id}
+                    href={`/accessions/${accession._id}`}
+                    className="group animate-enter rounded-lg border border-border/60 bg-muted/50 p-3 transition-all duration-200 hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/20 hover:bg-muted"
+                    style={{ animationDelay: `${Math.min(index * 50, 300)}ms` }}
+                  >
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {accession.accessionNumber}
+                      </span>
+                      <div className={`h-2 w-2 rounded-full ${color}`} />
                     </div>
-                    {accession.assigneeName && (
-                      <div className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5">
-                        <User className="h-3 w-3 text-primary" />
-                        <span className="text-primary">
-                          {accession.assigneeName}
-                        </span>
+                    <p className="mb-2 text-sm font-medium text-foreground line-clamp-2">
+                      {accession.source || t("kanban.unknownSource")}
+                    </p>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <span className="capitalize">{accession.method}</span>
                       </div>
-                    )}
-                  </div>
-                </Link>
-              ))
+                      {accession.assigneeName && (
+                        <div className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5">
+                          <User className="h-3 w-3 text-primary" />
+                          <span className="text-primary">
+                            {accession.assigneeName}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                ),
+              )
             )}
           </div>
         </ScrollArea>

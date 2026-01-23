@@ -1,8 +1,11 @@
 "use client";
 
+import { DeaccessionDialog } from "@/components/deaccession-dialog";
+import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { Checkbox } from "@v1/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,13 +13,10 @@ import {
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
 import { useQuery } from "convex/react";
-import { Checkbox } from "@v1/ui/checkbox";
 import { Archive, Building2, MoreVertical } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { DeaccessionDialog } from "@/components/deaccession-dialog";
-import { PermissionGate } from "@/components/permission-gate";
 
 interface ObjectGridItemProps {
   item: {
@@ -47,7 +47,7 @@ function ObjectGridItem({
   return (
     <>
       <div
-        className={`group relative rounded-lg border bg-card overflow-hidden transition-colors hover:bg-accent ${
+        className={`group relative rounded-xl border bg-card overflow-hidden transition-all duration-300 hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/30 hover:shadow-xl hover:shadow-indigo-900/10 ${
           isSelected ? "border-primary ring-2 ring-primary/20" : "border-border"
         }`}
       >
@@ -188,18 +188,23 @@ export function ObjectGridView({
 }: ObjectGridViewProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      {items.map((item) => (
-        <ObjectGridItem
+      {items.map((item, index) => (
+        <div
           key={item._id}
-          item={item}
-          organizationId={organizationId}
-          isSelected={selectedIds?.has(item._id)}
-          onSelect={
-            onSelectItem
-              ? (selected) => onSelectItem(item._id, selected)
-              : undefined
-          }
-        />
+          className="animate-enter"
+          style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
+        >
+          <ObjectGridItem
+            item={item}
+            organizationId={organizationId}
+            isSelected={selectedIds?.has(item._id)}
+            onSelect={
+              onSelectItem
+                ? (selected) => onSelectItem(item._id, selected)
+                : undefined
+            }
+          />
+        </div>
       ))}
     </div>
   );

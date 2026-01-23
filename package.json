@@ -49,5 +49,8 @@
     "vitest": "^4.0.17"
   },
   "packageManager": "bun@1.1.26",
-  "version": "0.0.1"
+  "version": "0.0.1",
+  "dependencies": {
+    "oh-my-opencode-darwin-arm64": "^3.0.0-beta.9"
+  }
 }

@@ -388,12 +388,12 @@ function LoanList({
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+        <div className="animate-enter rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/30">
           <div className="mb-4 flex items-start justify-between">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               <ArrowRightLeft className="h-4 w-4" />
             </div>
-            <span className="rounded border border-emerald-500/30 bg-emerald-500/20 px-1.5 py-0.5 text-xs font-medium text-emerald-200">
+            <span className="rounded border border-emerald-500/30 bg-emerald-500/20 px-1.5 py-0.5 text-xs font-medium text-emerald-400">
               +{activeLoansCount} active
             </span>
           </div>
@@ -405,9 +405,12 @@ function LoanList({
           </p>
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+        <div
+          className="animate-enter rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-emerald-500/30 hover:ring-1 hover:ring-emerald-500/30"
+          style={{ animationDelay: "100ms" }}
+        >
           <div className="mb-4 flex items-start justify-between">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <Boxes className="h-4 w-4" />
             </div>
           </div>
@@ -419,9 +422,12 @@ function LoanList({
           </p>
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+        <div
+          className="animate-enter rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-blue-500/30 hover:ring-1 hover:ring-blue-500/30"
+          style={{ animationDelay: "200ms" }}
+        >
           <div className="mb-4 flex items-start justify-between">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
               <ShieldCheck className="h-4 w-4" />
             </div>
           </div>
@@ -431,13 +437,16 @@ function LoanList({
           <p className="mt-1 text-2xl font-bold tracking-tight">—</p>
         </div>
 
-        <div className="relative overflow-hidden rounded-xl border border-border/60 bg-card p-4 shadow-sm">
-          <div className="absolute right-0 top-0 h-16 w-16 rounded-full bg-red-500/10 blur-2xl" />
+        <div
+          className="animate-enter relative overflow-hidden rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-rose-500/30 hover:ring-1 hover:ring-rose-500/30"
+          style={{ animationDelay: "300ms" }}
+        >
+          <div className="absolute right-0 top-0 h-16 w-16 rounded-full bg-rose-500/10 blur-2xl" />
           <div className="mb-4 flex items-start justify-between">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-500 dark:bg-red-900/20">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
               <AlertCircle className="h-4 w-4" />
             </div>
-            <span className="rounded border border-red-500/30 bg-red-500/20 px-1.5 py-0.5 text-xs font-medium text-red-200">
+            <span className="rounded border border-rose-500/30 bg-rose-500/20 px-1.5 py-0.5 text-xs font-medium text-rose-400">
               {t("kpis.actionRequired")}
             </span>
           </div>
