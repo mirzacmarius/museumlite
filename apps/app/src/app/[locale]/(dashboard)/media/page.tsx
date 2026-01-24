@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
+import { EmptyState } from "@v1/ui/empty-state";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { ScrollArea } from "@v1/ui/scroll-area";
@@ -242,12 +243,12 @@ function MediaBrowser({
           )}
 
           {media && media.page.length === 0 && (
-            <div className="flex h-64 flex-col items-center justify-center gap-2">
-              <Image className="h-8 w-8 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                {t("mediaPage.empty")}
-              </p>
-            </div>
+            <EmptyState
+              icon={Image}
+              title={t("mediaPage.empty")}
+              description="Upload images, videos, and documents to your media library"
+              size="md"
+            />
           )}
 
           {media && media.page.length > 0 && (

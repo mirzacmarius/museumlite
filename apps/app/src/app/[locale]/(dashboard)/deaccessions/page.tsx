@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
+import { EmptyState } from "@v1/ui/empty-state";
 import { Input } from "@v1/ui/input";
 import { ScrollArea } from "@v1/ui/scroll-area";
 import { useQuery } from "convex/react";
@@ -227,12 +228,12 @@ function DeaccessionTable({
               {deaccessions && deaccessions.page.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-16 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <Archive className="h-8 w-8 text-muted-foreground" />
-                      <p className="text-muted-foreground">
-                        No deaccessions found
-                      </p>
-                    </div>
+                    <EmptyState
+                      icon={Archive}
+                      title="No deaccessions found"
+                      description="Items removed from the collection will appear here"
+                      size="sm"
+                    />
                   </td>
                 </tr>
               )}

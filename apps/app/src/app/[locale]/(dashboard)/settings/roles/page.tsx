@@ -16,11 +16,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@v1/ui/dialog";
+import { EmptyState } from "@v1/ui/empty-state";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
-import { Edit, Plus, Trash2 } from "lucide-react";
+import { Edit, Plus, Shield, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 export default function RolesSettingsPage() {
@@ -338,8 +339,13 @@ export default function RolesSettingsPage() {
             <p className="text-muted-foreground">Loading roles...</p>
           </div>
         ) : roles.length === 0 ? (
-          <div className="col-span-2 flex h-64 items-center justify-center">
-            <p className="text-muted-foreground">No roles found</p>
+          <div className="col-span-2">
+            <EmptyState
+              icon={Shield}
+              title="No roles found"
+              description="Create custom roles to manage team permissions"
+              size="md"
+            />
           </div>
         ) : (
           roles.map((role) => (

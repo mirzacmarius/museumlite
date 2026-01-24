@@ -7,6 +7,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
+import { EmptyState } from "@v1/ui/empty-state";
 import { Tabs, TabsList, TabsTrigger } from "@v1/ui/tabs";
 import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
@@ -307,32 +308,30 @@ export default function NotificationsPage() {
             </p>
           </div>
         ) : notifications.length === 0 ? (
-          <div className="flex h-64 flex-col items-center justify-center gap-4 rounded-lg border border-dashed">
-            <div className="rounded-full bg-muted p-3">
-              <Inbox className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <div className="text-center">
-              <h3 className="font-medium">
-                {filter === "unread"
-                  ? t("notificationsPage.empty.noUnread")
-                  : t("notificationsPage.empty.noNotifications")}
-              </h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {filter === "unread"
-                  ? t("notificationsPage.empty.caughtUp")
-                  : t("notificationsPage.empty.description")}
-              </p>
-            </div>
-            {filter === "unread" && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setFilter("all")}
-              >
-                {t("notificationsPage.viewAll")}
-              </Button>
-            )}
-          </div>
+          <EmptyState
+            icon={Inbox}
+            title={
+              filter === "unread"
+                ? t("notificationsPage.empty.noUnread")
+                : t("notificationsPage.empty.noNotifications")
+            }
+            description={
+              filter === "unread"
+                ? t("notificationsPage.empty.caughtUp")
+                : t("notificationsPage.empty.description")
+            }
+            action={
+              filter === "unread"
+                ? {
+                    label: t("notificationsPage.viewAll"),
+                    onClick: () => setFilter("all"),
+                    variant: "outline",
+                  }
+                : undefined
+            }
+            variant="card"
+            size="md"
+          />
         ) : (
           <div className="space-y-2">
             {notifications.map((notification: NotificationItem) => {
