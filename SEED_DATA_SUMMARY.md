@@ -1,148 +1,68 @@
 # Database Seed Data Summary
 
 ## Overview
-This document summarizes the demo data that has been seeded for the Museumlite application and identifies functionality that requires demo data for testing.
+
+This document summarizes the demo data seeded for the Museumlite application using The Met Open Access API.
+
+**Note**: This seed focuses on collections with real museum artwork from The Met. Workflow tables (loans, accessions, etc.) are not seeded.
 
 ## ✅ Tables with Demo Data
 
 ### Core Tables
-- **organizations** - 5 demo organizations (Metropolitan Museum, British Museum, Library of Congress, Getty Museum, Smith Collection)
+- **organizations** - 5 demo organizations (National Museum of Natural History, Metropolitan Art Gallery, Heritage Library & Archives, Contemporary Design Museum, Vanderbilt Private Collection)
 - **users** - Uses existing authenticated user
 - **userOrganizations** - User assigned to all organizations as admin
 - **roles** - Created via `createDefaultRoles` function
-- **collections** - 21 collection objects across all organizations
-- **locations** - Hierarchical locations for each organization (buildings, floors, rooms, storage)
-- **locationHistory** - Movement tracking entries for collections
+- **collections** - Best-effort ~50 objects per org with real Met artwork metadata
+- **mediaFiles** - Real artwork images uploaded from The Met Open Access API
 
-### Workflow Tables
-- **accessions** - 2 accession records with approved status
-- **deaccessions** - 5 deaccession records with various statuses (pending, approved, rejected)
-- **loans** - 2 loan records (1 outgoing active, 1 incoming active)
-- **loanItems** - Items linked to loans
+## ⚠️ Tables Without Demo Data
 
-### Activity & Notifications
-- **auditLog** - ✅ **NEW**: Activity log entries for:
-  - Collection creation and updates
-  - Loan approvals and creation
-  - Accession approvals
-  - Deaccession approvals
-  - Various timestamps (1 day, 3 days, 7 days ago)
+### Workflow Tables (Not Seeded)
+- **loans**, **loanItems**, **loanDocuments** - No loan workflow data
+- **accessions**, **deaccessions** - No accession workflow data
+- **conditionReports** - No condition reports
+- **locations**, **locationHistory** - No location tracking data
+- **auditLog**, **notifications** - No activity/notification data
 
-- **notifications** - ✅ **NEW**: User notifications for:
-  - Pending loan approvals
-  - Pending accession approvals
-  - Pending deaccession approvals
-  - Approved loans (read notifications)
-  - Linked to related entities for navigation
+### Other Tables
+- **conservationTreatments**, **exhibitions** - No treatment/exhibition data
+- **workflowConfigs**, **webhooks**, **apiKeys**, **importJobs** - No configuration data
 
-### Loan Management
-- **conditionReports** - ✅ **NEW**: Condition reports for loan items:
-  - Condition "out" reports for active loans
-  - Condition "in" reports for older loans
-  - Damage assessments
+## 🎯 Functionality That Can Be Tested
 
-## ⚠️ Tables Without Demo Data (Cannot Be Fully Tested)
+With the seed data, you can test:
 
-### Media Files
-- **mediaFiles** - No demo data
-  - **Reason**: Requires actual file uploads (storageId)
-  - **Impact**: Cannot test media upload functionality, image galleries, or media management
-  - **Note**: Would require file storage setup and actual image files
+1. **Collections**
+   - View collections with real museum artwork
+   - See collection metadata (title, period, culture, materials, etc.)
+   - View high-quality images from The Met
 
-### Loan Documents
-- **loanDocuments** - No demo data
-  - **Reason**: Requires actual file uploads (storageId)
-  - **Impact**: Cannot test loan document upload/management
-  - **Note**: Would require file storage setup and actual document files
+2. **Media Files**
+   - View artwork images
+   - Image gallery functionality
 
-### Permissions & Roles
-- **permissions** - Not seeded
-  - **Impact**: May affect permission-based testing
-  - **Note**: Permissions are typically created during organization setup
+3. **Organizations**
+   - Switch between 5 demo organizations
+   - Different subscription tiers (free, pro, enterprise)
 
-- **rolePermissions** - Not seeded
-  - **Impact**: May affect role-based access control testing
-  - **Note**: Linked to permissions table
+4. **Dashboard**
+   - Collection counts and statistics
 
-### Workflow Configuration
-- **workflowConfigs** - No demo data
-  - **Impact**: Cannot test custom workflow configurations
-  - **Note**: Workflows may use default configurations
+## 🚫 Functionality That Requires Manual Setup
 
-### Integrations
-- **webhooks** - No demo data
-  - **Impact**: Cannot test webhook integrations
-  - **Note**: Advanced feature, not critical for basic testing
+1. **Workflow Features**
+   - Loans, accessions, deaccessions
+   - Condition reports
+   - Location tracking
 
-- **apiKeys** - No demo data
-  - **Impact**: Cannot test API key management
-  - **Note**: Advanced feature, not critical for basic testing
+2. **Activity & Notifications**
+   - Audit log entries
+   - User notifications
 
-- **importJobs** - No demo data
-  - **Impact**: Cannot test CSV/media import functionality
-  - **Note**: Background job feature
-
-## 🎯 Functionality That Can Now Be Tested
-
-With the new seed data, you can now test:
-
-1. **Activity Page** (`/activity`)
-   - View audit log entries
-   - Filter by entity type (collection, loan, accession, deaccession)
-   - Filter by date range
-   - See user information and action details
-
-2. **Notification Bell** (Header component)
-   - View unread notifications
-   - Mark notifications as read
-   - Navigate to related entities
-   - See notification counts
-
-3. **Loan Condition Reports**
-   - View condition reports for loan items
-   - See "out" and "in" condition assessments
-   - View damage assessments
-
-4. **Collections**
-   - View collections with locations
-   - See collection status (active, loaned, deaccessioned)
-   - Filter and search collections
-
-5. **Loans**
-   - View active loans
-   - See loan items
-   - View condition reports
-
-6. **Accessions & Deaccessions**
-   - View workflow records
-   - See various statuses (pending, approved, rejected)
-   - View approval history
-
-## 🚫 Functionality That Cannot Be Fully Tested
-
-1. **Media Management**
-   - Upload images for collections
-   - View image galleries
-   - Manage media files
-   - Image thumbnails
-
-2. **Loan Documents**
-   - Upload loan agreements
-   - Upload insurance documents
-   - Manage loan-related files
-
-3. **Import/Export**
-   - CSV import functionality
-   - Media import jobs
-   - Export features
-
-4. **Custom Workflows**
-   - Custom workflow configurations
-   - Multi-step approval workflows
-
-5. **Integrations**
-   - Webhook setup and testing
-   - API key management
+3. **Integrations**
+   - Webhooks, API keys
+   - Import/export jobs
 
 ## 📝 Running the Seed Script
 
@@ -150,24 +70,20 @@ To seed the database with demo data:
 
 ```bash
 cd packages/backend
-bunx convex run seed:seedDatabase
+npx convex run seedMetAction:resetAndSeed
 ```
 
-**Note**: The seed script requires an authenticated user with email `mirzacmarius@gmail.com`. Make sure you're logged in before running the seed script.
+**Requirements**:
+- Authenticated user with email `mirzacmarius@gmail.com` must exist
+- Convex dev server should be running or use production deployment
 
-## 🔄 Adding More Demo Data
+**Note**: The seed uses The Met Open Access API. Rate limiting may affect the number of objects created per organization. Any count > 0 per org is acceptable for demo purposes.
 
-To add demo data for media files or loan documents, you would need to:
+## 🔄 What the Seed Does
 
-1. **For Media Files**:
-   - Upload actual image files to Convex storage
-   - Create `mediaFiles` records with `storageId` references
-   - Link to collections
-
-2. **For Loan Documents**:
-   - Upload actual document files to Convex storage
-   - Create `loanDocuments` records with `storageId` references
-   - Link to loans
-
-These would require file upload functionality and actual files, which is why they're not included in the seed script.
-
+1. **Clears existing data** (preserves users and auth tables)
+2. **Creates 5 organizations** with different types and subscription tiers
+3. **Assigns user as admin** to all organizations
+4. **Fetches artwork from The Met** using different search keywords per org
+5. **Uploads images** to Convex storage
+6. **Creates collection records** with real artwork metadata
