@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
+import { EmptyState } from "@v1/ui/empty-state";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
@@ -33,6 +34,7 @@ import {
   Filter,
   MapPin,
   MoreVertical,
+  Package,
   Plus,
   Search,
   X,
@@ -756,12 +758,14 @@ function CollectionList({
 
   if (collections.page.length === 0) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">
-          {t("emptyState.noObjectsFound")}
-        </p>
+      <div className="flex h-64 flex-col items-center justify-center">
+        <EmptyState
+          icon={Package}
+          title={t("emptyState.noObjectsFound")}
+          description={t("emptyState.addFirstObject")}
+        />
         <PermissionGate permission="collections.create">
-          <Button asChild>
+          <Button asChild className="mt-4">
             <Link href="/objects/new">
               <Plus className="mr-2 h-4 w-4" />
               {t("emptyState.addFirstObject")}

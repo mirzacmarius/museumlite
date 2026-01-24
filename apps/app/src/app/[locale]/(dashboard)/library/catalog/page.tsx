@@ -8,6 +8,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
+import { EmptyState } from "@v1/ui/empty-state";
 import { Input } from "@v1/ui/input";
 import {
   Select,
@@ -257,30 +258,29 @@ export default function LibraryCatalogPage() {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : items.page.length === 0 ? (
-            <div className="flex h-64 flex-col items-center justify-center gap-4 p-6">
-              <BookCopy className="h-12 w-12 text-muted-foreground" />
-              <div className="text-center">
-                <p className="font-medium">
-                  {searchQuery || typeFilter !== "all" || statusFilter !== "all"
+            <div className="flex h-64 flex-col items-center justify-center p-6">
+              <EmptyState
+                icon={BookCopy}
+                title={
+                  searchQuery || typeFilter !== "all" || statusFilter !== "all"
                     ? tCat("emptyState.noItemsFiltered")
-                    : tCat("emptyState.noItems")}
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {searchQuery || typeFilter !== "all" || statusFilter !== "all"
+                    : tCat("emptyState.noItems")
+                }
+                description={
+                  searchQuery || typeFilter !== "all" || statusFilter !== "all"
                     ? tCat("emptyState.tryAdjustSearch")
-                    : tCat("emptyState.noItemsDescription")}
-                </p>
-              </div>
-              {!searchQuery &&
-                typeFilter === "all" &&
-                statusFilter === "all" && (
-                  <Button asChild>
-                    <Link href="/library/catalog/new">
-                      <Plus className="mr-2 h-4 w-4" />
-                      {tCat("addFirstItem")}
-                    </Link>
-                  </Button>
-                )}
+                    : tCat("emptyState.noItemsDescription")
+                }
+                action={
+                  !searchQuery && typeFilter === "all" && statusFilter === "all"
+                    ? {
+                        label: tCat("addFirstItem"),
+                        href: "/library/catalog/new",
+                        icon: Plus,
+                      }
+                    : undefined
+                }
+              />
             </div>
           ) : (
             <div className="p-6">

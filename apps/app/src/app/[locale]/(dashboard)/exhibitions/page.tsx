@@ -8,6 +8,7 @@ import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { EmptyState } from "@v1/ui/empty-state";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Input } from "@v1/ui/input";
 import {
@@ -265,18 +266,16 @@ function ExhibitionList({
 
   if (filteredExhibitions.length === 0) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-4">
-        <GalleryVerticalEnd className="h-12 w-12 text-muted-foreground" />
-        <div className="text-center">
-          <p className="text-muted-foreground">
-            {t("emptyState.noExhibitions")}
-          </p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {searchQuery || statusFilter !== "all"
+      <div className="flex h-64 items-center justify-center">
+        <EmptyState
+          icon={GalleryVerticalEnd}
+          title={t("emptyState.noExhibitions")}
+          description={
+            searchQuery || statusFilter !== "all"
               ? t("emptyState.adjustFilters")
-              : t("emptyState.createFirst")}
-          </p>
-        </div>
+              : t("emptyState.createFirst")
+          }
+        />
       </div>
     );
   }

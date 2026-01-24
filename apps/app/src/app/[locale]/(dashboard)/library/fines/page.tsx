@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
+import { EmptyState } from "@v1/ui/empty-state";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
@@ -355,20 +356,20 @@ export default function LibraryFinesPage() {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : fines.page.length === 0 ? (
-            <div className="flex h-64 flex-col items-center justify-center gap-4 p-6">
-              <DollarSign className="h-12 w-12 text-muted-foreground" />
-              <div className="text-center">
-                <p className="font-medium">
-                  {statusFilter !== "all"
+            <div className="flex h-64 items-center justify-center p-6">
+              <EmptyState
+                icon={DollarSign}
+                title={
+                  statusFilter !== "all"
                     ? tFines("emptyState.noFinesFiltered")
-                    : tFines("emptyState.noFines")}
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {statusFilter !== "all"
+                    : tFines("emptyState.noFines")
+                }
+                description={
+                  statusFilter !== "all"
                     ? tFines("emptyState.tryAdjustFilters")
-                    : tFines("emptyState.noFinesDescription")}
-                </p>
-              </div>
+                    : tFines("emptyState.noFinesDescription")
+                }
+              />
             </div>
           ) : (
             <div className="p-6">

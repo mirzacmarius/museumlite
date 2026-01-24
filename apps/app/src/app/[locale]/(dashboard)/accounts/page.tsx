@@ -8,6 +8,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
+import { EmptyState } from "@v1/ui/empty-state";
 import { Input } from "@v1/ui/input";
 import {
   Select,
@@ -262,14 +263,18 @@ function AccountList({
 
   if (accounts.accounts.length === 0) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">
-          {searchQuery
-            ? t("emptyState.noSearchResults")
-            : t("emptyState.noAccountsFound")}
-        </p>
+      <div className="flex h-64 flex-col items-center justify-center">
+        <EmptyState
+          icon={Users}
+          title={
+            searchQuery
+              ? t("emptyState.noSearchResults")
+              : t("emptyState.noAccountsFound")
+          }
+          description={t("emptyState.createFirst")}
+        />
         <PermissionGate permission="loans.create">
-          <Button asChild>
+          <Button asChild className="mt-4">
             <Link href="/accounts/new">
               <Plus className="mr-2 h-4 w-4" />
               {t("emptyState.createFirst")}
