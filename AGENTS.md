@@ -2,6 +2,14 @@
 
 Museum/Library collection management SaaS. Turborepo monorepo: Convex backend, Next.js 15 App Router, Bun, Biome.
 
+## Philosophy
+
+This codebase will outlive you. Every shortcut becomes someone else's burden. Every hack compounds into technical debt that slows the whole team down.
+
+You are not just writing code. You are shaping the future of this project. The patterns you establish will be copied. The corners you cut will be cut again.
+
+Fight entropy. Leave the codebase better than you found it.
+
 ## Commands
 
 ```bash
@@ -141,47 +149,6 @@ test("should create and retrieve item", async () => {
   expect(item?.title).toBe("Test");
 });
 ```
-
-Use shared modules helper for tests:
-
-```typescript
-import { modules } from "./test-setup";
-const t = convexTest(schema, modules);
-```
-
-### Permission Checks
-
-- Use `requirePermission(ctx, organizationId, "module.action")` early in handlers
-- `requirePermission` already enforces feature gating via `requireFeatureAccess`
-- For workflow-related permissions, use `canInitiateWorkflow` / `canApproveAtStep`
-
-### Audit Log Pattern
-
-Use the internal audit mutation after state changes:
-
-```typescript
-await ctx.runMutation(internal.audit.logAction, {
-  organizationId,
-  userId,
-  action: "updated_entity",
-  entityType: "collection",
-  entityId,
-  changes: { field: "value" },
-});
-```
-
-### Pre-commit Checklist
-
-1. `bun run lint`
-2. `bun run typecheck` (use `NODE_OPTIONS=--max-old-space-size=8192` if needed)
-3. `cd packages/backend && bun test:once`
-4. `lsp_diagnostics` clean on changed files
-
-### Epic 0 Completion Checklist
-
-- Quality commands verified
-- Example tests for query/mutation/action in `packages/backend/convex/__tests__`
-- Permission + audit log patterns documented
 
 ## File Locations
 
