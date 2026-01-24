@@ -30,6 +30,7 @@ export default {
     approved: "Approuvé",
     processing: "En Traitement",
     rejected: "Rejeté",
+    trends: "Tendances",
   },
   settings: {
     title: "Paramètres",

@@ -27,6 +27,8 @@ import {
 import Link from "next/link";
 import { Suspense } from "react";
 import { AssignmentsQueue } from "./_components/assignments-queue";
+import { CollectionGrowthChart } from "./_components/collection-growth-chart";
+import { LoanStatusChart } from "./_components/loan-status-chart";
 import { NewArrivalsFeed } from "./_components/new-arrivals-feed";
 
 export default function DashboardPage() {
@@ -192,6 +194,28 @@ export default function DashboardPage() {
         <Suspense fallback={<SkeletonCard className="h-64" />}>
           <NewArrivalsFeed />
         </Suspense>
+      </div>
+
+      <div className="px-6 pt-6">
+        <h3 className="text-xs font-semibold text-muted-foreground mb-4 uppercase tracking-wider">
+          {t("trends")}
+        </h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="rounded-xl border border-border bg-card p-6">
+            <h4 className="text-sm font-semibold mb-4">
+              {t("collectionGrowth")}
+            </h4>
+            <Suspense fallback={<SkeletonCard className="h-[300px]" />}>
+              <CollectionGrowthChart />
+            </Suspense>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-6">
+            <h4 className="text-sm font-semibold mb-4">
+              {t("loanStatusDistribution")}
+            </h4>
+            <LoanStatusChart data={analytics.loans} />
+          </div>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto scroll-smooth p-6">

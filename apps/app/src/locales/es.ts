@@ -32,6 +32,7 @@ export default {
     approved: "Aprobado",
     processing: "Procesando",
     rejected: "Rechazado",
+    trends: "Tendencias",
   },
   settings: {
     title: "Configuración",

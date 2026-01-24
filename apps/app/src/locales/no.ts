@@ -29,6 +29,7 @@ export default {
     approved: "Godkjent",
     processing: "Behandler",
     rejected: "Avvist",
+    trends: "Trender",
   },
   settings: {
     title: "Innstillinger",

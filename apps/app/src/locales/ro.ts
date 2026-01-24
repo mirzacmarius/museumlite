@@ -30,6 +30,7 @@ export default {
     approved: "Aprobat",
     processing: "În Procesare",
     rejected: "Respins",
+    trends: "Tendințe",
   },
   settings: {
     title: "Setări",

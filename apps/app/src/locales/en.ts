@@ -30,6 +30,7 @@ export default {
     approved: "Approved",
     processing: "Processing",
     rejected: "Rejected",
+    trends: "Trends",
   },
   settings: {
     title: "Settings",
@@ -1028,6 +1029,9 @@ export default {
       overdueLoans: "Overdue Loans",
       pendingApprovals: "Pending Approvals",
       unavailable: "Unavailable",
+    },
+    charts: {
+      statusDistribution: "Status Distribution",
     },
     table: {
       type: "Type",

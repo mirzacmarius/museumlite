@@ -814,6 +814,61 @@ export const getLocationUtilization = query({
   },
 });
 
+export const getCollectionGrowth = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.array(
+    v.object({
+      month: v.string(),
+      count: v.number(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.view_analytics",
+    );
+
+    const collections = await ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const now = new Date();
+    const months: { month: string; count: number }[] = [];
+
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthStr = date.toLocaleDateString("en-US", {
+        month: "short",
+        year: "2-digit",
+      });
+      const startOfMonth = date.getTime();
+      const endOfMonth = new Date(
+        date.getFullYear(),
+        date.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999,
+      ).getTime();
+
+      const count = collections.filter(
+        (c) => c._creationTime >= startOfMonth && c._creationTime <= endOfMonth,
+      ).length;
+
+      months.push({ month: monthStr, count });
+    }
+
+    return months;
+  },
+});
+
 export const getOperationalKpis = query({
   args: {
     organizationId: v.id("organizations"),
