@@ -3,7 +3,6 @@
 export default function IntegrationsSettingsLoading() {
   return (
     <div className="flex h-full w-full flex-col gap-6">
-      {/* Header Card */}
       <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
         <div className="flex w-full flex-col gap-2 p-6">
           <div className="h-7 w-32 animate-pulse rounded bg-muted/60" />
@@ -11,14 +10,12 @@ export default function IntegrationsSettingsLoading() {
         </div>
       </div>
 
-      {/* Integrations List */}
       <div className="flex w-full flex-col gap-4">
         {[...Array(2)].map((_, i) => (
           <div
             key={i}
             className="flex w-full flex-col rounded-lg border border-border bg-card"
           >
-            {/* Integration Header */}
             <div className="flex w-full items-start justify-between p-6">
               <div className="flex items-start gap-4">
                 <div className="flex h-12 w-12 animate-pulse items-center justify-center rounded-lg bg-primary/5" />
@@ -33,7 +30,6 @@ export default function IntegrationsSettingsLoading() {
               <div className="h-6 w-11 animate-pulse rounded-full bg-muted/50" />
             </div>
 
-            {/* Features Section */}
             <div className="border-t border-border px-6 py-4">
               <div className="mb-3 h-4 w-32 animate-pulse rounded bg-muted/50" />
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
