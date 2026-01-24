@@ -202,16 +202,14 @@ export default function DashboardPage() {
         </h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="rounded-xl border border-border bg-card p-6">
-            <h4 className="text-sm font-semibold mb-4">
-              {t("collectionGrowth")}
-            </h4>
+            <h4 className="text-sm font-semibold mb-4">Collection Growth</h4>
             <Suspense fallback={<SkeletonCard className="h-[300px]" />}>
               <CollectionGrowthChart />
             </Suspense>
           </div>
           <div className="rounded-xl border border-border bg-card p-6">
             <h4 className="text-sm font-semibold mb-4">
-              {t("loanStatusDistribution")}
+              Loan Status Distribution
             </h4>
             <LoanStatusChart data={analytics.loans} />
           </div>
