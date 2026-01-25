@@ -94,6 +94,7 @@ export function TimelineView({
           >
             <div
               onClick={() => onEventClick?.(event)}
+              onKeyDown={(e) => e.key === "Enter" && onEventClick?.(event)}
               className={cn(
                 "px-3 py-1.5 rounded-full border text-xs font-medium whitespace-nowrap transition-all duration-200",
                 getEventColor(event),
@@ -101,6 +102,8 @@ export function TimelineView({
                   "cursor-pointer hover:scale-105 hover:shadow-lg",
               )}
               title={`${event.title} - ${event.startDate.toLocaleDateString()}`}
+              role="button"
+              tabIndex={isInteractive ? 0 : -1}
             >
               {event.title}
             </div>

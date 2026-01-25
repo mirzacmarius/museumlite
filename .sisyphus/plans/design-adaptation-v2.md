@@ -983,7 +983,7 @@ interface TimelineEvent {
 
 ---
 
-### - [ ] 6.1 Style All Loading States (28 files)
+### - [x] 6.1 Style All Loading States (zinc-free)
 
 **What to do**:
 - Apply consistent skeleton styling to all 28 loading.tsx files
@@ -1015,7 +1015,7 @@ interface TimelineEvent {
 
 ---
 
-### - [ ] 6.2 Style Empty States
+### - [x] 6.2 Style Empty States (zinc-free)
 
 **What to do**:
 - Apply consistent empty state styling across pages
@@ -1048,7 +1048,7 @@ interface TimelineEvent {
 
 ---
 
-### - [ ] 6.3 Style Error States
+### - [x] 6.3 Style Error States (zinc-free)
 
 **What to do**:
 - Apply consistent error state styling

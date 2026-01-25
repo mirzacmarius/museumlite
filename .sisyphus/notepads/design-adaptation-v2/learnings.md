@@ -81,3 +81,27 @@
 - All 3 buttons are secondary action buttons (new/create/save)
 - Consistent with Task 4.1 (exhibitions) pattern
 - Completes Milestone 4: Feature Pages button migration
+
+### [2026-01-25] Task 6.4 - Lint Warnings Fix
+
+**Files fixed**: 2 components with accessibility warnings
+
+**timeline-view.tsx (line 95)**:
+- Added `onKeyDown` handler: `onKeyDown={(e) => e.key === "Enter" && onEventClick?.(event)}`
+- Added `role="button"` and `tabIndex={isInteractive ? 0 : -1}` for keyboard accessibility
+- Pattern: Interactive divs with onClick need keyboard support for a11y compliance
+
+**rack-visualization.tsx (line 74)**:
+- Added `onKeyDown` handler: `onKeyDown={(e) => e.key === "Enter" && item && onItemClick?.(item)}`
+- Added `role="button"` and `tabIndex={isInteractive ? 0 : -1}` for keyboard accessibility
+- Removed useless `case "empty":` from switch statement (line 57) - default case handles it
+
+**Verification**:
+- lsp_diagnostics: clean on both files
+- bun run lint: no warnings in timeline-view.tsx or rack-visualization.tsx
+- Pattern: All interactive divs now have keyboard event handlers + semantic attributes
+
+**Key Learning**: Biome's a11y/useKeyWithClickEvents rule requires:
+1. `onKeyDown` handler (typically checking for Enter key)
+2. `role="button"` attribute
+3. `tabIndex` for keyboard navigation (0 if interactive, -1 if not)

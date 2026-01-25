@@ -54,7 +54,6 @@ export function RackVisualization({
         return "bg-emerald-500/10 border-emerald-500/20 text-emerald-400";
       case "reserved":
         return "bg-amber-500/10 border-amber-500/20 text-amber-400";
-      case "empty":
       default:
         return "bg-muted/30 border-border text-muted-foreground";
     }
@@ -75,6 +74,7 @@ export function RackVisualization({
           <div
             key={`${row}-${column}`}
             onClick={() => item && onItemClick?.(item)}
+            onKeyDown={(e) => e.key === "Enter" && item && onItemClick?.(item)}
             className={cn(
               "border rounded-md p-2 transition-all duration-200 flex items-center justify-center min-h-[60px]",
               getStatusClasses(status),
@@ -82,6 +82,8 @@ export function RackVisualization({
                 "cursor-pointer hover:border-primary/50 hover:shadow-sm",
             )}
             title={item?.label}
+            role="button"
+            tabIndex={isInteractive ? 0 : -1}
           >
             {item?.label && (
               <span className="text-xs font-medium truncate">{item.label}</span>
