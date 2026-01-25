@@ -29,6 +29,7 @@ export const getAnalytics = query({
       active: v.number(),
       loaned: v.number(),
       deaccessioned: v.number(),
+      onDisplay: v.number(),
     }),
     loans: v.object({
       total: v.number(),
@@ -58,6 +59,8 @@ export const getAnalytics = query({
         description: v.optional(v.string()),
         itemsCount: v.number(),
         imageUrl: v.optional(v.string()),
+        storageLocation: v.optional(v.string()),
+        valuation: v.optional(v.number()),
       }),
     ),
     recentObjects: v.array(
@@ -149,6 +152,8 @@ export const getAnalytics = query({
             description: group.description,
             itemsCount: group.itemsCount ?? 0,
             imageUrl,
+            storageLocation: group.storageLocation,
+            valuation: group.valuation,
           };
         }),
     );
@@ -290,6 +295,8 @@ export const getAnalytics = query({
         active: collections.filter((c) => c.status === "active").length,
         loaned: collections.filter((c) => c.status === "loaned").length,
         deaccessioned: collections.filter((c) => c.status === "deaccessioned")
+          .length,
+        onDisplay: collections.filter((c) => c.displayStatus === "on_display")
           .length,
       },
       loans: {
