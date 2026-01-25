@@ -26,24 +26,29 @@ export default function DeveloperSettingsLoading() {
 
           <div className="rounded-lg border border-border">
             <div className="divide-y divide-border">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex items-center justify-between p-4">
-                  <div className="space-y-1">
+              {Array.from({ length: 3 }, (_, i) => `api-key-${i}`).map(
+                (key) => (
+                  <div
+                    key={key}
+                    className="flex items-center justify-between p-4"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-32 animate-pulse rounded bg-muted/60" />
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="h-6 w-24 animate-pulse rounded bg-muted/40" />
+                        <div className="h-4 w-32 animate-pulse rounded bg-muted/30" />
+                        <div className="h-4 w-28 animate-pulse rounded bg-muted/30" />
+                      </div>
+                    </div>
                     <div className="flex items-center gap-2">
-                      <div className="h-4 w-32 animate-pulse rounded bg-muted/60" />
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="h-6 w-24 animate-pulse rounded bg-muted/40" />
-                      <div className="h-4 w-32 animate-pulse rounded bg-muted/30" />
-                      <div className="h-4 w-28 animate-pulse rounded bg-muted/30" />
+                      <div className="h-9 w-20 animate-pulse rounded-lg bg-muted/50" />
+                      <div className="h-9 w-9 animate-pulse rounded bg-muted/30" />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-9 w-20 animate-pulse rounded-lg bg-muted/50" />
-                    <div className="h-9 w-9 animate-pulse rounded bg-muted/30" />
-                  </div>
-                </div>
-              ))}
+                ),
+              )}
             </div>
           </div>
         </div>

@@ -45,24 +45,26 @@ export default function DataSettingsLoading() {
               <div className="h-6 w-40 animate-pulse rounded bg-muted/60" />
             </div>
             <div className="space-y-4 px-6 pb-6">
-              {[...Array(2)].map((_, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between rounded-lg border p-4"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="h-5 w-5 animate-pulse rounded-full bg-muted/50" />
-                    <div>
-                      <div className="h-4 w-24 animate-pulse rounded bg-muted/60" />
-                      <div className="mt-1 h-3 w-32 animate-pulse rounded bg-muted/40" />
+              {Array.from({ length: 2 }, (_, i) => `data-row-${i}`).map(
+                (key) => (
+                  <div
+                    key={key}
+                    className="flex items-center justify-between rounded-lg border p-4"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="h-5 w-5 animate-pulse rounded-full bg-muted/50" />
+                      <div>
+                        <div className="h-4 w-24 animate-pulse rounded bg-muted/60" />
+                        <div className="mt-1 h-3 w-32 animate-pulse rounded bg-muted/40" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="h-2 w-32 animate-pulse rounded-full bg-muted/40" />
+                      <div className="h-6 w-20 animate-pulse rounded-full bg-muted/50" />
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="h-2 w-32 animate-pulse rounded-full bg-muted/40" />
-                    <div className="h-6 w-20 animate-pulse rounded-full bg-muted/50" />
-                  </div>
-                </div>
-              ))}
+                ),
+              )}
             </div>
           </div>
         </div>

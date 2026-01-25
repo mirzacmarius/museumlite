@@ -14,12 +14,14 @@ export default function ActivitySettingsLoading() {
           <div className="h-4 w-16 animate-pulse rounded bg-muted/60" />
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="space-y-2">
-              <div className="h-3 w-16 animate-pulse rounded bg-muted/40" />
-              <div className="h-9 w-full animate-pulse rounded-lg bg-muted/50" />
-            </div>
-          ))}
+          {Array.from({ length: 5 }, (_, i) => `activity-filter-${i}`).map(
+            (key) => (
+              <div key={key} className="space-y-2">
+                <div className="h-3 w-16 animate-pulse rounded bg-muted/40" />
+                <div className="h-9 w-full animate-pulse rounded-lg bg-muted/50" />
+              </div>
+            ),
+          )}
         </div>
       </div>
 
@@ -28,9 +30,9 @@ export default function ActivitySettingsLoading() {
       </div>
 
       <div className="flex-1 space-y-2">
-        {[...Array(8)].map((_, i) => (
+        {Array.from({ length: 8 }, (_, i) => `activity-row-${i}`).map((key) => (
           <div
-            key={i}
+            key={key}
             className="flex items-start gap-4 rounded-lg border border-border bg-card p-4"
           >
             <div className="h-9 w-9 animate-pulse rounded-full bg-muted/50" />
