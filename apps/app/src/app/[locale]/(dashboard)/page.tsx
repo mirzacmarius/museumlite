@@ -25,18 +25,11 @@ import {
   Settings,
 } from "lucide-react";
 import Link from "next/link";
-import { Suspense, useMemo } from "react";
+import { Suspense } from "react";
 import { AssignmentsQueue } from "./_components/assignments-queue";
 import { CollectionGrowthChart } from "./_components/collection-growth-chart";
 import { LoanStatusChart } from "./_components/loan-status-chart";
 import { NewArrivalsFeed } from "./_components/new-arrivals-feed";
-
-function generateSparkline(currentValue: number): number[] {
-  const variance = currentValue * 0.1;
-  return Array.from({ length: 7 }, () =>
-    Math.max(0, currentValue + (Math.random() - 0.5) * variance),
-  );
-}
 
 export default function DashboardPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
@@ -52,6 +45,13 @@ export default function DashboardPage() {
 
   const analytics = useQuery(
     api.dashboard.getAnalytics,
+    currentOrganizationId && hasAnalyticsPermission
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
+  );
+
+  const kpiTrends = useQuery(
+    api.dashboard.getKpiTrends,
     currentOrganizationId && hasAnalyticsPermission
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
@@ -145,16 +145,6 @@ export default function DashboardPage() {
     );
   }
 
-  const sparklines = useMemo(() => {
-    if (!analytics) return null;
-    return {
-      totalObjects: generateSparkline(analytics.objects.total),
-      objectsOnLoan: generateSparkline(analytics.objects.loaned),
-      activeLoans: generateSparkline(analytics.loans.active),
-      pendingAccessions: generateSparkline(analytics.accessions.pending),
-    };
-  }, [analytics]);
-
   if (analytics === undefined) {
     return (
       <div className="flex h-full w-full flex-col bg-background">
@@ -179,28 +169,28 @@ export default function DashboardPage() {
             value={formatNumber(analytics.objects.total, locale)}
             icon={Package}
             accentColor="indigo"
-            sparklineData={sparklines?.totalObjects}
+            sparklineData={kpiTrends?.totalObjects}
           />
           <KpiCard
             title={kpi("objectsOnLoan")}
             value={formatNumber(analytics.objects.loaned, locale)}
             icon={ArrowLeftRight}
             accentColor="emerald"
-            sparklineData={sparklines?.objectsOnLoan}
+            sparklineData={kpiTrends?.objectsOnLoan}
           />
           <KpiCard
             title={kpi("activeLoans")}
             value={formatNumber(analytics.loans.active, locale)}
             icon={ArrowLeftRight}
             accentColor="blue"
-            sparklineData={sparklines?.activeLoans}
+            sparklineData={kpiTrends?.activeLoans}
           />
           <KpiCard
             title={kpi("pendingAccessions")}
             value={formatNumber(analytics.accessions.pending, locale)}
             icon={FileClock}
             accentColor="amber"
-            sparklineData={sparklines?.pendingAccessions}
+            sparklineData={kpiTrends?.pendingAccessions}
           />
         </div>
       </div>

@@ -869,6 +869,79 @@ export const getCollectionGrowth = query({
   },
 });
 
+export const getKpiTrends = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    totalObjects: v.array(v.number()),
+    objectsOnLoan: v.array(v.number()),
+    activeLoans: v.array(v.number()),
+    pendingAccessions: v.array(v.number()),
+  }),
+  handler: async (ctx, args) => {
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.view_analytics",
+    );
+
+    const days = 7;
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+
+    const collections = await ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const loans = await ctx.db
+      .query("loans")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const accessions = await ctx.db
+      .query("accessions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const totalObjects: number[] = [];
+    const objectsOnLoan: number[] = [];
+    const activeLoans: number[] = [];
+    const pendingAccessions: number[] = [];
+
+    for (let i = days - 1; i >= 0; i--) {
+      const dayEnd = now - i * dayMs;
+
+      totalObjects.push(
+        collections.filter((c) => c._creationTime <= dayEnd).length,
+      );
+      objectsOnLoan.push(
+        collections.filter(
+          (c) => c._creationTime <= dayEnd && c.status === "loaned",
+        ).length,
+      );
+      activeLoans.push(
+        loans.filter((l) => l._creationTime <= dayEnd && l.status === "active")
+          .length,
+      );
+      pendingAccessions.push(
+        accessions.filter(
+          (a) => a._creationTime <= dayEnd && a.status === "pending",
+        ).length,
+      );
+    }
+
+    return { totalObjects, objectsOnLoan, activeLoans, pendingAccessions };
+  },
+});
+
 export const getOperationalKpis = query({
   args: {
     organizationId: v.id("organizations"),
