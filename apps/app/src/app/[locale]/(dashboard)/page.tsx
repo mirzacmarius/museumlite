@@ -172,18 +172,11 @@ export default function DashboardPage() {
             sparklineData={kpiTrends?.totalObjects}
           />
           <KpiCard
-            title={kpi("objectsOnLoan")}
-            value={formatNumber(analytics.objects.loaned, locale)}
-            icon={ArrowLeftRight}
+            title="Items on Display"
+            value={formatNumber(analytics.objects.onDisplay, locale)}
+            icon={Eye}
             accentColor="emerald"
             sparklineData={kpiTrends?.objectsOnLoan}
-          />
-          <KpiCard
-            title={kpi("activeLoans")}
-            value={formatNumber(analytics.loans.active, locale)}
-            icon={ArrowLeftRight}
-            accentColor="blue"
-            sparklineData={kpiTrends?.activeLoans}
           />
           <KpiCard
             title={kpi("pendingAccessions")}
@@ -191,6 +184,13 @@ export default function DashboardPage() {
             icon={FileClock}
             accentColor="amber"
             sparklineData={kpiTrends?.pendingAccessions}
+          />
+          <KpiCard
+            title={kpi("activeLoans")}
+            value={formatNumber(analytics.loans.active, locale)}
+            icon={ArrowLeftRight}
+            accentColor="blue"
+            sparklineData={kpiTrends?.activeLoans}
           />
         </div>
       </div>
@@ -205,26 +205,6 @@ export default function DashboardPage() {
         <Suspense fallback={<SkeletonCard className="h-64" />}>
           <NewArrivalsFeed />
         </Suspense>
-      </div>
-
-      <div className="px-4 sm:px-6 pt-6">
-        <h3 className="text-xs font-semibold text-muted-foreground mb-4 uppercase tracking-wider">
-          {t("trends")}
-        </h3>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
-            <h4 className="text-sm font-semibold mb-4">Collection Growth</h4>
-            <Suspense fallback={<SkeletonCard className="h-[300px]" />}>
-              <CollectionGrowthChart />
-            </Suspense>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
-            <h4 className="text-sm font-semibold mb-4">
-              Loan Status Distribution
-            </h4>
-            <LoanStatusChart data={analytics.loans} />
-          </div>
-        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto scroll-smooth p-4 sm:p-6">
@@ -267,7 +247,7 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-1.5 px-2 py-1 bg-background/90 backdrop-blur-md rounded-md border border-border shadow-sm">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       <span className="text-[10px] font-medium text-foreground/80">
-                        {group.itemsCount} {t("items")}
+                        {common("active")}
                       </span>
                     </div>
                   </div>
@@ -300,7 +280,7 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-[10px]">
                     <div className="group/item">
                       <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
-                        {t("items")}
+                        Cataloged Items
                       </span>
                       <span className="text-foreground/80 font-medium group-hover/item:text-indigo-400 transition-colors flex items-center gap-1">
                         {formatNumber(group.itemsCount, locale)}
@@ -308,10 +288,44 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
-                        {common("status")}
+                        Pending Accessions
                       </span>
-                      <span className="font-mono bg-emerald-900/10 text-emerald-500 px-1 py-0.5 rounded border border-emerald-900/30">
-                        {common("active")}
+                      <span className="font-mono text-muted-foreground">
+                        0 Items
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
+                        Storage
+                      </span>
+                      <span className="text-muted-foreground flex items-center gap-1 truncate">
+                        <Server className="w-3 h-3 text-muted-foreground/60" />
+                        {group.storageLocation ?? "-"}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="block text-muted-foreground/60 uppercase tracking-widest text-[9px] mb-0.5">
+                        Valuation
+                      </span>
+                      <span className="text-foreground/80">
+                        {group.valuation
+                          ? new Intl.NumberFormat(
+                              locale === "en"
+                                ? "en-US"
+                                : locale === "fr"
+                                  ? "fr-FR"
+                                  : locale === "es"
+                                    ? "es-ES"
+                                    : locale === "no"
+                                      ? "nb-NO"
+                                      : "ro-RO",
+                              {
+                                style: "currency",
+                                currency: "USD",
+                                notation: "compact",
+                              },
+                            ).format(group.valuation)
+                          : "-"}
                       </span>
                     </div>
                   </div>
@@ -479,12 +493,6 @@ export default function DashboardPage() {
               </div>
             </div>
           </Link>
-        </div>
-
-        <div className="mt-8">
-          <RecentActivityLog
-            activities={analytics.recentActivity as RecentActivityItem[]}
-          />
         </div>
       </div>
     </div>
