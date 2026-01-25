@@ -559,7 +559,7 @@ interface TimelineEvent {
 
 ---
 
-### - [ ] 3.1 Refine Accessions Kanban Styling
+### - [x] 3.1 Refine Accessions Kanban Styling
 
 **What to do**:
 - Verify and refine kanban board styling from v1 work
@@ -596,7 +596,7 @@ interface TimelineEvent {
 
 ---
 
-### - [ ] 3.2 Style Deaccessions Table View
+### - [x] 3.2 Style Deaccessions Table View
 
 **What to do**:
 - Apply design styling to deaccessions page
@@ -630,7 +630,7 @@ interface TimelineEvent {
 
 ---
 
-### - [ ] 3.3 Style Locations Pages with New Components
+### - [x] 3.3 Style Locations Pages with New Components
 
 **What to do**:
 - Apply LocationTree component from 1.3 to locations sidebar
@@ -669,7 +669,7 @@ interface TimelineEvent {
 
 ---
 
-### - [ ] 3.4 Style Loans Pages
+### - [x] 3.4 Style Loans Pages
 
 **What to do**:
 - Apply design styling to loans list and detail pages

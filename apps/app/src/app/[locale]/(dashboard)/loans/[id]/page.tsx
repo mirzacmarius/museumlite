@@ -33,12 +33,12 @@ import { useState } from "react";
 import {
   ActivityTab,
   FacilityTab,
+  type Loan,
   LoanAgreement,
   LoanContextSidebar,
   LogisticsTab,
   ObjectsTab,
   OverviewTab,
-  type Loan,
 } from "./_components";
 
 export default function LoanDetailPage() {
@@ -210,7 +210,9 @@ export default function LoanDetailPage() {
                         : tActions("incomingLoan")}
                     </div>
                     <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-secondary border border-border text-[11px] text-muted-foreground">
-                      <span className="font-medium">{tActions("international")}</span>
+                      <span className="font-medium">
+                        {tActions("international")}
+                      </span>
                     </div>
 
                     {/* Loan ID */}
@@ -371,6 +373,7 @@ export default function LoanDetailPage() {
 
       {/* Print Modal */}
       <Dialog open={isPrintModalOpen} onOpenChange={setIsPrintModalOpen}>
+        {/* [PRINT-EXEMPT] Light zinc colors intentionally used for PDF/print output */}
         <DialogContent className="max-w-[210mm] w-full h-[90vh] p-0 gap-0 overflow-hidden bg-zinc-50 dark:bg-background flex flex-col">
           <DialogHeader className="px-6 py-4 border-b border-border bg-background flex-shrink-0 flex-row items-center justify-between space-y-0">
             <DialogTitle>Print Dispatch Manifest</DialogTitle>
@@ -479,4 +482,3 @@ export default function LoanDetailPage() {
     </>
   );
 }
-

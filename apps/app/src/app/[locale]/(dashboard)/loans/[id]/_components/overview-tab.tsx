@@ -183,7 +183,7 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
                   ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
                   : doc.documentType === "insurance"
                     ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400";
+                    : "bg-muted text-muted-foreground";
               const Icon = doc.documentType === "insurance" ? Shield : FileText;
 
               return (

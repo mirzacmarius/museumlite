@@ -297,13 +297,15 @@ function LocationLayout({
         onOpenChange={setAddDialogOpen}
       />
 
-      <div className="flex-1 p-6 overflow-y-auto custom-scrollbar bg-gradient-to-br from-zinc-950 to-zinc-900/50">
+      <div className="flex-1 p-6 overflow-y-auto custom-scrollbar bg-gradient-to-br from-background to-card/70">
         {!selectedLocationId && (
           <div className="flex h-full flex-col items-center justify-center gap-4">
-            <MapPin className="h-12 w-12 text-zinc-600" />
+            <MapPin className="h-12 w-12 text-muted-foreground" />
             <div className="text-center">
-              <p className="text-zinc-500">{t("selectLocationFromSidebar")}</p>
-              <p className="mt-1 text-xs text-zinc-600">
+              <p className="text-muted-foreground">
+                {t("selectLocationFromSidebar")}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
                 {t("viewDetailsAndObjects")}
               </p>
             </div>
@@ -315,12 +317,12 @@ function LocationLayout({
             {/* Header */}
             <div className="flex items-end justify-between mb-8">
               <div>
-                <div className="flex items-center gap-2 text-xs text-zinc-500 mb-1">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                   <span>{t("locations")}</span>
                   <ChevronRight className="w-3 h-3" />
                   <span className="capitalize">{selectedLocation.type}</span>
                 </div>
-                <h2 className="text-2xl font-bold text-zinc-100 tracking-tight flex items-center gap-3">
+                <h2 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-3">
                   <span>{selectedLocation.name}</span>
                   <span className="text-xs font-normal px-2 py-0.5 rounded-full border text-blue-400 bg-blue-500/10 border-blue-500/20">
                     {selectedLocation.isActive ? t("active") : t("inactive")}
@@ -369,7 +371,7 @@ function LocationLayout({
 
             {/* Storage View - Units Table */}
             <div className="mt-8">
-              <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide mb-4">
+              <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
                 {t("storageUnits")}
               </h3>
               <StorageUnitsTable units={mockStorageUnits} />
@@ -378,12 +380,12 @@ function LocationLayout({
             {/* Objects at Location */}
             <div className="mt-8">
               <div className="flex items-end justify-between mb-4">
-                <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide">
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
                   {t("objectsAtThisLocation")}
                 </h3>
-                <div className="text-xs text-zinc-500">
+                <div className="text-xs text-muted-foreground">
                   {t("total")}:{" "}
-                  <span className="text-zinc-300">
+                  <span className="text-foreground">
                     {objectsAtLocation?.length ?? 0} {t("items")}
                   </span>
                 </div>
@@ -399,7 +401,7 @@ function LocationLayout({
                     >
                       <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-30" />
                       <div className="absolute inset-x-0 top-0 flex items-center justify-between border-b border-white/5 bg-black/20 p-3">
-                        <span className="font-mono text-[10px] text-zinc-400">
+                        <span className="font-mono text-[10px] text-muted-foreground">
                           {obj.accessionNumber}
                         </span>
                         <div className="flex gap-1">
@@ -409,7 +411,7 @@ function LocationLayout({
                                 ? "bg-emerald-500"
                                 : obj.status === "loaned"
                                   ? "bg-amber-500"
-                                  : "bg-zinc-500"
+                                  : "bg-slate-500"
                             }`}
                           />
                         </div>
@@ -425,7 +427,7 @@ function LocationLayout({
                           <p className="line-clamp-2 text-sm font-medium text-foreground transition-colors group-hover:text-indigo-400">
                             {obj.title}
                           </p>
-                          <p className="mt-1 text-[10px] capitalize text-zinc-500">
+                          <p className="mt-1 text-[10px] capitalize text-muted-foreground">
                             {obj.status}
                           </p>
                         </div>
