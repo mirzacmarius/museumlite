@@ -31,7 +31,7 @@ export function AccessionKanban({
 
   if (workflowSteps === undefined) {
     return (
-      <div className="flex-1 overflow-x-auto">
+      <div className="flex-1 overflow-x-auto custom-scrollbar">
         <div className="flex h-full min-w-max gap-6 pb-4">
           <KanbanColumnSkeleton />
           <KanbanColumnSkeleton />
@@ -42,7 +42,7 @@ export function AccessionKanban({
   }
 
   return (
-    <div className="flex-1 overflow-x-auto">
+    <div className="flex-1 overflow-x-auto custom-scrollbar">
       <div className="flex h-full min-w-max gap-6 pb-4">
         {workflowSteps.steps.map((step: WorkflowStep) => (
           <Suspense key={step.stepNumber} fallback={<KanbanColumnSkeleton />}>
