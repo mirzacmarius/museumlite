@@ -133,47 +133,51 @@ export default function AccountsPage() {
   }
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
+    <div className="flex h-full w-full bg-background px-4 sm:px-6">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
-          <div className="flex w-full items-center justify-between rounded-lg p-6">
+          <div className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg p-4 sm:p-6">
             <div className="flex flex-col gap-2">
-              <h2 className="text-xl font-medium text-primary">
+              <h2 className="text-lg sm:text-xl font-medium text-primary">
                 {isPatronView ? t("patronsTitle") : t("title")}
               </h2>
               <p className="text-sm font-normal text-primary/60">
                 {isPatronView ? t("patronsDescription") : t("description")}
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
               <PermissionGate permission="accounts.read">
                 <ExportCSVButton onExport={handleExport} filename="accounts" />
               </PermissionGate>
               <PermissionGate permission="accounts.create">
-                <Button asChild variant="outline">
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="sm:size-auto"
+                >
                   <Link href="/accounts/import">
-                    <FileUp className="mr-2 h-4 w-4" />
-                    {t("importCSV")}
+                    <FileUp className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">{t("importCSV")}</span>
                   </Link>
                 </Button>
               </PermissionGate>
               <PermissionGate permission="accounts.create">
                 <Button asChild>
                   <Link href="/accounts/new">
-                    <Plus className="mr-2 h-4 w-4" />
-                    {t("newAccount")}
+                    <Plus className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">{t("newAccount")}</span>
                   </Link>
                 </Button>
               </PermissionGate>
             </div>
           </div>
-          <div className="flex w-full px-6">
+          <div className="flex w-full px-4 sm:px-6">
             <div className="w-full border-b border-border" />
           </div>
 
-          {/* Search Bar and Filters */}
-          <div className="border-b border-border px-6 py-4">
-            <div className="flex gap-4">
+          <div className="border-b border-border px-4 sm:px-6 py-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -194,7 +198,7 @@ export default function AccountsPage() {
                     setAccountTypeFilter(value as AccountType | "all")
                   }
                 >
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder={t("filters.allTypes")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -315,7 +319,7 @@ function AccountList({
   };
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <div className="space-y-2">
         {accounts.accounts.map((account) => (
           <Link

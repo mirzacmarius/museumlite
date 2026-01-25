@@ -115,25 +115,25 @@ export default function LoansPage() {
       tierNeeded="pro"
     >
       <div className="flex h-full w-full flex-col overflow-y-auto bg-background">
-        <div className="mx-auto w-full max-w-7xl space-y-8 p-6">
-          <div className="flex items-center justify-between">
+        <div className="mx-auto w-full max-w-7xl space-y-6 sm:space-y-8 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
                 {t("title")}
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 {t("description")}
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <PermissionGate permission="loans.read">
                 <ExportCSVButton onExport={handleExport} filename="loans" />
               </PermissionGate>
               <PermissionGate permission="loans.create">
                 <Button asChild>
                   <Link href="/loans/new">
-                    <Plus className="h-3.5 w-3.5" />
-                    <span>{t("newLoan")}</span>
+                    <Plus className="h-3.5 w-3.5 sm:mr-1" />
+                    <span className="hidden sm:inline">{t("newLoan")}</span>
                   </Link>
                 </Button>
               </PermissionGate>
@@ -401,7 +401,7 @@ function LoanList({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <div className="animate-enter rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/30">
           <div className="mb-4 flex items-start justify-between">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
@@ -472,62 +472,64 @@ function LoanList({
       </div>
 
       <div className="space-y-4">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div className="flex self-start rounded-lg bg-muted p-1">
-            <button
-              type="button"
-              onClick={() => onTypeFilterChange("all")}
-              className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
-                typeFilter === "all"
-                  ? "bg-card shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t("filters.allLoans")}
-            </button>
-            <button
-              type="button"
-              onClick={() => onTypeFilterChange("outgoing")}
-              className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
-                typeFilter === "outgoing"
-                  ? "bg-card shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t("filters.outgoing")}
-            </button>
-            <button
-              type="button"
-              onClick={() => onTypeFilterChange("incoming")}
-              className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
-                typeFilter === "incoming"
-                  ? "bg-card shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t("filters.incoming")}
-            </button>
-            <button
-              type="button"
-              onClick={() => onStatusFilterChange("pending")}
-              className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
-                statusFilter === "pending"
-                  ? "bg-card shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t("filters.pending")}
-            </button>
+        <div className="flex flex-col gap-4">
+          <div className="flex overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="flex self-start rounded-lg bg-muted p-1 min-w-max">
+              <button
+                type="button"
+                onClick={() => onTypeFilterChange("all")}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
+                  typeFilter === "all"
+                    ? "bg-card shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t("filters.allLoans")}
+              </button>
+              <button
+                type="button"
+                onClick={() => onTypeFilterChange("outgoing")}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
+                  typeFilter === "outgoing"
+                    ? "bg-card shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t("filters.outgoing")}
+              </button>
+              <button
+                type="button"
+                onClick={() => onTypeFilterChange("incoming")}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
+                  typeFilter === "incoming"
+                    ? "bg-card shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t("filters.incoming")}
+              </button>
+              <button
+                type="button"
+                onClick={() => onStatusFilterChange("pending")}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
+                  statusFilter === "pending"
+                    ? "bg-card shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t("filters.pending")}
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="group relative">
+          <div className="flex items-center">
+            <div className="group relative w-full sm:w-auto">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                 <Search className="h-3.5 w-3.5 text-muted-foreground transition-colors group-focus-within:text-cyan-500" />
               </div>
               <Input
                 type="text"
-                className="block w-48 rounded-lg border border-border/60 bg-card p-2 pl-9 text-xs outline-none transition-all focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                className="block w-full sm:w-48 rounded-lg border border-border/60 bg-card p-2 pl-9 text-xs outline-none transition-all focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                 placeholder={t("searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => onSearchQueryChange(e.target.value)}
