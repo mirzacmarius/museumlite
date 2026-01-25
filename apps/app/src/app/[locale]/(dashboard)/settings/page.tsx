@@ -64,12 +64,12 @@ export default function DashboardSettings() {
   }
 
   return (
-    <div className="flex h-full w-full flex-col gap-6">
+    <div className="flex h-full w-full flex-col gap-4 sm:gap-6">
       {/* Avatar */}
       <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
-        <div className="flex w-full items-start justify-between rounded-lg p-6">
+        <div className="flex w-full flex-col-reverse sm:flex-row items-start sm:justify-between gap-4 rounded-lg p-4 sm:p-6">
           <div className="flex flex-col gap-2">
-            <h2 className="text-xl font-medium text-primary">
+            <h2 className="text-lg sm:text-xl font-medium text-primary">
               {t("avatar.title")}
             </h2>
             <p className="text-sm font-normal text-primary/60">
@@ -104,7 +104,7 @@ export default function DashboardSettings() {
             onUploadComplete={handleUpdateUserImage}
           />
         </div>
-        <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 dark:bg-card">
+        <div className="flex min-h-14 w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 rounded-lg rounded-t-none border-t border-border bg-secondary px-4 sm:px-6 py-3 sm:py-0 dark:bg-card">
           <p className="text-sm font-normal text-primary/60">
             {t("avatar.uploadHint")}
           </p>
@@ -132,9 +132,9 @@ export default function DashboardSettings() {
           nameForm.handleSubmit();
         }}
       >
-        <div className="flex w-full flex-col gap-4 rounded-lg p-6">
+        <div className="flex w-full flex-col gap-4 rounded-lg p-4 sm:p-6">
           <div className="flex flex-col gap-2">
-            <h2 className="text-xl font-medium text-primary">
+            <h2 className="text-lg sm:text-xl font-medium text-primary">
               {t("name.title")}
             </h2>
             <p className="text-sm font-normal text-primary/60">
@@ -152,12 +152,12 @@ export default function DashboardSettings() {
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
-                className="w-80 bg-transparent"
+                className="w-full sm:w-80 bg-transparent"
               />
             )}
           />
         </div>
-        <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 dark:bg-card">
+        <div className="flex min-h-14 w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 rounded-lg rounded-t-none border-t border-border bg-secondary px-4 sm:px-6 py-3 sm:py-0 dark:bg-card">
           <p className="text-sm font-normal text-primary/60">
             {t("name.hint")}
           </p>
@@ -176,9 +176,9 @@ export default function DashboardSettings() {
           usernameForm.handleSubmit();
         }}
       >
-        <div className="flex w-full flex-col gap-4 rounded-lg p-6">
+        <div className="flex w-full flex-col gap-4 rounded-lg p-4 sm:p-6">
           <div className="flex flex-col gap-2">
-            <h2 className="text-xl font-medium text-primary">
+            <h2 className="text-lg sm:text-xl font-medium text-primary">
               {t("username.title")}
             </h2>
             <p className="text-sm font-normal text-primary/60">
@@ -199,7 +199,7 @@ export default function DashboardSettings() {
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
-                className={`w-80 bg-transparent ${
+                className={`w-full sm:w-80 bg-transparent ${
                   field.state.meta?.errors.length > 0 &&
                   "border-destructive focus-visible:ring-destructive"
                 }`}
@@ -212,7 +212,7 @@ export default function DashboardSettings() {
             </p>
           )}
         </div>
-        <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 dark:bg-card">
+        <div className="flex min-h-14 w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 rounded-lg rounded-t-none border-t border-border bg-secondary px-4 sm:px-6 py-3 sm:py-0 dark:bg-card">
           <p className="text-sm font-normal text-primary/60">
             {t("username.hint")}
           </p>
@@ -224,21 +224,22 @@ export default function DashboardSettings() {
 
       {/* Delete Account */}
       <div className="flex w-full flex-col items-start rounded-lg border border-destructive bg-card">
-        <div className="flex flex-col gap-2 p-6">
-          <h2 className="text-xl font-medium text-primary">
+        <div className="flex flex-col gap-2 p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-medium text-primary">
             {t("deleteAccount.title")}
           </h2>
           <p className="text-sm font-normal text-primary/60">
             {t("deleteAccount.description")}
           </p>
         </div>
-        <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-red-500/10 px-6 dark:bg-red-500/10">
+        <div className="flex min-h-14 w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 rounded-lg rounded-t-none border-t border-border bg-red-500/10 px-4 sm:px-6 py-3 sm:py-0 dark:bg-red-500/10">
           <p className="text-sm font-normal text-primary/60">
             {t("deleteAccount.warning")}
           </p>
           <Button
             size="sm"
             variant="destructive"
+            className="flex-shrink-0"
             {...getButtonProps({
               onClick: doubleCheck ? handleDeleteAccount : undefined,
             })}

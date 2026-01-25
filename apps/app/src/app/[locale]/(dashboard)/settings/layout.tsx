@@ -19,8 +19,56 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const isActivityPath = pathname === "/settings/activity";
   const isDeveloperPath = pathname === "/settings/developer";
   const isDataPath = pathname === "/settings/data";
+  const navItems = [
+    { href: "/settings", label: t("general"), active: isSettingsPath },
+    {
+      href: "/settings/organization",
+      label: t("organization"),
+      active: isOrganizationPath,
+    },
+    { href: "/settings/users", label: t("users"), active: isUsersPath },
+    { href: "/settings/roles", label: t("roles"), active: isRolesPath },
+    {
+      href: "/settings/integrations",
+      label: t("integrations"),
+      active: isIntegrationsPath,
+    },
+    { href: "/settings/modules", label: t("modules"), active: isModulesPath },
+    { href: "/settings/billing", label: t("billing"), active: isBillingPath },
+    {
+      href: "/settings/activity",
+      label: t("activity"),
+      active: isActivityPath,
+    },
+    {
+      href: "/settings/developer",
+      label: t("developer"),
+      active: isDeveloperPath,
+    },
+    { href: "/settings/data", label: t("data"), active: isDataPath },
+  ];
+
   return (
-    <div className="flex h-full w-full px-6 py-8">
+    <div className="flex h-full w-full flex-col px-4 sm:px-6 py-4 sm:py-8">
+      <div className="lg:hidden mb-4 -mx-4 px-4 overflow-x-auto scrollbar-none">
+        <div className="flex gap-1 min-w-max pb-2">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "px-3 py-1.5 text-sm rounded-md whitespace-nowrap transition-colors",
+                item.active
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted",
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
       <div className="mx-auto flex h-full w-full max-w-screen-xl gap-12">
         <div className="hidden w-full max-w-64 flex-col gap-0.5 lg:flex">
           <Link
