@@ -325,14 +325,15 @@ export default function CollectionEditPage() {
         }
       }
 
-      // Parse objectType from JSON string to array
       let objectTypeArray: string[] = [];
       if (collection.objectType) {
         try {
-          objectTypeArray = JSON.parse(collection.objectType);
+          const parsed = JSON.parse(collection.objectType);
+          objectTypeArray = Array.isArray(parsed)
+            ? parsed
+            : [collection.objectType];
         } catch {
-          // If not valid JSON, treat as empty array
-          objectTypeArray = [];
+          objectTypeArray = [collection.objectType];
         }
       }
 

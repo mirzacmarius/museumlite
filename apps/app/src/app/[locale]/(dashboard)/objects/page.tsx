@@ -924,7 +924,15 @@ function CollectionTableRow({
         </td>
         <td className="px-4 py-3">
           <span className="px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 truncate max-w-[120px] inline-block">
-            {item.objectType ? JSON.parse(item.objectType)[0] : "General"}
+            {(() => {
+              if (!item.objectType) return "General";
+              try {
+                const parsed = JSON.parse(item.objectType);
+                return Array.isArray(parsed) ? parsed[0] : item.objectType;
+              } catch {
+                return item.objectType;
+              }
+            })()}
           </span>
         </td>
         <td className="px-4 py-3 text-zinc-400 truncate max-w-[150px]">

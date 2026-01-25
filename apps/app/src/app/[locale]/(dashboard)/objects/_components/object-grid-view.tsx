@@ -128,18 +128,27 @@ function ObjectGridItem({
                 {(() => {
                   try {
                     const types = JSON.parse(item.objectType);
-                    return Array.isArray(types) && types.length > 0
-                      ? types.slice(0, 2).map((type: string) => (
-                          <span
-                            key={type}
-                            className="inline-flex items-center rounded bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 text-[9px] text-zinc-400 font-medium"
-                          >
-                            {type}
-                          </span>
-                        ))
-                      : null;
+                    if (Array.isArray(types) && types.length > 0) {
+                      return types.slice(0, 2).map((type: string) => (
+                        <span
+                          key={type}
+                          className="inline-flex items-center rounded bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 text-[9px] text-zinc-400 font-medium"
+                        >
+                          {type}
+                        </span>
+                      ));
+                    }
+                    return (
+                      <span className="inline-flex items-center rounded bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 text-[9px] text-zinc-400 font-medium">
+                        {item.objectType}
+                      </span>
+                    );
                   } catch {
-                    return null;
+                    return (
+                      <span className="inline-flex items-center rounded bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 text-[9px] text-zinc-400 font-medium">
+                        {item.objectType}
+                      </span>
+                    );
                   }
                 })()}
               </div>
