@@ -304,4 +304,92 @@ describe("Dashboard: getAnalytics", () => {
     // #then
     expect(analytics.objects.total).toBe(1);
   });
+
+  test("returns onDisplay count in analytics", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestOrg(t);
+
+    // #when
+    const authed = t.withIdentity({
+      subject: `${userId}|session-ondisplay`,
+      issuer: "https://example.test",
+    });
+
+    const analytics = await authed.query(api.dashboard.getAnalytics, {
+      organizationId,
+    });
+
+    // #then
+    expect(analytics.objects).toHaveProperty("onDisplay");
+    expect(typeof analytics.objects.onDisplay).toBe("number");
+  });
+
+  test("onDisplay count is 0 for empty organization", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestOrg(t);
+
+    // #when
+    const authed = t.withIdentity({
+      subject: `${userId}|session-ondisplay-empty`,
+      issuer: "https://example.test",
+    });
+
+    const analytics = await authed.query(api.dashboard.getAnalytics, {
+      organizationId,
+    });
+
+    // #then
+    expect(analytics.objects.onDisplay).toBe(0);
+  });
+
+  test("recentCollectionGroups includes storageLocation and valuation", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestOrg(t);
+
+    await t.run(async (ctx) => {
+      const collectionGroupId = await ctx.db.insert("collectionGroups", {
+        organizationId,
+        name: "Test Collection Group",
+        description: "A test collection group",
+        itemsCount: 5,
+        storageLocation: "Building A, Room 101",
+        valuation: 50000,
+        createdAt: Date.now(),
+        createdBy: userId,
+      });
+
+      // Create a collection to associate with the group
+      await ctx.db.insert(
+        "collections",
+        createCollection(
+          organizationId,
+          userId,
+          "Test Item",
+          "ACC-TEST-001",
+          "active",
+        ),
+      );
+    });
+
+    // #when
+    const authed = t.withIdentity({
+      subject: `${userId}|session-recent-groups`,
+      issuer: "https://example.test",
+    });
+
+    const analytics = await authed.query(api.dashboard.getAnalytics, {
+      organizationId,
+    });
+
+    // #then
+    expect(analytics.recentCollectionGroups.length).toBeGreaterThan(0);
+    const group = analytics.recentCollectionGroups[0];
+    expect(group).toHaveProperty("storageLocation");
+    expect(group).toHaveProperty("valuation");
+    expect(group.storageLocation).toBe("Building A, Room 101");
+    expect(group.valuation).toBe(50000);
+  });
 });
