@@ -11,12 +11,14 @@ export default function AssignmentsLoading() {
           <div className="h-5 w-32 animate-pulse rounded bg-muted/60" />
         </div>
         <div className="flex items-center gap-6">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <div className="h-6 w-6 animate-pulse rounded-full bg-muted/40" />
-              <div className="h-3 w-16 animate-pulse rounded bg-muted/40" />
-            </div>
-          ))}
+          {Array.from({ length: 3 }, (_, i) => `assignment-stat-${i}`).map(
+            (key) => (
+              <div key={key} className="flex items-center gap-2">
+                <div className="h-6 w-6 animate-pulse rounded-full bg-muted/40" />
+                <div className="h-3 w-16 animate-pulse rounded bg-muted/40" />
+              </div>
+            ),
+          )}
         </div>
       </header>
 

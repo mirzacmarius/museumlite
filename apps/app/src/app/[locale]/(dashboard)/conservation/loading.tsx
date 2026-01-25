@@ -21,25 +21,27 @@ export default function ConservationLoading() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2 lg:grid-cols-3">
-            {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="flex flex-col justify-between rounded-xl border border-border bg-card p-5"
-              >
-                <div className="space-y-4">
-                  <div className="h-5 w-20 animate-pulse rounded-full bg-muted/40" />
-                  <div>
-                    <div className="h-5 w-48 animate-pulse rounded bg-muted/60" />
-                    <div className="mt-2 h-4 w-full animate-pulse rounded bg-muted/40" />
+            {Array.from({ length: 6 }, (_, i) => `conservation-card-${i}`).map(
+              (key) => (
+                <div
+                  key={key}
+                  className="flex flex-col justify-between rounded-xl border border-border bg-card p-5"
+                >
+                  <div className="space-y-4">
+                    <div className="h-5 w-20 animate-pulse rounded-full bg-muted/40" />
+                    <div>
+                      <div className="h-5 w-48 animate-pulse rounded bg-muted/60" />
+                      <div className="mt-2 h-4 w-full animate-pulse rounded bg-muted/40" />
+                    </div>
+                    <div className="flex flex-col gap-2 border-t border-border/50 pt-4">
+                      <div className="h-3 w-24 animate-pulse rounded bg-muted/40" />
+                      <div className="h-3 w-32 animate-pulse rounded bg-muted/40" />
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-2 border-t border-border/50 pt-4">
-                    <div className="h-3 w-24 animate-pulse rounded bg-muted/40" />
-                    <div className="h-3 w-32 animate-pulse rounded bg-muted/40" />
-                  </div>
+                  <div className="mt-4 h-8 w-full animate-pulse rounded-lg bg-muted/30" />
                 </div>
-                <div className="mt-4 h-8 w-full animate-pulse rounded-lg bg-muted/30" />
-              </div>
-            ))}
+              ),
+            )}
           </div>
         </div>
       </div>
