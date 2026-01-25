@@ -3829,4 +3829,20 @@ export default defineSchema({
     .index("by_user_and_module", ["userId", "module"])
     .index("by_organization_and_user", ["organizationId", "userId"])
     .index("by_organization_and_module", ["organizationId", "module"]),
+
+  // ============================================
+  // OBJECT COMMENTS
+  // ============================================
+
+  // Comments on collection objects
+  objectComments: defineTable({
+    organizationId: v.id("organizations"),
+    objectId: v.id("collections"),
+    userId: v.id("users"),
+    content: v.string(),
+    mentionedUserIds: v.optional(v.array(v.id("users"))),
+    createdAt: v.number(),
+  })
+    .index("by_object", ["objectId"])
+    .index("by_organization", ["organizationId"]),
 });

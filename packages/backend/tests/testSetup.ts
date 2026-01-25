@@ -14,6 +14,44 @@
  * ```
  */
 
-// Vite/Vitest import.meta.glob to load all Convex modules
-// Required by convex-test for module resolution
-export const modules = import.meta.glob("../convex/**/*.ts");
+type ModuleLoader = () => Promise<unknown>;
+
+const meta = import.meta as {
+  glob?: (pattern: string) => Record<string, ModuleLoader>;
+  dir?: string;
+};
+
+const globModules =
+  typeof meta.glob === "function"
+    ? (meta.glob("../convex/**/*.{ts,js}") as Record<string, ModuleLoader>)
+    : null;
+
+const bun = (
+  globalThis as {
+    Bun?: {
+      Glob: new (
+        pattern: string,
+      ) => {
+        scanSync: (options?: { cwd?: string }) => string[];
+      };
+    };
+  }
+).Bun;
+
+const bunModules = bun
+  ? Object.fromEntries(
+      [
+        ...new bun.Glob("../convex/**/*.{ts,js}").scanSync({
+          cwd: meta.dir,
+        }),
+      ].map((path) => [
+        path,
+        () => import(new URL(path, import.meta.url).href),
+      ]),
+    )
+  : null;
+
+export const modules = (globModules ?? bunModules ?? {}) as Record<
+  string,
+  ModuleLoader
+>;

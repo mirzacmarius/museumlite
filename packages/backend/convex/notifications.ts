@@ -37,6 +37,7 @@ export const NOTIFICATION_TYPES = {
   TASK_COMPLETED: "task_completed",
   MOVE_REQUEST_CREATED: "move_request_created",
   MOVE_REQUEST_APPROVED: "move_request_approved",
+  COMMENT_MENTION: "comment_mention",
 
   // System
   BATCH_JOB_COMPLETED: "batch_job_completed",
@@ -66,7 +67,7 @@ export const NOTIFICATION_CATEGORIES = {
     "assessment_due",
   ],
   alerts: ["condition_alert", "environmental_alert", "capacity_alert"],
-  assignments: ["task_assigned", "task_completed"],
+  assignments: ["task_assigned", "task_completed", "comment_mention"],
   system: ["batch_job_completed", "report_ready", "system_announcement"],
 };
 
@@ -615,7 +616,10 @@ export const sendApprovalRequest = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const typeMap: Record<string, { type: string; title: string; permission: string }> = {
+    const typeMap: Record<
+      string,
+      { type: string; title: string; permission: string }
+    > = {
       loan: {
         type: NOTIFICATION_TYPES.LOAN_PENDING_APPROVAL,
         title: `Loan Pending Approval: ${args.entityNumber}`,
@@ -812,18 +816,28 @@ export const updatePreferences = mutation({
 
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
 
-    if (args.enableApprovals !== undefined) updates.enableApprovals = args.enableApprovals;
-    if (args.enableReminders !== undefined) updates.enableReminders = args.enableReminders;
-    if (args.enableAlerts !== undefined) updates.enableAlerts = args.enableAlerts;
-    if (args.enableAssignments !== undefined) updates.enableAssignments = args.enableAssignments;
-    if (args.enableSystem !== undefined) updates.enableSystem = args.enableSystem;
-    if (args.disabledTypes !== undefined) updates.disabledTypes = args.disabledTypes;
-    if (args.emailEnabled !== undefined) updates.emailEnabled = args.emailEnabled;
+    if (args.enableApprovals !== undefined)
+      updates.enableApprovals = args.enableApprovals;
+    if (args.enableReminders !== undefined)
+      updates.enableReminders = args.enableReminders;
+    if (args.enableAlerts !== undefined)
+      updates.enableAlerts = args.enableAlerts;
+    if (args.enableAssignments !== undefined)
+      updates.enableAssignments = args.enableAssignments;
+    if (args.enableSystem !== undefined)
+      updates.enableSystem = args.enableSystem;
+    if (args.disabledTypes !== undefined)
+      updates.disabledTypes = args.disabledTypes;
+    if (args.emailEnabled !== undefined)
+      updates.emailEnabled = args.emailEnabled;
     if (args.emailDigestFrequency !== undefined)
       updates.emailDigestFrequency = args.emailDigestFrequency;
-    if (args.quietHoursEnabled !== undefined) updates.quietHoursEnabled = args.quietHoursEnabled;
-    if (args.quietHoursStart !== undefined) updates.quietHoursStart = args.quietHoursStart;
-    if (args.quietHoursEnd !== undefined) updates.quietHoursEnd = args.quietHoursEnd;
+    if (args.quietHoursEnabled !== undefined)
+      updates.quietHoursEnabled = args.quietHoursEnabled;
+    if (args.quietHoursStart !== undefined)
+      updates.quietHoursStart = args.quietHoursStart;
+    if (args.quietHoursEnd !== undefined)
+      updates.quietHoursEnd = args.quietHoursEnd;
     if (args.timezone !== undefined) updates.timezone = args.timezone;
 
     if (existing) {
