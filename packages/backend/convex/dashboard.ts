@@ -210,32 +210,64 @@ export const getAnalytics = query({
           let subtitle: string | undefined = event.action;
           let status: string | undefined;
 
+          // Helper to validate if a string looks like a valid Convex ID
+          const isValidConvexId = (id: string): boolean => {
+            // Convex IDs are base64url encoded, typically 32+ characters
+            // and contain only alphanumeric, underscore, and hyphen
+            return id != null && id.length >= 20 && /^[a-zA-Z0-9_-]+$/.test(id);
+          };
+
           if (type === "collection") {
-            const collection = await ctx.db.get(
-              event.entityId as Id<"collections">,
-            );
-            title = collection?.title ?? event.entityType;
-            subtitle = collection?.accessionNumber ?? event.action;
-            status = collection?.status;
+            if (isValidConvexId(event.entityId)) {
+              try {
+                const collectionId =
+                  event.entityId as unknown as Id<"collections">;
+                const collection = await ctx.db.get(collectionId);
+                title = collection?.title ?? event.entityType;
+                subtitle = collection?.accessionNumber ?? event.action;
+                status = collection?.status;
+              } catch {
+                // Invalid ID or entity not found, use defaults
+              }
+            }
           } else if (type === "loan") {
-            const loan = await ctx.db.get(event.entityId as Id<"loans">);
-            title = loan?.loanNumber ?? event.entityType;
-            subtitle = loan?.lenderBorrowerName ?? event.action;
-            status = loan?.status;
+            if (isValidConvexId(event.entityId)) {
+              try {
+                const loanId = event.entityId as unknown as Id<"loans">;
+                const loan = await ctx.db.get(loanId);
+                title = loan?.loanNumber ?? event.entityType;
+                subtitle = loan?.lenderBorrowerName ?? event.action;
+                status = loan?.status;
+              } catch {
+                // Invalid ID or entity not found, use defaults
+              }
+            }
           } else if (type === "accession") {
-            const accession = await ctx.db.get(
-              event.entityId as Id<"accessions">,
-            );
-            title = accession?.accessionNumber ?? event.entityType;
-            subtitle = accession?.source ?? event.action;
-            status = accession?.status;
+            if (isValidConvexId(event.entityId)) {
+              try {
+                const accessionId =
+                  event.entityId as unknown as Id<"accessions">;
+                const accession = await ctx.db.get(accessionId);
+                title = accession?.accessionNumber ?? event.entityType;
+                subtitle = accession?.source ?? event.action;
+                status = accession?.status;
+              } catch {
+                // Invalid ID or entity not found, use defaults
+              }
+            }
           } else if (type === "deaccession") {
-            const deaccession = await ctx.db.get(
-              event.entityId as Id<"deaccessions">,
-            );
-            title = deaccession?.deaccessionNumber ?? event.entityType;
-            subtitle = deaccession?.reason ?? event.action;
-            status = deaccession?.status;
+            if (isValidConvexId(event.entityId)) {
+              try {
+                const deaccessionId =
+                  event.entityId as unknown as Id<"deaccessions">;
+                const deaccession = await ctx.db.get(deaccessionId);
+                title = deaccession?.deaccessionNumber ?? event.entityType;
+                subtitle = deaccession?.reason ?? event.action;
+                status = deaccession?.status;
+              } catch {
+                // Invalid ID or entity not found, use defaults
+              }
+            }
           }
 
           return {
