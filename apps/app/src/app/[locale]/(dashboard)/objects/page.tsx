@@ -133,7 +133,7 @@ function CollectionFiltersAndList({
   onExport,
 }: {
   organizationId: Id<"organizations">;
-  onExport: () => Promise<any>;
+  onExport: () => Promise<Record<string, unknown>[] | undefined>;
 }) {
   const t = useScopedI18n("objects");
   const [showFilters, setShowFilters] = useState(false);
@@ -382,7 +382,7 @@ function CollectionFiltersAndList({
             <h2 className="text-lg font-semibold text-zinc-200 tracking-tight">
               {t("title")}
             </h2>
-            <div className="h-4 w-px bg-zinc-800"></div>
+            <div className="h-4 w-px bg-zinc-800" />
             <div className="relative group">
               <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
               <input
@@ -394,6 +394,7 @@ function CollectionFiltersAndList({
               />
             </div>
             <button
+              type="button"
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-3 py-1.5 border rounded-md text-xs transition-colors ${
                 showFilters || hasActiveFilters
@@ -407,6 +408,7 @@ function CollectionFiltersAndList({
 
             {hasActiveFilters && (
               <button
+                type="button"
                 onClick={resetFilters}
                 className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300"
               >
@@ -418,6 +420,7 @@ function CollectionFiltersAndList({
           <div className="flex items-center gap-3">
             <div className="flex bg-zinc-900 p-0.5 rounded-md border border-zinc-800">
               <button
+                type="button"
                 onClick={() => handleViewModeChange("list")}
                 className={`p-1.5 rounded shadow-sm transition-all ${
                   viewMode === "list"
@@ -428,6 +431,7 @@ function CollectionFiltersAndList({
                 <List className="h-3.5 w-3.5" />
               </button>
               <button
+                type="button"
                 onClick={() => handleViewModeChange("grid")}
                 className={`p-1.5 rounded shadow-sm transition-all ${
                   viewMode === "grid"
@@ -771,7 +775,7 @@ function CollectionList({
                 <th className="border-b border-zinc-800/80 px-4 py-3 font-medium text-zinc-500 text-right">
                   Status
                 </th>
-                <th className="border-b border-zinc-800/80 px-4 py-3 font-medium text-zinc-500 w-10"></th>
+                <th className="border-b border-zinc-800/80 px-4 py-3 font-medium text-zinc-500 w-10" />
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/40">
