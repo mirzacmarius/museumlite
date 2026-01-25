@@ -275,9 +275,42 @@ export const create = mutation({
   },
 });
 
-/**
- * Get collection object by ID
- */
+export const resolveId = query({
+  args: {
+    id: v.string(),
+  },
+  returns: v.union(
+    v.object({
+      type: v.literal("collection"),
+      id: v.id("collections"),
+    }),
+    v.object({
+      type: v.literal("collectionGroup"),
+      id: v.id("collectionGroups"),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db
+      .query("collections")
+      .filter((q) => q.eq(q.field("_id"), args.id))
+      .first();
+    if (collection) {
+      return { type: "collection" as const, id: collection._id };
+    }
+
+    const group = await ctx.db
+      .query("collectionGroups")
+      .filter((q) => q.eq(q.field("_id"), args.id))
+      .first();
+    if (group) {
+      return { type: "collectionGroup" as const, id: group._id };
+    }
+
+    return null;
+  },
+});
+
 export const get = query({
   args: {
     collectionId: v.id("collections"),
@@ -746,6 +779,20 @@ export const list = query({
     // Check permission
     await requirePermission(ctx, args.organizationId, "collections.read");
 
+    // If filtering by collectionGroupId, get all collection IDs from the many-to-many table
+    let collectionGroupCollectionIds: Set<string> | null = null;
+    if (args.collectionGroupId) {
+      const collectionGroupItems = await ctx.db
+        .query("collectionGroupItems")
+        .withIndex("by_collectionGroup", (q) =>
+          q.eq("collectionGroupId", args.collectionGroupId!),
+        )
+        .collect();
+      collectionGroupCollectionIds = new Set(
+        collectionGroupItems.map((item) => item.collectionId),
+      );
+    }
+
     let allResults: Array<{
       _id: Id<"collections">;
       title: string;
@@ -863,12 +910,6 @@ export const list = query({
         );
       }
 
-      if (args.collectionGroupId) {
-        query = query.filter((q) =>
-          q.eq(q.field("collectionGroupId"), args.collectionGroupId),
-        );
-      }
-
       // Date range filters
       if (args.catalogedFrom || args.catalogedTo) {
         query = query.filter((q) => {
@@ -928,9 +969,11 @@ export const list = query({
       allResults = allResults.filter((c) => c.objectType === args.objectType);
     }
 
-    if (args.collectionGroupId && args.search) {
+    if (args.collectionGroupId) {
       allResults = allResults.filter(
-        (c) => c.collectionGroupId === args.collectionGroupId,
+        (c) =>
+          c.collectionGroupId === args.collectionGroupId ||
+          collectionGroupCollectionIds?.has(c._id),
       );
     }
 

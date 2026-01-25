@@ -496,6 +496,8 @@ export const getWorkflowConfigs = query({
   returns: v.array(
     v.object({
       _id: v.id("workflowConfigs"),
+      _creationTime: v.number(),
+      organizationId: v.id("organizations"),
       workflowType: v.union(
         v.literal("accession"),
         v.literal("deaccession"),
@@ -509,9 +511,31 @@ export const getWorkflowConfigs = query({
           stepNumber: v.number(),
           roleId: v.id("roles"),
           name: v.string(),
+          requiredDocuments: v.optional(v.array(v.string())),
+          approvalMode: v.optional(
+            v.union(
+              v.literal("single"),
+              v.literal("multi"),
+              v.literal("unanimous"),
+            ),
+          ),
+          requiredApprovals: v.optional(v.number()),
+          allowedNextSteps: v.optional(v.array(v.number())),
+          canSkip: v.optional(v.boolean()),
         }),
       ),
       canInitiateRoles: v.array(v.id("roles")),
+      requiredDocuments: v.optional(
+        v.array(
+          v.object({
+            documentType: v.string(),
+            description: v.optional(v.string()),
+            requiredAtStep: v.optional(v.number()),
+          }),
+        ),
+      ),
+      requireSourceVerification: v.optional(v.boolean()),
+      templateId: v.optional(v.id("workflowTemplates")),
     }),
   ),
   handler: async (ctx, args) => {

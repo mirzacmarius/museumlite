@@ -60,23 +60,30 @@ export default function CollectionGroupDetailPage() {
   const { currentOrganizationId } = useOrganization();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const collection = useQuery(api.collections.get, {
-    collectionId: rawId as Id<"collections">,
-  });
+  const resolved = useQuery(api.collections.resolveId, { id: rawId });
+
+  const collection = useQuery(
+    api.collections.get,
+    resolved?.type === "collection" ? { collectionId: resolved.id } : "skip",
+  );
 
   const group = useQuery(
     api.collectionGroups.get,
-    collection === null ? { groupId: rawId as Id<"collectionGroups"> } : "skip",
+    resolved?.type === "collectionGroup" ? { groupId: resolved.id } : "skip",
   );
+
   useEffect(() => {
-    if (collection?._id) {
-      router.replace(`/objects/${collection._id}`);
+    if (resolved?.type === "collection") {
+      router.replace(`/objects/${resolved.id}`);
     }
-  }, [collection, router]);
+  }, [resolved, router]);
 
-  const groupId = rawId as Id<"collectionGroups">;
+  const groupId =
+    resolved?.type === "collectionGroup"
+      ? resolved.id
+      : (rawId as Id<"collectionGroups">);
 
-  if (collection?._id) {
+  if (resolved?.type === "collection") {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <p className="text-muted-foreground">{t("redirecting")}</p>
@@ -94,7 +101,7 @@ export default function CollectionGroupDetailPage() {
     );
   }
 
-  if (group === undefined) {
+  if (resolved === undefined || group === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <p className="text-muted-foreground">{common("loading")}</p>
@@ -102,7 +109,7 @@ export default function CollectionGroupDetailPage() {
     );
   }
 
-  if (group === null) {
+  if (resolved === null || group === null) {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <p className="text-muted-foreground">{t("notFound")}</p>

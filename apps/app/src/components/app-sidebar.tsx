@@ -433,9 +433,9 @@ export function AppSidebar({
             {collectionGroups?.slice(0, 5).map((group, index) => (
               <NavItem
                 key={group._id}
-                href={`/objects?collectionGroup=${group._id}`}
+                href={`/objects?collectionGroupId=${group._id}`}
                 title={group.name}
-                isActive={pathname?.includes(`collectionGroup=${group._id}`)}
+                isActive={pathname?.includes(`collectionGroupId=${group._id}`)}
                 colorIndicator={
                   COLLECTION_COLORS[index % COLLECTION_COLORS.length]
                 }
