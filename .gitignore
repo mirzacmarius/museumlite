@@ -24,6 +24,9 @@ build
 .DS_Store
 *.pem
 
+# sisyphus
+.sisyphus/boulder.json
+
 # debug
 npm-debug.log*
 yarn-debug.log*

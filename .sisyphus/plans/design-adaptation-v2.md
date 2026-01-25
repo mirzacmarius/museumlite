@@ -444,7 +444,7 @@ interface TimelineEvent {
 
 ---
 
-### - [ ] 2.1 Style Objects List and Detail Pages
+### - [x] 2.1 Style Objects List and Detail Pages
 
 **What to do**:
 - Apply design styling to `apps/app/src/app/[locale]/(dashboard)/objects/page.tsx`
@@ -486,7 +486,7 @@ interface TimelineEvent {
 
 ---
 
-### - [ ] 2.2 Style Collections Pages
+### - [x] 2.2 Style Collections Pages
 
 **What to do**:
 - Apply design styling to `apps/app/src/app/[locale]/(dashboard)/collections/page.tsx`
@@ -521,7 +521,7 @@ interface TimelineEvent {
 
 ---
 
-### - [ ] 2.3 Style Media/Digital Assets Pages
+### - [x] 2.3 Style Media/Digital Assets Pages
 
 **What to do**:
 - Apply design styling to media/digital assets pages

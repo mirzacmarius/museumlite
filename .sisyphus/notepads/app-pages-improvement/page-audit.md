@@ -200,3 +200,151 @@ apps/app/src/app/[locale]/(dashboard)/
 - Object comments backend (`packages/backend/convex/objectComments.ts`) and schema already existed; added mention support + notifications + UI comments tab.
 - Object detail page uses tabbed layout; comments integrated as new tab.
 - Notifications link helper now supports `object` entity type for `/objects/{id}`.
+
+---
+
+# Verification Summary (Session 2)
+
+**Date**: 2026-01-25
+**Session**: ses_40b302792ffesyFraJCjEy5uQl
+
+## Build & Lint Status
+
+✅ **TypeCheck**: PASSED
+- Command: `bun run typecheck`
+- Result: All 6 tasks successful, no type errors
+
+✅ **Lint**: PASSED
+- Command: `bun run lint`
+- Result: All files checked, no issues
+- Note: Pre-existing sherif warning (root package.json dependencies vs devDependencies)
+
+## Feature Verification
+
+### 1. Loading States ✅ COMPLETE
+**Status**: 28 loading.tsx files (originally 7)
+
+**Added files**:
+- assignments, activity, exhibitions
+- conservation, media
+- library/* (5 files: main, catalog, circulation, acquisitions, fines)
+- settings/* (11 files: main, billing, developer, data, integrations, modules, organization, roles, users, workflows, activity)
+
+**Pattern**: All use Skeleton components matching existing implementations
+
+### 2. Empty States ✅ COMPLETE
+**Status**: 24 usages of EmptyState component
+
+**Files verified**:
+- `packages/ui/src/components/empty-state.tsx` - Component definition
+- Multiple page files use EmptyState with icon, title, description, CTA pattern
+- object-comments.tsx uses EmptyState for "No comments yet"
+
+### 3. Recharts Integration ✅ COMPLETE (EXCEEDS REQUIREMENT)
+**Status**: 6 chart instances (required: 5+)
+
+**Charts implemented**:
+1. **CollectionGrowthChart** (LineChart)
+   - File: `apps/app/src/app/[locale]/(dashboard)/_components/collection-growth-chart.tsx`
+   - Uses: Recharts LineChart, CartesianGrid, XAxis, YAxis
+   - Query: `api.dashboard.getCollectionGrowth`
+
+2. **LoanStatusChart** (PieChart)
+   - File: `apps/app/src/app/[locale]/(dashboard)/_components/loan-status-chart.tsx`
+   - Uses: Recharts PieChart with donut style
+   - Shows: pending, active, returned loan distribution
+
+3. **KPI Sparklines** (4× AreaChart)
+   - File: `packages/ui/src/components/kpi-card.tsx`
+   - Dashboard usage: totalObjects, objectsOnLoan, activeLoans, pendingAccessions
+   - Uses: Recharts AreaChart in ResponsiveContainer
+
+**Infrastructure**:
+- Recharts v3.7.0 installed in packages/ui
+- Chart wrapper components: chart-container.tsx, chart-tooltip.tsx, chart-legend.tsx
+
+**Analytics page note**: Uses custom StackedBar component (not Recharts), but shows data visualization
+
+### 4. Advanced Search & Saved Views ⚠️ INCOMPLETE
+**Status**: Tasks marked [x] complete but NOT implemented
+
+**What exists**:
+- `savedViews` table in schema (line 3809)
+- Basic text search on collections page
+
+**What's missing**:
+- NO faceted filters (category, status, date range, location)
+- NO nuqs URL state persistence
+- NO saved views UI (save button, dropdown, edit/delete)
+- NO backend queries for savedViews CRUD
+
+**Conclusion**: Features planned but not actually implemented despite checkboxes being marked
+
+### 5. Mobile Responsive ✅ COMPLETE
+**Status**: Pre-existing implementation verified
+
+**Implementation**:
+- Sidebar: `collapsible="icon"` attribute
+- Layout: SidebarProvider + SidebarRail pattern
+- Responsive classes: `group-data-[collapsible=icon]:hidden` throughout
+- Tailwind breakpoints: sm:, md:, lg:, xl: used across pages
+
+### 6. Object Comments ✅ COMPLETE
+**Backend** (`packages/backend/convex/objectComments.ts`):
+- CRUD operations: list, create, remove
+- Schema: objectComments table with by_object index
+- Permission checks via requirePermission
+- Returns comments with user info
+
+**UI** (`apps/app/src/app/[locale]/(dashboard)/objects/[id]/_components/object-comments.tsx`):
+- Comment list with avatar, timestamp, content
+- New comment input with submit button
+- Delete own comments functionality
+- EmptyState for no comments
+- Loading skeletons
+
+**Integration**:
+- Integrated as tab in object detail page
+- Uses `api.objectComments.list` and `api.objectComments.create`
+
+### 7. @Mentions ✅ COMPLETE
+**Backend parsing** (objectComments.ts lines 9-114):
+- Regex pattern: `/@([a-zA-Z0-9._-]+)/g`
+- User handle lookup by username/email
+- Stores mentionedUserIds in comment
+
+**Notifications** (objectComments.ts lines 130-158):
+- Notification type: COMMENT_MENTION
+- Message format: "{author} mentioned you on {object}"
+- Links to object via relatedEntityType/relatedEntityId
+- Only sends to mentioned users (excludes author)
+
+**UI autocomplete** (object-comments.tsx lines 27-139):
+- Trigger: @ character detection
+- Autocomplete dropdown with user list
+- Shows avatar, name, handle
+- Insert @handle on selection
+- Real-time query state tracking
+
+### 8. Activity Feed ✅ COMPLETE
+**Pagination** (`apps/app/src/app/[locale]/(dashboard)/activity/_components/activity-list.tsx`):
+- Cursor-based pagination (lines 60-75)
+- Limit: 50 items per page
+- "Load More" functionality with continue cursor
+- Groups activities by month
+
+**Filtering** (`apps/app/src/app/[locale]/(dashboard)/activity/_components/activity-filters.tsx`):
+- Entity type filter dropdown (organization, collection, loan, accession, deaccession, etc.)
+- Date range filter with calendar picker
+- Custom date range support
+- Presets: All Time, Last 7 Days, Last 30 Days, etc.
+
+## Summary
+
+**Fully Complete**: 7/8 features
+**Incomplete**: 1/8 features (Advanced search + Saved views)
+
+**Next steps**:
+- Tasks 3.1 and 3.2 should be unmarked and completed OR
+- Plan should be updated to reflect that these features were deferred/skipped
+

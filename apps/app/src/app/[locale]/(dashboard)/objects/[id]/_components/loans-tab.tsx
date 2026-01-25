@@ -60,8 +60,8 @@ export function LoansTab({ collectionId, locale }: LoansTabProps) {
                           : loan.status === "dispatched"
                             ? "border border-amber-500/20 bg-amber-500/10 text-amber-400"
                             : loan.status === "returned"
-                              ? "border border-zinc-500/20 bg-zinc-500/10 text-zinc-400"
-                              : "border border-zinc-500/20 bg-zinc-500/10 text-zinc-400",
+                              ? "badge-neutral"
+                              : "badge-neutral",
                       )}
                     >
                       {loan.status}
