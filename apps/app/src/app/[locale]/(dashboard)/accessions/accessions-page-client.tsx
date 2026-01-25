@@ -49,7 +49,7 @@ export function AccessionsPageClient({
               placeholder={t("searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-56 h-8 bg-zinc-900 border border-zinc-800 rounded-full pl-9 pr-3 text-xs text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-700"
+              className="w-56 h-8 bg-zinc-900 border border-zinc-800 rounded-full pl-8 pr-3 text-xs text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-700"
             />
           </div>
           <PermissionGate permission="collections.read">
@@ -58,7 +58,7 @@ export function AccessionsPageClient({
           <PermissionGate permission="collections.create">
             <Link
               href="/accessions/import"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-md hover:border-zinc-700 hover:text-zinc-300 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-md hover:bg-zinc-800 transition-colors"
             >
               <FileUp className="h-3.5 w-3.5" />
               {t("importCSV")}
