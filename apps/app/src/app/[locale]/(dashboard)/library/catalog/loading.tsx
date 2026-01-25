@@ -27,30 +27,32 @@ export default function LibraryCatalogLoading() {
 
           <div className="p-6">
             <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-4 rounded-lg border border-border p-4"
-                >
-                  <div className="h-20 w-14 animate-pulse rounded bg-muted/50" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <div className="h-5 w-48 animate-pulse rounded bg-muted/60" />
-                      <div className="h-5 w-16 animate-pulse rounded-full bg-muted/40" />
+              {Array.from({ length: 5 }, (_, i) => `catalog-row-${i}`).map(
+                (key) => (
+                  <div
+                    key={key}
+                    className="flex items-center gap-4 rounded-lg border border-border p-4"
+                  >
+                    <div className="h-20 w-14 animate-pulse rounded bg-muted/50" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <div className="h-5 w-48 animate-pulse rounded bg-muted/60" />
+                        <div className="h-5 w-16 animate-pulse rounded-full bg-muted/40" />
+                      </div>
+                      <div className="mt-2 h-4 w-32 animate-pulse rounded bg-muted/40" />
+                      <div className="mt-2 flex items-center gap-4">
+                        <div className="h-3 w-24 animate-pulse rounded bg-muted/30" />
+                        <div className="h-3 w-12 animate-pulse rounded bg-muted/30" />
+                      </div>
                     </div>
-                    <div className="mt-2 h-4 w-32 animate-pulse rounded bg-muted/40" />
-                    <div className="mt-2 flex items-center gap-4">
-                      <div className="h-3 w-24 animate-pulse rounded bg-muted/30" />
-                      <div className="h-3 w-12 animate-pulse rounded bg-muted/30" />
+                    <div className="flex-shrink-0 text-right">
+                      <div className="h-4 w-12 animate-pulse rounded bg-muted/60" />
+                      <div className="mt-1 h-3 w-20 animate-pulse rounded bg-muted/40" />
+                      <div className="mt-2 h-5 w-14 animate-pulse rounded-full bg-muted/40" />
                     </div>
                   </div>
-                  <div className="flex-shrink-0 text-right">
-                    <div className="h-4 w-12 animate-pulse rounded bg-muted/60" />
-                    <div className="mt-1 h-3 w-20 animate-pulse rounded bg-muted/40" />
-                    <div className="mt-2 h-5 w-14 animate-pulse rounded-full bg-muted/40" />
-                  </div>
-                </div>
-              ))}
+                ),
+              )}
             </div>
           </div>
         </div>
