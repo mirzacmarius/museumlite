@@ -41,8 +41,11 @@ export function ChartTooltipContent({
         </p>
       )}
       <div className="space-y-1">
-        {payload.map((entry, index) => (
-          <div key={index} className="flex items-center gap-2 text-sm">
+        {payload.map((entry) => (
+          <div
+            key={`${entry.dataKey ?? entry.name ?? entry.color ?? "item"}-${entry.value ?? "value"}`}
+            className="flex items-center gap-2 text-sm"
+          >
             <div
               className="h-2 w-2 rounded-full"
               style={{ backgroundColor: entry.color }}

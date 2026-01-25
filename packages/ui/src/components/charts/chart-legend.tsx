@@ -32,8 +32,11 @@ export function ChartLegend({
         className,
       )}
     >
-      {payload.map((entry, index) => (
-        <div key={index} className="flex items-center gap-2">
+      {payload.map((entry) => (
+        <div
+          key={`${entry.value}-${entry.color}`}
+          className="flex items-center gap-2"
+        >
           <div
             className="h-3 w-3 rounded-sm"
             style={{ backgroundColor: entry.color }}
