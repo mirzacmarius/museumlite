@@ -3476,3 +3476,36 @@ export const bulkExport = query({
     return results;
   },
 });
+
+export const getStatusDistribution = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.array(
+    v.object({
+      status: v.string(),
+      count: v.number(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    await requireLoansAccess(ctx, args.organizationId);
+    await requirePermission(ctx, args.organizationId, "loans.read");
+
+    const loans = await ctx.db
+      .query("loans")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const statusCounts: Record<string, number> = {};
+    for (const loan of loans) {
+      statusCounts[loan.status] = (statusCounts[loan.status] || 0) + 1;
+    }
+
+    return Object.entries(statusCounts).map(([status, count]) => ({
+      status,
+      count,
+    }));
+  },
+});

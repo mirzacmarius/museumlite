@@ -33,6 +33,7 @@ import Link from "next/link";
 import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
 import { AdminOverview } from "./_components/admin-overview";
+import { LoanStatusChart } from "./_components/loan-status-chart";
 import { LoansBulkActionsBar } from "./_components/loans-bulk-actions-bar";
 
 type LoanStatus =
@@ -139,13 +140,26 @@ export default function LoansPage() {
             </div>
           </div>
 
-          <Suspense
-            fallback={
-              <div className="h-24 animate-pulse rounded-xl bg-card/40" />
-            }
-          >
-            <AdminOverview />
-          </Suspense>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+            <div className="lg:col-span-3">
+              <Suspense
+                fallback={
+                  <div className="h-24 animate-pulse rounded-xl bg-card/40" />
+                }
+              >
+                <AdminOverview />
+              </Suspense>
+            </div>
+            <div className="lg:col-span-1">
+              <Suspense
+                fallback={
+                  <div className="h-[250px] animate-pulse rounded-xl bg-card/40" />
+                }
+              >
+                <LoanStatusChart />
+              </Suspense>
+            </div>
+          </div>
 
           <LoanList
             organizationId={currentOrganizationId}
