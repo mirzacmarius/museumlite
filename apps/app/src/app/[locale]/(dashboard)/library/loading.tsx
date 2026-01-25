@@ -24,18 +24,20 @@ export default function LibraryDashboardLoading() {
             <div className="mt-2 h-4 w-56 animate-pulse rounded bg-muted/40" />
           </div>
           <div className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">
-            {[...Array(5)].map((_, i) => (
-              <div
-                key={i}
-                className="flex items-start gap-4 rounded-lg border border-border p-4"
-              >
-                <div className="h-10 w-10 animate-pulse rounded-lg bg-muted/60" />
-                <div className="flex-1">
-                  <div className="h-4 w-24 animate-pulse rounded bg-muted/60" />
-                  <div className="mt-2 h-3 w-32 animate-pulse rounded bg-muted/40" />
+            {Array.from({ length: 5 }, (_, i) => `library-card-${i}`).map(
+              (key) => (
+                <div
+                  key={key}
+                  className="flex items-start gap-4 rounded-lg border border-border p-4"
+                >
+                  <div className="h-10 w-10 animate-pulse rounded-lg bg-muted/60" />
+                  <div className="flex-1">
+                    <div className="h-4 w-24 animate-pulse rounded bg-muted/60" />
+                    <div className="mt-2 h-3 w-32 animate-pulse rounded bg-muted/40" />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ),
+            )}
           </div>
         </div>
 
@@ -45,12 +47,14 @@ export default function LibraryDashboardLoading() {
             <div className="mt-2 h-4 w-48 animate-pulse rounded bg-muted/40" />
           </div>
           <div className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i}>
-                <div className="h-3 w-24 animate-pulse rounded bg-muted/40" />
-                <div className="mt-2 h-5 w-16 animate-pulse rounded bg-muted/60" />
-              </div>
-            ))}
+            {Array.from({ length: 4 }, (_, i) => `library-stat-${i}`).map(
+              (key) => (
+                <div key={key}>
+                  <div className="h-3 w-24 animate-pulse rounded bg-muted/40" />
+                  <div className="mt-2 h-5 w-16 animate-pulse rounded bg-muted/60" />
+                </div>
+              ),
+            )}
           </div>
         </div>
       </div>
