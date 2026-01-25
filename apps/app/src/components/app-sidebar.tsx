@@ -1,32 +1,33 @@
 "use client";
 
 import {
-  BarChart3,
-  BookCopy,
-  BookUser,
+  Activity,
+  BookOpen,
   Building2,
   Check,
   ChevronRight,
   ChevronsUpDown,
-  ClipboardList,
-  DollarSign,
+  Container,
+  Database,
   FileCheck,
   FileX,
-  History,
+  GalleryVerticalEnd,
+  Globe,
+  Hammer,
+  IdCard,
   Image,
-  Inbox,
   LayoutGrid,
   Lock,
   LogOut,
   MapPin,
-  Microscope,
   Plus,
-  Presentation,
-  RefreshCw,
   Search,
   Settings2,
+  Shield,
   ShoppingCart,
+  Ticket,
   Truck,
+  Users,
 } from "lucide-react";
 import * as React from "react";
 
@@ -241,24 +242,18 @@ export function AppSidebar({
   );
 
   const navCoreInventory = [
-    { title: "All Objects", url: "/objects", icon: LayoutGrid },
-    { title: "New Arrivals", url: "/accessions", icon: Inbox, indicator: true },
-    {
-      title: "My Assignments",
-      url: "/assignments",
-      icon: ClipboardList,
-    },
-    { title: "Recent Activity", url: "/activity", icon: History },
-    { title: "Media Library", url: "/media", icon: Image },
+    { title: "Overview", url: "/", icon: LayoutGrid },
+    { title: "Object Catalog", url: "/objects", icon: Database },
+    { title: "Digital Assets", url: "/media", icon: Image },
   ];
 
   const navCollectionManagement = [
     { title: "Accessions", url: "/accessions", icon: FileCheck },
     { title: "Deaccessions", url: "/deaccessions", icon: FileX },
-    { title: "Locations", url: "/locations", icon: MapPin },
+    { title: "Location & Tracking", url: "/locations", icon: MapPin },
   ];
 
-  const navOperations = [
+  const navExhibitionsLoans = [
     {
       title: "Loans & Transport",
       url: "/loans",
@@ -266,36 +261,51 @@ export function AppSidebar({
       locked: !hasFeature("loans"),
     },
     {
-      title: "Active Rotations",
+      title: "Transit Log",
+      url: "/transit",
+      icon: Container,
+      locked: !hasFeature("loans"),
+    },
+    {
+      title: "Exhibitions",
       url: "/exhibitions",
-      icon: Presentation,
+      icon: GalleryVerticalEnd,
       locked: !hasFeature("exhibitions"),
     },
     {
-      title: "Lab Requests",
+      title: "Installations",
+      url: "/installations",
+      icon: Hammer,
+      locked: !hasFeature("exhibitions"),
+    },
+  ];
+
+  const navConservation = [
+    {
+      title: "Conservation",
       url: "/conservation",
-      icon: Microscope,
-      badge: "2",
+      icon: Activity,
+      locked: !hasFeature("conservation"),
+    },
+    {
+      title: "Insurance",
+      url: "/insurance",
+      icon: Shield,
       locked: !hasFeature("conservation"),
     },
   ];
 
   const navLibrary = [
-    { title: "Catalog", url: "/library/catalog", icon: BookCopy },
-    { title: "Circulation", url: "/library/circulation", icon: RefreshCw },
-    { title: "Patrons", url: "/accounts?type=patron", icon: BookUser },
-    { title: "Fines", url: "/library/fines", icon: DollarSign },
+    { title: "Catalog & Search", url: "/library/catalog", icon: BookOpen },
+    { title: "Circulation Desk", url: "/library/circulation", icon: IdCard },
+    { title: "Patron Management", url: "/accounts?type=patron", icon: Users },
+    { title: "Fines & Fees", url: "/library/fines", icon: Ticket },
     { title: "Acquisitions", url: "/library/acquisitions", icon: ShoppingCart },
   ];
 
   const navAdministration = [
+    { title: "Public Portal", url: "/portal", icon: Globe },
     { title: "Settings", url: "/settings", icon: Settings2 },
-    {
-      title: "Analytics",
-      url: "/analytics",
-      icon: BarChart3,
-      locked: !hasFeature("reporting"),
-    },
   ];
 
   const isPathActive = (url: string) => {
@@ -408,7 +418,6 @@ export function AppSidebar({
                 icon={item.icon}
                 title={item.title}
                 isActive={isPathActive(item.url)}
-                indicator={item.indicator}
               />
             ))}
           </SidebarMenu>
@@ -467,18 +476,35 @@ export function AppSidebar({
         </NavSection>
 
         <NavSection
-          title="Operations"
-          forceOpen={navOperations.some((item) => isPathActive(item.url))}
+          title="Exhibitions & Loans"
+          forceOpen={navExhibitionsLoans.some((item) => isPathActive(item.url))}
         >
           <SidebarMenu>
-            {navOperations.map((item) => (
+            {navExhibitionsLoans.map((item) => (
               <NavItem
                 key={item.title}
                 href={item.url}
                 icon={item.icon}
                 title={item.title}
                 isActive={isPathActive(item.url)}
-                badge={item.badge}
+                locked={item.locked}
+              />
+            ))}
+          </SidebarMenu>
+        </NavSection>
+
+        <NavSection
+          title="Conservation & Care"
+          forceOpen={navConservation.some((item) => isPathActive(item.url))}
+        >
+          <SidebarMenu>
+            {navConservation.map((item) => (
+              <NavItem
+                key={item.title}
+                href={item.url}
+                icon={item.icon}
+                title={item.title}
+                isActive={isPathActive(item.url)}
                 locked={item.locked}
               />
             ))}
@@ -487,7 +513,7 @@ export function AppSidebar({
 
         {showLibrarySection && (
           <NavSection
-            title="Library"
+            title="Library & Research"
             forceOpen={navLibrary.some((item) => isPathActive(item.url))}
           >
             <SidebarMenu>
@@ -516,7 +542,6 @@ export function AppSidebar({
                 icon={item.icon}
                 title={item.title}
                 isActive={isPathActive(item.url)}
-                locked={item.locked}
               />
             ))}
           </SidebarMenu>
