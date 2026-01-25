@@ -2,7 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import type { MutationCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { getUserRole, requirePermission } from "./utils/permissions";
 
@@ -30,6 +30,77 @@ async function checkGroupAccessControl(
       "You do not have the required role to manage this collection group",
     );
   }
+}
+
+/**
+ * Get thumbnail URL for a collection group with fallback to item images
+ * Priority: group.imageId → primary item image → any item thumbnail → null
+ */
+async function getCollectionGroupThumbnailUrl(
+  ctx: QueryCtx,
+  group: Doc<"collectionGroups">,
+): Promise<string | null> {
+  // 1. If group has its own image, use it
+  if (group.imageId) {
+    return await ctx.storage.getUrl(group.imageId);
+  }
+
+  // 2. Find items in this group via collectionGroupItems (many-to-many)
+  const groupItems = await ctx.db
+    .query("collectionGroupItems")
+    .withIndex("by_collectionGroup", (q) =>
+      q.eq("collectionGroupId", group._id),
+    )
+    .take(20); // Limit to avoid scanning too many
+
+  if (groupItems.length === 0) {
+    return null;
+  }
+
+  // 3. Look for primary image first, then any image
+  for (const groupItem of groupItems) {
+    // Try to find primary image for this collection
+    const primaryMedia = await ctx.db
+      .query("mediaFiles")
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", groupItem.collectionId),
+      )
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("isPrimary"), true),
+          q.eq(q.field("fileType"), "image"),
+        ),
+      )
+      .first();
+
+    if (primaryMedia) {
+      // Return thumbnail if available, otherwise original
+      if (primaryMedia.thumbnailStorageId) {
+        return await ctx.storage.getUrl(primaryMedia.thumbnailStorageId);
+      }
+      return await ctx.storage.getUrl(primaryMedia.storageId);
+    }
+  }
+
+  // 4. No primary images found, try any image with thumbnail
+  for (const groupItem of groupItems) {
+    const anyMedia = await ctx.db
+      .query("mediaFiles")
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", groupItem.collectionId),
+      )
+      .filter((q) => q.eq(q.field("fileType"), "image"))
+      .first();
+
+    if (anyMedia) {
+      if (anyMedia.thumbnailStorageId) {
+        return await ctx.storage.getUrl(anyMedia.thumbnailStorageId);
+      }
+      return await ctx.storage.getUrl(anyMedia.storageId);
+    }
+  }
+
+  return null;
 }
 
 export const create = mutation({
@@ -177,6 +248,7 @@ export const get = query({
       imageId: v.optional(v.id("_storage")),
       imageUrl: v.optional(v.string()),
       itemsCount: v.optional(v.number()),
+      valuation: v.optional(v.number()),
       createdAt: v.number(),
       createdBy: v.id("users"),
       lastModifiedAt: v.optional(v.number()),
