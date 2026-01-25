@@ -14,7 +14,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
 import { EmptyState } from "@v1/ui/empty-state";
@@ -33,6 +32,8 @@ import {
   Archive,
   Building2,
   Filter,
+  LayoutGrid,
+  List,
   MapPin,
   MoreVertical,
   Package,
@@ -118,48 +119,23 @@ export default function CollectionsPage() {
   }
 
   return (
-    <div className="flex h-full w-full bg-background px-4 sm:px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-        <div className="flex w-full flex-col rounded-lg border border-border/60 bg-card">
-          <div className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg p-4 sm:p-6">
-            <div className="flex flex-col gap-2">
-              <h2 className="text-xl font-medium text-primary">{t("title")}</h2>
-              <p className="text-sm font-normal text-primary/60">
-                {t("description")}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <PermissionGate permission="collections.read">
-                <ExportCSVButton onExport={handleExport} filename="objects" />
-              </PermissionGate>
-              <PermissionGate permission="collections.create">
-                <Button asChild>
-                  <Link href="/objects/new">
-                    <Plus className="mr-2 h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">{t("addObject")}</span>
-                    <span className="sm:hidden">Add</span>
-                  </Link>
-                </Button>
-              </PermissionGate>
-            </div>
-          </div>
-          <div className="flex w-full px-6">
-            <div className="w-full border-b border-border/60" />
-          </div>
-          <CollectionFiltersAndList organizationId={currentOrganizationId} />
-        </div>
-      </div>
+    <div className="flex h-full w-full bg-zinc-950 flex-col overflow-hidden">
+      <CollectionFiltersAndList
+        organizationId={currentOrganizationId}
+        onExport={handleExport}
+      />
     </div>
   );
 }
 
 function CollectionFiltersAndList({
   organizationId,
+  onExport,
 }: {
   organizationId: Id<"organizations">;
+  onExport: () => Promise<any>;
 }) {
   const t = useScopedI18n("objects");
-  const common = useScopedI18n("common");
   const [showFilters, setShowFilters] = useState(false);
   const { filters, setFilters, resetFilters, hasActiveFilters } =
     useObjectFilters();
@@ -322,10 +298,12 @@ function CollectionFiltersAndList({
     setSelectedIds(new Set());
   };
 
-  const handleExport = () => {
+  const handleBulkExport = () => {
     if (!bulkExport || bulkExport.length === 0) {
-      toast.error(t("form.toasts.noDataToExport"));
-      return;
+      if (selectedIds.size === 0) {
+        onExport();
+        return;
+      }
     }
 
     const headers = [
@@ -350,7 +328,7 @@ function CollectionFiltersAndList({
       "Cataloged Date",
     ];
 
-    const rows = bulkExport.map((item) => [
+    const rows = (bulkExport || []).map((item) => [
       item.accessionNumber,
       item.title,
       item.alternativeTitle ?? "",
@@ -388,7 +366,7 @@ function CollectionFiltersAndList({
     URL.revokeObjectURL(url);
 
     toast.success(
-      `Exported ${bulkExport.length} item${bulkExport.length !== 1 ? "s" : ""}`,
+      `Exported ${(bulkExport || []).length} item${(bulkExport || []).length !== 1 ? "s" : ""}`,
     );
   };
 
@@ -397,250 +375,230 @@ function CollectionFiltersAndList({
   };
 
   return (
-    <div className="flex flex-col">
-      {/* Search and Filter Bar */}
-      <div className="border-b border-border/60 p-4 sm:p-6">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
+    <div className="flex flex-col h-full">
+      <div className="flex flex-col border-b border-zinc-800/60 bg-zinc-900/20 backdrop-blur-sm z-20">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-semibold text-zinc-200 tracking-tight">
+              {t("title")}
+            </h2>
+            <div className="h-4 w-px bg-zinc-800"></div>
+            <div className="relative group">
+              <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
+              <input
+                type="text"
                 placeholder={t("searchPlaceholder")}
-                value={filters.search}
+                value={filters.search || ""}
                 onChange={(e) => setFilters({ search: e.target.value })}
-                className="pl-9"
+                className="w-64 bg-zinc-900/50 border border-zinc-800 rounded-md py-1.5 pl-8 pr-3 text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-indigo-500/50 focus:bg-zinc-900/80 transition-all"
               />
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <ViewToggle value={viewMode} onChange={handleViewModeChange} />
-              {viewMode === "list" && (
-                <ColumnConfigDropdown
-                  columns={columns ?? defaultColumns}
-                  onColumnToggle={handleColumnToggle}
-                />
-              )}
-              <Button
-                variant={showFilters ? "default" : "outline"}
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex-shrink-0"
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-3 py-1.5 border rounded-md text-xs transition-colors ${
+                showFilters || hasActiveFilters
+                  ? "bg-zinc-800 border-zinc-700 text-zinc-200"
+                  : "bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <Filter className="h-3.5 w-3.5" />
+              {t("filters.title")}
+            </button>
+
+            {hasActiveFilters && (
+              <button
+                onClick={resetFilters}
+                className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300"
               >
-                <Filter className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">{t("filters.title")}</span>
-              </Button>
-              <SavedViewsDropdown
-                organizationId={organizationId}
-                currentFilters={filters}
-                onApplyView={(viewFilters) => {
-                  setFilters({
-                    search: viewFilters.search || "",
-                    status: viewFilters.status || "all",
-                    objectType: viewFilters.objectType || "",
-                    culture: viewFilters.culture || "",
-                    period: viewFilters.period || "",
-                    materials: viewFilters.materials || "",
-                    collectionGroupId: viewFilters.collectionGroupId || "",
-                    locationId: viewFilters.locationId || "",
-                    catalogedFrom: viewFilters.catalogedFrom || "",
-                    catalogedTo: viewFilters.catalogedTo || "",
-                  });
-                }}
+                <X className="h-3 w-3" />
+                {t("filters.clear")}
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex bg-zinc-900 p-0.5 rounded-md border border-zinc-800">
+              <button
+                onClick={() => handleViewModeChange("list")}
+                className={`p-1.5 rounded shadow-sm transition-all ${
+                  viewMode === "list"
+                    ? "bg-zinc-800 text-zinc-200"
+                    : "text-zinc-500 hover:text-zinc-300"
+                }`}
+              >
+                <List className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => handleViewModeChange("grid")}
+                className={`p-1.5 rounded shadow-sm transition-all ${
+                  viewMode === "grid"
+                    ? "bg-zinc-800 text-zinc-200"
+                    : "text-zinc-500 hover:text-zinc-300"
+                }`}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            {viewMode === "list" && (
+              <ColumnConfigDropdown
+                columns={columns ?? defaultColumns}
+                onColumnToggle={handleColumnToggle}
               />
-              {hasActiveFilters && (
-                <Button
-                  variant="ghost"
-                  onClick={resetFilters}
-                  className="flex-shrink-0"
-                >
-                  <X className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">{t("filters.clear")}</span>
-                </Button>
-              )}
+            )}
+
+            <PermissionGate permission="collections.read">
+              <ExportCSVButton
+                onExport={onExport}
+                filename="objects"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 hover:text-zinc-200"
+              />
+            </PermissionGate>
+
+            <PermissionGate permission="collections.create">
+              <Button
+                asChild
+                className="h-8 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md text-xs font-medium shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)] transition-all border-none"
+              >
+                <Link href="/objects/new" className="flex items-center gap-2">
+                  <Plus className="h-3.5 w-3.5" />
+                  {t("addObject")}
+                </Link>
+              </Button>
+            </PermissionGate>
+          </div>
+        </div>
+
+        {showFilters && (
+          <div className="px-6 py-3 border-t border-zinc-800/60 bg-zinc-900/40 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in slide-in-from-top-2 duration-200">
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-500 uppercase font-medium">
+                {t("filters.status")}
+              </label>
+              <Select
+                value={filters.status}
+                onValueChange={(value) =>
+                  setFilters({
+                    status: value as "active" | "deaccessioned" | "all",
+                  })
+                }
+              >
+                <SelectTrigger className="w-full h-8 bg-zinc-950 border border-zinc-800 rounded text-xs px-2 text-zinc-300 focus:ring-0 focus:border-zinc-700">
+                  <SelectValue placeholder={t("filters.allStatuses")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("filters.active")}</SelectItem>
+                  <SelectItem value="deaccessioned">
+                    {t("filters.deaccessioned")}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-500 uppercase font-medium">
+                {t("filters.objectType")}
+              </label>
+              <Select
+                value={filters.objectType || "all"}
+                onValueChange={(value) =>
+                  setFilters({ objectType: value === "all" ? "" : value })
+                }
+              >
+                <SelectTrigger className="w-full h-8 bg-zinc-950 border border-zinc-800 rounded text-xs px-2 text-zinc-300 focus:ring-0 focus:border-zinc-700">
+                  <SelectValue placeholder={t("filters.allTypes")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("filters.allTypes")}</SelectItem>
+                  {uniqueObjectTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-500 uppercase font-medium">
+                {t("filters.location")}
+              </label>
+              <Select
+                value={filters.locationId || "all"}
+                onValueChange={(value) =>
+                  setFilters({ locationId: value === "all" ? "" : value })
+                }
+              >
+                <SelectTrigger className="w-full h-8 bg-zinc-950 border border-zinc-800 rounded text-xs px-2 text-zinc-300 focus:ring-0 focus:border-zinc-700">
+                  <SelectValue placeholder={t("filters.allLocations")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t("filters.allLocations")}
+                  </SelectItem>
+                  {locations?.map((location) => (
+                    <SelectItem key={location._id} value={location._id}>
+                      {location.path.map((p) => p.name).join(" > ")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-500 uppercase font-medium">
+                {t("filters.collectionGroup")}
+              </label>
+              <Select
+                value={filters.collectionGroupId || "all"}
+                onValueChange={(value) =>
+                  setFilters({
+                    collectionGroupId: value === "all" ? "" : value,
+                  })
+                }
+              >
+                <SelectTrigger className="w-full h-8 bg-zinc-950 border border-zinc-800 rounded text-xs px-2 text-zinc-300 focus:ring-0 focus:border-zinc-700">
+                  <SelectValue placeholder={t("filters.allGroups")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("filters.allGroups")}</SelectItem>
+                  {collectionGroups?.map((group) => (
+                    <SelectItem key={group._id} value={group._id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
-
-          {/* Advanced Filters */}
-          {showFilters && (
-            <div className="grid grid-cols-1 gap-3 sm:gap-4 border-t border-border/60 pt-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="status">{t("filters.status")}</Label>
-                <Select
-                  value={filters.status}
-                  onValueChange={(value) =>
-                    setFilters({
-                      status: value as "active" | "deaccessioned" | "all",
-                    })
-                  }
-                >
-                  <SelectTrigger id="status">
-                    <SelectValue placeholder={t("filters.allStatuses")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t("filters.active")}</SelectItem>
-                    <SelectItem value="deaccessioned">
-                      {t("filters.deaccessioned")}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="objectType">{t("filters.objectType")}</Label>
-                <Select
-                  value={filters.objectType || "all"}
-                  onValueChange={(value) =>
-                    setFilters({ objectType: value === "all" ? "" : value })
-                  }
-                >
-                  <SelectTrigger id="objectType">
-                    <SelectValue placeholder={t("filters.allTypes")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t("filters.allTypes")}</SelectItem>
-                    {uniqueObjectTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="culture">{t("filters.culture")}</Label>
-                <Input
-                  id="culture"
-                  placeholder={t("filters.filterByCulture")}
-                  value={filters.culture}
-                  onChange={(e) => setFilters({ culture: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="period">{t("filters.period")}</Label>
-                <Input
-                  id="period"
-                  placeholder={t("filters.filterByPeriod")}
-                  value={filters.period}
-                  onChange={(e) => setFilters({ period: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="materials">{t("filters.materials")}</Label>
-                <Input
-                  id="materials"
-                  placeholder={t("filters.filterByMaterials")}
-                  value={filters.materials}
-                  onChange={(e) => setFilters({ materials: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="collectionGroup">
-                  {t("filters.collectionGroup")}
-                </Label>
-                <Select
-                  value={filters.collectionGroupId || "all"}
-                  onValueChange={(value) =>
-                    setFilters({
-                      collectionGroupId: value === "all" ? "" : value,
-                    })
-                  }
-                >
-                  <SelectTrigger id="collectionGroup">
-                    <SelectValue placeholder={t("filters.allGroups")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
-                      {t("filters.allGroups")}
-                    </SelectItem>
-                    {collectionGroups?.map((group) => (
-                      <SelectItem key={group._id} value={group._id}>
-                        {group.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="location">{t("filters.location")}</Label>
-                <Select
-                  value={filters.locationId || "all"}
-                  onValueChange={(value) =>
-                    setFilters({ locationId: value === "all" ? "" : value })
-                  }
-                >
-                  <SelectTrigger id="location">
-                    <SelectValue placeholder={t("filters.allLocations")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
-                      {t("filters.allLocations")}
-                    </SelectItem>
-                    {locations?.map((location) => (
-                      <SelectItem key={location._id} value={location._id}>
-                        {location.path.map((p) => p.name).join(" > ")}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="catalogedFrom">
-                  {t("filters.dateAcquiredFrom")}
-                </Label>
-                <Input
-                  id="catalogedFrom"
-                  type="date"
-                  value={filters.catalogedFrom}
-                  onChange={(e) =>
-                    setFilters({ catalogedFrom: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="catalogedTo">
-                  {t("filters.dateAcquiredTo")}
-                </Label>
-                <Input
-                  id="catalogedTo"
-                  type="date"
-                  value={filters.catalogedTo}
-                  onChange={(e) => setFilters({ catalogedTo: e.target.value })}
-                />
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
-      {/* Collection List/Grid */}
-      <CollectionList
-        organizationId={organizationId}
-        collections={collections}
-        viewMode={viewMode}
-        columns={columns ?? defaultColumns}
-        selectedIds={selectedIds}
-        onSelectItem={handleSelectItem}
-        onSelectAll={handleSelectAll}
-        onLoadMore={() => {
-          if (collections && !collections.isDone) {
-            setCursor(collections.continueCursor);
-          }
-        }}
-        onReset={() => setCursor(null)}
-      />
+      <div className="flex-1 overflow-hidden relative bg-zinc-900/10">
+        <CollectionList
+          organizationId={organizationId}
+          collections={collections}
+          viewMode={viewMode}
+          columns={columns ?? defaultColumns}
+          selectedIds={selectedIds}
+          onSelectItem={handleSelectItem}
+          onSelectAll={handleSelectAll}
+          onLoadMore={() => {
+            if (collections && !collections.isDone) {
+              setCursor(collections.continueCursor);
+            }
+          }}
+          onReset={() => setCursor(null)}
+        />
+      </div>
 
-      {/* Bulk Actions */}
       <BulkActionsBar
         selectedCount={selectedIds.size}
         onClearSelection={handleClearSelection}
         onAddToGroup={() => setShowAddToGroupDialog(true)}
         onMoveLocation={() => setShowMoveLocationDialog(true)}
-        onExport={handleExport}
+        onExport={handleBulkExport}
         onDeaccession={() => setShowBulkDeaccessionDialog(true)}
       />
 
@@ -747,67 +705,112 @@ function CollectionList({
     ) && !allSelected;
 
   return (
-    <div className="p-4 sm:p-6">
-      {collections.page.length > 0 && (
-        <div className="mb-4 flex items-center gap-2">
-          <Checkbox
-            checked={allSelected || (someSelected ? "indeterminate" : false)}
-            onCheckedChange={(checked) => onSelectAll(checked === true)}
-            aria-label={common("selectAllItems")}
-          />
-          <span className="text-sm text-muted-foreground">
-            {allSelected
-              ? common("allSelected")
-              : someSelected
-                ? common("selectedCount", { count: selectedIds.size })
-                : common("selectAll")}
-          </span>
-        </div>
-      )}
+    <div className="h-full flex flex-col">
       {viewMode === "grid" ? (
-        <ObjectGridView
-          items={collections.page.map((item) => ({
-            _id: item._id as Id<"collections">,
-            accessionNumber: item.accessionNumber,
-            title: item.title,
-            objectType: item.objectType,
-            status: item.status,
-          }))}
-          organizationId={organizationId}
-          selectedIds={selectedIds}
-          onSelectItem={onSelectItem}
-        />
+        <div className="p-4 sm:p-6 overflow-y-auto">
+          {collections.page.length > 0 && (
+            <div className="mb-4 flex items-center gap-2">
+              <Checkbox
+                checked={
+                  allSelected || (someSelected ? "indeterminate" : false)
+                }
+                onCheckedChange={(checked) => onSelectAll(checked === true)}
+                aria-label={common("selectAllItems")}
+              />
+              <span className="text-sm text-muted-foreground">
+                {allSelected
+                  ? common("allSelected")
+                  : someSelected
+                    ? common("selectedCount", { count: selectedIds.size })
+                    : common("selectAll")}
+              </span>
+            </div>
+          )}
+          <ObjectGridView
+            items={collections.page.map((item) => ({
+              _id: item._id as Id<"collections">,
+              accessionNumber: item.accessionNumber,
+              title: item.title,
+              objectType: item.objectType,
+              status: item.status,
+            }))}
+            organizationId={organizationId}
+            selectedIds={selectedIds}
+            onSelectItem={onSelectItem}
+          />
+        </div>
       ) : (
-        <div className="space-y-4">
-          {collections.page.map((item) => (
-            <CollectionListItem
-              key={item._id}
-              item={item as CollectionListItem}
-              organizationId={organizationId}
-              columns={columns}
-              isSelected={selectedIds.has(item._id as Id<"collections">)}
-              onSelect={(selected: boolean) =>
-                onSelectItem(item._id as Id<"collections">, selected)
-              }
-            />
-          ))}
+        <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+          <table className="w-full text-left text-xs border-separate border-spacing-0">
+            <thead className="sticky top-0 z-10 bg-zinc-950/95 backdrop-blur-md shadow-sm">
+              <tr>
+                <th className="border-b border-zinc-800/80 px-4 py-3 w-10">
+                  <Checkbox
+                    checked={
+                      allSelected || (someSelected ? "indeterminate" : false)
+                    }
+                    onCheckedChange={(checked) => onSelectAll(checked === true)}
+                    className="border-zinc-700 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                  />
+                </th>
+                <th className="border-b border-zinc-800/80 px-4 py-3 font-medium text-zinc-500 w-16">
+                  Image
+                </th>
+                <th className="border-b border-zinc-800/80 px-4 py-3 font-medium text-zinc-500">
+                  Object ID & Description
+                </th>
+                <th className="border-b border-zinc-800/80 px-4 py-3 font-medium text-zinc-500">
+                  Collection
+                </th>
+                <th className="border-b border-zinc-800/80 px-4 py-3 font-medium text-zinc-500">
+                  Location
+                </th>
+                <th className="border-b border-zinc-800/80 px-4 py-3 font-medium text-zinc-500">
+                  Date Acquired
+                </th>
+                <th className="border-b border-zinc-800/80 px-4 py-3 font-medium text-zinc-500 text-right">
+                  Status
+                </th>
+                <th className="border-b border-zinc-800/80 px-4 py-3 font-medium text-zinc-500 w-10"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800/40">
+              {collections.page.map((item) => (
+                <CollectionTableRow
+                  key={item._id}
+                  item={item as CollectionListItem}
+                  organizationId={organizationId}
+                  columns={columns}
+                  isSelected={selectedIds.has(item._id as Id<"collections">)}
+                  onSelect={(selected: boolean) =>
+                    onSelectItem(item._id as Id<"collections">, selected)
+                  }
+                />
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
-      {!collections.isDone && (
-        <div className="mt-6 flex justify-center">
-          <Button variant="outline" onClick={onLoadMore}>
-            {t("pagination.loadMore")}
-          </Button>
+
+      <div className="px-6 py-3 border-t border-zinc-800/60 bg-zinc-950 flex items-center justify-between text-xs text-zinc-500 shrink-0">
+        <div>
+          {t("pagination.showing")}{" "}
+          <span className="text-zinc-300">{collections.page.length}</span>{" "}
+          {t("pagination.items")}
         </div>
-      )}
-      {collections.page.length > 0 && (
-        <div className="mt-4 text-center text-sm text-muted-foreground">
-          {t("pagination.showing")} {collections.page.length}{" "}
-          {collections.isDone
-            ? t("pagination.items")
-            : t("pagination.itemsMore")}
+        <div className="flex gap-2">
+          {!collections.isDone && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onLoadMore}
+              className="h-7 text-xs bg-zinc-900 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-300"
+            >
+              {t("pagination.loadMore")}
+            </Button>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -816,7 +819,7 @@ type CollectionListItem = FunctionReturnType<
   typeof api.collections.list
 >["page"][number];
 
-function CollectionListItem({
+function CollectionTableRow({
   item,
   organizationId,
   columns,
@@ -846,138 +849,122 @@ function CollectionListItem({
 
   const canDeaccession = item.status !== "deaccessioned";
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active":
+      case "verified":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium capitalize">
+            {status}
+          </span>
+        );
+      case "loaned":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 font-medium capitalize">
+            {status}
+          </span>
+        );
+      case "deaccessioned":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 font-medium capitalize">
+            {status}
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-500 font-medium capitalize">
+            {status}
+          </span>
+        );
+    }
+  };
+
   return (
     <>
-      <div
-        className={`group relative flex items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-muted/40 ${
-          isSelected
-            ? "border-primary ring-2 ring-primary/20"
-            : "border-border/60"
-        }`}
+      <tr
+        className={`group hover:bg-zinc-900/60 transition-colors ${isSelected ? "bg-zinc-900/80" : ""}`}
       >
-        {isColumnVisible("checkbox") && (
-          <div className="flex-shrink-0">
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={(checked) => onSelect(!!checked)}
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        )}
-        <Link
-          href={`/objects/${item._id}`}
-          className="flex flex-1 items-center gap-4 min-w-0 pr-2"
-        >
-          {isColumnVisible("image") && (
-            <div className="relative flex h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-              {primaryImageUrl ? (
-                <Image
-                  src={primaryImageUrl}
-                  alt={item.title}
-                  fill
-                  sizes="64px"
-                  className="object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <Building2 className="h-6 w-6 text-muted-foreground" />
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="flex flex-1 items-center justify-between min-w-0">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium truncate">{item.title}</h3>
-              <div className="mt-1 flex items-center gap-4 text-sm text-muted-foreground">
-                {isColumnVisible("accessionNumber") && (
-                  <span>{item.accessionNumber}</span>
-                )}
-                {isColumnVisible("location") &&
-                  locationPath &&
-                  locationPath.length > 0 && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {locationPath
-                        .map(
-                          (loc: {
-                            _id: Id<"locations">;
-                            name: string;
-                            type: string;
-                          }) => loc.name,
-                        )
-                        .join(" → ")}
-                    </span>
-                  )}
+        <td className="px-4 py-3">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={(checked) => onSelect(!!checked)}
+            onClick={(e) => e.stopPropagation()}
+            className="border-zinc-700 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+          />
+        </td>
+        <td className="px-4 py-3">
+          <div className="w-10 h-10 rounded-lg bg-zinc-800 border border-zinc-700 overflow-hidden relative">
+            {primaryImageUrl ? (
+              <Image
+                src={primaryImageUrl}
+                alt={item.title}
+                fill
+                sizes="40px"
+                className="object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <Building2 className="h-4 w-4 text-zinc-600" />
               </div>
-            </div>
-            <div className="text-right flex-shrink-0 ml-4">
-              {isColumnVisible("objectType") && (
-                <div className="flex flex-wrap justify-end gap-1 mb-1">
-                  {(() => {
-                    try {
-                      const types = item.objectType
-                        ? JSON.parse(item.objectType)
-                        : [];
-                      return Array.isArray(types) && types.length > 0 ? (
-                        types.map((type: string) => (
-                          <span
-                            key={type}
-                            className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-medium"
-                          >
-                            {type}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      );
-                    } catch {
-                      return (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      );
-                    }
-                  })()}
-                </div>
-              )}
-              {isColumnVisible("status") &&
-                (item.status === "deaccessioned" ? (
-                  <span className="inline-flex items-center rounded-full bg-red-500/10 border border-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400">
-                    <Archive className="mr-1 h-3 w-3" />
-                    Deaccessioned
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-400 capitalize">
-                    {item.status}
-                  </span>
-                ))}
-            </div>
+            )}
           </div>
-        </Link>
-
-        {/* Quick Actions Dropdown - MUS-95 */}
-        {canDeaccession && (
-          <div className="flex-shrink-0 ml-2 z-10">
+        </td>
+        <td className="px-4 py-3">
+          <Link
+            href={`/objects/${item._id}`}
+            className="flex flex-col group-hover:cursor-pointer"
+          >
+            <span className="text-zinc-200 font-medium group-hover:text-indigo-400 transition-colors truncate max-w-[200px]">
+              {item.title}
+            </span>
+            <span className="text-[10px] text-zinc-500 font-mono mt-0.5">
+              {item.accessionNumber}
+            </span>
+          </Link>
+        </td>
+        <td className="px-4 py-3">
+          <span className="px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 truncate max-w-[120px] inline-block">
+            {item.objectType ? JSON.parse(item.objectType)[0] : "General"}
+          </span>
+        </td>
+        <td className="px-4 py-3 text-zinc-400 truncate max-w-[150px]">
+          {locationPath && locationPath.length > 0 ? (
+            <span className="flex items-center gap-1">
+              {locationPath[locationPath.length - 1]?.name}
+            </span>
+          ) : (
+            <span className="text-zinc-600">-</span>
+          )}
+        </td>
+        <td className="px-4 py-3 text-zinc-500 font-mono text-[10px]">
+          {new Date(item._creationTime).toLocaleDateString()}
+        </td>
+        <td className="px-4 py-3 text-right">{getStatusBadge(item.status)}</td>
+        <td className="px-4 py-3 text-right">
+          {canDeaccession && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-8 w-8 text-zinc-500 hover:text-white"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                   }}
                 >
                   <MoreVertical className="h-4 w-4" />
-                  <span className="sr-only">Quick actions</span>
+                  <span className="sr-only">Actions</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
                 onClick={(e) => e.stopPropagation()}
+                className="bg-zinc-950 border-zinc-800 text-zinc-300"
               >
                 <PermissionGate permission="collections.create">
                   <DropdownMenuItem
+                    className="hover:bg-zinc-900 focus:bg-zinc-900 cursor-pointer"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -990,11 +977,10 @@ function CollectionListItem({
                 </PermissionGate>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
-        )}
-      </div>
+          )}
+        </td>
+      </tr>
 
-      {/* Deaccession Dialog */}
       <DeaccessionDialog
         open={isDeaccessionDialogOpen}
         onOpenChange={setIsDeaccessionDialogOpen}

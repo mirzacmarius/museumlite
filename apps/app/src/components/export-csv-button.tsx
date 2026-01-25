@@ -1,19 +1,19 @@
 "use client";
 
 import { useI18n } from "@/locales/client";
-import { Button } from "@v1/ui/button";
+import { Button, type ButtonProps } from "@v1/ui/button";
 import { Download, Loader2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
-interface ExportCSVButtonProps {
+interface ExportCSVButtonProps extends ButtonProps {
   data?: Record<string, unknown>[];
   onExport?: () => Promise<Record<string, unknown>[] | undefined>;
   filename: string;
-  disabled?: boolean;
 }
 
 export function convertToCSV(data: Record<string, unknown>[]): string {
+  // ... existing convertToCSV logic ...
   if (data.length === 0) return "";
 
   const headers = Object.keys(data[0] ?? {});
@@ -55,6 +55,11 @@ export function ExportCSVButton({
   onExport,
   filename,
   disabled,
+  className,
+  variant = "outline",
+  size,
+  children,
+  ...props
 }: ExportCSVButtonProps) {
   const t = useI18n();
   const [isExporting, setIsExporting] = useState(false);
@@ -91,13 +96,20 @@ export function ExportCSVButton({
     disabled || isExporting || (data ? data.length === 0 : false);
 
   return (
-    <Button variant="outline" onClick={handleExport} disabled={isDisabled}>
+    <Button
+      variant={variant}
+      size={size}
+      className={className}
+      onClick={handleExport}
+      disabled={isDisabled}
+      {...props}
+    >
       {isExporting ? (
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
       ) : (
         <Download className="mr-2 h-4 w-4" />
       )}
-      Export CSV
+      {children || "Export CSV"}
     </Button>
   );
 }

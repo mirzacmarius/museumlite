@@ -44,16 +44,46 @@ function ObjectGridItem({
     collectionId: item._id as Id<"collections">,
   });
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active":
+      case "verified":
+        return (
+          <span className="px-1.5 py-0.5 rounded bg-emerald-500/80 text-[9px] text-white font-medium capitalize shadow-sm">
+            {status}
+          </span>
+        );
+      case "loaned":
+        return (
+          <span className="px-1.5 py-0.5 rounded bg-blue-500/80 text-[9px] text-white font-medium capitalize shadow-sm">
+            {status}
+          </span>
+        );
+      case "deaccessioned":
+        return (
+          <span className="px-1.5 py-0.5 rounded bg-red-500/80 text-[9px] text-white font-medium capitalize shadow-sm">
+            {status}
+          </span>
+        );
+      default:
+        return (
+          <span className="px-1.5 py-0.5 rounded bg-zinc-500/80 text-[9px] text-white font-medium capitalize shadow-sm">
+            {status}
+          </span>
+        );
+    }
+  };
+
   return (
     <>
       <div
-        className={`group relative rounded-xl border bg-card overflow-hidden transition-all duration-300 hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/30 hover:shadow-xl hover:shadow-indigo-900/10 ${
-          isSelected ? "border-primary ring-2 ring-primary/20" : "border-border"
+        className={`group relative rounded-lg border bg-zinc-900 border-zinc-800 overflow-hidden transition-all duration-300 hover:border-zinc-600 hover:shadow-xl ${
+          isSelected ? "border-indigo-500 ring-1 ring-indigo-500" : ""
         }`}
       >
         {onSelect && (
           <div
-            className={`absolute top-2 left-2 z-10 transition-opacity ${
+            className={`absolute top-2 left-2 z-20 transition-opacity ${
               isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
             }`}
           >
@@ -61,37 +91,36 @@ function ObjectGridItem({
               checked={isSelected}
               onCheckedChange={(checked) => onSelect(!!checked)}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white/80 backdrop-blur-sm"
+              className="bg-zinc-950/80 border-zinc-700 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
             />
           </div>
         )}
         <Link href={`/objects/${item._id}`} className="block">
-          <div className="relative aspect-square bg-muted">
+          <div className="relative aspect-square bg-zinc-950 overflow-hidden">
             {primaryImageUrl ? (
               <Image
                 src={primaryImageUrl}
                 alt={item.title}
                 fill
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                className="object-cover"
+                className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center">
-                <Building2 className="h-12 w-12 text-muted-foreground" />
+              <div className="flex h-full w-full items-center justify-center text-zinc-700 group-hover:text-zinc-500 transition-colors">
+                <Building2 className="h-12 w-12" />
               </div>
             )}
-            {item.status === "deaccessioned" && (
-              <div className="absolute top-2 left-2 ml-6">
-                <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-600">
-                  <Archive className="mr-1 h-3 w-3" />
-                  Deaccessioned
-                </span>
-              </div>
-            )}
+
+            {/* Status Badge Top Right */}
+            <div className="absolute top-2 right-2 z-10">
+              {getStatusBadge(item.status)}
+            </div>
           </div>
           <div className="p-3">
-            <h3 className="font-medium text-sm truncate">{item.title}</h3>
-            <p className="text-xs text-muted-foreground mt-1 truncate">
+            <h3 className="font-medium text-xs text-zinc-200 truncate">
+              {item.title}
+            </h3>
+            <p className="text-[10px] text-zinc-500 font-mono mt-1 truncate">
               {item.accessionNumber}
             </p>
             {item.objectType && (
@@ -103,7 +132,7 @@ function ObjectGridItem({
                       ? types.slice(0, 2).map((type: string) => (
                           <span
                             key={type}
-                            className="inline-flex items-center rounded-md bg-secondary px-1.5 py-0.5 text-xs font-medium"
+                            className="inline-flex items-center rounded bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 text-[9px] text-zinc-400 font-medium"
                           >
                             {type}
                           </span>
@@ -119,27 +148,29 @@ function ObjectGridItem({
         </Link>
 
         {canDeaccession && (
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-20">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant="secondary"
+                  variant="ghost"
                   size="icon"
-                  className="h-7 w-7"
+                  className="h-6 w-6 bg-zinc-950/80 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 rounded-full border border-zinc-700"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                   }}
                 >
-                  <MoreVertical className="h-4 w-4" />
+                  <MoreVertical className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
                 onClick={(e) => e.stopPropagation()}
+                className="bg-zinc-950 border-zinc-800 text-zinc-300"
               >
                 <PermissionGate permission="collections.create">
                   <DropdownMenuItem
+                    className="hover:bg-zinc-900 focus:bg-zinc-900 cursor-pointer"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();

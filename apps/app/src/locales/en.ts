@@ -1618,7 +1618,7 @@ export default {
     },
   },
   objects: {
-    title: "Collection Objects",
+    title: "Object Catalog",
     description: "Browse and manage your objects",
     addObject: "Add Object",
     newObject: "New Object",
