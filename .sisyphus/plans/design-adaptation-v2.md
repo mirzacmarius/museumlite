@@ -268,7 +268,7 @@ Milestone 6: Final Polish
 
 ---
 
-### - [ ] 1.3 Create LocationTree Component
+### - [x] 1.3 Create LocationTree Component
 
 **What to do**:
 - Create `packages/ui/src/components/location-tree.tsx`
@@ -325,7 +325,7 @@ interface LocationNode {
 
 ---
 
-### - [ ] 1.4 Create RackVisualization Component
+### - [x] 1.4 Create RackVisualization Component
 
 **What to do**:
 - Create `packages/ui/src/components/rack-visualization.tsx`
@@ -382,7 +382,7 @@ interface RackItem {
 
 ---
 
-### - [ ] 1.5 Create TimelineView Component
+### - [x] 1.5 Create TimelineView Component
 
 **What to do**:
 - Create `packages/ui/src/components/timeline-view.tsx`
