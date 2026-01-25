@@ -143,9 +143,77 @@ export const getAnalytics = query({
         .sort((a, b) => b._creationTime - a._creationTime)
         .slice(0, 4)
         .map(async (group) => {
-          const imageUrl = group.imageId
-            ? (await ctx.storage.getUrl(group.imageId)) ?? undefined
-            : undefined;
+          let imageUrl: string | undefined;
+
+          // 1. Try group's own image first
+          if (group.imageId) {
+            imageUrl = (await ctx.storage.getUrl(group.imageId)) ?? undefined;
+          }
+
+          // 2. Fallback to item images if no group image
+          if (!imageUrl) {
+            // Find items in this group
+            const groupItems = await ctx.db
+              .query("collectionGroupItems")
+              .withIndex("by_collectionGroup", (q) =>
+                q.eq("collectionGroupId", group._id),
+              )
+              .take(20);
+
+            // Look for primary image first
+            for (const groupItem of groupItems) {
+              const primaryMedia = await ctx.db
+                .query("mediaFiles")
+                .withIndex("by_collection", (q) =>
+                  q.eq("collectionId", groupItem.collectionId),
+                )
+                .filter((q) =>
+                  q.and(
+                    q.eq(q.field("isPrimary"), true),
+                    q.eq(q.field("fileType"), "image"),
+                  ),
+                )
+                .first();
+
+              if (primaryMedia) {
+                if (primaryMedia.thumbnailStorageId) {
+                  imageUrl =
+                    (await ctx.storage.getUrl(primaryMedia.thumbnailStorageId)) ??
+                    undefined;
+                } else {
+                  imageUrl =
+                    (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined;
+                }
+                break;
+              }
+            }
+
+            // If no primary, try any image
+            if (!imageUrl) {
+              for (const groupItem of groupItems) {
+                const anyMedia = await ctx.db
+                  .query("mediaFiles")
+                  .withIndex("by_collection", (q) =>
+                    q.eq("collectionId", groupItem.collectionId),
+                  )
+                  .filter((q) => q.eq(q.field("fileType"), "image"))
+                  .first();
+
+                if (anyMedia) {
+                  if (anyMedia.thumbnailStorageId) {
+                    imageUrl =
+                      (await ctx.storage.getUrl(anyMedia.thumbnailStorageId)) ??
+                      undefined;
+                  } else {
+                    imageUrl =
+                      (await ctx.storage.getUrl(anyMedia.storageId)) ?? undefined;
+                  }
+                  break;
+                }
+              }
+            }
+          }
+
           return {
             id: group._id,
             name: group.name,
