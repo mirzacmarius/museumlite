@@ -208,10 +208,9 @@ export const list = query({
           managedByRoleName = role?.name;
         }
 
-        let imageUrl: string | undefined;
-        if (g.imageId) {
-          imageUrl = (await ctx.storage.getUrl(g.imageId)) ?? undefined;
-        }
+        // Use fallback helper: group.imageId → item primary → any item image → null
+        const imageUrl =
+          (await getCollectionGroupThumbnailUrl(ctx, g)) ?? undefined;
 
         return {
           _id: g._id,
@@ -273,10 +272,9 @@ export const get = query({
       managedByRoleName = role?.name;
     }
 
-    let imageUrl: string | undefined;
-    if (group.imageId) {
-      imageUrl = (await ctx.storage.getUrl(group.imageId)) ?? undefined;
-    }
+    // Use fallback helper: group.imageId → item primary → any item image → null
+    const imageUrl =
+      (await getCollectionGroupThumbnailUrl(ctx, group)) ?? undefined;
 
     return {
       ...group,
