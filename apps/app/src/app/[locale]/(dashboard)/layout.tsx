@@ -10,11 +10,12 @@ import { SkipNavigation } from "@/components/skip-navigation";
 import { I18nProviderClient } from "@/locales/client";
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@v1/backend/convex/_generated/api";
-import { SidebarProvider, SidebarTrigger } from "@v1/ui/sidebar";
+import { SidebarProvider } from "@v1/ui/sidebar";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { fetchQuery, preloadQuery } from "convex/nextjs";
 import { redirect } from "next/navigation";
+import { DashboardHeader } from "./dashboard-header";
 
 export default async function Layout({
   children,
@@ -56,13 +57,12 @@ export default async function Layout({
                   preloadedProducts={preloadedProducts}
                 />
                 <main className="flex min-h-screen w-full flex-col bg-background">
-                  <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 sm:px-6 backdrop-blur-xl">
-                    <SidebarTrigger className="-ml-1" />
+                  <DashboardHeader>
                     <div id="search" className="flex items-center gap-2">
                       <CommandPalette />
                       <NotificationBell />
                     </div>
-                  </header>
+                  </DashboardHeader>
                   <div id="main-content" className="flex-1">
                     {children}
                   </div>
