@@ -1,12 +1,12 @@
 "use client";
 
-import { Suspense } from "react";
-import { useQuery } from "convex/react";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
-import { KanbanColumnSkeleton } from "./kanban-column-skeleton";
+import { Suspense } from "react";
 import { KanbanColumn } from "./kanban-column";
+import { KanbanColumnSkeleton } from "./kanban-column-skeleton";
 
 type WorkflowStep = {
   stepNumber: number;
@@ -31,7 +31,7 @@ export function AccessionKanban({
 
   if (workflowSteps === undefined) {
     return (
-      <div className="flex-1 overflow-x-auto px-6">
+      <div className="flex-1 overflow-x-auto">
         <div className="flex h-full min-w-max gap-6 pb-4">
           <KanbanColumnSkeleton />
           <KanbanColumnSkeleton />
@@ -42,7 +42,7 @@ export function AccessionKanban({
   }
 
   return (
-    <div className="flex-1 overflow-x-auto px-6">
+    <div className="flex-1 overflow-x-auto">
       <div className="flex h-full min-w-max gap-6 pb-4">
         {workflowSteps.steps.map((step: WorkflowStep) => (
           <Suspense key={step.stepNumber} fallback={<KanbanColumnSkeleton />}>

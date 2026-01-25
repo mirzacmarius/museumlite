@@ -7,7 +7,13 @@ import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
+import { Inter } from "next/font/google";
 import { ConvexClientProvider } from "../convex-client-provider";
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+});
 
 export const metadata: Metadata = {
   title: "Museumlite",
@@ -244,10 +250,7 @@ export default function RootLayout({
     <ConvexAuthNextjsServerProvider>
       <html lang="en" suppressHydrationWarning>
         <body
-          className={cn(
-            `${GeistSans.variable} ${GeistMono.variable}`,
-            "antialiased",
-          )}
+          className={cn(inter.className, GeistMono.variable, "antialiased")}
           suppressHydrationWarning
         >
           <ThemeProvider

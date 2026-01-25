@@ -11,7 +11,6 @@ import {
   FileEdit,
   Search,
   ShieldCheck,
-  User,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -35,17 +34,25 @@ type KanbanColumnProps = {
   preloadedAccessions: unknown;
 };
 
-const stepColors: Record<number, string> = {
-  0: "bg-slate-500",
-  1: "bg-amber-500",
-  2: "bg-blue-500",
-  3: "bg-purple-500",
-  4: "bg-indigo-500",
-  [-1]: "bg-emerald-500",
+const stepDotStyles: Record<number, string> = {
+  0: "bg-slate-500 shadow-[0_0_8px_rgba(100,116,139,0.5)]",
+  1: "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]",
+  2: "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]",
+  3: "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]",
+  4: "bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]",
+  [-1]: "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]",
 };
 
-function getStepColor(stepNumber: number): string {
-  return stepColors[stepNumber] || stepColors[stepNumber % 5] || "bg-slate-500";
+const DEFAULT_DOT_STYLE = "bg-slate-500 shadow-[0_0_8px_rgba(100,116,139,0.5)]";
+
+function getStepDotStyle(stepNumber: number): string {
+  const direct = stepDotStyles[stepNumber];
+  if (direct) return direct;
+
+  const modulo = stepDotStyles[stepNumber % 5];
+  if (modulo) return modulo;
+
+  return DEFAULT_DOT_STYLE;
 }
 
 function getStepIcon(stepNumber: number) {
@@ -54,6 +61,15 @@ function getStepIcon(stepNumber: number) {
   if (stepNumber === 1) return <Clock className="h-4 w-4" />;
   if (stepNumber === 2) return <Search className="h-4 w-4" />;
   return <ShieldCheck className="h-4 w-4" />;
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 export function KanbanColumn({
@@ -69,7 +85,7 @@ export function KanbanColumn({
     paginationOpts: { numItems: 100, cursor: null },
   });
 
-  const color = getStepColor(stepNumber);
+  const dotStyle = getStepDotStyle(stepNumber);
   const icon = getStepIcon(stepNumber);
 
   const filteredAccessions =
@@ -94,21 +110,12 @@ export function KanbanColumn({
 
   return (
     <div className="flex w-72 flex-shrink-0 flex-col">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className={`rounded p-1 ${color}/20`}>{icon}</div>
-          <div>
-            <span className="text-sm font-medium text-foreground">
-              {stepName}
-            </span>
-            {roleName && (
-              <span className="ml-2 text-xs text-muted-foreground">
-                ({roleName})
-              </span>
-            )}
-          </div>
-        </div>
-        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+      <div className="flex items-center justify-between text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+        <span>
+          {stepName}
+          {roleName && <span className="ml-1 opacity-70">({roleName})</span>}
+        </span>
+        <span className="bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded text-[10px]">
           {filteredAccessions.length}
         </span>
       </div>
@@ -129,31 +136,31 @@ export function KanbanColumn({
                   <Link
                     key={accession._id}
                     href={`/accessions/${accession._id}`}
-                    className="group animate-enter rounded-lg border border-border/60 bg-muted/50 p-3 transition-all duration-200 hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/20 hover:bg-muted"
+                    className="bg-zinc-900 border border-zinc-800 p-3 rounded-lg shadow-sm hover:border-zinc-700 transition-colors cursor-pointer group animate-enter block"
                     style={{ animationDelay: `${Math.min(index * 50, 300)}ms` }}
                   >
-                    <div className="mb-1 flex items-center justify-between">
-                      <span className="text-xs font-medium text-muted-foreground">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-[10px] font-mono text-zinc-500">
                         {accession.accessionNumber}
                       </span>
-                      <div className={`h-2 w-2 rounded-full ${color}`} />
+                      <div className={`w-1.5 h-1.5 rounded-full ${dotStyle}`} />
                     </div>
-                    <p className="mb-2 text-sm font-medium text-foreground line-clamp-2">
+                    <p className="text-sm text-zinc-200 font-medium mb-1 group-hover:text-indigo-400 transition-colors line-clamp-2">
                       {accession.source || t("kanban.unknownSource")}
                     </p>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <span className="capitalize">{accession.method}</span>
-                      </div>
-                      {accession.assigneeName && (
-                        <div className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5">
-                          <User className="h-3 w-3 text-primary" />
-                          <span className="text-primary">
-                            {accession.assigneeName}
-                          </span>
+                    <p className="text-xs text-zinc-500 mb-3 capitalize">
+                      {accession.method}
+                    </p>
+                    {accession.assigneeName && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center text-[9px] text-indigo-300 font-medium">
+                          {getInitials(accession.assigneeName)}
                         </div>
-                      )}
-                    </div>
+                        <span className="text-[10px] text-zinc-400">
+                          {accession.assigneeName}
+                        </span>
+                      </div>
+                    )}
                   </Link>
                 ),
               )

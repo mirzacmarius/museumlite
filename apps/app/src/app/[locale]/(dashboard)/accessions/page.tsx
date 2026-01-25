@@ -46,7 +46,7 @@ export default async function AccessionsPage() {
     <div className="flex h-full w-full flex-col bg-background">
       <Suspense fallback={<AccessionsPageSkeleton />}>
         <AccessionsPageClient
-          organizations={organizations}
+          organizationId={firstOrg._id}
           preloadedAccessions={preloadedAccessions}
         />
       </Suspense>
