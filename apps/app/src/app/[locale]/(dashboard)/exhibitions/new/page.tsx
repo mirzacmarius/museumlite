@@ -328,7 +328,7 @@ export default function NewExhibitionPage() {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-100 dark:text-zinc-900"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 <Save className="mr-2 h-4 w-4" />
                 {isSubmitting

@@ -42,3 +42,42 @@
 **Verification**: 
 - lsp_diagnostics: clean
 - bun run typecheck: passed (6 successful, 6 total)
+### [2026-01-25] Task 4.1 - Exhibitions Button Migration
+
+**Files migrated**: 3 occurrences across exhibitions pages
+- `exhibitions/new/page.tsx:331` - Create button
+- `exhibitions/[id]/page.tsx:562` - Upload button
+- `exhibitions/[id]/edit/page.tsx:355` - Save button
+
+**Pattern applied**: `bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-100 dark:text-zinc-900` → `bg-primary text-primary-foreground hover:bg-primary/90`
+
+**Verification**: 
+- lsp_diagnostics: clean on all 3 files
+- No type errors introduced
+- CSS variables now consistent with design system
+
+**Notes**: 
+- All 3 buttons were secondary action buttons (create/upload/save)
+- Dark mode variants removed (primary color handles both light/dark via CSS variables)
+- Follows established pattern from Milestone 3 (Management Pages)
+
+### [2026-01-25] Task 4.2 - Conservation Button Migration
+
+**Files migrated**: 3 occurrences across conservation pages
+- `conservation/page.tsx:79` - New treatment button
+- `conservation/new/page.tsx:238` - Create record button
+- `conservation/[id]/edit/page.tsx:261` - Save changes button
+
+**Pattern applied**: 
+- File 1: `bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-100 dark:text-zinc-900` → `bg-primary text-primary-foreground hover:bg-primary/90`
+- Files 2-3: `bg-zinc-100 text-zinc-900 hover:bg-zinc-200` → `bg-primary text-primary-foreground hover:bg-primary/90`
+
+**Verification**: 
+- lsp_diagnostics: clean on all 3 files
+- No type errors introduced
+- CSS variables now consistent with design system
+
+**Notes**: 
+- All 3 buttons are secondary action buttons (new/create/save)
+- Consistent with Task 4.1 (exhibitions) pattern
+- Completes Milestone 4: Feature Pages button migration

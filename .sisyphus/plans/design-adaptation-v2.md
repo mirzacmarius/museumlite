@@ -710,7 +710,7 @@ interface TimelineEvent {
 
 ---
 
-### - [ ] 4.1 Style Exhibitions Pages with Timeline
+### - [x] 4.1 Style Exhibitions Pages with Timeline
 
 **What to do**:
 - Apply design styling to exhibitions list and detail
@@ -748,7 +748,7 @@ interface TimelineEvent {
 
 ---
 
-### - [ ] 4.2 Style Conservation Pages
+### - [x] 4.2 Style Conservation Pages
 
 **What to do**:
 - Apply design styling to conservation ticket table
@@ -781,7 +781,7 @@ interface TimelineEvent {
 
 ---
 
-### - [ ] 4.3 Style Insurance Pages
+### - [x] 4.3 Style Insurance Pages (N/A - directory does not exist)
 
 **What to do**:
 - Apply design styling to insurance policies/claims pages

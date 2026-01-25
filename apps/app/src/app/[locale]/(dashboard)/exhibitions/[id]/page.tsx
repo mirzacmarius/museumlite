@@ -559,7 +559,7 @@ export default function ExhibitionDetailPage() {
                         <Button
                           onClick={handleFileUpload}
                           disabled={!selectedFile || isUploading}
-                          className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
+                          className="bg-primary text-primary-foreground hover:bg-primary/90"
                         >
                           <Upload className="mr-2 h-4 w-4" />
                           {isUploading
