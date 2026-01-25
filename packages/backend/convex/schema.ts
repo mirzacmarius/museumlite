@@ -220,6 +220,8 @@ export default defineSchema({
     imageId: v.optional(v.id("_storage")),
     managedByRoleId: v.optional(v.id("roles")),
     itemsCount: v.optional(v.number()),
+    storageLocation: v.optional(v.string()),
+    valuation: v.optional(v.number()),
     createdAt: v.number(),
     createdBy: v.id("users"),
     lastModifiedAt: v.optional(v.number()),
