@@ -117,7 +117,7 @@ export function RecentActivityLog({
       )}
       <div className="rounded-xl border border-border overflow-hidden bg-card">
         <table className="w-full text-left text-xs">
-          <thead className="bg-muted/50 text-muted-foreground font-medium">
+          <thead className="bg-zinc-900/50 text-zinc-500 font-medium">
             <tr>
               <th className="px-4 py-3 font-medium">Object / Collection</th>
               <th className="px-4 py-3 font-medium">Action</th>
@@ -125,7 +125,7 @@ export function RecentActivityLog({
               <th className="px-4 py-3 font-medium text-right">Time</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border">
+          <tbody className="divide-y divide-zinc-800/60">
             {activities.length === 0 ? (
               <tr>
                 <td
@@ -142,15 +142,15 @@ export function RecentActivityLog({
                 return (
                   <tr
                     key={`${activity.type}-${activity.id}`}
-                    className="hover:bg-muted/40 transition-colors group"
+                    className="hover:bg-zinc-900/40 transition-colors cursor-pointer group"
                   >
                     <td className="p-0">
                       <Link
                         href={href}
-                        className="flex items-center gap-2 px-4 py-3 text-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                        className="flex items-center gap-2 px-4 py-3 text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                         aria-label={`View ${activity.type}: ${activity.title}`}
                       >
-                        <div className="w-6 h-6 rounded bg-muted flex items-center justify-center text-[10px] text-muted-foreground">
+                        <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">
                           {getInitials(activity.type)}
                         </div>
                         {activity.title}
@@ -163,8 +163,8 @@ export function RecentActivityLog({
                         {getActionText(activity.type, activity.status)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">System</td>
-                    <td className="px-4 py-3 text-right text-muted-foreground font-mono text-[10px]">
+                    <td className="px-4 py-3 text-zinc-400">System</td>
+                    <td className="px-4 py-3 text-right text-zinc-500 font-mono text-[10px]">
                       {formatRelativeTime(activity.timestamp)}
                     </td>
                   </tr>

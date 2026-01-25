@@ -29,6 +29,31 @@ import { Suspense } from "react";
 import { CollectionGrowthChart } from "./_components/collection-growth-chart";
 import { LoanStatusChart } from "./_components/loan-status-chart";
 
+const sampleActivities: RecentActivityItem[] = [
+  {
+    type: "collection",
+    id: "1",
+    title: "Bust of Marcus Aurelius",
+    timestamp: Date.now() - 10 * 60 * 1000,
+    status: "active",
+  },
+  {
+    type: "accession",
+    id: "2",
+    title: "Greco-Roman Collection",
+    subtitle: "Audit Complete",
+    timestamp: Date.now() - 2 * 60 * 60 * 1000,
+    status: "approved",
+  },
+  {
+    type: "loan",
+    id: "3",
+    title: "Loan #4401 (The Met)",
+    timestamp: Date.now() - 5 * 60 * 60 * 1000,
+    status: "pending",
+  },
+];
+
 export default function DashboardPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const locale = useCurrentLocale();
@@ -332,6 +357,8 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+
+        <RecentActivityLog activities={sampleActivities} />
       </div>
     </div>
   );
