@@ -5,20 +5,17 @@ import {
   BookCopy,
   BookUser,
   Building2,
-  CalendarRange,
   Check,
   ChevronRight,
   ChevronsUpDown,
   ClipboardList,
   DollarSign,
   FileCheck,
-  FileHeart,
   FileX,
   History,
   Image,
   Inbox,
   LayoutGrid,
-  Library,
   Lock,
   LogOut,
   MapPin,
@@ -28,10 +25,8 @@ import {
   RefreshCw,
   Search,
   Settings2,
-  ShieldCheck,
   ShoppingCart,
   Truck,
-  Users,
 } from "lucide-react";
 import * as React from "react";
 
@@ -99,8 +94,8 @@ function NavSection({
       className="group/section px-1 mb-2 group-data-[collapsible=icon]:hidden"
       open={defaultOpen || forceOpen}
     >
-      <summary className="px-2 pb-2 flex items-center justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:text-foreground/80 text-muted-foreground transition-colors group/summary">
-        <span className="text-[10px] font-medium uppercase tracking-widest">
+      <summary className="px-2 pb-2 flex items-center justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:text-zinc-300 text-zinc-500 transition-colors group/summary">
+        <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500 group-hover/summary:text-zinc-300 transition-colors">
           {title}
         </span>
         <div className="flex items-center gap-2">
@@ -111,7 +106,7 @@ function NavSection({
                 e.preventDefault();
                 onAction?.();
               }}
-              className="opacity-0 group-hover/summary:opacity-100 transition-opacity hover:text-foreground"
+              className="opacity-0 group-hover/summary:opacity-100 transition-opacity hover:text-zinc-200"
             >
               {actionIcon}
             </button>
@@ -153,8 +148,8 @@ function NavItem({
         className={cn(
           "flex items-center gap-2.5 px-3 py-1.5 text-xs rounded-md transition-all group h-auto",
           isActive
-            ? "text-foreground bg-muted/40 border border-border shadow-sm hover:bg-muted/40 hover:text-foreground"
-            : "text-muted-foreground hover:bg-muted/30 hover:text-foreground bg-transparent border border-transparent",
+            ? "bg-zinc-800/40 border border-zinc-800/60 shadow-sm text-zinc-200 hover:bg-zinc-800/60 hover:text-zinc-100"
+            : "text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 bg-transparent border border-transparent",
           locked && "opacity-70 pointer-events-none",
         )}
       >
@@ -175,18 +170,18 @@ function NavItem({
               className={cn(
                 "size-4 shrink-0",
                 isActive
-                  ? "text-accent"
-                  : "group-hover:text-muted-foreground transition-colors",
+                  ? "text-indigo-400"
+                  : "group-hover:text-zinc-300 transition-colors",
               )}
             />
           ) : null}
           <span className="font-medium flex-1">{title}</span>
           {locked ? (
-            <Lock className="ml-auto size-3 text-muted-foreground/60" />
+            <Lock className="ml-auto size-3 text-zinc-500/60" />
           ) : (
             <>
               {badge !== undefined && (
-                <span className="ml-auto text-[9px] bg-muted text-muted-foreground px-1 rounded">
+                <span className="ml-auto text-[9px] bg-zinc-900 text-zinc-400 px-1 rounded border border-zinc-800">
                   {badge}
                 </span>
               )}
@@ -315,66 +310,66 @@ export function AppSidebar({
   return (
     <Sidebar
       collapsible="icon"
-      className="border-r border-border bg-background"
+      className="border-r border-zinc-800/60 bg-zinc-950"
     >
-      <SidebarHeader className="bg-background p-3 border-b border-border">
+      <SidebarHeader className="bg-zinc-950 p-3 border-b border-zinc-800/60">
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild id="org-menu-trigger">
                 <button
                   type="button"
-                  className="w-full flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-muted/50 transition-all duration-200 group border border-transparent hover:border-border data-[state=open]:bg-muted/50 outline-none"
+                  className="w-full flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-zinc-900 transition-all duration-200 group border border-transparent hover:border-zinc-800 data-[state=open]:bg-zinc-900 outline-none"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="size-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-md shadow-inner flex items-center justify-center text-primary-foreground font-medium text-xs border border-primary/10 shrink-0">
-                      <Logo className="size-5 text-primary-foreground" />
+                    <div className="size-8 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-md shadow-inner flex items-center justify-center text-white font-medium text-xs border border-white/10 shrink-0">
+                      <Logo className="size-5 text-white" />
                     </div>
                     <div className="flex flex-col text-left group-data-[collapsible=icon]:hidden">
-                      <span className="text-xs font-medium text-foreground group-hover:text-foreground transition-colors truncate max-w-[120px]">
+                      <span className="text-xs font-semibold text-zinc-200 group-hover:text-white transition-colors truncate max-w-[120px]">
                         {currentOrg?.name || "Select Org"}
                       </span>
-                      <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">
+                      <span className="text-[10px] text-zinc-500 truncate max-w-[120px]">
                         {currentOrg?.role.name || "No Organization"}
                       </span>
                     </div>
                   </div>
-                  <ChevronsUpDown className="size-3.5 text-muted-foreground/60 group-hover:text-muted-foreground transition-colors group-data-[collapsible=icon]:hidden" />
+                  <ChevronsUpDown className="size-3.5 text-zinc-600 group-hover:text-zinc-400 transition-colors group-data-[collapsible=icon]:hidden" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg bg-popover border-border"
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg bg-zinc-950 border-zinc-800"
                 align="start"
                 side="bottom"
                 sideOffset={4}
               >
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                <DropdownMenuLabel className="text-xs text-zinc-500">
                   Organizations
                 </DropdownMenuLabel>
                 {organizations.map((org) => (
                   <DropdownMenuItem
                     key={org._id}
                     onClick={() => setCurrentOrganizationId(org._id)}
-                    className="gap-2 p-2 focus:bg-muted focus:text-foreground"
+                    className="gap-2 p-2 focus:bg-zinc-900 focus:text-zinc-200"
                   >
-                    <div className="flex size-6 items-center justify-center rounded-sm border border-border bg-muted">
-                      <Building2 className="size-4 shrink-0 text-muted-foreground" />
+                    <div className="flex size-6 items-center justify-center rounded-sm border border-zinc-800 bg-zinc-900">
+                      <Building2 className="size-4 shrink-0 text-zinc-500" />
                     </div>
-                    <span className="text-foreground">{org.name}</span>
+                    <span className="text-zinc-200">{org.name}</span>
                     {currentOrganizationId === org._id && (
-                      <Check className="ml-auto size-4 text-accent" />
+                      <Check className="ml-auto size-4 text-indigo-500" />
                     )}
                   </DropdownMenuItem>
                 ))}
-                <DropdownMenuSeparator className="bg-border/50" />
+                <DropdownMenuSeparator className="bg-zinc-800/50" />
                 <DropdownMenuItem
-                  className="gap-2 p-2 focus:bg-muted focus:text-foreground"
+                  className="gap-2 p-2 focus:bg-zinc-900 focus:text-zinc-200"
                   onClick={() => router.push("/organizations/new")}
                 >
-                  <div className="flex size-6 items-center justify-center rounded-md border border-border bg-muted">
-                    <Plus className="size-4 text-muted-foreground" />
+                  <div className="flex size-6 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900">
+                    <Plus className="size-4 text-zinc-500" />
                   </div>
-                  <div className="font-medium text-muted-foreground">
+                  <div className="font-medium text-zinc-500">
                     Add organization
                   </div>
                 </DropdownMenuItem>
@@ -387,17 +382,17 @@ export function AppSidebar({
       <SidebarContent className="py-4 px-2 gap-0 overflow-y-auto">
         <div className="px-2 mb-6 group-data-[collapsible=icon]:hidden">
           <div className="relative group">
-            <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-muted-foreground group-focus-within:text-foreground/80 transition-colors" />
+            <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
             <input
               type="text"
               placeholder="Search objects, loans..."
-              className="w-full bg-muted/40 border border-border rounded-md text-xs py-1.5 pl-8 pr-3 text-foreground/80 placeholder-muted-foreground/60 focus:outline-none focus:bg-muted focus:border-input transition-all cursor-pointer"
+              className="w-full bg-zinc-900/40 border border-zinc-800/60 rounded-md text-xs py-1.5 pl-8 pr-3 text-zinc-300 placeholder-zinc-600 focus:outline-none focus:bg-zinc-900 focus:border-zinc-700 transition-all cursor-pointer"
               readOnly
               onClick={openCommandPalette}
               onFocus={openCommandPalette}
             />
             <div className="absolute right-2 top-1.5 flex gap-1">
-              <span className="text-[10px] bg-muted text-muted-foreground px-1 rounded border border-input">
+              <span className="text-[10px] bg-zinc-900 text-zinc-500 px-1 rounded border border-zinc-800">
                 ⌘K
               </span>
             </div>
@@ -438,7 +433,7 @@ export function AppSidebar({
               />
             ))}
             {(!collectionGroups || collectionGroups.length === 0) && (
-              <div className="px-3 py-2 text-[11px] text-muted-foreground/60">
+              <div className="px-3 py-2 text-[11px] text-zinc-500/60">
                 No collections yet
               </div>
             )}
@@ -528,38 +523,38 @@ export function AppSidebar({
         </NavSection>
       </SidebarContent>
 
-      <SidebarFooter className="p-3 border-t border-border bg-background">
+      <SidebarFooter className="p-3 border-t border-zinc-800/60 bg-zinc-950">
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild id="user-menu-trigger">
                 <button
                   type="button"
-                  className="flex w-full items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors text-left outline-none group-data-[state=open]:bg-muted/50"
+                  className="flex w-full items-center gap-3 p-2 rounded-lg hover:bg-zinc-900/50 cursor-pointer transition-colors text-left outline-none group-data-[state=open]:bg-zinc-900/50"
                 >
                   <div className="relative shrink-0">
-                    <Avatar className="h-8 w-8 rounded-full border border-input">
+                    <Avatar className="h-8 w-8 rounded-full border border-zinc-700">
                       <AvatarImage
                         src={user?.avatarUrl ?? undefined}
                         alt={user?.name ?? undefined}
                       />
                       <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                     </Avatar>
-                    <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-background rounded-full" />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-zinc-950 rounded-full" />
                   </div>
                   <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                    <p className="text-xs font-medium text-foreground truncate">
+                    <p className="text-xs font-medium text-zinc-200 truncate">
                       {user?.name ?? undefined}
                     </p>
-                    <p className="text-[10px] text-muted-foreground truncate">
+                    <p className="text-[10px] text-zinc-500 truncate">
                       {user?.email ?? undefined}
                     </p>
                   </div>
-                  <ChevronsUpDown className="ml-auto size-3.5 text-muted-foreground/60 group-data-[collapsible=icon]:hidden" />
+                  <ChevronsUpDown className="ml-auto size-3.5 text-zinc-600 group-data-[collapsible=icon]:hidden" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg bg-popover border-border text-foreground/80"
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg bg-zinc-950 border-zinc-800 text-zinc-300"
                 side="bottom"
                 align="end"
                 sideOffset={4}
@@ -574,16 +569,16 @@ export function AppSidebar({
                       <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-semibold">
+                      <span className="truncate font-semibold text-zinc-200">
                         {user?.name ?? undefined}
                       </span>
-                      <span className="truncate text-xs">
+                      <span className="truncate text-xs text-zinc-500">
                         {user?.email ?? undefined}
                       </span>
                     </div>
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-border" />
+                <DropdownMenuSeparator className="bg-zinc-800" />
                 {monthlyProProduct && yearlyProProduct && (
                   <>
                     <DropdownMenuItem className="p-0 focus:bg-transparent">
@@ -599,21 +594,21 @@ export function AppSidebar({
                         </CheckoutLink>
                       </Button>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-border" />
+                    <DropdownMenuSeparator className="bg-zinc-800" />
                   </>
                 )}
-                <DropdownMenuItem className="flex justify-between focus:bg-muted focus:text-foreground">
+                <DropdownMenuItem className="flex justify-between focus:bg-zinc-900 focus:text-zinc-200">
                   <span>Theme</span>
                   <ThemeSwitcher />
                 </DropdownMenuItem>
-                <DropdownMenuItem className="flex justify-between focus:bg-muted focus:text-foreground">
+                <DropdownMenuItem className="flex justify-between focus:bg-zinc-900 focus:text-zinc-200">
                   <span>Language</span>
                   <LanguageSwitcher />
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-border" />
+                <DropdownMenuSeparator className="bg-zinc-800" />
                 <DropdownMenuItem
                   onClick={() => signOut()}
-                  className="focus:bg-muted focus:text-foreground"
+                  className="focus:bg-zinc-900 focus:text-zinc-200"
                 >
                   <LogOut className="mr-2 size-4" />
                   Log out
