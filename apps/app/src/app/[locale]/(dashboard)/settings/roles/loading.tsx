@@ -17,13 +17,20 @@ export default function RolesSettingsLoading() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="rounded-lg border border-border bg-card p-4">
+        {Array.from({ length: 4 }, (_, i) => ({
+          key: `role-card-${i}`,
+          isSystem: i === 0,
+          showActions: i > 0,
+        })).map((role) => (
+          <div
+            key={role.key}
+            className="rounded-lg border border-border bg-card p-4"
+          >
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <div className="h-5 w-24 animate-pulse rounded bg-muted/60" />
-                  {i === 0 && (
+                  {role.isSystem && (
                     <div className="h-5 w-16 animate-pulse rounded-full bg-primary/10" />
                   )}
                 </div>
@@ -37,7 +44,7 @@ export default function RolesSettingsLoading() {
                   </div>
                 </div>
               </div>
-              {i > 0 && (
+              {role.showActions && (
                 <div className="flex gap-2">
                   <div className="h-8 w-8 animate-pulse rounded bg-muted/30" />
                   <div className="h-8 w-8 animate-pulse rounded bg-muted/30" />

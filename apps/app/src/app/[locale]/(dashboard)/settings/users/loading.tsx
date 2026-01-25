@@ -18,8 +18,8 @@ export default function UsersSettingsLoading() {
 
       <div className="rounded-lg border border-border bg-card">
         <div className="divide-y divide-border">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="flex items-center justify-between p-4">
+          {Array.from({ length: 5 }, (_, i) => `user-row-${i}`).map((key) => (
+            <div key={key} className="flex items-center justify-between p-4">
               <div className="flex items-center gap-4">
                 <div className="h-10 w-10 animate-pulse rounded-full bg-muted/50" />
                 <div>

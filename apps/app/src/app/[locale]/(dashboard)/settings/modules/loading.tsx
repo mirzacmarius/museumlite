@@ -11,9 +11,9 @@ export default function ModulesSettingsLoading() {
       </div>
 
       <div className="flex w-full flex-col gap-4">
-        {[...Array(7)].map((_, i) => (
+        {Array.from({ length: 7 }, (_, i) => `module-card-${i}`).map((key) => (
           <div
-            key={i}
+            key={key}
             className="flex w-full flex-col rounded-lg border border-border bg-card"
           >
             <div className="flex w-full items-start justify-between p-6">
