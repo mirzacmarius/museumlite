@@ -162,8 +162,8 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-full w-full flex-col bg-background">
-      <div className="px-6 py-4 border-b border-border bg-background/50 backdrop-blur-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="px-4 sm:px-6 py-4 border-b border-border bg-background/50 backdrop-blur-sm">
+        <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
           <KpiCard
             title={kpi("totalObjects")}
             value={formatNumber(analytics.objects.total, locale)}
@@ -195,30 +195,30 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="px-6 pt-6">
+      <div className="px-4 sm:px-6 pt-6">
         <Suspense fallback={<SkeletonCard className="h-96" />}>
           <AssignmentsQueue />
         </Suspense>
       </div>
 
-      <div className="px-6 pt-6">
+      <div className="px-4 sm:px-6 pt-6">
         <Suspense fallback={<SkeletonCard className="h-64" />}>
           <NewArrivalsFeed />
         </Suspense>
       </div>
 
-      <div className="px-6 pt-6">
+      <div className="px-4 sm:px-6 pt-6">
         <h3 className="text-xs font-semibold text-muted-foreground mb-4 uppercase tracking-wider">
           {t("trends")}
         </h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="rounded-xl border border-border bg-card p-6">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
             <h4 className="text-sm font-semibold mb-4">Collection Growth</h4>
             <Suspense fallback={<SkeletonCard className="h-[300px]" />}>
               <CollectionGrowthChart />
             </Suspense>
           </div>
-          <div className="rounded-xl border border-border bg-card p-6">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
             <h4 className="text-sm font-semibold mb-4">
               Loan Status Distribution
             </h4>
@@ -227,12 +227,12 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto scroll-smooth p-6">
+      <div className="flex-1 overflow-y-auto scroll-smooth p-4 sm:p-6">
         <h3 className="text-xs font-semibold text-muted-foreground mb-4 uppercase tracking-wider">
           {t("departmentsAndCollections")}
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
           {analytics.recentCollectionGroups.map((group, index) => (
             <Link
               key={group.id}

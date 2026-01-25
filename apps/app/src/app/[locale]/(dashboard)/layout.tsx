@@ -56,7 +56,7 @@ export default async function Layout({
                   preloadedProducts={preloadedProducts}
                 />
                 <main className="flex min-h-screen w-full flex-col bg-background">
-                  <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-xl">
+                  <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 sm:px-6 backdrop-blur-xl">
                     <SidebarTrigger className="-ml-1" />
                     <div id="search" className="flex items-center gap-2">
                       <CommandPalette />
