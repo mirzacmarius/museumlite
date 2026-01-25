@@ -169,28 +169,24 @@ export default function DashboardPage() {
             value={formatNumber(analytics.objects.total, locale)}
             icon={Package}
             accentColor="indigo"
-            sparklineData={kpiTrends?.totalObjects}
           />
           <KpiCard
             title="Items on Display"
             value={formatNumber(analytics.objects.onDisplay, locale)}
             icon={Eye}
             accentColor="emerald"
-            sparklineData={kpiTrends?.objectsOnLoan}
           />
           <KpiCard
             title={kpi("pendingAccessions")}
             value={formatNumber(analytics.accessions.pending, locale)}
             icon={FileClock}
             accentColor="amber"
-            sparklineData={kpiTrends?.pendingAccessions}
           />
           <KpiCard
             title={kpi("activeLoans")}
             value={formatNumber(analytics.loans.active, locale)}
             icon={ArrowLeftRight}
             accentColor="blue"
-            sparklineData={kpiTrends?.activeLoans}
           />
         </div>
       </div>
