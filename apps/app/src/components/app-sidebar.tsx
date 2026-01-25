@@ -245,7 +245,7 @@ export function AppSidebar({
       : "skip",
   );
 
-  const navWorkspace = [
+  const navCoreInventory = [
     { title: "All Objects", url: "/objects", icon: LayoutGrid },
     { title: "New Arrivals", url: "/accessions", icon: Inbox, indicator: true },
     {
@@ -254,9 +254,22 @@ export function AppSidebar({
       icon: ClipboardList,
     },
     { title: "Recent Activity", url: "/activity", icon: History },
+    { title: "Media Library", url: "/media", icon: Image },
   ];
 
-  const navExhibitions = [
+  const navCollectionManagement = [
+    { title: "Accessions", url: "/accessions", icon: FileCheck },
+    { title: "Deaccessions", url: "/deaccessions", icon: FileX },
+    { title: "Locations", url: "/locations", icon: MapPin },
+  ];
+
+  const navOperations = [
+    {
+      title: "Loans & Transport",
+      url: "/loans",
+      icon: Truck,
+      locked: !hasFeature("loans"),
+    },
     {
       title: "Active Rotations",
       url: "/exhibitions",
@@ -264,63 +277,30 @@ export function AppSidebar({
       locked: !hasFeature("exhibitions"),
     },
     {
-      title: "Planning Queue",
-      url: "/exhibitions?status=planning",
-      icon: CalendarRange,
-      locked: !hasFeature("exhibitions"),
-    },
-  ];
-
-  const navConservation = [
-    {
       title: "Lab Requests",
       url: "/conservation",
       icon: Microscope,
       badge: "2",
       locked: !hasFeature("conservation"),
     },
-    {
-      title: "Condition Reports",
-      url: "/conservation?type=reports",
-      icon: FileHeart,
-      locked: !hasFeature("conservation"),
-    },
   ];
 
-  const navManagement = [
+  const navLibrary = [
+    { title: "Catalog", url: "/library/catalog", icon: BookCopy },
+    { title: "Circulation", url: "/library/circulation", icon: RefreshCw },
+    { title: "Patrons", url: "/accounts?type=patron", icon: BookUser },
+    { title: "Fines", url: "/library/fines", icon: DollarSign },
+    { title: "Acquisitions", url: "/library/acquisitions", icon: ShoppingCart },
+  ];
+
+  const navAdministration = [
+    { title: "Settings", url: "/settings", icon: Settings2 },
     {
       title: "Analytics",
       url: "/analytics",
       icon: BarChart3,
       locked: !hasFeature("reporting"),
     },
-    { title: "Donors & Sources", url: "/accounts", icon: Users },
-    {
-      title: "Loans & Transport",
-      url: "/loans",
-      icon: Truck,
-      locked: !hasFeature("loans"),
-    },
-    { title: "Locations", url: "/locations", icon: MapPin },
-    { title: "Media Library", url: "/media", icon: Image },
-    { title: "Accessions", url: "/accessions", icon: FileCheck },
-    { title: "Deaccessions", url: "/deaccessions", icon: FileX },
-    {
-      title: "Insurance & Audit",
-      url: "/settings/activity",
-      icon: ShieldCheck,
-      locked: !hasFeature("compliance"),
-    },
-    { title: "Settings", url: "/settings", icon: Settings2 },
-  ];
-
-  const navLibrary = [
-    { title: "Overview", url: "/library", icon: Library },
-    { title: "Catalog", url: "/library/catalog", icon: BookCopy },
-    { title: "Patrons", url: "/accounts?type=patron", icon: BookUser },
-    { title: "Circulation", url: "/library/circulation", icon: RefreshCw },
-    { title: "Fines", url: "/library/fines", icon: DollarSign },
-    { title: "Acquisitions", url: "/library/acquisitions", icon: ShoppingCart },
   ];
 
   const isPathActive = (url: string) => {
@@ -424,12 +404,9 @@ export function AppSidebar({
           </div>
         </div>
 
-        <div className="px-1 mb-6">
-          <div className="px-2 pb-2 text-[10px] font-medium text-muted-foreground uppercase tracking-widest group-data-[collapsible=icon]:hidden">
-            Workspace
-          </div>
+        <NavSection title="Core Inventory" defaultOpen>
           <SidebarMenu>
-            {navWorkspace.map((item) => (
+            {navCoreInventory.map((item) => (
               <NavItem
                 key={item.title}
                 href={item.url}
@@ -440,7 +417,7 @@ export function AppSidebar({
               />
             ))}
           </SidebarMenu>
-        </div>
+        </NavSection>
 
         <NavSection
           title="Collections"
@@ -476,29 +453,30 @@ export function AppSidebar({
         </NavSection>
 
         <NavSection
-          title="Exhibitions"
-          forceOpen={navExhibitions.some((item) => isPathActive(item.url))}
+          title="Collection Management"
+          forceOpen={navCollectionManagement.some((item) =>
+            isPathActive(item.url),
+          )}
         >
           <SidebarMenu>
-            {navExhibitions.map((item) => (
+            {navCollectionManagement.map((item) => (
               <NavItem
                 key={item.title}
                 href={item.url}
                 icon={item.icon}
                 title={item.title}
                 isActive={isPathActive(item.url)}
-                locked={item.locked}
               />
             ))}
           </SidebarMenu>
         </NavSection>
 
         <NavSection
-          title="Conservation"
-          forceOpen={navConservation.some((item) => isPathActive(item.url))}
+          title="Operations"
+          forceOpen={navOperations.some((item) => isPathActive(item.url))}
         >
           <SidebarMenu>
-            {navConservation.map((item) => (
+            {navOperations.map((item) => (
               <NavItem
                 key={item.title}
                 href={item.url}
@@ -506,24 +484,6 @@ export function AppSidebar({
                 title={item.title}
                 isActive={isPathActive(item.url)}
                 badge={item.badge}
-                locked={item.locked}
-              />
-            ))}
-          </SidebarMenu>
-        </NavSection>
-
-        <NavSection
-          title="Management"
-          forceOpen={navManagement.some((item) => isPathActive(item.url))}
-        >
-          <SidebarMenu>
-            {navManagement.map((item) => (
-              <NavItem
-                key={item.title}
-                href={item.url}
-                icon={item.icon}
-                title={item.title}
-                isActive={isPathActive(item.url)}
                 locked={item.locked}
               />
             ))}
@@ -548,6 +508,24 @@ export function AppSidebar({
             </SidebarMenu>
           </NavSection>
         )}
+
+        <NavSection
+          title="Administration"
+          forceOpen={navAdministration.some((item) => isPathActive(item.url))}
+        >
+          <SidebarMenu>
+            {navAdministration.map((item) => (
+              <NavItem
+                key={item.title}
+                href={item.url}
+                icon={item.icon}
+                title={item.title}
+                isActive={isPathActive(item.url)}
+                locked={item.locked}
+              />
+            ))}
+          </SidebarMenu>
+        </NavSection>
       </SidebarContent>
 
       <SidebarFooter className="p-3 border-t border-border bg-background">
