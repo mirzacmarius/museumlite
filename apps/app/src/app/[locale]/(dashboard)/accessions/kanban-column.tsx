@@ -136,7 +136,7 @@ export function KanbanColumn({
                   <Link
                     key={accession._id}
                     href={`/accessions/${accession._id}`}
-                    className="bg-zinc-900 border border-zinc-800 p-3 rounded-lg shadow-sm hover:border-zinc-700 transition-colors cursor-pointer group animate-enter block"
+                    className="bg-zinc-900 border border-zinc-800 p-3 rounded-lg hover:border-zinc-700 transition-colors cursor-pointer group animate-enter block"
                     style={{ animationDelay: `${Math.min(index * 50, 300)}ms` }}
                   >
                     <div className="flex justify-between items-start mb-2">
@@ -148,12 +148,12 @@ export function KanbanColumn({
                     <p className="text-sm text-zinc-200 font-medium mb-1 group-hover:text-indigo-400 transition-colors line-clamp-2">
                       {accession.source || t("kanban.unknownSource")}
                     </p>
-                    <p className="text-xs text-zinc-500 mb-3 capitalize">
+                    <p className="text-xs text-zinc-500 mb-3">
                       {accession.method}
                     </p>
                     {accession.assigneeName && (
                       <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center text-[9px] text-indigo-300 font-medium">
+                        <div className="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center text-[9px] text-indigo-300">
                           {getInitials(accession.assigneeName)}
                         </div>
                         <span className="text-[10px] text-zinc-400">
