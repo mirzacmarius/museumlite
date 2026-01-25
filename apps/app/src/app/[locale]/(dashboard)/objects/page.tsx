@@ -4,6 +4,7 @@ import { DeaccessionDialog } from "@/components/deaccession-dialog";
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useObjectFilters } from "@/hooks/use-url-filters";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -150,19 +151,6 @@ export default function CollectionsPage() {
   );
 }
 
-interface CollectionFilters {
-  search: string;
-  status: "active" | "deaccessioned" | "all";
-  objectType: string;
-  culture: string;
-  period: string;
-  materials: string;
-  collectionGroupId: string;
-  locationId: string;
-  catalogedFrom: string;
-  catalogedTo: string;
-}
-
 function CollectionFiltersAndList({
   organizationId,
 }: {
@@ -171,18 +159,8 @@ function CollectionFiltersAndList({
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState<CollectionFilters>({
-    search: "",
-    status: "all",
-    objectType: "",
-    culture: "",
-    period: "",
-    materials: "",
-    collectionGroupId: "",
-    locationId: "",
-    catalogedFrom: "",
-    catalogedTo: "",
-  });
+  const { filters, setFilters, resetFilters, hasActiveFilters } =
+    useObjectFilters();
 
   const [cursor, setCursor] = useState<string | null>(null);
   const prevFiltersRef = useRef(filters);
@@ -318,33 +296,6 @@ function CollectionFiltersAndList({
     return Array.from(types).sort();
   }, [collections]);
 
-  const hasActiveFilters =
-    filters.search ||
-    filters.status !== "all" ||
-    filters.objectType ||
-    filters.culture ||
-    filters.period ||
-    filters.materials ||
-    filters.collectionGroupId ||
-    filters.locationId ||
-    filters.catalogedFrom ||
-    filters.catalogedTo;
-
-  const clearFilters = () => {
-    setFilters({
-      search: "",
-      status: "all",
-      objectType: "",
-      culture: "",
-      period: "",
-      materials: "",
-      collectionGroupId: "",
-      locationId: "",
-      catalogedFrom: "",
-      catalogedTo: "",
-    });
-  };
-
   const handleSelectItem = (id: Id<"collections">, selected: boolean) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -454,9 +405,7 @@ function CollectionFiltersAndList({
               <Input
                 placeholder={t("searchPlaceholder")}
                 value={filters.search}
-                onChange={(e) =>
-                  setFilters({ ...filters, search: e.target.value })
-                }
+                onChange={(e) => setFilters({ search: e.target.value })}
                 className="pl-9"
               />
             </div>
@@ -475,7 +424,7 @@ function CollectionFiltersAndList({
               {t("filters.title")}
             </Button>
             {hasActiveFilters && (
-              <Button variant="ghost" onClick={clearFilters}>
+              <Button variant="ghost" onClick={resetFilters}>
                 <X className="mr-2 h-4 w-4" />
                 {t("filters.clear")}
               </Button>
@@ -491,8 +440,7 @@ function CollectionFiltersAndList({
                   value={filters.status}
                   onValueChange={(value) =>
                     setFilters({
-                      ...filters,
-                      status: value as CollectionFilters["status"],
+                      status: value as "active" | "deaccessioned" | "all",
                     })
                   }
                 >
@@ -513,10 +461,7 @@ function CollectionFiltersAndList({
                 <Select
                   value={filters.objectType || "all"}
                   onValueChange={(value) =>
-                    setFilters({
-                      ...filters,
-                      objectType: value === "all" ? "" : value,
-                    })
+                    setFilters({ objectType: value === "all" ? "" : value })
                   }
                 >
                   <SelectTrigger id="objectType">
@@ -539,9 +484,7 @@ function CollectionFiltersAndList({
                   id="culture"
                   placeholder={t("filters.filterByCulture")}
                   value={filters.culture}
-                  onChange={(e) =>
-                    setFilters({ ...filters, culture: e.target.value })
-                  }
+                  onChange={(e) => setFilters({ culture: e.target.value })}
                 />
               </div>
 
@@ -551,9 +494,7 @@ function CollectionFiltersAndList({
                   id="period"
                   placeholder={t("filters.filterByPeriod")}
                   value={filters.period}
-                  onChange={(e) =>
-                    setFilters({ ...filters, period: e.target.value })
-                  }
+                  onChange={(e) => setFilters({ period: e.target.value })}
                 />
               </div>
 
@@ -563,9 +504,7 @@ function CollectionFiltersAndList({
                   id="materials"
                   placeholder={t("filters.filterByMaterials")}
                   value={filters.materials}
-                  onChange={(e) =>
-                    setFilters({ ...filters, materials: e.target.value })
-                  }
+                  onChange={(e) => setFilters({ materials: e.target.value })}
                 />
               </div>
 
@@ -577,7 +516,6 @@ function CollectionFiltersAndList({
                   value={filters.collectionGroupId || "all"}
                   onValueChange={(value) =>
                     setFilters({
-                      ...filters,
                       collectionGroupId: value === "all" ? "" : value,
                     })
                   }
@@ -603,10 +541,7 @@ function CollectionFiltersAndList({
                 <Select
                   value={filters.locationId || "all"}
                   onValueChange={(value) =>
-                    setFilters({
-                      ...filters,
-                      locationId: value === "all" ? "" : value,
-                    })
+                    setFilters({ locationId: value === "all" ? "" : value })
                   }
                 >
                   <SelectTrigger id="location">
@@ -634,7 +569,7 @@ function CollectionFiltersAndList({
                   type="date"
                   value={filters.catalogedFrom}
                   onChange={(e) =>
-                    setFilters({ ...filters, catalogedFrom: e.target.value })
+                    setFilters({ catalogedFrom: e.target.value })
                   }
                 />
               </div>
@@ -647,9 +582,7 @@ function CollectionFiltersAndList({
                   id="catalogedTo"
                   type="date"
                   value={filters.catalogedTo}
-                  onChange={(e) =>
-                    setFilters({ ...filters, catalogedTo: e.target.value })
-                  }
+                  onChange={(e) => setFilters({ catalogedTo: e.target.value })}
                 />
               </div>
             </div>
