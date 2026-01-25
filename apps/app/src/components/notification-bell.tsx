@@ -73,6 +73,8 @@ export function NotificationBell() {
     switch (entityType) {
       case "collection":
         return `/collections/${entityId}`;
+      case "object":
+        return `/objects/${entityId}`;
       case "accession":
         return `/accessions/${entityId}`;
       case "deaccession":
