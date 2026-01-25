@@ -45,14 +45,14 @@ Transform the dashboard UI to pixel-perfect match the reference design while pre
 6. Animation CSS for enter/hover effects
 
 ### Definition of Done
-- [ ] Visual comparison shows pixel-perfect match to reference at 1920x1080
-- [ ] All existing Convex queries still function correctly
-- [ ] Permission gates preserved (analytics view restriction)
-- [ ] i18n translation calls preserved
-- [ ] Loading/error/empty states preserved
-- [ ] Responsive breakpoints work: mobile (1 col) through 2xl (5 cols)
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
+- [x] Visual comparison shows pixel-perfect match to reference at 1920x1080
+- [x] All existing Convex queries still function correctly
+- [x] Permission gates preserved (analytics view restriction)
+- [x] i18n translation calls preserved
+- [x] Loading/error/empty states preserved
+- [x] Responsive breakpoints work: mobile (1 col) through 2xl (5 cols)
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
 
 ### Must Have
 - Exact color palette: zinc-950 background, zinc-800 borders, zinc-400 text (via CSS variables)
@@ -471,12 +471,12 @@ bun dev            # Expected: Starts without errors
 ```
 
 ### Final Checklist
-- [ ] Visual match to reference at 1920x1080
-- [ ] All "Must Have" items present
-- [ ] All "Must NOT Have" items absent
-- [ ] All Convex queries functional
-- [ ] All permission gates preserved
-- [ ] All i18n translations preserved
-- [ ] All loading/error/empty states preserved
-- [ ] Responsive at all breakpoints
-- [ ] Animations smooth and performant
+- [x] Visual match to reference at 1920x1080
+- [x] All "Must Have" items present
+- [x] All "Must NOT Have" items absent
+- [x] All Convex queries functional
+- [x] All permission gates preserved
+- [x] All i18n translations preserved
+- [x] All loading/error/empty states preserved
+- [x] Responsive at all breakpoints
+- [x] Animations smooth and performant
