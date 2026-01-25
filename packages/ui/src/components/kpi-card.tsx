@@ -1,6 +1,24 @@
+"use client";
+
 import type { LucideIcon } from "lucide-react";
 import * as React from "react";
+import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { cn } from "../utils";
+
+function getAccentHex(color?: string): string {
+  switch (color) {
+    case "indigo":
+      return "#6366f1";
+    case "emerald":
+      return "#10b981";
+    case "amber":
+      return "#f59e0b";
+    case "blue":
+      return "#3b82f6";
+    default:
+      return "#6b7280";
+  }
+}
 
 interface KpiCardProps extends React.HTMLAttributes<HTMLDivElement> {
   title: string;
@@ -10,6 +28,7 @@ interface KpiCardProps extends React.HTMLAttributes<HTMLDivElement> {
   icon?: LucideIcon;
   loading?: boolean;
   accentColor?: "indigo" | "emerald" | "amber" | "blue";
+  sparklineData?: number[];
 }
 
 const KpiCard = React.forwardRef<HTMLDivElement, KpiCardProps>(
@@ -22,6 +41,7 @@ const KpiCard = React.forwardRef<HTMLDivElement, KpiCardProps>(
       icon: Icon,
       loading = false,
       accentColor,
+      sparklineData,
       className,
       ...props
     },
@@ -95,17 +115,58 @@ const KpiCard = React.forwardRef<HTMLDivElement, KpiCardProps>(
             </div>
           )}
         </div>
-        {change && (
+        {(change || (sparklineData && sparklineData.length > 0)) && (
           <div className="mt-3 pt-3 border-t border-border/50">
-            <p
-              className={cn("text-xs", {
-                "text-emerald-400": changeType === "positive",
-                "text-rose-400": changeType === "negative",
-                "text-muted-foreground": changeType === "neutral",
-              })}
-            >
-              {change}
-            </p>
+            {change && (
+              <p
+                className={cn("text-xs", {
+                  "text-emerald-400": changeType === "positive",
+                  "text-rose-400": changeType === "negative",
+                  "text-muted-foreground": changeType === "neutral",
+                })}
+              >
+                {change}
+              </p>
+            )}
+            {sparklineData && sparklineData.length > 0 && (
+              <div className={cn("h-8", change && "mt-2")}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={sparklineData.map((v, i) => ({ value: v, index: i }))}
+                    margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient
+                        id={`sparkline-gradient-${accentColor ?? "default"}`}
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor={getAccentHex(accentColor)}
+                          stopOpacity={0.3}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor={getAccentHex(accentColor)}
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      stroke={getAccentHex(accentColor)}
+                      strokeWidth={1.5}
+                      fill={`url(#sparkline-gradient-${accentColor ?? "default"})`}
+                      isAnimationActive={false}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
         )}
       </div>
