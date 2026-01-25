@@ -18,7 +18,6 @@ import {
 } from "@v1/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
 import { Button } from "@v1/ui/button";
-import { ImageLightbox, type LightboxImage } from "@v1/ui/image-lightbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
+import { ImageLightbox, type LightboxImage } from "@v1/ui/image-lightbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { SidebarProvider } from "@v1/ui/sidebar";
 import {
@@ -59,6 +59,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   ArchiveDetailsTab,
+  CommentsTab,
   ConservationTab,
   DigitalAssetsTab,
   ExhibitionsTab,
@@ -86,6 +87,7 @@ type TabId =
   | "exhibitions"
   | "loans"
   | "logs"
+  | "comments"
   | "fine_art"
   | "wine"
   | "automotive"
@@ -101,6 +103,7 @@ const baseTabs: { id: TabId; label: string }[] = [
   { id: "conservation", label: "Conservation" },
   { id: "exhibitions", label: "Exhibitions" },
   { id: "loans", label: "Loans" },
+  { id: "comments", label: "Comments" },
   { id: "logs", label: "Logs" },
 ];
 
@@ -797,6 +800,12 @@ export default function ObjectDetailPage() {
               {activeTab === "loans" && (
                 <LoansTab collectionId={collectionId} locale={locale} />
               )}
+              {activeTab === "comments" && currentOrganizationId && (
+                <CommentsTab
+                  collectionId={collectionId as Id<"collections">}
+                  organizationId={currentOrganizationId}
+                />
+              )}
               {activeTab === "logs" && (
                 <LogsTab
                   collectionId={collectionId}
@@ -854,11 +863,17 @@ export default function ObjectDetailPage() {
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
         collection={collection}
-        heroImage={heroImage ? { url: heroImage.url as string, thumbnailUrl: heroImage.thumbnailUrl } : null}
+        heroImage={
+          heroImage
+            ? {
+                url: heroImage.url as string,
+                thumbnailUrl: heroImage.thumbnailUrl,
+              }
+            : null
+        }
         locationPath={locationPath}
         locale={locale}
       />
     </>
   );
 }
-

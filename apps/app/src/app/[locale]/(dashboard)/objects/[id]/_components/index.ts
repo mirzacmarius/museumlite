@@ -1,5 +1,6 @@
 export { ArchiveDetailsTab } from "./archive-details-tab";
 export { ConservationTab } from "./conservation-tab";
+export { CommentsTab } from "./comments-tab";
 export { DigitalAssetsTab } from "./digital-assets-tab";
 export { ExhibitionsTab } from "./exhibitions-tab";
 export { FineArtDetailsTab } from "./fine-art-details-tab";
