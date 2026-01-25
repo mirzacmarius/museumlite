@@ -54,6 +54,7 @@ import {
   useDefaultColumns,
 } from "./_components/column-config";
 import { ObjectGridView } from "./_components/object-grid-view";
+import { SavedViewsDropdown } from "./_components/saved-views-dropdown";
 import { type ViewMode, ViewToggle } from "./_components/view-toggle";
 
 export default function CollectionsPage() {
@@ -423,6 +424,24 @@ function CollectionFiltersAndList({
               <Filter className="mr-2 h-4 w-4" />
               {t("filters.title")}
             </Button>
+            <SavedViewsDropdown
+              organizationId={organizationId}
+              currentFilters={filters}
+              onApplyView={(viewFilters) => {
+                setFilters({
+                  search: viewFilters.search || "",
+                  status: viewFilters.status || "all",
+                  objectType: viewFilters.objectType || "",
+                  culture: viewFilters.culture || "",
+                  period: viewFilters.period || "",
+                  materials: viewFilters.materials || "",
+                  collectionGroupId: viewFilters.collectionGroupId || "",
+                  locationId: viewFilters.locationId || "",
+                  catalogedFrom: viewFilters.catalogedFrom || "",
+                  catalogedTo: viewFilters.catalogedTo || "",
+                });
+              }}
+            />
             {hasActiveFilters && (
               <Button variant="ghost" onClick={resetFilters}>
                 <X className="mr-2 h-4 w-4" />
