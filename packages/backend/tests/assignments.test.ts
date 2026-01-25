@@ -9,16 +9,6 @@ import { modules } from "./testSetup";
 test("should require authentication for listMyAssignments", async () => {
   const t = convexTest(schema, modules);
 
-  await expect(
-    t.query(api.assignments.listMyAssignments, {
-      organizationId: "test-org-id" as Id<"organizations">,
-    }),
-  ).rejects.toThrow("Not authenticated");
-});
-
-test("should return empty assignments when no data exists", async () => {
-  const t = convexTest(schema, modules);
-
   const orgId = await t.run(async (ctx) => {
     return await ctx.db.insert("organizations", {
       name: "Test Org",
@@ -27,6 +17,16 @@ test("should return empty assignments when no data exists", async () => {
       settings: { enabledModules: [] },
     });
   });
+
+  await expect(
+    t.query(api.assignments.listMyAssignments, {
+      organizationId: orgId,
+    }),
+  ).rejects.toThrow("Not authenticated");
+});
+
+test("should return empty assignments when no data exists", async () => {
+  const t = convexTest(schema, modules);
 
   const userId = await t.run(async (ctx) => {
     return await ctx.db.insert("users", {
@@ -35,17 +35,47 @@ test("should return empty assignments when no data exists", async () => {
     });
   });
 
-  expect(true).toBe(true);
+  const orgId = await t.run(async (ctx) => {
+    return await ctx.db.insert("organizations", {
+      name: "Test Org",
+      slug: "test-org",
+      type: "museum",
+      settings: { enabledModules: [] },
+    });
+  });
+
+  const authed = t.withIdentity({
+    subject: `${userId}|session-empty-assignments`,
+    issuer: "https://example.test",
+  });
+
+  const result = await authed.query(api.assignments.listMyAssignments, {
+    organizationId: orgId,
+  });
+
+  expect(result).toEqual({
+    myAssignedAccessions: [],
+    myCatalogedItems: [],
+    pendingApprovals: [],
+    recentlyModified: [],
+    stats: {
+      itemsModifiedThisWeek: 0,
+      totalAssignedAccessions: 0,
+      totalCatalogedItems: 0,
+      totalPendingApprovals: 0,
+    },
+  });
 });
 
 test("should return valid assignment data structure", async () => {
   const t = convexTest(schema, modules);
 
-  expect(true).toBe(true);
-});
-
-test("should require authentication for getAssignmentCounts", async () => {
-  const t = convexTest(schema, modules);
+  const userId = await t.run(async (ctx) => {
+    return await ctx.db.insert("users", {
+      name: "Test User",
+      email: "test@example.com",
+    });
+  });
 
   const orgId = await t.run(async (ctx) => {
     return await ctx.db.insert("organizations", {
@@ -56,7 +86,47 @@ test("should require authentication for getAssignmentCounts", async () => {
     });
   });
 
-  const counts = await t.query(api.assignments.getAssignmentCounts, {
+  const authed = t.withIdentity({
+    subject: `${userId}|session-data-structure`,
+    issuer: "https://example.test",
+  });
+
+  const result = await authed.query(api.assignments.listMyAssignments, {
+    organizationId: orgId,
+  });
+
+  expect(result).toHaveProperty("myAssignedAccessions");
+  expect(result).toHaveProperty("myCatalogedItems");
+  expect(result).toHaveProperty("pendingApprovals");
+  expect(result).toHaveProperty("recentlyModified");
+  expect(result).toHaveProperty("stats");
+});
+
+test("should return zero counts when no assignments exist", async () => {
+  const t = convexTest(schema, modules);
+
+  const userId = await t.run(async (ctx) => {
+    return await ctx.db.insert("users", {
+      name: "Test User",
+      email: "test@example.com",
+    });
+  });
+
+  const orgId = await t.run(async (ctx) => {
+    return await ctx.db.insert("organizations", {
+      name: "Test Org",
+      slug: "test-org",
+      type: "museum",
+      settings: { enabledModules: [] },
+    });
+  });
+
+  const authed = t.withIdentity({
+    subject: `${userId}|session-counts`,
+    issuer: "https://example.test",
+  });
+
+  const counts = await authed.query(api.assignments.getAssignmentCounts, {
     organizationId: orgId,
   });
 
@@ -65,25 +135,4 @@ test("should require authentication for getAssignmentCounts", async () => {
     assignedAccessions: 0,
     urgentItems: 0,
   });
-});
-
-test("should return zero counts when no assignments exist", async () => {
-  const t = convexTest(schema, modules);
-
-  const orgId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Test Org",
-      slug: "test-org",
-      type: "museum",
-      settings: { enabledModules: [] },
-    });
-  });
-
-  const counts = await t.query(api.assignments.getAssignmentCounts, {
-    organizationId: orgId,
-  });
-
-  expect(counts.pendingApprovals).toBe(0);
-  expect(counts.assignedAccessions).toBe(0);
-  expect(counts.urgentItems).toBe(0);
 });

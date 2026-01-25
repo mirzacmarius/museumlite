@@ -65,7 +65,12 @@ test("accountSegments: create and list", async () => {
     });
   });
 
-  const segmentId = await t.mutation(api.accountSegments.create, {
+  const authed = t.withIdentity({
+    subject: `${userId}|session-create-and-list`,
+    issuer: "https://example.test",
+  });
+
+  const segmentId = await authed.mutation(api.accountSegments.create, {
     organizationId: orgId,
     name: "Active Institutions",
     description: "All active institution accounts",
@@ -85,7 +90,7 @@ test("accountSegments: create and list", async () => {
 
   expect(segmentId).toBeDefined();
 
-  const segments = await t.query(api.accountSegments.list, {
+  const segments = await authed.query(api.accountSegments.list, {
     organizationId: orgId,
   });
 
@@ -141,6 +146,11 @@ test("accountSegments: apply filters", async () => {
       roleId,
       joinedAt: Date.now(),
     });
+  });
+
+  const authed = t.withIdentity({
+    subject: `${userId}|session-apply-filters`,
+    issuer: "https://example.test",
   });
 
   await t.run(async (ctx) => {
@@ -201,7 +211,7 @@ test("accountSegments: apply filters", async () => {
     });
   });
 
-  const results = await t.query(api.accountSegments.apply, {
+  const results = await authed.query(api.accountSegments.apply, {
     segmentId,
   });
 
@@ -269,6 +279,11 @@ test("accountSegments: update and remove", async () => {
     });
   });
 
+  const authed = t.withIdentity({
+    subject: `${userId}|session-update-and-remove`,
+    issuer: "https://example.test",
+  });
+
   const segmentId = await t.run(async (ctx) => {
     return await ctx.db.insert("accountSegments", {
       organizationId: orgId,
@@ -285,7 +300,7 @@ test("accountSegments: update and remove", async () => {
     });
   });
 
-  await t.mutation(api.accountSegments.update, {
+  await authed.mutation(api.accountSegments.update, {
     segmentId,
     name: "Updated Segment",
     description: "Updated description",
@@ -298,7 +313,7 @@ test("accountSegments: update and remove", async () => {
   expect(updated?.name).toBe("Updated Segment");
   expect(updated?.description).toBe("Updated description");
 
-  await t.mutation(api.accountSegments.remove, {
+  await authed.mutation(api.accountSegments.remove, {
     segmentId,
   });
 
@@ -358,6 +373,11 @@ test("accountSegments: filter operators", async () => {
     });
   });
 
+  const authed = t.withIdentity({
+    subject: `${userId}|session-filter-operators`,
+    issuer: "https://example.test",
+  });
+
   await t.run(async (ctx) => {
     await ctx.db.insert("accounts", {
       organizationId: orgId,
@@ -386,7 +406,7 @@ test("accountSegments: filter operators", async () => {
     });
   });
 
-  const results = await t.query(api.accountSegments.apply, {
+  const results = await authed.query(api.accountSegments.apply, {
     segmentId,
   });
 

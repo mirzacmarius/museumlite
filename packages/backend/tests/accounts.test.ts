@@ -1,113 +1,119 @@
 import { convexTest } from "convex-test";
-import { beforeEach, describe, expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
 
-describe("Accounts CRUD", () => {
-  let organizationId: Id<"organizations">;
-  let userId: Id<"users">;
-  let roleId: Id<"roles">;
-  let accountsReadPermissionId: Id<"permissions">;
-  let accountsWritePermissionId: Id<"permissions">;
-  let accountsDeletePermissionId: Id<"permissions">;
-  let accountsManagePermissionId: Id<"permissions">;
+type TestSetup = {
+  organizationId: Id<"organizations">;
+  userId: Id<"users">;
+  roleId: Id<"roles">;
+};
 
-  beforeEach(async () => {
-    const t = convexTest(schema, modules);
-
-    organizationId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum",
-        type: "museum",
-        settings: {
-          enabledModules: ["accounts"],
-        },
-      });
-    });
-
-    userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
-    accountsReadPermissionId = await t.run(async (ctx) => {
-      return await ctx.db.insert("permissions", {
-        name: "accounts.read",
-        category: "accounts",
-      });
-    });
-
-    accountsWritePermissionId = await t.run(async (ctx) => {
-      return await ctx.db.insert("permissions", {
-        name: "accounts.write",
-        category: "accounts",
-      });
-    });
-
-    accountsDeletePermissionId = await t.run(async (ctx) => {
-      return await ctx.db.insert("permissions", {
-        name: "accounts.delete",
-        category: "accounts",
-      });
-    });
-
-    accountsManagePermissionId = await t.run(async (ctx) => {
-      return await ctx.db.insert("permissions", {
-        name: "accounts.manage",
-        category: "accounts",
-      });
-    });
-
-    roleId = await t.run(async (ctx) => {
-      const roleId = await ctx.db.insert("roles", {
-        organizationId,
-        name: "Admin",
-        isSystemRole: true,
-      });
-
-      await ctx.db.insert("rolePermissions", {
-        roleId,
-        permissionId: accountsReadPermissionId,
-      });
-
-      await ctx.db.insert("rolePermissions", {
-        roleId,
-        permissionId: accountsWritePermissionId,
-      });
-
-      await ctx.db.insert("rolePermissions", {
-        roleId,
-        permissionId: accountsDeletePermissionId,
-      });
-
-      await ctx.db.insert("rolePermissions", {
-        roleId,
-        permissionId: accountsManagePermissionId,
-      });
-
-      return roleId;
-    });
-
-    await t.run(async (ctx) => {
-      await ctx.db.insert("userOrganizations", {
-        userId,
-        organizationId,
-        roleId,
-        joinedAt: Date.now(),
-      });
+async function createTestSetup(
+  t: ReturnType<typeof convexTest>,
+): Promise<TestSetup> {
+  const organizationId = await t.run(async (ctx) => {
+    return await ctx.db.insert("organizations", {
+      name: "Test Museum",
+      slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
+      type: "museum",
+      settings: {
+        enabledModules: ["accounts"],
+      },
     });
   });
 
+  const userId = await t.run(async (ctx) => {
+    return await ctx.db.insert("users", {
+      name: "Test User",
+      email: `test-${Math.random().toString(36).slice(2, 8)}@example.com`,
+    });
+  });
+
+  const accountsReadPermissionId = await t.run(async (ctx) => {
+    return await ctx.db.insert("permissions", {
+      name: "accounts.read",
+      category: "accounts",
+    });
+  });
+
+  const accountsWritePermissionId = await t.run(async (ctx) => {
+    return await ctx.db.insert("permissions", {
+      name: "accounts.write",
+      category: "accounts",
+    });
+  });
+
+  const accountsDeletePermissionId = await t.run(async (ctx) => {
+    return await ctx.db.insert("permissions", {
+      name: "accounts.delete",
+      category: "accounts",
+    });
+  });
+
+  const accountsManagePermissionId = await t.run(async (ctx) => {
+    return await ctx.db.insert("permissions", {
+      name: "accounts.manage",
+      category: "accounts",
+    });
+  });
+
+  const roleId = await t.run(async (ctx) => {
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "Admin",
+      isSystemRole: true,
+    });
+
+    await ctx.db.insert("rolePermissions", {
+      roleId,
+      permissionId: accountsReadPermissionId,
+    });
+
+    await ctx.db.insert("rolePermissions", {
+      roleId,
+      permissionId: accountsWritePermissionId,
+    });
+
+    await ctx.db.insert("rolePermissions", {
+      roleId,
+      permissionId: accountsDeletePermissionId,
+    });
+
+    await ctx.db.insert("rolePermissions", {
+      roleId,
+      permissionId: accountsManagePermissionId,
+    });
+
+    return roleId;
+  });
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+  });
+
+  return { organizationId, userId, roleId };
+}
+
+describe("Accounts CRUD", () => {
   test("should create account with auto-generated account number", async () => {
     const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
 
-    const accountId = await t.mutation(api.accounts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-create`,
+      issuer: "https://example.test",
+    });
+
+    const accountId = await authed.mutation(api.accounts.create, {
       organizationId,
       accountType: "lender",
       businessName: "Test Lender Inc",
@@ -116,7 +122,7 @@ describe("Accounts CRUD", () => {
 
     expect(accountId).toBeDefined();
 
-    const account = await t.query(api.accounts.get, { accountId });
+    const account = await authed.query(api.accounts.get, { accountId });
     expect(account).toBeDefined();
     expect(account?.accountNumber).toMatch(/^ACC-\d{5}$/);
     expect(account?.businessName).toBe("Test Lender Inc");
@@ -125,20 +131,26 @@ describe("Accounts CRUD", () => {
 
   test("should list accounts with pagination", async () => {
     const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
 
-    await t.mutation(api.accounts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-list`,
+      issuer: "https://example.test",
+    });
+
+    await authed.mutation(api.accounts.create, {
       organizationId,
       accountType: "lender",
       businessName: "Lender 1",
     });
 
-    await t.mutation(api.accounts.create, {
+    await authed.mutation(api.accounts.create, {
       organizationId,
       accountType: "borrower",
       businessName: "Borrower 1",
     });
 
-    const result = await t.query(api.accounts.list, {
+    const result = await authed.query(api.accounts.list, {
       organizationId,
       paginationOpts: { numItems: 10, cursor: null },
     });
@@ -149,20 +161,26 @@ describe("Accounts CRUD", () => {
 
   test("should filter accounts by type", async () => {
     const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
 
-    await t.mutation(api.accounts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-filter`,
+      issuer: "https://example.test",
+    });
+
+    await authed.mutation(api.accounts.create, {
       organizationId,
       accountType: "lender",
       businessName: "Lender 1",
     });
 
-    await t.mutation(api.accounts.create, {
+    await authed.mutation(api.accounts.create, {
       organizationId,
       accountType: "borrower",
       businessName: "Borrower 1",
     });
 
-    const result = await t.query(api.accounts.list, {
+    const result = await authed.query(api.accounts.list, {
       organizationId,
       paginationOpts: { numItems: 10, cursor: null },
       accountType: "lender",
@@ -174,20 +192,26 @@ describe("Accounts CRUD", () => {
 
   test("should search accounts by name", async () => {
     const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
 
-    await t.mutation(api.accounts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-search`,
+      issuer: "https://example.test",
+    });
+
+    await authed.mutation(api.accounts.create, {
       organizationId,
       accountType: "lender",
       businessName: "ABC Corporation",
     });
 
-    await t.mutation(api.accounts.create, {
+    await authed.mutation(api.accounts.create, {
       organizationId,
       accountType: "borrower",
       businessName: "XYZ Industries",
     });
 
-    const result = await t.query(api.accounts.list, {
+    const result = await authed.query(api.accounts.list, {
       organizationId,
       paginationOpts: { numItems: 10, cursor: null },
       search: "ABC",
@@ -199,84 +223,114 @@ describe("Accounts CRUD", () => {
 
   test("should update account", async () => {
     const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
 
-    const accountId = await t.mutation(api.accounts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-update`,
+      issuer: "https://example.test",
+    });
+
+    const accountId = await authed.mutation(api.accounts.create, {
       organizationId,
       accountType: "lender",
       businessName: "Original Name",
     });
 
-    await t.mutation(api.accounts.update, {
+    await authed.mutation(api.accounts.update, {
       accountId,
       businessName: "Updated Name",
       email: "updated@example.com",
     });
 
-    const account = await t.query(api.accounts.get, { accountId });
+    const account = await authed.query(api.accounts.get, { accountId });
     expect(account?.businessName).toBe("Updated Name");
     expect(account?.email).toBe("updated@example.com");
   });
 
   test("should archive account", async () => {
     const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
 
-    const accountId = await t.mutation(api.accounts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-archive`,
+      issuer: "https://example.test",
+    });
+
+    const accountId = await authed.mutation(api.accounts.create, {
       organizationId,
       accountType: "lender",
       businessName: "Test Account",
     });
 
-    await t.mutation(api.accounts.archive, { accountId });
+    await authed.mutation(api.accounts.archive, { accountId });
 
-    const account = await t.query(api.accounts.get, { accountId });
+    const account = await authed.query(api.accounts.get, { accountId });
     expect(account?.status).toBe("archived");
   });
 
   test("should restore archived account", async () => {
     const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
 
-    const accountId = await t.mutation(api.accounts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-restore`,
+      issuer: "https://example.test",
+    });
+
+    const accountId = await authed.mutation(api.accounts.create, {
       organizationId,
       accountType: "lender",
       businessName: "Test Account",
     });
 
-    await t.mutation(api.accounts.archive, { accountId });
-    await t.mutation(api.accounts.restore, { accountId });
+    await authed.mutation(api.accounts.archive, { accountId });
+    await authed.mutation(api.accounts.restore, { accountId });
 
-    const account = await t.query(api.accounts.get, { accountId });
+    const account = await authed.query(api.accounts.get, { accountId });
     expect(account?.status).toBe("active");
   });
 
   test("should update account status", async () => {
     const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
 
-    const accountId = await t.mutation(api.accounts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-status`,
+      issuer: "https://example.test",
+    });
+
+    const accountId = await authed.mutation(api.accounts.create, {
       organizationId,
       accountType: "patron",
       firstName: "John",
       lastName: "Doe",
     });
 
-    await t.mutation(api.accounts.updateStatus, {
+    await authed.mutation(api.accounts.updateStatus, {
       accountId,
       status: "suspended",
     });
 
-    const account = await t.query(api.accounts.get, { accountId });
+    const account = await authed.query(api.accounts.get, { accountId });
     expect(account?.status).toBe("suspended");
   });
 
   test("should get account by name", async () => {
     const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
 
-    await t.mutation(api.accounts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-getbyname`,
+      issuer: "https://example.test",
+    });
+
+    await authed.mutation(api.accounts.create, {
       organizationId,
       accountType: "lender",
       businessName: "Unique Corporation",
     });
 
-    const account = await t.query(api.accounts.getByName, {
+    const account = await authed.query(api.accounts.getByName, {
       organizationId,
       name: "Unique Corporation",
     });
@@ -287,11 +341,17 @@ describe("Accounts CRUD", () => {
 
   test("should enforce module gating", async () => {
     const t = convexTest(schema, modules);
+    const { userId } = await createTestSetup(t);
+
+    const authed = t.withIdentity({
+      subject: `${userId}|session-gating`,
+      issuer: "https://example.test",
+    });
 
     const orgWithoutModule = await t.run(async (ctx) => {
       return await ctx.db.insert("organizations", {
         name: "No Accounts Module",
-        slug: "no-accounts",
+        slug: `no-accounts-${Math.random().toString(36).slice(2, 8)}`,
         type: "museum",
         settings: {
           enabledModules: [],
@@ -300,7 +360,7 @@ describe("Accounts CRUD", () => {
     });
 
     await expect(
-      t.query(api.accounts.list, {
+      authed.query(api.accounts.list, {
         organizationId: orgWithoutModule,
         paginationOpts: { numItems: 10, cursor: null },
       }),
@@ -309,11 +369,17 @@ describe("Accounts CRUD", () => {
 
   test("should enforce multi-tenant isolation", async () => {
     const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+
+    const authed = t.withIdentity({
+      subject: `${userId}|session-isolation`,
+      issuer: "https://example.test",
+    });
 
     const org2Id = await t.run(async (ctx) => {
       return await ctx.db.insert("organizations", {
         name: "Other Museum",
-        slug: "other-museum",
+        slug: `other-museum-${Math.random().toString(36).slice(2, 8)}`,
         type: "museum",
         settings: {
           enabledModules: ["accounts"],
@@ -321,21 +387,27 @@ describe("Accounts CRUD", () => {
       });
     });
 
-    const accountId = await t.mutation(api.accounts.create, {
+    const accountId = await authed.mutation(api.accounts.create, {
       organizationId,
       accountType: "lender",
       businessName: "Org 1 Account",
     });
 
-    const account = await t.query(api.accounts.get, { accountId });
+    const account = await authed.query(api.accounts.get, { accountId });
     expect(account?.organizationId).toBe(organizationId);
     expect(account?.organizationId).not.toBe(org2Id);
   });
 
   test("should prevent deletion of account used in loans", async () => {
     const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
 
-    const accountId = await t.mutation(api.accounts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-delete`,
+      issuer: "https://example.test",
+    });
+
+    const accountId = await authed.mutation(api.accounts.create, {
       organizationId,
       accountType: "lender",
       businessName: "Lender with Loan",
@@ -354,14 +426,20 @@ describe("Accounts CRUD", () => {
     });
 
     await expect(
-      t.mutation(api.accounts.remove, { accountId }),
+      authed.mutation(api.accounts.remove, { accountId }),
     ).rejects.toThrow("Cannot delete account that is used in existing loans");
   });
 
   test("should create patron account with required fields", async () => {
     const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
 
-    const accountId = await t.mutation(api.accounts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-patron`,
+      issuer: "https://example.test",
+    });
+
+    const accountId = await authed.mutation(api.accounts.create, {
       organizationId,
       accountType: "patron",
       firstName: "Jane",
@@ -370,7 +448,7 @@ describe("Accounts CRUD", () => {
       cardNumber: "CARD-001",
     });
 
-    const account = await t.query(api.accounts.get, { accountId });
+    const account = await authed.query(api.accounts.get, { accountId });
     expect(account?.accountType).toBe("patron");
     expect(account?.firstName).toBe("Jane");
     expect(account?.lastName).toBe("Smith");
@@ -379,9 +457,15 @@ describe("Accounts CRUD", () => {
 
   test("should validate patron account requires name", async () => {
     const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+
+    const authed = t.withIdentity({
+      subject: `${userId}|session-validate-patron`,
+      issuer: "https://example.test",
+    });
 
     await expect(
-      t.mutation(api.accounts.create, {
+      authed.mutation(api.accounts.create, {
         organizationId,
         accountType: "patron",
         email: "test@example.com",
@@ -393,9 +477,15 @@ describe("Accounts CRUD", () => {
 
   test("should validate non-patron account requires business name", async () => {
     const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+
+    const authed = t.withIdentity({
+      subject: `${userId}|session-validate-business`,
+      issuer: "https://example.test",
+    });
 
     await expect(
-      t.mutation(api.accounts.create, {
+      authed.mutation(api.accounts.create, {
         organizationId,
         accountType: "lender",
         email: "test@example.com",

@@ -87,7 +87,12 @@ describe("contacts", () => {
       });
     });
 
-    accountId = await t.mutation(api.accounts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-setup`,
+      issuer: "https://example.test",
+    });
+
+    accountId = await authed.mutation(api.accounts.create, {
       organizationId,
       accountType: "institution",
       businessName: "Test Institution",
@@ -95,7 +100,12 @@ describe("contacts", () => {
   });
 
   test("should create contact", async () => {
-    const contactId = await t.mutation(api.contacts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-create-contact`,
+      issuer: "https://example.test",
+    });
+
+    const contactId = await authed.mutation(api.contacts.create, {
       accountId,
       firstName: "John",
       lastName: "Doe",
@@ -112,7 +122,7 @@ describe("contacts", () => {
 
     expect(contactId).toBeDefined();
 
-    const contact = await t.query(api.contacts.get, { contactId });
+    const contact = await authed.query(api.contacts.get, { contactId });
     expect(contact).toBeDefined();
     expect(contact?.firstName).toBe("John");
     expect(contact?.lastName).toBe("Doe");
@@ -121,7 +131,12 @@ describe("contacts", () => {
   });
 
   test("should list contacts for account", async () => {
-    await t.mutation(api.contacts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-list-contacts`,
+      issuer: "https://example.test",
+    });
+
+    await authed.mutation(api.contacts.create, {
       accountId,
       firstName: "John",
       lastName: "Doe",
@@ -130,7 +145,7 @@ describe("contacts", () => {
       isActive: true,
     });
 
-    await t.mutation(api.contacts.create, {
+    await authed.mutation(api.contacts.create, {
       accountId,
       firstName: "Jane",
       lastName: "Smith",
@@ -139,14 +154,19 @@ describe("contacts", () => {
       isActive: true,
     });
 
-    const contacts = await t.query(api.contacts.list, { accountId });
+    const contacts = await authed.query(api.contacts.list, { accountId });
     expect(contacts).toHaveLength(2);
     expect(contacts.map((c) => c.firstName)).toContain("John");
     expect(contacts.map((c) => c.firstName)).toContain("Jane");
   });
 
   test("should list contacts by organization with search", async () => {
-    await t.mutation(api.contacts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-list-org-search`,
+      issuer: "https://example.test",
+    });
+
+    await authed.mutation(api.contacts.create, {
       accountId,
       firstName: "John",
       lastName: "Doe",
@@ -155,7 +175,7 @@ describe("contacts", () => {
       isActive: true,
     });
 
-    await t.mutation(api.contacts.create, {
+    await authed.mutation(api.contacts.create, {
       accountId,
       firstName: "Jane",
       lastName: "Smith",
@@ -164,12 +184,12 @@ describe("contacts", () => {
       isActive: true,
     });
 
-    const allContacts = await t.query(api.contacts.listByOrganization, {
+    const allContacts = await authed.query(api.contacts.listByOrganization, {
       organizationId,
     });
     expect(allContacts).toHaveLength(2);
 
-    const searchResults = await t.query(api.contacts.listByOrganization, {
+    const searchResults = await authed.query(api.contacts.listByOrganization, {
       organizationId,
       search: "john",
     });
@@ -178,7 +198,12 @@ describe("contacts", () => {
   });
 
   test("should update contact", async () => {
-    const contactId = await t.mutation(api.contacts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-update-contact`,
+      issuer: "https://example.test",
+    });
+
+    const contactId = await authed.mutation(api.contacts.create, {
       accountId,
       firstName: "John",
       lastName: "Doe",
@@ -187,20 +212,25 @@ describe("contacts", () => {
       isActive: true,
     });
 
-    await t.mutation(api.contacts.update, {
+    await authed.mutation(api.contacts.update, {
       contactId,
       firstName: "Jonathan",
       email: "jonathan@example.com",
     });
 
-    const contact = await t.query(api.contacts.get, { contactId });
+    const contact = await authed.query(api.contacts.get, { contactId });
     expect(contact?.firstName).toBe("Jonathan");
     expect(contact?.email).toBe("jonathan@example.com");
     expect(contact?.lastName).toBe("Doe");
   });
 
   test("should delete contact", async () => {
-    const contactId = await t.mutation(api.contacts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-delete-contact`,
+      issuer: "https://example.test",
+    });
+
+    const contactId = await authed.mutation(api.contacts.create, {
       accountId,
       firstName: "John",
       lastName: "Doe",
@@ -209,14 +239,19 @@ describe("contacts", () => {
       isActive: true,
     });
 
-    await t.mutation(api.contacts.remove, { contactId });
+    await authed.mutation(api.contacts.remove, { contactId });
 
-    const contact = await t.query(api.contacts.get, { contactId });
+    const contact = await authed.query(api.contacts.get, { contactId });
     expect(contact).toBeNull();
   });
 
   test("should enforce only one primary contact per account", async () => {
-    const contact1Id = await t.mutation(api.contacts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-primary-contact`,
+      issuer: "https://example.test",
+    });
+
+    const contact1Id = await authed.mutation(api.contacts.create, {
       accountId,
       firstName: "John",
       lastName: "Doe",
@@ -225,7 +260,7 @@ describe("contacts", () => {
       isActive: true,
     });
 
-    const contact2Id = await t.mutation(api.contacts.create, {
+    const contact2Id = await authed.mutation(api.contacts.create, {
       accountId,
       firstName: "Jane",
       lastName: "Smith",
@@ -234,15 +269,24 @@ describe("contacts", () => {
       isActive: true,
     });
 
-    const contact1 = await t.query(api.contacts.get, { contactId: contact1Id });
-    const contact2 = await t.query(api.contacts.get, { contactId: contact2Id });
+    const contact1 = await authed.query(api.contacts.get, {
+      contactId: contact1Id,
+    });
+    const contact2 = await authed.query(api.contacts.get, {
+      contactId: contact2Id,
+    });
 
     expect(contact1?.isPrimary).toBe(false);
     expect(contact2?.isPrimary).toBe(true);
   });
 
   test("should set primary contact", async () => {
-    const contact1Id = await t.mutation(api.contacts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-set-primary`,
+      issuer: "https://example.test",
+    });
+
+    const contact1Id = await authed.mutation(api.contacts.create, {
       accountId,
       firstName: "John",
       lastName: "Doe",
@@ -251,7 +295,7 @@ describe("contacts", () => {
       isActive: true,
     });
 
-    const contact2Id = await t.mutation(api.contacts.create, {
+    const contact2Id = await authed.mutation(api.contacts.create, {
       accountId,
       firstName: "Jane",
       lastName: "Smith",
@@ -260,10 +304,14 @@ describe("contacts", () => {
       isActive: true,
     });
 
-    await t.mutation(api.contacts.setPrimary, { contactId: contact2Id });
+    await authed.mutation(api.contacts.setPrimary, { contactId: contact2Id });
 
-    const contact1 = await t.query(api.contacts.get, { contactId: contact1Id });
-    const contact2 = await t.query(api.contacts.get, { contactId: contact2Id });
+    const contact1 = await authed.query(api.contacts.get, {
+      contactId: contact1Id,
+    });
+    const contact2 = await authed.query(api.contacts.get, {
+      contactId: contact2Id,
+    });
 
     expect(contact1?.isPrimary).toBe(false);
     expect(contact2?.isPrimary).toBe(true);
@@ -295,8 +343,13 @@ describe("contacts", () => {
       return user;
     });
 
+    const authed = t.withIdentity({
+      subject: `${restrictedUserId}|session-permission-gating`,
+      issuer: "https://example.test",
+    });
+
     await expect(
-      t.mutation(api.contacts.create, {
+      authed.mutation(api.contacts.create, {
         accountId,
         firstName: "Test",
         lastName: "User",
@@ -350,14 +403,24 @@ describe("contacts", () => {
       });
     });
 
-    const account2Id = await t.mutation(api.accounts.create, {
-      organizationId: org2Id,
-      accountType: "institution",
-      businessName: "Test Institution 2",
+    const account2Id = await t.run(async (ctx) => {
+      return await ctx.db.insert("accounts", {
+        organizationId: org2Id,
+        accountNumber: "ACC-00002",
+        accountType: "institution",
+        businessName: "Test Institution 2",
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const authed = t.withIdentity({
+      subject: `${userId}|session-module-gating`,
+      issuer: "https://example.test",
     });
 
     await expect(
-      t.query(api.contacts.list, { accountId: account2Id }),
+      authed.query(api.contacts.list, { accountId: account2Id }),
     ).rejects.toThrow();
   });
 
@@ -411,7 +474,12 @@ describe("contacts", () => {
       });
     });
 
-    const contactId = await t.mutation(api.contacts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-multi-tenant`,
+      issuer: "https://example.test",
+    });
+
+    const contactId = await authed.mutation(api.contacts.create, {
       accountId,
       firstName: "John",
       lastName: "Doe",
@@ -420,12 +488,17 @@ describe("contacts", () => {
       isActive: true,
     });
 
-    const contact = await t.query(api.contacts.get, { contactId });
+    const contact = await authed.query(api.contacts.get, { contactId });
     expect(contact).toBeDefined();
   });
 
   test("should update primary contact via update mutation", async () => {
-    const contact1Id = await t.mutation(api.contacts.create, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-update-primary`,
+      issuer: "https://example.test",
+    });
+
+    const contact1Id = await authed.mutation(api.contacts.create, {
       accountId,
       firstName: "John",
       lastName: "Doe",
@@ -434,7 +507,7 @@ describe("contacts", () => {
       isActive: true,
     });
 
-    const contact2Id = await t.mutation(api.contacts.create, {
+    const contact2Id = await authed.mutation(api.contacts.create, {
       accountId,
       firstName: "Jane",
       lastName: "Smith",
@@ -443,13 +516,17 @@ describe("contacts", () => {
       isActive: true,
     });
 
-    await t.mutation(api.contacts.update, {
+    await authed.mutation(api.contacts.update, {
       contactId: contact2Id,
       isPrimary: true,
     });
 
-    const contact1 = await t.query(api.contacts.get, { contactId: contact1Id });
-    const contact2 = await t.query(api.contacts.get, { contactId: contact2Id });
+    const contact1 = await authed.query(api.contacts.get, {
+      contactId: contact1Id,
+    });
+    const contact2 = await authed.query(api.contacts.get, {
+      contactId: contact2Id,
+    });
 
     expect(contact1?.isPrimary).toBe(false);
     expect(contact2?.isPrimary).toBe(true);

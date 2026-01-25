@@ -76,18 +76,26 @@ test("accountRelationships: create and list", async () => {
     });
   });
 
-  const relationshipId = await t.mutation(api.accountRelationships.create, {
-    accountId,
-    relatedEntityType: "loan",
-    relatedEntityId: "LN-001",
-    relationshipType: "lender",
-    startDate: Date.now(),
-    notes: "Test relationship",
+  const authed = t.withIdentity({
+    subject: `${userId}|session-create-and-list`,
+    issuer: "https://example.test",
   });
+
+  const relationshipId = await authed.mutation(
+    api.accountRelationships.create,
+    {
+      accountId,
+      relatedEntityType: "loan",
+      relatedEntityId: "LN-001",
+      relationshipType: "lender",
+      startDate: Date.now(),
+      notes: "Test relationship",
+    },
+  );
 
   expect(relationshipId).toBeDefined();
 
-  const relationships = await t.query(api.accountRelationships.list, {
+  const relationships = await authed.query(api.accountRelationships.list, {
     accountId,
   });
 
@@ -168,10 +176,18 @@ test("accountRelationships: listByEntity", async () => {
     });
   });
 
-  const relationships = await t.query(api.accountRelationships.listByEntity, {
-    relatedEntityType: "loan",
-    relatedEntityId: "LN-001",
+  const authed = t.withIdentity({
+    subject: `${userId}|session-listByEntity`,
+    issuer: "https://example.test",
   });
+
+  const relationships = await authed.query(
+    api.accountRelationships.listByEntity,
+    {
+      relatedEntityType: "loan",
+      relatedEntityId: "LN-001",
+    },
+  );
 
   expect(relationships).toHaveLength(1);
   expect(relationships[0].accountId).toBe(accountId);
@@ -249,7 +265,12 @@ test("accountRelationships: timeline", async () => {
     });
   });
 
-  const timeline = await t.query(api.accountRelationships.timeline, {
+  const authed = t.withIdentity({
+    subject: `${userId}|session-timeline`,
+    issuer: "https://example.test",
+  });
+
+  const timeline = await authed.query(api.accountRelationships.timeline, {
     accountId,
   });
 
@@ -340,7 +361,12 @@ test("accountRelationships: update and remove", async () => {
     });
   });
 
-  await t.mutation(api.accountRelationships.update, {
+  const authed = t.withIdentity({
+    subject: `${userId}|session-update-and-remove`,
+    issuer: "https://example.test",
+  });
+
+  await authed.mutation(api.accountRelationships.update, {
     relationshipId,
     relationshipType: "borrower",
     notes: "Updated notes",
@@ -353,7 +379,7 @@ test("accountRelationships: update and remove", async () => {
   expect(updated?.relationshipType).toBe("borrower");
   expect(updated?.notes).toBe("Updated notes");
 
-  await t.mutation(api.accountRelationships.remove, {
+  await authed.mutation(api.accountRelationships.remove, {
     relationshipId,
   });
 

@@ -65,9 +65,8 @@ test("accountDocuments: create and list", async () => {
     });
   });
 
-  const storageId = await t.run(async (ctx) => {
-    return await ctx.db.insert("_storage", {});
-  });
+  // Mock storage ID - _storage is a system table and can't be inserted in tests
+  const storageId = "0e9655dc186fb9e9;_storage" as any;
 
   const writePermissionId = await t.run(async (ctx) => {
     return await ctx.db.insert("permissions", {
@@ -83,7 +82,12 @@ test("accountDocuments: create and list", async () => {
     });
   });
 
-  const documentId = await t.mutation(api.accountDocuments.create, {
+  const authed = t.withIdentity({
+    subject: `${userId}|session-create-and-list`,
+    issuer: "https://example.test",
+  });
+
+  const documentId = await authed.mutation(api.accountDocuments.create, {
     accountId,
     storageId,
     filename: "test.pdf",
@@ -95,7 +99,7 @@ test("accountDocuments: create and list", async () => {
 
   expect(documentId).toBeDefined();
 
-  const documents = await t.query(api.accountDocuments.list, {
+  const documents = await authed.query(api.accountDocuments.list, {
     accountId,
   });
 
@@ -164,9 +168,8 @@ test("accountDocuments: get with download URL", async () => {
     });
   });
 
-  const storageId = await t.run(async (ctx) => {
-    return await ctx.db.insert("_storage", {});
-  });
+  // Mock storage ID - _storage is a system table and can't be inserted in tests
+  const storageId = "0e9655dc186fb9e9;_storage" as any;
 
   const documentId = await t.run(async (ctx) => {
     return await ctx.db.insert("accountDocuments", {
@@ -182,7 +185,12 @@ test("accountDocuments: get with download URL", async () => {
     });
   });
 
-  const document = await t.query(api.accountDocuments.get, {
+  const authed = t.withIdentity({
+    subject: `${userId}|session-get-with-download-url`,
+    issuer: "https://example.test",
+  });
+
+  const document = await authed.query(api.accountDocuments.get, {
     documentId,
   });
 
@@ -251,9 +259,8 @@ test("accountDocuments: remove", async () => {
     });
   });
 
-  const storageId = await t.run(async (ctx) => {
-    return await ctx.db.insert("_storage", {});
-  });
+  // Mock storage ID - _storage is a system table and can't be inserted in tests
+  const storageId = "0e9655dc186fb9e9;_storage" as any;
 
   const documentId = await t.run(async (ctx) => {
     return await ctx.db.insert("accountDocuments", {
@@ -269,7 +276,12 @@ test("accountDocuments: remove", async () => {
     });
   });
 
-  await t.mutation(api.accountDocuments.remove, {
+  const authed = t.withIdentity({
+    subject: `${userId}|session-remove`,
+    issuer: "https://example.test",
+  });
+
+  await authed.mutation(api.accountDocuments.remove, {
     documentId,
   });
 
