@@ -47,16 +47,16 @@ const FEATURE_REQUIREMENTS: Record<FeatureId, SubscriptionTier> = {
 
 const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
   free: {
-    objects: 1000,
+    objects: 100,
     mediaBytes: 1 * 1024 * 1024 * 1024,
-    users: 3,
-    exportsPerMonth: 50,
+    users: 1,
+    exportsPerMonth: 10,
   },
   pro: {
-    objects: 50000,
-    mediaBytes: 100 * 1024 * 1024 * 1024,
-    users: 25,
-    exportsPerMonth: 1000,
+    objects: 500,
+    mediaBytes: 10 * 1024 * 1024 * 1024,
+    users: 10,
+    exportsPerMonth: 100,
   },
   enterprise: {
     objects: null,

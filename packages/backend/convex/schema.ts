@@ -117,6 +117,7 @@ export default defineSchema({
   organizations: defineTable({
     name: v.string(),
     slug: v.string(),
+    logoId: v.optional(v.id("_storage")),
     type: v.union(
       v.literal("museum"),
       v.literal("gallery"),
@@ -160,6 +161,15 @@ export default defineSchema({
             v.literal("archive"),
             v.literal("general"),
           ),
+        ),
+        portalSettings: v.optional(
+          v.object({
+            isEnabled: v.optional(v.boolean()),
+            isSearchEnabled: v.optional(v.boolean()),
+            isHighResEnabled: v.optional(v.boolean()),
+            isValuationVisible: v.optional(v.boolean()),
+            portalSlug: v.optional(v.string()),
+          }),
         ),
       }),
     ),

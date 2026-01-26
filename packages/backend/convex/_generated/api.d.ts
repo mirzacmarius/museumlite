@@ -71,7 +71,6 @@ import type * as seedMet from "../seedMet.js";
 import type * as seedMetAction from "../seedMetAction.js";
 import type * as seedSingleOrg from "../seedSingleOrg.js";
 import type * as subscriptions from "../subscriptions.js";
-import type * as testAction from "../testAction.js";
 import type * as testHelpers from "../testHelpers.js";
 import type * as transit from "../transit.js";
 import type * as typeOptions from "../typeOptions.js";
@@ -159,7 +158,6 @@ declare const fullApi: ApiFromModules<{
   seedMetAction: typeof seedMetAction;
   seedSingleOrg: typeof seedSingleOrg;
   subscriptions: typeof subscriptions;
-  testAction: typeof testAction;
   testHelpers: typeof testHelpers;
   transit: typeof transit;
   typeOptions: typeof typeOptions;

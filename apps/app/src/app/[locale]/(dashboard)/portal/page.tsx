@@ -1,15 +1,24 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
-import { Button } from "@v1/ui/button";
-import { Building2, Globe, Settings } from "lucide-react";
-import Link from "next/link";
+import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { useQuery } from "convex/react";
+import { Building2, Loader2 } from "lucide-react";
+import { PortalPreview } from "./_components/portal-preview";
+import { PortalSettingsSidebar } from "./_components/portal-settings-sidebar";
 
 export default function PublicPortalPage() {
   const common = useScopedI18n("common");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
+
+  const portalSettings = useQuery(
+    api.organizations.getPortalSettings,
+    currentOrganizationId
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
+  );
 
   if (isLoading) {
     return (
@@ -36,45 +45,32 @@ export default function PublicPortalPage() {
     );
   }
 
+  if (portalSettings === undefined) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-full w-full bg-background px-4 sm:px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-        <div className="flex w-full flex-col rounded-lg border border-border/60 bg-card">
-          <div className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg p-4 sm:p-6">
-            <div className="flex flex-col gap-2">
-              <h2 className="text-xl font-medium text-primary">
-                Public Portal
-              </h2>
-              <p className="text-sm font-normal text-primary/60">
-                Configure your public-facing collection portal
-              </p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <PermissionGate permission="organization.manage">
-                <Button variant="outline" asChild>
-                  <Link href="/settings">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Portal Settings
-                  </Link>
-                </Button>
-              </PermissionGate>
-            </div>
-          </div>
-          <div className="flex w-full px-6">
-            <div className="w-full border-b border-border/60" />
-          </div>
-          <div className="flex flex-1 flex-col items-center justify-center p-8">
-            <Globe className="h-16 w-16 text-muted-foreground/40 mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              Public Portal Coming Soon
-            </h3>
-            <p className="text-sm text-muted-foreground text-center max-w-md">
-              Create a public-facing website to showcase your collection, allow
-              online research, and engage with visitors. This feature is
-              currently under development.
-            </p>
-          </div>
-        </div>
+    <div className="flex h-full w-full flex-col bg-background px-4 sm:px-6 py-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-foreground">
+          Public Portal
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Configure and preview your public-facing collection portal
+        </p>
+      </div>
+
+      <div className="flex flex-1 gap-6 min-h-0">
+        <PortalSettingsSidebar />
+        <PortalPreview
+          isEnabled={portalSettings.isEnabled}
+          orgSlug={portalSettings.orgSlug}
+          portalSlug={portalSettings.portalSlug}
+        />
       </div>
     </div>
   );

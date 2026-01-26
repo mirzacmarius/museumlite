@@ -17,6 +17,7 @@ import {
   type SubscriptionTier,
   enforceUserQuota,
   getTierLimits,
+  requireFeatureAccess,
 } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
@@ -328,6 +329,7 @@ export const getBySlug = query({
       _id: v.id("organizations"),
       name: v.string(),
       slug: v.string(),
+      logoUrl: v.optional(v.string()),
       type: v.union(
         v.literal("museum"),
         v.literal("gallery"),
@@ -350,6 +352,15 @@ export const getBySlug = query({
           enableDetailedConditionReports: v.optional(v.boolean()),
           enabledIntegrations: v.optional(v.array(v.string())),
           enabledModules: v.optional(v.array(enabledModuleValidator)),
+          portalSettings: v.optional(
+            v.object({
+              isEnabled: v.optional(v.boolean()),
+              isSearchEnabled: v.optional(v.boolean()),
+              isHighResEnabled: v.optional(v.boolean()),
+              isValuationVisible: v.optional(v.boolean()),
+              portalSlug: v.optional(v.string()),
+            }),
+          ),
         }),
       ),
       subscriptionTier: v.optional(
@@ -364,7 +375,18 @@ export const getBySlug = query({
       .query("organizations")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .first();
-    return org ?? null;
+
+    if (!org) return null;
+
+    let logoUrl: string | undefined;
+    if (org.logoId) {
+      logoUrl = (await ctx.storage.getUrl(org.logoId)) ?? undefined;
+    }
+
+    return {
+      ...org,
+      logoUrl,
+    };
   },
 });
 
@@ -761,6 +783,101 @@ export const updateAccessionNumberFormat = mutation({
     });
 
     return null;
+  },
+});
+
+/**
+ * Update portal settings
+ */
+export const updatePortalSettings = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    portalSettings: v.object({
+      isEnabled: v.optional(v.boolean()),
+      isSearchEnabled: v.optional(v.boolean()),
+      isHighResEnabled: v.optional(v.boolean()),
+      isValuationVisible: v.optional(v.boolean()),
+      portalSlug: v.optional(v.string()),
+    }),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Permission check
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
+
+    // Feature gate check - requires Pro tier
+    await requireFeatureAccess(ctx, args.organizationId, "public_portal");
+
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) {
+      throw new Error("Organization not found");
+    }
+
+    // Merge settings
+    await ctx.db.patch(args.organizationId, {
+      settings: {
+        ...org.settings,
+        portalSettings: {
+          ...org.settings?.portalSettings,
+          ...args.portalSettings,
+        },
+      },
+    });
+
+    // Audit log
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "updated_portal_settings",
+      entityType: "organization",
+      entityId: args.organizationId,
+      changes: args.portalSettings,
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Get portal settings for an organization
+ */
+export const getPortalSettings = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    isEnabled: v.boolean(),
+    isSearchEnabled: v.boolean(),
+    isHighResEnabled: v.boolean(),
+    isValuationVisible: v.boolean(),
+    portalSlug: v.string(),
+    orgSlug: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) {
+      throw new Error("Organization not found");
+    }
+
+    const portalSettings = org.settings?.portalSettings;
+
+    return {
+      isEnabled: portalSettings?.isEnabled ?? false,
+      isSearchEnabled: portalSettings?.isSearchEnabled ?? false,
+      isHighResEnabled: portalSettings?.isHighResEnabled ?? false,
+      isValuationVisible: portalSettings?.isValuationVisible ?? false,
+      portalSlug: portalSettings?.portalSlug ?? "gallery",
+      orgSlug: org.slug,
+    };
   },
 });
 

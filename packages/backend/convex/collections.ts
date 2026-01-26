@@ -2277,7 +2277,14 @@ export const listPublic = query({
       return { items: [], nextCursor: undefined, hasMore: false };
     }
 
-    await requireFeatureAccess(ctx, organization._id, "public_portal");
+    const hasAccess = await hasFeatureAccess(
+      ctx,
+      organization._id,
+      "public_portal",
+    );
+    if (!hasAccess || !organization.settings?.portalSettings?.isEnabled) {
+      return { items: [], nextCursor: undefined, hasMore: false };
+    }
 
     const pageSize = args.limit ?? 24;
     const allCollections = await ctx.db
@@ -2411,7 +2418,14 @@ export const getPublic = query({
       return null;
     }
 
-    await requireFeatureAccess(ctx, organization._id, "public_portal");
+    const hasAccess = await hasFeatureAccess(
+      ctx,
+      organization._id,
+      "public_portal",
+    );
+    if (!hasAccess || !organization.settings?.portalSettings?.isEnabled) {
+      return null;
+    }
 
     let collection = await ctx.db
       .query("collections")
@@ -2532,7 +2546,14 @@ export const getPublicFilters = query({
       return { objectTypes: [], cultures: [], periods: [] };
     }
 
-    await requireFeatureAccess(ctx, organization._id, "public_portal");
+    const hasAccess = await hasFeatureAccess(
+      ctx,
+      organization._id,
+      "public_portal",
+    );
+    if (!hasAccess || !organization.settings?.portalSettings?.isEnabled) {
+      return { objectTypes: [], cultures: [], periods: [] };
+    }
 
     const collections = await ctx.db
       .query("collections")
@@ -2586,6 +2607,10 @@ export const listPublicForSitemap = query({
     for (const org of organizations) {
       const hasPortal = await hasFeatureAccess(ctx, org._id, "public_portal");
       if (!hasPortal) {
+        continue;
+      }
+
+      if (!org.settings?.portalSettings?.isEnabled) {
         continue;
       }
 
