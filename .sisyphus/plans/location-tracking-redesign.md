@@ -432,7 +432,7 @@ Task 7 (Cleanup + Final Verification)
 
 ---
 
-- [ ] 7. Cleanup Old Components + Final Verification
+- [x] 7. Cleanup Old Components + Final Verification
 
   **What to do**:
   - Delete old component files that are replaced:
@@ -459,9 +459,9 @@ Task 7 (Cleanup + Final Verification)
   **Acceptance Criteria**:
 
   **Full Verification:**
-  - [ ] `bun run typecheck` → passes (all workspaces)
-  - [ ] `bun run lint` → passes
-  - [ ] `bun test` → passes (backend tests)
+  - [x] `bun run typecheck` → passes (all workspaces)
+  - [x] `bun run lint` → passes
+  - [x] `bun test` → passes (backend tests)
   - [ ] Manual: `/locations` page matches mockup
   - [ ] Manual: `/locations/[id]` detail page still works
   - [ ] Manual: No console errors
@@ -498,9 +498,9 @@ bun dev            # Expected: page renders at localhost:3000/locations
 ```
 
 ### Final Checklist
-- [ ] All "Must Have" features present
-- [ ] All "Must NOT Have" exclusions respected
-- [ ] Visual comparison with mockup passes
-- [ ] All tests pass
-- [ ] No TypeScript errors
-- [ ] Existing /locations/[id] page unbroken
+- [x] All "Must Have" features present
+- [x] All "Must NOT Have" exclusions respected
+- [ ] Visual comparison with mockup passes (requires manual browser testing)
+- [x] All tests pass
+- [x] No TypeScript errors
+- [ ] Existing /locations/[id] page unbroken (requires manual browser testing)
