@@ -5,7 +5,14 @@ import { Package } from "lucide-react";
 interface VitrineItem {
   id: string;
   name: string;
-  type: "roman" | "greek" | "busts" | "tools" | "empty" | "maintenance";
+  type:
+    | "roman"
+    | "greek"
+    | "busts"
+    | "tools"
+    | "empty"
+    | "maintenance"
+    | "artifact";
   status: "active" | "warning" | "maintenance" | "empty";
 }
 

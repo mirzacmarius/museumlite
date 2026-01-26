@@ -173,6 +173,11 @@ function LocationLayout({
     selectedLocationId ? { locationId: selectedLocationId } : "skip",
   );
 
+  const environmentalData = useQuery(
+    api.locations.getEnvironmentalReadings,
+    selectedLocationId ? { locationId: selectedLocationId } : "skip",
+  );
+
   const exhibitionTypes = [
     "gallery",
     "exhibition",
@@ -198,97 +203,63 @@ function LocationLayout({
         !loc.parentLocationId,
     ) ?? [];
 
-  // Mock data for rich visualization
-  const mockVitrines = [
-    {
-      id: "vit-01",
-      name: "Amphora B",
-      type: "roman" as const,
+  const isStorageView =
+    selectedLocation &&
+    storageTypes.some((t) => selectedLocation.type.toLowerCase().includes(t));
+
+  const vitrinesFromObjects =
+    objectsAtLocation?.slice(0, 4).map((obj, i) => ({
+      id: `vit-${String(i + 1).padStart(2, "0")}`,
+      name: obj.title.slice(0, 20) + (obj.title.length > 20 ? "..." : ""),
+      type: "artifact" as const,
       status: "active" as const,
-    },
-    {
-      id: "vit-02",
-      name: "Greek Vase",
-      type: "greek" as const,
-      status: "active" as const,
-    },
-    {
-      id: "vit-03",
-      name: "Roman Bust",
-      type: "busts" as const,
-      status: "warning" as const,
-    },
-    {
-      id: "vit-04",
-      name: "Tools",
-      type: "tools" as const,
-      status: "active" as const,
-    },
+    })) ?? [];
+
+  const wallSlotsFromObjects =
+    objectsAtLocation?.slice(4, 10).map((obj, i) => ({
+      id: `w${i + 1}`,
+      occupied: true,
+      itemType: "sculpture" as const,
+    })) ?? [];
+
+  const wallSlots = [
+    ...wallSlotsFromObjects,
+    ...Array.from({ length: Math.max(0, 6 - wallSlotsFromObjects.length) }).map(
+      (_, i) => ({
+        id: `w${wallSlotsFromObjects.length + i + 1}`,
+        occupied: false,
+        itemType: undefined,
+      }),
+    ),
   ];
 
-  const mockWallSlots = [
-    { id: "w1", occupied: true, itemType: "sculpture" },
-    { id: "w2", occupied: true, itemType: "sculpture" },
-    { id: "w3", occupied: true, itemType: "sculpture" },
-    { id: "w4", occupied: false },
-    { id: "w5", occupied: true, itemType: "package" },
-    { id: "w6", occupied: true, itemType: "package" },
+  const drawersFromObjects =
+    objectsAtLocation?.slice(10, 14).map((obj, i) => ({
+      id: `drw-a${i + 1}`,
+      name: `Drawer A${i + 1}`,
+      status: "active" as const,
+      contents: obj.title.slice(0, 15),
+    })) ?? [];
+
+  const drawers = [
+    ...drawersFromObjects,
+    ...Array.from({ length: Math.max(0, 4 - drawersFromObjects.length) }).map(
+      (_, i) => ({
+        id: `drw-a${drawersFromObjects.length + i + 1}`,
+        name: `Drawer A${drawersFromObjects.length + i + 1}`,
+        status: "empty" as const,
+        contents: undefined,
+      }),
+    ),
   ];
 
-  const mockDrawers = [
-    {
-      id: "drw-a1",
-      name: "Drawer A1",
-      status: "active" as const,
-      contents: "Coins",
-    },
-    {
-      id: "drw-a2",
-      name: "Drawer A2",
-      status: "warning" as const,
-      contents: "Jewelry",
-    },
-    {
-      id: "drw-a3",
-      name: "Drawer A3",
-      status: "active" as const,
-      contents: "Frags",
-    },
-    { id: "drw-a4", name: "Drawer A4", status: "empty" as const },
-  ];
-
-  const mockStorageUnits = [
-    {
-      id: "Unit A-01",
-      classification: "Small Ceramics",
-      occupancy: "12/20 boxes",
-      status: "accessible" as const,
-    },
-    {
-      id: "Unit A-02",
-      classification: "Metalwork",
-      occupancy: "18/20 boxes",
-      status: "accessible" as const,
-    },
-    {
-      id: "Unit B-05",
-      classification: "Textiles (Rolled)",
-      occupancy: "Full",
-      status: "locked" as const,
-    },
-    {
-      id: "Unit B-06",
-      classification: "Numismatics",
-      occupancy: "5/40 trays",
-      status: "restricted" as const,
-    },
-    {
-      id: "Unit C-01",
-      classification: "Unprocessed",
-      occupancy: "Varies",
-      status: "holding" as const,
-    },
-  ];
+  const storageUnitsData =
+    selectedLocation?.children?.map((child) => ({
+      id: child.name,
+      classification: child.type,
+      occupancy: "—",
+      status: child.isActive ? ("accessible" as const) : ("locked" as const),
+    })) ?? [];
 
   return (
     <div className="flex h-full">
@@ -347,43 +318,42 @@ function LocationLayout({
                   />
                 )}
                 <LocationStats
-                  temperature={
-                    (selectedLocation.customFields?.temperature as number) ?? 21
-                  }
-                  humidity={
-                    (selectedLocation.customFields?.humidity as number) ?? 45
-                  }
+                  temperature={environmentalData?.temperature}
+                  humidity={environmentalData?.humidity}
                   status={t("active")}
                 />
               </div>
             </div>
 
-            {/* Exhibition View - Vitrines Grid */}
-            <VitrinesGrid
-              title={t("freestandingVitrines")}
-              subtitle={t("galleryDisplay")}
-              occupancy={`12/16 ${t("slots")}`}
-              items={mockVitrines}
-            />
+            {!isStorageView && (
+              <>
+                <VitrinesGrid
+                  title={t("freestandingVitrines")}
+                  subtitle={t("galleryDisplay")}
+                  occupancy={`${vitrinesFromObjects.length}/4 ${t("slots")}`}
+                  items={vitrinesFromObjects}
+                />
 
-            {/* Wall Display and Secure Drawers */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-              <WallDisplay
-                title={t("wallMountedDisplay")}
-                location={t("northWall")}
-                securityStatus={t("locked")}
-                slots={mockWallSlots}
-              />
-              <SecureDrawers title={t("secureDrawers")} drawers={mockDrawers} />
-            </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+                  <WallDisplay
+                    title={t("wallMountedDisplay")}
+                    location={t("northWall")}
+                    securityStatus={t("locked")}
+                    slots={wallSlots}
+                  />
+                  <SecureDrawers title={t("secureDrawers")} drawers={drawers} />
+                </div>
+              </>
+            )}
 
-            {/* Storage View - Units Table */}
-            <div className="mt-8">
-              <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
-                {t("storageUnits")}
-              </h3>
-              <StorageUnitsTable units={mockStorageUnits} />
-            </div>
+            {isStorageView && (
+              <div className="mt-8">
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
+                  {t("storageUnits")}
+                </h3>
+                <StorageUnitsTable units={storageUnitsData} />
+              </div>
+            )}
 
             {/* Objects at Location */}
             <div className="mt-8">

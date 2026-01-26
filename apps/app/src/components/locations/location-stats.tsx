@@ -3,8 +3,8 @@
 import { Droplets, Thermometer } from "lucide-react";
 
 interface LocationStatsProps {
-  temperature: number;
-  humidity: number;
+  temperature: number | null | undefined;
+  humidity: number | null | undefined;
   status?: string;
 }
 
@@ -34,7 +34,7 @@ export function LocationStats({
             Temp
           </div>
           <div className="text-sm font-mono text-zinc-200">
-            {temperature.toFixed(1)}°C
+            {temperature != null ? `${temperature.toFixed(1)}°C` : "N/A"}
           </div>
         </div>
       </div>
@@ -46,7 +46,9 @@ export function LocationStats({
           <div className="text-[10px] text-zinc-500 uppercase font-bold">
             Humidity
           </div>
-          <div className="text-sm font-mono text-zinc-200">{humidity}% RH</div>
+          <div className="text-sm font-mono text-zinc-200">
+            {humidity != null ? `${humidity}% RH` : "N/A"}
+          </div>
         </div>
       </div>
       <div className="px-3 py-2 border rounded-lg flex items-center gap-3">
