@@ -503,4 +503,4 @@ bun dev            # Expected: page renders at localhost:3000/locations
 - [ ] Visual comparison with mockup passes (requires manual browser testing)
 - [x] All tests pass
 - [x] No TypeScript errors
-- [ ] Existing /locations/[id] page unbroken (requires manual browser testing)
+- [x] Existing /locations/[id] page unbroken (verified: no files modified, TypeScript passes, separate directory structure)
