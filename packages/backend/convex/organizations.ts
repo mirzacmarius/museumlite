@@ -13,7 +13,11 @@ import {
   AccessionNumberParser,
   accessionParser,
 } from "./utils/accessionNumberParser";
-import { enforceUserQuota } from "./utils/featureGates";
+import {
+  type SubscriptionTier,
+  enforceUserQuota,
+  getTierLimits,
+} from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
 type EnabledModule =
@@ -483,6 +487,92 @@ export const getSettings = query({
   handler: async (ctx, args) => {
     const org = await ctx.db.get(args.organizationId);
     return org?.settings ?? null;
+  },
+});
+
+/**
+ * Get organization usage statistics
+ */
+export const getUsageStats = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    tier: v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
+    storage: v.object({
+      used: v.number(),
+      limit: v.union(v.number(), v.null()),
+    }),
+    objects: v.object({
+      used: v.number(),
+      limit: v.union(v.number(), v.null()),
+    }),
+    exports: v.object({
+      used: v.number(),
+      limit: v.union(v.number(), v.null()),
+    }),
+  }),
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) {
+      throw new Error("Organization not found");
+    }
+
+    const tier: SubscriptionTier = org.subscriptionTier ?? "free";
+    const limits = getTierLimits(tier);
+
+    // Get object count
+    const collections = await ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+    const objectCount = collections.length;
+
+    // Get storage used
+    const mediaFiles = await ctx.db
+      .query("mediaFiles")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+    const storageUsed = mediaFiles.reduce(
+      (total, file) => total + file.fileSize,
+      0,
+    );
+
+    // Get export count for current month
+    function getMonthStart(timestamp: number) {
+      const date = new Date(timestamp);
+      return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1);
+    }
+    const periodStart = getMonthStart(Date.now());
+    const exportUsage = await ctx.db
+      .query("exportUsage")
+      .withIndex("by_organization_and_period", (q) =>
+        q
+          .eq("organizationId", args.organizationId)
+          .eq("periodStart", periodStart),
+      )
+      .first();
+    const exportCount = exportUsage?.count ?? 0;
+
+    return {
+      tier,
+      storage: {
+        used: storageUsed,
+        limit: limits.mediaBytes,
+      },
+      objects: {
+        used: objectCount,
+        limit: limits.objects,
+      },
+      exports: {
+        used: exportCount,
+        limit: limits.exportsPerMonth,
+      },
+    };
   },
 });
 
