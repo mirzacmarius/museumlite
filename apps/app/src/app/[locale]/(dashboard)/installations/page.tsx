@@ -30,6 +30,12 @@ export default function InstallationsPage() {
               Please select or create an organization to view installations.
             </p>
           </div>
+          <Button asChild>
+            <Link href="/organizations/new">
+              <Plus className="mr-2 h-4 w-4" />
+              {common("createOrganization")}
+            </Link>
+          </Button>
         </div>
       </div>
     );

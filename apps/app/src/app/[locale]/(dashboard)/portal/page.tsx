@@ -4,8 +4,10 @@ import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
-import { Building2, Loader2 } from "lucide-react";
+import { Building2, Loader2, Plus } from "lucide-react";
+import Link from "next/link";
 import { PortalPreview } from "./_components/portal-preview";
 import { PortalSettingsSidebar } from "./_components/portal-settings-sidebar";
 
@@ -40,6 +42,12 @@ export default function PublicPortalPage() {
               portal.
             </p>
           </div>
+          <Button asChild>
+            <Link href="/organizations/new">
+              <Plus className="mr-2 h-4 w-4" />
+              {common("createOrganization")}
+            </Link>
+          </Button>
         </div>
       </div>
     );

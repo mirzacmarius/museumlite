@@ -30,6 +30,12 @@ export default function TransitLogPage() {
               Please select or create an organization to view transit logs.
             </p>
           </div>
+          <Button asChild>
+            <Link href="/organizations/new">
+              <Plus className="mr-2 h-4 w-4" />
+              {common("createOrganization")}
+            </Link>
+          </Button>
         </div>
       </div>
     );
