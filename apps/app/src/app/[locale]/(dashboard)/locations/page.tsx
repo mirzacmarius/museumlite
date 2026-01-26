@@ -173,7 +173,15 @@ function LocationLayout({
     selectedLocationId ? { locationId: selectedLocationId } : "skip",
   );
 
-  const exhibitionTypes = ["gallery", "exhibition", "hall", "wing", "room"];
+  const exhibitionTypes = [
+    "gallery",
+    "exhibition",
+    "hall",
+    "wing",
+    "room",
+    "building",
+    "floor",
+  ];
   const storageTypes = ["vault", "storage", "cabinet", "shelf", "archive"];
 
   const exhibitionLocations =
