@@ -127,7 +127,7 @@ Task 7 (Cleanup + Final Verification)
 
 ## TODOs
 
-- [ ] 1. Create `getEnvironmentalReadings` Convex Query + Test
+- [x] 1. Create `getEnvironmentalReadings` Convex Query + Test
 
   **What to do**:
   - Create new query in `packages/backend/convex/locations.ts`
@@ -158,13 +158,13 @@ Task 7 (Cleanup + Final Verification)
   **Acceptance Criteria**:
 
   **Backend Test:**
-  - [ ] Test file: `packages/backend/convex/locations.test.ts`
-  - [ ] Test covers: Query with readings, query without readings (returns null)
-  - [ ] `bun test locations.test.ts` → PASS
+  - [x] Test file: `packages/backend/convex/locations.test.ts`
+  - [x] Test covers: Query with readings, query without readings (returns null)
+  - [x] `bun test locations.test.ts` → PASS
 
   **Manual Verification:**
-  - [ ] In Convex dashboard, run query with valid locationId
-  - [ ] Verify response shape: `{ temperature: number, humidity: number, recordedAt: number } | null`
+  - [x] In Convex dashboard, run query with valid locationId
+  - [x] Verify response shape: `{ temperature: number, humidity: number, recordedAt: number } | null`
 
   **Commit**: YES
   - Message: `feat(backend): add getEnvironmentalReadings query for location page`
@@ -173,7 +173,7 @@ Task 7 (Cleanup + Final Verification)
 
 ---
 
-- [ ] 2. Create New `LocationSidebar` Component
+- [x] 2. Create New `LocationSidebar` Component
 
   **What to do**:
   - Create `apps/app/src/app/[locale]/(dashboard)/locations/_components/location-sidebar-new.tsx`
@@ -226,7 +226,7 @@ Task 7 (Cleanup + Final Verification)
 
 ---
 
-- [ ] 3. Create New `LocationHeader` Component
+- [x] 3. Create New `LocationHeader` Component
 
   **What to do**:
   - Create `apps/app/src/app/[locale]/(dashboard)/locations/_components/location-header-new.tsx`
@@ -274,7 +274,7 @@ Task 7 (Cleanup + Final Verification)
 
 ---
 
-- [ ] 4. Create New `GalleryView` Component
+- [x] 4. Create New `GalleryView` Component
 
   **What to do**:
   - Create `apps/app/src/app/[locale]/(dashboard)/locations/_components/gallery-view-new.tsx`
@@ -328,7 +328,7 @@ Task 7 (Cleanup + Final Verification)
 
 ---
 
-- [ ] 5. Create New `StorageView` Component
+- [x] 5. Create New `StorageView` Component
 
   **What to do**:
   - Create `apps/app/src/app/[locale]/(dashboard)/locations/_components/storage-view-new.tsx`
@@ -377,7 +377,7 @@ Task 7 (Cleanup + Final Verification)
 
 ---
 
-- [ ] 6. Assemble New Locations Page
+- [x] 6. Assemble New Locations Page
 
   **What to do**:
   - Replace content in `apps/app/src/app/[locale]/(dashboard)/locations/page.tsx`

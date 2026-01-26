@@ -7,10 +7,10 @@ import { useQuery } from "convex/react";
 import { Building2, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { GalleryViewNew } from "./_components/gallery-view-new";
-import { LocationHeaderNew } from "./_components/location-header-new";
-import { LocationSidebarNew } from "./_components/location-sidebar-new";
-import { StorageViewNew } from "./_components/storage-view-new";
+import { GalleryView } from "./_components/gallery-view";
+import { LocationHeader } from "./_components/location-header";
+import { LocationSidebar } from "./_components/location-sidebar";
+import { StorageView } from "./_components/storage-view";
 
 export default function LocationsPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
@@ -137,7 +137,7 @@ function LocationLayout({
 
   return (
     <div className="flex h-full w-full">
-      <LocationSidebarNew
+      <LocationSidebar
         exhibitionLocations={exhibitionLocations}
         storageLocations={storageLocations}
         selectedLocationId={selectedLocationId}
@@ -161,13 +161,13 @@ function LocationLayout({
 
         {selectedLocationId && selectedLocation && (
           <>
-            <LocationHeaderNew
+            <LocationHeader
               location={selectedLocation}
               environmentalData={environmentalData ?? null}
             />
 
             {!isStorageView && (
-              <GalleryViewNew
+              <GalleryView
                 objects={
                   objectsAtLocation?.map((obj) => ({
                     _id: obj._id,
@@ -179,7 +179,7 @@ function LocationLayout({
             )}
 
             {isStorageView && (
-              <StorageViewNew
+              <StorageView
                 units={childLocations.map((loc) => ({
                   _id: loc._id,
                   name: loc.name,

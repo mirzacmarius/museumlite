@@ -8,11 +8,11 @@ interface GalleryObject {
   accessionNumber?: string;
 }
 
-interface GalleryViewNewProps {
+interface GalleryViewProps {
   objects: GalleryObject[];
 }
 
-export function GalleryViewNew({ objects }: GalleryViewNewProps) {
+export function GalleryView({ objects }: GalleryViewProps) {
   const vitrineObjects = objects.slice(0, 8);
   const wallObjects = objects.slice(8, 14);
   const drawerObjects = objects.slice(14, 18);

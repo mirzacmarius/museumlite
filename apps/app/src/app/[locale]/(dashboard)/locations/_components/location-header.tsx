@@ -2,7 +2,7 @@
 
 import { ChevronRight, Droplets, Thermometer } from "lucide-react";
 
-interface LocationHeaderNewProps {
+interface LocationHeaderProps {
   location: {
     name: string;
     type: string;
@@ -15,10 +15,10 @@ interface LocationHeaderNewProps {
   } | null;
 }
 
-export function LocationHeaderNew({
+export function LocationHeader({
   location,
   environmentalData,
-}: LocationHeaderNewProps) {
+}: LocationHeaderProps) {
   const getStatusBadge = () => {
     if (!location.isActive) {
       return {

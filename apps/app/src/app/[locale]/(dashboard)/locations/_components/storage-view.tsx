@@ -7,19 +7,19 @@ interface StorageUnit {
   isActive: boolean;
 }
 
-interface StorageViewNewProps {
+interface StorageViewProps {
   units: StorageUnit[];
   totalObjects: number;
   capacity: number;
   lastAuditDate?: Date;
 }
 
-export function StorageViewNew({
+export function StorageView({
   units,
   totalObjects,
   capacity,
   lastAuditDate,
-}: StorageViewNewProps) {
+}: StorageViewProps) {
   const occupancyPercent =
     capacity > 0 ? Math.round((totalObjects / capacity) * 100) : 0;
 

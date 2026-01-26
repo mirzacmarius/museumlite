@@ -3,7 +3,7 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Lock, Thermometer } from "lucide-react";
 
-interface LocationSidebarNewProps {
+interface LocationSidebarProps {
   exhibitionLocations: Array<{
     _id: Id<"locations">;
     name: string;
@@ -20,12 +20,12 @@ interface LocationSidebarNewProps {
   onSelectLocation: (id: Id<"locations">) => void;
 }
 
-export function LocationSidebarNew({
+export function LocationSidebar({
   exhibitionLocations,
   storageLocations,
   selectedLocationId,
   onSelectLocation,
-}: LocationSidebarNewProps) {
+}: LocationSidebarProps) {
   return (
     <div className="w-60 border-r border-zinc-800/60 p-4 bg-zinc-950 overflow-y-auto custom-scrollbar">
       {exhibitionLocations.length > 0 && (
