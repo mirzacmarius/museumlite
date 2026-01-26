@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { internalMutation, internalQuery } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { action, internalMutation, internalQuery } from "./_generated/server";
 
 // Tables to clear - hardcoded list (NOT using TableNames to avoid as any)
 // These are verified to exist in schema.ts
@@ -4779,5 +4780,115 @@ export const verifyEntityCounts = internalQuery({
           .collect()
       ).length,
     };
+  },
+});
+
+export const assignMissingLocations = internalMutation({
+  args: {
+    userId: v.id("users"),
+  },
+  returns: v.object({
+    assigned: v.number(),
+    skipped: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const collectionsWithoutLocation = await ctx.db
+      .query("collections")
+      .filter((q) => q.eq(q.field("currentLocationId"), undefined))
+      .collect();
+
+    if (collectionsWithoutLocation.length === 0) {
+      return { assigned: 0, skipped: 0 };
+    }
+
+    const byOrg = new Map<
+      Id<"organizations">,
+      typeof collectionsWithoutLocation
+    >();
+    for (const c of collectionsWithoutLocation) {
+      const list = byOrg.get(c.organizationId) || [];
+      list.push(c);
+      byOrg.set(c.organizationId, list);
+    }
+
+    let assigned = 0;
+    let skipped = 0;
+
+    for (const [orgId, collections] of byOrg) {
+      const locations = await ctx.db
+        .query("locations")
+        .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("isActive"), true),
+            q.or(
+              q.eq(q.field("type"), "room"),
+              q.eq(q.field("type"), "cabinet"),
+              q.eq(q.field("type"), "shelf"),
+              q.eq(q.field("type"), "storage"),
+            ),
+          ),
+        )
+        .collect();
+
+      if (locations.length === 0) {
+        skipped += collections.length;
+        continue;
+      }
+
+      for (const collection of collections) {
+        const randomLocation =
+          locations[Math.floor(Math.random() * locations.length)]!;
+
+        await ctx.db.patch(collection._id, {
+          currentLocationId: randomLocation._id,
+        });
+
+        await ctx.db.insert("locationHistory", {
+          collectionId: collection._id,
+          fromLocationId: undefined,
+          toLocationId: randomLocation._id,
+          movedBy: args.userId,
+          movedAt: Date.now(),
+          reason: "Initial location assignment (migration)",
+        });
+
+        assigned++;
+      }
+    }
+
+    return { assigned, skipped };
+  },
+});
+
+export const runAssignMissingLocations = action({
+  args: {},
+  returns: v.object({
+    assigned: v.number(),
+    skipped: v.number(),
+  }),
+  handler: async (ctx): Promise<{ assigned: number; skipped: number }> => {
+    const userId: Id<"users"> | null = await ctx.runQuery(
+      internal.seedMet.findUserByEmail,
+      {
+        email: "mirzacmarius@gmail.com",
+      },
+    );
+
+    if (!userId) {
+      throw new Error("Seed user not found. Please log in first.");
+    }
+
+    const result: { assigned: number; skipped: number } = await ctx.runMutation(
+      internal.seedMet.assignMissingLocations,
+      {
+        userId,
+      },
+    );
+
+    console.log(
+      `Location assignment complete: ${result.assigned} assigned, ${result.skipped} skipped`,
+    );
+    return result;
   },
 });
