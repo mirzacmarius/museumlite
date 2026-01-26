@@ -4,7 +4,29 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import type { ActionCtx } from "./_generated/server";
-import { internalAction } from "./_generated/server";
+import { action, internalAction } from "./_generated/server";
+
+/**
+ * Public action wrapper to run the seed from CLI.
+ * Usage: bunx convex run seedMetAction:runSeed
+ */
+export const runSeed = action({
+  args: {},
+  returns: v.union(v.null(), v.string()),
+  handler: async (ctx) => {
+    try {
+      await ctx.runAction(internal.seedMetAction.resetAndSeed, {});
+      return null;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? `${error.name}: ${error.message}`
+          : String(error);
+      console.error("Seed failed:", errorMessage);
+      return errorMessage;
+    }
+  },
+});
 
 const ORGANIZATIONS = [
   {
@@ -4668,6 +4690,770 @@ async function fetchImageBlob(url: string): Promise<Blob | null> {
   }
 }
 
+async function seedModuleDetails(
+  ctx: ActionCtx,
+  orgId: Id<"organizations">,
+  userId: Id<"users">,
+  orgType: "museum" | "gallery" | "library" | "collector",
+): Promise<void> {
+  // Get all collections for this org
+  const collections = await ctx.runQuery(internal.seedMet.getCollections, {
+    organizationId: orgId,
+  });
+
+  console.log(
+    `  Creating module details for ${collections.length} collections`,
+  );
+
+  // Distribution based on org type
+  const distributions: Record<string, Record<string, number>> = {
+    museum: { fineArt: 0.6, naturalHistory: 0.3, vehicle: 0.05, wine: 0.05 },
+    gallery: { fineArt: 0.9, wine: 0.1, naturalHistory: 0, vehicle: 0 },
+    library: {
+      archive: 0.8,
+      fineArt: 0.2,
+      naturalHistory: 0,
+      vehicle: 0,
+      wine: 0,
+    },
+    collector: {
+      wine: 0.4,
+      vehicle: 0.3,
+      fineArt: 0.3,
+      naturalHistory: 0,
+      archive: 0,
+    },
+  };
+
+  const dist = distributions[orgType] ?? distributions.museum!;
+
+  // Helper to pick module type based on distribution
+  function pickModuleType(): string {
+    const rand = Math.random();
+    let cumulative = 0;
+    for (const [type, prob] of Object.entries(dist!)) {
+      cumulative += prob;
+      if (rand < cumulative) return type;
+    }
+    return "fineArt";
+  }
+
+  // Wine data generators
+  const wineRegions = [
+    "Bordeaux",
+    "Burgundy",
+    "Napa Valley",
+    "Tuscany",
+    "Rioja",
+    "Champagne",
+    "Barossa Valley",
+  ];
+  const wineVarietals = [
+    "Cabernet Sauvignon",
+    "Pinot Noir",
+    "Chardonnay",
+    "Merlot",
+    "Syrah",
+    "Riesling",
+    "Sauvignon Blanc",
+  ];
+  const wineProducers = [
+    "Château Margaux",
+    "Opus One",
+    "Penfolds",
+    "Domaine de la Romanée-Conti",
+    "Antinori",
+  ];
+
+  // Vehicle data generators
+  const vehicleMakes = [
+    "Ferrari",
+    "Porsche",
+    "Mercedes-Benz",
+    "Aston Martin",
+    "Jaguar",
+    "Rolls-Royce",
+    "Bentley",
+  ];
+  const vehicleModels: Record<string, string[]> = {
+    Ferrari: ["250 GTO", "F40", "Testarossa", "308 GTB"],
+    Porsche: ["911 Carrera", "356 Speedster", "959", "Carrera GT"],
+    "Mercedes-Benz": ["300SL Gullwing", "540K", "W196"],
+    "Aston Martin": ["DB5", "DB4 GT", "Vantage"],
+    Jaguar: ["E-Type", "XK120", "D-Type"],
+    "Rolls-Royce": ["Silver Ghost", "Phantom", "Corniche"],
+    Bentley: ["Blower", "Continental", "Speed Six"],
+  };
+
+  // Natural history data
+  const kingdoms = ["Animalia", "Plantae", "Fungi"];
+  const preservationMethods = [
+    "dry",
+    "wet",
+    "frozen",
+    "pinned",
+    "pressed",
+    "mounted",
+    "fossil",
+  ] as const;
+
+  // Archive data
+  const confidentialityLevels = [
+    "public",
+    "internal",
+    "confidential",
+    "restricted",
+  ] as const;
+  const departments = [
+    "Administration",
+    "Research",
+    "Legal",
+    "Finance",
+    "Operations",
+    "Human Resources",
+  ];
+
+  const moduleCount = {
+    fineArt: 0,
+    wine: 0,
+    vehicle: 0,
+    naturalHistory: 0,
+    archive: 0,
+  };
+
+  for (const collection of collections) {
+    const moduleType = pickModuleType();
+
+    try {
+      switch (moduleType) {
+        case "wine": {
+          const region =
+            wineRegions[Math.floor(Math.random() * wineRegions.length)]!;
+          const varietal =
+            wineVarietals[Math.floor(Math.random() * wineVarietals.length)]!;
+          const producer =
+            wineProducers[Math.floor(Math.random() * wineProducers.length)]!;
+          const vintage = 1960 + Math.floor(Math.random() * 60); // 1960-2020
+
+          await ctx.runMutation(internal.seedMet.createWineDetails, {
+            collectionId: collection._id,
+            organizationId: orgId,
+            vintage,
+            producer,
+            region,
+            varietal,
+            bottleSize: "750ml",
+            quantity: 1 + Math.floor(Math.random() * 12),
+            purchasePrice: 100 + Math.floor(Math.random() * 5000),
+            currentValue: 200 + Math.floor(Math.random() * 10000),
+          });
+          moduleCount.wine++;
+          break;
+        }
+
+        case "vehicle": {
+          const make =
+            vehicleMakes[Math.floor(Math.random() * vehicleMakes.length)]!;
+          const models = vehicleModels[make] || ["Classic Model"];
+          const model = models[Math.floor(Math.random() * models.length)]!;
+          const year = 1950 + Math.floor(Math.random() * 50); // 1950-2000
+
+          // Generate a plausible 17-char VIN
+          const vinChars = "ABCDEFGHJKLMNPRSTUVWXYZ0123456789";
+          let vin = "";
+          for (let i = 0; i < 17; i++) {
+            vin += vinChars[Math.floor(Math.random() * vinChars.length)];
+          }
+
+          await ctx.runMutation(internal.seedMet.createVehicleDetails, {
+            collectionId: collection._id,
+            organizationId: orgId,
+            vin,
+            make,
+            model,
+            year,
+            odometer: Math.floor(Math.random() * 100000),
+            odometerUnit: "miles",
+            insuranceValue: 50000 + Math.floor(Math.random() * 500000),
+          });
+          moduleCount.vehicle++;
+          break;
+        }
+
+        case "naturalHistory": {
+          const kingdom =
+            kingdoms[Math.floor(Math.random() * kingdoms.length)]!;
+          const preservationMethod =
+            preservationMethods[
+              Math.floor(Math.random() * preservationMethods.length)
+            ];
+
+          await ctx.runMutation(internal.seedMet.createNaturalHistoryDetails, {
+            collectionId: collection._id,
+            organizationId: orgId,
+            kingdom,
+            commonName: collection.title,
+            preservationMethod,
+            locality: "Field Collection Site",
+            habitat: "Various",
+          });
+          moduleCount.naturalHistory++;
+          break;
+        }
+
+        case "archive": {
+          const confidentialityLevel =
+            confidentialityLevels[
+              Math.floor(Math.random() * confidentialityLevels.length)
+            ];
+          const department =
+            departments[Math.floor(Math.random() * departments.length)]!;
+
+          await ctx.runMutation(internal.seedMet.createArchiveDetails, {
+            collectionId: collection._id,
+            organizationId: orgId,
+            documentType: "Historical Record",
+            retentionCategory: "Permanent",
+            retentionYears: 100,
+            confidentialityLevel,
+            originatingDepartment: department,
+          });
+          moduleCount.archive++;
+          break;
+        }
+
+        default: {
+          // fineArt - already created by seedCollectionDetailsData, skip
+          moduleCount.fineArt++;
+          break;
+        }
+      }
+    } catch (error) {
+      // Skip if module detail already exists (idempotent)
+      console.log(
+        `  Skipped module detail for ${collection._id} (may already exist)`,
+      );
+    }
+  }
+
+  console.log(
+    `  Module details created: wine=${moduleCount.wine}, vehicle=${moduleCount.vehicle}, naturalHistory=${moduleCount.naturalHistory}, archive=${moduleCount.archive}`,
+  );
+}
+
+async function seedRelationshipsAndDocuments(
+  ctx: ActionCtx,
+  orgId: Id<"organizations">,
+  userId: Id<"users">,
+): Promise<void> {
+  console.log("  Seeding relationships and documents...");
+
+  // --- Account Relationships ---
+  const lenders = await ctx.runQuery(internal.seedMet.getAccounts, {
+    organizationId: orgId,
+    accountType: "lender",
+  });
+
+  const borrowers = await ctx.runQuery(internal.seedMet.getAccounts, {
+    organizationId: orgId,
+    accountType: "borrower",
+  });
+
+  // Get loans to link accounts to
+  const loans = await ctx.runQuery(internal.seedMet.getLoans, {
+    organizationId: orgId,
+  });
+
+  let relationshipCount = 0;
+  for (const lender of lenders.slice(0, 10)) {
+    // Link each lender to 2-3 random loans
+    const lenderLoans = loans.slice(0, 2 + Math.floor(Math.random() * 2));
+    for (const loan of lenderLoans) {
+      await ctx.runMutation(internal.seedMet.createAccountRelationship, {
+        organizationId: orgId,
+        accountId: lender._id,
+        relatedEntityType: "loan",
+        relatedEntityId: loan._id,
+        relationshipType: "lender",
+        startDate:
+          Date.now() - Math.floor(Math.random() * 365 * 24 * 60 * 60 * 1000),
+        createdAt: Date.now(),
+      });
+      relationshipCount++;
+    }
+  }
+  console.log(`  Created ${relationshipCount} account relationships`);
+
+  // --- Object Comments ---
+  const collections = await ctx.runQuery(internal.seedMet.getCollections, {
+    organizationId: orgId,
+  });
+
+  const commentTemplates = [
+    "Excellent condition, well preserved.",
+    "Requires minor conservation attention.",
+    "Beautiful example of the period.",
+    "Provenance verified through documentation.",
+    "Subject of recent scholarly research.",
+    "Popular with visitors during exhibitions.",
+    "Acquired through generous donation.",
+    "Rare find, one of few known examples.",
+    "Recently restored, condition improved.",
+    "Cataloging notes updated.",
+  ];
+
+  let commentCount = 0;
+  // Add comments to ~30% of collections
+  const collectionsWithComments = collections.filter(() => Math.random() < 0.3);
+  for (const collection of collectionsWithComments) {
+    const numComments = 1 + Math.floor(Math.random() * 3); // 1-3 comments
+    for (let i = 0; i < numComments; i++) {
+      const comment =
+        commentTemplates[Math.floor(Math.random() * commentTemplates.length)]!;
+      await ctx.runMutation(internal.seedMet.createObjectComment, {
+        organizationId: orgId,
+        objectId: collection._id,
+        userId,
+        content: comment,
+        createdAt:
+          Date.now() - Math.floor(Math.random() * 90 * 24 * 60 * 60 * 1000), // Last 90 days
+      });
+      commentCount++;
+    }
+  }
+  console.log(`  Created ${commentCount} object comments`);
+
+  // --- Condition Disputes ---
+  // Get returned loans for potential disputes
+  const returnedLoans = loans.filter((l) => l.status === "returned");
+
+  let disputeCount = 0;
+  // Create disputes for ~10% of returned loans
+  const loansWithDisputes = returnedLoans.filter(() => Math.random() < 0.1);
+  for (const loan of loansWithDisputes) {
+    // Get a collection from this loan (simplified - use first collection)
+    const loanCollections = collections.slice(0, 1);
+    if (loanCollections.length === 0) continue;
+
+    await ctx.runMutation(internal.seedMet.createConditionDispute, {
+      loanId: loan._id,
+      organizationId: orgId,
+      collectionId: loanCollections[0]!._id,
+      conditionBefore: "Good",
+      conditionBeforeNotes: "Item was in good condition before loan",
+      conditionAfter: "Fair",
+      conditionAfterNotes: "Minor scratches observed on return",
+      disputeDescription:
+        "Borrower claims damage was pre-existing. Investigating.",
+      reportedBy: userId,
+      reportedAt: Date.now(),
+      status: "investigating",
+    });
+    disputeCount++;
+  }
+  console.log(`  Created ${disputeCount} condition disputes`);
+
+  // --- Conservation Alert Rules ---
+  const alertRules = [
+    {
+      name: "High Humidity Alert",
+      triggerType: "environmental" as const,
+      priority: "high" as const,
+      description: "Alert when humidity exceeds safe levels",
+    },
+    {
+      name: "Temperature Warning",
+      triggerType: "environmental" as const,
+      priority: "medium" as const,
+      description: "Alert when temperature is out of range",
+    },
+    {
+      name: "Overdue Treatment",
+      triggerType: "treatment_overdue" as const,
+      priority: "critical" as const,
+      description: "Alert when conservation treatment is overdue",
+      daysOverdue: 30,
+    },
+    {
+      name: "Assessment Due",
+      triggerType: "assessment_due" as const,
+      priority: "medium" as const,
+      description: "Alert when periodic assessment is due",
+      assessmentIntervalDays: 365,
+    },
+    {
+      name: "Critical Condition",
+      triggerType: "condition_threshold" as const,
+      priority: "critical" as const,
+      description: "Alert when object condition drops to critical",
+      conditionThreshold: "critical",
+    },
+  ];
+
+  for (const rule of alertRules) {
+    await ctx.runMutation(internal.seedMet.createConservationAlertRule, {
+      organizationId: orgId,
+      name: rule.name,
+      description: rule.description,
+      triggerType: rule.triggerType,
+      conditionThreshold: rule.conditionThreshold,
+      daysOverdue: rule.daysOverdue,
+      assessmentIntervalDays: rule.assessmentIntervalDays,
+      priority: rule.priority,
+      emailNotification: true,
+      inAppNotification: true,
+      isActive: true,
+      createdBy: userId,
+      createdAt: Date.now(),
+    });
+  }
+  console.log(`  Created ${alertRules.length} conservation alert rules`);
+
+  console.log("  Relationships and documents seeding complete");
+}
+
+async function seedLocationAssignments(
+  ctx: ActionCtx,
+  orgId: Id<"organizations">,
+  userId: Id<"users">,
+): Promise<void> {
+  const locations = await ctx.runQuery(internal.seedMet.getLocationsForOrg, {
+    organizationId: orgId,
+    types: ["room", "cabinet"],
+  });
+
+  if (locations.length === 0) {
+    console.log("  No locations available for assignment");
+    return;
+  }
+
+  const collections = await ctx.runQuery(
+    internal.seedMet.getCollectionsWithoutLocation,
+    { organizationId: orgId },
+  );
+
+  console.log(`  Assigning locations to ${collections.length} collections`);
+
+  for (const collection of collections) {
+    const location = locations[Math.floor(Math.random() * locations.length)]!;
+
+    await ctx.runMutation(internal.seedMet.updateCollectionLocation, {
+      collectionId: collection._id,
+      locationId: location._id,
+    });
+
+    await ctx.runMutation(internal.seedMet.createLocationHistory, {
+      collectionId: collection._id,
+      toLocationId: location._id,
+      movedBy: userId,
+      movedAt: Date.now(),
+      reason: "Initial placement during collection seeding",
+    });
+  }
+
+  console.log(`  Assigned locations to ${collections.length} collections`);
+}
+
+async function seedAdminData(
+  ctx: ActionCtx,
+  orgId: Id<"organizations">,
+  userId: Id<"users">,
+): Promise<void> {
+  console.log("  Seeding admin data...");
+
+  // --- API Keys ---
+  const apiKeys = [
+    {
+      name: "Read-Only Integration",
+      permissions: ["read:collections", "read:loans", "read:accounts"],
+    },
+    {
+      name: "Full Access Key",
+      permissions: [
+        "read:all",
+        "write:collections",
+        "write:loans",
+        "write:accounts",
+      ],
+    },
+  ];
+
+  for (const key of apiKeys) {
+    await ctx.runMutation(internal.seedMet.createApiKey, {
+      organizationId: orgId,
+      name: key.name,
+      prefix: `seed_${Date.now().toString(36)}`,
+      keyHash:
+        "seed_key_hash_placeholder_" + Math.random().toString(36).slice(2),
+      permissions: key.permissions,
+      isRevoked: false,
+      createdBy: userId,
+      createdAt: Date.now(),
+    });
+  }
+  console.log(`  Created ${apiKeys.length} API keys`);
+
+  // --- Webhooks ---
+  const webhooks = [
+    {
+      name: "Loan Events Webhook",
+      events: ["loan.created", "loan.approved", "loan.returned"],
+    },
+    {
+      name: "Collection Events Webhook",
+      events: [
+        "collection.created",
+        "collection.updated",
+        "collection.deleted",
+      ],
+    },
+    {
+      name: "Alert Events Webhook",
+      events: ["alert.triggered", "alert.resolved"],
+    },
+  ];
+
+  for (const webhook of webhooks) {
+    await ctx.runMutation(internal.seedMet.createWebhook, {
+      organizationId: orgId,
+      name: webhook.name,
+      url:
+        "https://example.com/webhook/seed-" +
+        webhook.name.toLowerCase().replace(/\s+/g, "-"),
+      secret: "whsec_seed_secret_" + Math.random().toString(36).slice(2),
+      events: webhook.events,
+      isActive: true,
+      createdBy: userId,
+      createdAt: Date.now(),
+    });
+  }
+  console.log(`  Created ${webhooks.length} webhooks`);
+
+  // --- Scheduled Reports ---
+  const reports = [
+    {
+      name: "Weekly Collection Health",
+      reportType: "collection_health" as const,
+      schedule: "weekly" as const,
+    },
+    {
+      name: "Monthly Loan Status",
+      reportType: "loan_performance" as const,
+      schedule: "monthly" as const,
+    },
+    {
+      name: "Quarterly Conservation Summary",
+      reportType: "conservation_status" as const,
+      schedule: "quarterly" as const,
+    },
+  ];
+
+  for (const report of reports) {
+    await ctx.runMutation(internal.seedMet.createScheduledReport, {
+      organizationId: orgId,
+      name: report.name,
+      description: `Automated ${report.schedule} report for ${report.reportType.replace(/_/g, " ")}`,
+      reportType: report.reportType,
+      schedule: report.schedule,
+      emailRecipients: ["reports@example.com"],
+      isActive: true,
+      createdBy: userId,
+      createdAt: Date.now(),
+    });
+  }
+  console.log(`  Created ${reports.length} scheduled reports`);
+
+  // --- Notification Preferences ---
+  await ctx.runMutation(internal.seedMet.createNotificationPreference, {
+    userId,
+    organizationId: orgId,
+    enableApprovals: true,
+    enableReminders: true,
+    enableAlerts: true,
+    enableAssignments: true,
+    enableSystem: true,
+    emailEnabled: true,
+    updatedAt: Date.now(),
+  });
+  console.log("  Created notification preferences for seed user");
+
+  console.log("  Admin data seeding complete");
+}
+
+async function seedLibraryExtensions(
+  ctx: ActionCtx,
+  orgId: Id<"organizations">,
+  userId: Id<"users">,
+  orgType: "museum" | "gallery" | "library" | "collector",
+): Promise<void> {
+  if (orgType !== "library") {
+    console.log("  Skipping library extensions (not a library org)");
+    return;
+  }
+
+  console.log("  Seeding library extensions...");
+
+  const vendorData = [
+    { name: "Academic Press", website: "https://academicpress.example.com" },
+    {
+      name: "Heritage Books Inc",
+      website: "https://heritagebooks.example.com",
+    },
+    {
+      name: "Digital Archives Ltd",
+      website: "https://digitalarchives.example.com",
+    },
+    {
+      name: "Scholarly Publications",
+      website: "https://scholarlypubs.example.com",
+    },
+    {
+      name: "Classic Reprints Co",
+      website: "https://classicreprints.example.com",
+    },
+  ];
+
+  const vendorIds: Id<"libraryVendors">[] = [];
+  for (const vendor of vendorData) {
+    const vendorId = await ctx.runMutation(
+      internal.seedMet.createLibraryVendor,
+      {
+        organizationId: orgId,
+        name: vendor.name,
+        contactName: vendor.name + " Sales Team",
+        email:
+          "sales@" +
+          vendor.name.toLowerCase().replace(/\s+/g, "") +
+          ".example.com",
+        phone: "+1-555-" + Math.floor(Math.random() * 9000 + 1000).toString(),
+        website: vendor.website,
+        paymentTerms: "Net 30",
+        discountPercent: 10 + Math.floor(Math.random() * 15),
+        isActive: true,
+        createdAt: Date.now(),
+      },
+    );
+    vendorIds.push(vendorId);
+  }
+  console.log(`  Created ${vendorData.length} library vendors`);
+
+  const bookTitles = [
+    "Modern Conservation Techniques",
+    "History of European Art",
+    "Digital Preservation Handbook",
+    "Archive Management Systems",
+    "Cultural Heritage Studies",
+    "Museum Leadership Guide",
+    "Collection Care Manual",
+    "Rare Books Restoration",
+    "Archaeological Documentation",
+    "Art Authentication Methods",
+  ];
+
+  const statuses = [
+    "submitted",
+    "under_review",
+    "approved",
+    "ordered",
+    "received",
+    "cataloged",
+  ] as const;
+  const priorities = ["low", "normal", "high", "urgent"] as const;
+
+  for (const title of bookTitles) {
+    const priority = priorities[Math.floor(Math.random() * priorities.length)]!;
+    const status = statuses[Math.floor(Math.random() * statuses.length)]!;
+
+    await ctx.runMutation(internal.seedMet.createLibraryAcquisitionRequest, {
+      organizationId: orgId,
+      title,
+      authors: ["Author " + Math.floor(Math.random() * 100)],
+      isbn:
+        "978-" + Math.floor(Math.random() * 9000000000 + 1000000000).toString(),
+      publisher:
+        vendorData[Math.floor(Math.random() * vendorData.length)]!.name,
+      requestedBy: userId,
+      requestedAt:
+        Date.now() - Math.floor(Math.random() * 90 * 24 * 60 * 60 * 1000),
+      reason: "Requested for research collection",
+      priority,
+      quantity: 1,
+      status,
+    });
+  }
+  console.log(`  Created ${bookTitles.length} acquisition requests`);
+
+  const libraryItems = await ctx.runQuery(internal.seedMet.getLibraryItems, {
+    organizationId: orgId,
+  });
+
+  if (libraryItems.length === 0) {
+    console.log("  No library items found for serial subscriptions");
+    return;
+  }
+
+  const frequencies = ["monthly", "quarterly", "annually"] as const;
+  const subscriptionCount = Math.min(5, libraryItems.length);
+
+  for (let i = 0; i < subscriptionCount; i++) {
+    const item = libraryItems[i]!;
+    const frequency =
+      frequencies[Math.floor(Math.random() * frequencies.length)]!;
+    const vendorId = vendorIds[Math.floor(Math.random() * vendorIds.length)];
+
+    const subscriptionId = await ctx.runMutation(
+      internal.seedMet.createSerialSubscription,
+      {
+        organizationId: orgId,
+        itemId: item._id,
+        vendorId,
+        subscriptionNumber: "SUB-" + Date.now().toString(36) + "-" + i,
+        startDate: Date.now() - 365 * 24 * 60 * 60 * 1000,
+        endDate: Date.now() + 365 * 24 * 60 * 60 * 1000,
+        frequency,
+        expectedIssues:
+          frequency === "monthly" ? 12 : frequency === "quarterly" ? 4 : 1,
+        cost: 100 + Math.floor(Math.random() * 500),
+        status: "active",
+        autoRenew: true,
+        createdAt: Date.now(),
+      },
+    );
+
+    const issueCount = 3 + Math.floor(Math.random() * 4);
+    const issueStatuses = [
+      "expected",
+      "received",
+      "received",
+      "received",
+    ] as const;
+
+    for (let j = 0; j < issueCount; j++) {
+      const issueStatus =
+        issueStatuses[Math.floor(Math.random() * issueStatuses.length)]!;
+      await ctx.runMutation(internal.seedMet.createSerialIssue, {
+        organizationId: orgId,
+        subscriptionId,
+        itemId: item._id,
+        issueNumber: (j + 1).toString(),
+        volume: "Vol. " + (2024 - Math.floor(j / 4)),
+        issueDate: Date.now() - (issueCount - j) * 30 * 24 * 60 * 60 * 1000,
+        receivedDate:
+          issueStatus === "received"
+            ? Date.now() - (issueCount - j - 1) * 30 * 24 * 60 * 60 * 1000
+            : undefined,
+        status: issueStatus,
+        createdAt: Date.now(),
+      });
+    }
+  }
+  console.log(
+    `  Created ${subscriptionCount} serial subscriptions with issues`,
+  );
+
+  console.log("  Library extensions seeding complete");
+}
+
 export const resetAndSeed = internalAction({
   args: {},
   returns: v.null(),
@@ -4761,13 +5547,45 @@ export const resetAndSeed = internalAction({
     for (const tableName of tablesToClear) {
       let deleted = 0;
       let batchDeleted: number;
+      let retries = 0;
+      const maxRetries = 3;
+
       do {
-        batchDeleted = await ctx.runMutation(internal.seedMet.clearTableBatch, {
-          tableName,
-          batchSize: 500,
-        });
-        deleted += batchDeleted;
-      } while (batchDeleted === 500);
+        try {
+          batchDeleted = await ctx.runMutation(
+            internal.seedMet.clearTableBatch,
+            {
+              tableName,
+              batchSize: 100, // Reduced from 500 for less OCC contention
+            },
+          );
+          deleted += batchDeleted;
+          retries = 0; // Reset on success
+          await sleep(100); // Small delay between batches
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            error.message.includes("OptimisticConcurrencyControlFailure")
+          ) {
+            retries++;
+            if (retries >= maxRetries) {
+              console.warn(
+                `OCC retry limit reached for ${tableName}, continuing...`,
+              );
+              batchDeleted = 0; // Break the loop
+            } else {
+              console.log(
+                `OCC conflict on ${tableName}, retry ${retries}/${maxRetries}...`,
+              );
+              await sleep(500 * retries); // Exponential backoff
+              batchDeleted = 100; // Continue loop
+            }
+          } else {
+            throw error; // Re-throw non-OCC errors
+          }
+        }
+      } while (batchDeleted === 100);
+
       if (deleted > 0) {
         console.log(`  Cleared ${deleted} from ${tableName}`);
       }
@@ -4877,6 +5695,16 @@ export const resetAndSeed = internalAction({
         console.warn(`WARNING: ${org.name} has <10 objects`);
       }
       totalCollections += successCount;
+
+      await seedLocationAssignments(ctx, orgId, userId);
+
+      await seedModuleDetails(ctx, orgId, userId, org.type);
+
+      await seedRelationshipsAndDocuments(ctx, orgId, userId);
+
+      await seedAdminData(ctx, orgId, userId);
+
+      await seedLibraryExtensions(ctx, orgId, userId, org.type);
 
       await seedCollectionDetailsData(ctx, orgId, userId);
 
