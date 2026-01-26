@@ -217,6 +217,7 @@ export const getByEntity = query({
       action: v.string(),
       timestamp: v.number(),
       userName: v.optional(v.string()),
+      userImage: v.optional(v.string()),
       changes: v.optional(auditLogChanges),
     }),
   ),
@@ -233,7 +234,6 @@ export const getByEntity = query({
       .order("desc")
       .take(limit);
 
-    // Get user names for each entry
     const enrichedEntries = await Promise.all(
       entries.map(async (entry) => {
         const user = await ctx.db.get(entry.userId);
@@ -242,6 +242,7 @@ export const getByEntity = query({
           action: entry.action,
           timestamp: entry.timestamp,
           userName: user?.name || user?.email || undefined,
+          userImage: user?.image || undefined,
           changes: entry.changes,
         };
       }),

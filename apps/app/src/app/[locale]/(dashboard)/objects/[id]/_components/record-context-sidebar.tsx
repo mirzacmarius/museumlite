@@ -36,6 +36,8 @@ interface RecordContextSidebarProps {
     endYear?: string;
     verified?: boolean;
   }>;
+  verified?: boolean;
+  verifiedByName?: string;
 }
 
 export function RecordContextSidebar({
@@ -47,6 +49,8 @@ export function RecordContextSidebar({
   valuation,
   provenance,
   ownershipHistory,
+  verified,
+  verifiedByName,
 }: RecordContextSidebarProps) {
   const locale = useCurrentLocale();
 
@@ -293,6 +297,19 @@ export function RecordContextSidebar({
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border/60 p-3">
+        {verified && (
+          <div className="mb-3 flex items-center gap-3 rounded-lg border border-indigo-500/20 bg-indigo-500/10 p-2">
+            <ShieldCheck className="h-4 w-4 text-indigo-400" />
+            <div className="flex-1">
+              <p className="text-[10px] font-medium text-indigo-200">
+                Record Verified
+              </p>
+              <p className="text-[9px] text-indigo-300/60">
+                Approved by {verifiedByName || "Curator"}
+              </p>
+            </div>
+          </div>
+        )}
         <div className="flex gap-2">
           <Button
             variant="outline"

@@ -4,8 +4,118 @@ import { formatDate } from "@/lib/format-date";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
 import { useQuery } from "convex/react";
 import { ScrollText } from "lucide-react";
+
+/**
+ * Get the badge color classes based on the action string
+ */
+function getActionBadgeClasses(action: string): {
+  bg: string;
+  text: string;
+} {
+  const lowerAction = action.toLowerCase();
+
+  // Movement actions - indigo
+  if (lowerAction.includes("move") || lowerAction.includes("moved")) {
+    return { bg: "bg-indigo-500/10", text: "text-indigo-400" };
+  }
+
+  // Creation/addition actions - emerald
+  if (
+    lowerAction.includes("add") ||
+    lowerAction.includes("added") ||
+    lowerAction.includes("create") ||
+    lowerAction.includes("created")
+  ) {
+    return { bg: "bg-emerald-500/10", text: "text-emerald-400" };
+  }
+
+  // Update/edit actions - amber
+  if (
+    lowerAction.includes("update") ||
+    lowerAction.includes("updated") ||
+    lowerAction.includes("edit") ||
+    lowerAction.includes("edited") ||
+    lowerAction.includes("change") ||
+    lowerAction.includes("changed")
+  ) {
+    return { bg: "bg-amber-500/10", text: "text-amber-400" };
+  }
+
+  // Default - neutral gray
+  return { bg: "bg-secondary", text: "text-foreground" };
+}
+
+/**
+ * Format the changes field for display
+ */
+function formatChanges(
+  changes: Record<string, unknown> | undefined,
+): React.ReactNode {
+  if (!changes || typeof changes !== "object") {
+    return null;
+  }
+
+  // Handle previous/new value pattern
+  if ("previous" in changes && "new" in changes) {
+    return (
+      <div className="mt-1 flex gap-4">
+        <span className="font-mono text-[10px] text-muted-foreground line-through">
+          {String(changes.previous)}
+        </span>
+        <span className="font-mono text-[10px] text-foreground">
+          {String(changes.new)}
+        </span>
+      </div>
+    );
+  }
+
+  // Handle fileName pattern
+  if ("fileName" in changes) {
+    return (
+      <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+        File: {String(changes.fileName)}
+      </p>
+    );
+  }
+
+  // Handle location change pattern
+  if ("previousLocation" in changes || "newLocation" in changes) {
+    const previousLocation = changes.previousLocation;
+    if (!previousLocation) return null;
+    return (
+      <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+        Previous: {String(previousLocation)}
+      </p>
+    );
+  }
+
+  // Handle field changes pattern (e.g., { field: "title", previous: "X", new: "Y" })
+  if ("field" in changes) {
+    return (
+      <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+        Changed &quot;{String(changes.field)}&quot;
+        {changes.previous !== undefined &&
+          ` from "${String(changes.previous)}"`}
+        {changes.new !== undefined && ` to "${String(changes.new)}"`}
+      </p>
+    );
+  }
+
+  // Fallback: show first few key-value pairs
+  const entries = Object.entries(changes).slice(0, 2);
+  if (entries.length > 0) {
+    return (
+      <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+        {entries.map(([key, value]) => `${key}: ${String(value)}`).join(", ")}
+      </p>
+    );
+  }
+
+  return null;
+}
 
 interface LogsTabProps {
   collectionId: string;
@@ -76,20 +186,31 @@ export function LogsTab({
                   </td>
                   <td className="px-4 py-3 align-top">
                     <div className="flex items-center gap-2">
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full border border-border/60 bg-secondary text-[9px] text-muted-foreground">
-                        {log.userName?.charAt(0) || "?"}
-                      </div>
-                      <span className="text-xs text-muted-foreground">
+                      <Avatar className="h-5 w-5 border border-border/60">
+                        <AvatarImage
+                          src={log.userImage ?? undefined}
+                          alt={log.userName ?? "User"}
+                        />
+                        <AvatarFallback className="bg-secondary text-[9px] text-muted-foreground">
+                          {log.userName?.charAt(0) || "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs text-foreground">
                         {log.userName || tCommon("unknown")}
                       </span>
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-medium text-accent">
+                    <p className="text-xs text-foreground">
+                      <span
+                        className={`font-medium ${getActionBadgeClasses(log.action).text}`}
+                      >
                         {log.action}
                       </span>
                     </p>
+                    {formatChanges(
+                      log.changes as Record<string, unknown> | undefined,
+                    )}
                   </td>
                 </tr>
               ))

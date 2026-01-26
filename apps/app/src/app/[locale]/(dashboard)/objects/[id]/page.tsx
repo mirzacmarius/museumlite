@@ -856,6 +856,8 @@ export default function ObjectDetailPage() {
           condition={collection.condition}
           provenance={collection.provenance}
           ownershipHistory={collection.ownershipHistory}
+          verified={collection.verified}
+          verifiedByName={collection.verifiedByName}
         />
       </SidebarProvider>
 

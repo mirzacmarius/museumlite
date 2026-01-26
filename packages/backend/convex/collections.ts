@@ -408,13 +408,28 @@ export const get = query({
       catalogedAt: v.number(),
       lastModifiedBy: v.optional(v.id("users")),
       lastModifiedAt: v.optional(v.number()),
+      verified: v.optional(v.boolean()),
+      verifiedBy: v.optional(v.id("users")),
+      verifiedByName: v.optional(v.string()),
+      verifiedAt: v.optional(v.number()),
       _creationTime: v.number(),
     }),
     v.null(),
   ),
   handler: async (ctx, args) => {
     const collection = await ctx.db.get(args.collectionId);
-    return collection;
+    if (!collection) return null;
+
+    let verifiedByName: string | undefined;
+    if (collection.verifiedBy) {
+      const verifier = await ctx.db.get(collection.verifiedBy);
+      verifiedByName = verifier?.name ?? verifier?.email ?? undefined;
+    }
+
+    return {
+      ...collection,
+      verifiedByName,
+    };
   },
 });
 
