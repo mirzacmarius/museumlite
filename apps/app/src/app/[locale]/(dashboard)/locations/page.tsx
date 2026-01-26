@@ -262,7 +262,7 @@ function LocationLayout({
     })) ?? [];
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full w-full">
       <LocationSidebar
         exhibitionLocations={exhibitionLocations}
         storageLocations={storageLocations}
@@ -309,6 +309,7 @@ function LocationLayout({
                 </h2>
               </div>
               <div className="flex flex-col gap-2">
+              <div className="flex gap-4">
                 {occupancy && (
                   <OccupancyDisplay
                     objectCount={occupancy.objectCount}
@@ -322,6 +323,7 @@ function LocationLayout({
                   humidity={environmentalData?.humidity}
                   status={t("active")}
                 />
+                </div>
               </div>
             </div>
 
