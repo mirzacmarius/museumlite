@@ -361,6 +361,10 @@ export default defineSchema({
     catalogedAt: v.number(),
     lastModifiedBy: v.optional(v.id("users")),
     lastModifiedAt: v.optional(v.number()),
+    // Record verification
+    verified: v.optional(v.boolean()),
+    verifiedBy: v.optional(v.id("users")),
+    verifiedAt: v.optional(v.number()),
   })
     .index("by_organization", ["organizationId"])
     .index("by_accessionNumber", ["accessionNumber"])
