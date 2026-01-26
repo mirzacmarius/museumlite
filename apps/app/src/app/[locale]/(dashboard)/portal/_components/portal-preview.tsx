@@ -13,7 +13,7 @@ export function PortalPreview({
   orgSlug,
   portalSlug,
 }: PortalPreviewProps) {
-  const webUrl = process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3001";
+  const webUrl = process.env.NEXT_PUBLIC_WEB_URL || "https://museumlite.com";
   const portalUrl = `${webUrl}/${orgSlug}/${portalSlug}`;
 
   return (

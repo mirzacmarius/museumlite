@@ -69,7 +69,7 @@ export function PortalSettingsSidebar() {
     }
   };
 
-  const webUrl = process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3001";
+  const webUrl = process.env.NEXT_PUBLIC_WEB_URL || "https://museumlite.com";
   const fullPortalUrl = portalSettings?.orgSlug
     ? `${webUrl}/${portalSettings.orgSlug}/${portalSlug}`
     : "";
