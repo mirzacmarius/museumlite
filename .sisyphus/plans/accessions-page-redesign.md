@@ -43,10 +43,10 @@ Redesign the Accessions page to match the reference HTML design with zinc-based 
 - Updated `accession-kanban.tsx` container styles
 
 ### Definition of Done
-- [ ] Page matches reference design visually
-- [ ] All existing functionality preserved
-- [ ] `bun run typecheck` passes
-- [ ] No console errors
+- [ ] Page matches reference design visually - **REQUIRES MANUAL BROWSER TESTING**
+- [ ] All existing functionality preserved - **REQUIRES MANUAL BROWSER TESTING**
+- [x] `bun run typecheck` passes
+- [ ] No console errors - **REQUIRES MANUAL BROWSER TESTING**
 
 ### Must Have
 - Zinc-based dark theme (zinc-900, zinc-800, zinc-500, etc.)
@@ -229,8 +229,8 @@ Task 1 (Stats) → Task 2 (Kanban Column) → Task 3 (Page Client) → Task 4 (C
   **Parallelizable**: NO (final step)
   
   **Acceptance Criteria**:
-  - [ ] `bun run typecheck` → 0 errors
-  - [ ] `bun run lint` → 0 errors (or only pre-existing)
+  - [x] `bun run typecheck` → 0 errors
+  - [x] `bun run lint` → 0 errors (or only pre-existing)
   
   **Commit**: NO (verification only)
 

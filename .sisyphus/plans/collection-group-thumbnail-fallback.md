@@ -33,11 +33,11 @@ Add automatic thumbnail fallback logic: when a collection group has no `imageId`
 - Helper function to avoid code duplication
 
 ### Definition of Done
-- [ ] Collection groups without `imageId` show item thumbnails
-- [ ] Primary images are prioritized over non-primary
-- [ ] Package icon still shows when no images exist
-- [ ] `bun run typecheck` passes
-- [ ] No console errors
+- [ ] Collection groups without `imageId` show item thumbnails - **REQUIRES MANUAL BROWSER TESTING**
+- [ ] Primary images are prioritized over non-primary - **REQUIRES MANUAL BROWSER TESTING**
+- [ ] Package icon still shows when no images exist - **REQUIRES MANUAL BROWSER TESTING**
+- [x] `bun run typecheck` passes
+- [ ] No console errors - **REQUIRES MANUAL BROWSER TESTING**
 
 ### Must Have
 - Fallback logic: group.imageId → item.isPrimary → any item thumbnail → null
@@ -219,9 +219,9 @@ cd packages/backend && bun test  # Expected: all pass
 ```
 
 ### Final Checklist
-- [ ] Helper function works correctly
-- [ ] Dashboard shows fallback thumbnails
-- [ ] Collections page shows fallback thumbnails
-- [ ] Package icon still appears when no images
-- [ ] TypeScript passes
-- [ ] Tests pass
+- [ ] Helper function works correctly - **REQUIRES MANUAL BROWSER TESTING**
+- [ ] Dashboard shows fallback thumbnails - **REQUIRES MANUAL BROWSER TESTING**
+- [ ] Collections page shows fallback thumbnails - **REQUIRES MANUAL BROWSER TESTING**
+- [ ] Package icon still appears when no images - **REQUIRES MANUAL BROWSER TESTING**
+- [x] TypeScript passes
+- [x] Tests pass

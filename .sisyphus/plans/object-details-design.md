@@ -38,15 +38,15 @@ Bring the object details page into complete visual and functional alignment with
 4. Schema addition of verification fields to collections table
 
 ### Definition of Done
-- [ ] Logs tab shows colored action badges matching design colors
-- [ ] Logs tab displays user photos when available (fallback to initials)
-- [ ] Logs tab shows previous/new values from changes field
-- [ ] Digital Assets tab shows documents (PDF, 3D files) with file sizes
-- [ ] Sidebar shows "Record Verified" badge when collection.verified is true
-- [ ] Schema has verified/verifiedBy/verifiedAt fields on collections table
-- [ ] All visual styling matches design HTML
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
+- [x] Logs tab shows colored action badges matching design colors
+- [x] Logs tab displays user photos when available (fallback to initials)
+- [x] Logs tab shows previous/new values from changes field
+- [x] Digital Assets tab shows documents (PDF, 3D files) with file sizes
+- [x] Sidebar shows "Record Verified" badge when collection.verified is true
+- [x] Schema has verified/verifiedBy/verifiedAt fields on collections table
+- [x] All visual styling matches design HTML
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
 
 ### Must Have
 - Schema backward compatibility (all new fields optional)
@@ -114,7 +114,7 @@ Task 5 (Verification)
 
 ## TODOs
 
-- [ ] 1. Add verification fields to collections schema
+- [x] 1. Add verification fields to collections schema
 
   **What to do**:
   - Add `verified: v.optional(v.boolean())` to collections table
@@ -150,7 +150,7 @@ Task 5 (Verification)
 
 ---
 
-- [ ] 2. Enhance Digital Assets Tab to show documents
+- [x] 2. Enhance Digital Assets Tab to show documents
 
   **What to do**:
   - Query media table for documents (filter by `fileType: "document"`)
@@ -200,7 +200,7 @@ Task 5 (Verification)
 
 ---
 
-- [ ] 3. Enhance Logs Tab with colored badges, avatars, and change details
+- [x] 3. Enhance Logs Tab with colored badges, avatars, and change details
 
   **What to do**:
   - Add user avatar images using Avatar component (use userImage if available)
@@ -259,7 +259,7 @@ Task 5 (Verification)
 
 ---
 
-- [ ] 4. Add Record Verified badge to sidebar footer
+- [x] 4. Add Record Verified badge to sidebar footer
 
   **What to do**:
   - Modify RecordContextSidebar to accept collection prop (need verified, verifiedBy)
@@ -310,7 +310,7 @@ Task 5 (Verification)
 
 ---
 
-- [ ] 5. Final verification and cleanup
+- [x] 5. Final verification and cleanup
 
   **What to do**:
   - Run full typecheck: `bun run typecheck`
@@ -363,7 +363,7 @@ bunx convex dev    # Expected: Schema push success (in packages/backend)
 ```
 
 ### Final Checklist
-- [ ] All "Must Have" present
-- [ ] All "Must NOT Have" absent
-- [ ] All commits made with correct messages
-- [ ] Visual match with design HTML confirmed
+- [x] All "Must Have" present
+- [x] All "Must NOT Have" absent
+- [x] All commits made with correct messages
+- [x] Visual match with design HTML confirmed

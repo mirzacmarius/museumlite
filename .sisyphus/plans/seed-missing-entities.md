@@ -40,9 +40,9 @@ Populate all missing entity relationships in the demo database so every feature 
 5. All document/attachment/relationship tables populated
 
 ### Definition of Done
-- [ ] `bun run typecheck` passes with no errors
-- [ ] `bunx convex run seedMetAction.resetAndSeed` completes successfully
-- [ ] Query verification shows expected record counts per entity type
+- [x] `bun run typecheck` passes with no errors
+- [ ] `bunx convex run seedMetAction.resetAndSeed` completes successfully - **REQUIRES MANUAL EXECUTION**
+- [ ] Query verification shows expected record counts per entity type - **REQUIRES MANUAL VERIFICATION**
 
 ### Must Have
 - Location assignment for all active collections (not loaned/deaccessioned)
@@ -719,14 +719,14 @@ bunx convex run seedMet.verifyEntityCounts --args '{"organizationId": "..."}' # 
 ```
 
 ### Final Checklist
-- [ ] All collections have currentLocationId set (except loaned/deaccessioned)
-- [ ] All collections have exactly one module detail record
-- [ ] All loans have 1-2 documents
-- [ ] All exhibitions have 1-2 documents
-- [ ] All accounts have 1 document
-- [ ] ~30% of collections have comments
-- [ ] Each org has 5 conservation alert rules
-- [ ] Each org has 2 API keys, 3 webhooks, 3 scheduled reports
-- [ ] Library org has vendors, acquisition requests, serial subscriptions
-- [ ] No TypeScript errors
-- [ ] Seed completes in reasonable time (<5 minutes)
+- [ ] All collections have currentLocationId set (except loaned/deaccessioned) - **REQUIRES MANUAL DB QUERY**
+- [ ] All collections have exactly one module detail record - **REQUIRES MANUAL DB QUERY**
+- [ ] All loans have 1-2 documents - **REQUIRES MANUAL DB QUERY**
+- [ ] All exhibitions have 1-2 documents - **REQUIRES MANUAL DB QUERY**
+- [ ] All accounts have 1 document - **REQUIRES MANUAL DB QUERY**
+- [ ] ~30% of collections have comments - **REQUIRES MANUAL DB QUERY**
+- [ ] Each org has 5 conservation alert rules - **REQUIRES MANUAL DB QUERY**
+- [ ] Each org has 2 API keys, 3 webhooks, 3 scheduled reports - **REQUIRES MANUAL DB QUERY**
+- [ ] Library org has vendors, acquisition requests, serial subscriptions - **REQUIRES MANUAL DB QUERY**
+- [x] No TypeScript errors
+- [ ] Seed completes in reasonable time (<5 minutes) - **REQUIRES MANUAL EXECUTION**
