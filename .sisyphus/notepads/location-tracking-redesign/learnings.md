@@ -96,3 +96,67 @@ Task 2 & 3 can be done in parallel (sidebar + header components).
 - Awaiting manual browser testing by human user
 - No blockers for deployment after manual verification
 
+
+## [2026-01-26 Blocker Documentation] Manual Testing Required
+
+### Completed Programmatic Verification
+- [x] All TypeScript compilation checks (5/5 tasks)
+- [x] Linting verification
+- [x] Backend test suite (11/11 tests)
+- [x] Component exports and imports verified
+- [x] File structure verified
+
+### Blocked: Manual Browser Testing
+The following acceptance criteria **cannot be verified programmatically** and require human interaction:
+
+**Task 2 - LocationSidebar:**
+- [ ] Visual: Sidebar renders at 240px width
+- [ ] Visual: "Exhibition Spaces" section shows exhibition-type locations
+- [ ] Visual: "Secure Storage" section shows storage-type locations
+- [ ] Interaction: Clicking a location triggers callback
+- [ ] Visual: Active location has indigo border highlight
+
+**Task 3 - LocationHeader:**
+- [ ] Visual: Header renders with breadcrumb, title, status badge
+- [ ] Visual: Environmental cards show temperature and humidity
+- [ ] Visual: If no environmental data, cards show "N/A"
+
+**Task 4 - GalleryView:**
+- [ ] Visual: Vitrines grid renders 4 glass case cards
+- [ ] Visual: Wall display renders 6 slots
+- [ ] Visual: Secure drawers render 4 rows
+- [ ] Visual: Objects from location appear in slots
+- [ ] Visual: Empty slots show "Empty" placeholder
+- [ ] Interaction: Hovering object shows tooltip with name
+
+**Task 5 - StorageView:**
+- [ ] Visual: Stats cards render with capacity, items, audit date
+- [ ] Visual: Progress bar shows utilization percentage
+- [ ] Visual: Table renders storage units with status badges
+- [ ] Visual: Status colors match (emerald, amber, rose)
+
+**Task 6 - Page Assembly:**
+- [ ] Navigation: Navigate to `http://localhost:3000/locations`
+- [ ] Visual: Sidebar loads with locations
+- [ ] Interaction: Clicking exhibition location shows GalleryView
+- [ ] Interaction: Clicking storage location shows StorageView
+- [ ] Visual: Environmental data displays in header
+- [ ] Visual: Objects appear in vitrines/table
+- [ ] Console: No TypeScript errors in console
+- [ ] Visual: Compare with mockup: layout matches
+
+**Task 7 - Final Verification:**
+- [ ] Visual: `/locations` page matches mockup
+- [ ] Regression: `/locations/[id]` detail page still works
+- [ ] Console: No console errors
+
+### Blocker Resolution
+**Action Required**: Human user must:
+1. Run `bun dev` to start development server
+2. Open browser to `http://localhost:3000/locations`
+3. Perform visual and interaction testing
+4. Compare with mockup at `museumlite.aura.build.html` lines 2613-3136
+5. Mark remaining checkboxes in plan file
+
+**Status**: Implementation 100% complete, awaiting manual QA.
+

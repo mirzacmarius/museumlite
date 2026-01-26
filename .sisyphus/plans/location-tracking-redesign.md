@@ -217,7 +217,7 @@ Task 7 (Cleanup + Final Verification)
     - Active location has indigo border highlight
 
   **TypeScript:**
-  - [ ] `bun run typecheck` → passes, no errors in new file
+  - [x] `bun run typecheck` → passes, no errors in new file
 
   **Commit**: YES
   - Message: `feat(locations): add new LocationSidebar component matching mockup`
@@ -265,7 +265,7 @@ Task 7 (Cleanup + Final Verification)
   - [ ] If no environmental data, cards show "N/A"
 
   **TypeScript:**
-  - [ ] `bun run typecheck` → passes
+  - [x] `bun run typecheck` → passes
 
   **Commit**: YES
   - Message: `feat(locations): add new LocationHeader component with env cards`
@@ -319,7 +319,7 @@ Task 7 (Cleanup + Final Verification)
   - [ ] Hovering object shows tooltip with name
 
   **TypeScript:**
-  - [ ] `bun run typecheck` → passes
+  - [x] `bun run typecheck` → passes
 
   **Commit**: YES
   - Message: `feat(locations): add GalleryView component with vitrines, wall display, drawers`
@@ -368,7 +368,7 @@ Task 7 (Cleanup + Final Verification)
   - [ ] Status colors match (emerald, amber, rose)
 
   **TypeScript:**
-  - [ ] `bun run typecheck` → passes
+  - [x] `bun run typecheck` → passes
 
   **Commit**: YES
   - Message: `feat(locations): add StorageView component with stats and units table`
@@ -423,7 +423,7 @@ Task 7 (Cleanup + Final Verification)
   - [ ] Compare with mockup: layout matches
 
   **TypeScript:**
-  - [ ] `bun run typecheck` → passes
+  - [x] `bun run typecheck` → passes
 
   **Commit**: YES
   - Message: `feat(locations): assemble new location tracking page with auto-view switching`
