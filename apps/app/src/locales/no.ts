@@ -1899,6 +1899,7 @@ export default {
     gridView: "Rutenettvisning",
     backToList: "Tilbake til listen",
     tryAgain: "Prøv igjen",
+    createOrganization: "Opprett Organisasjon",
     toast: {
       exportFailed: "Kunne ikke eksportere data",
       invalidEmail: "Ugyldig e-postadresseformat",

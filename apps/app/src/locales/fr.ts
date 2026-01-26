@@ -1982,6 +1982,7 @@ export default {
     gridView: "Vue grille",
     backToList: "Retour à la liste",
     tryAgain: "Réessayer",
+    createOrganization: "Créer une Organisation",
     toast: {
       exportFailed: "Échec de l'exportation des données",
       invalidEmail: "Format d'adresse e-mail invalide",

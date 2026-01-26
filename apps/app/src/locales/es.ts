@@ -1896,6 +1896,7 @@ export default {
     gridView: "Vista de cuadrícula",
     backToList: "Volver a la lista",
     tryAgain: "Reintentar",
+    createOrganization: "Crear Organización",
     toast: {
       exportFailed: "Error al exportar datos",
       invalidEmail: "Formato de dirección de correo electrónico inválido",

@@ -557,6 +557,7 @@ export default {
     download: "Descarcă",
     settings: "Setări",
     language: "Limba",
+    createOrganization: "Creează Organizație",
   },
   objects: {
     title: "Obiecte Colecție",

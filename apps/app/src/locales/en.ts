@@ -1572,6 +1572,7 @@ export default {
     gridView: "Grid view",
     backToList: "Back to list",
     tryAgain: "Try Again",
+    createOrganization: "Create Organization",
     toast: {
       exportFailed: "Failed to export data",
       invalidEmail: "Invalid email address format",
