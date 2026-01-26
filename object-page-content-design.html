@@ -1,0 +1,1410 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MuseumLite - Object Details</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Subtle Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f3f46;
+    }
+
+    /* Animation Utilities */
+    .animate-enter {
+      animation: enter 0.3s ease-out forwards;
+      opacity: 0;
+      transform: translateY(5px);
+    }
+
+    @keyframes enter {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+
+<body
+  class="bg-zinc-950 text-zinc-400 antialiased selection:bg-indigo-500/30 selection:text-indigo-200 overflow-hidden h-screen flex text-sm">
+  <!-- Sidebar -->
+  <aside class="w-64 border-r border-zinc-800/60 flex flex-col h-full bg-zinc-950 hidden md:flex shrink-0 z-20">
+    <!-- Organization Switcher -->
+    <div class="p-3 border-b border-zinc-800/60 relative">
+      <button
+        class="w-full flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-zinc-900 transition-all duration-200 group border border-transparent hover:border-zinc-800"
+        onclick="document.getElementById('org-menu').classList.toggle('hidden')">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-md shadow-inner flex items-center justify-center text-white font-medium text-xs border border-white/10">
+            NM
+          </div>
+          <div class="text-left">
+            <p class="text-xs font-medium text-zinc-200 group-hover:text-white transition-colors">
+              National Museum
+            </p>
+            <p class="text-[10px] text-zinc-500">Enterprise Plan</p>
+          </div>
+        </div>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          data-lucide="chevrons-up-down"
+          class="lucide lucide-chevrons-up-down w-3.5 h-3.5 text-zinc-600 group-hover:text-zinc-400 transition-colors">
+          <path d="m7 15 5 5 5-5"></path>
+          <path d="m7 9 5-5 5 5"></path>
+        </svg>
+      </button>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto py-4 px-2">
+      <div class="space-y-6">
+        <!-- Workspace -->
+        <div class="px-1">
+          <div class="px-2 pb-2 text-[10px] font-medium text-zinc-500 uppercase tracking-widest">
+            Workspace
+          </div>
+          <div class="space-y-0.5">
+            <a href="/collection"
+              class="flex items-center gap-2.5 hover:text-zinc-200 hover:bg-zinc-900/50 transition-all group text-xs text-zinc-400 rounded-md pt-1.5 pr-3 pb-1.5 pl-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                data-lucide="layout-grid"
+                class="lucide lucide-layout-grid w-4 h-4 group-hover:text-zinc-400 transition-colors">
+                <rect width="7" height="7" x="3" y="3" rx="1"></rect>
+                <rect width="7" height="7" x="14" y="3" rx="1"></rect>
+                <rect width="7" height="7" x="14" y="14" rx="1"></rect>
+                <rect width="7" height="7" x="3" y="14" rx="1"></rect>
+              </svg>
+              <span class="font-medium">All Objects</span>
+            </a>
+            <a href="#"
+              class="flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50 rounded-md transition-all group">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                data-lucide="plus-circle"
+                class="lucide lucide-plus-circle w-4 h-4 group-hover:text-zinc-400 transition-colors">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M8 12h8"></path>
+                <path d="M12 8v8"></path>
+              </svg>
+              <span class="">Accessioning</span>
+            </a>
+            <a href="#"
+              class="flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 rounded-md transition-all group">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                data-lucide="clipboard-list"
+                class="lucide lucide-clipboard-list w-4 h-4 group-hover:text-zinc-400 transition-colors">
+                <rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect>
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <path d="M12 11h4"></path>
+                <path d="M12 16h4"></path>
+                <path d="M8 11h.01"></path>
+                <path d="M8 16h.01"></path>
+              </svg>
+              <span class="">My Assignments</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Collections -->
+        <details open="" class="group/coll px-1">
+          <summary
+            class="px-2 pb-2 flex items-center justify-between cursor-pointer list-none [&amp;::-webkit-details-marker]:hidden hover:text-zinc-300 text-zinc-500 transition-colors group/summary">
+            <span class="text-[10px] font-medium uppercase tracking-widest">
+              Collections
+            </span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              data-lucide="chevron-right"
+              class="lucide lucide-chevron-right w-3 h-3 transition-transform duration-200 group-open/coll:rotate-90">
+              <path d="m9 18 6-6-6-6"></path>
+            </svg>
+          </summary>
+          <div class="space-y-0.5 pt-1">
+            <button
+              class="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-200 bg-zinc-800/40 rounded-md border border-zinc-800/60 shadow-sm text-left">
+              <div class="w-1 h-4 bg-amber-600 rounded-full shadow-[0_0_10px_rgba(217,119,6,0.5)]"></div>
+              <span>Greco-Roman Antiquity</span>
+            </button>
+            <button
+              class="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50 rounded-md transition-all group text-left">
+              <div class="w-1 h-4 bg-emerald-600/20 rounded-full border border-emerald-600/40"></div>
+              <span>Renaissance Art</span>
+            </button>
+          </div>
+        </details>
+      </div>
+    </nav>
+
+    <div class="p-3 border-t border-zinc-800/60">
+      <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-900/50 cursor-pointer transition-colors">
+        <div class="relative">
+          <img
+            src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&amp;fit=facearea&amp;facepad=2&amp;w=48&amp;h=48&amp;q=80"
+            alt="User" class="w-8 h-8 rounded-full border border-zinc-700">
+          <div class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-zinc-950 rounded-full">
+          </div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-medium text-zinc-200 truncate">
+            Dr. A. Carter
+          </p>
+          <p class="text-[10px] text-zinc-500 truncate">Senior Curator</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content: Object Details -->
+  <main class="flex-1 flex flex-col min-w-0 bg-zinc-950 relative z-10">
+    <!-- Navbar -->
+    <header
+      class="h-14 border-b border-zinc-800/60 flex items-center justify-between px-6 bg-zinc-950/80 backdrop-blur-xl sticky top-0 z-50">
+      <div class="flex items-center gap-2 text-xs">
+        <button class="p-1 hover:bg-zinc-900 rounded-md transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            data-lucide="arrow-left" class="lucide lucide-arrow-left w-4 h-4 text-zinc-500">
+            <path d="m12 19-7-7 7-7"></path>
+            <path d="M19 12H5"></path>
+          </svg>
+        </button>
+        <span class="text-zinc-500 flex items-center gap-2">
+          Collections
+        </span>
+        <span class="text-zinc-700">/</span>
+        <span class="text-zinc-500">Greco-Roman</span>
+        <span class="text-zinc-700">/</span>
+        <span class="text-zinc-300 font-medium">Bust of Marcus Aurelius</span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button class="p-2 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-900 transition-colors" title="Share">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="share-2"
+            class="lucide lucide-share-2 w-4 h-4">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" x2="15.42" y1="13.51" y2="17.49"></line>
+            <line x1="15.41" x2="8.59" y1="6.51" y2="10.49"></line>
+          </svg>
+        </button>
+        <button class="p-2 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-900 transition-colors"
+          title="Print Record">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="printer"
+            class="lucide lucide-printer w-4 h-4">
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"></path>
+            <rect x="6" y="14" width="12" height="8" rx="1"></rect>
+          </svg>
+        </button>
+        <div class="h-4 w-px bg-zinc-800"></div>
+        <button
+          class="flex items-center gap-2 bg-white text-zinc-950 hover:bg-zinc-200 px-3 py-1.5 rounded-md text-xs font-semibold transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil"
+            class="lucide lucide-pencil w-3.5 h-3.5">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+            <path d="m15 5 4 4"></path>
+          </svg>
+          <span>Edit Object</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Scrollable Area -->
+    <div class="flex-1 overflow-y-auto p-0 scroll-smooth">
+      <!-- Hero Section -->
+      <div class="border-b border-zinc-800/60 bg-zinc-900/10 px-8 py-8 animate-enter">
+        <div class="max-w-5xl mx-auto flex gap-8 items-start">
+          <div class="shrink-0 relative group cursor-zoom-in">
+            <img
+              src="https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?q=80&amp;w=600&amp;auto=format&amp;fit=crop"
+              alt="Object Primary"
+              class="w-48 h-48 rounded-xl object-cover border border-zinc-700 shadow-2xl bg-zinc-900">
+            <div
+              class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                data-lucide="maximize-2" class="lucide lucide-maximize-2 w-6 h-6 text-white">
+                <path d="M15 3h6v6"></path>
+                <path d="m21 3-7 7"></path>
+                <path d="m3 21 7-7"></path>
+                <path d="M9 21H3v-6"></path>
+              </svg>
+            </div>
+          </div>
+
+          <div class="flex-1 space-y-4">
+            <!-- Status, Accession & Alternates Row -->
+            <div class="flex items-center flex-wrap gap-2.5">
+              <div
+                class="px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-bold uppercase tracking-wider">
+                On Display
+              </div>
+              <div
+                class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-950/30 border border-emerald-500/20 text-[11px] text-emerald-400">
+                <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                <span class="font-medium">Public</span>
+              </div>
+
+              <!-- Main ID -->
+              <div
+                class="flex items-center gap-1.5 text-xs text-zinc-300 font-mono bg-zinc-900 px-2 py-1 rounded border border-zinc-800">
+                <span>NM.2024.10.001</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  data-lucide="copy"
+                  class="lucide lucide-copy w-3 h-3 text-zinc-600 hover:text-white cursor-pointer transition-colors">
+                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                </svg>
+              </div>
+
+              <!-- Alternates (Moved from General) -->
+              <div class="h-4 w-px bg-zinc-800 mx-1"></div>
+              <div class="flex items-center gap-2">
+                <div
+                  class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-900/50 border border-zinc-800 text-[10px] text-zinc-400 hover:text-zinc-200 transition-colors">
+                  <span class="font-mono text-zinc-600 select-none">ID:</span>
+                  <span>1924.10</span>
+                </div>
+                <div
+                  class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-900/50 border border-zinc-800 text-[10px] text-zinc-400 hover:text-zinc-200 transition-colors">
+                  <span class="font-mono text-zinc-600 select-none">LC:</span>
+                  <span>Item 44</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Parent Object Info (Updated with Avatars) -->
+            <div class="flex items-center gap-6 text-xs border-l border-zinc-800 pl-4 py-1 ml-2">
+              <!-- Parent -->
+              <div class="flex items-center gap-2">
+                <span class="uppercase tracking-wide text-[10px] font-medium text-zinc-500">Part of</span>
+                <a href="#" class="flex items-center gap-2 group">
+                  <img
+                    src="https://images.unsplash.com/photo-1599940824399-b87987ceb72a?q=80&amp;w=64&amp;auto=format&amp;fit=crop"
+                    alt="Group"
+                    class="w-6 h-6 rounded-full border border-zinc-700 object-cover group-hover:border-indigo-500 transition-colors">
+                  <span
+                    class="text-zinc-300 group-hover:text-indigo-400 transition-colors border-b border-transparent group-hover:border-indigo-500/30">The
+                    Carnarvon Bequest</span>
+                </a>
+              </div>
+
+              <!-- Siblings -->
+              <div class="flex items-center gap-2">
+                <span class="uppercase tracking-wide text-[10px] font-medium text-zinc-500">Siblings</span>
+                <div class="flex -space-x-2 hover:space-x-1 transition-all duration-300">
+                  <!-- Sibling 1 -->
+                  <a href="#" class="relative z-30 group" title="Statue of Faustina">
+                    <img
+                      src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/917d6f93-fb36-439a-8c48-884b67b35381_1600w.jpg"
+                      class="w-6 h-6 rounded-full border border-zinc-950 ring-1 ring-zinc-700 object-cover group-hover:ring-indigo-500 transition-all">
+                  </a>
+                  <!-- Sibling 2 -->
+                  <a href="#" class="relative z-20 group" title="Coin of Commodus">
+                    <div
+                      class="w-6 h-6 rounded-full bg-zinc-900 border border-zinc-950 ring-1 ring-zinc-700 flex items-center justify-center group-hover:ring-indigo-500 transition-all">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="text-zinc-500">
+                        <circle cx="12" cy="12" r="10"></circle>
+                      </svg>
+                    </div>
+                  </a>
+                  <!-- More -->
+                  <div class="relative z-10">
+                    <div
+                      class="w-6 h-6 rounded-full bg-zinc-800 border border-zinc-950 ring-1 ring-zinc-700 flex items-center justify-center text-[8px] font-medium text-zinc-400">
+                      +4
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Titles -->
+            <div>
+              <h1 class="text-3xl font-semibold text-zinc-100 tracking-tight leading-tight mb-1">
+                Bust of Marcus Aurelius
+              </h1>
+              <p class="text-zinc-500 text-sm">
+                Alternative Title: The Philosopher Emperor
+              </p>
+            </div>
+
+            <!-- Metadata Row -->
+            <div class="flex items-center gap-6 pt-2">
+              <div class="flex items-center gap-2 text-xs">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  data-lucide="map-pin" class="lucide lucide-map-pin w-4 h-4 text-zinc-500">
+                  <path
+                    d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0">
+                  </path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <span class="text-zinc-400">Wing A, Gallery 4 (Roman Hall)</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  data-lucide="calendar" class="lucide lucide-calendar w-4 h-4 text-zinc-500">
+                  <path d="M8 2v4"></path>
+                  <path d="M16 2v4"></path>
+                  <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+                  <path d="M3 10h18"></path>
+                </svg>
+                <span class="text-zinc-400">Late 2nd Century AD</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="border-b border-zinc-800/60 px-8 bg-zinc-950/50 sticky top-0 z-40 backdrop-blur-md">
+        <div class="max-w-5xl mx-auto flex gap-6 text-xs font-medium" id="tabs-container">
+          <button onclick="openTab(event, 'General')"
+            class="tab-btn py-3 border-b-2 border-indigo-500 text-zinc-100 transition-colors">General</button>
+          <button onclick="openTab(event, 'Physical')"
+            class="tab-btn py-3 border-b-2 border-transparent text-zinc-500 hover:text-zinc-300 transition-colors">Physical
+            Description</button>
+          <button onclick="openTab(event, 'Media')"
+            class="tab-btn py-3 border-b-2 border-transparent text-zinc-500 hover:text-zinc-300 transition-colors">Media</button>
+          <button onclick="openTab(event, 'Digital')"
+            class="tab-btn py-3 border-b-2 border-transparent text-zinc-500 hover:text-zinc-300 transition-colors">Digital
+            Assets</button>
+          <button onclick="openTab(event, 'Provenance')"
+            class="tab-btn py-3 border-b-2 border-transparent text-zinc-500 hover:text-zinc-300 transition-colors">Provenance</button>
+          <button onclick="openTab(event, 'Conservation')"
+            class="tab-btn py-3 border-b-2 border-transparent text-zinc-500 hover:text-zinc-300 transition-colors">Conservation</button>
+          <button onclick="openTab(event, 'Exhibitions')"
+            class="tab-btn py-3 border-b-2 border-transparent text-zinc-500 hover:text-zinc-300 transition-colors">Exhibitions</button>
+          <button onclick="openTab(event, 'Logs')"
+            class="tab-btn py-3 border-b-2 border-transparent text-zinc-500 hover:text-zinc-300 transition-colors">Logs</button>
+        </div>
+      </div>
+
+      <div class="p-8 max-w-5xl mx-auto space-y-8 min-h-[500px]">
+
+        <!-- TAB: GENERAL -->
+        <div id="General" class="tab-content animate-enter space-y-8">
+          <!-- Section: Classification Grid -->
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-xs font-medium text-white flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  data-lucide="tag" class="lucide lucide-tag w-4 h-4 text-indigo-500">
+                  <path
+                    d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z">
+                  </path>
+                  <circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle>
+                </svg>
+                Classification &amp; Metadata
+              </h3>
+            </div>
+
+            <!-- Read Only Details Card -->
+            <div class="bg-zinc-900/20 border border-zinc-800/60 rounded-xl p-6 space-y-6">
+
+              <!-- Removed Accession/Parent Grid from here as requested -->
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Collection -->
+                <div class="grid gap-1">
+                  <label class="text-xs font-medium leading-none text-zinc-500 uppercase tracking-wider">
+                    Collection
+                  </label>
+                  <div class="text-zinc-200 text-sm">Greco-Roman Antiquity</div>
+                </div>
+
+                <!-- Object Type -->
+                <div class="grid gap-1">
+                  <label class="text-xs font-medium leading-none text-zinc-500 uppercase tracking-wider">
+                    Object Type
+                  </label>
+                  <div class="text-zinc-200 text-sm">Sculpture / Bust</div>
+                </div>
+
+                <!-- Culture -->
+                <div class="grid gap-1">
+                  <label class="text-xs font-medium leading-none text-zinc-500 uppercase tracking-wider">
+                    Culture
+                  </label>
+                  <div class="text-zinc-200 text-sm">Roman (Imperial)</div>
+                </div>
+
+                <!-- Artist / Maker -->
+                <div class="grid gap-1">
+                  <label class="text-xs font-medium leading-none text-zinc-500 uppercase tracking-wider">
+                    Artist / Maker
+                  </label>
+                  <div class="text-zinc-200 text-sm">Unknown Roman Sculptor</div>
+                </div>
+              </div>
+
+              <!-- Description -->
+              <div class="grid gap-2">
+                <label class="text-xs font-medium leading-none text-zinc-500 uppercase tracking-wider">
+                  Description
+                </label>
+                <p class="text-sm text-zinc-300 leading-relaxed max-w-3xl">
+                  A finely carved marble bust depicting the Emperor Marcus Aurelius in his later years. The emperor is
+                  shown wearing a paludamentum (military cloak) fastened at the right shoulder with a fibula. His beard
+                  is long and philosopher-like, hair deeply drilled to create contrast with the smooth skin of the face.
+                  The eyes are heavy-lidded, gazing slightly upward and to the right, suggesting a contemplative
+                  demeanor typical of Antonine portraiture.
+                </p>
+              </div>
+
+              <!-- Links -->
+              <div class="space-y-3 pt-2">
+                <div class="flex items-center justify-between">
+                  <label class="text-xs font-medium leading-none text-zinc-500 uppercase tracking-wider">
+                    External Links
+                  </label>
+                </div>
+                <div class="space-y-1">
+                  <a href="#"
+                    class="flex items-center gap-2 text-sm hover:underline hover:text-indigo-400 text-zinc-300 transition-colors w-max">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      data-lucide="link" class="lucide lucide-link w-3.5 h-3.5 text-zinc-500">
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                    </svg>
+                    <span>Wikipedia Entry: Marcus Aurelius</span>
+                  </a>
+                  <a href="#"
+                    class="flex items-center gap-2 text-sm hover:underline hover:text-indigo-400 text-zinc-300 transition-colors w-max">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      data-lucide="box" class="lucide lucide-box w-3.5 h-3.5 text-zinc-500">
+                      <path
+                        d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z">
+                      </path>
+                      <path d="m3.3 7 8.7 5 8.7-5"></path>
+                      <path d="M12 22V12"></path>
+                    </svg>
+                    <span>Sketchfab 3D Model</span>
+                  </a>
+                </div>
+              </div>
+
+              <!-- Status Display -->
+              <div class="flex items-center gap-8 pt-4 border-t border-zinc-800/60">
+                <!-- Download Status -->
+                <div class="flex items-center gap-2.5">
+                  <div class="flex h-2.5 w-2.5 items-center justify-center rounded-full bg-indigo-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                      class="w-1.5 h-1.5 text-white">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                  <span class="text-sm font-medium text-zinc-300">
+                    High-Res Downloadable
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: PHYSICAL DESCRIPTION -->
+        <div id="Physical" class="tab-content hidden animate-enter space-y-8">
+          <!-- Stats -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-zinc-900/20 border border-zinc-800/60 rounded-xl p-4">
+              <span class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Materials</span>
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center border border-zinc-700">
+                  <span class="text-xs font-serif text-white">M</span>
+                </div>
+                <span class="text-sm font-medium text-white">Fine-grain Carrara Marble</span>
+              </div>
+            </div>
+            <div class="bg-zinc-900/20 border border-zinc-800/60 rounded-xl p-4">
+              <span class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Technique</span>
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center border border-zinc-700">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    data-lucide="hammer" class="lucide lucide-hammer w-3.5 h-3.5 text-zinc-300">
+                    <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"></path>
+                    <path d="m18 15 4-4"></path>
+                    <path
+                      d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5">
+                    </path>
+                  </svg>
+                </div>
+                <span class="text-sm font-medium text-white">Carved, Drill-work, Polished</span>
+              </div>
+            </div>
+            <div class="bg-zinc-900/20 border border-zinc-800/60 rounded-xl p-4">
+              <span class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Overall Condition</span>
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-8 h-8 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/20">
+                  <div class="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                </div>
+                <span class="text-sm font-medium text-emerald-400">Excellent / Stable</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detailed Dimensions Input Grid -->
+          <div>
+            <h3 class="text-xs font-medium text-white mb-4 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                data-lucide="ruler" class="lucide lucide-ruler w-4 h-4 text-rose-500">
+                <path
+                  d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z">
+                </path>
+                <path d="m14.5 12.5 2-2"></path>
+                <path d="m11.5 9.5 2-2"></path>
+                <path d="m8.5 6.5 2-2"></path>
+                <path d="m17.5 15.5 2-2"></path>
+              </svg>
+              Detailed Dimensions
+            </h3>
+            <div class="bg-zinc-900/20 border border-zinc-800/60 rounded-xl p-6">
+              <div
+                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 divide-y md:divide-y-0 md:divide-x divide-zinc-800">
+                <!-- Height Input -->
+                <div class="space-y-1">
+                  <span class="text-[10px] font-medium uppercase tracking-wider text-zinc-500">Total Height</span>
+                  <div class="flex items-baseline gap-1">
+                    <span class="text-2xl font-light text-zinc-100">84.0</span>
+                    <span class="text-xs text-zinc-500">cm</span>
+                  </div>
+                </div>
+
+                <!-- Width Input -->
+                <div class="space-y-1 md:pl-6 pt-4 md:pt-0">
+                  <span class="text-[10px] font-medium uppercase tracking-wider text-zinc-500">Max Width</span>
+                  <div class="flex items-baseline gap-1">
+                    <span class="text-2xl font-light text-zinc-100">62.0</span>
+                    <span class="text-xs text-zinc-500">cm</span>
+                  </div>
+                </div>
+
+                <!-- Depth Input -->
+                <div class="space-y-1 md:pl-6 pt-4 md:pt-0">
+                  <span class="text-[10px] font-medium uppercase tracking-wider text-zinc-500">Depth</span>
+                  <div class="flex items-baseline gap-1">
+                    <span class="text-2xl font-light text-zinc-100">35.0</span>
+                    <span class="text-xs text-zinc-500">cm</span>
+                  </div>
+                </div>
+
+                <!-- Weight Input -->
+                <div class="space-y-1 md:pl-6 pt-4 md:pt-0">
+                  <span class="text-[10px] font-medium uppercase tracking-wider text-zinc-500">Weight</span>
+                  <div class="flex items-baseline gap-1">
+                    <span class="text-2xl font-light text-zinc-100">115</span>
+                    <span class="text-xs text-zinc-500">kg</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Inscriptions & Marks -->
+          <div>
+            <h3 class="text-xs font-medium text-white mb-4 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                data-lucide="search" class="lucide lucide-search w-4 h-4 text-sky-500">
+                <path d="m21 21-4.34-4.34"></path>
+                <circle cx="11" cy="11" r="8"></circle>
+              </svg>
+              Inscriptions &amp; Marks
+            </h3>
+            <div class="p-4 bg-zinc-900/20 border border-zinc-800/60 rounded-xl space-y-3">
+              <p class="text-sm text-zinc-300">
+                No contemporary inscriptions present on the bust or socle.
+              </p>
+              <div class="flex gap-2 items-start mt-2">
+                <span
+                  class="shrink-0 px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[10px] text-zinc-400 font-mono">Mark
+                  A</span>
+                <p class="text-xs text-zinc-400">Underneath the base: Red painted accession number <span
+                    class="text-zinc-200">"1924.10"</span> (Museum accession mark, circa 1924).</p>
+              </div>
+              <div class="flex gap-2 items-start">
+                <span
+                  class="shrink-0 px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[10px] text-zinc-400 font-mono">Mark
+                  B</span>
+                <p class="text-xs text-zinc-400">Rear of left shoulder: Small incised monogram <span
+                    class="text-zinc-200">"LC"</span>, possibly collector's mark of Lord Carnarvon.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: MEDIA -->
+        <div id="Media" class="tab-content hidden animate-enter space-y-6">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-medium text-white flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                data-lucide="image" class="lucide lucide-image w-4 h-4 text-indigo-500">
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+                <circle cx="9" cy="9" r="2"></circle>
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+              </svg>
+              Media Gallery
+            </h3>
+          </div>
+
+          <!-- Gallery Grid -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- Image 1 -->
+            <div
+              class="group relative rounded-lg overflow-hidden border border-zinc-800 bg-zinc-900 aspect-square cursor-pointer">
+              <img
+                src="https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?q=80&amp;w=400&amp;auto=format&amp;fit=crop"
+                class="w-full h-full object-cover opacity-80 group-hover:opacity-40 transition-all duration-300">
+              <div
+                class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-6 group-hover:opacity-0 transition-opacity">
+                <p class="text-xs font-medium text-white truncate">Primary View</p>
+                <p class="text-[10px] text-zinc-400">Main</p>
+              </div>
+              <!-- Hover Overlay -->
+              <div
+                class="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <div
+                  class="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center shadow-xl mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    data-lucide="maximize-2" class="lucide lucide-maximize-2 w-5 h-5 text-white">
+                    <path d="M15 3h6v6"></path>
+                    <path d="m21 3-7 7"></path>
+                    <path d="m3 21 7-7"></path>
+                    <path d="M9 21H3v-6"></path>
+                  </svg>
+                </div>
+                <span class="text-xs font-medium text-white tracking-wide">Expand</span>
+              </div>
+            </div>
+            <!-- Image 2 -->
+            <div
+              class="group relative rounded-lg overflow-hidden border border-zinc-800 bg-zinc-900 aspect-square cursor-pointer">
+              <img
+                src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/917d6f93-fb36-439a-8c48-884b67b35381_1600w.jpg"
+                class="w-full h-full object-cover opacity-80 group-hover:opacity-40 transition-all duration-300">
+              <div
+                class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-6 group-hover:opacity-0 transition-opacity">
+                <p class="text-xs font-medium text-white truncate">Profile Left</p>
+                <p class="text-[10px] text-zinc-400">Reference</p>
+              </div>
+              <!-- Hover Overlay -->
+              <div
+                class="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <div
+                  class="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center shadow-xl mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    data-lucide="maximize-2" class="lucide lucide-maximize-2 w-5 h-5 text-white">
+                    <path d="M15 3h6v6"></path>
+                    <path d="m21 3-7 7"></path>
+                    <path d="m3 21 7-7"></path>
+                    <path d="M9 21H3v-6"></path>
+                  </svg>
+                </div>
+                <span class="text-xs font-medium text-white tracking-wide">Expand</span>
+              </div>
+            </div>
+            <!-- Image 3 -->
+            <div
+              class="group relative rounded-lg overflow-hidden border border-zinc-800 bg-zinc-900 aspect-square cursor-pointer">
+              <img
+                src="https://images.unsplash.com/photo-1461360370896-922624d12aa1?q=80&amp;w=400&amp;auto=format&amp;fit=crop"
+                class="w-full h-full object-cover opacity-80 group-hover:opacity-40 transition-all duration-300">
+              <div
+                class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-6 group-hover:opacity-0 transition-opacity">
+                <p class="text-xs font-medium text-white truncate">Base Detail</p>
+                <p class="text-[10px] text-zinc-400">Detail</p>
+              </div>
+              <!-- Hover Overlay -->
+              <div
+                class="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <div
+                  class="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center shadow-xl mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    data-lucide="maximize-2" class="lucide lucide-maximize-2 w-5 h-5 text-white">
+                    <path d="M15 3h6v6"></path>
+                    <path d="m21 3-7 7"></path>
+                    <path d="m3 21 7-7"></path>
+                    <path d="M9 21H3v-6"></path>
+                  </svg>
+                </div>
+                <span class="text-xs font-medium text-white tracking-wide">Expand</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: DIGITAL ASSETS -->
+        <div id="Digital" class="tab-content hidden animate-enter space-y-6">
+          <h3 class="text-xs font-medium text-white flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="link"
+              class="lucide lucide-link w-4 h-4 text-sky-500">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            Digital Resources
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-zinc-900/20 border border-zinc-800/60 rounded-xl p-1 h-full">
+              <a href="#" class="flex items-center gap-3 p-3 hover:bg-zinc-800/50 rounded-lg transition-colors group">
+                <div
+                  class="w-8 h-8 rounded bg-zinc-800 flex items-center justify-center text-zinc-500 group-hover:text-zinc-300 border border-zinc-700/50">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    data-lucide="globe" class="lucide lucide-globe w-4 h-4">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                    <path d="M2 12h20"></path>
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs font-medium text-zinc-300 group-hover:text-white">Online Collection Record</p>
+                  <p class="text-[10px] text-zinc-500">museum.org/collections/...</p>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  data-lucide="external-link"
+                  class="lucide lucide-external-link w-3 h-3 text-zinc-600 group-hover:text-zinc-400">
+                  <path d="M15 3h6v6"></path>
+                  <path d="M10 14 21 3"></path>
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                </svg>
+              </a>
+              <a href="#" class="flex items-center gap-3 p-3 hover:bg-zinc-800/50 rounded-lg transition-colors group">
+                <div
+                  class="w-8 h-8 rounded bg-zinc-800 flex items-center justify-center text-zinc-500 group-hover:text-zinc-300 border border-zinc-700/50">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    data-lucide="file-text" class="lucide lucide-file-text w-4 h-4">
+                    <path
+                      d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z">
+                    </path>
+                    <path d="M14 2v5a1 1 0 0 0 1 1h5"></path>
+                    <path d="M10 9H8"></path>
+                    <path d="M16 13H8"></path>
+                    <path d="M16 17H8"></path>
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs font-medium text-zinc-300 group-hover:text-white">Conservation Report 2023</p>
+                  <p class="text-[10px] text-zinc-500">PDF • 2.4 MB</p>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  data-lucide="download" class="lucide lucide-download w-3 h-3 text-zinc-600 group-hover:text-zinc-400">
+                  <path d="M12 15V3"></path>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <path d="m7 10 5 5 5-5"></path>
+                </svg>
+              </a>
+            </div>
+
+            <!-- File/Doc 3D Model -->
+            <div class="bg-zinc-900/20 border border-zinc-800/60 rounded-xl p-1 h-full">
+              <a href="#" class="flex items-center gap-3 p-3 hover:bg-zinc-800/50 rounded-lg transition-colors group">
+                <div
+                  class="w-8 h-8 rounded bg-zinc-800 flex items-center justify-center text-zinc-500 group-hover:text-zinc-300 border border-zinc-700/50">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    data-lucide="file-box" class="lucide lucide-file-box w-4 h-4">
+                    <path d="M14.5 22H18a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"></path>
+                    <path d="M14 2v6h6"></path>
+                    <path d="M5.5 16a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5Z"></path>
+                    <path d="M8 16v1a2.5 2.5 0 0 1-5 0v-1"></path>
+                    <path d="M12 18.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5Z"></path>
+                    <path d="M9.5 18.5v1a2.5 2.5 0 0 1-5 0v-1"></path>
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs font-medium text-zinc-300 group-hover:text-white">3D_Scan_Raw.glb</p>
+                  <p class="text-[10px] text-zinc-500">GLB • 124 MB</p>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  data-lucide="download" class="lucide lucide-download w-3 h-3 text-zinc-600 group-hover:text-zinc-400">
+                  <path d="M12 15V3"></path>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <path d="m7 10 5 5 5-5"></path>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: PROVENANCE -->
+        <div id="Provenance" class="tab-content hidden animate-enter">
+          <!-- Acquisition Section (Moved Here) -->
+          <div class="mb-8">
+            <h3 class="text-xs font-medium text-white mb-4 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                data-lucide="building-2" class="lucide lucide-building-2 w-4 h-4 text-emerald-500">
+                <path d="M10 12h4"></path>
+                <path d="M10 8h4"></path>
+                <path d="M14 21v-3a2 2 0 0 0-4 0v3"></path>
+                <path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2"></path>
+                <path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"></path>
+              </svg>
+              Acquisition Information
+            </h3>
+            <div class="bg-zinc-900/20 border border-zinc-800/60 rounded-xl p-6">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <span class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Method</span>
+                  <span
+                    class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    Bequest
+                  </span>
+                </div>
+                <div>
+                  <span class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Source / Donor</span>
+                  <div class="flex items-center gap-2">
+                    <div
+                      class="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center text-[9px] text-white font-bold">
+                      LC</div>
+                    <span class="text-sm text-zinc-300">Estate of Lord Carnarvon</span>
+                  </div>
+                </div>
+                <div>
+                  <span class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Date</span>
+                  <span class="text-sm text-zinc-300">Oct 12, 1924</span>
+                </div>
+              </div>
+              <div class="pt-4 mt-4 border-t border-zinc-800/50">
+                <span class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Credit Line</span>
+                <p class="text-sm text-zinc-400 italic font-serif">"Gift of the Estate of Lord Carnarvon, 1924"</p>
+              </div>
+            </div>
+          </div>
+
+          <h3 class="text-xs font-medium text-white mb-6 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              data-lucide="history" class="lucide lucide-history w-4 h-4 text-purple-500">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+              <path d="M12 7v5l4 2"></path>
+            </svg>
+            Ownership History
+          </h3>
+          <div class="relative pl-8 border-l border-zinc-800 space-y-8">
+            <!-- Node 1 -->
+            <div class="relative">
+              <div
+                class="absolute -left-[39px] top-1.5 w-4 h-4 rounded-full bg-zinc-950 border-2 border-indigo-500 flex items-center justify-center">
+                <div class="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+              </div>
+              <div class="bg-zinc-900/20 border border-zinc-800/60 rounded-lg p-4 max-w-2xl">
+                <div class="flex justify-between items-center mb-2">
+                  <h4 class="text-sm font-semibold text-zinc-100">National Museum</h4>
+                  <span class="text-xs font-mono text-zinc-500">1924 - Present</span>
+                </div>
+                <p class="text-sm text-zinc-400">Acquired through bequest.</p>
+                <div class="mt-2 text-xs text-zinc-500 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    data-lucide="file-check" class="lucide lucide-file-check w-3 h-3">
+                    <path
+                      d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z">
+                    </path>
+                    <path d="M14 2v5a1 1 0 0 0 1 1h5"></path>
+                    <path d="m9 15 2 2 4-4"></path>
+                  </svg>
+                  Verified by accession ledger Vol. IV
+                </div>
+              </div>
+            </div>
+
+            <!-- Node 2 -->
+            <div class="relative">
+              <div class="absolute -left-[39px] top-1.5 w-4 h-4 rounded-full bg-zinc-950 border-2 border-zinc-700">
+              </div>
+              <div class="bg-zinc-900/20 border border-zinc-800/60 rounded-lg p-4 max-w-2xl">
+                <div class="flex justify-between items-center mb-2">
+                  <h4 class="text-sm font-semibold text-zinc-100">George Herbert, 5th Earl of Carnarvon</h4>
+                  <span class="text-xs font-mono text-zinc-500">1898 - 1923</span>
+                </div>
+                <p class="text-sm text-zinc-400">Purchased in Rome from the dealer antiquarian A. Jollois.</p>
+              </div>
+            </div>
+
+            <!-- Node 3 -->
+            <div class="relative">
+              <div class="absolute -left-[39px] top-1.5 w-4 h-4 rounded-full bg-zinc-950 border-2 border-zinc-700">
+              </div>
+              <div class="bg-zinc-900/20 border border-zinc-800/60 rounded-lg p-4 max-w-2xl">
+                <div class="flex justify-between items-center mb-2">
+                  <h4 class="text-sm font-semibold text-zinc-100">Private Collection (Rome)</h4>
+                  <span class="text-xs font-mono text-zinc-500">c. 1850 - 1898</span>
+                </div>
+                <p class="text-sm text-zinc-400">Held in the collection of the Palazzo Giustiniani.</p>
+              </div>
+            </div>
+
+            <!-- Node 4 -->
+            <div class="relative opacity-60">
+              <div
+                class="absolute -left-[39px] top-1.5 w-4 h-4 rounded-full bg-zinc-950 border-2 border-dashed border-zinc-700">
+              </div>
+              <div class="p-2">
+                <h4 class="text-sm font-medium text-zinc-500 italic">History prior to 1850 is unknown. Likely excavated
+                  near Tivoli.</h4>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: CONSERVATION -->
+        <div id="Conservation" class="tab-content hidden animate-enter">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xs font-medium text-white flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                data-lucide="stethoscope" class="lucide lucide-stethoscope w-4 h-4 text-rose-500">
+                <path d="M11 2v2"></path>
+                <path d="M5 2v2"></path>
+                <path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"></path>
+                <path d="M8 15a6 6 0 0 0 12 0v-3"></path>
+                <circle cx="20" cy="10" r="2"></circle>
+              </svg>
+              Treatment History
+            </h3>
+          </div>
+
+          <div class="space-y-4">
+            <!-- Report Card 1 -->
+            <div class="bg-zinc-900/20 border border-zinc-800/60 rounded-xl overflow-hidden group">
+              <div class="px-4 py-3 border-b border-zinc-800/60 bg-zinc-900/30 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                  <span
+                    class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/10 text-green-400 border border-green-500/20 uppercase tracking-wide">Routine</span>
+                  <span class="text-xs font-medium text-zinc-200">Surface Cleaning</span>
+                </div>
+                <span class="text-xs font-mono text-zinc-500">June 14, 2023</span>
+              </div>
+              <div class="p-4">
+                <p class="text-sm text-zinc-400 mb-3">
+                  Superficial dust removal using soft brush and vacuum. Spot cleaning of nose area with deionized water.
+                </p>
+                <div class="flex items-center gap-2 text-[10px] text-zinc-500">
+                  <img
+                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&amp;fit=facearea&amp;facepad=2&amp;w=32&amp;h=32&amp;q=80"
+                    class="w-5 h-5 rounded-full grayscale opacity-70">
+                  <span>Performed by <span class="text-zinc-300">Sarah Jenkins</span></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Report Card 2 -->
+            <div class="bg-zinc-900/20 border border-zinc-800/60 rounded-xl overflow-hidden group">
+              <div class="px-4 py-3 border-b border-zinc-800/60 bg-zinc-900/30 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                  <span
+                    class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-wide">Stabilization</span>
+                  <span class="text-xs font-medium text-zinc-200">Socle Reinforcement</span>
+                </div>
+                <span class="text-xs font-mono text-zinc-500">Feb 02, 1988</span>
+              </div>
+              <div class="p-4">
+                <p class="text-sm text-zinc-400 mb-3">
+                  Old adhesive from 19th-century mount failing. Separated bust from socle. Re-adhered using Paraloid
+                  B-72 with stainless steel pin for additional support.
+                </p>
+                <div class="flex items-center gap-2 text-[10px] text-zinc-500">
+                  <div class="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[8px]">MJ</div>
+                  <span>Performed by <span class="text-zinc-300">Dr. M. Jones</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: EXHIBITIONS -->
+        <div id="Exhibitions" class="tab-content hidden animate-enter">
+          <h3 class="text-xs font-medium text-white mb-6 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              data-lucide="presentation" class="lucide lucide-presentation w-4 h-4 text-amber-500">
+              <path d="M2 3h20"></path>
+              <path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"></path>
+              <path d="m7 21 5-5 5 5"></path>
+            </svg>
+            Exhibition History
+          </h3>
+
+          <div class="grid grid-cols-1 gap-4">
+            <!-- Current -->
+            <div class="border border-indigo-500/30 bg-indigo-500/5 rounded-xl p-4 flex gap-4">
+              <div
+                class="shrink-0 flex flex-col items-center justify-center w-14 h-14 bg-zinc-900 rounded-lg border border-zinc-800 text-center">
+                <span class="text-[10px] text-zinc-500 uppercase font-bold">Now</span>
+                <span class="text-xs text-indigo-400 font-bold">Open</span>
+              </div>
+              <div>
+                <h4 class="text-sm font-medium text-white">Faces of Empire: Power in Rome</h4>
+                <p class="text-xs text-zinc-400 mt-1">Wing A, Gallery 4 (Roman Hall)</p>
+                <div class="mt-2 flex gap-2">
+                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">Jan
+                    2024 - Dec 2025</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Past -->
+            <div
+              class="border border-zinc-800/60 bg-zinc-900/20 rounded-xl p-4 flex gap-4 opacity-75 hover:opacity-100 transition-opacity">
+              <div
+                class="shrink-0 flex flex-col items-center justify-center w-14 h-14 bg-zinc-900 rounded-lg border border-zinc-800 text-center">
+                <span class="text-[10px] text-zinc-500 uppercase font-bold">2018</span>
+                <span class="text-xs text-zinc-400 font-bold">Past</span>
+              </div>
+              <div>
+                <h4 class="text-sm font-medium text-zinc-200">The Antonines</h4>
+                <p class="text-xs text-zinc-500 mt-1">Temporary Exhibition Hall B</p>
+                <div class="mt-2 flex gap-2">
+                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-500">Loan:
+                    British Museum</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Past -->
+            <div
+              class="border border-zinc-800/60 bg-zinc-900/20 rounded-xl p-4 flex gap-4 opacity-75 hover:opacity-100 transition-opacity">
+              <div
+                class="shrink-0 flex flex-col items-center justify-center w-14 h-14 bg-zinc-900 rounded-lg border border-zinc-800 text-center">
+                <span class="text-[10px] text-zinc-500 uppercase font-bold">1995</span>
+                <span class="text-xs text-zinc-400 font-bold">Past</span>
+              </div>
+              <div>
+                <h4 class="text-sm font-medium text-zinc-200">Marble &amp; Flesh</h4>
+                <p class="text-xs text-zinc-500 mt-1">Main Rotunda</p>
+                <div class="mt-2 flex gap-2">
+                  <span
+                    class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-500">Internal
+                    Curatorial</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: LOGS -->
+        <div id="Logs" class="tab-content hidden animate-enter">
+          <h3 class="text-xs font-medium text-white mb-6 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              data-lucide="scroll-text" class="lucide lucide-scroll-text w-4 h-4 text-orange-500">
+              <path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"></path>
+              <path d="M19 17V5a2 2 0 0 0-2-2H4"></path>
+            </svg>
+            Audit Log
+          </h3>
+
+          <div class="border border-zinc-800/60 rounded-xl bg-zinc-900/20 overflow-hidden">
+            <table class="w-full text-left">
+              <thead class="bg-zinc-900/50 border-b border-zinc-800/60">
+                <tr>
+                  <th class="px-4 py-3 text-[10px] uppercase font-semibold text-zinc-500 w-32">Date</th>
+                  <th class="px-4 py-3 text-[10px] uppercase font-semibold text-zinc-500 w-48">User</th>
+                  <th class="px-4 py-3 text-[10px] uppercase font-semibold text-zinc-500">Action Details</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-zinc-800/60">
+                <!-- Log Entry 1 -->
+                <tr class="group hover:bg-zinc-900/40 transition-colors">
+                  <td class="px-4 py-3 align-top">
+                    <span class="text-xs text-zinc-400 font-mono">Oct 24, 09:41</span>
+                  </td>
+                  <td class="px-4 py-3 align-top">
+                    <div class="flex items-center gap-2">
+                      <img
+                        src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&amp;fit=facearea&amp;facepad=2&amp;w=32&amp;h=32&amp;q=80"
+                        class="w-5 h-5 rounded-full border border-zinc-700">
+                      <span class="text-xs text-zinc-300">Dr. A. Carter</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3">
+                    <p class="text-xs text-zinc-300"><span class="text-indigo-400 font-medium">Moved Object</span> to
+                      location <span class="text-white">Gallery 4</span></p>
+                    <p class="text-[10px] text-zinc-500 mt-0.5 font-mono">Previous: Storage B12</p>
+                  </td>
+                </tr>
+                <!-- Log Entry 2 -->
+                <tr class="group hover:bg-zinc-900/40 transition-colors">
+                  <td class="px-4 py-3 align-top">
+                    <span class="text-xs text-zinc-400 font-mono">Oct 23, 14:22</span>
+                  </td>
+                  <td class="px-4 py-3 align-top">
+                    <div class="flex items-center gap-2">
+                      <img
+                        src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&amp;fit=facearea&amp;facepad=2&amp;w=32&amp;h=32&amp;q=80"
+                        class="w-5 h-5 rounded-full border border-zinc-700 grayscale opacity-70">
+                      <span class="text-xs text-zinc-300">Sarah Jenkins</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3">
+                    <p class="text-xs text-zinc-300"><span class="text-emerald-400 font-medium">Added Record</span>
+                      Conservation Report 2023</p>
+                    <p class="text-[10px] text-zinc-500 mt-0.5 font-mono">File: Cons_Report_23_Final.pdf</p>
+                  </td>
+                </tr>
+                <!-- Log Entry 3 -->
+                <tr class="group hover:bg-zinc-900/40 transition-colors">
+                  <td class="px-4 py-3 align-top">
+                    <span class="text-xs text-zinc-400 font-mono">Oct 20, 11:05</span>
+                  </td>
+                  <td class="px-4 py-3 align-top">
+                    <div class="flex items-center gap-2">
+                      <div
+                        class="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[9px] text-zinc-500 border border-zinc-700">
+                        SYS</div>
+                      <span class="text-xs text-zinc-300">System</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3">
+                    <p class="text-xs text-zinc-300"><span class="text-amber-400 font-medium">Updated Valuation</span>
+                      (Automated Index)</p>
+                    <div class="flex gap-4 mt-1">
+                      <span class="text-[10px] text-zinc-500 font-mono line-through">$1.2M</span>
+                      <span class="text-[10px] text-zinc-300 font-mono">$1.45M</span>
+                    </div>
+                  </td>
+                </tr>
+                <!-- Log Entry 4 -->
+                <tr class="group hover:bg-zinc-900/40 transition-colors">
+                  <td class="px-4 py-3 align-top">
+                    <span class="text-xs text-zinc-400 font-mono">Oct 12, 09:00</span>
+                  </td>
+                  <td class="px-4 py-3 align-top">
+                    <div class="flex items-center gap-2">
+                      <img
+                        src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&amp;fit=facearea&amp;facepad=2&amp;w=32&amp;h=32&amp;q=80"
+                        class="w-5 h-5 rounded-full border border-zinc-700">
+                      <span class="text-xs text-zinc-300">Dr. A. Carter</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3">
+                    <p class="text-xs text-zinc-300"><span class="text-zinc-200 font-medium">Edited Metadata</span></p>
+                    <p class="text-[10px] text-zinc-500 mt-0.5 font-mono">Changed "Artist" from "Unknown" to "Unknown
+                      Roman Sculptor"</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="px-4 py-3 border-t border-zinc-800/60 bg-zinc-900/30 text-center">
+              <button class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Load older logs...</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Padding -->
+        <div class="h-12"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Right Panel (Context & History) -->
+  <aside class="w-80 border-l border-zinc-800/60 bg-zinc-950 flex flex-col h-full hidden 2xl:flex shrink-0 z-30">
+    <div class="p-4 border-b border-zinc-800/60">
+      <h3 class="text-xs font-medium text-white mb-1">
+        Record Context
+      </h3>
+      <p class="text-[10px] text-zinc-500">
+        History and related items
+      </p>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-4 space-y-6">
+
+      <!-- Tags -->
+      <div>
+        <span class="text-[10px] font-medium uppercase tracking-widest text-zinc-500 block mb-3">
+          Tags
+        </span>
+        <div class="flex flex-wrap gap-2">
+          <span
+            class="px-2 py-1 rounded bg-zinc-900 border border-zinc-800 text-[10px] text-zinc-400 hover:text-zinc-200 cursor-pointer transition-colors">Imperial
+            Portraiture</span>
+          <span
+            class="px-2 py-1 rounded bg-zinc-900 border border-zinc-800 text-[10px] text-zinc-400 hover:text-zinc-200 cursor-pointer transition-colors">Bearded</span>
+          <span
+            class="px-2 py-1 rounded bg-zinc-900 border border-zinc-800 text-[10px] text-zinc-400 hover:text-zinc-200 cursor-pointer transition-colors">Antonine</span>
+        </div>
+      </div>
+
+      <div class="h-px bg-zinc-800/50"></div>
+
+      <!-- Related Objects -->
+      <div>
+        <span class="text-[10px] font-medium uppercase tracking-widest text-zinc-500 block mb-3">
+          Related Objects (2)
+        </span>
+        <div class="space-y-2">
+          <a href="#" class="flex items-start gap-3 p-2 rounded-lg hover:bg-zinc-900/50 transition-colors group">
+            <img
+              src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/917d6f93-fb36-439a-8c48-884b67b35381_1600w.jpg"
+              class="w-10 h-10 rounded object-cover opacity-70 group-hover:opacity-100 transition-opacity border border-zinc-800">
+            <div class="min-w-0">
+              <p class="text-[11px] font-medium text-zinc-300 group-hover:text-white truncate">
+                Statue of Faustina
+              </p>
+              <p class="text-[10px] text-zinc-500 font-mono">NM.2024.10.005</p>
+              <p class="text-[10px] text-indigo-400 mt-0.5">Same Provenance</p>
+            </div>
+          </a>
+          <a href="#" class="flex items-start gap-3 p-2 rounded-lg hover:bg-zinc-900/50 transition-colors group">
+            <div class="w-10 h-10 rounded bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                data-lucide="image-off" class="lucide lucide-image-off w-4 h-4 text-zinc-600">
+                <line x1="2" x2="22" y1="2" y2="22"></line>
+                <path d="M10.41 10.41a2 2 0 1 1-2.83-2.83"></path>
+                <line x1="13.5" x2="6" y1="13.5" y2="21"></line>
+                <line x1="18" x2="21" y1="12" y2="15"></line>
+                <path d="M3.59 3.59A1.99 1.99 0 0 0 3 5v14a2 2 0 0 0 2 2h14c.55 0 1.052-.22 1.41-.59"></path>
+                <path d="M21 15V5a2 2 0 0 0-2-2H9"></path>
+              </svg>
+            </div>
+            <div class="min-w-0">
+              <p class="text-[11px] font-medium text-zinc-300 group-hover:text-white truncate">
+                Coin of Commodus
+              </p>
+              <p class="text-[10px] text-zinc-500 font-mono">NM.1988.02.1</p>
+              <p class="text-[10px] text-indigo-400 mt-0.5">Historical Link</p>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="h-px bg-zinc-800/50"></div>
+
+      <!-- Timeline / History -->
+      <div>
+        <span class="text-[10px] font-medium uppercase tracking-widest text-zinc-500 block mb-3">
+          Recent Activity
+        </span>
+        <div class="relative pl-3 border-l border-zinc-800/60 space-y-6">
+          <!-- Item 1 -->
+          <div class="relative group">
+            <div class="absolute -left-[17px] top-1 w-2 h-2 rounded-full bg-indigo-500 ring-4 ring-zinc-950"></div>
+            <div>
+              <p class="text-[11px] text-zinc-300">Moved to <span class="text-zinc-100">Gallery 4</span></p>
+              <p class="text-[10px] text-zinc-500 mt-0.5">Today, 9:41 AM • Dr. A. Carter</p>
+            </div>
+          </div>
+          <!-- Item 2 -->
+          <div class="relative group">
+            <div
+              class="absolute -left-[17px] top-1 w-2 h-2 rounded-full bg-zinc-700 ring-4 ring-zinc-950 group-hover:bg-zinc-600 transition-colors">
+            </div>
+            <div>
+              <p class="text-[11px] text-zinc-300">Conservation Report added</p>
+              <p class="text-[10px] text-zinc-500 mt-0.5">Yesterday • Sarah Jenkins</p>
+            </div>
+          </div>
+          <!-- Item 3 -->
+          <div class="relative group">
+            <div
+              class="absolute -left-[17px] top-1 w-2 h-2 rounded-full bg-zinc-700 ring-4 ring-zinc-950 group-hover:bg-zinc-600 transition-colors">
+            </div>
+            <div>
+              <p class="text-[11px] text-zinc-300">Valuation Updated</p>
+              <p class="text-[10px] text-zinc-500 mt-0.5">Oct 24 • System</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="p-3 border-t border-zinc-800/60 bg-zinc-950/80">
+      <div class="flex items-center gap-3 p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          data-lucide="shield-check" class="lucide lucide-shield-check w-4 h-4 text-indigo-400">
+          <path
+            d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z">
+          </path>
+          <path d="m9 12 2 2 4-4"></path>
+        </svg>
+        <div class="flex-1">
+          <p class="text-[10px] font-medium text-indigo-200">Record Verified</p>
+          <p class="text-[9px] text-indigo-300/60">Approved by Curator</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <script>
+    lucide.createIcons();
+
+    function openTab(evt, tabName) {
+      // 1. Hide all tab-content
+      var i, tabcontent, tablinks;
+      tabcontent = document.getElementsByClassName("tab-content");
+      for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].classList.add("hidden");
+      }
+
+      // 2. Remove active styling from all tab buttons
+      tablinks = document.getElementsByClassName("tab-btn");
+      for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].classList.remove("border-indigo-500", "text-zinc-100");
+        tablinks[i].classList.add("border-transparent", "text-zinc-500");
+      }
+
+      // 3. Show the requested tab and styling
+      document.getElementById(tabName).classList.remove("hidden");
+      evt.currentTarget.classList.remove("border-transparent", "text-zinc-500");
+      evt.currentTarget.classList.add("border-indigo-500", "text-zinc-100");
+    }
+  </script>
+
+</body>
+
+</html>
