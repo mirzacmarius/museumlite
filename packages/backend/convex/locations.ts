@@ -492,6 +492,46 @@ export const getOccupancy = query({
   },
 });
 
+export const getEnvironmentalReadings = query({
+  args: {
+    locationId: v.id("locations"),
+  },
+  returns: v.union(
+    v.object({
+      temperature: v.optional(v.number()),
+      humidity: v.optional(v.number()),
+      recordedAt: v.number(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const location = await ctx.db.get(args.locationId);
+    if (!location) {
+      return null;
+    }
+
+    await requirePermission(ctx, location.organizationId, "locations.read");
+
+    const latestReading = await ctx.db
+      .query("environmentalReadings")
+      .withIndex("by_location_and_time", (q) =>
+        q.eq("locationId", args.locationId),
+      )
+      .order("desc")
+      .first();
+
+    if (!latestReading) {
+      return null;
+    }
+
+    return {
+      temperature: latestReading.temperature,
+      humidity: latestReading.humidity,
+      recordedAt: latestReading.recordedAt,
+    };
+  },
+});
+
 export const deleteLocation = mutation({
   args: {
     locationId: v.id("locations"),
@@ -679,7 +719,13 @@ export const checkMoveAllowed = query({
       return {
         allowed: false,
         requiresOverride: false,
-        issues: [{ type: "error", message: "Collection not found", canOverride: false }],
+        issues: [
+          {
+            type: "error",
+            message: "Collection not found",
+            canOverride: false,
+          },
+        ],
       };
     }
 
@@ -688,11 +734,17 @@ export const checkMoveAllowed = query({
       return {
         allowed: false,
         requiresOverride: false,
-        issues: [{ type: "error", message: "Location not found", canOverride: false }],
+        issues: [
+          { type: "error", message: "Location not found", canOverride: false },
+        ],
       };
     }
 
-    const issues: Array<{ type: string; message: string; canOverride: boolean }> = [];
+    const issues: Array<{
+      type: string;
+      message: string;
+      canOverride: boolean;
+    }> = [];
 
     // Check location status
     const locationStatus = toLocation.status ?? "active";
@@ -795,7 +847,9 @@ export const createMoveRequest = mutation({
     // Check for pending requests for same object
     const existingRequest = await ctx.db
       .query("locationMoveRequests")
-      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", args.collectionId),
+      )
       .filter((q) =>
         q.or(
           q.eq(q.field("status"), "pending"),
