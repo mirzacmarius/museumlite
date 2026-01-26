@@ -239,6 +239,7 @@ export const createCollection = internalMutation({
     inscriptions: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
     creditLine: v.optional(v.string()),
+    currentLocationId: v.optional(v.id("locations")),
   },
   returns: v.id("collections"),
   handler: async (ctx, args) => {
@@ -266,6 +267,7 @@ export const createCollection = internalMutation({
       inscriptions: args.inscriptions,
       tags: args.tags,
       creditLine: args.creditLine,
+      currentLocationId: args.currentLocationId,
       status: "active",
       isPubliclyVisible: true,
       catalogedBy: args.userId,
@@ -3468,5 +3470,1314 @@ export const createUserPreferences = internalMutation({
       value: args.value,
       updatedAt: args.updatedAt,
     });
+  },
+});
+
+// ========================================
+// PHASE 13: ADDITIONAL SEED MUTATIONS
+// ========================================
+
+/**
+ * Create account relationship (links accounts to loans/exhibitions/acquisitions/items)
+ */
+export const createAccountRelationship = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    accountId: v.id("accounts"),
+    relatedEntityType: v.union(
+      v.literal("loan"),
+      v.literal("exhibition"),
+      v.literal("acquisition"),
+      v.literal("item"),
+    ),
+    relatedEntityId: v.string(),
+    relationshipType: v.union(
+      v.literal("lender"),
+      v.literal("borrower"),
+      v.literal("donor"),
+      v.literal("vendor"),
+      v.literal("buyer"),
+    ),
+    startDate: v.number(),
+    endDate: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+  },
+  returns: v.id("accountRelationships"),
+  handler: async (ctx, args) => {
+    // Check for existing relationship (idempotent)
+    const existing = await ctx.db
+      .query("accountRelationships")
+      .withIndex("by_organization_and_account", (q) =>
+        q
+          .eq("organizationId", args.organizationId)
+          .eq("accountId", args.accountId),
+      )
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("relatedEntityType"), args.relatedEntityType),
+          q.eq(q.field("relatedEntityId"), args.relatedEntityId),
+          q.eq(q.field("relationshipType"), args.relationshipType),
+        ),
+      )
+      .first();
+
+    if (existing) {
+      return existing._id;
+    }
+
+    return await ctx.db.insert("accountRelationships", {
+      organizationId: args.organizationId,
+      accountId: args.accountId,
+      relatedEntityType: args.relatedEntityType,
+      relatedEntityId: args.relatedEntityId,
+      relationshipType: args.relationshipType,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      notes: args.notes,
+      createdAt: args.createdAt,
+    });
+  },
+});
+
+/**
+ * Create account document
+ * NOTE: storageId is required by schema - this mutation requires actual file upload
+ */
+export const createAccountDocument = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    accountId: v.id("accounts"),
+    storageId: v.id("_storage"),
+    filename: v.string(),
+    mimeType: v.string(),
+    size: v.number(),
+    documentType: v.union(
+      v.literal("contract"),
+      v.literal("agreement"),
+      v.literal("invoice"),
+      v.literal("correspondence"),
+      v.literal("other"),
+    ),
+    description: v.optional(v.string()),
+    uploadedBy: v.id("users"),
+    uploadedAt: v.number(),
+  },
+  returns: v.id("accountDocuments"),
+  handler: async (ctx, args) => {
+    // Check for existing document by storageId (idempotent)
+    const existing = await ctx.db
+      .query("accountDocuments")
+      .withIndex("by_storage", (q) => q.eq("storageId", args.storageId))
+      .first();
+
+    if (existing) {
+      return existing._id;
+    }
+
+    return await ctx.db.insert("accountDocuments", {
+      organizationId: args.organizationId,
+      accountId: args.accountId,
+      storageId: args.storageId,
+      filename: args.filename,
+      mimeType: args.mimeType,
+      size: args.size,
+      documentType: args.documentType,
+      description: args.description,
+      uploadedBy: args.uploadedBy,
+      uploadedAt: args.uploadedAt,
+    });
+  },
+});
+
+/**
+ * Create exhibition document
+ * NOTE: storageId is required by schema - this mutation requires actual file upload
+ */
+export const createExhibitionDocument = internalMutation({
+  args: {
+    exhibitionId: v.id("exhibitions"),
+    storageId: v.id("_storage"),
+    documentType: v.union(
+      v.literal("floor_plan"),
+      v.literal("label"),
+      v.literal("press_release"),
+      v.literal("checklist"),
+      v.literal("other"),
+    ),
+    fileName: v.string(),
+    uploadedBy: v.id("users"),
+    uploadedAt: v.number(),
+  },
+  returns: v.id("exhibitionDocuments"),
+  handler: async (ctx, args) => {
+    // Check for existing document by exhibition and storageId (idempotent)
+    const existing = await ctx.db
+      .query("exhibitionDocuments")
+      .withIndex("by_exhibition", (q) =>
+        q.eq("exhibitionId", args.exhibitionId),
+      )
+      .filter((q) => q.eq(q.field("storageId"), args.storageId))
+      .first();
+
+    if (existing) {
+      return existing._id;
+    }
+
+    return await ctx.db.insert("exhibitionDocuments", {
+      exhibitionId: args.exhibitionId,
+      storageId: args.storageId,
+      documentType: args.documentType,
+      fileName: args.fileName,
+      uploadedBy: args.uploadedBy,
+      uploadedAt: args.uploadedAt,
+    });
+  },
+});
+
+/**
+ * Create conservation attachment
+ * NOTE: storageId is required by schema - this mutation requires actual file upload
+ */
+export const createConservationAttachment = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    treatmentId: v.id("conservationTreatments"),
+    storageId: v.id("_storage"),
+    fileName: v.string(),
+    fileType: v.string(),
+    fileSize: v.number(),
+    attachmentType: v.union(
+      v.literal("before_photo"),
+      v.literal("after_photo"),
+      v.literal("during_photo"),
+      v.literal("report"),
+      v.literal("lab_notes"),
+      v.literal("x_ray"),
+      v.literal("uv_photo"),
+      v.literal("microscopy"),
+      v.literal("other"),
+    ),
+    caption: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    takenAt: v.optional(v.number()),
+    uploadedBy: v.id("users"),
+    uploadedAt: v.number(),
+  },
+  returns: v.id("conservationAttachments"),
+  handler: async (ctx, args) => {
+    // Check for existing attachment by treatment and storageId (idempotent)
+    const existing = await ctx.db
+      .query("conservationAttachments")
+      .withIndex("by_treatment", (q) => q.eq("treatmentId", args.treatmentId))
+      .filter((q) => q.eq(q.field("storageId"), args.storageId))
+      .first();
+
+    if (existing) {
+      return existing._id;
+    }
+
+    return await ctx.db.insert("conservationAttachments", {
+      organizationId: args.organizationId,
+      treatmentId: args.treatmentId,
+      storageId: args.storageId,
+      fileName: args.fileName,
+      fileType: args.fileType,
+      fileSize: args.fileSize,
+      attachmentType: args.attachmentType,
+      caption: args.caption,
+      notes: args.notes,
+      takenAt: args.takenAt,
+      uploadedBy: args.uploadedBy,
+      uploadedAt: args.uploadedAt,
+    });
+  },
+});
+
+/**
+ * Create conservation alert rule
+ */
+export const createConservationAlertRule = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    triggerType: v.union(
+      v.literal("condition_threshold"),
+      v.literal("treatment_overdue"),
+      v.literal("assessment_due"),
+      v.literal("urgent_treatment"),
+      v.literal("environmental"),
+    ),
+    conditionThreshold: v.optional(v.string()),
+    daysOverdue: v.optional(v.number()),
+    assessmentIntervalDays: v.optional(v.number()),
+    priority: v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high"),
+      v.literal("critical"),
+    ),
+    notifyRoles: v.optional(v.array(v.id("roles"))),
+    notifyUsers: v.optional(v.array(v.id("users"))),
+    emailNotification: v.boolean(),
+    inAppNotification: v.boolean(),
+    isActive: v.boolean(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  },
+  returns: v.id("conservationAlertRules"),
+  handler: async (ctx, args) => {
+    // Check for existing rule by name (idempotent)
+    const existing = await ctx.db
+      .query("conservationAlertRules")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => q.eq(q.field("name"), args.name))
+      .first();
+
+    if (existing) {
+      return existing._id;
+    }
+
+    return await ctx.db.insert("conservationAlertRules", {
+      organizationId: args.organizationId,
+      name: args.name,
+      description: args.description,
+      triggerType: args.triggerType,
+      conditionThreshold: args.conditionThreshold,
+      daysOverdue: args.daysOverdue,
+      assessmentIntervalDays: args.assessmentIntervalDays,
+      priority: args.priority,
+      notifyRoles: args.notifyRoles,
+      notifyUsers: args.notifyUsers,
+      emailNotification: args.emailNotification,
+      inAppNotification: args.inAppNotification,
+      isActive: args.isActive,
+      createdBy: args.createdBy,
+      createdAt: args.createdAt,
+    });
+  },
+});
+
+/**
+ * Create object comment
+ */
+export const createObjectComment = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    objectId: v.id("collections"),
+    userId: v.id("users"),
+    content: v.string(),
+    mentionedUserIds: v.optional(v.array(v.id("users"))),
+    createdAt: v.number(),
+  },
+  returns: v.id("objectComments"),
+  handler: async (ctx, args) => {
+    // No idempotency check - comments can be duplicated
+    return await ctx.db.insert("objectComments", {
+      organizationId: args.organizationId,
+      objectId: args.objectId,
+      userId: args.userId,
+      content: args.content,
+      mentionedUserIds: args.mentionedUserIds,
+      createdAt: args.createdAt,
+    });
+  },
+});
+
+/**
+ * Create condition dispute
+ */
+export const createConditionDispute = internalMutation({
+  args: {
+    loanId: v.id("loans"),
+    organizationId: v.id("organizations"),
+    collectionId: v.id("collections"),
+    conditionBefore: v.string(),
+    conditionBeforeNotes: v.optional(v.string()),
+    conditionAfter: v.string(),
+    conditionAfterNotes: v.optional(v.string()),
+    disputeDescription: v.string(),
+    reportedBy: v.id("users"),
+    reportedAt: v.number(),
+    status: v.optional(
+      v.union(
+        v.literal("reported"),
+        v.literal("investigating"),
+        v.literal("resolved_in_favor_lender"),
+        v.literal("resolved_in_favor_borrower"),
+        v.literal("resolved_compromise"),
+        v.literal("withdrawn"),
+      ),
+    ),
+  },
+  returns: v.id("conditionDisputes"),
+  handler: async (ctx, args) => {
+    // Check for existing dispute by loan and collection (idempotent)
+    const existing = await ctx.db
+      .query("conditionDisputes")
+      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+      .filter((q) => q.eq(q.field("collectionId"), args.collectionId))
+      .first();
+
+    if (existing) {
+      return existing._id;
+    }
+
+    return await ctx.db.insert("conditionDisputes", {
+      loanId: args.loanId,
+      organizationId: args.organizationId,
+      collectionId: args.collectionId,
+      conditionBefore: args.conditionBefore,
+      conditionBeforeNotes: args.conditionBeforeNotes,
+      conditionAfter: args.conditionAfter,
+      conditionAfterNotes: args.conditionAfterNotes,
+      disputeDescription: args.disputeDescription,
+      reportedBy: args.reportedBy,
+      reportedAt: args.reportedAt,
+      status: args.status ?? "reported",
+    });
+  },
+});
+
+/**
+ * Create API key
+ */
+export const createApiKey = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    prefix: v.string(),
+    keyHash: v.string(),
+    permissions: v.array(v.string()),
+    expiresAt: v.optional(v.number()),
+    isRevoked: v.optional(v.boolean()),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  },
+  returns: v.id("apiKeys"),
+  handler: async (ctx, args) => {
+    // Check for existing key by prefix (idempotent)
+    const existing = await ctx.db
+      .query("apiKeys")
+      .withIndex("by_prefix", (q) => q.eq("prefix", args.prefix))
+      .first();
+
+    if (existing) {
+      return existing._id;
+    }
+
+    return await ctx.db.insert("apiKeys", {
+      organizationId: args.organizationId,
+      name: args.name,
+      prefix: args.prefix,
+      keyHash: args.keyHash,
+      permissions: args.permissions,
+      expiresAt: args.expiresAt,
+      isRevoked: args.isRevoked ?? false,
+      createdBy: args.createdBy,
+      createdAt: args.createdAt,
+    });
+  },
+});
+
+/**
+ * Create webhook
+ */
+export const createWebhook = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    url: v.string(),
+    secret: v.string(),
+    events: v.array(v.string()),
+    isActive: v.boolean(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  },
+  returns: v.id("webhooks"),
+  handler: async (ctx, args) => {
+    // Check for existing webhook by name (idempotent)
+    const existing = await ctx.db
+      .query("webhooks")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => q.eq(q.field("name"), args.name))
+      .first();
+
+    if (existing) {
+      return existing._id;
+    }
+
+    return await ctx.db.insert("webhooks", {
+      organizationId: args.organizationId,
+      name: args.name,
+      url: args.url,
+      secret: args.secret,
+      events: args.events,
+      isActive: args.isActive,
+      createdBy: args.createdBy,
+      createdAt: args.createdAt,
+    });
+  },
+});
+
+/**
+ * Create scheduled report
+ */
+export const createScheduledReport = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    reportType: v.union(
+      v.literal("collection_health"),
+      v.literal("conservation_status"),
+      v.literal("insurance_coverage"),
+      v.literal("location_utilization"),
+      v.literal("loan_performance"),
+      v.literal("accession_activity"),
+      v.literal("deaccession_activity"),
+      v.literal("media_rights"),
+      v.literal("compliance_audit"),
+      v.literal("operational_kpis"),
+      v.literal("custom"),
+    ),
+    schedule: v.union(
+      v.literal("daily"),
+      v.literal("weekly"),
+      v.literal("monthly"),
+      v.literal("quarterly"),
+      v.literal("on_demand"),
+    ),
+    emailRecipients: v.optional(v.array(v.string())),
+    isActive: v.boolean(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  },
+  returns: v.id("scheduledReports"),
+  handler: async (ctx, args) => {
+    // Check for existing report by name (idempotent)
+    const existing = await ctx.db
+      .query("scheduledReports")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => q.eq(q.field("name"), args.name))
+      .first();
+
+    if (existing) {
+      return existing._id;
+    }
+
+    return await ctx.db.insert("scheduledReports", {
+      organizationId: args.organizationId,
+      name: args.name,
+      description: args.description,
+      reportType: args.reportType,
+      schedule: args.schedule,
+      emailRecipients: args.emailRecipients,
+      isActive: args.isActive,
+      createdBy: args.createdBy,
+      createdAt: args.createdAt,
+    });
+  },
+});
+
+/**
+ * Create notification preference
+ */
+export const createNotificationPreference = internalMutation({
+  args: {
+    userId: v.id("users"),
+    organizationId: v.id("organizations"),
+    enableApprovals: v.optional(v.boolean()),
+    enableReminders: v.optional(v.boolean()),
+    enableAlerts: v.optional(v.boolean()),
+    enableAssignments: v.optional(v.boolean()),
+    enableSystem: v.optional(v.boolean()),
+    emailEnabled: v.optional(v.boolean()),
+    updatedAt: v.optional(v.number()),
+  },
+  returns: v.id("notificationPreferences"),
+  handler: async (ctx, args) => {
+    // Check for existing preference (idempotent)
+    const existing = await ctx.db
+      .query("notificationPreferences")
+      .withIndex("by_user_and_organization", (q) =>
+        q.eq("userId", args.userId).eq("organizationId", args.organizationId),
+      )
+      .first();
+
+    if (existing) {
+      // Update existing preference
+      await ctx.db.patch(existing._id, {
+        enableApprovals: args.enableApprovals,
+        enableReminders: args.enableReminders,
+        enableAlerts: args.enableAlerts,
+        enableAssignments: args.enableAssignments,
+        enableSystem: args.enableSystem,
+        emailEnabled: args.emailEnabled,
+        updatedAt: args.updatedAt,
+      });
+      return existing._id;
+    }
+
+    return await ctx.db.insert("notificationPreferences", {
+      userId: args.userId,
+      organizationId: args.organizationId,
+      enableApprovals: args.enableApprovals,
+      enableReminders: args.enableReminders,
+      enableAlerts: args.enableAlerts,
+      enableAssignments: args.enableAssignments,
+      enableSystem: args.enableSystem,
+      emailEnabled: args.emailEnabled,
+      updatedAt: args.updatedAt,
+    });
+  },
+});
+
+/**
+ * Create library vendor
+ */
+export const createLibraryVendor = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    contactName: v.optional(v.string()),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    website: v.optional(v.string()),
+    address: v.optional(v.string()),
+    accountNumber: v.optional(v.string()),
+    paymentTerms: v.optional(v.string()),
+    discountPercent: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+  },
+  returns: v.id("libraryVendors"),
+  handler: async (ctx, args) => {
+    // Check for existing vendor by name (idempotent)
+    const existing = await ctx.db
+      .query("libraryVendors")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => q.eq(q.field("name"), args.name))
+      .first();
+
+    if (existing) {
+      return existing._id;
+    }
+
+    return await ctx.db.insert("libraryVendors", {
+      organizationId: args.organizationId,
+      name: args.name,
+      contactName: args.contactName,
+      email: args.email,
+      phone: args.phone,
+      website: args.website,
+      address: args.address,
+      accountNumber: args.accountNumber,
+      paymentTerms: args.paymentTerms,
+      discountPercent: args.discountPercent,
+      notes: args.notes,
+      isActive: args.isActive,
+      createdAt: args.createdAt,
+    });
+  },
+});
+
+/**
+ * Create library acquisition request
+ */
+export const createLibraryAcquisitionRequest = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    title: v.string(),
+    authors: v.optional(v.array(v.string())),
+    isbn: v.optional(v.string()),
+    publisher: v.optional(v.string()),
+    itemType: v.optional(v.string()),
+    requestedBy: v.id("users"),
+    requestedAt: v.number(),
+    reason: v.optional(v.string()),
+    priority: v.union(
+      v.literal("low"),
+      v.literal("normal"),
+      v.literal("high"),
+      v.literal("urgent"),
+    ),
+    quantity: v.number(),
+    status: v.optional(
+      v.union(
+        v.literal("submitted"),
+        v.literal("under_review"),
+        v.literal("approved"),
+        v.literal("ordered"),
+        v.literal("received"),
+        v.literal("cataloged"),
+        v.literal("rejected"),
+        v.literal("cancelled"),
+      ),
+    ),
+    notes: v.optional(v.string()),
+  },
+  returns: v.id("libraryAcquisitionRequests"),
+  handler: async (ctx, args) => {
+    // Check for existing request by title and requestedBy (idempotent)
+    const existing = await ctx.db
+      .query("libraryAcquisitionRequests")
+      .withIndex("by_requestedBy", (q) => q.eq("requestedBy", args.requestedBy))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("title"), args.title),
+          q.eq(q.field("organizationId"), args.organizationId),
+        ),
+      )
+      .first();
+
+    if (existing) {
+      return existing._id;
+    }
+
+    return await ctx.db.insert("libraryAcquisitionRequests", {
+      organizationId: args.organizationId,
+      title: args.title,
+      authors: args.authors,
+      isbn: args.isbn,
+      publisher: args.publisher,
+      itemType: args.itemType,
+      requestedBy: args.requestedBy,
+      requestedAt: args.requestedAt,
+      reason: args.reason,
+      priority: args.priority,
+      quantity: args.quantity,
+      status: args.status ?? "submitted",
+      notes: args.notes,
+    });
+  },
+});
+
+/**
+ * Create serial subscription
+ */
+export const createSerialSubscription = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    itemId: v.id("libraryItems"),
+    vendorId: v.optional(v.id("libraryVendors")),
+    subscriptionNumber: v.optional(v.string()),
+    startDate: v.number(),
+    endDate: v.optional(v.number()),
+    frequency: v.union(
+      v.literal("daily"),
+      v.literal("weekly"),
+      v.literal("biweekly"),
+      v.literal("monthly"),
+      v.literal("bimonthly"),
+      v.literal("quarterly"),
+      v.literal("annually"),
+      v.literal("irregular"),
+    ),
+    expectedIssues: v.optional(v.number()),
+    cost: v.optional(v.number()),
+    status: v.optional(
+      v.union(
+        v.literal("active"),
+        v.literal("cancelled"),
+        v.literal("expired"),
+        v.literal("pending_renewal"),
+      ),
+    ),
+    autoRenew: v.boolean(),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+  },
+  returns: v.id("serialSubscriptions"),
+  handler: async (ctx, args) => {
+    // Check for existing subscription by item (idempotent)
+    const existing = await ctx.db
+      .query("serialSubscriptions")
+      .withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+      .first();
+
+    if (existing) {
+      return existing._id;
+    }
+
+    return await ctx.db.insert("serialSubscriptions", {
+      organizationId: args.organizationId,
+      itemId: args.itemId,
+      vendorId: args.vendorId,
+      subscriptionNumber: args.subscriptionNumber,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      frequency: args.frequency,
+      expectedIssues: args.expectedIssues,
+      cost: args.cost,
+      status: args.status ?? "active",
+      autoRenew: args.autoRenew,
+      notes: args.notes,
+      createdAt: args.createdAt,
+    });
+  },
+});
+
+/**
+ * Create serial issue
+ */
+export const createSerialIssue = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    subscriptionId: v.id("serialSubscriptions"),
+    itemId: v.id("libraryItems"),
+    issueNumber: v.optional(v.string()),
+    volume: v.optional(v.string()),
+    issueDate: v.optional(v.number()),
+    receivedDate: v.optional(v.number()),
+    status: v.union(
+      v.literal("expected"),
+      v.literal("received"),
+      v.literal("claimed"),
+      v.literal("missing"),
+    ),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+  },
+  returns: v.id("serialIssues"),
+  handler: async (ctx, args) => {
+    // Check for existing issue by subscription and issue number (idempotent)
+    const existing = await ctx.db
+      .query("serialIssues")
+      .withIndex("by_subscription", (q) =>
+        q.eq("subscriptionId", args.subscriptionId),
+      )
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("issueNumber"), args.issueNumber),
+          q.eq(q.field("volume"), args.volume),
+        ),
+      )
+      .first();
+
+    if (existing) {
+      return existing._id;
+    }
+
+    return await ctx.db.insert("serialIssues", {
+      organizationId: args.organizationId,
+      subscriptionId: args.subscriptionId,
+      itemId: args.itemId,
+      issueNumber: args.issueNumber,
+      volume: args.volume,
+      issueDate: args.issueDate,
+      receivedDate: args.receivedDate,
+      status: args.status,
+      notes: args.notes,
+      createdAt: args.createdAt,
+    });
+  },
+});
+
+// ========================================
+// PHASE 14: LOCATION ASSIGNMENT HELPERS
+// ========================================
+
+export const getLocationsForOrg = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+    types: v.optional(v.array(v.string())),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("locations"),
+      name: v.string(),
+      type: v.string(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const locations = await ctx.db
+      .query("locations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const filtered = args.types
+      ? locations.filter((l) => args.types!.includes(l.type))
+      : locations;
+
+    return filtered.map((l) => ({ _id: l._id, name: l.name, type: l.type }));
+  },
+});
+
+export const getCollectionsWithoutLocation = internalQuery({
+  args: { organizationId: v.id("organizations") },
+  returns: v.array(
+    v.object({
+      _id: v.id("collections"),
+      status: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const collections = await ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    return collections
+      .filter(
+        (c) =>
+          c.currentLocationId === undefined &&
+          c.status !== "loaned" &&
+          c.status !== "deaccessioned",
+      )
+      .map((c) => ({ _id: c._id, status: c.status }));
+  },
+});
+
+export const updateCollectionLocation = internalMutation({
+  args: {
+    collectionId: v.id("collections"),
+    locationId: v.id("locations"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.collectionId, {
+      currentLocationId: args.locationId,
+    });
+    return null;
+  },
+});
+
+/**
+ * Get library items for an organization (for seeding serial subscriptions)
+ */
+export const getLibraryItems = internalQuery({
+  args: { organizationId: v.id("organizations") },
+  returns: v.array(
+    v.object({
+      _id: v.id("libraryItems"),
+      title: v.string(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const items = await ctx.db
+      .query("libraryItems")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+    return items.map((i) => ({ _id: i._id, title: i.title }));
+  },
+});
+
+/**
+ * Verify entity counts for an organization after seeding
+ * Returns counts of all seeded entity types for verification
+ */
+export const verifyEntityCounts = internalQuery({
+  args: { organizationId: v.id("organizations") },
+  returns: v.object({
+    collections: v.number(),
+    collectionGroups: v.number(),
+    locations: v.number(),
+    mediaFiles: v.number(),
+    fineArtDetails: v.number(),
+    wineDetails: v.number(),
+    vehicleDetails: v.number(),
+    naturalHistoryDetails: v.number(),
+    archiveDetails: v.number(),
+    loans: v.number(),
+    conditionDisputes: v.number(),
+    accounts: v.number(),
+    accountRelationships: v.number(),
+    accountDocuments: v.number(),
+    contacts: v.number(),
+    exhibitions: v.number(),
+    exhibitionObjects: v.number(),
+    conservationTreatments: v.number(),
+    conservationAttachments: v.number(),
+    conservationAlertRules: v.number(),
+    conservationAlerts: v.number(),
+    assessmentSchedules: v.number(),
+    accessions: v.number(),
+    deaccessions: v.number(),
+    appraisals: v.number(),
+    apiKeys: v.number(),
+    webhooks: v.number(),
+    scheduledReports: v.number(),
+    notificationPreferences: v.number(),
+    objectComments: v.number(),
+    libraryItems: v.number(),
+    itemCopies: v.number(),
+    circulations: v.number(),
+    libraryHolds: v.number(),
+    libraryVendors: v.number(),
+    libraryAcquisitionRequests: v.number(),
+    serialSubscriptions: v.number(),
+    serialIssues: v.number(),
+    insurancePolicies: v.number(),
+    insuranceCoverages: v.number(),
+    insuranceClaims: v.number(),
+    transitRecords: v.number(),
+    workflowConfigs: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const { organizationId } = args;
+
+    const notificationPrefs = await ctx.db
+      .query("notificationPreferences")
+      .withIndex("by_user_and_organization")
+      .collect();
+
+    return {
+      collections: (
+        await ctx.db
+          .query("collections")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      collectionGroups: (
+        await ctx.db
+          .query("collectionGroups")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      locations: (
+        await ctx.db
+          .query("locations")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      mediaFiles: (
+        await ctx.db
+          .query("mediaFiles")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      fineArtDetails: (
+        await ctx.db
+          .query("fineArtDetails")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      wineDetails: (
+        await ctx.db
+          .query("wineDetails")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      vehicleDetails: (
+        await ctx.db
+          .query("vehicleDetails")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      naturalHistoryDetails: (
+        await ctx.db
+          .query("naturalHistoryDetails")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      archiveDetails: (
+        await ctx.db
+          .query("archiveDetails")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      loans: (
+        await ctx.db
+          .query("loans")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      conditionDisputes: (
+        await ctx.db
+          .query("conditionDisputes")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      accounts: (
+        await ctx.db
+          .query("accounts")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      accountRelationships: (
+        await ctx.db
+          .query("accountRelationships")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      accountDocuments: (
+        await ctx.db
+          .query("accountDocuments")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      contacts: (
+        await ctx.db
+          .query("contacts")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      exhibitions: (
+        await ctx.db
+          .query("exhibitions")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      exhibitionObjects: (
+        await ctx.db
+          .query("exhibitionObjects")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      conservationTreatments: (
+        await ctx.db
+          .query("conservationTreatments")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      conservationAttachments: (
+        await ctx.db
+          .query("conservationAttachments")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      conservationAlertRules: (
+        await ctx.db
+          .query("conservationAlertRules")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      conservationAlerts: (
+        await ctx.db
+          .query("conservationAlerts")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      assessmentSchedules: (
+        await ctx.db
+          .query("assessmentSchedules")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      accessions: (
+        await ctx.db
+          .query("accessions")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      deaccessions: (
+        await ctx.db
+          .query("deaccessions")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      appraisals: (
+        await ctx.db
+          .query("appraisals")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      apiKeys: (
+        await ctx.db
+          .query("apiKeys")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      webhooks: (
+        await ctx.db
+          .query("webhooks")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      scheduledReports: (
+        await ctx.db
+          .query("scheduledReports")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      notificationPreferences: notificationPrefs.filter(
+        (p) => p.organizationId === organizationId,
+      ).length,
+      objectComments: (
+        await ctx.db
+          .query("objectComments")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      libraryItems: (
+        await ctx.db
+          .query("libraryItems")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      itemCopies: (
+        await ctx.db
+          .query("itemCopies")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      circulations: (
+        await ctx.db
+          .query("circulations")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      libraryHolds: (
+        await ctx.db
+          .query("libraryHolds")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      libraryVendors: (
+        await ctx.db
+          .query("libraryVendors")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      libraryAcquisitionRequests: (
+        await ctx.db
+          .query("libraryAcquisitionRequests")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      serialSubscriptions: (
+        await ctx.db
+          .query("serialSubscriptions")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      serialIssues: (
+        await ctx.db
+          .query("serialIssues")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      insurancePolicies: (
+        await ctx.db
+          .query("insurancePolicies")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      insuranceCoverages: (
+        await ctx.db
+          .query("insuranceCoverages")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      insuranceClaims: (
+        await ctx.db
+          .query("insuranceClaims")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      transitRecords: (
+        await ctx.db
+          .query("transitRecords")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+      workflowConfigs: (
+        await ctx.db
+          .query("workflowConfigs")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect()
+      ).length,
+    };
   },
 });

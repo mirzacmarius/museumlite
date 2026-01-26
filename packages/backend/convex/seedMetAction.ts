@@ -14,15 +14,20 @@ export const runSeed = action({
   args: {},
   returns: v.union(v.null(), v.string()),
   handler: async (ctx) => {
+    console.log("[runSeed] Starting seed...");
     try {
+      console.log("[runSeed] Calling resetAndSeed...");
       await ctx.runAction(internal.seedMetAction.resetAndSeed, {});
+      console.log("[runSeed] resetAndSeed completed successfully");
       return null;
     } catch (error) {
+      console.log("[runSeed] Caught error, processing...");
       const errorMessage =
         error instanceof Error
           ? `${error.name}: ${error.message}`
           : String(error);
-      console.error("Seed failed:", errorMessage);
+      console.error("[runSeed] Seed failed:", errorMessage);
+      console.log("[runSeed] Returning error message");
       return errorMessage;
     }
   },
