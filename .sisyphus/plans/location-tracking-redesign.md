@@ -43,13 +43,13 @@ Rewrite the Location & Tracking page from scratch to match the HTML mockup desig
 7. Backend tests for new queries
 
 ### Definition of Done
-- [ ] Page renders matching mockup layout (visual comparison)
-- [ ] All data comes from Convex queries (no hardcoded mock data)
-- [ ] Exhibition locations auto-show Gallery View
-- [ ] Storage locations auto-show Storage View
-- [ ] `bun run typecheck` passes with no errors
-- [ ] `bun test` passes (backend tests)
-- [ ] Manual browser testing completes successfully
+- [ ] Page renders matching mockup layout (visual comparison) - **REQUIRES MANUAL BROWSER TESTING**
+- [x] All data comes from Convex queries (no hardcoded mock data)
+- [x] Exhibition locations auto-show Gallery View (logic implemented in page.tsx)
+- [x] Storage locations auto-show Storage View (logic implemented in page.tsx)
+- [x] `bun run typecheck` passes with no errors
+- [x] `bun test` passes (backend tests)
+- [ ] Manual browser testing completes successfully - **REQUIRES HUMAN VERIFICATION**
 
 ### Must Have
 - Two-panel layout: 240px sidebar + main content
