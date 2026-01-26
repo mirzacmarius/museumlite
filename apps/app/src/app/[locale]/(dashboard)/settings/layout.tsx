@@ -1,10 +1,9 @@
 "use client";
-import { I18nProviderClient, useScopedI18n } from "@/locales/client";
+import { useScopedI18n } from "@/locales/client";
 import { buttonVariants } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { use } from "react";
 
 const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const t = useScopedI18n("settings.sidebar");
@@ -219,14 +218,6 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export default function Layout({
-  children,
-  params,
-}: { children: React.ReactNode; params: Promise<{ locale: string }> }) {
-  const { locale } = use(params);
-  return (
-    <I18nProviderClient locale={locale}>
-      <LayoutContainer>{children}</LayoutContainer>
-    </I18nProviderClient>
-  );
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <LayoutContainer>{children}</LayoutContainer>;
 }

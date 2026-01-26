@@ -1,4 +1,5 @@
 import "@v1/ui/globals.css";
+import { I18nProviderClient } from "@/locales/client";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { Toaster } from "@v1/ui/sonner";
 import { TooltipProvider } from "@v1/ui/tooltip";
@@ -241,14 +242,17 @@ export const viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params: Promise<{ locale: string }>;
 }>) {
+  const { locale } = await params;
   return (
     <ConvexAuthNextjsServerProvider>
-      <html lang="en" suppressHydrationWarning>
+      <html lang={locale} suppressHydrationWarning>
         <body
           className={cn(inter.className, GeistMono.variable, "antialiased")}
           suppressHydrationWarning
@@ -260,7 +264,11 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <TooltipProvider delayDuration={0}>
-              <ConvexClientProvider>{children}</ConvexClientProvider>
+              <ConvexClientProvider>
+                <I18nProviderClient locale={locale}>
+                  {children}
+                </I18nProviderClient>
+              </ConvexClientProvider>
             </TooltipProvider>
             <Toaster />
           </ThemeProvider>

@@ -7,7 +7,6 @@ import { NotificationBell } from "@/components/notification-bell";
 import { OrganizationProvider } from "@/components/organization-provider";
 import { PermissionProvider } from "@/components/permission-gate";
 import { SkipNavigation } from "@/components/skip-navigation";
-import { I18nProviderClient } from "@/locales/client";
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@v1/backend/convex/_generated/api";
 import { SidebarProvider } from "@v1/ui/sidebar";
@@ -19,12 +18,9 @@ import { DashboardHeader } from "./dashboard-header";
 
 export default async function Layout({
   children,
-  params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ locale: string }>;
 }) {
-  const { locale } = await params;
   const user = await fetchQuery(
     api.users.getUser,
     {},
@@ -44,36 +40,34 @@ export default async function Layout({
     { token: await convexAuthNextjsToken() },
   );
   return (
-    <I18nProviderClient locale={locale}>
-      <OrganizationProvider>
-        <PermissionProvider>
-          <CommandPaletteProvider>
-            <KeyboardShortcutsProvider>
-              <SidebarProvider>
-                <SkipNavigation />
-                <NavigationProgress />
-                <AppSidebar
-                  preloadedUser={preloadedUser}
-                  preloadedProducts={preloadedProducts}
-                />
-                <main className="flex min-h-screen w-full flex-col bg-background">
-                  <DashboardHeader>
-                    <div id="search" className="flex items-center gap-2">
-                      <CommandPalette />
-                      <NotificationBell />
-                    </div>
-                  </DashboardHeader>
-                  <div id="main-content" className="flex-1">
-                    {children}
+    <OrganizationProvider>
+      <PermissionProvider>
+        <CommandPaletteProvider>
+          <KeyboardShortcutsProvider>
+            <SidebarProvider>
+              <SkipNavigation />
+              <NavigationProgress />
+              <AppSidebar
+                preloadedUser={preloadedUser}
+                preloadedProducts={preloadedProducts}
+              />
+              <main className="flex min-h-screen w-full flex-col bg-background">
+                <DashboardHeader>
+                  <div id="search" className="flex items-center gap-2">
+                    <CommandPalette />
+                    <NotificationBell />
                   </div>
-                </main>
-                <Analytics />
-                <SpeedInsights />
-              </SidebarProvider>
-            </KeyboardShortcutsProvider>
-          </CommandPaletteProvider>
-        </PermissionProvider>
-      </OrganizationProvider>
-    </I18nProviderClient>
+                </DashboardHeader>
+                <div id="main-content" className="flex-1">
+                  {children}
+                </div>
+              </main>
+              <Analytics />
+              <SpeedInsights />
+            </SidebarProvider>
+          </KeyboardShortcutsProvider>
+        </CommandPaletteProvider>
+      </PermissionProvider>
+    </OrganizationProvider>
   );
 }
