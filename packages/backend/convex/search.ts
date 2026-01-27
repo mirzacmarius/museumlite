@@ -133,7 +133,7 @@ export const globalSearch = query({
       hasPermission(ctx, args.organizationId, "accounts.read"),
       hasPermission(ctx, args.organizationId, "accessions.read"),
       hasPermission(ctx, args.organizationId, "locations.read"),
-      hasPermission(ctx, args.organizationId, "exhibitions.read"),
+      hasPermission(ctx, args.organizationId, "collections.read"),
     ]);
 
     if (canReadCollections) {
