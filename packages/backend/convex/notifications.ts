@@ -2,7 +2,12 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { internalMutation, mutation, query } from "./_generated/server";
+import {
+  type QueryCtx,
+  internalMutation,
+  mutation,
+  query,
+} from "./_generated/server";
 
 // ============================================
 // Notification Type Constants
@@ -913,4 +918,19 @@ function getCategoryForType(type: string): string {
     }
   }
   return "system";
+}
+
+/**
+ * Get user email by user ID
+ * Returns null if user not found or email not set
+ */
+async function getUserEmail(
+  ctx: QueryCtx,
+  userId: Id<"users">,
+): Promise<string | null> {
+  const user = await ctx.db.get(userId);
+  if (!user) {
+    return null;
+  }
+  return user.email ?? null;
 }
