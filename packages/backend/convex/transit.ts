@@ -9,6 +9,11 @@ import {
   mutation,
   query,
 } from "./_generated/server";
+import {
+  getCurrentYear,
+  getNextYearBasedValue,
+  padNumber,
+} from "./utils/numberGenerator";
 import { requirePermission } from "./utils/permissions";
 
 const transitTypeValidator = v.union(
@@ -53,8 +58,7 @@ async function generateTransitNumber(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
 ): Promise<string> {
-  const now = new Date();
-  const year = now.getFullYear();
+  const year = getCurrentYear();
 
   const counter = await ctx.db
     .query("transitCounters")
@@ -63,25 +67,13 @@ async function generateTransitNumber(
     )
     .first();
 
-  let nextValue: number;
+  const nextValue = await getNextYearBasedValue(ctx, counter, {
+    tableName: "transitCounters",
+    organizationId,
+    year,
+  });
 
-  if (counter) {
-    nextValue = counter.currentValue + 1;
-    await ctx.db.patch(counter._id, {
-      currentValue: nextValue,
-      lastGeneratedAt: Date.now(),
-    });
-  } else {
-    nextValue = 1;
-    await ctx.db.insert("transitCounters", {
-      organizationId,
-      year,
-      currentValue: nextValue,
-      lastGeneratedAt: Date.now(),
-    });
-  }
-
-  return `TRN-${year}-${String(nextValue).padStart(4, "0")}`;
+  return `TRN-${year}-${padNumber(nextValue, 4)}`;
 }
 
 export const createTransitRecord = mutation({

@@ -13,6 +13,11 @@ import {
 } from "./_generated/server";
 import { requireFeatureAccess } from "./utils/featureGates";
 import {
+  getCurrentYear,
+  getNextYearBasedValue,
+  padNumber,
+} from "./utils/numberGenerator";
+import {
   canApproveAtStep,
   canInitiateWorkflow,
   getUsersToNotifyForWorkflowStep,
@@ -35,7 +40,7 @@ async function generateLoanNumber(
   organizationId: Id<"organizations">,
 ): Promise<string> {
   const now = new Date();
-  const year = now.getFullYear();
+  const year = getCurrentYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");
 
   const counter = await ctx.db
@@ -45,25 +50,13 @@ async function generateLoanNumber(
     )
     .first();
 
-  let nextValue: number;
+  const nextValue = await getNextYearBasedValue(ctx, counter, {
+    tableName: "loanCounters",
+    organizationId,
+    year,
+  });
 
-  if (counter) {
-    nextValue = counter.currentValue + 1;
-    await ctx.db.patch(counter._id, {
-      currentValue: nextValue,
-      lastGeneratedAt: Date.now(),
-    });
-  } else {
-    nextValue = 1;
-    await ctx.db.insert("loanCounters", {
-      organizationId,
-      year,
-      currentValue: nextValue,
-      lastGeneratedAt: Date.now(),
-    });
-  }
-
-  return `L${year}.${month}.${String(nextValue).padStart(4, "0")}`;
+  return `L${year}.${month}.${padNumber(nextValue, 4)}`;
 }
 
 /**

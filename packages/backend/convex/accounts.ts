@@ -5,6 +5,7 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, query } from "./_generated/server";
 import { requireModuleEnabled } from "./utils/featureGates";
+import { getNextGlobalValue, padNumber } from "./utils/numberGenerator";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -20,24 +21,12 @@ async function generateAccountNumber(
     .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
     .first();
 
-  let nextValue: number;
+  const nextValue = await getNextGlobalValue(ctx, counter, {
+    tableName: "accountCounters",
+    organizationId,
+  });
 
-  if (counter) {
-    nextValue = counter.currentValue + 1;
-    await ctx.db.patch(counter._id, {
-      currentValue: nextValue,
-      lastGeneratedAt: Date.now(),
-    });
-  } else {
-    nextValue = 1;
-    await ctx.db.insert("accountCounters", {
-      organizationId,
-      currentValue: nextValue,
-      lastGeneratedAt: Date.now(),
-    });
-  }
-
-  return `ACC-${String(nextValue).padStart(5, "0")}`;
+  return `ACC-${padNumber(nextValue, 5)}`;
 }
 
 const accountTypeValidator = v.union(

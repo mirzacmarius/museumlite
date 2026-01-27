@@ -10,9 +10,15 @@ import {
   canApproveAtStep,
   getUsersToNotifyForWorkflowStep,
 } from "./utils/permissions";
+import {
+  getCurrentYear,
+  getNextYearBasedValue,
+  padNumber,
+} from "./utils/numberGenerator";
 
 /**
  * Generate deaccession number
+ * Format: DA-{ORG}-{YEAR}-{SEQUENCE} e.g. DA-MUS-2025-001
  */
 async function generateDeaccessionNumber(
   ctx: any,
@@ -23,22 +29,23 @@ async function generateDeaccessionNumber(
     throw new Error("Organization not found");
   }
 
-  const year = new Date().getFullYear();
+  const year = getCurrentYear();
   const orgSlug = org.slug.toUpperCase().substring(0, 3);
 
-  // Count existing deaccessions this year
-  const existing = await ctx.db
-    .query("deaccessions")
-    .withIndex("by_organization", (q: any) =>
-      q.eq("organizationId", organizationId),
+  const counter = await ctx.db
+    .query("deaccessionCounters")
+    .withIndex("by_organization_and_year", (q) =>
+      q.eq("organizationId", organizationId).eq("year", year),
     )
-    .filter((q: any) =>
-      q.eq(q.field("deaccessionNumber"), `DA-${orgSlug}-${year}-001`),
-    )
-    .collect();
+    .first();
 
-  const sequence = String(existing.length + 1).padStart(3, "0");
-  return `DA-${orgSlug}-${year}-${sequence}`;
+  const nextValue = await getNextYearBasedValue(ctx, counter, {
+    tableName: "deaccessionCounters",
+    organizationId,
+    year,
+  });
+
+  return `DA-${orgSlug}-${year}-${padNumber(nextValue, 3)}`;
 }
 
 /**

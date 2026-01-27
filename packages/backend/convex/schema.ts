@@ -491,6 +491,14 @@ export default defineSchema({
     "scopeKey",
   ]),
 
+  // Deaccession number counter tracking
+  deaccessionCounters: defineTable({
+    organizationId: v.id("organizations"),
+    year: v.number(),
+    currentValue: v.number(),
+    lastGeneratedAt: v.number(),
+  }).index("by_organization_and_year", ["organizationId", "year"]),
+
   // Custom accession number templates
   accessionTemplates: defineTable({
     organizationId: v.id("organizations"),
