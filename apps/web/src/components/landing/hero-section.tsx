@@ -1,9 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, PlayCircle } from "lucide-react";
+import { ArrowRight, PlayCircle, Sparkles } from "lucide-react";
 import { Button } from "@v1/ui/button";
 import Link from "next/link";
+
+function getDeterministicRandom(seed: number) {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
 
 export function HeroSection() {
   return (
@@ -15,11 +20,14 @@ export function HeroSection() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(20)].map((_, i) => {
           const particleId = `particle-${i}`;
-          const randomX = Math.random() * 100;
-          const randomY = Math.random() * 100;
-          const randomAnimateY = Math.random() * -100;
-          const randomWidth = Math.random() * 4;
-          const randomHeight = Math.random() * 4;
+          const baseSeed = i + 1;
+          const randomX = getDeterministicRandom(baseSeed) * 100;
+          const randomY = getDeterministicRandom(baseSeed + 1) * 100;
+          const randomAnimateY = getDeterministicRandom(baseSeed + 2) * -100;
+          const randomWidth = getDeterministicRandom(baseSeed + 3) * 4;
+          const randomHeight = getDeterministicRandom(baseSeed + 4) * 4;
+          const randomScale = getDeterministicRandom(baseSeed + 5) * 0.5 + 0.5;
+          const randomDuration = getDeterministicRandom(baseSeed + 6) * 10 + 10;
 
           return (
             <motion.div
@@ -28,14 +36,14 @@ export function HeroSection() {
               initial={{
                 x: `${randomX}%`,
                 y: `${randomY}%`,
-                scale: Math.random() * 0.5 + 0.5,
+                scale: randomScale,
               }}
               animate={{
                 y: [null, `${randomAnimateY}%`],
                 opacity: [0.2, 0.5, 0.2],
               }}
               transition={{
-                duration: Math.random() * 10 + 10,
+                duration: randomDuration,
                 repeat: Number.POSITIVE_INFINITY,
                 ease: "linear",
               }}

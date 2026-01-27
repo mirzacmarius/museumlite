@@ -127,7 +127,11 @@ export default function BillingSettings() {
               description={t("freeDescription")}
               isCurrent={!user.subscription}
               amount={0}
-              t={t as unknown as (key: "monthly" | "yearly" | "perMonth" | "perYear") => string}
+              t={
+                t as unknown as (
+                  key: "monthly" | "yearly" | "perMonth" | "perYear",
+                ) => string
+              }
             />
             {selectedPlanInterval === "month" && monthlyProProduct && (
               <Plan
@@ -141,7 +145,11 @@ export default function BillingSettings() {
                     state === "month" ? "year" : "month",
                   );
                 }}
-                t={t as unknown as (key: "monthly" | "yearly" | "perMonth" | "perYear") => string}
+                t={
+                  t as unknown as (
+                    key: "monthly" | "yearly" | "perMonth" | "perYear",
+                  ) => string
+                }
               />
             )}
             {selectedPlanInterval === "year" && yearlyProProduct && (
@@ -156,7 +164,11 @@ export default function BillingSettings() {
                     state === "month" ? "year" : "month",
                   );
                 }}
-                t={t as unknown as (key: "monthly" | "yearly" | "perMonth" | "perYear") => string}
+                t={
+                  t as unknown as (
+                    key: "monthly" | "yearly" | "perMonth" | "perYear",
+                  ) => string
+                }
               />
             )}
           </div>

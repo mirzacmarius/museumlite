@@ -333,7 +333,9 @@ export const listByCollection = query({
 
     const appraisals = await ctx.db
       .query("appraisals")
-      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", args.collectionId),
+      )
       .collect();
 
     const maxAgeMs = 730 * 24 * 60 * 60 * 1000;

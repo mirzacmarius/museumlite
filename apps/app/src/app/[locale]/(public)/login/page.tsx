@@ -19,9 +19,7 @@ export default async function Page() {
           <h1 className="text-3xl font-bold tracking-tight">
             {t("loginPage.heading")}
           </h1>
-          <p className="text-muted-foreground">
-            {t("loginPage.description")}
-          </p>
+          <p className="text-muted-foreground">{t("loginPage.description")}</p>
         </div>
         <div className="flex flex-col items-center justify-center">
           <Logo width={350} height={350} />

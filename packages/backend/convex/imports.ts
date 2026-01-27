@@ -1196,7 +1196,12 @@ export const getImportTemplate = query({
     description: v.string(),
   }),
   handler: async (_ctx, args) => {
-    type TemplateType = "objects" | "accessions" | "locations" | "accounts" | "loans";
+    type TemplateType =
+      | "objects"
+      | "accessions"
+      | "locations"
+      | "accounts"
+      | "loans";
     const templates: Record<
       TemplateType,
       {

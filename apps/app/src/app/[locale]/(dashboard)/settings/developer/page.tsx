@@ -488,7 +488,8 @@ function WebhooksTab({
       setTestResult({
         id: webhookId,
         success: false,
-        message: error instanceof Error ? error.message : t("webhooks.testFailed"),
+        message:
+          error instanceof Error ? error.message : t("webhooks.testFailed"),
       });
     } finally {
       setTestingId(null);
@@ -797,11 +798,7 @@ function UtilitiesTab({
       const result = await deleteAllLoans({ organizationId });
       setDeleteResult(result);
     } catch (error) {
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Failed to delete loans",
-      );
+      alert(error instanceof Error ? error.message : "Failed to delete loans");
     } finally {
       setIsDeletingLoans(false);
     }
@@ -811,9 +808,7 @@ function UtilitiesTab({
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">{t("utilities")}</h2>
-        <p className="text-sm text-muted-foreground">
-          {t("utilitiesDesc")}
-        </p>
+        <p className="text-sm text-muted-foreground">{t("utilitiesDesc")}</p>
       </div>
 
       <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6">
@@ -823,9 +818,7 @@ function UtilitiesTab({
           </div>
           <div className="flex-1 space-y-2">
             <div>
-              <h3 className="text-lg font-semibold">
-                {t("deleteAllLoans")}
-              </h3>
+              <h3 className="text-lg font-semibold">{t("deleteAllLoans")}</h3>
               <p className="text-sm text-muted-foreground">
                 {t("deleteLoansDesc")}
               </p>
@@ -833,9 +826,7 @@ function UtilitiesTab({
 
             {deleteResult && (
               <div className="rounded-md bg-muted p-4 space-y-1">
-                <p className="text-sm font-medium">
-                  {t("operationCompleted")}
-                </p>
+                <p className="text-sm font-medium">{t("operationCompleted")}</p>
                 <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                   <li>
                     {t("deletedLoans", {
@@ -864,9 +855,7 @@ function UtilitiesTab({
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" disabled={isDeletingLoans}>
                     <Trash2 className="mr-2 h-4 w-4" />
-                    {isDeletingLoans
-                      ? common("deleting")
-                      : t("deleteAllLoans")}
+                    {isDeletingLoans ? common("deleting") : t("deleteAllLoans")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -888,9 +877,7 @@ function UtilitiesTab({
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>
-                      {t("cancel")}
-                    </AlertDialogCancel>
+                    <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleDeleteAllLoans}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

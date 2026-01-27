@@ -51,12 +51,20 @@ export default function PublicObjectPage() {
   );
   const sortedImages = [
     ...object.images.filter(
-      (img: { _id: string; url: string; isPrimary: boolean; caption?: string }) =>
-        img.isPrimary,
+      (img: {
+        _id: string;
+        url: string;
+        isPrimary: boolean;
+        caption?: string;
+      }) => img.isPrimary,
     ),
     ...object.images.filter(
-      (img: { _id: string; url: string; isPrimary: boolean; caption?: string }) =>
-        !img.isPrimary,
+      (img: {
+        _id: string;
+        url: string;
+        isPrimary: boolean;
+        caption?: string;
+      }) => !img.isPrimary,
     ),
   ];
   const currentImage = sortedImages[selectedImageIndex];

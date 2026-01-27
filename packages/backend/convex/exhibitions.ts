@@ -737,7 +737,9 @@ export const activate = mutation({
     // Move all exhibition objects to installed status and update their locations
     const exhibitionObjects = await ctx.db
       .query("exhibitionObjects")
-      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .withIndex("by_exhibition", (q) =>
+        q.eq("exhibitionId", args.exhibitionId),
+      )
       .filter((q) => q.eq(q.field("status"), "pending"))
       .collect();
 
@@ -798,7 +800,10 @@ export const close = mutation({
 
     await requireExhibitionAccess(ctx, exhibition.organizationId);
 
-    if (exhibition.status !== "active" && exhibition.status !== "deinstalling") {
+    if (
+      exhibition.status !== "active" &&
+      exhibition.status !== "deinstalling"
+    ) {
       throw new Error("Exhibition must be active or deinstalling to close");
     }
 
@@ -825,7 +830,9 @@ export const close = mutation({
     // Handle objects - return them to original locations if requested
     const exhibitionObjects = await ctx.db
       .query("exhibitionObjects")
-      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .withIndex("by_exhibition", (q) =>
+        q.eq("exhibitionId", args.exhibitionId),
+      )
       .collect();
 
     const notReturnedObjects = exhibitionObjects.filter(
@@ -1319,7 +1326,9 @@ export const startInstallation = mutation({
     );
 
     if (exhibition.status !== "approved") {
-      throw new Error("Exhibition must be approved before starting installation");
+      throw new Error(
+        "Exhibition must be approved before starting installation",
+      );
     }
 
     await ctx.db.patch(args.exhibitionId, {
@@ -1368,7 +1377,10 @@ export const completeInstallationTask = mutation({
       "collections.update",
     );
 
-    if (exhibition.status !== "installing" && exhibition.status !== "approved") {
+    if (
+      exhibition.status !== "installing" &&
+      exhibition.status !== "approved"
+    ) {
       throw new Error("Exhibition is not in installation phase");
     }
 
@@ -1438,7 +1450,10 @@ export const uncompleteInstallationTask = mutation({
       "collections.update",
     );
 
-    if (exhibition.status !== "installing" && exhibition.status !== "approved") {
+    if (
+      exhibition.status !== "installing" &&
+      exhibition.status !== "approved"
+    ) {
       throw new Error("Exhibition is not in installation phase");
     }
 
@@ -1534,8 +1549,7 @@ export const checkInstallationReadiness = query({
           completed: task.completed,
           completedBy: task.completedBy,
           completedAt: task.completedAt,
-          completedByName:
-            completer?.name ?? completer?.username ?? undefined,
+          completedByName: completer?.name ?? completer?.username ?? undefined,
           notes: task.notes,
         };
       }),
@@ -1841,7 +1855,9 @@ export const checkDeinstallationReadiness = query({
     // Check if all objects have been returned
     const exhibitionObjects = await ctx.db
       .query("exhibitionObjects")
-      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .withIndex("by_exhibition", (q) =>
+        q.eq("exhibitionId", args.exhibitionId),
+      )
       .collect();
 
     const objectsNotReturned = exhibitionObjects.filter(
@@ -1860,8 +1876,7 @@ export const checkDeinstallationReadiness = query({
           completed: task.completed,
           completedBy: task.completedBy,
           completedAt: task.completedAt,
-          completedByName:
-            completer?.name ?? completer?.username ?? undefined,
+          completedByName: completer?.name ?? completer?.username ?? undefined,
           notes: task.notes,
         };
       }),
@@ -1923,7 +1938,9 @@ export const addExhibitionObject = mutation({
     // Check if object is already in this exhibition
     const existingEntry = await ctx.db
       .query("exhibitionObjects")
-      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .withIndex("by_exhibition", (q) =>
+        q.eq("exhibitionId", args.exhibitionId),
+      )
       .filter((q) => q.eq(q.field("collectionId"), args.collectionId))
       .first();
 
@@ -2179,7 +2196,9 @@ export const returnObjectToOriginalLocation = mutation({
       exhibitionObject.status !== "deinstalled" &&
       exhibitionObject.status !== "installed"
     ) {
-      throw new Error("Object must be installed or deinstalled before returning");
+      throw new Error(
+        "Object must be installed or deinstalled before returning",
+      );
     }
 
     const returnLocation =
@@ -2257,7 +2276,9 @@ export const listExhibitionObjects = query({
 
     const exhibitionObjects = await ctx.db
       .query("exhibitionObjects")
-      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .withIndex("by_exhibition", (q) =>
+        q.eq("exhibitionId", args.exhibitionId),
+      )
       .collect();
 
     const results = await Promise.all(
@@ -2332,7 +2353,9 @@ export const bulkInstallObjects = mutation({
 
     const pendingObjects = await ctx.db
       .query("exhibitionObjects")
-      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .withIndex("by_exhibition", (q) =>
+        q.eq("exhibitionId", args.exhibitionId),
+      )
       .filter((q) => q.eq(q.field("status"), "pending"))
       .collect();
 
@@ -2395,7 +2418,9 @@ export const bulkReturnObjects = mutation({
 
     const deinstalledObjects = await ctx.db
       .query("exhibitionObjects")
-      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .withIndex("by_exhibition", (q) =>
+        q.eq("exhibitionId", args.exhibitionId),
+      )
       .filter((q) => q.eq(q.field("status"), "deinstalled"))
       .collect();
 

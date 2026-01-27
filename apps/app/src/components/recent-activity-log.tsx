@@ -5,6 +5,7 @@ import Link from "next/link";
 export type RecentActivityItem = {
   type: "collection" | "loan" | "accession" | "deaccession";
   id: string;
+  entityId?: string;
   title: string;
   subtitle?: string;
   timestamp: number;
@@ -136,12 +137,15 @@ export function RecentActivityLog({
                 </td>
               </tr>
             ) : (
-              activities.map((activity, index) => {
-                const href = getActivityLink(activity.type, activity.id);
+              activities.map((activity) => {
+                const href = getActivityLink(
+                  activity.type,
+                  activity.entityId ?? activity.id,
+                );
 
                 return (
                   <tr
-                    key={`${activity.type}-${activity.id}-${activity.timestamp}-${index}`}
+                    key={activity.id}
                     className="hover:bg-zinc-900/40 transition-colors cursor-pointer group"
                   >
                     <td className="p-0">

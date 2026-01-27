@@ -33,9 +33,7 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
 
   const permissions = useQuery(
     api.roles.getUserPermissions,
-    currentOrganizationId
-      ? { organizationId: currentOrganizationId }
-      : "skip",
+    currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
   );
 
   const hasPermission = useCallback(

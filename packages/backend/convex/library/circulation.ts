@@ -644,7 +644,10 @@ export const renew = mutation({
 
     // Check if item is recalled
     if (circulation.isRecalled) {
-      return { success: false, error: "Item has been recalled and cannot be renewed" };
+      return {
+        success: false,
+        error: "Item has been recalled and cannot be renewed",
+      };
     }
 
     const account = await ctx.db.get(circulation.accountId);
@@ -666,7 +669,10 @@ export const renew = mutation({
       .first();
 
     if (holds) {
-      return { success: false, error: "Item has pending holds and cannot be renewed" };
+      return {
+        success: false,
+        error: "Item has pending holds and cannot be renewed",
+      };
     }
 
     // Get settings for renewal limits
@@ -882,7 +888,11 @@ export const checkPatronBlocks = query({
   handler: async (ctx, args) => {
     const account = await ctx.db.get(args.accountId);
     if (!account) {
-      return { isBlocked: true, blocks: [{ type: "error", reason: "Account not found" }], canOverride: false };
+      return {
+        isBlocked: true,
+        blocks: [{ type: "error", reason: "Account not found" }],
+        canOverride: false,
+      };
     }
 
     await requireModuleEnabled(ctx, account.organizationId, "library");
@@ -1029,7 +1039,8 @@ export const checkoutWithOverride = mutation({
         )
         .first();
 
-      const loanPeriodDays = item.loanPeriodDays || settings?.defaultLoanPeriodDays || 14;
+      const loanPeriodDays =
+        item.loanPeriodDays || settings?.defaultLoanPeriodDays || 14;
       dueDate = now + loanPeriodDays * 24 * 60 * 60 * 1000;
     }
 
@@ -1369,9 +1380,7 @@ export const listPatronCheckouts = query({
           item,
           copy,
           isOverdue: circ.dueDate < now,
-          daysUntilDue: Math.ceil(
-            (circ.dueDate - now) / (24 * 60 * 60 * 1000),
-          ),
+          daysUntilDue: Math.ceil((circ.dueDate - now) / (24 * 60 * 60 * 1000)),
         };
       }),
     );
