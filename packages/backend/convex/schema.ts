@@ -198,6 +198,28 @@ export default defineSchema({
     isSystemRole: v.boolean(),
   }).index("by_organization", ["organizationId"]),
 
+  // Pending organization invitations
+  organizationInvitations: defineTable({
+    organizationId: v.id("organizations"),
+    email: v.string(),
+    roleId: v.id("roles"),
+    token: v.string(),
+    expiresAt: v.number(),
+    invitedBy: v.id("users"),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("declined"),
+      v.literal("expired"),
+    ),
+    createdAt: v.number(),
+    acceptedAt: v.optional(v.number()),
+  })
+    .index("by_token", ["token"])
+    .index("by_organization", ["organizationId"])
+    .index("by_email", ["email"])
+    .index("by_status", ["status"]),
+
   // Granular permission definitions
   permissions: defineTable({
     name: v.string(),
