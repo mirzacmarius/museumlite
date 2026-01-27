@@ -98,6 +98,27 @@ export function CommandPalette() {
       : "skip",
   );
 
+  // Batch fetch all image URLs for objects in search results
+  const collectionIds = React.useMemo(() => {
+    if (!searchResults?.objects) return [];
+    return searchResults.objects.map((obj) => obj._id);
+  }, [searchResults?.objects]);
+
+  const batchImageUrls = useQuery(
+    api.media.getBatchPrimaryImageUrls,
+    hasSearch && searchResults && collectionIds.length > 0
+      ? { collectionIds }
+      : "skip",
+  );
+
+  // Create a map for O(1) lookup of image URLs by collection ID
+  const imageUrlMap = React.useMemo(() => {
+    if (!batchImageUrls) return new Map<Id<"collections">, string | null>();
+    return new Map(
+      batchImageUrls.map((item) => [item.collectionId, item.url]),
+    );
+  }, [batchImageUrls]);
+
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -168,6 +189,7 @@ export function CommandPalette() {
                       key={obj._id}
                       obj={obj}
                       runCommand={runCommand}
+                      imageUrl={imageUrlMap.get(obj._id)}
                     />
                   ))}
                 </CommandGroup>
