@@ -5,7 +5,10 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useCallback, useState } from "react";
 
-import { ExportCSVButton } from "@/components/export-csv-button";
+import {
+  ExportButtonWithFormat,
+  type ExportFormat,
+} from "@/components/export-button-with-format";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
 import { FileUp, Plus, Search } from "lucide-react";
@@ -30,11 +33,21 @@ export function AccessionsPageClient({
   const t = useScopedI18n("accessions");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const exportAccessions = useMutation(api.imports.exportAccessions);
+  const exportAccessionsWithFormat = useMutation(
+    api.imports.exportAccessionsWithFormat,
+  );
 
-  const handleExport = useCallback(async () => {
-    return exportAccessions({ organizationId });
-  }, [exportAccessions, organizationId]);
+  const handleExport = useCallback(
+    async (format: ExportFormat) => {
+      // Accessions don't support Dublin Core
+      if (format === "dublin-core") return undefined;
+      return exportAccessionsWithFormat({
+        organizationId,
+        format: format as "csv" | "json" | "xml" | "spectrum",
+      });
+    },
+    [exportAccessionsWithFormat, organizationId],
+  );
 
   return (
     <div className="p-6 h-full flex flex-col">
@@ -53,7 +66,11 @@ export function AccessionsPageClient({
             />
           </div>
           <PermissionGate permission="collections.read">
-            <ExportCSVButton onExport={handleExport} filename="accessions" />
+            <ExportButtonWithFormat
+              onExport={handleExport}
+              filename="accessions"
+              supportedFormats={["csv", "json", "xml", "spectrum"]}
+            />
           </PermissionGate>
           <PermissionGate permission="collections.create">
             <Link

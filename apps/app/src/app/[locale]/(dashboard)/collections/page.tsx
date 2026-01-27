@@ -1,6 +1,9 @@
 "use client";
 
-import { ExportCSVButton } from "@/components/export-csv-button";
+import {
+  ExportButtonWithFormat,
+  type ExportFormat,
+} from "@/components/export-button-with-format";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { formatDate } from "@/lib/format-date";
@@ -28,12 +31,23 @@ export default function CollectionsPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const [search, setSearch] = useState("");
 
-  const exportObjects = useMutation(api.imports.exportObjects);
+  const exportObjectsWithFormat = useMutation(
+    api.imports.exportObjectsWithFormat,
+  );
 
-  const handleExport = useCallback(async () => {
-    if (!currentOrganizationId) return [];
-    return exportObjects({ organizationId: currentOrganizationId });
-  }, [currentOrganizationId, exportObjects]);
+  const handleExport = useCallback(
+    async (format: ExportFormat) => {
+      if (!currentOrganizationId) return undefined;
+      // Map UI format to backend format
+      const backendFormat =
+        format === "dublin-core" ? "dublincore" : format;
+      return exportObjectsWithFormat({
+        organizationId: currentOrganizationId,
+        format: backendFormat as "csv" | "json" | "xml" | "dublincore" | "spectrum",
+      });
+    },
+    [currentOrganizationId, exportObjectsWithFormat],
+  );
 
   if (isLoading) {
     return (
@@ -96,7 +110,10 @@ export default function CollectionsPage() {
             </div>
             <div className="flex items-center gap-2">
               <PermissionGate permission="collections.read">
-                <ExportCSVButton onExport={handleExport} filename="objects" />
+                <ExportButtonWithFormat
+                  onExport={handleExport}
+                  filename="objects"
+                />
               </PermissionGate>
               <PermissionGate permission="collections.create">
                 <Button asChild variant="outline">
