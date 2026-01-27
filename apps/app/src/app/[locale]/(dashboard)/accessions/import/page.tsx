@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { parseCSV } from "@/lib/csv-parser";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -49,104 +50,6 @@ const REQUIRED_COLUMNS = ["dateReceived", "source", "method"];
 const OPTIONAL_COLUMNS = ["accessionNumber", "cost", "notes"];
 const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
 
-function parseCSV(text: string): { rows: ParsedRow[]; errors: string[] } {
-  const lines = text.split(/\r?\n/).filter((line) => line.trim());
-  if (lines.length < 2) {
-    return {
-      rows: [],
-      errors: ["CSV must have a header row and at least one data row"],
-    };
-  }
-
-  const headerLine = lines[0];
-  if (!headerLine) {
-    return { rows: [], errors: ["Missing header row"] };
-  }
-
-  const headers = headerLine
-    .split(",")
-    .map((h) => h.trim().replace(/^"|"$/g, ""));
-
-  const missingRequired = REQUIRED_COLUMNS.filter(
-    (col) => !headers.some((h) => h.toLowerCase() === col.toLowerCase()),
-  );
-
-  if (missingRequired.length > 0) {
-    return {
-      rows: [],
-      errors: [`Missing required columns: ${missingRequired.join(", ")}`],
-    };
-  }
-
-  const columnMap = new Map<string, number>();
-  for (const col of ALL_COLUMNS) {
-    const idx = headers.findIndex((h) => h.toLowerCase() === col.toLowerCase());
-    if (idx !== -1) {
-      columnMap.set(col, idx);
-    }
-  }
-
-  const rows: ParsedRow[] = [];
-  const errors: string[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line || !line.trim()) continue;
-
-    const values = parseCSVLine(line);
-
-    const getValue = (col: string): string => {
-      const idx = columnMap.get(col);
-      if (idx === undefined) return "";
-      return (values[idx] || "").trim();
-    };
-
-    const source = getValue("source");
-    if (!source) {
-      errors.push(`Row ${i + 1}: Source is required`);
-      continue;
-    }
-
-    rows.push({
-      accessionNumber: getValue("accessionNumber") || undefined,
-      dateReceived: getValue("dateReceived") || new Date().toISOString(),
-      source,
-      method: getValue("method") || "other",
-      cost: getValue("cost") || undefined,
-      notes: getValue("notes") || undefined,
-    });
-  }
-
-  return { rows, errors };
-}
-
-function parseCSVLine(line: string): string[] {
-  const result: string[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-
-    if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char === "," && !inQuotes) {
-      result.push(current);
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-
-  result.push(current);
-  return result;
-}
-
 export default function ImportAccessionsPage() {
   const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("accessions");
@@ -176,7 +79,26 @@ export default function ImportAccessionsPage() {
       const reader = new FileReader();
       reader.onload = (event) => {
         const text = event.target?.result as string;
-        const { rows, errors } = parseCSV(text);
+        const { rows, errors } = parseCSV<ParsedRow>({
+          text,
+          requiredColumns: REQUIRED_COLUMNS,
+          allColumns: ALL_COLUMNS,
+          mapRow: (getValue, rowIndex) => {
+            const source = getValue("source");
+            if (!source) {
+              throw new Error(`Row ${rowIndex}: Source is required`);
+            }
+
+            return {
+              accessionNumber: getValue("accessionNumber") || undefined,
+              dateReceived: getValue("dateReceived") || new Date().toISOString(),
+              source,
+              method: getValue("method") || "other",
+              cost: getValue("cost") || undefined,
+              notes: getValue("notes") || undefined,
+            };
+          },
+        });
 
         setState({
           step: "preview",

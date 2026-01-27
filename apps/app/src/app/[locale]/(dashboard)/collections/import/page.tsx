@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { parseCSV } from "@/lib/csv-parser";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -77,116 +78,6 @@ const OPTIONAL_COLUMNS = [
 ];
 const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
 
-function parseCSV(text: string): { rows: ParsedRow[]; errors: string[] } {
-  const lines = text.split(/\r?\n/).filter((line) => line.trim());
-  if (lines.length < 2) {
-    return {
-      rows: [],
-      errors: ["CSV must have a header row and at least one data row"],
-    };
-  }
-
-  const headerLine = lines[0];
-  if (!headerLine) {
-    return { rows: [], errors: ["Missing header row"] };
-  }
-
-  const headers = headerLine
-    .split(",")
-    .map((h) => h.trim().replace(/^"|"$/g, ""));
-
-  const missingRequired = REQUIRED_COLUMNS.filter(
-    (col) => !headers.some((h) => h.toLowerCase() === col.toLowerCase()),
-  );
-
-  if (missingRequired.length > 0) {
-    return {
-      rows: [],
-      errors: [`Missing required columns: ${missingRequired.join(", ")}`],
-    };
-  }
-
-  const columnMap = new Map<string, number>();
-  for (const col of ALL_COLUMNS) {
-    const idx = headers.findIndex((h) => h.toLowerCase() === col.toLowerCase());
-    if (idx !== -1) {
-      columnMap.set(col, idx);
-    }
-  }
-
-  const rows: ParsedRow[] = [];
-  const errors: string[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line || !line.trim()) continue;
-
-    const values = parseCSVLine(line);
-
-    const getValue = (col: string): string => {
-      const idx = columnMap.get(col);
-      if (idx === undefined) return "";
-      return (values[idx] || "").trim();
-    };
-
-    const title = getValue("title");
-
-    if (!title) {
-      errors.push(`Row ${i + 1}: Title is required`);
-      continue;
-    }
-
-    rows.push({
-      accessionNumber: getValue("accessionNumber") || undefined,
-      title,
-      alternativeTitle: getValue("alternativeTitle") || undefined,
-      creator: getValue("creator") || undefined,
-      objectType: getValue("objectType") || undefined,
-      objectName: getValue("objectName") || undefined,
-      culture: getValue("culture") || undefined,
-      period: getValue("period") || undefined,
-      dateCreated: getValue("dateCreated") || undefined,
-      materials: getValue("materials") || undefined,
-      technique: getValue("technique") || undefined,
-      dimensions: getValue("dimensions") || undefined,
-      description: getValue("description") || undefined,
-      condition: getValue("condition") || undefined,
-      provenance: getValue("provenance") || undefined,
-      location: getValue("location") || undefined,
-      collectionGroup: getValue("collectionGroup") || undefined,
-    });
-  }
-
-  return { rows, errors };
-}
-
-function parseCSVLine(line: string): string[] {
-  const result: string[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-
-    if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char === "," && !inQuotes) {
-      result.push(current);
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-
-  result.push(current);
-  return result;
-}
-
 export default function ImportObjectsPage() {
   const t = useScopedI18n("collections");
   const common = useScopedI18n("common");
@@ -217,7 +108,38 @@ export default function ImportObjectsPage() {
       const reader = new FileReader();
       reader.onload = (event) => {
         const text = event.target?.result as string;
-        const { rows, errors } = parseCSV(text);
+        const { rows, errors } = parseCSV<ParsedRow>({
+          text,
+          requiredColumns: REQUIRED_COLUMNS,
+          allColumns: ALL_COLUMNS,
+          mapRow: (getValue, rowIndex) => {
+            const title = getValue("title");
+
+            if (!title) {
+              throw new Error(`Row ${rowIndex}: Title is required`);
+            }
+
+            return {
+              accessionNumber: getValue("accessionNumber") || undefined,
+              title,
+              alternativeTitle: getValue("alternativeTitle") || undefined,
+              creator: getValue("creator") || undefined,
+              objectType: getValue("objectType") || undefined,
+              objectName: getValue("objectName") || undefined,
+              culture: getValue("culture") || undefined,
+              period: getValue("period") || undefined,
+              dateCreated: getValue("dateCreated") || undefined,
+              materials: getValue("materials") || undefined,
+              technique: getValue("technique") || undefined,
+              dimensions: getValue("dimensions") || undefined,
+              description: getValue("description") || undefined,
+              condition: getValue("condition") || undefined,
+              provenance: getValue("provenance") || undefined,
+              location: getValue("location") || undefined,
+              collectionGroup: getValue("collectionGroup") || undefined,
+            };
+          },
+        });
 
         setState({
           step: "preview",
