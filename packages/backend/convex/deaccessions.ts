@@ -10,6 +10,11 @@ import {
   canApproveAtStep,
   getUsersToNotifyForWorkflowStep,
 } from "./utils/permissions";
+import {
+  getCurrentYear,
+  getNextYearBasedValue,
+  padNumber,
+} from "./utils/numberGenerator";
 
 /**
  * Generate deaccession number
@@ -24,44 +29,23 @@ async function generateDeaccessionNumber(
     throw new Error("Organization not found");
   }
 
-  const year = new Date().getFullYear();
+  const year = getCurrentYear();
   const orgSlug = org.slug.toUpperCase().substring(0, 3);
-  const scope = "year";
-  const scopeKey = year.toString();
 
-  // Try to find existing counter
-  const existingCounter = await ctx.db
+  const counter = await ctx.db
     .query("deaccessionCounters")
-    .withIndex("by_organization_and_scope", (q) =>
-      q
-        .eq("organizationId", organizationId)
-        .eq("scope", scope)
-        .eq("scopeKey", scopeKey),
+    .withIndex("by_organization_and_year", (q) =>
+      q.eq("organizationId", organizationId).eq("year", year),
     )
-    .unique();
+    .first();
 
-  let nextValue: number;
-  if (existingCounter) {
-    // Increment existing counter
-    nextValue = existingCounter.currentValue + 1;
-    await ctx.db.patch(existingCounter._id, {
-      currentValue: nextValue,
-      lastGeneratedAt: Date.now(),
-    });
-  } else {
-    // Create new counter starting at 1
-    await ctx.db.insert("deaccessionCounters", {
-      organizationId,
-      scope,
-      scopeKey,
-      currentValue: 1,
-      lastGeneratedAt: Date.now(),
-    });
-    nextValue = 1;
-  }
+  const nextValue = await getNextYearBasedValue(ctx, counter, {
+    tableName: "deaccessionCounters",
+    organizationId,
+    year,
+  });
 
-  const sequence = String(nextValue).padStart(3, "0");
-  return `DA-${orgSlug}-${year}-${sequence}`;
+  return `DA-${orgSlug}-${year}-${padNumber(nextValue, 3)}`;
 }
 
 /**
