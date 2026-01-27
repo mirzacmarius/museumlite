@@ -136,7 +136,9 @@ export default function NotificationSettingsPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="emailEnabled">Enable Email Notifications</Label>
+                  <Label htmlFor="emailEnabled">
+                    Enable Email Notifications
+                  </Label>
                   <p className="text-xs text-muted-foreground">
                     Receive notifications via email for important events
                   </p>
@@ -160,9 +162,7 @@ export default function NotificationSettingsPage() {
                 value={formData.emailDigestFrequency}
                 onValueChange={(
                   value: "instant" | "daily" | "weekly" | "never",
-                ) =>
-                  setFormData({ ...formData, emailDigestFrequency: value })
-                }
+                ) => setFormData({ ...formData, emailDigestFrequency: value })}
                 disabled={!formData.emailEnabled}
               >
                 <SelectTrigger id="emailDigestFrequency">
@@ -207,8 +207,8 @@ export default function NotificationSettingsPage() {
               <li className="flex items-start gap-2">
                 <span className="text-primary">•</span>
                 <span>
-                  <strong className="text-primary">Task Assignments:</strong> When
-                  you are assigned a new task
+                  <strong className="text-primary">Task Assignments:</strong>{" "}
+                  When you are assigned a new task
                 </span>
               </li>
             </ul>

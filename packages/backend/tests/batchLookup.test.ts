@@ -58,11 +58,7 @@ test("batchGetByIds should deduplicate IDs", async () => {
 
   // Fetch with duplicate IDs
   const results = await t.run(async (ctx) => {
-    return await batchGetByIds(
-      ctx,
-      [orgId, orgId, orgId],
-      "organizations",
-    );
+    return await batchGetByIds(ctx, [orgId, orgId, orgId], "organizations");
   });
 
   // Should only fetch once despite 3 duplicate IDs
@@ -88,11 +84,7 @@ test("batchGetByIds should return null for non-existent IDs", async () => {
 
   // Fetch with mix of real and fake IDs
   const results = await t.run(async (ctx) => {
-    return await batchGetByIds(
-      ctx,
-      [realOrgId, fakeOrgId],
-      "organizations",
-    );
+    return await batchGetByIds(ctx, [realOrgId, fakeOrgId], "organizations");
   });
 
   expect(results).toHaveLength(2);
@@ -204,7 +196,11 @@ test("batchLookup should combine fetch and map creation", async () => {
 
   // Use convenience function (perform all assertions inside t.run)
   await t.run(async (ctx) => {
-    const lookupMap = await batchLookup(ctx, [org1Id, org2Id, org3Id], "organizations");
+    const lookupMap = await batchLookup(
+      ctx,
+      [org1Id, org2Id, org3Id],
+      "organizations",
+    );
 
     expect(lookupMap.size).toBe(3);
     expect(lookupMap.get(org1Id)?.name).toBe("Gallery A");

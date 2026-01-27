@@ -114,12 +114,16 @@ describe("mediaVersions", () => {
     const t = convexTest(schema, modules);
     const setup = await createTestSetup(t);
 
-    const versionId = await t.mutation(api.mediaVersions.createVersion, {
-      mediaId: setup.mediaFileId,
-      storageId: setup.storageId,
-      editType: "crop",
-      editMetadata: { x: 0, y: 0, width: 100, height: 100 },
-    }, { as: setup.userId });
+    const versionId = await t.mutation(
+      api.mediaVersions.createVersion,
+      {
+        mediaId: setup.mediaFileId,
+        storageId: setup.storageId,
+        editType: "crop",
+        editMetadata: { x: 0, y: 0, width: 100, height: 100 },
+      },
+      { as: setup.userId },
+    );
 
     expect(versionId).toBeDefined();
 
@@ -137,18 +141,26 @@ describe("mediaVersions", () => {
     const setup = await createTestSetup(t);
 
     // Create version 1
-    await t.mutation(api.mediaVersions.createVersion, {
-      mediaId: setup.mediaFileId,
-      storageId: setup.storageId,
-      editType: "crop",
-    }, { as: setup.userId });
+    await t.mutation(
+      api.mediaVersions.createVersion,
+      {
+        mediaId: setup.mediaFileId,
+        storageId: setup.storageId,
+        editType: "crop",
+      },
+      { as: setup.userId },
+    );
 
     // Create version 2
-    const version2Id = await t.mutation(api.mediaVersions.createVersion, {
-      mediaId: setup.mediaFileId,
-      storageId: setup.storageId,
-      editType: "rotate",
-    }, { as: setup.userId });
+    const version2Id = await t.mutation(
+      api.mediaVersions.createVersion,
+      {
+        mediaId: setup.mediaFileId,
+        storageId: setup.storageId,
+        editType: "rotate",
+      },
+      { as: setup.userId },
+    );
 
     const version2 = await t.run(async (ctx) => {
       return await ctx.db.get(version2Id);
@@ -162,27 +174,43 @@ describe("mediaVersions", () => {
     const setup = await createTestSetup(t);
 
     // Create multiple versions
-    await t.mutation(api.mediaVersions.createVersion, {
-      mediaId: setup.mediaFileId,
-      storageId: setup.storageId,
-      editType: "crop",
-    }, { as: setup.userId });
+    await t.mutation(
+      api.mediaVersions.createVersion,
+      {
+        mediaId: setup.mediaFileId,
+        storageId: setup.storageId,
+        editType: "crop",
+      },
+      { as: setup.userId },
+    );
 
-    await t.mutation(api.mediaVersions.createVersion, {
-      mediaId: setup.mediaFileId,
-      storageId: setup.storageId,
-      editType: "rotate",
-    }, { as: setup.userId });
+    await t.mutation(
+      api.mediaVersions.createVersion,
+      {
+        mediaId: setup.mediaFileId,
+        storageId: setup.storageId,
+        editType: "rotate",
+      },
+      { as: setup.userId },
+    );
 
-    await t.mutation(api.mediaVersions.createVersion, {
-      mediaId: setup.mediaFileId,
-      storageId: setup.storageId,
-      editType: "adjust",
-    }, { as: setup.userId });
+    await t.mutation(
+      api.mediaVersions.createVersion,
+      {
+        mediaId: setup.mediaFileId,
+        storageId: setup.storageId,
+        editType: "adjust",
+      },
+      { as: setup.userId },
+    );
 
-    const versions = await t.query(api.mediaVersions.listVersions, {
-      mediaId: setup.mediaFileId,
-    }, { as: setup.userId });
+    const versions = await t.query(
+      api.mediaVersions.listVersions,
+      {
+        mediaId: setup.mediaFileId,
+      },
+      { as: setup.userId },
+    );
 
     expect(versions.length).toBe(3);
     expect(versions[0].versionNumber).toBe(3); // Newest first
@@ -195,22 +223,34 @@ describe("mediaVersions", () => {
     const setup = await createTestSetup(t);
 
     // Create versions
-    const version1Id = await t.mutation(api.mediaVersions.createVersion, {
-      mediaId: setup.mediaFileId,
-      storageId: setup.storageId,
-      editType: "crop",
-    }, { as: setup.userId });
+    const version1Id = await t.mutation(
+      api.mediaVersions.createVersion,
+      {
+        mediaId: setup.mediaFileId,
+        storageId: setup.storageId,
+        editType: "crop",
+      },
+      { as: setup.userId },
+    );
 
-    await t.mutation(api.mediaVersions.createVersion, {
-      mediaId: setup.mediaFileId,
-      storageId: setup.storageId,
-      editType: "rotate",
-    }, { as: setup.userId });
+    await t.mutation(
+      api.mediaVersions.createVersion,
+      {
+        mediaId: setup.mediaFileId,
+        storageId: setup.storageId,
+        editType: "rotate",
+      },
+      { as: setup.userId },
+    );
 
     // Revert to version 1
-    await t.mutation(api.mediaVersions.revertToVersion, {
-      versionId: version1Id,
-    }, { as: setup.userId });
+    await t.mutation(
+      api.mediaVersions.revertToVersion,
+      {
+        versionId: version1Id,
+      },
+      { as: setup.userId },
+    );
 
     const mediaFile = await t.run(async (ctx) => {
       return await ctx.db.get(setup.mediaFileId);
@@ -250,11 +290,15 @@ describe("mediaVersions", () => {
 
     // Try to create version without permission - should throw
     await expect(async () => {
-      await t.mutation(api.mediaVersions.createVersion, {
-        mediaId: setup.mediaFileId,
-        storageId: setup.storageId,
-        editType: "crop",
-      }, { as: unauthorizedUserId });
+      await t.mutation(
+        api.mediaVersions.createVersion,
+        {
+          mediaId: setup.mediaFileId,
+          storageId: setup.storageId,
+          editType: "crop",
+        },
+        { as: unauthorizedUserId },
+      );
     }).rejects.toThrow();
   });
 
@@ -309,11 +353,15 @@ describe("mediaVersions", () => {
 
     // Try to create version for media in different org - should throw
     await expect(async () => {
-      await t.mutation(api.mediaVersions.createVersion, {
-        mediaId: setup.mediaFileId,
-        storageId: setup.storageId,
-        editType: "crop",
-      }, { as: otherUserId });
+      await t.mutation(
+        api.mediaVersions.createVersion,
+        {
+          mediaId: setup.mediaFileId,
+          storageId: setup.storageId,
+          editType: "crop",
+        },
+        { as: otherUserId },
+      );
     }).rejects.toThrow();
   });
 });

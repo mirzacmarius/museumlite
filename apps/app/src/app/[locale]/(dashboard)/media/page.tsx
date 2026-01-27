@@ -378,7 +378,8 @@ function MediaDetailModal({
   const [photographer, setPhotographer] = useState("");
   const [copyright, setCopyright] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [revertVersionId, setRevertVersionId] = useState<Id<"mediaVersions"> | null>(null);
+  const [revertVersionId, setRevertVersionId] =
+    useState<Id<"mediaVersions"> | null>(null);
 
   const media = useQuery(api.media.listByOrganization, "skip");
   const updateMedia = useMutation(api.media.update);
@@ -627,116 +628,130 @@ function MediaDetailModal({
         )}
 
         {/* Version History Section */}
-        {item && item.fileType === "image" && versions && versions.length > 0 && (
-          <div className="mt-6 space-y-3 border-t border-zinc-800 pt-6">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-zinc-500" />
-              <h3 className="text-sm font-semibold text-zinc-200">
-                Version History
-              </h3>
-              <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
-                {versions.length}
-              </span>
-            </div>
-
-            <ScrollArea className="h-48">
-              <div className="space-y-2 pr-4">
-                {versions.map((version: { _id: Id<"mediaVersions">; versionNumber: number; editType: string; editMetadata?: unknown; createdAt: number; url: string | null }) => {
-                  const isCurrentVersion = item?.currentVersionId === version._id;
-                  return (
-                    <div
-                      key={version._id}
-                      className={`flex gap-3 rounded-lg border p-3 transition-colors ${
-                        isCurrentVersion
-                          ? "border-indigo-500/30 bg-indigo-500/5"
-                          : "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700"
-                      }`}
-                    >
-                      {/* Thumbnail */}
-                      <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded border border-zinc-800 bg-zinc-950">
-                        {version.url ? (
-                          <img
-                            src={version.url}
-                            alt={`Version ${version.versionNumber}`}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <File className="h-6 w-6 text-zinc-700" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Version Info */}
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-zinc-200">
-                              Version {version.versionNumber}
-                            </p>
-                            {isCurrentVersion && (
-                              <span className="rounded bg-indigo-500/20 px-1.5 py-0.5 text-[10px] font-medium text-indigo-400">
-                                Current
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-zinc-500">
-                            {formatDistanceLocale(
-                              new Date(version.createdAt),
-                              locale,
-                              { addSuffix: true }
-                            )}
-                          </p>
-                        </div>
-
-                        {/* Edit Type Badge */}
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex rounded bg-zinc-800 px-2 py-0.5 text-xs capitalize text-zinc-300">
-                            {version.editType}
-                          </span>
-
-                          {/* Edit Metadata Details */}
-                          {version.editMetadata && (
-                            <span className="text-xs text-zinc-500">
-                              {version.editType === "crop" &&
-                                version.editMetadata.crop &&
-                                `Cropped to ${Math.round(version.editMetadata.crop.width)}×${Math.round(version.editMetadata.crop.height)}`}
-                              {version.editType === "rotate" &&
-                                version.editMetadata.rotation !== undefined &&
-                                `Rotated ${version.editMetadata.rotation}°`}
-                              {version.editType === "adjust" &&
-                                (version.editMetadata.brightness ||
-                                  version.editMetadata.contrast) &&
-                                `B: ${version.editMetadata.brightness || 100}%, C: ${version.editMetadata.contrast || 100}%`}
-                              {version.editType === "watermark" &&
-                                version.editMetadata.watermarkText &&
-                                `"${version.editMetadata.watermarkText}"`}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Revert Button */}
-                      <div className="flex items-center">
-                        {!isCurrentVersion && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setRevertVersionId(version._id)}
-                            className="border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                          >
-                            <RotateCcw className="mr-1 h-3 w-3" />
-                            Revert
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+        {item &&
+          item.fileType === "image" &&
+          versions &&
+          versions.length > 0 && (
+            <div className="mt-6 space-y-3 border-t border-zinc-800 pt-6">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-zinc-500" />
+                <h3 className="text-sm font-semibold text-zinc-200">
+                  Version History
+                </h3>
+                <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
+                  {versions.length}
+                </span>
               </div>
-            </ScrollArea>
-          </div>
-        )}
+
+              <ScrollArea className="h-48">
+                <div className="space-y-2 pr-4">
+                  {versions.map(
+                    (version: {
+                      _id: Id<"mediaVersions">;
+                      versionNumber: number;
+                      editType: string;
+                      editMetadata?: unknown;
+                      createdAt: number;
+                      url: string | null;
+                    }) => {
+                      const isCurrentVersion =
+                        item?.currentVersionId === version._id;
+                      return (
+                        <div
+                          key={version._id}
+                          className={`flex gap-3 rounded-lg border p-3 transition-colors ${
+                            isCurrentVersion
+                              ? "border-indigo-500/30 bg-indigo-500/5"
+                              : "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700"
+                          }`}
+                        >
+                          {/* Thumbnail */}
+                          <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded border border-zinc-800 bg-zinc-950">
+                            {version.url ? (
+                              <img
+                                src={version.url}
+                                alt={`Version ${version.versionNumber}`}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center">
+                                <File className="h-6 w-6 text-zinc-700" />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Version Info */}
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium text-zinc-200">
+                                  Version {version.versionNumber}
+                                </p>
+                                {isCurrentVersion && (
+                                  <span className="rounded bg-indigo-500/20 px-1.5 py-0.5 text-[10px] font-medium text-indigo-400">
+                                    Current
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-zinc-500">
+                                {formatDistanceLocale(
+                                  new Date(version.createdAt),
+                                  locale,
+                                  { addSuffix: true },
+                                )}
+                              </p>
+                            </div>
+
+                            {/* Edit Type Badge */}
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex rounded bg-zinc-800 px-2 py-0.5 text-xs capitalize text-zinc-300">
+                                {version.editType}
+                              </span>
+
+                              {/* Edit Metadata Details */}
+                              {version.editMetadata && (
+                                <span className="text-xs text-zinc-500">
+                                  {version.editType === "crop" &&
+                                    version.editMetadata.crop &&
+                                    `Cropped to ${Math.round(version.editMetadata.crop.width)}×${Math.round(version.editMetadata.crop.height)}`}
+                                  {version.editType === "rotate" &&
+                                    version.editMetadata.rotation !==
+                                      undefined &&
+                                    `Rotated ${version.editMetadata.rotation}°`}
+                                  {version.editType === "adjust" &&
+                                    (version.editMetadata.brightness ||
+                                      version.editMetadata.contrast) &&
+                                    `B: ${version.editMetadata.brightness || 100}%, C: ${version.editMetadata.contrast || 100}%`}
+                                  {version.editType === "watermark" &&
+                                    version.editMetadata.watermarkText &&
+                                    `"${version.editMetadata.watermarkText}"`}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Revert Button */}
+                          <div className="flex items-center">
+                            {!isCurrentVersion && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setRevertVersionId(version._id)}
+                                className="border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                              >
+                                <RotateCcw className="mr-1 h-3 w-3" />
+                                Revert
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    },
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
       </DialogContent>
       <MediaEditorDialog
         mediaId={mediaId}

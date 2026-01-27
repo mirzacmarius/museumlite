@@ -68,7 +68,12 @@ export default function OrganizationSettingsPage() {
     isEnabled: false,
     text: "",
     opacity: 0.5,
-    position: "bottom-right" as "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right",
+    position: "bottom-right" as
+      | "center"
+      | "top-left"
+      | "top-right"
+      | "bottom-left"
+      | "bottom-right",
   });
 
   const organization = useQuery(
@@ -82,7 +87,9 @@ export default function OrganizationSettingsPage() {
   const createTemplate = useMutation(api.accessionTemplates.create);
   const removeTemplate = useMutation(api.accessionTemplates.remove);
   const updateTemplate = useMutation(api.accessionTemplates.update);
-  const updateWatermarkSettings = useMutation(api.organizations.updateWatermarkSettings);
+  const updateWatermarkSettings = useMutation(
+    api.organizations.updateWatermarkSettings,
+  );
 
   // Query custom conditions (for display only)
   const customConditions = useQuery(
@@ -142,7 +149,8 @@ export default function OrganizationSettingsPage() {
         isEnabled: organization.settings?.watermarkSettings?.isEnabled ?? false,
         text: organization.settings?.watermarkSettings?.text || "",
         opacity: organization.settings?.watermarkSettings?.opacity ?? 0.5,
-        position: organization.settings?.watermarkSettings?.position || "bottom-right",
+        position:
+          organization.settings?.watermarkSettings?.position || "bottom-right",
       });
     }
   }, [organization]);
@@ -370,7 +378,9 @@ export default function OrganizationSettingsPage() {
     } catch (err) {
       console.error("Error updating watermark settings:", err);
       setError(
-        err instanceof Error ? err.message : "Failed to update watermark settings",
+        err instanceof Error
+          ? err.message
+          : "Failed to update watermark settings",
       );
     } finally {
       setIsSubmitting(false);
@@ -748,7 +758,14 @@ export default function OrganizationSettingsPage() {
                     <Label htmlFor="watermarkPosition">Position</Label>
                     <Select
                       value={watermarkSettings.position}
-                      onValueChange={(value: "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right") =>
+                      onValueChange={(
+                        value:
+                          | "center"
+                          | "top-left"
+                          | "top-right"
+                          | "bottom-left"
+                          | "bottom-right",
+                      ) =>
                         setWatermarkSettings({
                           ...watermarkSettings,
                           position: value,
@@ -763,7 +780,9 @@ export default function OrganizationSettingsPage() {
                         <SelectItem value="top-left">Top Left</SelectItem>
                         <SelectItem value="top-right">Top Right</SelectItem>
                         <SelectItem value="bottom-left">Bottom Left</SelectItem>
-                        <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                        <SelectItem value="bottom-right">
+                          Bottom Right
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

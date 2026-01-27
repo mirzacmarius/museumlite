@@ -17,12 +17,8 @@ describe("Legacy Templates", () => {
       expect(PASTPERFECT_TEMPLATE.system).toBe("PastPerfect");
       expect(PASTPERFECT_TEMPLATE.collectionMappings).toBeInstanceOf(Array);
       expect(PASTPERFECT_TEMPLATE.accessionMappings).toBeInstanceOf(Array);
-      expect(PASTPERFECT_TEMPLATE.collectionMappings.length).toBeGreaterThan(
-        0,
-      );
-      expect(PASTPERFECT_TEMPLATE.accessionMappings.length).toBeGreaterThan(
-        0,
-      );
+      expect(PASTPERFECT_TEMPLATE.collectionMappings.length).toBeGreaterThan(0);
+      expect(PASTPERFECT_TEMPLATE.accessionMappings.length).toBeGreaterThan(0);
     });
 
     test("TMS template has required structure", () => {
@@ -153,7 +149,11 @@ describe("Legacy Templates", () => {
       };
 
       const mappings: FieldMapping[] = [
-        { sourceField: "ObjectID", targetField: "accessionNumber", required: true },
+        {
+          sourceField: "ObjectID",
+          targetField: "accessionNumber",
+          required: true,
+        },
         { sourceField: "Title", targetField: "title" },
       ];
 
@@ -285,7 +285,11 @@ describe("Legacy Templates", () => {
       };
 
       const mappings: FieldMapping[] = [
-        { sourceField: "ObjectID", targetField: "accessionNumber", required: true },
+        {
+          sourceField: "ObjectID",
+          targetField: "accessionNumber",
+          required: true,
+        },
         { sourceField: "Title", targetField: "title", required: true },
       ];
 
@@ -301,7 +305,11 @@ describe("Legacy Templates", () => {
       };
 
       const mappings: FieldMapping[] = [
-        { sourceField: "ObjectID", targetField: "accessionNumber", required: true },
+        {
+          sourceField: "ObjectID",
+          targetField: "accessionNumber",
+          required: true,
+        },
         { sourceField: "Title", targetField: "title", required: true },
       ];
 
@@ -320,7 +328,11 @@ describe("Legacy Templates", () => {
       };
 
       const mappings: FieldMapping[] = [
-        { sourceField: "ObjectID", targetField: "accessionNumber", required: true },
+        {
+          sourceField: "ObjectID",
+          targetField: "accessionNumber",
+          required: true,
+        },
       ];
 
       const result = validateMappings(sourceData, mappings);
@@ -350,7 +362,11 @@ describe("Legacy Templates", () => {
       };
 
       const mappings: FieldMapping[] = [
-        { sourceField: "ObjectID", targetField: "accessionNumber", required: true },
+        {
+          sourceField: "ObjectID",
+          targetField: "accessionNumber",
+          required: true,
+        },
         { sourceField: "Title", targetField: "title", required: true },
         { sourceField: "Maker", targetField: "creator", required: true },
       ];
@@ -586,10 +602,7 @@ describe("Legacy Templates", () => {
         Keywords: "landscape; impressionism; Monet",
       };
 
-      const result = applyMappings(
-        tmsData,
-        TMS_TEMPLATE.collectionMappings,
-      );
+      const result = applyMappings(tmsData, TMS_TEMPLATE.collectionMappings);
 
       expect(result.accessionNumber).toBe("TMS.2024.456");
       expect(result.title).toBe("Impressionist Landscape");
@@ -643,10 +656,7 @@ describe("Legacy Templates", () => {
         AcquisitionNotes: "Purchased at spring auction",
       };
 
-      const result = applyMappings(
-        tmsData,
-        TMS_TEMPLATE.accessionMappings,
-      );
+      const result = applyMappings(tmsData, TMS_TEMPLATE.accessionMappings);
 
       expect(result.accessionNumber).toBe("2024.ACC.123");
       expect(typeof result.dateReceived).toBe("number");

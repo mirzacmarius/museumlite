@@ -68,7 +68,13 @@ interface ParsedRow {
 }
 
 interface ImportState {
-  step: "upload" | "mapping" | "validation" | "preview" | "importing" | "complete";
+  step:
+    | "upload"
+    | "mapping"
+    | "validation"
+    | "preview"
+    | "importing"
+    | "complete";
   file: File | null;
   rawData: Record<string, string>[];
   sourceFields: string[];
@@ -102,23 +108,108 @@ const OPTIONAL_COLUMNS = [
 const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
 
 const TARGET_FIELDS = [
-  { id: "title", label: "Title", required: true, description: "Object title or name" },
-  { id: "accessionNumber", label: "Accession Number", required: false, description: "Unique identifier (auto-generated if empty)" },
-  { id: "alternativeTitle", label: "Alternative Title", required: false, description: "Secondary or alternative name" },
-  { id: "creator", label: "Creator", required: false, description: "Artist, maker, or creator" },
-  { id: "objectType", label: "Object Type", required: false, description: "Type or category of object" },
-  { id: "objectName", label: "Object Name", required: false, description: "Specific name of the object" },
-  { id: "culture", label: "Culture", required: false, description: "Cultural origin" },
-  { id: "period", label: "Period", required: false, description: "Historical period" },
-  { id: "dateCreated", label: "Date Created", required: false, description: "Creation date or period" },
-  { id: "materials", label: "Materials", required: false, description: "Materials used" },
-  { id: "technique", label: "Technique", required: false, description: "Production technique" },
-  { id: "dimensions", label: "Dimensions", required: false, description: "Physical dimensions" },
-  { id: "description", label: "Description", required: false, description: "Detailed description" },
-  { id: "condition", label: "Condition", required: false, description: "Current condition" },
-  { id: "provenance", label: "Provenance", required: false, description: "Ownership history" },
-  { id: "location", label: "Location", required: false, description: "Current location" },
-  { id: "collectionGroup", label: "Collection Group", required: false, description: "Collection or group name" },
+  {
+    id: "title",
+    label: "Title",
+    required: true,
+    description: "Object title or name",
+  },
+  {
+    id: "accessionNumber",
+    label: "Accession Number",
+    required: false,
+    description: "Unique identifier (auto-generated if empty)",
+  },
+  {
+    id: "alternativeTitle",
+    label: "Alternative Title",
+    required: false,
+    description: "Secondary or alternative name",
+  },
+  {
+    id: "creator",
+    label: "Creator",
+    required: false,
+    description: "Artist, maker, or creator",
+  },
+  {
+    id: "objectType",
+    label: "Object Type",
+    required: false,
+    description: "Type or category of object",
+  },
+  {
+    id: "objectName",
+    label: "Object Name",
+    required: false,
+    description: "Specific name of the object",
+  },
+  {
+    id: "culture",
+    label: "Culture",
+    required: false,
+    description: "Cultural origin",
+  },
+  {
+    id: "period",
+    label: "Period",
+    required: false,
+    description: "Historical period",
+  },
+  {
+    id: "dateCreated",
+    label: "Date Created",
+    required: false,
+    description: "Creation date or period",
+  },
+  {
+    id: "materials",
+    label: "Materials",
+    required: false,
+    description: "Materials used",
+  },
+  {
+    id: "technique",
+    label: "Technique",
+    required: false,
+    description: "Production technique",
+  },
+  {
+    id: "dimensions",
+    label: "Dimensions",
+    required: false,
+    description: "Physical dimensions",
+  },
+  {
+    id: "description",
+    label: "Description",
+    required: false,
+    description: "Detailed description",
+  },
+  {
+    id: "condition",
+    label: "Condition",
+    required: false,
+    description: "Current condition",
+  },
+  {
+    id: "provenance",
+    label: "Provenance",
+    required: false,
+    description: "Ownership history",
+  },
+  {
+    id: "location",
+    label: "Location",
+    required: false,
+    description: "Current location",
+  },
+  {
+    id: "collectionGroup",
+    label: "Collection Group",
+    required: false,
+    description: "Collection or group name",
+  },
 ];
 
 interface ImportTemplate {
@@ -137,19 +228,19 @@ const IMPORT_TEMPLATES: ImportTemplate[] = [
       "Object Name": "title",
       "Cat. No": "accessionNumber",
       "Alternate Name": "alternativeTitle",
-      "Artist": "creator",
+      Artist: "creator",
       "Object Type": "objectType",
-      "Culture": "culture",
+      Culture: "culture",
       "Date Made": "dateCreated",
-      "Period": "period",
-      "Medium": "materials",
-      "Technique": "technique",
-      "Measurements": "dimensions",
-      "Description": "description",
-      "Condition": "condition",
-      "Provenance": "provenance",
-      "Location": "location",
-      "Collection": "collectionGroup",
+      Period: "period",
+      Medium: "materials",
+      Technique: "technique",
+      Measurements: "dimensions",
+      Description: "description",
+      Condition: "condition",
+      Provenance: "provenance",
+      Location: "location",
+      Collection: "collectionGroup",
     },
   },
   {
@@ -157,22 +248,22 @@ const IMPORT_TEMPLATES: ImportTemplate[] = [
     name: "TMS (The Museum System)",
     description: "Import from The Museum System (TMS)",
     mappings: {
-      "Title": "title",
-      "ObjectNumber": "accessionNumber",
-      "AlternateTitle": "alternativeTitle",
-      "DisplayName": "creator",
-      "Classification": "objectType",
-      "ObjectName": "objectName",
-      "Culture": "culture",
-      "Period": "period",
-      "Dated": "dateCreated",
-      "Medium": "materials",
-      "Dimensions": "dimensions",
-      "Description": "description",
-      "ConditionNotes": "condition",
-      "Provenance": "provenance",
-      "CurrentLocation": "location",
-      "Department": "collectionGroup",
+      Title: "title",
+      ObjectNumber: "accessionNumber",
+      AlternateTitle: "alternativeTitle",
+      DisplayName: "creator",
+      Classification: "objectType",
+      ObjectName: "objectName",
+      Culture: "culture",
+      Period: "period",
+      Dated: "dateCreated",
+      Medium: "materials",
+      Dimensions: "dimensions",
+      Description: "description",
+      ConditionNotes: "condition",
+      Provenance: "provenance",
+      CurrentLocation: "location",
+      Department: "collectionGroup",
     },
   },
 ];
@@ -225,14 +316,18 @@ export default function ImportObjectsPage() {
         const headerLine = lines[0];
         if (!headerLine) return;
 
-        const headers = headerLine.split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
+        const headers = headerLine
+          .split(",")
+          .map((h) => h.trim().replace(/^"|"$/g, ""));
 
         const rawData: Record<string, string>[] = [];
         for (let i = 1; i < lines.length; i++) {
           const line = lines[i];
           if (!line) continue;
 
-          const values = line.split(",").map((v) => v.trim().replace(/^"|"$/g, ""));
+          const values = line
+            .split(",")
+            .map((v) => v.trim().replace(/^"|"$/g, ""));
           const row: Record<string, string> = {};
 
           for (let j = 0; j < headers.length; j++) {
@@ -266,90 +361,93 @@ export default function ImportObjectsPage() {
     [],
   );
 
-  const handleSaveMappings = useCallback((mappings: FieldMapping[]) => {
-    setState((prev) => ({
-      ...prev,
-      fieldMappings: mappings,
-      step: "validation",
-    }));
+  const handleSaveMappings = useCallback(
+    (mappings: FieldMapping[]) => {
+      setState((prev) => ({
+        ...prev,
+        fieldMappings: mappings,
+        step: "validation",
+      }));
 
-    const mappingMap = new Map(
-      mappings
-        .filter((m) => m.targetField !== null)
-        .map((m) => [m.targetField, m.sourceField])
-    );
+      const mappingMap = new Map(
+        mappings
+          .filter((m) => m.targetField !== null)
+          .map((m) => [m.targetField, m.sourceField]),
+      );
 
-    const getValue = (field: string) => {
-      const sourceField = mappingMap.get(field);
-      return sourceField || field;
-    };
+      const getValue = (field: string) => {
+        const sourceField = mappingMap.get(field);
+        return sourceField || field;
+      };
 
-    const parsedRows: ParsedRow[] = [];
-    const validationErrors: string[] = [];
+      const parsedRows: ParsedRow[] = [];
+      const validationErrors: string[] = [];
 
-    for (let i = 0; i < state.rawData.length; i++) {
-      const rowData = state.rawData[i];
-      if (!rowData) continue;
+      for (let i = 0; i < state.rawData.length; i++) {
+        const rowData = state.rawData[i];
+        if (!rowData) continue;
 
-      try {
-        const titleSource = getValue("title");
-        const title = rowData[titleSource];
+        try {
+          const titleSource = getValue("title");
+          const title = rowData[titleSource];
 
-        if (!title) {
-          validationErrors.push(`Row ${i + 1}: Title is required`);
-          continue;
+          if (!title) {
+            validationErrors.push(`Row ${i + 1}: Title is required`);
+            continue;
+          }
+
+          const accessionNumberSource = getValue("accessionNumber");
+          const alternativeTitleSource = getValue("alternativeTitle");
+          const creatorSource = getValue("creator");
+          const objectTypeSource = getValue("objectType");
+          const objectNameSource = getValue("objectName");
+          const cultureSource = getValue("culture");
+          const periodSource = getValue("period");
+          const dateCreatedSource = getValue("dateCreated");
+          const materialsSource = getValue("materials");
+          const techniqueSource = getValue("technique");
+          const dimensionsSource = getValue("dimensions");
+          const descriptionSource = getValue("description");
+          const conditionSource = getValue("condition");
+          const provenanceSource = getValue("provenance");
+          const locationSource = getValue("location");
+          const collectionGroupSource = getValue("collectionGroup");
+
+          parsedRows.push({
+            accessionNumber: rowData[accessionNumberSource] || undefined,
+            title,
+            alternativeTitle: rowData[alternativeTitleSource] || undefined,
+            creator: rowData[creatorSource] || undefined,
+            objectType: rowData[objectTypeSource] || undefined,
+            objectName: rowData[objectNameSource] || undefined,
+            culture: rowData[cultureSource] || undefined,
+            period: rowData[periodSource] || undefined,
+            dateCreated: rowData[dateCreatedSource] || undefined,
+            materials: rowData[materialsSource] || undefined,
+            technique: rowData[techniqueSource] || undefined,
+            dimensions: rowData[dimensionsSource] || undefined,
+            description: rowData[descriptionSource] || undefined,
+            condition: rowData[conditionSource] || undefined,
+            provenance: rowData[provenanceSource] || undefined,
+            location: rowData[locationSource] || undefined,
+            collectionGroup: rowData[collectionGroupSource] || undefined,
+          });
+        } catch (err) {
+          validationErrors.push(
+            `Row ${i + 1}: ${err instanceof Error ? err.message : "Parse error"}`,
+          );
         }
-
-        const accessionNumberSource = getValue("accessionNumber");
-        const alternativeTitleSource = getValue("alternativeTitle");
-        const creatorSource = getValue("creator");
-        const objectTypeSource = getValue("objectType");
-        const objectNameSource = getValue("objectName");
-        const cultureSource = getValue("culture");
-        const periodSource = getValue("period");
-        const dateCreatedSource = getValue("dateCreated");
-        const materialsSource = getValue("materials");
-        const techniqueSource = getValue("technique");
-        const dimensionsSource = getValue("dimensions");
-        const descriptionSource = getValue("description");
-        const conditionSource = getValue("condition");
-        const provenanceSource = getValue("provenance");
-        const locationSource = getValue("location");
-        const collectionGroupSource = getValue("collectionGroup");
-
-        parsedRows.push({
-          accessionNumber: rowData[accessionNumberSource] || undefined,
-          title,
-          alternativeTitle: rowData[alternativeTitleSource] || undefined,
-          creator: rowData[creatorSource] || undefined,
-          objectType: rowData[objectTypeSource] || undefined,
-          objectName: rowData[objectNameSource] || undefined,
-          culture: rowData[cultureSource] || undefined,
-          period: rowData[periodSource] || undefined,
-          dateCreated: rowData[dateCreatedSource] || undefined,
-          materials: rowData[materialsSource] || undefined,
-          technique: rowData[techniqueSource] || undefined,
-          dimensions: rowData[dimensionsSource] || undefined,
-          description: rowData[descriptionSource] || undefined,
-          condition: rowData[conditionSource] || undefined,
-          provenance: rowData[provenanceSource] || undefined,
-          location: rowData[locationSource] || undefined,
-          collectionGroup: rowData[collectionGroupSource] || undefined,
-        });
-      } catch (err) {
-        validationErrors.push(
-          `Row ${i + 1}: ${err instanceof Error ? err.message : "Parse error"}`
-        );
       }
-    }
 
-    setState((prev) => ({
-      ...prev,
-      rows: parsedRows,
-      validationErrors,
-      step: validationErrors.length > 0 ? "validation" : "preview",
-    }));
-  }, [state.rawData]);
+      setState((prev) => ({
+        ...prev,
+        rows: parsedRows,
+        validationErrors,
+        step: validationErrors.length > 0 ? "validation" : "preview",
+      }));
+    },
+    [state.rawData],
+  );
 
   const handleContinueAfterValidation = useCallback(() => {
     setState((prev) => ({ ...prev, step: "preview" }));
@@ -404,22 +502,21 @@ export default function ImportObjectsPage() {
     }
   }, [currentOrganizationId, state.rows, createImportJob, importBatch]);
 
-  const handleTemplateSelect = useCallback(
-    (templateId: string) => {
-      setState((prev) => ({
-        ...prev,
-        selectedTemplate: templateId === "" ? null : templateId,
-      }));
-    },
-    [],
-  );
+  const handleTemplateSelect = useCallback((templateId: string) => {
+    setState((prev) => ({
+      ...prev,
+      selectedTemplate: templateId === "" ? null : templateId,
+    }));
+  }, []);
 
   const getInitialMappings = useCallback((): FieldMapping[] | undefined => {
     if (!state.selectedTemplate) {
       return undefined;
     }
 
-    const template = IMPORT_TEMPLATES.find((t) => t.id === state.selectedTemplate);
+    const template = IMPORT_TEMPLATES.find(
+      (t) => t.id === state.selectedTemplate,
+    );
     if (!template) {
       return undefined;
     }
@@ -576,7 +673,8 @@ export default function ImportObjectsPage() {
                   <CardHeader>
                     <CardTitle>Legacy System Template</CardTitle>
                     <CardDescription>
-                      Optionally select a template to automatically map fields from legacy collection management systems
+                      Optionally select a template to automatically map fields
+                      from legacy collection management systems
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -598,7 +696,9 @@ export default function ImportObjectsPage() {
                             {IMPORT_TEMPLATES.map((template) => (
                               <SelectItem key={template.id} value={template.id}>
                                 <div className="flex flex-col">
-                                  <span className="font-medium">{template.name}</span>
+                                  <span className="font-medium">
+                                    {template.name}
+                                  </span>
                                   <span className="text-xs text-muted-foreground">
                                     {template.description}
                                   </span>
@@ -638,13 +738,16 @@ export default function ImportObjectsPage() {
                   <div>
                     <h2 className="text-xl font-semibold">Validation Report</h2>
                     <p className="text-sm text-muted-foreground">
-                      {state.rows.length} valid rows, {state.validationErrors.length} errors
+                      {state.rows.length} valid rows,{" "}
+                      {state.validationErrors.length} errors
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
-                      onClick={() => setState((prev) => ({ ...prev, step: "mapping" }))}
+                      onClick={() =>
+                        setState((prev) => ({ ...prev, step: "mapping" }))
+                      }
                     >
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back to Mapping
@@ -704,7 +807,9 @@ export default function ImportObjectsPage() {
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
-                      onClick={() => setState((prev) => ({ ...prev, step: "validation" }))}
+                      onClick={() =>
+                        setState((prev) => ({ ...prev, step: "validation" }))
+                      }
                     >
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back to Validation
@@ -727,7 +832,8 @@ export default function ImportObjectsPage() {
                     <div className="flex items-center gap-2 text-amber-600">
                       <AlertCircle className="h-4 w-4" />
                       <span className="font-medium">
-                        {state.validationErrors.length} rows were skipped due to validation errors
+                        {state.validationErrors.length} rows were skipped due to
+                        validation errors
                       </span>
                     </div>
                   </div>

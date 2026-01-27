@@ -43,7 +43,13 @@ interface ParsedRow {
 }
 
 interface ImportState {
-  step: "upload" | "mapping" | "validation" | "preview" | "importing" | "complete";
+  step:
+    | "upload"
+    | "mapping"
+    | "validation"
+    | "preview"
+    | "importing"
+    | "complete";
   file: File | null;
   rawData: Record<string, string>[];
   sourceFields: string[];
@@ -59,12 +65,42 @@ const OPTIONAL_COLUMNS = ["accessionNumber", "cost", "notes"];
 const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
 
 const TARGET_FIELDS = [
-  { id: "dateReceived", label: "Date Received", required: true, description: "Date the item was received" },
-  { id: "source", label: "Source", required: true, description: "Source or donor of the item" },
-  { id: "method", label: "Method", required: true, description: "Acquisition method (purchase, donation, etc.)" },
-  { id: "accessionNumber", label: "Accession Number", required: false, description: "Unique identifier (auto-generated if empty)" },
-  { id: "cost", label: "Cost", required: false, description: "Acquisition cost" },
-  { id: "notes", label: "Notes", required: false, description: "Additional notes" },
+  {
+    id: "dateReceived",
+    label: "Date Received",
+    required: true,
+    description: "Date the item was received",
+  },
+  {
+    id: "source",
+    label: "Source",
+    required: true,
+    description: "Source or donor of the item",
+  },
+  {
+    id: "method",
+    label: "Method",
+    required: true,
+    description: "Acquisition method (purchase, donation, etc.)",
+  },
+  {
+    id: "accessionNumber",
+    label: "Accession Number",
+    required: false,
+    description: "Unique identifier (auto-generated if empty)",
+  },
+  {
+    id: "cost",
+    label: "Cost",
+    required: false,
+    description: "Acquisition cost",
+  },
+  {
+    id: "notes",
+    label: "Notes",
+    required: false,
+    description: "Additional notes",
+  },
 ];
 
 export default function ImportAccessionsPage() {
@@ -113,14 +149,18 @@ export default function ImportAccessionsPage() {
         const headerLine = lines[0];
         if (!headerLine) return;
 
-        const headers = headerLine.split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
+        const headers = headerLine
+          .split(",")
+          .map((h) => h.trim().replace(/^"|"$/g, ""));
 
         const rawData: Record<string, string>[] = [];
         for (let i = 1; i < lines.length; i++) {
           const line = lines[i];
           if (!line) continue;
 
-          const values = line.split(",").map((v) => v.trim().replace(/^"|"$/g, ""));
+          const values = line
+            .split(",")
+            .map((v) => v.trim().replace(/^"|"$/g, ""));
           const row: Record<string, string> = {};
 
           for (let j = 0; j < headers.length; j++) {
@@ -153,74 +193,79 @@ export default function ImportAccessionsPage() {
     [],
   );
 
-  const handleSaveMappings = useCallback((mappings: FieldMapping[]) => {
-    setState((prev) => ({
-      ...prev,
-      fieldMappings: mappings,
-      step: "validation",
-    }));
+  const handleSaveMappings = useCallback(
+    (mappings: FieldMapping[]) => {
+      setState((prev) => ({
+        ...prev,
+        fieldMappings: mappings,
+        step: "validation",
+      }));
 
-    const mappingMap = new Map(
-      mappings
-        .filter((m) => m.targetField !== null)
-        .map((m) => [m.targetField, m.sourceField])
-    );
+      const mappingMap = new Map(
+        mappings
+          .filter((m) => m.targetField !== null)
+          .map((m) => [m.targetField, m.sourceField]),
+      );
 
-    const getValue = (field: string) => {
-      const sourceField = mappingMap.get(field);
-      return sourceField || field;
-    };
+      const getValue = (field: string) => {
+        const sourceField = mappingMap.get(field);
+        return sourceField || field;
+      };
 
-    const parsedRows: ParsedRow[] = [];
-    const validationErrors: string[] = [];
+      const parsedRows: ParsedRow[] = [];
+      const validationErrors: string[] = [];
 
-    for (let i = 0; i < state.rawData.length; i++) {
-      const rowData = state.rawData[i];
-      if (!rowData) continue;
+      for (let i = 0; i < state.rawData.length; i++) {
+        const rowData = state.rawData[i];
+        if (!rowData) continue;
 
-      try {
-        const dateReceivedSource = getValue("dateReceived");
-        const sourceSource = getValue("source");
-        const methodSource = getValue("method");
-        const accessionNumberSource = getValue("accessionNumber");
-        const costSource = getValue("cost");
-        const notesSource = getValue("notes");
+        try {
+          const dateReceivedSource = getValue("dateReceived");
+          const sourceSource = getValue("source");
+          const methodSource = getValue("method");
+          const accessionNumberSource = getValue("accessionNumber");
+          const costSource = getValue("cost");
+          const notesSource = getValue("notes");
 
-        const dateReceived = rowData[dateReceivedSource];
-        const source = rowData[sourceSource];
-        const method = rowData[methodSource];
+          const dateReceived = rowData[dateReceivedSource];
+          const source = rowData[sourceSource];
+          const method = rowData[methodSource];
 
-        if (!dateReceived || !source || !method) {
-          const missing = [];
-          if (!dateReceived) missing.push("dateReceived");
-          if (!source) missing.push("source");
-          if (!method) missing.push("method");
-          validationErrors.push(`Row ${i + 1}: Missing required fields: ${missing.join(", ")}`);
-          continue;
+          if (!dateReceived || !source || !method) {
+            const missing = [];
+            if (!dateReceived) missing.push("dateReceived");
+            if (!source) missing.push("source");
+            if (!method) missing.push("method");
+            validationErrors.push(
+              `Row ${i + 1}: Missing required fields: ${missing.join(", ")}`,
+            );
+            continue;
+          }
+
+          parsedRows.push({
+            accessionNumber: rowData[accessionNumberSource] || undefined,
+            dateReceived,
+            source,
+            method,
+            cost: rowData[costSource] || undefined,
+            notes: rowData[notesSource] || undefined,
+          });
+        } catch (err) {
+          validationErrors.push(
+            `Row ${i + 1}: ${err instanceof Error ? err.message : "Parse error"}`,
+          );
         }
-
-        parsedRows.push({
-          accessionNumber: rowData[accessionNumberSource] || undefined,
-          dateReceived,
-          source,
-          method,
-          cost: rowData[costSource] || undefined,
-          notes: rowData[notesSource] || undefined,
-        });
-      } catch (err) {
-        validationErrors.push(
-          `Row ${i + 1}: ${err instanceof Error ? err.message : "Parse error"}`
-        );
       }
-    }
 
-    setState((prev) => ({
-      ...prev,
-      rows: parsedRows,
-      validationErrors,
-      step: validationErrors.length > 0 ? "validation" : "preview",
-    }));
-  }, [state.rawData]);
+      setState((prev) => ({
+        ...prev,
+        rows: parsedRows,
+        validationErrors,
+        step: validationErrors.length > 0 ? "validation" : "preview",
+      }));
+    },
+    [state.rawData],
+  );
 
   const handleContinueAfterValidation = useCallback(() => {
     setState((prev) => ({ ...prev, step: "preview" }));
@@ -421,13 +466,16 @@ export default function ImportAccessionsPage() {
                   <div>
                     <h2 className="text-xl font-semibold">Validation Report</h2>
                     <p className="text-sm text-muted-foreground">
-                      {state.rows.length} valid rows, {state.validationErrors.length} errors
+                      {state.rows.length} valid rows,{" "}
+                      {state.validationErrors.length} errors
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
-                      onClick={() => setState((prev) => ({ ...prev, step: "mapping" }))}
+                      onClick={() =>
+                        setState((prev) => ({ ...prev, step: "mapping" }))
+                      }
                     >
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back to Mapping
@@ -489,7 +537,9 @@ export default function ImportAccessionsPage() {
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
-                      onClick={() => setState((prev) => ({ ...prev, step: "validation" }))}
+                      onClick={() =>
+                        setState((prev) => ({ ...prev, step: "validation" }))
+                      }
                     >
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back to Validation
@@ -512,7 +562,8 @@ export default function ImportAccessionsPage() {
                     <div className="flex items-center gap-2 text-amber-600">
                       <AlertCircle className="h-4 w-4" />
                       <span className="font-medium">
-                        {state.validationErrors.length} rows were skipped due to validation errors
+                        {state.validationErrors.length} rows were skipped due to
+                        validation errors
                       </span>
                     </div>
                   </div>

@@ -114,11 +114,15 @@ describe("mediaEdits", () => {
     const t = convexTest(schema, modules);
     const setup = await createTestSetup(t);
 
-    const editHistoryId = await t.mutation(api.mediaEdits.trackEdit, {
-      mediaId: setup.mediaFileId,
-      operation: "crop",
-      parameters: { x: 10, y: 10, width: 200, height: 150 },
-    }, { as: setup.userId });
+    const editHistoryId = await t.mutation(
+      api.mediaEdits.trackEdit,
+      {
+        mediaId: setup.mediaFileId,
+        operation: "crop",
+        parameters: { x: 10, y: 10, width: 200, height: 150 },
+      },
+      { as: setup.userId },
+    );
 
     expect(editHistoryId).toBeDefined();
 
@@ -128,7 +132,12 @@ describe("mediaEdits", () => {
 
     expect(editHistory).toBeDefined();
     expect(editHistory?.operation).toBe("crop");
-    expect(editHistory?.parameters).toEqual({ x: 10, y: 10, width: 200, height: 150 });
+    expect(editHistory?.parameters).toEqual({
+      x: 10,
+      y: 10,
+      width: 200,
+      height: 150,
+    });
   });
 
   test("should track all operation types", async () => {
@@ -136,36 +145,56 @@ describe("mediaEdits", () => {
     const setup = await createTestSetup(t);
 
     // Track crop
-    await t.mutation(api.mediaEdits.trackEdit, {
-      mediaId: setup.mediaFileId,
-      operation: "crop",
-      parameters: { x: 0, y: 0, width: 100, height: 100 },
-    }, { as: setup.userId });
+    await t.mutation(
+      api.mediaEdits.trackEdit,
+      {
+        mediaId: setup.mediaFileId,
+        operation: "crop",
+        parameters: { x: 0, y: 0, width: 100, height: 100 },
+      },
+      { as: setup.userId },
+    );
 
     // Track rotate
-    await t.mutation(api.mediaEdits.trackEdit, {
-      mediaId: setup.mediaFileId,
-      operation: "rotate",
-      parameters: { degrees: 90 },
-    }, { as: setup.userId });
+    await t.mutation(
+      api.mediaEdits.trackEdit,
+      {
+        mediaId: setup.mediaFileId,
+        operation: "rotate",
+        parameters: { degrees: 90 },
+      },
+      { as: setup.userId },
+    );
 
     // Track adjust
-    await t.mutation(api.mediaEdits.trackEdit, {
-      mediaId: setup.mediaFileId,
-      operation: "adjust",
-      parameters: { brightness: 120, contrast: 110 },
-    }, { as: setup.userId });
+    await t.mutation(
+      api.mediaEdits.trackEdit,
+      {
+        mediaId: setup.mediaFileId,
+        operation: "adjust",
+        parameters: { brightness: 120, contrast: 110 },
+      },
+      { as: setup.userId },
+    );
 
     // Track watermark
-    await t.mutation(api.mediaEdits.trackEdit, {
-      mediaId: setup.mediaFileId,
-      operation: "watermark",
-      parameters: { text: "Copyright 2026", position: "bottom-right" },
-    }, { as: setup.userId });
+    await t.mutation(
+      api.mediaEdits.trackEdit,
+      {
+        mediaId: setup.mediaFileId,
+        operation: "watermark",
+        parameters: { text: "Copyright 2026", position: "bottom-right" },
+      },
+      { as: setup.userId },
+    );
 
-    const history = await t.query(api.mediaEdits.getEditHistory, {
-      mediaId: setup.mediaFileId,
-    }, { as: setup.userId });
+    const history = await t.query(
+      api.mediaEdits.getEditHistory,
+      {
+        mediaId: setup.mediaFileId,
+      },
+      { as: setup.userId },
+    );
 
     expect(history.length).toBe(4);
     expect(history.some((h) => h.operation === "crop")).toBe(true);
@@ -179,24 +208,40 @@ describe("mediaEdits", () => {
     const setup = await createTestSetup(t);
 
     // Create multiple edits with slight delays
-    await t.mutation(api.mediaEdits.trackEdit, {
-      mediaId: setup.mediaFileId,
-      operation: "crop",
-    }, { as: setup.userId });
+    await t.mutation(
+      api.mediaEdits.trackEdit,
+      {
+        mediaId: setup.mediaFileId,
+        operation: "crop",
+      },
+      { as: setup.userId },
+    );
 
-    await t.mutation(api.mediaEdits.trackEdit, {
-      mediaId: setup.mediaFileId,
-      operation: "rotate",
-    }, { as: setup.userId });
+    await t.mutation(
+      api.mediaEdits.trackEdit,
+      {
+        mediaId: setup.mediaFileId,
+        operation: "rotate",
+      },
+      { as: setup.userId },
+    );
 
-    await t.mutation(api.mediaEdits.trackEdit, {
-      mediaId: setup.mediaFileId,
-      operation: "adjust",
-    }, { as: setup.userId });
+    await t.mutation(
+      api.mediaEdits.trackEdit,
+      {
+        mediaId: setup.mediaFileId,
+        operation: "adjust",
+      },
+      { as: setup.userId },
+    );
 
-    const history = await t.query(api.mediaEdits.getEditHistory, {
-      mediaId: setup.mediaFileId,
-    }, { as: setup.userId });
+    const history = await t.query(
+      api.mediaEdits.getEditHistory,
+      {
+        mediaId: setup.mediaFileId,
+      },
+      { as: setup.userId },
+    );
 
     expect(history.length).toBe(3);
     // Most recent first
@@ -236,10 +281,14 @@ describe("mediaEdits", () => {
 
     // Try to track edit without permission - should throw
     await expect(async () => {
-      await t.mutation(api.mediaEdits.trackEdit, {
-        mediaId: setup.mediaFileId,
-        operation: "crop",
-      }, { as: unauthorizedUserId });
+      await t.mutation(
+        api.mediaEdits.trackEdit,
+        {
+          mediaId: setup.mediaFileId,
+          operation: "crop",
+        },
+        { as: unauthorizedUserId },
+      );
     }).rejects.toThrow();
   });
 });

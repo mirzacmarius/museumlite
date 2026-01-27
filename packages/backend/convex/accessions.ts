@@ -1,10 +1,10 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { env } from "./env";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
+import { env } from "./env";
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
 import { batchLookup } from "./utils/batchLookup";
@@ -266,7 +266,11 @@ export const list = query({
       const collectionIds = allResults
         .map((a) => a.collectionId)
         .filter(Boolean) as Id<"collections">[];
-      const collectionMap = await batchLookup(ctx, collectionIds, "collections");
+      const collectionMap = await batchLookup(
+        ctx,
+        collectionIds,
+        "collections",
+      );
 
       // Get collection titles for accessions to include in search
       const accessionsWithCollectionInfo = allResults.map((accession) => {
@@ -307,8 +311,8 @@ export const list = query({
     // Batch fetch users for assignees
     const assigneeIds = page
       .map((item) => item.assignedTo)
-      .filter((id): id is Id<"accounts"> => id !== undefined);
-    const usersMap = await batchLookup(ctx, assigneeIds, "accounts");
+      .filter((id) => id !== undefined) as Id<"users">[];
+    const usersMap = await batchLookup(ctx, assigneeIds, "users");
 
     const pageWithAssignees = page.map((item) => {
       let assigneeName: string | undefined;
@@ -1012,16 +1016,16 @@ export const getWorkflowHistory = query({
 
     const history = accession.workflowHistory ?? [];
 
-    // Batch fetch approver accounts to avoid N+1 queries
+    // Batch fetch approver users to avoid N+1 queries
     const approverIds = history.map((item) => item.approvedBy);
-    const approverMap = await batchLookup(ctx, approverIds, "accounts");
+    const approverMap = await batchLookup(ctx, approverIds, "users");
 
     // Enrich with approver names using batch lookup map
     const enrichedHistory = history.map((item) => {
       const approver = approverMap.get(item.approvedBy);
       return {
         ...item,
-        approverName: approver?.name || approver?.username || undefined,
+        approverName: approver?.name || approver?.email || undefined,
       };
     });
 
@@ -1177,11 +1181,14 @@ export const assign = mutation({
     if (args.userId !== currentUserId) {
       // Get user who is assigning
       const assigningUser = await ctx.db.get(currentUserId);
-      const assignedByName = assigningUser?.name ?? assigningUser?.email ?? "A team member";
+      const assignedByName =
+        assigningUser?.name ?? assigningUser?.email ?? "A team member";
 
       // Get organization for building deep link
       const org = await ctx.db.get(accession.organizationId);
-      const taskUrl = org ? `${env.SITE_URL}/${org.slug}/accessions/${args.accessionId}` : undefined;
+      const taskUrl = org
+        ? `${env.SITE_URL}/${org.slug}/accessions/${args.accessionId}`
+        : undefined;
 
       await ctx.runMutation(internal.notifications.sendNotification, {
         organizationId: accession.organizationId,
@@ -1611,16 +1618,18 @@ export const getDocumentChecklist = query({
 
     const checklist = accession.documentChecklist ?? [];
 
-    // Batch fetch uploader accounts to avoid N+1 queries
+    // Batch fetch uploader users to avoid N+1 queries
     const uploaderIds = checklist
       .map((item) => item.uploadedBy)
-      .filter((id): id is Id<"accounts"> => id !== undefined);
-    const uploaderMap = await batchLookup(ctx, uploaderIds, "accounts");
+      .filter((id) => id !== undefined) as Id<"users">[];
+    const uploaderMap = await batchLookup(ctx, uploaderIds, "users");
 
     // Fetch storage URLs in parallel
     const storageUrls = await Promise.all(
       checklist.map((item) =>
-        item.storageId ? ctx.storage.getUrl(item.storageId) : Promise.resolve(null),
+        item.storageId
+          ? ctx.storage.getUrl(item.storageId)
+          : Promise.resolve(null),
       ),
     );
 
@@ -2057,9 +2066,14 @@ export const bulkExport = query({
     // Filter out null accessions and check permissions
     const validAccessions = [];
     for (const accession of accessions) {
-      if (!accession) continue;
-      await requirePermission(ctx, accession.organizationId, "accessions.read");
-      validAccessions.push(accession);
+      if (accession) {
+        await requirePermission(
+          ctx,
+          accession.organizationId,
+          "accessions.read",
+        );
+        validAccessions.push(accession);
+      }
     }
 
     // Batch fetch collections to avoid N+1 queries
@@ -2115,14 +2129,14 @@ export const bulkExport = query({
       let assignedToName: string | undefined;
       if (accession.assignedTo) {
         const assignee = await ctx.db.get(accession.assignedTo);
-        assignedToName = assignee?.name ?? assignee?.username;
+        assignedToName = assignee?.name ?? assignee?.email;
       }
 
       // Get approver name
       let approvedByName: string | undefined;
       if (accession.approvedBy) {
         const approver = await ctx.db.get(accession.approvedBy);
-        approvedByName = approver?.name ?? approver?.username;
+        approvedByName = approver?.name ?? approver?.email;
       }
 
       results.push({

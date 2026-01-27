@@ -1406,6 +1406,11 @@ export const createDefaultRoles = internalMutation({
       "locations.read",
       "locations.update",
       "locations.delete",
+      // Sites
+      "sites.create",
+      "sites.read",
+      "sites.update",
+      "sites.delete",
       // Media
       "media.upload",
       "media.read",
@@ -1457,7 +1462,7 @@ export const createDefaultRoles = internalMutation({
       });
     }
 
-    // Curator: collections + media + locations
+    // Curator: collections + media + locations + sites
     const curatorPerms = [
       "collections.create",
       "collections.read",
@@ -1471,6 +1476,7 @@ export const createDefaultRoles = internalMutation({
       "locations.read",
       "locations.update",
       "locations.delete",
+      "sites.read",
       "accounts.read",
     ];
     for (const permName of curatorPerms) {
@@ -1483,7 +1489,7 @@ export const createDefaultRoles = internalMutation({
       }
     }
 
-    // Registrar: workflows + locations + loans
+    // Registrar: workflows + locations + loans + sites
     const registrarPerms = [
       "collections.create",
       "collections.read",
@@ -1501,6 +1507,7 @@ export const createDefaultRoles = internalMutation({
       "locations.read",
       "locations.update",
       "locations.delete",
+      "sites.read",
       "media.read",
       "accounts.read",
       "accounts.write",
@@ -1516,7 +1523,7 @@ export const createDefaultRoles = internalMutation({
       }
     }
 
-    // Cataloger: collections + media
+    // Cataloger: collections + media + sites
     const catalogerPerms = [
       "collections.create",
       "collections.read",
@@ -1525,6 +1532,7 @@ export const createDefaultRoles = internalMutation({
       "media.read",
       "media.delete",
       "locations.read",
+      "sites.read",
       "accounts.read",
     ];
     for (const permName of catalogerPerms) {
@@ -1542,6 +1550,7 @@ export const createDefaultRoles = internalMutation({
       "collections.read",
       "loans.read",
       "locations.read",
+      "sites.read",
       "media.read",
       "accounts.read",
     ];

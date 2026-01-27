@@ -1039,15 +1039,19 @@ export const sendEmailNotification = internalMutation({
           emailData.startDate &&
           emailData.endDate
         ) {
-          await ctx.scheduler.runAfter(0, internal.email.actions.sendLoanApprovedEmailAction, {
-            email: userEmail,
-            loanId: emailData.loanId,
-            itemName: emailData.itemName,
-            borrowerName: emailData.borrowerName,
-            startDate: emailData.startDate,
-            endDate: emailData.endDate,
-            loanUrl: emailData.loanUrl,
-          });
+          await ctx.scheduler.runAfter(
+            0,
+            internal.email.actions.sendLoanApprovedEmailAction,
+            {
+              email: userEmail,
+              loanId: emailData.loanId,
+              itemName: emailData.itemName,
+              borrowerName: emailData.borrowerName,
+              startDate: emailData.startDate,
+              endDate: emailData.endDate,
+              loanUrl: emailData.loanUrl,
+            },
+          );
           return true;
         }
         break;
@@ -1060,15 +1064,19 @@ export const sendEmailNotification = internalMutation({
           emailData.startDate &&
           emailData.endDate
         ) {
-          await ctx.scheduler.runAfter(0, internal.email.actions.sendLoanRejectedEmailAction, {
-            email: userEmail,
-            loanId: emailData.loanId,
-            itemName: emailData.itemName,
-            borrowerName: emailData.borrowerName,
-            startDate: emailData.startDate,
-            endDate: emailData.endDate,
-            loanUrl: emailData.loanUrl,
-          });
+          await ctx.scheduler.runAfter(
+            0,
+            internal.email.actions.sendLoanRejectedEmailAction,
+            {
+              email: userEmail,
+              loanId: emailData.loanId,
+              itemName: emailData.itemName,
+              borrowerName: emailData.borrowerName,
+              startDate: emailData.startDate,
+              endDate: emailData.endDate,
+              loanUrl: emailData.loanUrl,
+            },
+          );
           return true;
         }
         break;
@@ -1081,28 +1089,36 @@ export const sendEmailNotification = internalMutation({
           emailData.startDate &&
           emailData.endDate
         ) {
-          await ctx.scheduler.runAfter(0, internal.email.actions.sendLoanPendingEmailAction, {
-            email: userEmail,
-            loanId: emailData.loanId,
-            itemName: emailData.itemName,
-            borrowerName: emailData.borrowerName,
-            startDate: emailData.startDate,
-            endDate: emailData.endDate,
-            loanUrl: emailData.loanUrl,
-          });
+          await ctx.scheduler.runAfter(
+            0,
+            internal.email.actions.sendLoanPendingEmailAction,
+            {
+              email: userEmail,
+              loanId: emailData.loanId,
+              itemName: emailData.itemName,
+              borrowerName: emailData.borrowerName,
+              startDate: emailData.startDate,
+              endDate: emailData.endDate,
+              loanUrl: emailData.loanUrl,
+            },
+          );
           return true;
         }
         break;
 
       case NOTIFICATION_TYPES.TASK_ASSIGNED:
         if (emailData.taskTitle && emailData.assignedBy) {
-          await ctx.scheduler.runAfter(0, internal.email.actions.sendTaskAssignedEmailAction, {
-            email: userEmail,
-            taskTitle: emailData.taskTitle,
-            assignedBy: emailData.assignedBy,
-            dueDate: emailData.dueDate,
-            taskUrl: emailData.taskUrl,
-          });
+          await ctx.scheduler.runAfter(
+            0,
+            internal.email.actions.sendTaskAssignedEmailAction,
+            {
+              email: userEmail,
+              taskTitle: emailData.taskTitle,
+              assignedBy: emailData.assignedBy,
+              dueDate: emailData.dueDate,
+              taskUrl: emailData.taskUrl,
+            },
+          );
           return true;
         }
         break;

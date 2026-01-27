@@ -60,14 +60,23 @@ export function toDublinCore(
     language?: string;
   } = {},
 ): DublinCoreMetadata {
-  const { organizationName, includeAlternateIdentifiers = false, language } = options;
+  const {
+    organizationName,
+    includeAlternateIdentifiers = false,
+    language,
+  } = options;
 
   // Build identifier (primary accession number)
   let identifier = collection.accessionNumber || "";
 
   // Include alternate identifiers if requested
-  if (includeAlternateIdentifiers && collection.alternateAccessionNumbers?.length) {
-    identifier = [identifier, ...collection.alternateAccessionNumbers].join("; ");
+  if (
+    includeAlternateIdentifiers &&
+    collection.alternateAccessionNumbers?.length
+  ) {
+    identifier = [identifier, ...collection.alternateAccessionNumbers].join(
+      "; ",
+    );
   }
 
   // Build subject from tags
@@ -95,13 +104,14 @@ export function toDublinCore(
   const coverageParts: string[] = [];
   if (collection.culture) coverageParts.push(collection.culture);
   if (collection.period) coverageParts.push(collection.period);
-  const coverage = coverageParts.length > 0 ? coverageParts.join("; ") : undefined;
+  const coverage =
+    coverageParts.length > 0 ? coverageParts.join("; ") : undefined;
 
   // Build relation from links
   const relation = collection.links?.length
     ? collection.links.length === 1
-      ? collection.links[0].url
-      : collection.links.map(link => link.url)
+      ? collection.links[0]?.url
+      : collection.links.map((link) => link.url)
     : undefined;
 
   // Build rights from credit line and legal restrictions
@@ -159,7 +169,7 @@ export function fromDublinCore(
   let dimensions: string | undefined;
 
   if (metadata.format) {
-    const formatParts = metadata.format.split(";").map(s => s.trim());
+    const formatParts = metadata.format.split(";").map((s) => s.trim());
     // Simple heuristic: first part is materials, second is technique, third is dimensions
     if (formatParts.length >= 1) materials = formatParts[0];
     if (formatParts.length >= 2) technique = formatParts[1];
@@ -171,7 +181,7 @@ export function fromDublinCore(
   let period: string | undefined;
 
   if (metadata.coverage) {
-    const coverageParts = metadata.coverage.split(";").map(s => s.trim());
+    const coverageParts = metadata.coverage.split(";").map((s) => s.trim());
     if (coverageParts.length >= 1) culture = coverageParts[0];
     if (coverageParts.length >= 2) period = coverageParts[1];
   }
@@ -179,12 +189,12 @@ export function fromDublinCore(
   // Parse relation back to links
   const links = metadata.relation
     ? Array.isArray(metadata.relation)
-      ? metadata.relation.map(url => ({ url }))
+      ? metadata.relation.map((url) => ({ url }))
       : [{ url: metadata.relation }]
     : undefined;
 
   // Parse identifier to extract primary and alternate accession numbers
-  const identifiers = metadata.identifier.split(";").map(s => s.trim());
+  const identifiers = metadata.identifier.split(";").map((s) => s.trim());
   const accessionNumber = identifiers[0] || metadata.identifier;
   const alternateAccessionNumbers =
     identifiers.length > 1 ? identifiers.slice(1) : undefined;
@@ -230,12 +240,8 @@ export function toDublinCoreXML(
   lines.push(
     '<oai_dc:dc xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/"',
   );
-  lines.push(
-    '          xmlns:dc="http://purl.org/dc/elements/1.1/"',
-  );
-  lines.push(
-    '          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"',
-  );
+  lines.push('          xmlns:dc="http://purl.org/dc/elements/1.1/"');
+  lines.push('          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"');
   lines.push(
     '          xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">',
   );
@@ -301,5 +307,5 @@ export function collectionsToDublinCore(
     language?: string;
   } = {},
 ): DublinCoreMetadata[] {
-  return collections.map(collection => toDublinCore(collection, options));
+  return collections.map((collection) => toDublinCore(collection, options));
 }

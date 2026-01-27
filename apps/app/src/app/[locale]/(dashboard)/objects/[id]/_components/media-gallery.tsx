@@ -82,7 +82,9 @@ export function MediaGallery({
   const updateOrder = useMutation(api.media.updateOrder);
 
   const [editingMedia, setEditingMedia] = useState<string | null>(null);
-  const [editingImageId, setEditingImageId] = useState<Id<"mediaFiles"> | null>(null);
+  const [editingImageId, setEditingImageId] = useState<Id<"mediaFiles"> | null>(
+    null,
+  );
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState<string | null>(
     null,
   );
@@ -524,7 +526,9 @@ export function MediaGallery({
                                 variant="secondary"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setEditingImageId(file._id as Id<"mediaFiles">);
+                                  setEditingImageId(
+                                    file._id as Id<"mediaFiles">,
+                                  );
                                 }}
                                 title={common("edit")}
                                 className="h-7 w-7 p-0"

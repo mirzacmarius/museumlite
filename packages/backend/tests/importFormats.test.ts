@@ -89,12 +89,16 @@ describe("Import E2E Verification", () => {
     const accessions = await asUser.run(async (ctx) => {
       return ctx.db
         .query("accessions")
-        .withIndex("by_organization", (q) => q.eq("organizationId", orgId as Id<"organizations">))
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", orgId as Id<"organizations">),
+        )
         .collect();
     });
 
     expect(accessions.length).toBe(0);
-    console.log("✓ Step 1: Validation report shows errors before commit - NO data imported");
+    console.log(
+      "✓ Step 1: Validation report shows errors before commit - NO data imported",
+    );
   });
 
   /**
@@ -183,7 +187,9 @@ describe("Import E2E Verification", () => {
     const accessions = await asUser.run(async (ctx) => {
       return ctx.db
         .query("accessions")
-        .withIndex("by_organization", (q) => q.eq("organizationId", orgId as Id<"organizations">))
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", orgId as Id<"organizations">),
+        )
         .collect();
     });
 
@@ -343,7 +349,9 @@ describe("Import E2E Verification", () => {
     const accessions = await asUser.run(async (ctx) => {
       return ctx.db
         .query("accessions")
-        .withIndex("by_organization", (q) => q.eq("organizationId", orgId as Id<"organizations">))
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", orgId as Id<"organizations">),
+        )
         .collect();
     });
 
@@ -443,7 +451,9 @@ describe("Import E2E Verification", () => {
     const collections = await asUser.run(async (ctx) => {
       return ctx.db
         .query("collections")
-        .withIndex("by_organization", (q) => q.eq("organizationId", orgId as Id<"organizations">))
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", orgId as Id<"organizations">),
+        )
         .collect();
     });
 
@@ -554,7 +564,9 @@ describe("Import E2E Verification", () => {
     const collections = await asUser.run(async (ctx) => {
       return ctx.db
         .query("collections")
-        .withIndex("by_organization", (q) => q.eq("organizationId", orgId as Id<"organizations">))
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", orgId as Id<"organizations">),
+        )
         .collect();
     });
 
@@ -597,7 +609,11 @@ describe("Import E2E Verification", () => {
       name: "Test Mapping 1",
       entityType: "accession",
       mappings: [
-        { sourceField: "field1", targetField: "accessionNumber", required: true },
+        {
+          sourceField: "field1",
+          targetField: "accessionNumber",
+          required: true,
+        },
       ],
     });
 
@@ -618,12 +634,17 @@ describe("Import E2E Verification", () => {
     expect(allMappings.length).toBeGreaterThanOrEqual(2);
 
     // List mappings filtered by entity type
-    const accessionMappings = await asUser.query(api.imports.listFieldMappings, {
-      organizationId: orgId as Id<"organizations">,
-      entityType: "accession",
-    });
+    const accessionMappings = await asUser.query(
+      api.imports.listFieldMappings,
+      {
+        organizationId: orgId as Id<"organizations">,
+        entityType: "accession",
+      },
+    );
 
-    expect(accessionMappings.some((m) => m.name === "Test Mapping 1")).toBe(true);
+    expect(accessionMappings.some((m) => m.name === "Test Mapping 1")).toBe(
+      true,
+    );
 
     // Delete a mapping
     await asUser.mutation(api.imports.deleteFieldMapping, {

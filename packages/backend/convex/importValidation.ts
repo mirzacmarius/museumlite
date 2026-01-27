@@ -227,8 +227,9 @@ function validateCollectionRow(
   // Validate dimensions format (optional guidance)
   if (row.dimensions && row.dimensions.trim() !== "") {
     // Check if dimensions include units
-    const hasUnits =
-      /cm|in|mm|m|inches|centimeters|millimeters|meters/i.test(row.dimensions);
+    const hasUnits = /cm|in|mm|m|inches|centimeters|millimeters|meters/i.test(
+      row.dimensions,
+    );
     if (!hasUnits) {
       errors.push({
         row: rowNumber,

@@ -280,7 +280,10 @@ export function toSpectrumXML(
     '<spectrum:object xmlns:spectrum="http://www.collectionstrust.org.uk/spectrum/object">',
   );
 
-  const addElement = (name: string, value: string | number | boolean | undefined) => {
+  const addElement = (
+    name: string,
+    value: string | number | boolean | undefined,
+  ) => {
     if (value === undefined || value === null) return;
 
     const strValue = String(value);

@@ -49,9 +49,7 @@ export async function batchGetByIds<TableName extends TableNames>(
   const uniqueIds = Array.from(new Set(ids));
 
   // Fetch all documents in parallel
-  const documents = await Promise.all(
-    uniqueIds.map((id) => ctx.db.get(id)),
-  );
+  const documents = await Promise.all(uniqueIds.map((id) => ctx.db.get(id)));
 
   return documents;
 }

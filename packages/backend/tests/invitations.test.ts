@@ -148,9 +148,12 @@ describe("invitations", () => {
     });
 
     // List invitations
-    const invitations = await authed.query(api.invitations.listPendingInvitations, {
-      organizationId: orgId,
-    });
+    const invitations = await authed.query(
+      api.invitations.listPendingInvitations,
+      {
+        organizationId: orgId,
+      },
+    );
 
     expect(invitations).toHaveLength(1);
     expect(invitations[0].email).toBe("invited@test.com");

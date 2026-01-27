@@ -32,51 +32,53 @@ import * as React from "react";
 import { useCommandPalette } from "./command-palette-provider";
 import { useOrganization } from "./organization-provider";
 
-const CommandObjectItem = React.memo(({
-  obj,
-  runCommand,
-  imageUrl,
-}: {
-  obj: {
-    _id: Id<"collections">;
-    title: string;
-    accessionNumber: string;
-  };
-  runCommand: (command: () => unknown) => void;
-  imageUrl: string | null | undefined;
-}) => {
-  const router = useRouter();
+const CommandObjectItem = React.memo(
+  ({
+    obj,
+    runCommand,
+    imageUrl,
+  }: {
+    obj: {
+      _id: Id<"collections">;
+      title: string;
+      accessionNumber: string;
+    };
+    runCommand: (command: () => unknown) => void;
+    imageUrl: string | null | undefined;
+  }) => {
+    const router = useRouter();
 
-  return (
-    <CommandItem
-      value={`${obj.title} ${obj.accessionNumber}`}
-      onSelect={() => runCommand(() => router.push(`/objects/${obj._id}`))}
-      className="flex items-center gap-2"
-    >
-      {imageUrl ? (
-        <div className="relative h-7 w-7 overflow-hidden rounded-[4px] border border-border/50 shrink-0 bg-muted/20">
-          <img
-            src={imageUrl}
-            alt={obj.title}
-            className="h-full w-full object-cover"
-          />
+    return (
+      <CommandItem
+        value={`${obj.title} ${obj.accessionNumber}`}
+        onSelect={() => runCommand(() => router.push(`/objects/${obj._id}`))}
+        className="flex items-center gap-2"
+      >
+        {imageUrl ? (
+          <div className="relative h-7 w-7 overflow-hidden rounded-[4px] border border-border/50 shrink-0 bg-muted/20">
+            <img
+              src={imageUrl}
+              alt={obj.title}
+              className="h-full w-full object-cover"
+            />
+          </div>
+        ) : (
+          <div className="flex h-7 w-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
+            <Box className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+        )}
+        <div className="flex flex-col overflow-hidden gap-0.5">
+          <span className="truncate leading-none">{obj.title}</span>
+          <span className="text-[10px] text-muted-foreground truncate font-mono leading-none opacity-70">
+            {obj.accessionNumber}
+          </span>
         </div>
-      ) : (
-        <div className="flex h-7 w-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
-          <Box className="h-3.5 w-3.5 text-muted-foreground" />
-        </div>
-      )}
-      <div className="flex flex-col overflow-hidden gap-0.5">
-        <span className="truncate leading-none">{obj.title}</span>
-        <span className="text-[10px] text-muted-foreground truncate font-mono leading-none opacity-70">
-          {obj.accessionNumber}
-        </span>
-      </div>
-    </CommandItem>
-  );
-});
+      </CommandItem>
+    );
+  },
+);
 
-CommandObjectItem.displayName = 'CommandObjectItem';
+CommandObjectItem.displayName = "CommandObjectItem";
 
 export function CommandPalette() {
   const { open, setOpen } = useCommandPalette();
@@ -114,9 +116,7 @@ export function CommandPalette() {
   // Create a map for O(1) lookup of image URLs by collection ID
   const imageUrlMap = React.useMemo(() => {
     if (!batchImageUrls) return new Map<Id<"collections">, string | null>();
-    return new Map(
-      batchImageUrls.map((item) => [item.collectionId, item.url]),
-    );
+    return new Map(batchImageUrls.map((item) => [item.collectionId, item.url]));
   }, [batchImageUrls]);
 
   React.useEffect(() => {

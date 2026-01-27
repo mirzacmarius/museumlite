@@ -568,3 +568,131 @@ export const backfillLoanAdminPermissions = internalMutation({
     };
   },
 });
+
+export const addSitesPermissions = internalMutation({
+  args: {},
+  returns: v.object({
+    permissionsCreated: v.number(),
+    rolePermissionsAdded: v.number(),
+  }),
+  handler: async (ctx) => {
+    console.log("Starting migration: Add sites permissions");
+
+    const sitesPermissions = [
+      { name: "sites.create", description: "Create new sites" },
+      { name: "sites.read", description: "View sites" },
+      { name: "sites.update", description: "Edit sites" },
+      { name: "sites.delete", description: "Delete sites" },
+    ];
+
+    const permissionIds: Map<string, Id<"permissions">> = new Map();
+    let permissionsCreated = 0;
+
+    for (const perm of sitesPermissions) {
+      const existing = await ctx.db
+        .query("permissions")
+        .withIndex("by_category", (q) => q.eq("category", "sites"))
+        .filter((q) => q.eq(q.field("name"), perm.name))
+        .first();
+
+      if (existing) {
+        permissionIds.set(perm.name, existing._id);
+        console.log(`Permission ${perm.name} already exists`);
+      } else {
+        const id = await ctx.db.insert("permissions", {
+          name: perm.name,
+          description: perm.description,
+          category: "sites",
+        });
+        permissionIds.set(perm.name, id);
+        permissionsCreated++;
+        console.log(`Created permission ${perm.name}`);
+      }
+    }
+
+    const organizations = await ctx.db.query("organizations").collect();
+    console.log(`Found ${organizations.length} organizations`);
+
+    let rolePermissionsAdded = 0;
+
+    for (const org of organizations) {
+      const adminRole = await ctx.db
+        .query("roles")
+        .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("name"), "admin"),
+            q.eq(q.field("isSystemRole"), true),
+          ),
+        )
+        .first();
+
+      if (adminRole) {
+        for (const [permName, permId] of permissionIds) {
+          const existing = await ctx.db
+            .query("rolePermissions")
+            .withIndex("by_role", (q) => q.eq("roleId", adminRole._id))
+            .filter((q) => q.eq(q.field("permissionId"), permId))
+            .first();
+
+          if (!existing) {
+            await ctx.db.insert("rolePermissions", {
+              roleId: adminRole._id,
+              permissionId: permId,
+            });
+            rolePermissionsAdded++;
+            console.log(`Added ${permName} to admin role for ${org.name}`);
+          }
+        }
+      }
+
+      const readOnlyRoles = ["curator", "registrar", "cataloger", "viewer"];
+      const sitesReadPermId = permissionIds.get("sites.read");
+
+      if (sitesReadPermId) {
+        for (const roleName of readOnlyRoles) {
+          const role = await ctx.db
+            .query("roles")
+            .withIndex("by_organization", (q) =>
+              q.eq("organizationId", org._id),
+            )
+            .filter((q) =>
+              q.and(
+                q.eq(q.field("name"), roleName),
+                q.eq(q.field("isSystemRole"), true),
+              ),
+            )
+            .first();
+
+          if (role) {
+            const existing = await ctx.db
+              .query("rolePermissions")
+              .withIndex("by_role", (q) => q.eq("roleId", role._id))
+              .filter((q) => q.eq(q.field("permissionId"), sitesReadPermId))
+              .first();
+
+            if (!existing) {
+              await ctx.db.insert("rolePermissions", {
+                roleId: role._id,
+                permissionId: sitesReadPermId,
+              });
+              rolePermissionsAdded++;
+              console.log(
+                `Added sites.read to ${roleName} role for ${org.name}`,
+              );
+            }
+          }
+        }
+      }
+    }
+
+    console.log(
+      `Created ${permissionsCreated} permissions, added ${rolePermissionsAdded} role-permissions`,
+    );
+
+    return {
+      permissionsCreated,
+      rolePermissionsAdded,
+    };
+  },
+});

@@ -74,8 +74,9 @@ export function AdvancedSearchDialog({
       ? initialFilterGroups
       : [{ filters: [], operator: "AND" }],
   );
-  const [groupOperator, setGroupOperator] =
-    useState<"AND" | "OR">(initialGroupOperator);
+  const [groupOperator, setGroupOperator] = useState<"AND" | "OR">(
+    initialGroupOperator,
+  );
 
   const addFilterGroup = () => {
     setFilterGroups([...filterGroups, { filters: [], operator: "AND" }]);
@@ -129,7 +130,9 @@ export function AdvancedSearchDialog({
     const validFilterGroups = filterGroups
       .map((group) => ({
         ...group,
-        filters: group.filters.filter((f) => f.value !== "" && f.value !== null),
+        filters: group.filters.filter(
+          (f) => f.value !== "" && f.value !== null,
+        ),
       }))
       .filter((group) => group.filters.length > 0);
 

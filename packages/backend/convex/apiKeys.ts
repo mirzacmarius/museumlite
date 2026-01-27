@@ -11,7 +11,10 @@ function generateApiKey(): string {
   const randomValues = new Uint32Array(37);
   crypto.getRandomValues(randomValues);
   for (let i = 0; i < 37; i++) {
-    key += chars.charAt(randomValues[i] % chars.length);
+    const randomValue = randomValues[i];
+    if (randomValue !== undefined) {
+      key += chars.charAt(randomValue % chars.length);
+    }
   }
   return key;
 }

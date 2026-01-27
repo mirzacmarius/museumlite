@@ -222,6 +222,7 @@ export default defineSchema({
       v.literal("collections"),
       v.literal("loans"),
       v.literal("locations"),
+      v.literal("sites"),
       v.literal("media"),
       v.literal("users"),
       v.literal("organization"),
@@ -236,6 +237,68 @@ export default defineSchema({
   })
     .index("by_role", ["roleId"])
     .index("by_permission", ["permissionId"]),
+
+  // Organization invitations for pending user invites
+  organizationInvitations: defineTable({
+    organizationId: v.id("organizations"),
+    email: v.string(),
+    roleId: v.id("roles"),
+    token: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("declined"),
+      v.literal("expired"),
+    ),
+    invitedBy: v.id("users"),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+    acceptedAt: v.optional(v.number()),
+    acceptedBy: v.optional(v.id("users")),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_token", ["token"])
+    .index("by_email", ["email"]),
+
+  // Sites for multi-location organizations
+  sites: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    address: v.optional(v.string()),
+    isActive: v.boolean(),
+    isPrimary: v.boolean(),
+  }).index("by_organization", ["organizationId"]),
+
+  // User-site access assignments
+  userSites: defineTable({
+    userId: v.id("users"),
+    siteId: v.id("sites"),
+    canAccess: v.boolean(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_site", ["siteId"])
+    .index("by_user_and_site", ["userId", "siteId"]),
+
+  // User search history for autocomplete
+  searchHistory: defineTable({
+    organizationId: v.id("organizations"),
+    userId: v.id("users"),
+    module: v.union(
+      v.literal("objects"),
+      v.literal("loans"),
+      v.literal("accounts"),
+      v.literal("locations"),
+      v.literal("accessions"),
+    ),
+    query: v.string(),
+    filters: v.optional(v.string()),
+    resultCount: v.optional(v.number()),
+    searchedAt: v.number(),
+  })
+    .index("by_user_and_searched_at", ["userId", "searchedAt"])
+    .index("by_user_and_module", ["userId", "module"])
+    .index("by_organization_and_user", ["organizationId", "userId"]),
 
   // Collection Groups (Virtual collections of objects)
   collectionGroups: defineTable({
@@ -612,7 +675,10 @@ export default defineSchema({
   })
     .index("by_original_media", ["originalMediaId"])
     .index("by_organization", ["organizationId"])
-    .index("by_original_media_and_version", ["originalMediaId", "versionNumber"]),
+    .index("by_original_media_and_version", [
+      "originalMediaId",
+      "versionNumber",
+    ]),
 
   // Media edit history - chronological log of all edit operations
   mediaEditHistory: defineTable({

@@ -201,10 +201,7 @@ export const QRLabelSheet = forwardRef<HTMLDivElement, QRLabelSheetProps>(
         )}
       >
         <div
-          className={cn(
-            "grid gap-2",
-            "print:gap-0",
-          )}
+          className={cn("grid gap-2", "print:gap-0")}
           style={{
             gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
           }}

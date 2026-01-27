@@ -530,7 +530,10 @@ export const createInvitation = mutation({
   handler: async (
     ctx,
     args,
-  ): Promise<{ invitationId: Id<"organizationInvitations">; token: string }> => {
+  ): Promise<{
+    invitationId: Id<"organizationInvitations">;
+    token: string;
+  }> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
@@ -540,11 +543,14 @@ export const createInvitation = mutation({
     await requirePermission(ctx, args.organizationId, "users.invite");
 
     // Call internal mutation
-    return await ctx.runMutation(internal.invitations.createInvitationInternal, {
-      organizationId: args.organizationId,
-      email: args.email,
-      roleId: args.roleId,
-      invitedBy: userId,
-    });
+    return await ctx.runMutation(
+      internal.invitations.createInvitationInternal,
+      {
+        organizationId: args.organizationId,
+        email: args.email,
+        roleId: args.roleId,
+        invitedBy: userId,
+      },
+    );
   },
 });

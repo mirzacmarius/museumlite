@@ -1,6 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { env } from "./env";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
@@ -10,6 +9,7 @@ import {
   mutation,
   query,
 } from "./_generated/server";
+import { env } from "./env";
 import { requireFeatureAccess } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
@@ -598,11 +598,14 @@ export const assignTask = mutation({
     if (args.assigneeId && args.assigneeId !== userId) {
       // Get user who is assigning the task
       const assigningUser = await ctx.db.get(userId);
-      const assignedByName = assigningUser?.name ?? assigningUser?.email ?? "A team member";
+      const assignedByName =
+        assigningUser?.name ?? assigningUser?.email ?? "A team member";
 
       // Get organization for building deep link
       const org = await ctx.db.get(task.organizationId);
-      const taskUrl = org ? `${env.SITE_URL}/${org.slug}/installations/${task.installationId}/tasks/${args.taskId}` : undefined;
+      const taskUrl = org
+        ? `${env.SITE_URL}/${org.slug}/exhibitions/${task.exhibitionId}/tasks/${args.taskId}`
+        : undefined;
 
       await ctx.runMutation(internal.notifications.sendNotification, {
         organizationId: task.organizationId,
@@ -615,7 +618,9 @@ export const assignTask = mutation({
         emailData: {
           taskTitle: task.title,
           assignedBy: assignedByName,
-          dueDate: task.dueDate ? new Date(task.dueDate).toLocaleDateString() : undefined,
+          dueDate: task.dueDate
+            ? new Date(task.dueDate).toLocaleDateString()
+            : undefined,
           taskUrl,
         },
       });

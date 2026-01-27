@@ -1,13 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  Check,
-  RotateCcw,
-  RotateCw,
-  Save,
-  X,
-} from "lucide-react";
+import { Check, RotateCcw, RotateCw, Save, X } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactCrop, { type Crop, type PixelCrop } from "react-image-crop";
@@ -24,7 +18,12 @@ export interface WatermarkSettings {
   isEnabled?: boolean;
   text?: string;
   opacity?: number;
-  position?: "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  position?:
+    | "center"
+    | "top-left"
+    | "top-right"
+    | "bottom-left"
+    | "bottom-right";
 }
 
 interface MediaEditorProps {
@@ -234,7 +233,15 @@ export function MediaEditor({
       ctx.strokeText(watermarkText, x, y);
       ctx.fillText(watermarkText, x, y);
     }
-  }, [completedCrop, rotation, brightness, contrast, watermarkEnabled, watermarkSettings, watermarkPosition]);
+  }, [
+    completedCrop,
+    rotation,
+    brightness,
+    contrast,
+    watermarkEnabled,
+    watermarkSettings,
+    watermarkPosition,
+  ]);
 
   const handleSave = useCallback(async () => {
     if (!canvasRef.current || !onSave) return;
@@ -278,7 +285,7 @@ export function MediaEditor({
       onClose();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to save edited image"
+        error instanceof Error ? error.message : "Failed to save edited image",
       );
     } finally {
       setIsSaving(false);
@@ -463,7 +470,10 @@ export function MediaEditor({
           <div className="absolute bottom-0 left-0 right-0 z-10 bg-card/40 border-t border-border/60 backdrop-blur-xl p-4">
             <div className="grid grid-cols-2 gap-4 max-w-4xl mx-auto">
               <div className="flex flex-col gap-2">
-                <label htmlFor="brightness" className="text-xs text-muted-foreground">
+                <label
+                  htmlFor="brightness"
+                  className="text-xs text-muted-foreground"
+                >
                   Brightness: {brightness}%
                 </label>
                 <input
@@ -478,7 +488,10 @@ export function MediaEditor({
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label htmlFor="contrast" className="text-xs text-muted-foreground">
+                <label
+                  htmlFor="contrast"
+                  className="text-xs text-muted-foreground"
+                >
                   Contrast: {contrast}%
                 </label>
                 <input
@@ -495,7 +508,10 @@ export function MediaEditor({
               {watermarkSettings?.text && (
                 <>
                   <div className="flex flex-col gap-2">
-                    <label htmlFor="watermark-toggle" className="text-xs text-muted-foreground">
+                    <label
+                      htmlFor="watermark-toggle"
+                      className="text-xs text-muted-foreground"
+                    >
                       Watermark
                     </label>
                     <div className="flex items-center gap-2">
@@ -514,7 +530,10 @@ export function MediaEditor({
                   </div>
                   {watermarkEnabled && (
                     <div className="flex flex-col gap-2">
-                      <label htmlFor="watermark-position" className="text-xs text-muted-foreground">
+                      <label
+                        htmlFor="watermark-position"
+                        className="text-xs text-muted-foreground"
+                      >
                         Position
                       </label>
                       <select
@@ -527,7 +546,7 @@ export function MediaEditor({
                         }
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
+                          if (e.key === "Enter" || e.key === " ") {
                             // Select element handles this natively, but handler satisfies linter
                           }
                         }}

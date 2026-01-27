@@ -39,11 +39,15 @@ export default function CollectionsPage() {
     async (format: ExportFormat) => {
       if (!currentOrganizationId) return undefined;
       // Map UI format to backend format
-      const backendFormat =
-        format === "dublin-core" ? "dublincore" : format;
+      const backendFormat = format === "dublin-core" ? "dublincore" : format;
       return exportObjectsWithFormat({
         organizationId: currentOrganizationId,
-        format: backendFormat as "csv" | "json" | "xml" | "dublincore" | "spectrum",
+        format: backendFormat as
+          | "csv"
+          | "json"
+          | "xml"
+          | "dublincore"
+          | "spectrum",
       });
     },
     [currentOrganizationId, exportObjectsWithFormat],

@@ -191,7 +191,9 @@ async function seedLargeDataset(
             dateCreated: `${1500 + (idx % 500)}`,
             status: "active",
             catalogedBy: userId,
-            catalogedAt: Date.now() - Math.floor(Math.random() * 365 * 24 * 60 * 60 * 1000),
+            catalogedAt:
+              Date.now() -
+              Math.floor(Math.random() * 365 * 24 * 60 * 60 * 1000),
           });
         }),
       );
@@ -494,7 +496,11 @@ describe("Search Performance Stress Tests", () => {
       filterGroups: [
         {
           filters: [
-            { field: "objectType", operator: "in", value: ["Painting", "Sculpture"] },
+            {
+              field: "objectType",
+              operator: "in",
+              value: ["Painting", "Sculpture"],
+            },
             { field: "creator", operator: "contains", value: "van" },
             { field: "period", operator: "eq", value: "Modern" },
           ],

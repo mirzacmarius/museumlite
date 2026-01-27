@@ -63,8 +63,7 @@ export function BulkPrintLabelsDialog({
 
   // Build label data for all loaded collections
   const labelData: LabelData[] = loadedCollections.map((collection) => {
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
     const qrCodeUrl = `${origin}/${locale}/objects/${collection._id}`;
 
     return {

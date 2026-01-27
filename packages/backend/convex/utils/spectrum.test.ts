@@ -171,7 +171,11 @@ describe("SPECTRUM Collection Mapping", () => {
     expect(record.exhibitionHistory).toBe("Metropolitan Museum, 1975");
     expect(record.creditLine).toBe("Gift of the Estate of John Collector");
     expect(record.objectType).toBe("Fine Art");
-    expect(record.keywords).toEqual(["landscape", "American art", "20th century"]);
+    expect(record.keywords).toEqual([
+      "landscape",
+      "American art",
+      "20th century",
+    ]);
     expect(record.legalRestrictions).toBe(false);
     expect(record.publiclyVisible).toBe(true);
   });
@@ -319,7 +323,7 @@ describe("SPECTRUM XML Generation", () => {
     const xml = toSpectrumXML(record);
 
     expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
-    expect(xml).toContain('<spectrum:object');
+    expect(xml).toContain("<spectrum:object");
     expect(xml).toContain("<objectNumber>2024.001</objectNumber>");
     expect(xml).toContain("<objectName>Painting</objectName>");
     expect(xml).toContain("<title>Test Painting</title>");
@@ -395,7 +399,7 @@ describe("SPECTRUM XML Generation", () => {
     const xml = entryToSpectrumXML(entry);
 
     expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
-    expect(xml).toContain('<spectrum:entry');
+    expect(xml).toContain("<spectrum:entry");
     expect(xml).toContain("<entryNumber>2024.001</entryNumber>");
     expect(xml).toContain("<entryDate>2024-01-15T00:00:00.000Z</entryDate>");
     expect(xml).toContain("<entryMethod>gift</entryMethod>");

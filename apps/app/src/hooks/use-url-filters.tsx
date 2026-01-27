@@ -1,6 +1,11 @@
 "use client";
 
-import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
+import {
+  createParser,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryState,
+} from "nuqs";
 import { useCallback, useMemo } from "react";
 
 type ObjectStatus = "active" | "deaccessioned" | "all";
@@ -36,25 +41,18 @@ export interface FilterGroup {
 }
 
 // Custom parser for JSON serialization of advanced filters
-const parseAsJson = <T,>(defaultValue: T) => ({
-  parse: (value: string | null) => {
-    if (!value) return defaultValue;
-    try {
-      return JSON.parse(value) as T;
-    } catch {
-      return defaultValue;
-    }
-  },
-  serialize: (value: T) => {
-    if (
-      (Array.isArray(value) && value.length === 0) ||
-      value === defaultValue
-    ) {
-      return null;
-    }
-    return JSON.stringify(value);
-  },
-});
+const parseAsJson = <T,>() =>
+  createParser({
+    parse: (value: string) => {
+      try {
+        return JSON.parse(value) as T;
+      } catch {
+        return null;
+      }
+    },
+    serialize: (value: T) => JSON.stringify(value),
+    eq: (a, b) => JSON.stringify(a) === JSON.stringify(b),
+  });
 
 export function useObjectFilters() {
   const [search, setSearch] = useQueryState(
@@ -105,7 +103,7 @@ export function useObjectFilters() {
   // Advanced filter state using JSON serialization
   const [advancedFilters, setAdvancedFilters] = useQueryState(
     "advancedFilters",
-    parseAsJson<FilterGroup[]>([]),
+    parseAsJson<FilterGroup[]>().withDefault([]),
   );
   const [filterCombinations, setFilterCombinations] = useQueryState(
     "filterCombinations",

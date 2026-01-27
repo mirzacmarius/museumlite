@@ -463,9 +463,9 @@ describe("sites CRUD operations", () => {
 
     await t.run((ctx) => ctx.db.insert("authSessions", { userId }));
 
-    await expect(
-      t.mutation(api.sites.archive, { siteId }),
-    ).rejects.toThrow("Cannot archive the primary site");
+    await expect(t.mutation(api.sites.archive, { siteId })).rejects.toThrow(
+      "Cannot archive the primary site",
+    );
 
     const site = await t.run(async (ctx) => await ctx.db.get(siteId));
     expect(site?.isActive).toBe(true);
@@ -513,7 +513,9 @@ describe("sites CRUD operations", () => {
       return { siteId, targetUserId, adminUserId };
     });
 
-    await t.run((ctx) => ctx.db.insert("authSessions", { userId: adminUserId }));
+    await t.run((ctx) =>
+      ctx.db.insert("authSessions", { userId: adminUserId }),
+    );
 
     const userSiteId = await t.mutation(api.sites.grantUserSiteAccess, {
       siteId,
@@ -539,8 +541,8 @@ describe("sites CRUD operations", () => {
   test("should update existing user site access when granting", async () => {
     const t = convexTest(schema, modules);
 
-    const { siteId, targetUserId, adminUserId, existingUserSiteId } = await t.run(
-      async (ctx) => {
+    const { siteId, targetUserId, adminUserId, existingUserSiteId } =
+      await t.run(async (ctx) => {
         const orgId = await ctx.db.insert("organizations", {
           name: "Test Museum",
           slug: "test-museum-grant-existing",
@@ -584,10 +586,11 @@ describe("sites CRUD operations", () => {
         });
 
         return { siteId, targetUserId, adminUserId, existingUserSiteId };
-      },
-    );
+      });
 
-    await t.run((ctx) => ctx.db.insert("authSessions", { userId: adminUserId }));
+    await t.run((ctx) =>
+      ctx.db.insert("authSessions", { userId: adminUserId }),
+    );
 
     const userSiteId = await t.mutation(api.sites.grantUserSiteAccess, {
       siteId,
@@ -638,7 +641,9 @@ describe("sites CRUD operations", () => {
       return { siteId, nonMemberId, adminUserId };
     });
 
-    await t.run((ctx) => ctx.db.insert("authSessions", { userId: adminUserId }));
+    await t.run((ctx) =>
+      ctx.db.insert("authSessions", { userId: adminUserId }),
+    );
 
     await expect(
       t.mutation(api.sites.grantUserSiteAccess, {
@@ -697,7 +702,9 @@ describe("sites CRUD operations", () => {
       return { siteId, targetUserId, adminUserId };
     });
 
-    await t.run((ctx) => ctx.db.insert("authSessions", { userId: adminUserId }));
+    await t.run((ctx) =>
+      ctx.db.insert("authSessions", { userId: adminUserId }),
+    );
 
     await t.mutation(api.sites.revokeUserSiteAccess, {
       siteId,
@@ -760,7 +767,9 @@ describe("sites CRUD operations", () => {
       return { siteId, targetUserId, adminUserId };
     });
 
-    await t.run((ctx) => ctx.db.insert("authSessions", { userId: adminUserId }));
+    await t.run((ctx) =>
+      ctx.db.insert("authSessions", { userId: adminUserId }),
+    );
 
     // Should not throw when no assignment exists
     const result = await t.mutation(api.sites.revokeUserSiteAccess, {

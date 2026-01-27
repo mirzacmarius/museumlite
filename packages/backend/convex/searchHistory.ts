@@ -115,7 +115,10 @@ export const save = mutation({
 
     if (allUserSearches.length > 100) {
       for (let i = 100; i < allUserSearches.length; i++) {
-        await ctx.db.delete(allUserSearches[i]._id);
+        const search = allUserSearches[i];
+        if (search) {
+          await ctx.db.delete(search._id);
+        }
       }
     }
 

@@ -416,7 +416,10 @@ describe("fromDublinCore", () => {
     const collection = fromDublinCore(metadata);
 
     expect(collection.accessionNumber).toBe("2024.1.1");
-    expect(collection.alternateAccessionNumbers).toEqual(["OLD-123", "REF-456"]);
+    expect(collection.alternateAccessionNumbers).toEqual([
+      "OLD-123",
+      "REF-456",
+    ]);
   });
 
   test("should map type to objectType", () => {
@@ -480,13 +483,15 @@ describe("toDublinCoreXML", () => {
     const xml = toDublinCoreXML(metadata);
 
     expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
-    expect(xml).toContain('<oai_dc:dc');
+    expect(xml).toContain("<oai_dc:dc");
     expect(xml).toContain('xmlns:dc="http://purl.org/dc/elements/1.1/"');
-    expect(xml).toContain('<dc:title>Test Artwork</dc:title>');
-    expect(xml).toContain('<dc:identifier>2024.1.1</dc:identifier>');
-    expect(xml).toContain('<dc:creator>John Artist</dc:creator>');
-    expect(xml).toContain('<dc:description>A beautiful painting</dc:description>');
-    expect(xml).toContain('</oai_dc:dc>');
+    expect(xml).toContain("<dc:title>Test Artwork</dc:title>");
+    expect(xml).toContain("<dc:identifier>2024.1.1</dc:identifier>");
+    expect(xml).toContain("<dc:creator>John Artist</dc:creator>");
+    expect(xml).toContain(
+      "<dc:description>A beautiful painting</dc:description>",
+    );
+    expect(xml).toContain("</oai_dc:dc>");
   });
 
   test("should escape special XML characters", () => {
@@ -497,10 +502,10 @@ describe("toDublinCoreXML", () => {
 
     const xml = toDublinCoreXML(metadata);
 
-    expect(xml).toContain('&amp;');
-    expect(xml).toContain('&quot;');
-    expect(xml).toContain('&lt;');
-    expect(xml).toContain('&gt;');
+    expect(xml).toContain("&amp;");
+    expect(xml).toContain("&quot;");
+    expect(xml).toContain("&lt;");
+    expect(xml).toContain("&gt;");
   });
 
   test("should handle array values with multiple elements", () => {
@@ -512,9 +517,9 @@ describe("toDublinCoreXML", () => {
 
     const xml = toDublinCoreXML(metadata);
 
-    expect(xml).toContain('<dc:subject>painting</dc:subject>');
-    expect(xml).toContain('<dc:subject>modern art</dc:subject>');
-    expect(xml).toContain('<dc:subject>abstract</dc:subject>');
+    expect(xml).toContain("<dc:subject>painting</dc:subject>");
+    expect(xml).toContain("<dc:subject>modern art</dc:subject>");
+    expect(xml).toContain("<dc:subject>abstract</dc:subject>");
   });
 
   test("should omit undefined fields", () => {
@@ -525,9 +530,9 @@ describe("toDublinCoreXML", () => {
 
     const xml = toDublinCoreXML(metadata);
 
-    expect(xml).not.toContain('<dc:creator>');
-    expect(xml).not.toContain('<dc:subject>');
-    expect(xml).not.toContain('<dc:description>');
+    expect(xml).not.toContain("<dc:creator>");
+    expect(xml).not.toContain("<dc:subject>");
+    expect(xml).not.toContain("<dc:description>");
   });
 
   test("should format with pretty printing by default", () => {
@@ -538,8 +543,8 @@ describe("toDublinCoreXML", () => {
 
     const xml = toDublinCoreXML(metadata);
 
-    expect(xml).toContain('\n');
-    expect(xml.split('\n').length).toBeGreaterThan(1);
+    expect(xml).toContain("\n");
+    expect(xml.split("\n").length).toBeGreaterThan(1);
   });
 
   test("should format without pretty printing when disabled", () => {
@@ -550,7 +555,7 @@ describe("toDublinCoreXML", () => {
 
     const xml = toDublinCoreXML(metadata, { pretty: false });
 
-    expect(xml).not.toContain('\n');
+    expect(xml).not.toContain("\n");
   });
 });
 

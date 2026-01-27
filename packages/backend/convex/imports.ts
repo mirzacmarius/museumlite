@@ -2,25 +2,22 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
+import { collectionsToDublinCore, toDublinCoreXML } from "./utils/dublinCore";
 import { enforceExportQuota, recordExportUsage } from "./utils/featureGates";
-import { requirePermission } from "./utils/permissions";
 import { toJSON, toXML } from "./utils/formatConverters";
 import {
-  collectionsToDublinCore,
-  toDublinCoreXML,
-} from "./utils/dublinCore";
+  type FieldMapping,
+  type ImportTemplate,
+  getTemplate,
+  listTemplates,
+} from "./utils/legacyTemplates";
+import { requirePermission } from "./utils/permissions";
 import {
   accessionsToSpectrumEntries,
   collectionsToSpectrum,
   entryToSpectrumXML,
   toSpectrumXML,
 } from "./utils/spectrum";
-import {
-  getTemplate,
-  listTemplates,
-  type ImportTemplate,
-  type FieldMapping,
-} from "./utils/legacyTemplates";
 
 type AccessionMethod =
   | "purchase"
@@ -1514,11 +1511,7 @@ export const exportObjectsWithFormat = mutation({
 export const exportLocationsWithFormat = mutation({
   args: {
     organizationId: v.id("organizations"),
-    format: v.union(
-      v.literal("csv"),
-      v.literal("json"),
-      v.literal("xml"),
-    ),
+    format: v.union(v.literal("csv"), v.literal("json"), v.literal("xml")),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
@@ -1605,11 +1598,7 @@ export const exportAccountsWithFormat = mutation({
         v.literal("patron"),
       ),
     ),
-    format: v.union(
-      v.literal("csv"),
-      v.literal("json"),
-      v.literal("xml"),
-    ),
+    format: v.union(v.literal("csv"), v.literal("json"), v.literal("xml")),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
@@ -1721,11 +1710,7 @@ export const exportLoansWithFormat = mutation({
       ),
     ),
     type: v.optional(v.union(v.literal("incoming"), v.literal("outgoing"))),
-    format: v.union(
-      v.literal("csv"),
-      v.literal("json"),
-      v.literal("xml"),
-    ),
+    format: v.union(v.literal("csv"), v.literal("json"), v.literal("xml")),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
@@ -1832,7 +1817,7 @@ export const exportLoansWithFormat = mutation({
 // CSV TEMPLATES
 // ============================================
 
-export const getImportTemplate = query({
+export const getImportTemplateByType = query({
   args: {
     type: v.union(
       v.literal("objects"),
@@ -2280,7 +2265,7 @@ export const listFieldMappings = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
 
-    let query = ctx.db
+    const query = ctx.db
       .query("importFieldMappings")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),

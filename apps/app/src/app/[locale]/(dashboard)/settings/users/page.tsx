@@ -376,69 +376,71 @@ export default function UsersSettingsPage() {
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {pendingInvitations.map((invitation: {
-                _id: Id<"organizationInvitations">;
-                email: string;
-                roleName: string;
-                expiresAt: number;
-                inviterName?: string;
-                isExpired: boolean;
-              }) => (
-                <div
-                  key={invitation._id}
-                  className="flex items-center justify-between p-4"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                      <Mail className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{invitation.email}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {invitation.roleName}
-                      </p>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {invitation.isExpired ? (
-                          <span className="text-destructive">
-                            {t("expired")}
-                          </span>
-                        ) : (
-                          <span>
-                            {t("expires", {
-                              date: formatDate(
-                                new Date(invitation.expiresAt),
-                                locale,
-                              ),
-                            })}
-                          </span>
-                        )}
+              {pendingInvitations.map(
+                (invitation: {
+                  _id: Id<"organizationInvitations">;
+                  email: string;
+                  roleName: string;
+                  expiresAt: number;
+                  inviterName?: string;
+                  isExpired: boolean;
+                }) => (
+                  <div
+                    key={invitation._id}
+                    className="flex items-center justify-between p-4"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                        <Mail className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{invitation.email}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {invitation.roleName}
+                        </p>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          {invitation.isExpired ? (
+                            <span className="text-destructive">
+                              {t("expired")}
+                            </span>
+                          ) : (
+                            <span>
+                              {t("expires", {
+                                date: formatDate(
+                                  new Date(invitation.expiresAt),
+                                  locale,
+                                ),
+                              })}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <PermissionGate permission="users.invite">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleResendInvitation(invitation._id)}
+                        >
+                          {t("resend")}
+                        </Button>
+                      </PermissionGate>
+                      <PermissionGate permission="users.invite">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCancelInvitation(invitation._id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          {t("cancelInvitation")}
+                        </Button>
+                      </PermissionGate>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <PermissionGate permission="users.invite">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleResendInvitation(invitation._id)}
-                      >
-                        {t("resend")}
-                      </Button>
-                    </PermissionGate>
-                    <PermissionGate permission="users.invite">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleCancelInvitation(invitation._id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        {t("cancelInvitation")}
-                      </Button>
-                    </PermissionGate>
-                  </div>
-                </div>
-              ))}
+                ),
+              )}
             </div>
           )}
         </div>

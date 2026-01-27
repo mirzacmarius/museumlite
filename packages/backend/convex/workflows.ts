@@ -695,11 +695,14 @@ export const assignDeaccession = mutation({
     if (args.userId !== currentUserId) {
       // Get user who is assigning
       const assigningUser = await ctx.db.get(currentUserId);
-      const assignedByName = assigningUser?.name ?? assigningUser?.email ?? "A team member";
+      const assignedByName =
+        assigningUser?.name ?? assigningUser?.email ?? "A team member";
 
       // Get organization for building deep link
       const org = await ctx.db.get(deaccession.organizationId);
-      const taskUrl = org ? `${env.SITE_URL}/${org.slug}/deaccessions/${args.deaccessionId}` : undefined;
+      const taskUrl = org
+        ? `${env.SITE_URL}/${org.slug}/deaccessions/${args.deaccessionId}`
+        : undefined;
 
       await ctx.runMutation(internal.notifications.sendNotification, {
         organizationId: deaccession.organizationId,
@@ -811,11 +814,14 @@ export const assignLoan = mutation({
     if (args.userId !== currentUserId) {
       // Get user who is assigning
       const assigningUser = await ctx.db.get(currentUserId);
-      const assignedByName = assigningUser?.name ?? assigningUser?.email ?? "A team member";
+      const assignedByName =
+        assigningUser?.name ?? assigningUser?.email ?? "A team member";
 
       // Get organization for building deep link
       const org = await ctx.db.get(loan.organizationId);
-      const taskUrl = org ? `${env.SITE_URL}/${org.slug}/loans/${args.loanId}` : undefined;
+      const taskUrl = org
+        ? `${env.SITE_URL}/${org.slug}/loans/${args.loanId}`
+        : undefined;
 
       await ctx.runMutation(internal.notifications.sendNotification, {
         organizationId: loan.organizationId,

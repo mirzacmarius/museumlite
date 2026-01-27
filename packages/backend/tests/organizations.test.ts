@@ -158,13 +158,17 @@ describe("watermark settings", () => {
     });
 
     // Update watermark settings
-    await t.mutation(api.organizations.updateWatermarkSettings, {
-      organizationId: orgId,
-      isEnabled: true,
-      text: "© 2026 Test Museum",
-      opacity: 0.7,
-      position: "bottom-right",
-    }, { as: userId });
+    await t.mutation(
+      api.organizations.updateWatermarkSettings,
+      {
+        organizationId: orgId,
+        isEnabled: true,
+        text: "© 2026 Test Museum",
+        opacity: 0.7,
+        position: "bottom-right",
+      },
+      { as: userId },
+    );
 
     // Verify settings were saved
     const org = await t.run(async (ctx) => {

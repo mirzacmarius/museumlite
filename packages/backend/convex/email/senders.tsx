@@ -83,7 +83,9 @@ function InvitationEmail({
               Accept Invitation
             </Button>
           </Section>
-          <Text style={{ fontSize: "14px", lineHeight: "24px", color: "#666666" }}>
+          <Text
+            style={{ fontSize: "14px", lineHeight: "24px", color: "#666666" }}
+          >
             Or copy and paste this URL into your browser:
             <br />
             <Link href={acceptUrl} style={{ color: "#067df7" }}>
@@ -100,7 +102,9 @@ function InvitationEmail({
           >
             <strong>Important:</strong> This invitation will expire in 7 days.
           </Text>
-          <Text style={{ fontSize: "14px", lineHeight: "24px", color: "#666666" }}>
+          <Text
+            style={{ fontSize: "14px", lineHeight: "24px", color: "#666666" }}
+          >
             If you don't want to join this organization, you can{" "}
             <Link href={declineUrl} style={{ color: "#067df7" }}>
               decline this invitation
@@ -306,7 +310,9 @@ function LoanPendingEmail({
   );
 }
 
-export async function sendLoanApprovedEmail(args: LoanNotificationEmailOptions) {
+export async function sendLoanApprovedEmail(
+  args: LoanNotificationEmailOptions,
+) {
   const html = await render(<LoanApprovedEmail {...args} />);
   await sendEmail({
     to: args.email,
@@ -315,7 +321,9 @@ export async function sendLoanApprovedEmail(args: LoanNotificationEmailOptions) 
   });
 }
 
-export async function sendLoanRejectedEmail(args: LoanNotificationEmailOptions) {
+export async function sendLoanRejectedEmail(
+  args: LoanNotificationEmailOptions,
+) {
   const html = await render(<LoanRejectedEmail {...args} />);
   await sendEmail({
     to: args.email,
@@ -497,7 +505,9 @@ function SubscriptionErrorEmail({ email }: SubscriptionEmailOptions) {
   );
 }
 
-export async function sendSubscriptionSuccessEmail(args: SubscriptionEmailOptions) {
+export async function sendSubscriptionSuccessEmail(
+  args: SubscriptionEmailOptions,
+) {
   const html = await render(<SubscriptionSuccessEmail {...args} />);
   await sendEmail({
     to: args.email,
@@ -506,7 +516,9 @@ export async function sendSubscriptionSuccessEmail(args: SubscriptionEmailOption
   });
 }
 
-export async function sendSubscriptionErrorEmail(args: SubscriptionEmailOptions) {
+export async function sendSubscriptionErrorEmail(
+  args: SubscriptionEmailOptions,
+) {
   const html = await render(<SubscriptionErrorEmail {...args} />);
   await sendEmail({
     to: args.email,

@@ -2,7 +2,14 @@
 
 import { PermissionGate } from "@/components/permission-gate";
 import { Button } from "@v1/ui/button";
-import { Archive, Download, FolderPlus, MapPin, Printer, X } from "lucide-react";
+import {
+  Archive,
+  Download,
+  FolderPlus,
+  MapPin,
+  Printer,
+  X,
+} from "lucide-react";
 
 interface BulkActionsBarProps {
   selectedCount: number;

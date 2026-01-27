@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@v1/ui/components/button";
+import { Button } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
 import {
   AlertCircle,

@@ -27,12 +27,10 @@ export function toJSON(
   const { pretty = true, indent = 2 } = options;
 
   try {
-    return pretty
-      ? JSON.stringify(data, null, indent)
-      : JSON.stringify(data);
+    return pretty ? JSON.stringify(data, null, indent) : JSON.stringify(data);
   } catch (error) {
     throw new Error(
-      `Failed to convert to JSON: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Failed to convert to JSON: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }
@@ -47,7 +45,7 @@ export function fromJSON<T = unknown>(jsonString: string): T {
     return JSON.parse(jsonString) as T;
   } catch (error) {
     throw new Error(
-      `Failed to parse JSON: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Failed to parse JSON: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }
@@ -70,11 +68,11 @@ export interface XmlConversionOptions {
  */
 function escapeXml(str: string): string {
   return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
 
 /**
@@ -86,9 +84,9 @@ function unescapeXml(str: string): string {
   return str
     .replace(/&apos;/g, "'")
     .replace(/&quot;/g, '"')
-    .replace(/&gt;/g, '>')
-    .replace(/&lt;/g, '<')
-    .replace(/&amp;/g, '&');
+    .replace(/&gt;/g, ">")
+    .replace(/&lt;/g, "<")
+    .replace(/&amp;/g, "&");
 }
 
 /**
@@ -98,20 +96,18 @@ function unescapeXml(str: string): string {
  * @param indent - Indentation string
  * @returns XML element string
  */
-function valueToXml(key: string, value: unknown, indent = ''): string {
+function valueToXml(key: string, value: unknown, indent = ""): string {
   if (value === null || value === undefined) {
     return `${indent}<${key} />`;
   }
 
-  if (typeof value === 'object' && !Array.isArray(value)) {
+  if (typeof value === "object" && !Array.isArray(value)) {
     const nested = objectToXml(value as Record<string, unknown>, `${indent}  `);
     return `${indent}<${key}>\n${nested}\n${indent}</${key}>`;
   }
 
   if (Array.isArray(value)) {
-    return value
-      .map(item => valueToXml(key, item, indent))
-      .join('\n');
+    return value.map((item) => valueToXml(key, item, indent)).join("\n");
   }
 
   const escapedValue = escapeXml(String(value));
@@ -124,10 +120,10 @@ function valueToXml(key: string, value: unknown, indent = ''): string {
  * @param indent - Indentation string
  * @returns XML elements string
  */
-function objectToXml(obj: Record<string, unknown>, indent = ''): string {
+function objectToXml(obj: Record<string, unknown>, indent = ""): string {
   return Object.entries(obj)
     .map(([key, value]) => valueToXml(key, value, indent))
-    .join('\n');
+    .join("\n");
 }
 
 /**
@@ -142,9 +138,9 @@ export function toXML(
 ): string {
   const {
     pretty = true,
-    indent = '  ',
-    rootTag = 'data',
-    itemTag = 'item',
+    indent = "  ",
+    rootTag = "data",
+    itemTag = "item",
   } = options;
 
   try {
@@ -153,16 +149,19 @@ export function toXML(
     if (Array.isArray(data)) {
       xml += `<${rootTag}>\n`;
       xml += data
-        .map(item => {
-          if (typeof item === 'object' && item !== null) {
-            const content = objectToXml(item as Record<string, unknown>, indent + indent);
+        .map((item) => {
+          if (typeof item === "object" && item !== null) {
+            const content = objectToXml(
+              item as Record<string, unknown>,
+              indent + indent,
+            );
             return `${indent}<${itemTag}>\n${content}\n${indent}</${itemTag}>`;
           }
           return `${indent}<${itemTag}>${escapeXml(String(item))}</${itemTag}>`;
         })
-        .join('\n');
+        .join("\n");
       xml += `\n</${rootTag}>`;
-    } else if (typeof data === 'object' && data !== null) {
+    } else if (typeof data === "object" && data !== null) {
       xml += `<${rootTag}>\n`;
       xml += objectToXml(data as Record<string, unknown>, indent);
       xml += `\n</${rootTag}>`;
@@ -170,10 +169,10 @@ export function toXML(
       xml += `<${rootTag}>${escapeXml(String(data))}</${rootTag}>`;
     }
 
-    return pretty ? xml : xml.replace(/\n\s*/g, '');
+    return pretty ? xml : xml.replace(/\n\s*/g, "");
   } catch (error) {
     throw new Error(
-      `Failed to convert to XML: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Failed to convert to XML: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }
@@ -187,20 +186,23 @@ function parseXmlElement(element: string): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
   // Match all child elements
-  const elementRegex = /<(\w+)(?:\s[^>]*)?>(.+?)<\/\1>|<(\w+)(?:\s[^>]*)?\s*\/>/gs;
+  const elementRegex =
+    /<(\w+)(?:\s[^>]*)?>(.+?)<\/\1>|<(\w+)(?:\s[^>]*)?\s*\/>/gs;
   const matches = element.matchAll(elementRegex);
 
   for (const match of matches) {
-    const tagName = match[1] || match[3];
+    const tagName = match[1] ?? match[3];
     const content = match[2];
 
-    if (!content) {
-      result[tagName] = null;
+    if (!tagName || !content) {
+      if (tagName) {
+        result[tagName] = null;
+      }
       continue;
     }
 
     // Check if content contains nested elements
-    if (content.includes('<')) {
+    if (content.includes("<")) {
       result[tagName] = parseXmlElement(content);
     } else {
       result[tagName] = unescapeXml(content.trim());
@@ -218,15 +220,18 @@ function parseXmlElement(element: string): Record<string, unknown> {
 export function fromXML<T = unknown>(xmlString: string): T {
   try {
     // Remove XML declaration
-    const cleaned = xmlString.replace(/<\?xml[^?]*\?>/g, '').trim();
+    const cleaned = xmlString.replace(/<\?xml[^?]*\?>/g, "").trim();
 
     // Find root element
     const rootMatch = cleaned.match(/<(\w+)(?:\s[^>]*)?>(.+)<\/\1>/s);
     if (!rootMatch) {
-      throw new Error('Invalid XML: No root element found');
+      throw new Error("Invalid XML: No root element found");
     }
 
     const rootContent = rootMatch[2];
+    if (!rootContent) {
+      throw new Error("Invalid XML: Root element is empty");
+    }
 
     // Check if root contains multiple items with the same tag (array)
     const itemRegex = /<(\w+)(?:\s[^>]*)?>(.+?)<\/\1>/gs;
@@ -234,14 +239,16 @@ export function fromXML<T = unknown>(xmlString: string): T {
 
     if (items.length > 0) {
       // Check if all items have the same tag name
-      const firstTag = items[0][1];
-      const allSameTag = items.every(item => item[1] === firstTag);
+      const firstTag = items[0]?.[1];
+      const allSameTag =
+        firstTag && items.every((item) => item[1] === firstTag);
 
       if (allSameTag && items.length > 1) {
         // Parse as array
-        return items.map(item => {
+        return items.map((item) => {
           const content = item[2];
-          return content.includes('<')
+          if (!content) return null;
+          return content.includes("<")
             ? parseXmlElement(content)
             : unescapeXml(content.trim());
         }) as T;
@@ -252,7 +259,7 @@ export function fromXML<T = unknown>(xmlString: string): T {
     return parseXmlElement(rootContent) as T;
   } catch (error) {
     throw new Error(
-      `Failed to parse XML: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Failed to parse XML: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }
@@ -278,7 +285,7 @@ export function isValidJSON(str: string): boolean {
  */
 export function isValidXML(str: string): boolean {
   try {
-    const cleaned = str.replace(/<\?xml[^?]*\?>/g, '').trim();
+    const cleaned = str.replace(/<\?xml[^?]*\?>/g, "").trim();
 
     // Check for root element
     const rootMatch = cleaned.match(/<(\w+)(?:\s[^>]*)?>.*<\/\1>/s);
@@ -305,15 +312,15 @@ export function isValidXML(str: string): boolean {
  * @param str - String to detect format
  * @returns Detected format or null if unknown
  */
-export function detectFormat(str: string): 'json' | 'xml' | null {
+export function detectFormat(str: string): "json" | "xml" | null {
   const trimmed = str.trim();
 
-  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-    return isValidJSON(trimmed) ? 'json' : null;
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    return isValidJSON(trimmed) ? "json" : null;
   }
 
-  if (trimmed.startsWith('<?xml') || trimmed.startsWith('<')) {
-    return isValidXML(trimmed) ? 'xml' : null;
+  if (trimmed.startsWith("<?xml") || trimmed.startsWith("<")) {
+    return isValidXML(trimmed) ? "xml" : null;
   }
 
   return null;

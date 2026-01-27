@@ -41,10 +41,13 @@ describe("Export Formats E2E Verification", () => {
     });
 
     // Test CSV export
-    const csvExport = await asUser.mutation(api.imports.exportAccessionsWithFormat, {
-      organizationId: orgId as Id<"organizations">,
-      format: "csv",
-    });
+    const csvExport = await asUser.mutation(
+      api.imports.exportAccessionsWithFormat,
+      {
+        organizationId: orgId as Id<"organizations">,
+        format: "csv",
+      },
+    );
 
     expect(csvExport).toContain("accessionNumber");
     expect(csvExport).toContain("ACC-2024-001");
@@ -52,38 +55,53 @@ describe("Export Formats E2E Verification", () => {
     console.log("✓ CSV export verified - contains headers and data");
 
     // Test JSON export
-    const jsonExport = await asUser.mutation(api.imports.exportAccessionsWithFormat, {
-      organizationId: orgId as Id<"organizations">,
-      format: "json",
-    });
+    const jsonExport = await asUser.mutation(
+      api.imports.exportAccessionsWithFormat,
+      {
+        organizationId: orgId as Id<"organizations">,
+        format: "json",
+      },
+    );
 
     const jsonData = JSON.parse(jsonExport);
     expect(Array.isArray(jsonData)).toBe(true);
     expect(jsonData.length).toBeGreaterThan(0);
     expect(jsonData[0].accessionNumber).toBe("ACC-2024-001");
-    console.log("✓ JSON export verified - valid JSON structure with correct data");
+    console.log(
+      "✓ JSON export verified - valid JSON structure with correct data",
+    );
 
     // Test XML export
-    const xmlExport = await asUser.mutation(api.imports.exportAccessionsWithFormat, {
-      organizationId: orgId as Id<"organizations">,
-      format: "xml",
-    });
+    const xmlExport = await asUser.mutation(
+      api.imports.exportAccessionsWithFormat,
+      {
+        organizationId: orgId as Id<"organizations">,
+        format: "xml",
+      },
+    );
 
     expect(xmlExport).toContain('<?xml version="1.0" encoding="UTF-8"?>');
     expect(xmlExport).toContain("<accessions>");
     expect(xmlExport).toContain("<accession>");
-    expect(xmlExport).toContain("<accessionNumber>ACC-2024-001</accessionNumber>");
+    expect(xmlExport).toContain(
+      "<accessionNumber>ACC-2024-001</accessionNumber>",
+    );
     console.log("✓ XML export verified - valid XML structure with proper tags");
 
     // Test SPECTRUM export
-    const spectrumExport = await asUser.mutation(api.imports.exportAccessionsWithFormat, {
-      organizationId: orgId as Id<"organizations">,
-      format: "spectrum",
-    });
+    const spectrumExport = await asUser.mutation(
+      api.imports.exportAccessionsWithFormat,
+      {
+        organizationId: orgId as Id<"organizations">,
+        format: "spectrum",
+      },
+    );
 
     expect(spectrumExport).toContain('<?xml version="1.0" encoding="UTF-8"?>');
     expect(spectrumExport).toContain("spectrum:entries");
-    expect(spectrumExport).toContain("<ObjectNumber>ACC-2024-001</ObjectNumber>");
+    expect(spectrumExport).toContain(
+      "<ObjectNumber>ACC-2024-001</ObjectNumber>",
+    );
     console.log("✓ SPECTRUM export verified - valid SPECTRUM XML structure");
   });
 
@@ -131,10 +149,13 @@ describe("Export Formats E2E Verification", () => {
     });
 
     // Test CSV export
-    const csvExport = await asUser.mutation(api.imports.exportObjectsWithFormat, {
-      organizationId: orgId as Id<"organizations">,
-      format: "csv",
-    });
+    const csvExport = await asUser.mutation(
+      api.imports.exportObjectsWithFormat,
+      {
+        organizationId: orgId as Id<"organizations">,
+        format: "csv",
+      },
+    );
 
     expect(csvExport).toContain("accessionNumber");
     expect(csvExport).toContain("2024.001");
@@ -142,10 +163,13 @@ describe("Export Formats E2E Verification", () => {
     console.log("✓ CSV export verified for collections");
 
     // Test JSON export
-    const jsonExport = await asUser.mutation(api.imports.exportObjectsWithFormat, {
-      organizationId: orgId as Id<"organizations">,
-      format: "json",
-    });
+    const jsonExport = await asUser.mutation(
+      api.imports.exportObjectsWithFormat,
+      {
+        organizationId: orgId as Id<"organizations">,
+        format: "json",
+      },
+    );
 
     const jsonData = JSON.parse(jsonExport);
     expect(Array.isArray(jsonData)).toBe(true);
@@ -154,10 +178,13 @@ describe("Export Formats E2E Verification", () => {
     console.log("✓ JSON export verified for collections");
 
     // Test XML export
-    const xmlExport = await asUser.mutation(api.imports.exportObjectsWithFormat, {
-      organizationId: orgId as Id<"organizations">,
-      format: "xml",
-    });
+    const xmlExport = await asUser.mutation(
+      api.imports.exportObjectsWithFormat,
+      {
+        organizationId: orgId as Id<"organizations">,
+        format: "xml",
+      },
+    );
 
     expect(xmlExport).toContain('<?xml version="1.0" encoding="UTF-8"?>');
     expect(xmlExport).toContain("<collections>");
@@ -166,10 +193,13 @@ describe("Export Formats E2E Verification", () => {
     console.log("✓ XML export verified for collections");
 
     // Test Dublin Core export
-    const dcExport = await asUser.mutation(api.imports.exportObjectsWithFormat, {
-      organizationId: orgId as Id<"organizations">,
-      format: "dublincore",
-    });
+    const dcExport = await asUser.mutation(
+      api.imports.exportObjectsWithFormat,
+      {
+        organizationId: orgId as Id<"organizations">,
+        format: "dublincore",
+      },
+    );
 
     expect(dcExport).toContain('<?xml version="1.0" encoding="UTF-8"?>');
     expect(dcExport).toContain("dublincore:records");
@@ -179,10 +209,13 @@ describe("Export Formats E2E Verification", () => {
     console.log("✓ Dublin Core export verified - proper metadata mapping");
 
     // Test SPECTRUM export
-    const spectrumExport = await asUser.mutation(api.imports.exportObjectsWithFormat, {
-      organizationId: orgId as Id<"organizations">,
-      format: "spectrum",
-    });
+    const spectrumExport = await asUser.mutation(
+      api.imports.exportObjectsWithFormat,
+      {
+        organizationId: orgId as Id<"organizations">,
+        format: "spectrum",
+      },
+    );
 
     expect(spectrumExport).toContain('<?xml version="1.0" encoding="UTF-8"?>');
     expect(spectrumExport).toContain("spectrum:objects");
@@ -214,20 +247,26 @@ describe("Export Formats E2E Verification", () => {
     });
 
     // Test empty CSV export
-    const csvExport = await asUser.mutation(api.imports.exportAccessionsWithFormat, {
-      organizationId: orgId as Id<"organizations">,
-      format: "csv",
-    });
+    const csvExport = await asUser.mutation(
+      api.imports.exportAccessionsWithFormat,
+      {
+        organizationId: orgId as Id<"organizations">,
+        format: "csv",
+      },
+    );
 
     expect(csvExport).toContain("accessionNumber");
     expect(csvExport.split("\n").length).toBe(1); // Only header row
     console.log("✓ Empty CSV export handled correctly");
 
     // Test empty JSON export
-    const jsonExport = await asUser.mutation(api.imports.exportAccessionsWithFormat, {
-      organizationId: orgId as Id<"organizations">,
-      format: "json",
-    });
+    const jsonExport = await asUser.mutation(
+      api.imports.exportAccessionsWithFormat,
+      {
+        organizationId: orgId as Id<"organizations">,
+        format: "json",
+      },
+    );
 
     const jsonData = JSON.parse(jsonExport);
     expect(Array.isArray(jsonData)).toBe(true);
@@ -235,10 +274,13 @@ describe("Export Formats E2E Verification", () => {
     console.log("✓ Empty JSON export handled correctly");
 
     // Test empty XML export
-    const xmlExport = await asUser.mutation(api.imports.exportAccessionsWithFormat, {
-      organizationId: orgId as Id<"organizations">,
-      format: "xml",
-    });
+    const xmlExport = await asUser.mutation(
+      api.imports.exportAccessionsWithFormat,
+      {
+        organizationId: orgId as Id<"organizations">,
+        format: "xml",
+      },
+    );
 
     expect(xmlExport).toContain('<?xml version="1.0" encoding="UTF-8"?>');
     expect(xmlExport).toContain("<accessions>");
@@ -273,35 +315,48 @@ describe("Export Formats E2E Verification", () => {
         title: 'Test "Artwork" with <special> & characters',
         creator: "Artist & Co.",
         objectType: "Painting",
-        description: "Description with\nnewlines and \"quotes\"",
+        description: 'Description with\nnewlines and "quotes"',
         status: "active",
       });
     });
 
     // Test CSV escaping
-    const csvExport = await asUser.mutation(api.imports.exportObjectsWithFormat, {
-      organizationId: orgId as Id<"organizations">,
-      format: "csv",
-    });
+    const csvExport = await asUser.mutation(
+      api.imports.exportObjectsWithFormat,
+      {
+        organizationId: orgId as Id<"organizations">,
+        format: "csv",
+      },
+    );
 
-    expect(csvExport).toContain('"Test ""Artwork"" with <special> & characters"');
+    expect(csvExport).toContain(
+      '"Test ""Artwork"" with <special> & characters"',
+    );
     console.log("✓ CSV special character escaping verified");
 
     // Test JSON escaping
-    const jsonExport = await asUser.mutation(api.imports.exportObjectsWithFormat, {
-      organizationId: orgId as Id<"organizations">,
-      format: "json",
-    });
+    const jsonExport = await asUser.mutation(
+      api.imports.exportObjectsWithFormat,
+      {
+        organizationId: orgId as Id<"organizations">,
+        format: "json",
+      },
+    );
 
     const jsonData = JSON.parse(jsonExport);
-    expect(jsonData[0].title).toBe('Test "Artwork" with <special> & characters');
+    expect(jsonData[0].title).toBe(
+      'Test "Artwork" with <special> & characters',
+    );
     console.log("✓ JSON special character handling verified");
 
     // Test XML escaping
-    const xmlExport = await asUser.mutation(api.imports.exportObjectsWithFormat, {
-      organizationId: orgId as Id<"organizations">,
-      format: "xml",
-    });
+    const xmlExport = await asUser.mutation(
+      api.imports.exportObjectsWithFormat,
+      {
+        organizationId: orgId as Id<"organizations">,
+        format: "xml",
+      },
+    );
 
     expect(xmlExport).toContain("&lt;");
     expect(xmlExport).toContain("&gt;");

@@ -83,6 +83,7 @@ export const getAnalytics = query({
           v.literal("deaccession"),
         ),
         id: v.string(),
+        entityId: v.optional(v.string()),
         title: v.string(),
         subtitle: v.optional(v.string()),
         timestamp: v.number(),
@@ -98,17 +99,12 @@ export const getAnalytics = query({
     );
 
     // Query locations first as they're needed for filtering collections
-    let locations = await ctx.db
+    const locations = await ctx.db
       .query("locations")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
       .collect();
-
-    // Filter by siteId if provided
-    if (args.siteId !== undefined) {
-      locations = locations.filter((loc) => loc.siteId === args.siteId);
-    }
 
     let collectionGroups = await ctx.db
       .query("collectionGroups")
@@ -231,11 +227,13 @@ export const getAnalytics = query({
               if (primaryMedia) {
                 if (primaryMedia.thumbnailStorageId) {
                   imageUrl =
-                    (await ctx.storage.getUrl(primaryMedia.thumbnailStorageId)) ??
-                    undefined;
+                    (await ctx.storage.getUrl(
+                      primaryMedia.thumbnailStorageId,
+                    )) ?? undefined;
                 } else {
                   imageUrl =
-                    (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined;
+                    (await ctx.storage.getUrl(primaryMedia.storageId)) ??
+                    undefined;
                 }
                 break;
               }
@@ -259,7 +257,8 @@ export const getAnalytics = query({
                       undefined;
                   } else {
                     imageUrl =
-                      (await ctx.storage.getUrl(anyMedia.storageId)) ?? undefined;
+                      (await ctx.storage.getUrl(anyMedia.storageId)) ??
+                      undefined;
                   }
                   break;
                 }
@@ -324,9 +323,11 @@ export const getAnalytics = query({
 
       auditLogEntries = auditLogEntries.filter((event) => {
         if (event.entityType.includes("collection")) {
-          const entityId = event.entityId as unknown as Id<"collections">;
           return (
-            collectionIds.has(entityId) || collectionGroupIds.has(entityId)
+            collectionIds.has(event.entityId as unknown as Id<"collections">) ||
+            collectionGroupIds.has(
+              event.entityId as unknown as Id<"collectionGroups">,
+            )
           );
         }
         if (event.entityType.includes("loan")) {
@@ -429,7 +430,8 @@ export const getAnalytics = query({
 
           return {
             type,
-            id: event.entityId,
+            id: event._id,
+            entityId: event.entityId,
             title,
             subtitle,
             timestamp: event.timestamp,

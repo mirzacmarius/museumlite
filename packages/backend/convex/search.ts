@@ -93,7 +93,9 @@ async function multiFieldSearch(
   // This searches: creator, alternativeTitle, objectName, objectType, culture
   const metadataResults = await ctx.db
     .query("collections")
-    .withIndex("by_organization", (q: any) => q.eq("organizationId", organizationId))
+    .withIndex("by_organization", (q: any) =>
+      q.eq("organizationId", organizationId),
+    )
     .filter((q: any) =>
       q.or(
         // Search in creator field (case-insensitive prefix match)
@@ -399,38 +401,6 @@ export const globalSearch = query({
       }));
     }
 
-    // Log performance metrics
-    const endTime = Date.now();
-    const durationMs = endTime - startTime;
-    const isWithinThreshold = durationMs < 500;
-
-    // Calculate total results
-    const totalResults =
-      results.objects.length +
-      results.collectionGroups.length +
-      results.loans.length +
-      results.accounts.length +
-      results.accessions.length +
-      results.locations.length;
-
-    // Log performance (fire and forget - don't await)
-    ctx.scheduler.runAfter(0, logSearchPerformance, {
-      organizationId: args.organizationId,
-      queryType: "globalSearch",
-      searchQuery,
-      durationMs,
-      resultCounts: {
-        objects: results.objects.length,
-        collectionGroups: results.collectionGroups.length,
-        loans: results.loans.length,
-        accounts: results.accounts.length,
-        accessions: results.accessions.length,
-        locations: results.locations.length,
-        total: totalResults,
-      },
-      isWithinThreshold,
-    });
-
     return results;
   },
 });
@@ -509,24 +479,6 @@ export const paginatedSearchCollections = query({
     );
     const page = searchResults.slice(startIndex, endIndex);
 
-    // Log performance metrics
-    const endTime = Date.now();
-    const durationMs = endTime - startTime;
-    const isWithinThreshold = durationMs < 500;
-
-    // Log performance (fire and forget - don't await)
-    ctx.scheduler.runAfter(0, logSearchPerformance, {
-      organizationId: args.organizationId,
-      queryType: "paginatedSearchCollections",
-      searchQuery,
-      durationMs,
-      resultCounts: {
-        objects: page.length,
-        total: page.length,
-      },
-      isWithinThreshold,
-    });
-
     return {
       page: page.map((obj) => ({
         _id: obj._id,
@@ -582,7 +534,9 @@ export const searchSuggestions = query({
     // Get collections to extract suggestions from various fields
     const collections = await ctx.db
       .query("collections")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
       .take(100); // Sample from recent items
 
     for (const item of collections) {
@@ -597,12 +551,18 @@ export const searchSuggestions = query({
       }
 
       // Add object name suggestions
-      if (item.objectName && item.objectName.toLowerCase().includes(queryPrefix)) {
+      if (
+        item.objectName &&
+        item.objectName.toLowerCase().includes(queryPrefix)
+      ) {
         suggestions.add(item.objectName);
       }
 
       // Add object type suggestions
-      if (item.objectType && item.objectType.toLowerCase().includes(queryPrefix)) {
+      if (
+        item.objectType &&
+        item.objectType.toLowerCase().includes(queryPrefix)
+      ) {
         suggestions.add(item.objectType);
       }
 
@@ -639,23 +599,6 @@ export const searchSuggestions = query({
         return a.localeCompare(b);
       })
       .slice(0, limit);
-
-    // Log performance metrics
-    const endTime = Date.now();
-    const durationMs = endTime - startTime;
-    const isWithinThreshold = durationMs < 500;
-
-    // Log performance (fire and forget - don't await)
-    ctx.scheduler.runAfter(0, logSearchPerformance, {
-      organizationId: args.organizationId,
-      queryType: "searchSuggestions",
-      searchQuery: queryPrefix,
-      durationMs,
-      resultCounts: {
-        total: sortedSuggestions.length,
-      },
-      isWithinThreshold,
-    });
 
     return sortedSuggestions;
   },

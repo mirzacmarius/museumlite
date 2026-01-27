@@ -116,7 +116,10 @@ export function MediaEditorDialog({
           });
         }
 
-        if (editMetadata.brightness !== undefined || editMetadata.contrast !== undefined) {
+        if (
+          editMetadata.brightness !== undefined ||
+          editMetadata.contrast !== undefined
+        ) {
           await trackEdit({
             mediaId,
             versionId,
@@ -142,7 +145,9 @@ export function MediaEditorDialog({
         onClose();
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : "Failed to save edited media",
+          error instanceof Error
+            ? error.message
+            : "Failed to save edited media",
         );
       } finally {
         setIsSaving(false);
@@ -185,12 +190,16 @@ export function MediaEditorDialog({
   };
 
   // Prepare watermark settings
-  const watermarkSettings: WatermarkSettings | undefined = organizationSettings?.settings?.watermarkSettings
+  const watermarkSettings: WatermarkSettings | undefined = organizationSettings
+    ?.settings?.watermarkSettings
     ? {
-        isEnabled: organizationSettings.settings.watermarkSettings.isEnabled ?? false,
+        isEnabled:
+          organizationSettings.settings.watermarkSettings.isEnabled ?? false,
         text: organizationSettings.settings.watermarkSettings.text ?? "",
         opacity: organizationSettings.settings.watermarkSettings.opacity ?? 0.5,
-        position: organizationSettings.settings.watermarkSettings.position ?? "bottom-right",
+        position:
+          organizationSettings.settings.watermarkSettings.position ??
+          "bottom-right",
       }
     : undefined;
 

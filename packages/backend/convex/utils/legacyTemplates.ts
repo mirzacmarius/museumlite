@@ -568,9 +568,7 @@ export const TMS_TEMPLATE: ImportTemplate = {
  * @param templateName - Name of the template (case-insensitive)
  * @returns Import template or undefined if not found
  */
-export function getTemplate(
-  templateName: string,
-): ImportTemplate | undefined {
+export function getTemplate(templateName: string): ImportTemplate | undefined {
   const normalized = templateName.toLowerCase().trim();
 
   switch (normalized) {
@@ -612,27 +610,34 @@ export function applyMappings(
     // Skip if source field is missing and not required
     if (sourceValue === undefined || sourceValue === null) {
       if (mapping.required) {
-        throw new Error(
-          `Required field ${mapping.sourceField} is missing`,
-        );
+        throw new Error(`Required field ${mapping.sourceField} is missing`);
       }
       continue;
     }
 
     // Apply transformation if specified
-    let transformedValue = sourceValue;
-    if (mapping.transform) {
-      transformedValue = applyTransform(
-        sourceValue,
-        mapping.transform,
-      );
-    }
+    const transformedValue = mapping.transform
+      ? applyTransform(sourceValue, mapping.transform)
+      : sourceValue;
 
-    // Set the target field value
-    result[mapping.targetField] = transformedValue;
+    // Set the target field value - use setProperty helper to avoid strict mode issues
+    setProperty(result, mapping.targetField, transformedValue);
   }
 
   return result;
+}
+
+/**
+ * Helper function to set a property on a Record<string, unknown>
+ * This avoids TypeScript strict mode issues with unknown values
+ */
+function setProperty(
+  obj: Record<string, unknown>,
+  key: string,
+  value: unknown,
+): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (obj as any)[key] = value;
 }
 
 /**
@@ -814,9 +819,10 @@ export function findMapping(
   if (exactMatch) return exactMatch;
 
   // Try partial match
-  const partialMatch = mappings.find((m) =>
-    m.sourceField.toLowerCase().includes(normalized) ||
-    normalized.includes(m.sourceField.toLowerCase())
+  const partialMatch = mappings.find(
+    (m) =>
+      m.sourceField.toLowerCase().includes(normalized) ||
+      normalized.includes(m.sourceField.toLowerCase()),
   );
   return partialMatch;
 }
