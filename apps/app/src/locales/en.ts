@@ -68,6 +68,7 @@ export default {
     },
     sidebar: {
       general: "General",
+      notifications: "Notifications",
       organization: "Organization",
       users: "Users",
       roles: "Roles",
@@ -77,6 +78,9 @@ export default {
       activity: "Activity",
       developer: "Developer",
       data: "Data Import/Export",
+    },
+    notifications: {
+      title: "Notifications",
     },
     roles: {
       title: "Role Management",

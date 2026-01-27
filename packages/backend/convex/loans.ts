@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import { env } from "./env";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
@@ -897,17 +898,57 @@ export const approve = mutation({
           changes: { status: "active", step: currentStep },
         });
 
+        // Get loan items to include in email
+        const loanItems = await ctx.db
+          .query("loanItems")
+          .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+          .collect();
+
+        // Get item names from collections
+        let itemName = "Loan items";
+        if (loanItems.length > 0) {
+          const firstItem = loanItems[0];
+          const collection = firstItem
+            ? await ctx.db.get(firstItem.collectionId)
+            : null;
+          if (collection?.title) {
+            itemName = collection.title;
+            if (loanItems.length > 1) {
+              itemName += ` and ${loanItems.length - 1} other item${loanItems.length > 2 ? "s" : ""}`;
+            }
+          }
+        }
+
+        // Format dates for email
+        const startDate = loan.startDate
+          ? new Date(loan.startDate).toLocaleDateString()
+          : "TBD";
+        const endDate = loan.endDate
+          ? new Date(loan.endDate).toLocaleDateString()
+          : "TBD";
+
+        // Build loan URL
+        const loanUrl = `${env.SITE_URL}/loans/${args.loanId}`;
+
         const creatorEntry = history.find((h) => h.step === 0);
         const creatorId = creatorEntry?.approvedBy;
         if (creatorId && creatorId !== userId) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
+          await ctx.runMutation(internal.notifications.sendNotification, {
             organizationId: loan.organizationId,
             userId: creatorId,
-            type: "workflow_approved",
+            type: "loan_approved",
             title: "Loan Approved",
             message: `Loan ${loan.loanNumber} has been fully approved and is now active.`,
             relatedEntityType: "loan",
             relatedEntityId: args.loanId,
+            emailData: {
+              loanId: args.loanId,
+              itemName,
+              borrowerName: loan.lenderBorrowerName,
+              startDate,
+              endDate,
+              loanUrl,
+            },
           });
         }
       } else {
@@ -969,9 +1010,41 @@ export const approve = mutation({
         )
         .collect();
 
+      // Get loan items to include in email
+      const loanItems = await ctx.db
+        .query("loanItems")
+        .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+        .collect();
+
+      // Get item names from collections
+      let itemName = "Loan items";
+      if (loanItems.length > 0) {
+        const firstItem = loanItems[0];
+        const collection = firstItem
+          ? await ctx.db.get(firstItem.collectionId)
+          : null;
+        if (collection?.title) {
+          itemName = collection.title;
+          if (loanItems.length > 1) {
+            itemName += ` and ${loanItems.length - 1} other item${loanItems.length > 2 ? "s" : ""}`;
+          }
+        }
+      }
+
+      // Format dates for email
+      const startDate = loan.startDate
+        ? new Date(loan.startDate).toLocaleDateString()
+        : "TBD";
+      const endDate = loan.endDate
+        ? new Date(loan.endDate).toLocaleDateString()
+        : "TBD";
+
+      // Build loan URL (this will be used in the email deep link)
+      const loanUrl = `${env.SITE_URL}/loans/${args.loanId}`;
+
       for (const userOrg of userOrgs) {
         if (userOrg.userId !== userId) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
+          await ctx.runMutation(internal.notifications.sendNotification, {
             organizationId: loan.organizationId,
             userId: userOrg.userId,
             type: "loan_approved",
@@ -979,6 +1052,14 @@ export const approve = mutation({
             message: `Loan ${loan.loanNumber} has been approved and is now active.`,
             relatedEntityType: "loan",
             relatedEntityId: args.loanId,
+            emailData: {
+              loanId: args.loanId,
+              itemName,
+              borrowerName: loan.lenderBorrowerName,
+              startDate,
+              endDate,
+              loanUrl,
+            },
           });
         }
       }
@@ -1045,17 +1126,57 @@ export const reject = mutation({
       changes: { status: "cancelled", comment: args.comment },
     });
 
+    // Get loan items to include in email
+    const loanItems = await ctx.db
+      .query("loanItems")
+      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+      .collect();
+
+    // Get item names from collections
+    let itemName = "Loan items";
+    if (loanItems.length > 0) {
+      const firstItem = loanItems[0];
+      const collection = firstItem
+        ? await ctx.db.get(firstItem.collectionId)
+        : null;
+      if (collection?.title) {
+        itemName = collection.title;
+        if (loanItems.length > 1) {
+          itemName += ` and ${loanItems.length - 1} other item${loanItems.length > 2 ? "s" : ""}`;
+        }
+      }
+    }
+
+    // Format dates for email
+    const startDate = loan.startDate
+      ? new Date(loan.startDate).toLocaleDateString()
+      : "TBD";
+    const endDate = loan.endDate
+      ? new Date(loan.endDate).toLocaleDateString()
+      : "TBD";
+
+    // Build loan URL
+    const loanUrl = `${env.SITE_URL}/loans/${args.loanId}`;
+
     const creatorEntry = history.find((h) => h.step === 0);
     const creatorId = creatorEntry?.approvedBy;
     if (creatorId && creatorId !== userId) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
+      await ctx.runMutation(internal.notifications.sendNotification, {
         organizationId: loan.organizationId,
         userId: creatorId,
-        type: "workflow_rejected",
+        type: "loan_rejected",
         title: "Loan Rejected",
         message: `Loan ${loan.loanNumber} has been rejected.${args.comment ? ` Reason: ${args.comment}` : ""}`,
         relatedEntityType: "loan",
         relatedEntityId: args.loanId,
+        emailData: {
+          loanId: args.loanId,
+          itemName,
+          borrowerName: loan.lenderBorrowerName,
+          startDate,
+          endDate,
+          loanUrl,
+        },
       });
     }
 

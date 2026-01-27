@@ -9,6 +9,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const t = useScopedI18n("settings.sidebar");
   const pathname = usePathname();
   const isSettingsPath = pathname === "/settings";
+  const isNotificationsPath = pathname === "/settings/notifications";
   const isBillingPath = pathname === "/settings/billing";
   const isUsersPath = pathname === "/settings/users";
   const isRolesPath = pathname === "/settings/roles";
@@ -20,6 +21,11 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const isDataPath = pathname === "/settings/data";
   const navItems = [
     { href: "/settings", label: t("general"), active: isSettingsPath },
+    {
+      href: "/settings/notifications",
+      label: t("notifications"),
+      active: isNotificationsPath,
+    },
     {
       href: "/settings/organization",
       label: t("organization"),
@@ -83,6 +89,20 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
               )}
             >
               {t("general")}
+            </span>
+          </Link>
+          <Link
+            href="/settings/notifications"
+            className={cn(
+              `${buttonVariants({ variant: "ghost" })} ${isNotificationsPath && "bg-primary/5"} justify-start rounded-md`,
+            )}
+          >
+            <span
+              className={cn(
+                `text-sm text-primary/80 ${isNotificationsPath && "font-medium text-primary"}`,
+              )}
+            >
+              {t("notifications")}
             </span>
           </Link>
           <Link
