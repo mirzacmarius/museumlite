@@ -1584,28 +1584,35 @@ export const getDocumentChecklist = query({
 
     const checklist = accession.documentChecklist ?? [];
 
-    // Enrich with uploader names and URLs
-    const enrichedChecklist = await Promise.all(
-      checklist.map(async (item) => {
-        let uploaderName: string | undefined;
-        let url: string | undefined;
+    // Batch fetch uploader accounts to avoid N+1 queries
+    const uploaderIds = checklist
+      .map((item) => item.uploadedBy)
+      .filter((id): id is Id<"accounts"> => id !== undefined);
+    const uploaderMap = await batchLookup(ctx, uploaderIds, "accounts");
 
-        if (item.uploadedBy) {
-          const user = await ctx.db.get(item.uploadedBy);
-          uploaderName = user?.name || user?.email || undefined;
-        }
-
-        if (item.storageId) {
-          url = (await ctx.storage.getUrl(item.storageId)) ?? undefined;
-        }
-
-        return {
-          ...item,
-          uploaderName,
-          url,
-        };
-      }),
+    // Fetch storage URLs in parallel
+    const storageUrls = await Promise.all(
+      checklist.map((item) =>
+        item.storageId ? ctx.storage.getUrl(item.storageId) : Promise.resolve(null),
+      ),
     );
+
+    // Enrich with uploader names and URLs using batch lookup map
+    const enrichedChecklist = checklist.map((item, index) => {
+      let uploaderName: string | undefined;
+      if (item.uploadedBy) {
+        const user = uploaderMap.get(item.uploadedBy);
+        uploaderName = user?.name || user?.email || undefined;
+      }
+
+      const url = storageUrls[index] ?? undefined;
+
+      return {
+        ...item,
+        uploaderName,
+        url,
+      };
+    });
 
     const required = checklist.filter((i) => i.required);
     const uploaded = checklist.filter((i) => i.uploaded);
