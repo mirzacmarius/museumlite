@@ -8,6 +8,7 @@ import {
   mutation,
   query,
 } from "./_generated/server";
+import { sendInvitationEmail } from "./email/templates/invitationEmail";
 import { getNextCounterPreview } from "./utils/accessionCounter";
 import {
   AccessionNumberParser,
@@ -988,8 +989,36 @@ export const inviteUser = mutation({
       .first();
 
     if (!user) {
-      // TODO: Send invitation email
-      throw new Error("User not found. Email invitation not yet implemented.");
+      // User doesn't exist - create invitation for them
+      const invitation = await ctx.runMutation(
+        internal.invitations.createInvitationInternal,
+        {
+          organizationId: args.organizationId,
+          email: args.email,
+          roleId: args.roleId,
+          invitedBy: userId,
+        },
+      );
+
+      // Get organization, role, and inviter details for the email
+      const organization = await ctx.db.get(args.organizationId);
+      const role = await ctx.db.get(args.roleId);
+      const inviter = await ctx.db.get(userId);
+
+      if (!organization || !role || !inviter) {
+        throw new Error("Failed to load invitation details");
+      }
+
+      // Send invitation email
+      await sendInvitationEmail({
+        email: args.email,
+        organizationName: organization.name,
+        inviterName: inviter.name ?? inviter.email ?? "Someone",
+        role: role.name,
+        token: invitation.token,
+      });
+
+      return null;
     }
 
     // Check if user is already in organization
