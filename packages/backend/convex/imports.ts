@@ -302,6 +302,15 @@ export const exportAccessions = mutation({
         v.literal("cataloged"),
       ),
     ),
+    format: v.optional(
+      v.union(
+        v.literal("csv"),
+        v.literal("json"),
+        v.literal("xml"),
+        v.literal("dublincore"),
+        v.literal("spectrum"),
+      ),
+    ),
   },
   returns: v.array(
     v.object({
@@ -357,6 +366,15 @@ export const exportAccessions = mutation({
 export const exportLocations = mutation({
   args: {
     organizationId: v.id("organizations"),
+    format: v.optional(
+      v.union(
+        v.literal("csv"),
+        v.literal("json"),
+        v.literal("xml"),
+        v.literal("dublincore"),
+        v.literal("spectrum"),
+      ),
+    ),
   },
   returns: v.array(
     v.object({
@@ -416,6 +434,15 @@ export const exportAccounts = mutation({
         v.literal("both"),
         v.literal("institution"),
         v.literal("patron"),
+      ),
+    ),
+    format: v.optional(
+      v.union(
+        v.literal("csv"),
+        v.literal("json"),
+        v.literal("xml"),
+        v.literal("dublincore"),
+        v.literal("spectrum"),
       ),
     ),
   },
@@ -492,6 +519,15 @@ export const exportObjects = mutation({
         v.literal("loaned"),
         v.literal("deaccessioned"),
         v.literal("in_conservation"),
+      ),
+    ),
+    format: v.optional(
+      v.union(
+        v.literal("csv"),
+        v.literal("json"),
+        v.literal("xml"),
+        v.literal("dublincore"),
+        v.literal("spectrum"),
       ),
     ),
   },
@@ -834,6 +870,15 @@ export const exportLoans = mutation({
       ),
     ),
     type: v.optional(v.union(v.literal("incoming"), v.literal("outgoing"))),
+    format: v.optional(
+      v.union(
+        v.literal("csv"),
+        v.literal("json"),
+        v.literal("xml"),
+        v.literal("dublincore"),
+        v.literal("spectrum"),
+      ),
+    ),
   },
   returns: v.array(
     v.object({
