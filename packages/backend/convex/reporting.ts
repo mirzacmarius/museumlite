@@ -915,6 +915,92 @@ export const getConservationTrends = query({
   },
 });
 
+/**
+ * Get accession activity trends
+ */
+export const getAccessionTrends = query({
+  args: {
+    organizationId: v.id("organizations"),
+    period: v.union(
+      v.literal("daily"),
+      v.literal("weekly"),
+      v.literal("monthly"),
+    ),
+    startDate: v.number(),
+    endDate: v.number(),
+  },
+  returns: v.array(
+    v.object({
+      date: v.string(),
+      timestamp: v.number(),
+      receivedCount: v.number(),
+      approvedCount: v.number(),
+      approvalRate: v.optional(v.number()),
+      averageProcessingTime: v.optional(v.number()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    await requireFeatureAccess(ctx, args.organizationId, "reporting");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.view_analytics",
+    );
+
+    const accessions = await ctx.db
+      .query("accessions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const buckets = generateDateBuckets(args.startDate, args.endDate, args.period);
+
+    return buckets.map((bucket) => {
+      const receivedInBucket = accessions.filter(
+        (a) => a.dateReceived >= bucket.start && a.dateReceived < bucket.end,
+      );
+
+      const approvedInBucket = accessions.filter(
+        (a) =>
+          a.status === "approved" &&
+          a.approvedAt &&
+          a.approvedAt >= bucket.start &&
+          a.approvedAt < bucket.end,
+      );
+
+      const receivedCount = receivedInBucket.length;
+      const approvedCount = approvedInBucket.length;
+
+      const approvalRate =
+        receivedCount > 0
+          ? Math.round((approvedCount / receivedCount) * 100)
+          : undefined;
+
+      const processingTimes = approvedInBucket
+        .filter((a) => a.approvedAt)
+        .map((a) => a.approvedAt! - a.dateReceived);
+
+      const averageProcessingTime =
+        processingTimes.length > 0
+          ? Math.round(
+              processingTimes.reduce((sum, time) => sum + time, 0) /
+                processingTimes.length,
+            )
+          : undefined;
+
+      return {
+        date: bucket.label,
+        timestamp: bucket.start,
+        receivedCount,
+        approvedCount,
+        approvalRate,
+        averageProcessingTime,
+      };
+    });
+  },
+});
+
 // ============================================
 // 2.10.3 COLLECTION HEALTH DASHBOARD
 // ============================================
