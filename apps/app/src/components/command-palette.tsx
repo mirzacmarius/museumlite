@@ -32,9 +32,10 @@ import * as React from "react";
 import { useCommandPalette } from "./command-palette-provider";
 import { useOrganization } from "./organization-provider";
 
-function CommandObjectItem({
+const CommandObjectItem = React.memo(({
   obj,
   runCommand,
+  imageUrl,
 }: {
   obj: {
     _id: Id<"collections">;
@@ -42,11 +43,9 @@ function CommandObjectItem({
     accessionNumber: string;
   };
   runCommand: (command: () => unknown) => void;
-}) {
+  imageUrl: string | null | undefined;
+}) => {
   const router = useRouter();
-  const imageUrl = useQuery(api.media.getPrimaryImageUrl, {
-    collectionId: obj._id,
-  });
 
   return (
     <CommandItem
@@ -75,7 +74,9 @@ function CommandObjectItem({
       </div>
     </CommandItem>
   );
-}
+});
+
+CommandObjectItem.displayName = 'CommandObjectItem';
 
 export function CommandPalette() {
   const { open, setOpen } = useCommandPalette();
