@@ -8,8 +8,10 @@ function generateApiKey(): string {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let key = "ml_";
+  const randomValues = new Uint32Array(37);
+  crypto.getRandomValues(randomValues);
   for (let i = 0; i < 37; i++) {
-    key += chars.charAt(Math.floor(Math.random() * chars.length));
+    key += chars.charAt(randomValues[i] % chars.length);
   }
   return key;
 }
