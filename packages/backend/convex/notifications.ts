@@ -1014,7 +1014,7 @@ export const sendEmailNotification = internalMutation({
     // Get user preferences
     const prefs = await ctx.db
       .query("notificationPreferences")
-      .withIndex("by_user_and_org", (q) =>
+      .withIndex("by_user_and_organization", (q) =>
         q.eq("userId", args.userId).eq("organizationId", args.organizationId),
       )
       .first();

@@ -79,6 +79,9 @@ export default {
       developer: "Developer",
       data: "Data Import/Export",
     },
+    notifications: {
+      title: "Notifications",
+    },
     roles: {
       title: "Role Management",
       description: "Create and manage custom roles with specific permissions",
