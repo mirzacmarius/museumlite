@@ -1,5 +1,6 @@
 "use client";
 
+import { convertToCSV } from "@/lib/format-converters";
 import { useI18n } from "@/locales/client";
 import { Button, type ButtonProps } from "@v1/ui/button";
 import { Download, Loader2 } from "lucide-react";
@@ -10,44 +11,6 @@ interface ExportCSVButtonProps extends ButtonProps {
   data?: Record<string, unknown>[];
   onExport?: () => Promise<Record<string, unknown>[] | undefined>;
   filename: string;
-}
-
-export function convertToCSV(data: Record<string, unknown>[]): string {
-  // ... existing convertToCSV logic ...
-  if (data.length === 0) return "";
-
-  const headers = Object.keys(data[0] ?? {});
-  const csvRows: string[] = [];
-
-  csvRows.push(headers.join(","));
-
-  for (const row of data) {
-    const values = headers.map((header) => {
-      const value = row[header];
-      if (value === null || value === undefined) return "";
-      if (typeof value === "number") {
-        if (
-          header.toLowerCase().includes("date") ||
-          header.toLowerCase().includes("at")
-        ) {
-          return new Date(value).toISOString();
-        }
-        return String(value);
-      }
-      const stringValue = String(value);
-      if (
-        stringValue.includes(",") ||
-        stringValue.includes('"') ||
-        stringValue.includes("\n")
-      ) {
-        return `"${stringValue.replace(/"/g, '""')}"`;
-      }
-      return stringValue;
-    });
-    csvRows.push(values.join(","));
-  }
-
-  return csvRows.join("\n");
 }
 
 export function ExportCSVButton({

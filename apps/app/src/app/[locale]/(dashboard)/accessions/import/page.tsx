@@ -1,7 +1,12 @@
 "use client";
 
+import {
+  ImportFieldMapper,
+  type FieldMapping,
+} from "@/components/import-field-mapper";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { parseCSV } from "@/lib/csv-parser";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -26,7 +31,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 interface ParsedRow {
   accessionNumber?: string;
@@ -38,9 +43,13 @@ interface ParsedRow {
 }
 
 interface ImportState {
-  step: "upload" | "preview" | "importing" | "complete";
+  step: "upload" | "mapping" | "validation" | "preview" | "importing" | "complete";
   file: File | null;
+  rawData: Record<string, string>[];
+  sourceFields: string[];
+  fieldMappings: FieldMapping[];
   rows: ParsedRow[];
+  validationErrors: string[];
   errors: string[];
   jobId: Id<"importJobs"> | null;
 }
@@ -49,103 +58,14 @@ const REQUIRED_COLUMNS = ["dateReceived", "source", "method"];
 const OPTIONAL_COLUMNS = ["accessionNumber", "cost", "notes"];
 const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
 
-function parseCSV(text: string): { rows: ParsedRow[]; errors: string[] } {
-  const lines = text.split(/\r?\n/).filter((line) => line.trim());
-  if (lines.length < 2) {
-    return {
-      rows: [],
-      errors: ["CSV must have a header row and at least one data row"],
-    };
-  }
-
-  const headerLine = lines[0];
-  if (!headerLine) {
-    return { rows: [], errors: ["Missing header row"] };
-  }
-
-  const headers = headerLine
-    .split(",")
-    .map((h) => h.trim().replace(/^"|"$/g, ""));
-
-  const missingRequired = REQUIRED_COLUMNS.filter(
-    (col) => !headers.some((h) => h.toLowerCase() === col.toLowerCase()),
-  );
-
-  if (missingRequired.length > 0) {
-    return {
-      rows: [],
-      errors: [`Missing required columns: ${missingRequired.join(", ")}`],
-    };
-  }
-
-  const columnMap = new Map<string, number>();
-  for (const col of ALL_COLUMNS) {
-    const idx = headers.findIndex((h) => h.toLowerCase() === col.toLowerCase());
-    if (idx !== -1) {
-      columnMap.set(col, idx);
-    }
-  }
-
-  const rows: ParsedRow[] = [];
-  const errors: string[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line || !line.trim()) continue;
-
-    const values = parseCSVLine(line);
-
-    const getValue = (col: string): string => {
-      const idx = columnMap.get(col);
-      if (idx === undefined) return "";
-      return (values[idx] || "").trim();
-    };
-
-    const source = getValue("source");
-    if (!source) {
-      errors.push(`Row ${i + 1}: Source is required`);
-      continue;
-    }
-
-    rows.push({
-      accessionNumber: getValue("accessionNumber") || undefined,
-      dateReceived: getValue("dateReceived") || new Date().toISOString(),
-      source,
-      method: getValue("method") || "other",
-      cost: getValue("cost") || undefined,
-      notes: getValue("notes") || undefined,
-    });
-  }
-
-  return { rows, errors };
-}
-
-function parseCSVLine(line: string): string[] {
-  const result: string[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-
-    if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char === "," && !inQuotes) {
-      result.push(current);
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-
-  result.push(current);
-  return result;
-}
+const TARGET_FIELDS = [
+  { id: "dateReceived", label: "Date Received", required: true, description: "Date the item was received" },
+  { id: "source", label: "Source", required: true, description: "Source or donor of the item" },
+  { id: "method", label: "Method", required: true, description: "Acquisition method (purchase, donation, etc.)" },
+  { id: "accessionNumber", label: "Accession Number", required: false, description: "Unique identifier (auto-generated if empty)" },
+  { id: "cost", label: "Cost", required: false, description: "Acquisition cost" },
+  { id: "notes", label: "Notes", required: false, description: "Additional notes" },
+];
 
 export default function ImportAccessionsPage() {
   const { currentOrganizationId } = useOrganization();
@@ -155,7 +75,11 @@ export default function ImportAccessionsPage() {
   const [state, setState] = useState<ImportState>({
     step: "upload",
     file: null,
+    rawData: [],
+    sourceFields: [],
+    fieldMappings: [],
     rows: [],
+    validationErrors: [],
     errors: [],
     jobId: null,
   });
@@ -176,13 +100,47 @@ export default function ImportAccessionsPage() {
       const reader = new FileReader();
       reader.onload = (event) => {
         const text = event.target?.result as string;
-        const { rows, errors } = parseCSV(text);
+        const lines = text.split("\n").filter((line) => line.trim());
+
+        if (lines.length === 0) {
+          setState((prev) => ({
+            ...prev,
+            errors: ["CSV file is empty"],
+          }));
+          return;
+        }
+
+        const headerLine = lines[0];
+        if (!headerLine) return;
+
+        const headers = headerLine.split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
+
+        const rawData: Record<string, string>[] = [];
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i];
+          if (!line) continue;
+
+          const values = line.split(",").map((v) => v.trim().replace(/^"|"$/g, ""));
+          const row: Record<string, string> = {};
+
+          for (let j = 0; j < headers.length; j++) {
+            const header = headers[j];
+            if (header) {
+              row[header] = values[j] || "";
+            }
+          }
+          rawData.push(row);
+        }
 
         setState({
-          step: "preview",
+          step: "mapping",
           file,
-          rows,
-          errors,
+          rawData,
+          sourceFields: headers,
+          fieldMappings: [],
+          rows: [],
+          validationErrors: [],
+          errors: [],
           jobId: null,
         });
       };
@@ -194,6 +152,79 @@ export default function ImportAccessionsPage() {
     },
     [],
   );
+
+  const handleSaveMappings = useCallback((mappings: FieldMapping[]) => {
+    setState((prev) => ({
+      ...prev,
+      fieldMappings: mappings,
+      step: "validation",
+    }));
+
+    const mappingMap = new Map(
+      mappings
+        .filter((m) => m.targetField !== null)
+        .map((m) => [m.targetField, m.sourceField])
+    );
+
+    const getValue = (field: string) => {
+      const sourceField = mappingMap.get(field);
+      return sourceField || field;
+    };
+
+    const parsedRows: ParsedRow[] = [];
+    const validationErrors: string[] = [];
+
+    for (let i = 0; i < state.rawData.length; i++) {
+      const rowData = state.rawData[i];
+      if (!rowData) continue;
+
+      try {
+        const dateReceivedSource = getValue("dateReceived");
+        const sourceSource = getValue("source");
+        const methodSource = getValue("method");
+        const accessionNumberSource = getValue("accessionNumber");
+        const costSource = getValue("cost");
+        const notesSource = getValue("notes");
+
+        const dateReceived = rowData[dateReceivedSource];
+        const source = rowData[sourceSource];
+        const method = rowData[methodSource];
+
+        if (!dateReceived || !source || !method) {
+          const missing = [];
+          if (!dateReceived) missing.push("dateReceived");
+          if (!source) missing.push("source");
+          if (!method) missing.push("method");
+          validationErrors.push(`Row ${i + 1}: Missing required fields: ${missing.join(", ")}`);
+          continue;
+        }
+
+        parsedRows.push({
+          accessionNumber: rowData[accessionNumberSource] || undefined,
+          dateReceived,
+          source,
+          method,
+          cost: rowData[costSource] || undefined,
+          notes: rowData[notesSource] || undefined,
+        });
+      } catch (err) {
+        validationErrors.push(
+          `Row ${i + 1}: ${err instanceof Error ? err.message : "Parse error"}`
+        );
+      }
+    }
+
+    setState((prev) => ({
+      ...prev,
+      rows: parsedRows,
+      validationErrors,
+      step: validationErrors.length > 0 ? "validation" : "preview",
+    }));
+  }, [state.rawData]);
+
+  const handleContinueAfterValidation = useCallback(() => {
+    setState((prev) => ({ ...prev, step: "preview" }));
+  }, []);
 
   const handleStartImport = useCallback(async () => {
     if (!currentOrganizationId || state.rows.length === 0) return;
@@ -248,7 +279,11 @@ export default function ImportAccessionsPage() {
     setState({
       step: "upload",
       file: null,
+      rawData: [],
+      sourceFields: [],
+      fieldMappings: [],
       rows: [],
+      validationErrors: [],
       errors: [],
       jobId: null,
     });
@@ -357,6 +392,86 @@ export default function ImportAccessionsPage() {
               </div>
             )}
 
+            {state.step === "mapping" && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold">Map Fields</h2>
+                    <p className="text-sm text-muted-foreground">
+                      {state.rawData.length} rows from {state.file?.name}
+                    </p>
+                  </div>
+                  <Button variant="outline" onClick={handleReset}>
+                    <X className="mr-2 h-4 w-4" />
+                    {t("import.cancel")}
+                  </Button>
+                </div>
+
+                <ImportFieldMapper
+                  sourceFields={state.sourceFields}
+                  targetFields={TARGET_FIELDS}
+                  onSave={handleSaveMappings}
+                />
+              </div>
+            )}
+
+            {state.step === "validation" && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold">Validation Report</h2>
+                    <p className="text-sm text-muted-foreground">
+                      {state.rows.length} valid rows, {state.validationErrors.length} errors
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setState((prev) => ({ ...prev, step: "mapping" }))}
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back to Mapping
+                    </Button>
+                    {state.rows.length > 0 && (
+                      <Button
+                        onClick={handleContinueAfterValidation}
+                        className="bg-indigo-600 hover:bg-indigo-500"
+                      >
+                        Continue with {state.rows.length} Valid Rows
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {state.validationErrors.length > 0 && (
+                  <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
+                    <div className="flex items-center gap-2 text-destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="font-medium">
+                        {state.validationErrors.length} validation errors
+                      </span>
+                    </div>
+                    <ul className="mt-2 max-h-96 space-y-1 overflow-auto text-sm text-destructive">
+                      {state.validationErrors.map((error, index) => (
+                        <li key={`${error}-${index}`}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {state.rows.length > 0 && (
+                  <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-4">
+                    <div className="flex items-center gap-2 text-green-600">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span className="font-medium">
+                        {state.rows.length} rows passed validation
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {state.step === "preview" && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -372,9 +487,12 @@ export default function ImportAccessionsPage() {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleReset}>
-                      <X className="mr-2 h-4 w-4" />
-                      {t("import.cancel")}
+                    <Button
+                      variant="outline"
+                      onClick={() => setState((prev) => ({ ...prev, step: "validation" }))}
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back to Validation
                     </Button>
                     <PermissionGate permission="collections.create">
                       <Button
@@ -388,6 +506,17 @@ export default function ImportAccessionsPage() {
                     </PermissionGate>
                   </div>
                 </div>
+
+                {state.validationErrors.length > 0 && (
+                  <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
+                    <div className="flex items-center gap-2 text-amber-600">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="font-medium">
+                        {state.validationErrors.length} rows were skipped due to validation errors
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {state.errors.length > 0 && (
                   <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
