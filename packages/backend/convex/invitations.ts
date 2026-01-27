@@ -527,7 +527,10 @@ export const createInvitation = mutation({
     invitationId: v.id("organizationInvitations"),
     token: v.string(),
   }),
-  handler: async (ctx, args) => {
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ invitationId: Id<"organizationInvitations">; token: string }> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");

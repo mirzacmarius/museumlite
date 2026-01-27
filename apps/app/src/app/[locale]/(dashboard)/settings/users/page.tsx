@@ -376,7 +376,14 @@ export default function UsersSettingsPage() {
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {pendingInvitations.map((invitation) => (
+              {pendingInvitations.map((invitation: {
+                _id: Id<"organizationInvitations">;
+                email: string;
+                roleName: string;
+                expiresAt: number;
+                inviterName?: string;
+                isExpired: boolean;
+              }) => (
                 <div
                   key={invitation._id}
                   className="flex items-center justify-between p-4"
