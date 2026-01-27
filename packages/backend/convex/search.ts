@@ -57,6 +57,14 @@ export const globalSearch = query({
         type: v.optional(v.string()),
       }),
     ),
+    exhibitions: v.array(
+      v.object({
+        _id: v.id("exhibitions"),
+        title: v.string(),
+        location: v.optional(v.string()),
+        status: v.string(),
+      }),
+    ),
   }),
   handler: async (ctx, args) => {
     const searchLimit = args.limit ?? 5;
@@ -98,6 +106,12 @@ export const globalSearch = query({
         name: string;
         type?: string;
       }>,
+      exhibitions: [] as Array<{
+        _id: Id<"exhibitions">;
+        title: string;
+        location?: string;
+        status: string;
+      }>,
     };
 
     if (searchQuery.length < 2) {
@@ -112,12 +126,14 @@ export const globalSearch = query({
       canReadAccounts,
       canReadAccessions,
       canReadLocations,
+      canReadExhibitions,
     ] = await Promise.all([
       hasPermission(ctx, args.organizationId, "collections.read"),
       hasPermission(ctx, args.organizationId, "loans.read"),
       hasPermission(ctx, args.organizationId, "accounts.read"),
       hasPermission(ctx, args.organizationId, "accessions.read"),
       hasPermission(ctx, args.organizationId, "locations.read"),
+      hasPermission(ctx, args.organizationId, "collections.read"),
     ]);
 
     if (canReadCollections) {
@@ -240,6 +256,24 @@ export const globalSearch = query({
         _id: loc._id,
         name: loc.name,
         type: loc.type,
+      }));
+    }
+
+    if (canReadExhibitions) {
+      const exhibitionResults = await ctx.db
+        .query("exhibitions")
+        .withSearchIndex("search_exhibitions", (q) =>
+          q
+            .search("title", searchQuery)
+            .eq("organizationId", args.organizationId),
+        )
+        .take(searchLimit);
+
+      results.exhibitions = exhibitionResults.map((exh) => ({
+        _id: exh._id,
+        title: exh.title,
+        location: exh.location,
+        status: exh.status,
       }));
     }
 

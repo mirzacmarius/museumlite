@@ -1890,7 +1890,11 @@ export default defineSchema({
     .index("by_startDate", ["startDate"])
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_organization_and_startDate", ["organizationId", "startDate"])
-    .index("by_location", ["locationId"]),
+    .index("by_location", ["locationId"])
+    .searchIndex("search_exhibitions", {
+      searchField: "title",
+      filterFields: ["organizationId"],
+    }),
 
   // Track objects in exhibitions and their original locations
   exhibitionObjects: defineTable({

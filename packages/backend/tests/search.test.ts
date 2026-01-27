@@ -115,6 +115,7 @@ describe("Search: globalSearch", () => {
     expect(result.accounts).toEqual([]);
     expect(result.accessions).toEqual([]);
     expect(result.locations).toEqual([]);
+    expect(result.exhibitions).toEqual([]);
   });
 
   test("returns empty results for empty query", async () => {
@@ -138,6 +139,7 @@ describe("Search: globalSearch", () => {
     // #then
     expect(result.objects).toEqual([]);
     expect(result.loans).toEqual([]);
+    expect(result.exhibitions).toEqual([]);
   });
 
   test("returns correct structure with all entity arrays", async () => {
@@ -169,8 +171,10 @@ describe("Search: globalSearch", () => {
     expect(result).toHaveProperty("accounts");
     expect(result).toHaveProperty("accessions");
     expect(result).toHaveProperty("locations");
+    expect(result).toHaveProperty("exhibitions");
     expect(Array.isArray(result.objects)).toBe(true);
     expect(Array.isArray(result.loans)).toBe(true);
+    expect(Array.isArray(result.exhibitions)).toBe(true);
   });
 
   test("respects permission checks - no collections.read means no objects", async () => {
@@ -313,5 +317,6 @@ describe("Search: globalSearch", () => {
     // #then - should return empty (trimmed query is empty, < 2 chars)
     expect(result.objects).toEqual([]);
     expect(result.loans).toEqual([]);
+    expect(result.exhibitions).toEqual([]);
   });
 });
