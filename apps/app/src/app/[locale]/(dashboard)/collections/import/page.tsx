@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  ImportFieldMapper,
+  type FieldMapping,
+} from "@/components/import-field-mapper";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { parseCSV } from "@/lib/csv-parser";
@@ -27,7 +31,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 interface ParsedRow {
   accessionNumber?: string;
@@ -50,9 +54,13 @@ interface ParsedRow {
 }
 
 interface ImportState {
-  step: "upload" | "preview" | "importing" | "complete";
+  step: "upload" | "mapping" | "validation" | "preview" | "importing" | "complete";
   file: File | null;
+  rawData: Record<string, string>[];
+  sourceFields: string[];
+  fieldMappings: FieldMapping[];
   rows: ParsedRow[];
+  validationErrors: string[];
   errors: string[];
   jobId: Id<"importJobs"> | null;
 }
@@ -78,6 +86,26 @@ const OPTIONAL_COLUMNS = [
 ];
 const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
 
+const TARGET_FIELDS = [
+  { id: "title", label: "Title", required: true, description: "Object title or name" },
+  { id: "accessionNumber", label: "Accession Number", required: false, description: "Unique identifier (auto-generated if empty)" },
+  { id: "alternativeTitle", label: "Alternative Title", required: false, description: "Secondary or alternative name" },
+  { id: "creator", label: "Creator", required: false, description: "Artist, maker, or creator" },
+  { id: "objectType", label: "Object Type", required: false, description: "Type or category of object" },
+  { id: "objectName", label: "Object Name", required: false, description: "Specific name of the object" },
+  { id: "culture", label: "Culture", required: false, description: "Cultural origin" },
+  { id: "period", label: "Period", required: false, description: "Historical period" },
+  { id: "dateCreated", label: "Date Created", required: false, description: "Creation date or period" },
+  { id: "materials", label: "Materials", required: false, description: "Materials used" },
+  { id: "technique", label: "Technique", required: false, description: "Production technique" },
+  { id: "dimensions", label: "Dimensions", required: false, description: "Physical dimensions" },
+  { id: "description", label: "Description", required: false, description: "Detailed description" },
+  { id: "condition", label: "Condition", required: false, description: "Current condition" },
+  { id: "provenance", label: "Provenance", required: false, description: "Ownership history" },
+  { id: "location", label: "Location", required: false, description: "Current location" },
+  { id: "collectionGroup", label: "Collection Group", required: false, description: "Collection or group name" },
+];
+
 export default function ImportObjectsPage() {
   const t = useScopedI18n("collections");
   const common = useScopedI18n("common");
@@ -87,7 +115,11 @@ export default function ImportObjectsPage() {
   const [state, setState] = useState<ImportState>({
     step: "upload",
     file: null,
+    rawData: [],
+    sourceFields: [],
+    fieldMappings: [],
     rows: [],
+    validationErrors: [],
     errors: [],
     jobId: null,
   });
@@ -108,44 +140,47 @@ export default function ImportObjectsPage() {
       const reader = new FileReader();
       reader.onload = (event) => {
         const text = event.target?.result as string;
-        const { rows, errors } = parseCSV<ParsedRow>({
-          text,
-          requiredColumns: REQUIRED_COLUMNS,
-          allColumns: ALL_COLUMNS,
-          mapRow: (getValue, rowIndex) => {
-            const title = getValue("title");
+        const lines = text.split("\n").filter((line) => line.trim());
 
-            if (!title) {
-              throw new Error(`Row ${rowIndex}: Title is required`);
+        if (lines.length === 0) {
+          setState((prev) => ({
+            ...prev,
+            errors: ["CSV file is empty"],
+          }));
+          return;
+        }
+
+        const headerLine = lines[0];
+        if (!headerLine) return;
+
+        const headers = headerLine.split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
+
+        const rawData: Record<string, string>[] = [];
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i];
+          if (!line) continue;
+
+          const values = line.split(",").map((v) => v.trim().replace(/^"|"$/g, ""));
+          const row: Record<string, string> = {};
+
+          for (let j = 0; j < headers.length; j++) {
+            const header = headers[j];
+            if (header) {
+              row[header] = values[j] || "";
             }
-
-            return {
-              accessionNumber: getValue("accessionNumber") || undefined,
-              title,
-              alternativeTitle: getValue("alternativeTitle") || undefined,
-              creator: getValue("creator") || undefined,
-              objectType: getValue("objectType") || undefined,
-              objectName: getValue("objectName") || undefined,
-              culture: getValue("culture") || undefined,
-              period: getValue("period") || undefined,
-              dateCreated: getValue("dateCreated") || undefined,
-              materials: getValue("materials") || undefined,
-              technique: getValue("technique") || undefined,
-              dimensions: getValue("dimensions") || undefined,
-              description: getValue("description") || undefined,
-              condition: getValue("condition") || undefined,
-              provenance: getValue("provenance") || undefined,
-              location: getValue("location") || undefined,
-              collectionGroup: getValue("collectionGroup") || undefined,
-            };
-          },
-        });
+          }
+          rawData.push(row);
+        }
 
         setState({
-          step: "preview",
+          step: "mapping",
           file,
-          rows,
-          errors,
+          rawData,
+          sourceFields: headers,
+          fieldMappings: [],
+          rows: [],
+          validationErrors: [],
+          errors: [],
           jobId: null,
         });
       };
@@ -157,6 +192,95 @@ export default function ImportObjectsPage() {
     },
     [],
   );
+
+  const handleSaveMappings = useCallback((mappings: FieldMapping[]) => {
+    setState((prev) => ({
+      ...prev,
+      fieldMappings: mappings,
+      step: "validation",
+    }));
+
+    const mappingMap = new Map(
+      mappings
+        .filter((m) => m.targetField !== null)
+        .map((m) => [m.targetField, m.sourceField])
+    );
+
+    const getValue = (field: string) => {
+      const sourceField = mappingMap.get(field);
+      return sourceField || field;
+    };
+
+    const parsedRows: ParsedRow[] = [];
+    const validationErrors: string[] = [];
+
+    for (let i = 0; i < state.rawData.length; i++) {
+      const rowData = state.rawData[i];
+      if (!rowData) continue;
+
+      try {
+        const titleSource = getValue("title");
+        const title = rowData[titleSource];
+
+        if (!title) {
+          validationErrors.push(`Row ${i + 1}: Title is required`);
+          continue;
+        }
+
+        const accessionNumberSource = getValue("accessionNumber");
+        const alternativeTitleSource = getValue("alternativeTitle");
+        const creatorSource = getValue("creator");
+        const objectTypeSource = getValue("objectType");
+        const objectNameSource = getValue("objectName");
+        const cultureSource = getValue("culture");
+        const periodSource = getValue("period");
+        const dateCreatedSource = getValue("dateCreated");
+        const materialsSource = getValue("materials");
+        const techniqueSource = getValue("technique");
+        const dimensionsSource = getValue("dimensions");
+        const descriptionSource = getValue("description");
+        const conditionSource = getValue("condition");
+        const provenanceSource = getValue("provenance");
+        const locationSource = getValue("location");
+        const collectionGroupSource = getValue("collectionGroup");
+
+        parsedRows.push({
+          accessionNumber: rowData[accessionNumberSource] || undefined,
+          title,
+          alternativeTitle: rowData[alternativeTitleSource] || undefined,
+          creator: rowData[creatorSource] || undefined,
+          objectType: rowData[objectTypeSource] || undefined,
+          objectName: rowData[objectNameSource] || undefined,
+          culture: rowData[cultureSource] || undefined,
+          period: rowData[periodSource] || undefined,
+          dateCreated: rowData[dateCreatedSource] || undefined,
+          materials: rowData[materialsSource] || undefined,
+          technique: rowData[techniqueSource] || undefined,
+          dimensions: rowData[dimensionsSource] || undefined,
+          description: rowData[descriptionSource] || undefined,
+          condition: rowData[conditionSource] || undefined,
+          provenance: rowData[provenanceSource] || undefined,
+          location: rowData[locationSource] || undefined,
+          collectionGroup: rowData[collectionGroupSource] || undefined,
+        });
+      } catch (err) {
+        validationErrors.push(
+          `Row ${i + 1}: ${err instanceof Error ? err.message : "Parse error"}`
+        );
+      }
+    }
+
+    setState((prev) => ({
+      ...prev,
+      rows: parsedRows,
+      validationErrors,
+      step: validationErrors.length > 0 ? "validation" : "preview",
+    }));
+  }, [state.rawData]);
+
+  const handleContinueAfterValidation = useCallback(() => {
+    setState((prev) => ({ ...prev, step: "preview" }));
+  }, []);
 
   const handleStartImport = useCallback(async () => {
     if (!currentOrganizationId || state.rows.length === 0) return;
@@ -211,7 +335,11 @@ export default function ImportObjectsPage() {
     setState({
       step: "upload",
       file: null,
+      rawData: [],
+      sourceFields: [],
+      fieldMappings: [],
       rows: [],
+      validationErrors: [],
       errors: [],
       jobId: null,
     });
@@ -326,6 +454,86 @@ export default function ImportObjectsPage() {
               </div>
             )}
 
+            {state.step === "mapping" && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold">Map Fields</h2>
+                    <p className="text-sm text-muted-foreground">
+                      {state.rawData.length} rows from {state.file?.name}
+                    </p>
+                  </div>
+                  <Button variant="outline" onClick={handleReset}>
+                    <X className="mr-2 h-4 w-4" />
+                    {common("cancel")}
+                  </Button>
+                </div>
+
+                <ImportFieldMapper
+                  sourceFields={state.sourceFields}
+                  targetFields={TARGET_FIELDS}
+                  onSave={handleSaveMappings}
+                />
+              </div>
+            )}
+
+            {state.step === "validation" && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold">Validation Report</h2>
+                    <p className="text-sm text-muted-foreground">
+                      {state.rows.length} valid rows, {state.validationErrors.length} errors
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setState((prev) => ({ ...prev, step: "mapping" }))}
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back to Mapping
+                    </Button>
+                    {state.rows.length > 0 && (
+                      <Button
+                        onClick={handleContinueAfterValidation}
+                        className="bg-indigo-600 hover:bg-indigo-500"
+                      >
+                        Continue with {state.rows.length} Valid Rows
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {state.validationErrors.length > 0 && (
+                  <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
+                    <div className="flex items-center gap-2 text-destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="font-medium">
+                        {state.validationErrors.length} validation errors
+                      </span>
+                    </div>
+                    <ul className="mt-2 max-h-96 space-y-1 overflow-auto text-sm text-destructive">
+                      {state.validationErrors.map((error, index) => (
+                        <li key={`${error}-${index}`}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {state.rows.length > 0 && (
+                  <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-4">
+                    <div className="flex items-center gap-2 text-green-600">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span className="font-medium">
+                        {state.rows.length} rows passed validation
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {state.step === "preview" && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -339,9 +547,12 @@ export default function ImportObjectsPage() {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleReset}>
-                      <X className="mr-2 h-4 w-4" />
-                      {common("cancel")}
+                    <Button
+                      variant="outline"
+                      onClick={() => setState((prev) => ({ ...prev, step: "validation" }))}
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back to Validation
                     </Button>
                     <PermissionGate permission="collections.create">
                       <Button
@@ -355,6 +566,17 @@ export default function ImportObjectsPage() {
                     </PermissionGate>
                   </div>
                 </div>
+
+                {state.validationErrors.length > 0 && (
+                  <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
+                    <div className="flex items-center gap-2 text-amber-600">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="font-medium">
+                        {state.validationErrors.length} rows were skipped due to validation errors
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {state.errors.length > 0 && (
                   <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
