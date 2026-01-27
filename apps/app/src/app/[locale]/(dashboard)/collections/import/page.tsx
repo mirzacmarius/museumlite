@@ -12,6 +12,20 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@v1/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -59,6 +73,7 @@ interface ImportState {
   rawData: Record<string, string>[];
   sourceFields: string[];
   fieldMappings: FieldMapping[];
+  selectedTemplate: string | null;
   rows: ParsedRow[];
   validationErrors: string[];
   errors: string[];
@@ -106,6 +121,62 @@ const TARGET_FIELDS = [
   { id: "collectionGroup", label: "Collection Group", required: false, description: "Collection or group name" },
 ];
 
+interface ImportTemplate {
+  id: string;
+  name: string;
+  description: string;
+  mappings: Record<string, string>;
+}
+
+const IMPORT_TEMPLATES: ImportTemplate[] = [
+  {
+    id: "pastperfect",
+    name: "PastPerfect",
+    description: "Import from PastPerfect Museum Software",
+    mappings: {
+      "Object Name": "title",
+      "Cat. No": "accessionNumber",
+      "Alternate Name": "alternativeTitle",
+      "Artist": "creator",
+      "Object Type": "objectType",
+      "Culture": "culture",
+      "Date Made": "dateCreated",
+      "Period": "period",
+      "Medium": "materials",
+      "Technique": "technique",
+      "Measurements": "dimensions",
+      "Description": "description",
+      "Condition": "condition",
+      "Provenance": "provenance",
+      "Location": "location",
+      "Collection": "collectionGroup",
+    },
+  },
+  {
+    id: "tms",
+    name: "TMS (The Museum System)",
+    description: "Import from The Museum System (TMS)",
+    mappings: {
+      "Title": "title",
+      "ObjectNumber": "accessionNumber",
+      "AlternateTitle": "alternativeTitle",
+      "DisplayName": "creator",
+      "Classification": "objectType",
+      "ObjectName": "objectName",
+      "Culture": "culture",
+      "Period": "period",
+      "Dated": "dateCreated",
+      "Medium": "materials",
+      "Dimensions": "dimensions",
+      "Description": "description",
+      "ConditionNotes": "condition",
+      "Provenance": "provenance",
+      "CurrentLocation": "location",
+      "Department": "collectionGroup",
+    },
+  },
+];
+
 export default function ImportObjectsPage() {
   const t = useScopedI18n("collections");
   const common = useScopedI18n("common");
@@ -118,6 +189,7 @@ export default function ImportObjectsPage() {
     rawData: [],
     sourceFields: [],
     fieldMappings: [],
+    selectedTemplate: null,
     rows: [],
     validationErrors: [],
     errors: [],
@@ -178,6 +250,7 @@ export default function ImportObjectsPage() {
           rawData,
           sourceFields: headers,
           fieldMappings: [],
+          selectedTemplate: null,
           rows: [],
           validationErrors: [],
           errors: [],
@@ -331,6 +404,35 @@ export default function ImportObjectsPage() {
     }
   }, [currentOrganizationId, state.rows, createImportJob, importBatch]);
 
+  const handleTemplateSelect = useCallback(
+    (templateId: string) => {
+      setState((prev) => ({
+        ...prev,
+        selectedTemplate: templateId === "" ? null : templateId,
+      }));
+    },
+    [],
+  );
+
+  const getInitialMappings = useCallback((): FieldMapping[] | undefined => {
+    if (!state.selectedTemplate) {
+      return undefined;
+    }
+
+    const template = IMPORT_TEMPLATES.find((t) => t.id === state.selectedTemplate);
+    if (!template) {
+      return undefined;
+    }
+
+    return state.sourceFields.map((sourceField) => {
+      const targetField = template.mappings[sourceField] || null;
+      return {
+        sourceField,
+        targetField,
+      };
+    });
+  }, [state.selectedTemplate, state.sourceFields]);
+
   const handleReset = useCallback(() => {
     setState({
       step: "upload",
@@ -338,6 +440,7 @@ export default function ImportObjectsPage() {
       rawData: [],
       sourceFields: [],
       fieldMappings: [],
+      selectedTemplate: null,
       rows: [],
       validationErrors: [],
       errors: [],
@@ -469,9 +572,61 @@ export default function ImportObjectsPage() {
                   </Button>
                 </div>
 
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Legacy System Template</CardTitle>
+                    <CardDescription>
+                      Optionally select a template to automatically map fields from legacy collection management systems
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <Select
+                          value={state.selectedTemplate || ""}
+                          onValueChange={handleTemplateSelect}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a template or map fields manually..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">
+                              <span className="text-muted-foreground">
+                                No template (manual mapping)
+                              </span>
+                            </SelectItem>
+                            {IMPORT_TEMPLATES.map((template) => (
+                              <SelectItem key={template.id} value={template.id}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{template.name}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {template.description}
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {state.selectedTemplate && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleTemplateSelect("")}
+                        >
+                          <X className="mr-2 h-4 w-4" />
+                          Clear Template
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <ImportFieldMapper
+                  key={state.selectedTemplate || "manual"}
                   sourceFields={state.sourceFields}
                   targetFields={TARGET_FIELDS}
+                  initialMappings={getInitialMappings()}
                   onSave={handleSaveMappings}
                 />
               </div>
