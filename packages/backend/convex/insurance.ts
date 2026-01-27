@@ -9,6 +9,11 @@ import {
   mutation,
   query,
 } from "./_generated/server";
+import {
+  getCurrentYear,
+  getNextYearBasedValue,
+  padNumber,
+} from "./utils/numberGenerator";
 import { requirePermission } from "./utils/permissions";
 
 const policyTypeValidator = v.union(
@@ -75,8 +80,7 @@ async function generateClaimNumber(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
 ): Promise<string> {
-  const now = new Date();
-  const year = now.getFullYear();
+  const year = getCurrentYear();
 
   const counter = await ctx.db
     .query("claimCounters")
@@ -85,25 +89,13 @@ async function generateClaimNumber(
     )
     .first();
 
-  let nextValue: number;
+  const nextValue = await getNextYearBasedValue(ctx, counter, {
+    tableName: "claimCounters",
+    organizationId,
+    year,
+  });
 
-  if (counter) {
-    nextValue = counter.currentValue + 1;
-    await ctx.db.patch(counter._id, {
-      currentValue: nextValue,
-      lastGeneratedAt: Date.now(),
-    });
-  } else {
-    nextValue = 1;
-    await ctx.db.insert("claimCounters", {
-      organizationId,
-      year,
-      currentValue: nextValue,
-      lastGeneratedAt: Date.now(),
-    });
-  }
-
-  return `CLM-${year}-${String(nextValue).padStart(4, "0")}`;
+  return `CLM-${year}-${padNumber(nextValue, 4)}`;
 }
 
 export const createPolicy = mutation({
