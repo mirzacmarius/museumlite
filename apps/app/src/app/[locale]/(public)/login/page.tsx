@@ -9,12 +9,24 @@ export async function generateMetadata() {
   };
 }
 
-export default function Page() {
+export default async function Page() {
+  const t = await getI18n();
+
   return (
-    <div className="h-screen w-screen flex flex-col items-center justify-center">
-      <div className="flex flex-col items-center justify-center size-96">
-        <Logo width={350} height={350} />
-        <GoogleSignin />
+    <div className="h-screen w-screen flex flex-col items-center justify-center px-4">
+      <div className="flex flex-col items-center justify-center max-w-md w-full space-y-8">
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">
+            {t("loginPage.heading")}
+          </h1>
+          <p className="text-muted-foreground">
+            {t("loginPage.description")}
+          </p>
+        </div>
+        <div className="flex flex-col items-center justify-center">
+          <Logo width={350} height={350} />
+          <GoogleSignin />
+        </div>
       </div>
     </div>
   );
