@@ -303,26 +303,30 @@ export const list = query({
     );
     const page = allResults.slice(startIndex, endIndex);
 
-    const pageWithAssignees = await Promise.all(
-      page.map(async (item) => {
-        let assigneeName: string | undefined;
-        if (item.assignedTo) {
-          const user = await ctx.db.get(item.assignedTo);
-          assigneeName = user?.name || user?.email || undefined;
-        }
-        return {
-          _id: item._id,
-          accessionNumber: item.accessionNumber,
-          dateReceived: item.dateReceived,
-          source: item.source,
-          method: item.method,
-          status: item.status,
-          workflowStep: item.workflowStep,
-          assignedTo: item.assignedTo,
-          assigneeName,
-        };
-      }),
-    );
+    // Batch fetch users for assignees
+    const assigneeIds = page
+      .map((item) => item.assignedTo)
+      .filter((id): id is Id<"accounts"> => id !== undefined);
+    const usersMap = await batchLookup(ctx, assigneeIds, "accounts");
+
+    const pageWithAssignees = page.map((item) => {
+      let assigneeName: string | undefined;
+      if (item.assignedTo) {
+        const user = usersMap.get(item.assignedTo);
+        assigneeName = user?.name || user?.email || undefined;
+      }
+      return {
+        _id: item._id,
+        accessionNumber: item.accessionNumber,
+        dateReceived: item.dateReceived,
+        source: item.source,
+        method: item.method,
+        status: item.status,
+        workflowStep: item.workflowStep,
+        assignedTo: item.assignedTo,
+        assigneeName,
+      };
+    });
 
     return {
       page: pageWithAssignees,
