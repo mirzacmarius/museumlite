@@ -3502,8 +3502,7 @@ export default {
     alreadyAcceptedDescription:
       "This invitation has already been accepted. Sign in to access your organization.",
     alreadyDeclined: "Already Declined",
-    alreadyDeclinedDescription:
-      "This invitation has already been declined.",
+    alreadyDeclinedDescription: "This invitation has already been declined.",
     acceptSuccess: "Invitation accepted successfully!",
     acceptFailed: "Failed to accept invitation. Please try again.",
     declineSuccess: "Invitation declined",

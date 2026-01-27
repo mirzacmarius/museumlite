@@ -181,14 +181,18 @@ export const updateScheduledReport = mutation({
 
     if (args.name !== undefined) updates.name = args.name;
     if (args.description !== undefined) updates.description = args.description;
-    if (args.reportConfig !== undefined) updates.reportConfig = args.reportConfig;
+    if (args.reportConfig !== undefined)
+      updates.reportConfig = args.reportConfig;
     if (args.schedule !== undefined) updates.schedule = args.schedule;
-    if (args.scheduledDay !== undefined) updates.scheduledDay = args.scheduledDay;
-    if (args.scheduledTime !== undefined) updates.scheduledTime = args.scheduledTime;
+    if (args.scheduledDay !== undefined)
+      updates.scheduledDay = args.scheduledDay;
+    if (args.scheduledTime !== undefined)
+      updates.scheduledTime = args.scheduledTime;
     if (args.timezone !== undefined) updates.timezone = args.timezone;
     if (args.emailRecipients !== undefined)
       updates.emailRecipients = args.emailRecipients;
-    if (args.emailSubject !== undefined) updates.emailSubject = args.emailSubject;
+    if (args.emailSubject !== undefined)
+      updates.emailSubject = args.emailSubject;
     if (args.includeAttachment !== undefined)
       updates.includeAttachment = args.includeAttachment;
     if (args.attachmentFormat !== undefined)
@@ -196,7 +200,12 @@ export const updateScheduledReport = mutation({
     if (args.isActive !== undefined) updates.isActive = args.isActive;
 
     // Recalculate next run if schedule changed
-    if (args.schedule || args.scheduledDay || args.scheduledTime || args.timezone) {
+    if (
+      args.schedule ||
+      args.scheduledDay ||
+      args.scheduledTime ||
+      args.timezone
+    ) {
       updates.nextRunAt = calculateNextRun(
         args.schedule ?? report.schedule,
         args.scheduledDay ?? report.scheduledDay,
@@ -256,7 +265,11 @@ export const listScheduledReports = query({
       isActive: v.boolean(),
       lastRunAt: v.optional(v.number()),
       lastRunStatus: v.optional(
-        v.union(v.literal("success"), v.literal("failed"), v.literal("partial")),
+        v.union(
+          v.literal("success"),
+          v.literal("failed"),
+          v.literal("partial"),
+        ),
       ),
       nextRunAt: v.optional(v.number()),
       emailRecipients: v.optional(v.array(v.string())),
@@ -320,7 +333,11 @@ export const getScheduledReport = query({
       isActive: v.boolean(),
       lastRunAt: v.optional(v.number()),
       lastRunStatus: v.optional(
-        v.union(v.literal("success"), v.literal("failed"), v.literal("partial")),
+        v.union(
+          v.literal("success"),
+          v.literal("failed"),
+          v.literal("partial"),
+        ),
       ),
       lastRunError: v.optional(v.string()),
       nextRunAt: v.optional(v.number()),
@@ -474,7 +491,9 @@ export const listReportRuns = query({
     runs.sort((a, b) => b.startedAt - a.startedAt);
 
     // Apply limit
-    const limitedRuns = args.limit ? runs.slice(0, args.limit) : runs.slice(0, 50);
+    const limitedRuns = args.limit
+      ? runs.slice(0, args.limit)
+      : runs.slice(0, 50);
 
     // Enrich with user names
     const enriched = await Promise.all(
@@ -657,7 +676,11 @@ export const getCollectionTrends = query({
       .collect();
 
     // Generate date buckets
-    const buckets = generateDateBuckets(args.startDate, args.endDate, args.period);
+    const buckets = generateDateBuckets(
+      args.startDate,
+      args.endDate,
+      args.period,
+    );
     const currentData = buckets.map((bucket) => {
       const bucketAccessions = accessions.filter(
         (a) =>
@@ -730,7 +753,10 @@ export const getCollectionTrends = query({
       });
     }
 
-    const currentPeriodNet = currentData.reduce((sum, d) => sum + d.netChange, 0);
+    const currentPeriodNet = currentData.reduce(
+      (sum, d) => sum + d.netChange,
+      0,
+    );
     const comparisonPeriodNet = comparisonData
       ? comparisonData.reduce((sum, d) => sum + d.netChange, 0)
       : undefined;
@@ -738,7 +764,8 @@ export const getCollectionTrends = query({
     const percentChange =
       comparisonPeriodNet !== undefined && comparisonPeriodNet !== 0
         ? Math.round(
-            ((currentPeriodNet - comparisonPeriodNet) / Math.abs(comparisonPeriodNet)) *
+            ((currentPeriodNet - comparisonPeriodNet) /
+              Math.abs(comparisonPeriodNet)) *
               100,
           )
         : undefined;
@@ -794,7 +821,11 @@ export const getLoanTrends = query({
       )
       .collect();
 
-    const buckets = generateDateBuckets(args.startDate, args.endDate, args.period);
+    const buckets = generateDateBuckets(
+      args.startDate,
+      args.endDate,
+      args.period,
+    );
 
     return buckets.map((bucket) => {
       const newLoans = loans.filter(
@@ -875,7 +906,11 @@ export const getConservationTrends = query({
       )
       .collect();
 
-    const buckets = generateDateBuckets(args.startDate, args.endDate, args.period);
+    const buckets = generateDateBuckets(
+      args.startDate,
+      args.endDate,
+      args.period,
+    );
 
     return buckets.map((bucket) => {
       // Use performedAt as the treatment start date
@@ -1228,11 +1263,14 @@ export const getCollectionHealthDashboard = query({
     const recommendations: string[] = [];
 
     // Conservation health
-    const poorConditionPercent = totalObjects > 0 ? (conditionCounts.poor / totalObjects) * 100 : 0;
+    const poorConditionPercent =
+      totalObjects > 0 ? (conditionCounts.poor / totalObjects) * 100 : 0;
     if (poorConditionPercent > 20) {
       healthScore -= 20;
       criticalIssues.push("High percentage of objects in poor condition");
-      recommendations.push("Prioritize conservation treatments for objects in poor condition");
+      recommendations.push(
+        "Prioritize conservation treatments for objects in poor condition",
+      );
     } else if (poorConditionPercent > 10) {
       healthScore -= 10;
       warningIssues.push("Elevated number of objects in poor condition");
@@ -1253,7 +1291,9 @@ export const getCollectionHealthDashboard = query({
 
     if (expiringPolicies > 0) {
       healthScore -= 5;
-      warningIssues.push(`${expiringPolicies} insurance policies expiring soon`);
+      warningIssues.push(
+        `${expiringPolicies} insurance policies expiring soon`,
+      );
       recommendations.push("Renew expiring insurance policies");
     }
 
@@ -1272,7 +1312,9 @@ export const getCollectionHealthDashboard = query({
 
     if (overCapacityLocations > 0) {
       healthScore -= 5;
-      warningIssues.push(`${overCapacityLocations} locations are over capacity`);
+      warningIssues.push(
+        `${overCapacityLocations} locations are over capacity`,
+      );
       recommendations.push("Redistribute objects from over-capacity locations");
     }
 

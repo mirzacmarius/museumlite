@@ -28,8 +28,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       : `${object.title}${object.creator ? ` by ${object.creator}` : ""}${object.dateCreated ? `, ${object.dateCreated}` : ""}`;
 
     const primaryImage = object.images.find(
-      (img: { _id: string; url: string; isPrimary: boolean; caption?: string }) =>
-        img.isPrimary,
+      (img: {
+        _id: string;
+        url: string;
+        isPrimary: boolean;
+        caption?: string;
+      }) => img.isPrimary,
     );
 
     return {

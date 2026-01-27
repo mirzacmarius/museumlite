@@ -146,7 +146,9 @@ export default function InvitePage({ params }: PageProps) {
                 <AlertCircle className="h-8 w-8 text-orange-500" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight">{t("expired")}</h1>
+            <h1 className="text-2xl font-bold tracking-tight">
+              {t("expired")}
+            </h1>
             <p className="text-muted-foreground">{t("expiredDescription")}</p>
             <Button onClick={() => router.push(`/${locale}/login`)}>
               {t("goToLogin")}
@@ -224,16 +226,16 @@ export default function InvitePage({ params }: PageProps) {
       <div className="flex flex-col items-center justify-center max-w-md w-full space-y-8">
         <Logo width={200} height={200} />
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">
-            {t("heading")}
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("heading")}</h1>
           <p className="text-muted-foreground">{t("description")}</p>
         </div>
 
         <div className="w-full rounded-lg border border-border bg-card p-6 space-y-4">
           <div>
             <p className="text-sm text-muted-foreground">{t("organization")}</p>
-            <p className="text-lg font-semibold">{invitation.organizationName}</p>
+            <p className="text-lg font-semibold">
+              {invitation.organizationName}
+            </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">{t("role")}</p>
@@ -269,7 +271,9 @@ export default function InvitePage({ params }: PageProps) {
               size="lg"
               onClick={() => {
                 // Redirect to login with return URL
-                router.push(`/${locale}/login?returnTo=${encodeURIComponent(`/${locale}/invite/${token}`)}`);
+                router.push(
+                  `/${locale}/login?returnTo=${encodeURIComponent(`/${locale}/invite/${token}`)}`,
+                );
               }}
             >
               {t("signInToAccept")}

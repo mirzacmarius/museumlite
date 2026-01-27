@@ -3387,7 +3387,8 @@ export default {
     signInToAccept: "Logg inn for å godta",
     loading: "Laster invitasjon...",
     notFound: "Invitasjon ikke funnet",
-    notFoundDescription: "Denne invitasjonslenken er ugyldig eller har blitt fjernet.",
+    notFoundDescription:
+      "Denne invitasjonslenken er ugyldig eller har blitt fjernet.",
     expired: "Invitasjon utløpt",
     expiredDescription:
       "Denne invitasjonen har utløpt. Vennligst kontakt organisasjonsadministratoren for en ny invitasjon.",
@@ -3395,7 +3396,8 @@ export default {
     alreadyAcceptedDescription:
       "Denne invitasjonen har allerede blitt godtatt. Logg inn for å få tilgang til organisasjonen din.",
     alreadyDeclined: "Allerede avslått",
-    alreadyDeclinedDescription: "Denne invitasjonen har allerede blitt avslått.",
+    alreadyDeclinedDescription:
+      "Denne invitasjonen har allerede blitt avslått.",
     acceptSuccess: "Invitasjon godtatt!",
     acceptFailed: "Kunne ikke godta invitasjonen. Vennligst prøv igjen.",
     declineSuccess: "Invitasjon avslått",

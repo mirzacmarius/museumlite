@@ -571,11 +571,13 @@ export default {
     resend: "Reenviar",
     resending: "Reenviando...",
     resendSuccess: "Invitación reenviada con éxito",
-    resendFailed: "Error al reenviar la invitación. Por favor, inténtelo de nuevo.",
+    resendFailed:
+      "Error al reenviar la invitación. Por favor, inténtelo de nuevo.",
     cancelInvitation: "Cancelar",
     cancelConfirm: "¿Está seguro de que desea cancelar esta invitación?",
     cancelSuccess: "Invitación cancelada con éxito",
-    cancelFailed: "Error al cancelar la invitación. Por favor, inténtelo de nuevo.",
+    cancelFailed:
+      "Error al cancelar la invitación. Por favor, inténtelo de nuevo.",
   },
   activityLog: {
     featureName: "Cumplimiento y registro de auditoría",
@@ -3404,7 +3406,8 @@ export default {
     signInToAccept: "Inicia sesión para aceptar",
     loading: "Cargando invitación...",
     notFound: "Invitación no encontrada",
-    notFoundDescription: "Este enlace de invitación es inválido o ha sido eliminado.",
+    notFoundDescription:
+      "Este enlace de invitación es inválido o ha sido eliminado.",
     expired: "Invitación expirada",
     expiredDescription:
       "Esta invitación ha expirado. Por favor, contacta al administrador de la organización para una nueva invitación.",
@@ -3414,9 +3417,11 @@ export default {
     alreadyDeclined: "Ya rechazada",
     alreadyDeclinedDescription: "Esta invitación ya ha sido rechazada.",
     acceptSuccess: "¡Invitación aceptada con éxito!",
-    acceptFailed: "Error al aceptar la invitación. Por favor, inténtalo de nuevo.",
+    acceptFailed:
+      "Error al aceptar la invitación. Por favor, inténtalo de nuevo.",
     declineSuccess: "Invitación rechazada",
-    declineFailed: "Error al rechazar la invitación. Por favor, inténtalo de nuevo.",
+    declineFailed:
+      "Error al rechazar la invitación. Por favor, inténtalo de nuevo.",
     redirecting: "Redirigiendo...",
     goToLogin: "Ir a iniciar sesión",
     unknownInviter: "Desconocido",

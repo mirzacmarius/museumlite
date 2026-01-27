@@ -24,12 +24,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         title: string;
         lastModifiedAt?: number;
       }) => ({
-      url: `${BASE_URL}/collections/${item.organizationSlug}/${encodeURIComponent(item.urlSlug)}`,
-      lastModified: item.lastModifiedAt
-        ? new Date(item.lastModifiedAt)
-        : new Date(),
-      changeFrequency: "monthly" as const,
-      priority: 0.6,
+        url: `${BASE_URL}/collections/${item.organizationSlug}/${encodeURIComponent(item.urlSlug)}`,
+        lastModified: item.lastModifiedAt
+          ? new Date(item.lastModifiedAt)
+          : new Date(),
+        changeFrequency: "monthly" as const,
+        priority: 0.6,
       }),
     );
 

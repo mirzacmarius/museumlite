@@ -83,7 +83,9 @@ export function InvitationEmail({
               Accept Invitation
             </Button>
           </Section>
-          <Text style={{ fontSize: "14px", lineHeight: "24px", color: "#666666" }}>
+          <Text
+            style={{ fontSize: "14px", lineHeight: "24px", color: "#666666" }}
+          >
             Or copy and paste this URL into your browser:
             <br />
             <Link href={acceptUrl} style={{ color: "#067df7" }}>
@@ -100,7 +102,9 @@ export function InvitationEmail({
           >
             <strong>Important:</strong> This invitation will expire in 7 days.
           </Text>
-          <Text style={{ fontSize: "14px", lineHeight: "24px", color: "#666666" }}>
+          <Text
+            style={{ fontSize: "14px", lineHeight: "24px", color: "#666666" }}
+          >
             If you don't want to join this organization, you can{" "}
             <Link href={declineUrl} style={{ color: "#067df7" }}>
               decline this invitation

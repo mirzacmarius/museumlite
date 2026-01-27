@@ -19,7 +19,8 @@ export default {
     signInToAccept: "Autentifică-te pentru a accepta",
     loading: "Se încarcă invitația...",
     notFound: "Invitație negăsită",
-    notFoundDescription: "Acest link de invitație este invalid sau a fost eliminat.",
+    notFoundDescription:
+      "Acest link de invitație este invalid sau a fost eliminat.",
     expired: "Invitație expirată",
     expiredDescription:
       "Această invitație a expirat. Te rugăm să contactezi administratorul organizației pentru o nouă invitație.",
@@ -1544,17 +1545,20 @@ export default {
     role: "Rol",
     emailRequired: "Adresa de email este obligatorie",
     roleRequired: "Rolul este obligatoriu",
-    inviteFailed: "Nu s-a putut invita utilizatorul. Te rugăm să încerci din nou.",
+    inviteFailed:
+      "Nu s-a putut invita utilizatorul. Te rugăm să încerci din nou.",
     removeConfirm:
       "Ești sigur că vrei să elimini acest utilizator din organizație?",
-    removeFailed: "Nu s-a putut elimina utilizatorul. Te rugăm să încerci din nou.",
+    removeFailed:
+      "Nu s-a putut elimina utilizatorul. Te rugăm să încerci din nou.",
     updateRoleFailed:
       "Nu s-a putut actualiza rolul utilizatorului. Te rugăm să încerci din nou.",
     loadingUsers: "Se încarcă utilizatorii...",
     noUsers: "Nu s-au găsit utilizatori",
     unknownUser: "Utilizator Necunoscut",
     joined: "Alăturat {date}",
-    selectOrganization: "Te rugăm să selectezi o organizație pentru a gestiona utilizatorii.",
+    selectOrganization:
+      "Te rugăm să selectezi o organizație pentru a gestiona utilizatorii.",
     inviting: "Se invită...",
     cancel: "Anulează",
     pendingInvitations: "Invitații în Așteptare",
@@ -1567,7 +1571,8 @@ export default {
     resend: "Retrimite",
     resending: "Se retrimite...",
     resendSuccess: "Invitație retrimisă cu succes",
-    resendFailed: "Nu s-a putut retrimite invitația. Te rugăm să încerci din nou.",
+    resendFailed:
+      "Nu s-a putut retrimite invitația. Te rugăm să încerci din nou.",
     cancelInvitation: "Anulează",
     cancelConfirm: "Ești sigur că vrei să anulezi această invitație?",
     cancelSuccess: "Invitație anulată cu succes",

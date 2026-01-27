@@ -35,7 +35,7 @@ export function OccupancyDisplay({
   };
 
   return (
-<>
+    <>
       <div className="px-3 py-2 bg-zinc-900/50 border border-zinc-800 rounded-lg flex items-center gap-3">
         <div className="p-1.5 rounded bg-violet-500/10 text-violet-400">
           <Package className="w-4 h-4" />

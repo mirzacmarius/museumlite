@@ -1661,7 +1661,11 @@ export const openDispute = mutation({
 
     await requirePermission(ctx, claim.organizationId, "organization.manage");
 
-    if (claim.status !== "denied" && claim.status !== "approved" && claim.status !== "settled") {
+    if (
+      claim.status !== "denied" &&
+      claim.status !== "approved" &&
+      claim.status !== "settled"
+    ) {
       throw new Error("Can only dispute claims that have been decided");
     }
 
@@ -1995,7 +1999,11 @@ export const linkAppraisalToCoverage = mutation({
       throw new Error("Coverage not found");
     }
 
-    await requirePermission(ctx, coverage.organizationId, "organization.manage");
+    await requirePermission(
+      ctx,
+      coverage.organizationId,
+      "organization.manage",
+    );
 
     const appraisal = await ctx.db.get(args.appraisalId);
     if (!appraisal) {
@@ -2041,13 +2049,19 @@ export const checkAppraisalForCoverage = query({
   handler: async (ctx, args) => {
     const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
-      return { hasAppraisal: false, appraisalValid: false, warning: "Collection not found" };
+      return {
+        hasAppraisal: false,
+        appraisalValid: false,
+        warning: "Collection not found",
+      };
     }
 
     // Find most recent appraisal
     const appraisals = await ctx.db
       .query("appraisals")
-      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", args.collectionId),
+      )
       .collect();
 
     if (appraisals.length === 0) {
@@ -2256,7 +2270,9 @@ export const addCoverageWithAppraisalCheck = mutation({
     // Check appraisal status
     const appraisals = await ctx.db
       .query("appraisals")
-      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", args.collectionId),
+      )
       .collect();
 
     let warning: string | undefined;

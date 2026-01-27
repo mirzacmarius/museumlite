@@ -2159,7 +2159,9 @@ export const listAssessmentSchedules = query({
           ? Math.floor((schedule.nextDueDate - now) / (24 * 60 * 60 * 1000))
           : undefined;
 
-        const isOverdue = schedule.nextDueDate ? schedule.nextDueDate < now : false;
+        const isOverdue = schedule.nextDueDate
+          ? schedule.nextDueDate < now
+          : false;
 
         return {
           _id: schedule._id,
@@ -2233,7 +2235,11 @@ export const recordEnvironmentalReading = mutation({
     }
 
     if (userId) {
-      await requirePermission(ctx, location.organizationId, "collections.update");
+      await requirePermission(
+        ctx,
+        location.organizationId,
+        "collections.update",
+      );
     }
 
     // Check thresholds and generate violations
@@ -2291,7 +2297,9 @@ export const recordEnvironmentalReading = mutation({
         thresholds.uvLevelMax !== undefined &&
         args.uvLevel > thresholds.uvLevelMax
       ) {
-        violations.push(`UV level ${args.uvLevel} exceeds maximum ${thresholds.uvLevelMax}`);
+        violations.push(
+          `UV level ${args.uvLevel} exceeds maximum ${thresholds.uvLevelMax}`,
+        );
       }
     }
 
@@ -2454,12 +2462,19 @@ export const getEnvironmentalSummary = query({
       .collect();
 
     // Calculate stats
-    const temps = readings.filter((r) => r.temperature !== undefined).map((r) => r.temperature!);
-    const humids = readings.filter((r) => r.humidity !== undefined).map((r) => r.humidity!);
-    const lights = readings.filter((r) => r.lightLevel !== undefined).map((r) => r.lightLevel!);
+    const temps = readings
+      .filter((r) => r.temperature !== undefined)
+      .map((r) => r.temperature!);
+    const humids = readings
+      .filter((r) => r.humidity !== undefined)
+      .map((r) => r.humidity!);
+    const lights = readings
+      .filter((r) => r.lightLevel !== undefined)
+      .map((r) => r.lightLevel!);
 
     const calcStats = (values: number[]) => {
-      if (values.length === 0) return { min: undefined, max: undefined, avg: undefined };
+      if (values.length === 0)
+        return { min: undefined, max: undefined, avg: undefined };
       return {
         min: Math.min(...values),
         max: Math.max(...values),

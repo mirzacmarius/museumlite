@@ -210,30 +210,30 @@ export default function PublicCollectionPage() {
                   href={`/collections/${slug}/${encodeURIComponent(item.accessionNumber)}`}
                   className="group block"
                 >
-                <div className="aspect-square relative rounded-lg overflow-hidden bg-white/5 border border-white/10 mb-3">
-                  {item.primaryImageUrl ? (
-                    <Image
-                      src={item.primaryImageUrl}
-                      alt={item.title}
-                      fill
-                      className="object-cover transition-transform group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-white/20">
-                      No Image
-                    </div>
+                  <div className="aspect-square relative rounded-lg overflow-hidden bg-white/5 border border-white/10 mb-3">
+                    {item.primaryImageUrl ? (
+                      <Image
+                        src={item.primaryImageUrl}
+                        alt={item.title}
+                        fill
+                        className="object-cover transition-transform group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-white/20">
+                        No Image
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="font-medium text-white group-hover:text-white/80 line-clamp-2">
+                    {item.title}
+                  </h3>
+                  {item.creator && (
+                    <p className="text-sm text-white/60 mt-1">{item.creator}</p>
                   )}
-                </div>
-                <h3 className="font-medium text-white group-hover:text-white/80 line-clamp-2">
-                  {item.title}
-                </h3>
-                {item.creator && (
-                  <p className="text-sm text-white/60 mt-1">{item.creator}</p>
-                )}
-                <p className="text-xs text-white/40 mt-1">
-                  {item.accessionNumber}
-                </p>
-              </Link>
+                  <p className="text-xs text-white/40 mt-1">
+                    {item.accessionNumber}
+                  </p>
+                </Link>
               ),
             )}
           </div>
@@ -249,40 +249,42 @@ export default function PublicCollectionPage() {
                 dateCreated?: string;
                 primaryImageUrl?: string;
               }) => (
-              <Link
-                key={item._id}
-                href={`/collections/${slug}/${encodeURIComponent(item.accessionNumber)}`}
-                className="group flex gap-4 p-4 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
-              >
-                <div className="w-24 h-24 relative rounded overflow-hidden flex-shrink-0">
-                  {item.primaryImageUrl ? (
-                    <Image
-                      src={item.primaryImageUrl}
-                      alt={item.title}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white/5 text-white/20 text-xs">
-                      No Image
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-white group-hover:text-white/80">
-                    {item.title}
-                  </h3>
-                  {item.creator && (
-                    <p className="text-sm text-white/60 mt-1">{item.creator}</p>
-                  )}
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-white/40">
-                    <span>{item.accessionNumber}</span>
-                    {item.objectType && <span>{item.objectType}</span>}
-                    {item.dateCreated && <span>{item.dateCreated}</span>}
+                <Link
+                  key={item._id}
+                  href={`/collections/${slug}/${encodeURIComponent(item.accessionNumber)}`}
+                  className="group flex gap-4 p-4 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
+                >
+                  <div className="w-24 h-24 relative rounded overflow-hidden flex-shrink-0">
+                    {item.primaryImageUrl ? (
+                      <Image
+                        src={item.primaryImageUrl}
+                        alt={item.title}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-white/5 text-white/20 text-xs">
+                        No Image
+                      </div>
+                    )}
                   </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-white/40 self-center flex-shrink-0" />
-              </Link>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-white group-hover:text-white/80">
+                      {item.title}
+                    </h3>
+                    {item.creator && (
+                      <p className="text-sm text-white/60 mt-1">
+                        {item.creator}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-white/40">
+                      <span>{item.accessionNumber}</span>
+                      {item.objectType && <span>{item.objectType}</span>}
+                      {item.dateCreated && <span>{item.dateCreated}</span>}
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-white/40 self-center flex-shrink-0" />
+                </Link>
               ),
             )}
           </div>
