@@ -32,9 +32,10 @@ import * as React from "react";
 import { useCommandPalette } from "./command-palette-provider";
 import { useOrganization } from "./organization-provider";
 
-function CommandObjectItem({
+const CommandObjectItem = React.memo(({
   obj,
   runCommand,
+  imageUrl,
 }: {
   obj: {
     _id: Id<"collections">;
@@ -42,11 +43,9 @@ function CommandObjectItem({
     accessionNumber: string;
   };
   runCommand: (command: () => unknown) => void;
-}) {
+  imageUrl: string | null | undefined;
+}) => {
   const router = useRouter();
-  const imageUrl = useQuery(api.media.getPrimaryImageUrl, {
-    collectionId: obj._id,
-  });
 
   return (
     <CommandItem
@@ -75,7 +74,9 @@ function CommandObjectItem({
       </div>
     </CommandItem>
   );
-}
+});
+
+CommandObjectItem.displayName = 'CommandObjectItem';
 
 export function CommandPalette() {
   const { open, setOpen } = useCommandPalette();
@@ -96,6 +97,27 @@ export function CommandPalette() {
         }
       : "skip",
   );
+
+  // Batch fetch all image URLs for objects in search results
+  const collectionIds = React.useMemo(() => {
+    if (!searchResults?.objects) return [];
+    return searchResults.objects.map((obj) => obj._id);
+  }, [searchResults?.objects]);
+
+  const batchImageUrls = useQuery(
+    api.media.getBatchPrimaryImageUrls,
+    hasSearch && searchResults && collectionIds.length > 0
+      ? { collectionIds }
+      : "skip",
+  );
+
+  // Create a map for O(1) lookup of image URLs by collection ID
+  const imageUrlMap = React.useMemo(() => {
+    if (!batchImageUrls) return new Map<Id<"collections">, string | null>();
+    return new Map(
+      batchImageUrls.map((item) => [item.collectionId, item.url]),
+    );
+  }, [batchImageUrls]);
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -167,6 +189,7 @@ export function CommandPalette() {
                       key={obj._id}
                       obj={obj}
                       runCommand={runCommand}
+                      imageUrl={imageUrlMap.get(obj._id)}
                     />
                   ))}
                 </CommandGroup>

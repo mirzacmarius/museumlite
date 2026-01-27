@@ -551,6 +551,67 @@ export const getPrimaryImageUrl = query({
 });
 
 /**
+ * Get primary image URLs for multiple collections in a single query
+ */
+export const getBatchPrimaryImageUrls = query({
+  args: {
+    collectionIds: v.array(v.id("collections")),
+  },
+  returns: v.array(
+    v.object({
+      collectionId: v.id("collections"),
+      url: v.union(v.string(), v.null()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    // Fetch all collections and their primary images in parallel
+    const results = await Promise.all(
+      args.collectionIds.map(async (collectionId) => {
+        const collection = await ctx.db.get(collectionId);
+        if (!collection) {
+          return { collectionId, url: null };
+        }
+
+        try {
+          await requirePermission(ctx, collection.organizationId, "media.read");
+        } catch {
+          return { collectionId, url: null };
+        }
+
+        // Find primary image for this collection
+        const primaryMedia = await ctx.db
+          .query("mediaFiles")
+          .withIndex("by_collection", (q) =>
+            q.eq("collectionId", collectionId),
+          )
+          .filter((q) => q.eq(q.field("isPrimary"), true))
+          .first();
+
+        if (!primaryMedia) {
+          return { collectionId, url: null };
+        }
+
+        // Return thumbnail URL if available, otherwise fallback to original
+        if (primaryMedia.thumbnailStorageId) {
+          const url = await ctx.storage.getUrl(primaryMedia.thumbnailStorageId);
+          return { collectionId, url };
+        }
+
+        // Only return original URL if it's an image type
+        if (primaryMedia.fileType === "image") {
+          const url = await ctx.storage.getUrl(primaryMedia.storageId);
+          return { collectionId, url };
+        }
+
+        return { collectionId, url: null };
+      }),
+    );
+
+    return results;
+  },
+});
+
+/**
  * Get upload progress for large files
  */
 export const getUploadProgress = query({
