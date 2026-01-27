@@ -1,7 +1,7 @@
 "use client";
 
 import { CHART_COLOR_ARRAY, ChartContainer } from "@v1/ui/charts";
-import { Cell, Pie, PieChart, Tooltip } from "recharts";
+import dynamic from "next/dynamic";
 
 interface LoanStatusChartProps {
   data: {
@@ -10,6 +10,56 @@ interface LoanStatusChartProps {
     returned: number;
   };
 }
+
+interface ChartData {
+  name: string;
+  value: number;
+  color: string;
+}
+
+// Lazy load the recharts components to reduce initial bundle size
+const LazyPieChart = dynamic(
+  () =>
+    import("recharts").then((mod) => {
+      const { PieChart, Pie, Cell, Tooltip } = mod;
+      return {
+        default: ({ chartData }: { chartData: ChartData[] }) => (
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              innerRadius={50}
+              outerRadius={80}
+              paddingAngle={2}
+              dataKey="value"
+            >
+              {chartData.map((entry) => (
+                <Cell key={entry.name} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "8px",
+              }}
+            />
+          </PieChart>
+        ),
+      };
+    }),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-[200px] items-center justify-center">
+        <div className="animate-pulse text-sm text-muted-foreground">
+          Loading chart...
+        </div>
+      </div>
+    ),
+  },
+);
 
 export function LoanStatusChart({ data }: LoanStatusChartProps) {
   const chartData = [
@@ -31,28 +81,7 @@ export function LoanStatusChart({ data }: LoanStatusChartProps) {
   return (
     <div className="space-y-4">
       <ChartContainer height={200}>
-        <PieChart>
-          <Pie
-            data={chartData}
-            cx="50%"
-            cy="50%"
-            innerRadius={50}
-            outerRadius={80}
-            paddingAngle={2}
-            dataKey="value"
-          >
-            {chartData.map((entry) => (
-              <Cell key={entry.name} fill={entry.color} />
-            ))}
-          </Pie>
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "hsl(var(--card))",
-              border: "1px solid hsl(var(--border))",
-              borderRadius: "8px",
-            }}
-          />
-        </PieChart>
+        <LazyPieChart chartData={chartData} />
       </ChartContainer>
       <div className="flex justify-center gap-4">
         {chartData.map((entry) => (

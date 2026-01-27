@@ -3,13 +3,11 @@
 import { useOrganization } from "@/components/organization-provider";
 import { usePermission } from "@/components/permission-gate";
 import { RecentActivityLog } from "@/components/recent-activity-log";
-import { SiteSelector } from "@/components/site-selector";
 import { formatNumber } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { KpiCard } from "@v1/ui/kpi-card";
-import { SkeletonCard } from "@v1/ui/skeleton-variants";
 import { useQuery } from "convex/react";
 import {
   ArrowLeftRight,
@@ -18,14 +16,10 @@ import {
   FileClock,
   Package,
   Presentation,
-  ScanBarcode,
   Server,
   Settings,
 } from "lucide-react";
 import Link from "next/link";
-import { Suspense, useState } from "react";
-import { CollectionGrowthChart } from "./_components/collection-growth-chart";
-import { LoanStatusChart } from "./_components/loan-status-chart";
 
 export default function DashboardPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
@@ -33,7 +27,6 @@ export default function DashboardPage() {
   const t = useScopedI18n("dashboard");
   const kpi = useScopedI18n("kpi");
   const common = useScopedI18n("common");
-  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
 
   const hasAnalyticsPermission = usePermission(
     currentOrganizationId,
@@ -43,20 +36,14 @@ export default function DashboardPage() {
   const analytics = useQuery(
     api.dashboard.getAnalytics,
     currentOrganizationId && hasAnalyticsPermission
-      ? {
-          organizationId: currentOrganizationId as Id<"organizations">,
-          ...(selectedSiteId && { siteId: selectedSiteId as Id<"sites"> }),
-        }
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
 
   const kpiTrends = useQuery(
     api.dashboard.getKpiTrends,
     currentOrganizationId && hasAnalyticsPermission
-      ? {
-          organizationId: currentOrganizationId as Id<"organizations">,
-          ...(selectedSiteId && { siteId: selectedSiteId as Id<"sites"> }),
-        }
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
 
@@ -156,17 +143,6 @@ export default function DashboardPage() {
   return (
     <div className="flex h-full w-full flex-col bg-background">
       <div className="px-4 sm:px-6 py-4 border-b border-border bg-background/50 backdrop-blur-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-medium text-muted-foreground">
-            Filter by Site
-          </h2>
-          <SiteSelector
-            organizationId={currentOrganizationId}
-            value={selectedSiteId}
-            onValueChange={setSelectedSiteId}
-            showAllSitesOption={true}
-          />
-        </div>
         <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
           <KpiCard
             title={kpi("totalObjects")}
