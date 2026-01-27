@@ -4,6 +4,17 @@ import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { enforceExportQuota, recordExportUsage } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
+import { toJSON, toXML } from "./utils/formatConverters";
+import {
+  collectionsToDublinCore,
+  toDublinCoreXML,
+} from "./utils/dublinCore";
+import {
+  accessionsToSpectrumEntries,
+  collectionsToSpectrum,
+  entryToSpectrumXML,
+  toSpectrumXML,
+} from "./utils/spectrum";
 
 type AccessionMethod =
   | "purchase"
@@ -1217,6 +1228,597 @@ export const importLoansBatch = mutation({
     });
 
     return { processed, errors };
+  },
+});
+
+// ============================================
+// MULTI-FORMAT EXPORT MUTATIONS
+// ============================================
+
+export const exportAccessionsWithFormat = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    status: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("approved"),
+        v.literal("rejected"),
+        v.literal("cataloged"),
+      ),
+    ),
+    format: v.union(
+      v.literal("csv"),
+      v.literal("json"),
+      v.literal("xml"),
+      v.literal("spectrum"),
+    ),
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(ctx, args.organizationId, "collections.read");
+    await enforceExportQuota(ctx, args.organizationId);
+
+    const accessionsQuery = ctx.db
+      .query("accessions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      );
+
+    const accessions = await accessionsQuery.collect();
+
+    const filtered = args.status
+      ? accessions.filter((a) => a.status === args.status)
+      : accessions;
+
+    const exportRows = filtered.map((a) => ({
+      accessionNumber: a.accessionNumber,
+      dateReceived: a.dateReceived,
+      source: a.source,
+      method: a.method,
+      cost: a.cost,
+      notes: a.notes,
+      status: a.status,
+      createdAt: a._creationTime,
+    }));
+
+    await recordExportUsage(ctx, args.organizationId);
+
+    // Convert to requested format
+    if (args.format === "json") {
+      return toJSON(exportRows, { pretty: true });
+    }
+
+    if (args.format === "xml") {
+      return toXML(exportRows, {
+        pretty: true,
+        rootTag: "accessions",
+        itemTag: "accession",
+      });
+    }
+
+    if (args.format === "spectrum") {
+      const spectrumEntries = accessionsToSpectrumEntries(filtered);
+      // Return as XML array
+      const xmlEntries = spectrumEntries
+        .map((entry) => entryToSpectrumXML(entry))
+        .join("\n");
+      return `<?xml version="1.0" encoding="UTF-8"?>\n<spectrum:entries xmlns:spectrum="http://www.collectionstrust.org.uk/spectrum/entry">\n${xmlEntries}\n</spectrum:entries>`;
+    }
+
+    // Default: CSV format
+    const headers = [
+      "accessionNumber",
+      "dateReceived",
+      "source",
+      "method",
+      "cost",
+      "notes",
+      "status",
+      "createdAt",
+    ];
+    const csvRows = [headers.join(",")];
+    for (const row of exportRows) {
+      const values = [
+        row.accessionNumber,
+        new Date(row.dateReceived).toISOString(),
+        row.source,
+        row.method,
+        row.cost?.toString() || "",
+        row.notes || "",
+        row.status,
+        new Date(row.createdAt).toISOString(),
+      ];
+      csvRows.push(values.map((v) => `"${v}"`).join(","));
+    }
+    return csvRows.join("\n");
+  },
+});
+
+export const exportObjectsWithFormat = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    status: v.optional(
+      v.union(
+        v.literal("active"),
+        v.literal("loaned"),
+        v.literal("deaccessioned"),
+        v.literal("in_conservation"),
+      ),
+    ),
+    format: v.union(
+      v.literal("csv"),
+      v.literal("json"),
+      v.literal("xml"),
+      v.literal("dublincore"),
+      v.literal("spectrum"),
+    ),
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(ctx, args.organizationId, "collections.read");
+    await enforceExportQuota(ctx, args.organizationId);
+
+    const objects = await ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const filtered = args.status
+      ? objects.filter((o) => o.status === args.status)
+      : objects;
+
+    const locations = await ctx.db
+      .query("locations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+    const locationMap = new Map(locations.map((l) => [l._id, l.name]));
+
+    const groups = await ctx.db
+      .query("collectionGroups")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+    const groupMap = new Map(groups.map((g) => [g._id, g.name]));
+
+    const exportRows = filtered.map((o) => ({
+      accessionNumber: o.accessionNumber,
+      title: o.title,
+      alternativeTitle: o.alternativeTitle,
+      creator: o.creator,
+      objectType: o.objectType,
+      objectName: o.objectName,
+      culture: o.culture,
+      period: o.period,
+      dateCreated: o.dateCreated,
+      materials: o.materials,
+      technique: o.technique,
+      dimensions: o.dimensions,
+      description: o.description,
+      condition: o.condition,
+      provenance: o.provenance,
+      location: o.currentLocationId
+        ? locationMap.get(o.currentLocationId)
+        : undefined,
+      collectionGroup: o.collectionGroupId
+        ? groupMap.get(o.collectionGroupId)
+        : undefined,
+      status: o.status,
+      createdAt: o._creationTime,
+    }));
+
+    await recordExportUsage(ctx, args.organizationId);
+
+    // Convert to requested format
+    if (args.format === "json") {
+      return toJSON(exportRows, { pretty: true });
+    }
+
+    if (args.format === "xml") {
+      return toXML(exportRows, {
+        pretty: true,
+        rootTag: "collections",
+        itemTag: "collection",
+      });
+    }
+
+    if (args.format === "dublincore") {
+      const dcRecords = collectionsToDublinCore(filtered);
+      // Return as XML array
+      const xmlRecords = dcRecords
+        .map((record) => toDublinCoreXML(record))
+        .join("\n");
+      return `<?xml version="1.0" encoding="UTF-8"?>\n<dublincore:records xmlns:dublincore="http://purl.org/dc/elements/1.1/">\n${xmlRecords}\n</dublincore:records>`;
+    }
+
+    if (args.format === "spectrum") {
+      const spectrumRecords = collectionsToSpectrum(filtered);
+      // Return as XML array
+      const xmlRecords = spectrumRecords
+        .map((record) => toSpectrumXML(record))
+        .join("\n");
+      return `<?xml version="1.0" encoding="UTF-8"?>\n<spectrum:objects xmlns:spectrum="http://www.collectionstrust.org.uk/spectrum/object">\n${xmlRecords}\n</spectrum:objects>`;
+    }
+
+    // Default: CSV format
+    const headers = [
+      "accessionNumber",
+      "title",
+      "alternativeTitle",
+      "creator",
+      "objectType",
+      "objectName",
+      "culture",
+      "period",
+      "dateCreated",
+      "materials",
+      "technique",
+      "dimensions",
+      "description",
+      "condition",
+      "provenance",
+      "location",
+      "collectionGroup",
+      "status",
+      "createdAt",
+    ];
+    const csvRows = [headers.join(",")];
+    for (const row of exportRows) {
+      const values = [
+        row.accessionNumber,
+        row.title,
+        row.alternativeTitle || "",
+        row.creator || "",
+        row.objectType || "",
+        row.objectName || "",
+        row.culture || "",
+        row.period || "",
+        row.dateCreated || "",
+        row.materials || "",
+        row.technique || "",
+        row.dimensions || "",
+        row.description || "",
+        row.condition || "",
+        row.provenance || "",
+        row.location || "",
+        row.collectionGroup || "",
+        row.status || "",
+        new Date(row.createdAt).toISOString(),
+      ];
+      csvRows.push(values.map((v) => `"${v.replace(/"/g, '""')}"`).join(","));
+    }
+    return csvRows.join("\n");
+  },
+});
+
+export const exportLocationsWithFormat = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    format: v.union(
+      v.literal("csv"),
+      v.literal("json"),
+      v.literal("xml"),
+    ),
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(ctx, args.organizationId, "locations.read");
+    await enforceExportQuota(ctx, args.organizationId);
+
+    const locations = await ctx.db
+      .query("locations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const locationMap = new Map(locations.map((l) => [l._id, l.name]));
+
+    const exportRows = locations.map((l) => ({
+      name: l.name,
+      type: l.type,
+      parentLocation: l.parentLocationId
+        ? locationMap.get(l.parentLocationId)
+        : undefined,
+      address: l.address,
+      capacity: l.capacity,
+      isActive: l.isActive,
+      notes: l.notes,
+    }));
+
+    await recordExportUsage(ctx, args.organizationId);
+
+    // Convert to requested format
+    if (args.format === "json") {
+      return toJSON(exportRows, { pretty: true });
+    }
+
+    if (args.format === "xml") {
+      return toXML(exportRows, {
+        pretty: true,
+        rootTag: "locations",
+        itemTag: "location",
+      });
+    }
+
+    // Default: CSV format
+    const headers = [
+      "name",
+      "type",
+      "parentLocation",
+      "address",
+      "capacity",
+      "isActive",
+      "notes",
+    ];
+    const csvRows = [headers.join(",")];
+    for (const row of exportRows) {
+      const values = [
+        row.name,
+        row.type,
+        row.parentLocation || "",
+        row.address || "",
+        row.capacity?.toString() || "",
+        row.isActive.toString(),
+        row.notes || "",
+      ];
+      csvRows.push(values.map((v) => `"${v.replace(/"/g, '""')}"`).join(","));
+    }
+    return csvRows.join("\n");
+  },
+});
+
+export const exportAccountsWithFormat = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    accountType: v.optional(
+      v.union(
+        v.literal("lender"),
+        v.literal("borrower"),
+        v.literal("both"),
+        v.literal("institution"),
+        v.literal("patron"),
+      ),
+    ),
+    format: v.union(
+      v.literal("csv"),
+      v.literal("json"),
+      v.literal("xml"),
+    ),
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(ctx, args.organizationId, "loans.read");
+    await enforceExportQuota(ctx, args.organizationId);
+
+    const accounts = await ctx.db
+      .query("accounts")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const filtered = args.accountType
+      ? accounts.filter((a) => a.accountType === args.accountType)
+      : accounts;
+
+    const exportRows = filtered.map((a) => ({
+      accountNumber: a.accountNumber,
+      accountType: a.accountType,
+      businessName: a.businessName,
+      firstName: a.firstName,
+      lastName: a.lastName,
+      email: a.email,
+      phone: a.phone,
+      address: a.address,
+      city: a.city,
+      zipCode: a.zipCode,
+      country: a.country,
+      contactPerson: a.contactPerson,
+      contactEmail: a.contactEmail,
+      notes: a.notes,
+      createdAt: a._creationTime,
+    }));
+
+    await recordExportUsage(ctx, args.organizationId);
+
+    // Convert to requested format
+    if (args.format === "json") {
+      return toJSON(exportRows, { pretty: true });
+    }
+
+    if (args.format === "xml") {
+      return toXML(exportRows, {
+        pretty: true,
+        rootTag: "accounts",
+        itemTag: "account",
+      });
+    }
+
+    // Default: CSV format
+    const headers = [
+      "accountNumber",
+      "accountType",
+      "businessName",
+      "firstName",
+      "lastName",
+      "email",
+      "phone",
+      "address",
+      "city",
+      "zipCode",
+      "country",
+      "contactPerson",
+      "contactEmail",
+      "notes",
+      "createdAt",
+    ];
+    const csvRows = [headers.join(",")];
+    for (const row of exportRows) {
+      const values = [
+        row.accountNumber,
+        row.accountType || "",
+        row.businessName || "",
+        row.firstName || "",
+        row.lastName || "",
+        row.email || "",
+        row.phone || "",
+        row.address || "",
+        row.city || "",
+        row.zipCode || "",
+        row.country || "",
+        row.contactPerson || "",
+        row.contactEmail || "",
+        row.notes || "",
+        new Date(row.createdAt).toISOString(),
+      ];
+      csvRows.push(values.map((v) => `"${v.replace(/"/g, '""')}"`).join(","));
+    }
+    return csvRows.join("\n");
+  },
+});
+
+export const exportLoansWithFormat = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    status: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("active"),
+        v.literal("dispatched"),
+        v.literal("returned"),
+        v.literal("cancelled"),
+      ),
+    ),
+    type: v.optional(v.union(v.literal("incoming"), v.literal("outgoing"))),
+    format: v.union(
+      v.literal("csv"),
+      v.literal("json"),
+      v.literal("xml"),
+    ),
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(ctx, args.organizationId, "loans.read");
+    await enforceExportQuota(ctx, args.organizationId);
+
+    const loans = await ctx.db
+      .query("loans")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    let filtered = loans;
+    if (args.status) {
+      filtered = filtered.filter((l) => l.status === args.status);
+    }
+    if (args.type) {
+      filtered = filtered.filter((l) => l.type === args.type);
+    }
+
+    const loansWithCounts = await Promise.all(
+      filtered.map(async (loan) => {
+        const items = await ctx.db
+          .query("loanItems")
+          .withIndex("by_loan", (q) => q.eq("loanId", loan._id))
+          .collect();
+
+        return {
+          loanNumber: loan.loanNumber,
+          type: loan.type,
+          status: loan.status,
+          lenderBorrowerName: loan.lenderBorrowerName,
+          lenderBorrowerContact: loan.lenderBorrowerContact,
+          startDate: loan.startDate,
+          endDate: loan.endDate,
+          terms: loan.terms,
+          insuranceValue: loan.insuranceValue,
+          itemCount: items.length,
+          notes: loan.notes,
+          createdAt: loan._creationTime,
+        };
+      }),
+    );
+
+    await recordExportUsage(ctx, args.organizationId);
+
+    // Convert to requested format
+    if (args.format === "json") {
+      return toJSON(loansWithCounts, { pretty: true });
+    }
+
+    if (args.format === "xml") {
+      return toXML(loansWithCounts, {
+        pretty: true,
+        rootTag: "loans",
+        itemTag: "loan",
+      });
+    }
+
+    // Default: CSV format
+    const headers = [
+      "loanNumber",
+      "type",
+      "status",
+      "lenderBorrowerName",
+      "lenderBorrowerContact",
+      "startDate",
+      "endDate",
+      "terms",
+      "insuranceValue",
+      "itemCount",
+      "notes",
+      "createdAt",
+    ];
+    const csvRows = [headers.join(",")];
+    for (const row of loansWithCounts) {
+      const values = [
+        row.loanNumber,
+        row.type,
+        row.status,
+        row.lenderBorrowerName,
+        row.lenderBorrowerContact || "",
+        new Date(row.startDate).toISOString(),
+        row.endDate ? new Date(row.endDate).toISOString() : "",
+        row.terms || "",
+        row.insuranceValue?.toString() || "",
+        row.itemCount.toString(),
+        row.notes || "",
+        new Date(row.createdAt).toISOString(),
+      ];
+      csvRows.push(values.map((v) => `"${v.replace(/"/g, '""')}"`).join(","));
+    }
+    return csvRows.join("\n");
   },
 });
 
