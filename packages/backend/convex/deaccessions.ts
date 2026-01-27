@@ -13,6 +13,7 @@ import {
 
 /**
  * Generate deaccession number
+ * Format: DA-{ORG}-{YEAR}-{SEQUENCE} e.g. DA-MUS-2025-001
  */
 async function generateDeaccessionNumber(
   ctx: any,
@@ -25,19 +26,41 @@ async function generateDeaccessionNumber(
 
   const year = new Date().getFullYear();
   const orgSlug = org.slug.toUpperCase().substring(0, 3);
+  const scope = "year";
+  const scopeKey = year.toString();
 
-  // Count existing deaccessions this year
-  const existing = await ctx.db
-    .query("deaccessions")
-    .withIndex("by_organization", (q: any) =>
-      q.eq("organizationId", organizationId),
+  // Try to find existing counter
+  const existingCounter = await ctx.db
+    .query("deaccessionCounters")
+    .withIndex("by_organization_and_scope", (q) =>
+      q
+        .eq("organizationId", organizationId)
+        .eq("scope", scope)
+        .eq("scopeKey", scopeKey),
     )
-    .filter((q: any) =>
-      q.eq(q.field("deaccessionNumber"), `DA-${orgSlug}-${year}-001`),
-    )
-    .collect();
+    .unique();
 
-  const sequence = String(existing.length + 1).padStart(3, "0");
+  let nextValue: number;
+  if (existingCounter) {
+    // Increment existing counter
+    nextValue = existingCounter.currentValue + 1;
+    await ctx.db.patch(existingCounter._id, {
+      currentValue: nextValue,
+      lastGeneratedAt: Date.now(),
+    });
+  } else {
+    // Create new counter starting at 1
+    await ctx.db.insert("deaccessionCounters", {
+      organizationId,
+      scope,
+      scopeKey,
+      currentValue: 1,
+      lastGeneratedAt: Date.now(),
+    });
+    nextValue = 1;
+  }
+
+  const sequence = String(nextValue).padStart(3, "0");
   return `DA-${orgSlug}-${year}-${sequence}`;
 }
 
