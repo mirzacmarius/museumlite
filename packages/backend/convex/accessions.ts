@@ -7,6 +7,7 @@ import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
+import { batchLookup } from "./utils/batchLookup";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
@@ -261,18 +262,19 @@ export const list = query({
     // Apply search filter if provided
     if (args.search && args.search.trim().length > 0) {
       const searchLower = args.search.toLowerCase();
-      // Get collection titles for accessions to include in search
-      const accessionsWithCollectionInfo = await Promise.all(
-        allResults.map(async (accession) => {
-          let collectionTitle = "";
-          if (accession.collectionId) {
-            const collection = await ctx.db.get(accession.collectionId);
-            collectionTitle = collection?.title || "";
-          }
+      // Batch fetch collections to avoid N+1 queries
+      const collectionIds = allResults
+        .map((a) => a.collectionId)
+        .filter(Boolean) as Id<"collections">[];
+      const collectionMap = await batchLookup(ctx, collectionIds, "collections");
 
-          return { ...accession, collectionTitle };
-        }),
-      );
+      // Get collection titles for accessions to include in search
+      const accessionsWithCollectionInfo = allResults.map((accession) => {
+        const collectionTitle = accession.collectionId
+          ? collectionMap.get(accession.collectionId)?.title || ""
+          : "";
+        return { ...accession, collectionTitle };
+      });
 
       allResults = accessionsWithCollectionInfo
         .filter((accession) => {
@@ -302,26 +304,30 @@ export const list = query({
     );
     const page = allResults.slice(startIndex, endIndex);
 
-    const pageWithAssignees = await Promise.all(
-      page.map(async (item) => {
-        let assigneeName: string | undefined;
-        if (item.assignedTo) {
-          const user = await ctx.db.get(item.assignedTo);
-          assigneeName = user?.name || user?.email || undefined;
-        }
-        return {
-          _id: item._id,
-          accessionNumber: item.accessionNumber,
-          dateReceived: item.dateReceived,
-          source: item.source,
-          method: item.method,
-          status: item.status,
-          workflowStep: item.workflowStep,
-          assignedTo: item.assignedTo,
-          assigneeName,
-        };
-      }),
-    );
+    // Batch fetch users for assignees
+    const assigneeIds = page
+      .map((item) => item.assignedTo)
+      .filter((id): id is Id<"accounts"> => id !== undefined);
+    const usersMap = await batchLookup(ctx, assigneeIds, "accounts");
+
+    const pageWithAssignees = page.map((item) => {
+      let assigneeName: string | undefined;
+      if (item.assignedTo) {
+        const user = usersMap.get(item.assignedTo);
+        assigneeName = user?.name || user?.email || undefined;
+      }
+      return {
+        _id: item._id,
+        accessionNumber: item.accessionNumber,
+        dateReceived: item.dateReceived,
+        source: item.source,
+        method: item.method,
+        status: item.status,
+        workflowStep: item.workflowStep,
+        assignedTo: item.assignedTo,
+        assigneeName,
+      };
+    });
 
     return {
       page: pageWithAssignees,
@@ -1006,16 +1012,18 @@ export const getWorkflowHistory = query({
 
     const history = accession.workflowHistory ?? [];
 
-    // Enrich with approver names
-    const enrichedHistory = await Promise.all(
-      history.map(async (item) => {
-        const approver = await ctx.db.get(item.approvedBy);
-        return {
-          ...item,
-          approverName: approver?.name || approver?.username || undefined,
-        };
-      }),
-    );
+    // Batch fetch approver accounts to avoid N+1 queries
+    const approverIds = history.map((item) => item.approvedBy);
+    const approverMap = await batchLookup(ctx, approverIds, "accounts");
+
+    // Enrich with approver names using batch lookup map
+    const enrichedHistory = history.map((item) => {
+      const approver = approverMap.get(item.approvedBy);
+      return {
+        ...item,
+        approverName: approver?.name || approver?.username || undefined,
+      };
+    });
 
     return enrichedHistory;
   },
@@ -1603,28 +1611,35 @@ export const getDocumentChecklist = query({
 
     const checklist = accession.documentChecklist ?? [];
 
-    // Enrich with uploader names and URLs
-    const enrichedChecklist = await Promise.all(
-      checklist.map(async (item) => {
-        let uploaderName: string | undefined;
-        let url: string | undefined;
+    // Batch fetch uploader accounts to avoid N+1 queries
+    const uploaderIds = checklist
+      .map((item) => item.uploadedBy)
+      .filter((id): id is Id<"accounts"> => id !== undefined);
+    const uploaderMap = await batchLookup(ctx, uploaderIds, "accounts");
 
-        if (item.uploadedBy) {
-          const user = await ctx.db.get(item.uploadedBy);
-          uploaderName = user?.name || user?.email || undefined;
-        }
-
-        if (item.storageId) {
-          url = (await ctx.storage.getUrl(item.storageId)) ?? undefined;
-        }
-
-        return {
-          ...item,
-          uploaderName,
-          url,
-        };
-      }),
+    // Fetch storage URLs in parallel
+    const storageUrls = await Promise.all(
+      checklist.map((item) =>
+        item.storageId ? ctx.storage.getUrl(item.storageId) : Promise.resolve(null),
+      ),
     );
+
+    // Enrich with uploader names and URLs using batch lookup map
+    const enrichedChecklist = checklist.map((item, index) => {
+      let uploaderName: string | undefined;
+      if (item.uploadedBy) {
+        const user = uploaderMap.get(item.uploadedBy);
+        uploaderName = user?.name || user?.email || undefined;
+      }
+
+      const url = storageUrls[index] ?? undefined;
+
+      return {
+        ...item,
+        uploaderName,
+        url,
+      };
+    });
 
     const required = checklist.filter((i) => i.required);
     const uploaded = checklist.filter((i) => i.uploaded);
@@ -2034,6 +2049,25 @@ export const bulkExport = query({
       throw new Error("Not authenticated");
     }
 
+    // Fetch all accessions first
+    const accessions = await Promise.all(
+      args.accessionIds.map((id) => ctx.db.get(id)),
+    );
+
+    // Filter out null accessions and check permissions
+    const validAccessions = [];
+    for (const accession of accessions) {
+      if (!accession) continue;
+      await requirePermission(ctx, accession.organizationId, "accessions.read");
+      validAccessions.push(accession);
+    }
+
+    // Batch fetch collections to avoid N+1 queries
+    const collectionIds = validAccessions
+      .map((a) => a.collectionId)
+      .filter(Boolean) as Id<"collections">[];
+    const collectionMap = await batchLookup(ctx, collectionIds, "collections");
+
     const results: Array<{
       _id: Id<"accessions">;
       accessionNumber: string;
@@ -2053,17 +2087,12 @@ export const bulkExport = query({
       sourceVerified?: boolean;
     }> = [];
 
-    for (const accessionId of args.accessionIds) {
-      const accession = await ctx.db.get(accessionId);
-      if (!accession) continue;
-
-      await requirePermission(ctx, accession.organizationId, "accessions.read");
-
-      // Get collection info
+    for (const accession of validAccessions) {
+      // Get collection info using batch lookup map
       let collectionTitle: string | undefined;
       let collectionAccessionNumber: string | undefined;
       if (accession.collectionId) {
-        const collection = await ctx.db.get(accession.collectionId);
+        const collection = collectionMap.get(accession.collectionId);
         if (collection) {
           collectionTitle = collection.title;
           collectionAccessionNumber = collection.accessionNumber;
