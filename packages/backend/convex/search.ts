@@ -126,12 +126,14 @@ export const globalSearch = query({
       canReadAccounts,
       canReadAccessions,
       canReadLocations,
+      canReadExhibitions,
     ] = await Promise.all([
       hasPermission(ctx, args.organizationId, "collections.read"),
       hasPermission(ctx, args.organizationId, "loans.read"),
       hasPermission(ctx, args.organizationId, "accounts.read"),
       hasPermission(ctx, args.organizationId, "accessions.read"),
       hasPermission(ctx, args.organizationId, "locations.read"),
+      hasPermission(ctx, args.organizationId, "exhibitions.read"),
     ]);
 
     if (canReadCollections) {
@@ -254,6 +256,24 @@ export const globalSearch = query({
         _id: loc._id,
         name: loc.name,
         type: loc.type,
+      }));
+    }
+
+    if (canReadExhibitions) {
+      const exhibitionResults = await ctx.db
+        .query("exhibitions")
+        .withSearchIndex("search_exhibitions", (q) =>
+          q
+            .search("title", searchQuery)
+            .eq("organizationId", args.organizationId),
+        )
+        .take(searchLimit);
+
+      results.exhibitions = exhibitionResults.map((exh) => ({
+        _id: exh._id,
+        title: exh.title,
+        location: exh.location,
+        status: exh.status,
       }));
     }
 
