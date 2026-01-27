@@ -428,6 +428,24 @@ export default defineSchema({
     "scopeKey",
   ]),
 
+  // Deaccession number counter tracking
+  deaccessionCounters: defineTable({
+    organizationId: v.id("organizations"),
+    scope: v.union(
+      v.literal("global"),
+      v.literal("year"),
+      v.literal("month"),
+      v.literal("day"),
+    ),
+    scopeKey: v.string(), // e.g., "2025", "2025-10", "2025-10-02", "global"
+    currentValue: v.number(),
+    lastGeneratedAt: v.number(),
+  }).index("by_organization_and_scope", [
+    "organizationId",
+    "scope",
+    "scopeKey",
+  ]),
+
   // Custom accession number templates
   accessionTemplates: defineTable({
     organizationId: v.id("organizations"),
