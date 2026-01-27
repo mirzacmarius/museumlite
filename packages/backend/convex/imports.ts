@@ -15,6 +15,12 @@ import {
   entryToSpectrumXML,
   toSpectrumXML,
 } from "./utils/spectrum";
+import {
+  getTemplate,
+  listTemplates,
+  type ImportTemplate,
+  type FieldMapping,
+} from "./utils/legacyTemplates";
 
 type AccessionMethod =
   | "purchase"
@@ -2315,5 +2321,62 @@ export const deleteFieldMapping = mutation({
     await ctx.db.delete(args.mappingId);
 
     return null;
+  },
+});
+
+const fieldMappingValidator = v.object({
+  sourceField: v.string(),
+  targetField: v.string(),
+  transform: v.optional(
+    v.union(
+      v.literal("date"),
+      v.literal("cost"),
+      v.literal("method"),
+      v.literal("array"),
+      v.literal("dimensions"),
+    ),
+  ),
+  required: v.optional(v.boolean()),
+  description: v.optional(v.string()),
+});
+
+const importTemplateValidator = v.object({
+  name: v.string(),
+  description: v.string(),
+  system: v.union(
+    v.literal("PastPerfect"),
+    v.literal("TMS"),
+    v.literal("custom"),
+  ),
+  collectionMappings: v.array(fieldMappingValidator),
+  accessionMappings: v.array(fieldMappingValidator),
+});
+
+export const getImportTemplate = query({
+  args: {
+    templateName: v.optional(v.string()),
+  },
+  returns: v.union(importTemplateValidator, v.null()),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
+    if (!args.templateName) {
+      return null;
+    }
+
+    const template = getTemplate(args.templateName);
+    return template || null;
+  },
+});
+
+export const listImportTemplates = query({
+  args: {},
+  returns: v.array(importTemplateValidator),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+
+    return listTemplates();
   },
 });

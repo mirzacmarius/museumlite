@@ -33,3 +33,75 @@ test("should rollback failed import", async () => {
   const t = convexTest(schema, modules);
   expect(true).toBe(true);
 });
+
+test("getImportTemplate returns PastPerfect template", async () => {
+  const t = convexTest(schema, modules);
+
+  const user = await t.run(async (ctx) => {
+    return await ctx.db.insert("users", {
+      email: "test@example.com",
+      name: "Test User",
+    });
+  });
+
+  t.setUser(user);
+
+  const template = await t.query.imports.getImportTemplate({
+    templateName: "PastPerfect",
+  });
+
+  expect(template).not.toBeNull();
+  expect(template?.name).toBe("PastPerfect");
+  expect(template?.system).toBe("PastPerfect");
+  expect(template?.collectionMappings).toBeDefined();
+  expect(template?.accessionMappings).toBeDefined();
+  expect(template?.collectionMappings.length).toBeGreaterThan(0);
+  expect(template?.accessionMappings.length).toBeGreaterThan(0);
+});
+
+test("getImportTemplate returns TMS template", async () => {
+  const t = convexTest(schema, modules);
+
+  const user = await t.run(async (ctx) => {
+    return await ctx.db.insert("users", {
+      email: "test@example.com",
+      name: "Test User",
+    });
+  });
+
+  t.setUser(user);
+
+  const template = await t.query.imports.getImportTemplate({
+    templateName: "TMS",
+  });
+
+  expect(template).not.toBeNull();
+  expect(template?.name).toBe("TMS");
+  expect(template?.system).toBe("TMS");
+  expect(template?.collectionMappings).toBeDefined();
+  expect(template?.accessionMappings).toBeDefined();
+  expect(template?.collectionMappings.length).toBeGreaterThan(0);
+  expect(template?.accessionMappings.length).toBeGreaterThan(0);
+});
+
+test("listImportTemplates returns both PastPerfect and TMS templates", async () => {
+  const t = convexTest(schema, modules);
+
+  const user = await t.run(async (ctx) => {
+    return await ctx.db.insert("users", {
+      email: "test@example.com",
+      name: "Test User",
+    });
+  });
+
+  t.setUser(user);
+
+  const templates = await t.query.imports.listImportTemplates({});
+
+  expect(templates).toBeDefined();
+  expect(templates.length).toBe(2);
+
+  const templateNames = templates.map((t) => t.name);
+  expect(templateNames).toContain("PastPerfect");
+  expect(templateNames).toContain("TMS");
+});
