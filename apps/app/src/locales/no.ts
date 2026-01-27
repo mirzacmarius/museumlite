@@ -3353,6 +3353,8 @@ export default {
   },
   loginPage: {
     title: "Logg Inn",
+    heading: "Velkommen tilbake",
+    description: "Logg inn på kontoen din for å fortsette",
   },
   accessions: {
     title: "Aksessjoner",
