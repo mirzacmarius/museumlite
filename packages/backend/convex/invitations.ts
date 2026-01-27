@@ -2,7 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -443,27 +443,20 @@ export const cancelInvitation = mutation({
 });
 
 /**
- * Create an invitation (used by organizations.inviteUser)
+ * Internal: Create an invitation (called from organizations.inviteUser)
  */
-export const createInvitation = mutation({
+export const createInvitationInternal = internalMutation({
   args: {
     organizationId: v.id("organizations"),
     email: v.string(),
     roleId: v.id("roles"),
+    invitedBy: v.id("users"),
   },
   returns: v.object({
     invitationId: v.id("organizationInvitations"),
     token: v.string(),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-
-    // Check permission
-    await requirePermission(ctx, args.organizationId, "users.invite");
-
     // Check if invitation already exists for this email
     const existingInvitation = await ctx.db
       .query("organizationInvitations")
@@ -499,7 +492,7 @@ export const createInvitation = mutation({
       roleId: args.roleId,
       token,
       expiresAt,
-      invitedBy: userId,
+      invitedBy: args.invitedBy,
       status: "pending",
       createdAt: Date.now(),
     });
@@ -507,7 +500,7 @@ export const createInvitation = mutation({
     // Log audit action
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: args.organizationId,
-      userId,
+      userId: args.invitedBy,
       action: "created_invitation",
       entityType: "invitation",
       entityId: invitationId,
@@ -518,5 +511,37 @@ export const createInvitation = mutation({
     });
 
     return { invitationId, token };
+  },
+});
+
+/**
+ * Create an invitation (used by organizations.inviteUser)
+ */
+export const createInvitation = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    email: v.string(),
+    roleId: v.id("roles"),
+  },
+  returns: v.object({
+    invitationId: v.id("organizationInvitations"),
+    token: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Check permission
+    await requirePermission(ctx, args.organizationId, "users.invite");
+
+    // Call internal mutation
+    return await ctx.runMutation(internal.invitations.createInvitationInternal, {
+      organizationId: args.organizationId,
+      email: args.email,
+      roleId: args.roleId,
+      invitedBy: userId,
+    });
   },
 });

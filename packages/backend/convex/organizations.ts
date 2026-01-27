@@ -988,8 +988,14 @@ export const inviteUser = mutation({
       .first();
 
     if (!user) {
-      // TODO: Send invitation email
-      throw new Error("User not found. Email invitation not yet implemented.");
+      // User doesn't exist - create invitation for them
+      await ctx.runMutation(internal.invitations.createInvitationInternal, {
+        organizationId: args.organizationId,
+        email: args.email,
+        roleId: args.roleId,
+        invitedBy: userId,
+      });
+      return null;
     }
 
     // Check if user is already in organization
