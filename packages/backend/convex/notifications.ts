@@ -8,6 +8,12 @@ import {
   mutation,
   query,
 } from "./_generated/server";
+import {
+  sendLoanApprovedEmail,
+  sendLoanPendingEmail,
+  sendLoanRejectedEmail,
+} from "./email/templates/loanNotification";
+import { sendTaskAssignedEmail } from "./email/templates/assignmentNotification";
 
 // ============================================
 // Notification Type Constants
@@ -934,3 +940,152 @@ async function getUserEmail(
   }
   return user.email ?? null;
 }
+
+/**
+ * Internal: Send email notification based on notification type
+ * Checks user email preferences and sends appropriate email template
+ */
+export const sendEmailNotification = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    userId: v.id("users"),
+    type: v.string(),
+    title: v.string(),
+    message: v.string(),
+    relatedEntityId: v.optional(v.string()),
+    // Additional data for email templates
+    emailData: v.optional(
+      v.object({
+        // For loan notifications
+        loanId: v.optional(v.string()),
+        itemName: v.optional(v.string()),
+        borrowerName: v.optional(v.string()),
+        startDate: v.optional(v.string()),
+        endDate: v.optional(v.string()),
+        loanUrl: v.optional(v.string()),
+        // For task assignments
+        taskTitle: v.optional(v.string()),
+        assignedBy: v.optional(v.string()),
+        dueDate: v.optional(v.string()),
+        taskUrl: v.optional(v.string()),
+      }),
+    ),
+  },
+  returns: v.union(v.boolean(), v.null()),
+  handler: async (ctx, args) => {
+    // Get user preferences
+    const prefs = await ctx.db
+      .query("notificationPreferences")
+      .withIndex("by_user_and_org", (q) =>
+        q.eq("userId", args.userId).eq("organizationId", args.organizationId),
+      )
+      .first();
+
+    // Check if email notifications are enabled and set to instant delivery
+    const emailEnabled = prefs?.emailEnabled ?? false;
+    const emailDigestFrequency = prefs?.emailDigestFrequency ?? "never";
+
+    if (!emailEnabled || emailDigestFrequency !== "instant") {
+      return null; // Email not enabled or not instant, skip sending
+    }
+
+    // Get user email
+    const userEmail = await getUserEmail(ctx, args.userId);
+    if (!userEmail) {
+      return null; // No email address, cannot send
+    }
+
+    // Send appropriate email based on notification type
+    try {
+      const emailData = args.emailData ?? {};
+
+      switch (args.type) {
+        case NOTIFICATION_TYPES.LOAN_APPROVED:
+          if (
+            emailData.loanId &&
+            emailData.itemName &&
+            emailData.borrowerName &&
+            emailData.startDate &&
+            emailData.endDate
+          ) {
+            await sendLoanApprovedEmail({
+              email: userEmail,
+              loanId: emailData.loanId,
+              itemName: emailData.itemName,
+              borrowerName: emailData.borrowerName,
+              startDate: emailData.startDate,
+              endDate: emailData.endDate,
+              loanUrl: emailData.loanUrl,
+            });
+            return true;
+          }
+          break;
+
+        case NOTIFICATION_TYPES.LOAN_REJECTED:
+          if (
+            emailData.loanId &&
+            emailData.itemName &&
+            emailData.borrowerName &&
+            emailData.startDate &&
+            emailData.endDate
+          ) {
+            await sendLoanRejectedEmail({
+              email: userEmail,
+              loanId: emailData.loanId,
+              itemName: emailData.itemName,
+              borrowerName: emailData.borrowerName,
+              startDate: emailData.startDate,
+              endDate: emailData.endDate,
+              loanUrl: emailData.loanUrl,
+            });
+            return true;
+          }
+          break;
+
+        case NOTIFICATION_TYPES.LOAN_PENDING_APPROVAL:
+          if (
+            emailData.loanId &&
+            emailData.itemName &&
+            emailData.borrowerName &&
+            emailData.startDate &&
+            emailData.endDate
+          ) {
+            await sendLoanPendingEmail({
+              email: userEmail,
+              loanId: emailData.loanId,
+              itemName: emailData.itemName,
+              borrowerName: emailData.borrowerName,
+              startDate: emailData.startDate,
+              endDate: emailData.endDate,
+              loanUrl: emailData.loanUrl,
+            });
+            return true;
+          }
+          break;
+
+        case NOTIFICATION_TYPES.TASK_ASSIGNED:
+          if (emailData.taskTitle && emailData.assignedBy) {
+            await sendTaskAssignedEmail({
+              email: userEmail,
+              taskTitle: emailData.taskTitle,
+              assignedBy: emailData.assignedBy,
+              dueDate: emailData.dueDate,
+              taskUrl: emailData.taskUrl,
+            });
+            return true;
+          }
+          break;
+
+        default:
+          // Notification type not configured for email, skip
+          return null;
+      }
+
+      return null; // Missing required email data
+    } catch (error) {
+      // Log error but don't throw - email sending is best-effort
+      console.error("Failed to send email notification:", error);
+      return false;
+    }
+  },
+});
