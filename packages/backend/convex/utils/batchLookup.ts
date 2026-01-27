@@ -1,3 +1,13 @@
+/**
+ * Batch lookup utilities for avoiding N+1 query patterns
+ *
+ * This module provides utilities to efficiently fetch multiple documents
+ * from Convex tables in a single batch operation, avoiding the N+1 query
+ * anti-pattern. Use these functions when you need to fetch related documents
+ * for a collection of items.
+ *
+ * @module batchLookup
+ */
 import type { Doc, Id, TableNames } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 
