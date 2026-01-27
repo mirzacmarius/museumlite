@@ -14,6 +14,7 @@ export const create = mutation({
     organizationId: v.id("organizations"),
     name: v.string(),
     type: v.string(),
+    siteId: v.optional(v.id("sites")),
     parentLocationId: v.optional(v.id("locations")),
     address: v.optional(v.string()),
     coordinates: v.optional(
@@ -35,6 +36,17 @@ export const create = mutation({
 
     // Check permission
     await requirePermission(ctx, args.organizationId, "locations.create");
+
+    // Validate site if provided
+    if (args.siteId) {
+      const site = await ctx.db.get(args.siteId);
+      if (!site || site.organizationId !== args.organizationId) {
+        throw new Error("Invalid site");
+      }
+      if (!site.isActive) {
+        throw new Error("Site is not active");
+      }
+    }
 
     // Validate parent location if provided
     if (args.parentLocationId) {
@@ -70,6 +82,7 @@ export const create = mutation({
       organizationId: args.organizationId,
       name: args.name,
       type: args.type,
+      siteId: args.siteId,
       parentLocationId: args.parentLocationId,
       sortOrder: maxSortOrder + 1,
       address: args.address,
@@ -90,6 +103,7 @@ export const create = mutation({
 export const listAll = query({
   args: {
     organizationId: v.id("organizations"),
+    siteId: v.optional(v.id("sites")),
   },
   returns: v.array(
     v.object({
@@ -106,13 +120,18 @@ export const listAll = query({
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "locations.read");
 
-    const locations = await ctx.db
+    let locations = await ctx.db
       .query("locations")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
       .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
+
+    // Filter by siteId if provided
+    if (args.siteId !== undefined) {
+      locations = locations.filter((loc) => loc.siteId === args.siteId);
+    }
 
     // Sort by sortOrder for proper display order
     const sortedLocations = locations.sort((a, b) => a.sortOrder - b.sortOrder);
@@ -137,6 +156,7 @@ export const list = query({
   args: {
     organizationId: v.id("organizations"),
     parentLocationId: v.optional(v.union(v.id("locations"), v.literal("root"))),
+    siteId: v.optional(v.id("sites")),
   },
   returns: v.array(
     v.object({
@@ -185,7 +205,12 @@ export const list = query({
       );
     }
 
-    const locations = await query.collect();
+    let locations = await query.collect();
+
+    // Filter by siteId if provided
+    if (args.siteId !== undefined) {
+      locations = locations.filter((loc) => loc.siteId === args.siteId);
+    }
 
     // Build hierarchical structure
     const locationsWithChildren = await Promise.all(
@@ -218,6 +243,68 @@ export const list = query({
     );
 
     return locationsWithChildren;
+  },
+});
+
+/**
+ * List all locations for a specific site
+ */
+export const listBySite = query({
+  args: {
+    organizationId: v.id("organizations"),
+    siteId: v.id("sites"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("locations"),
+      name: v.string(),
+      type: v.string(),
+      siteId: v.optional(v.id("sites")),
+      parentLocationId: v.optional(v.id("locations")),
+      sortOrder: v.number(),
+      isActive: v.boolean(),
+      address: v.optional(v.string()),
+      notes: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "locations.read");
+
+    // Validate site belongs to organization
+    const site = await ctx.db.get(args.siteId);
+    if (!site || site.organizationId !== args.organizationId) {
+      throw new Error("Invalid site");
+    }
+
+    const locations = await ctx.db
+      .query("locations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    // Filter by siteId
+    const filteredLocations = locations.filter(
+      (loc) => loc.siteId === args.siteId,
+    );
+
+    // Sort by sortOrder for proper display order
+    const sortedLocations = filteredLocations.sort(
+      (a, b) => a.sortOrder - b.sortOrder,
+    );
+
+    return sortedLocations.map((loc) => ({
+      _id: loc._id,
+      name: loc.name,
+      type: loc.type,
+      siteId: loc.siteId,
+      parentLocationId: loc.parentLocationId,
+      sortOrder: loc.sortOrder,
+      isActive: loc.isActive,
+      address: loc.address,
+      notes: loc.notes,
+    }));
   },
 });
 
@@ -311,6 +398,7 @@ export const update = mutation({
     locationId: v.id("locations"),
     name: v.optional(v.string()),
     type: v.optional(v.string()),
+    siteId: v.optional(v.id("sites")),
     parentLocationId: v.optional(v.id("locations")),
     address: v.optional(v.string()),
     coordinates: v.optional(
@@ -337,6 +425,19 @@ export const update = mutation({
 
     // Check permission
     await requirePermission(ctx, location.organizationId, "locations.update");
+
+    // Validate site if provided
+    if (args.siteId !== undefined) {
+      if (args.siteId) {
+        const site = await ctx.db.get(args.siteId);
+        if (!site || site.organizationId !== location.organizationId) {
+          throw new Error("Invalid site");
+        }
+        if (!site.isActive) {
+          throw new Error("Site is not active");
+        }
+      }
+    }
 
     // Validate parent location if changing
     if (
@@ -373,6 +474,7 @@ export const update = mutation({
     const updates: {
       name?: string;
       type?: string;
+      siteId?: Id<"sites">;
       parentLocationId?: Id<"locations">;
       address?: string;
       coordinates?: { latitude: number; longitude: number };
@@ -383,6 +485,7 @@ export const update = mutation({
 
     if (args.name !== undefined) updates.name = args.name;
     if (args.type !== undefined) updates.type = args.type;
+    if (args.siteId !== undefined) updates.siteId = args.siteId;
     if (args.parentLocationId !== undefined)
       updates.parentLocationId = args.parentLocationId;
     if (args.address !== undefined) updates.address = args.address;

@@ -21,6 +21,7 @@
     "convex": "^1.31.4",
     "convex-helpers": "^0.1.63",
     "openai": "^4.61.1",
+    "qrcode": "^1.5.4",
     "sharp": "^0.34.4",
     "standardwebhooks": "^1.0.0"
   },

@@ -19,6 +19,7 @@ function addDays(timestamp: number, days: number): number {
 export const getAnalytics = query({
   args: {
     organizationId: v.id("organizations"),
+    siteId: v.optional(v.id("sites")),
   },
   returns: v.object({
     collections: v.object({
@@ -82,7 +83,6 @@ export const getAnalytics = query({
           v.literal("deaccession"),
         ),
         id: v.string(),
-        entityId: v.optional(v.string()),
         title: v.string(),
         subtitle: v.optional(v.string()),
         timestamp: v.number(),
@@ -97,487 +97,346 @@ export const getAnalytics = query({
       "organization.view_analytics",
     );
 
-    // Fetch all collection groups for counting and recent items
-    const collectionGroups = await ctx.db
-      .query("collectionGroups")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    // OPTIMIZATION: Use database-level .filter() before .collect() for status counts
-    // Instead of: collect all collections → filter in JavaScript
-    // We do: filter at database level → collect only matching records
-    // Benefits:
-    // 1. Reduces memory usage by transferring only needed records
-    // 2. Leverages database indexing for faster filtering
-    // 3. Promise.all runs all queries in parallel for better performance
-    const [
-      collections,
-      activeCollections,
-      loanedCollections,
-      deaccessionedCollections,
-      onDisplayCollections,
-    ] = await Promise.all([
-      ctx.db
-        .query("collections")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect(),
-      ctx.db
-        .query("collections")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .filter((q) => q.eq(q.field("status"), "active"))
-        .collect(),
-      ctx.db
-        .query("collections")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .filter((q) => q.eq(q.field("status"), "loaned"))
-        .collect(),
-      ctx.db
-        .query("collections")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .filter((q) => q.eq(q.field("status"), "deaccessioned"))
-        .collect(),
-      ctx.db
-        .query("collections")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .filter((q) => q.eq(q.field("displayStatus"), "on_display"))
-        .collect(),
-    ]);
-
-    // OPTIMIZATION: Database-level filtering for loan status and type counts
-    // Previously: allLoans.filter(l => l.status === 'pending') in JavaScript
-    // Now: .filter(q => q.eq(q.field("status"), "pending")) at database level
-    // This significantly reduces data transfer when organizations have many loans
-    const [
-      allLoans,
-      pendingLoans,
-      activeLoans,
-      returnedLoans,
-      incomingLoans,
-      outgoingLoans,
-    ] = await Promise.all([
-      ctx.db
-        .query("loans")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect(),
-      ctx.db
-        .query("loans")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .filter((q) => q.eq(q.field("status"), "pending"))
-        .collect(),
-      ctx.db
-        .query("loans")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .filter((q) => q.eq(q.field("status"), "active"))
-        .collect(),
-      ctx.db
-        .query("loans")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .filter((q) => q.eq(q.field("status"), "returned"))
-        .collect(),
-      ctx.db
-        .query("loans")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .filter((q) => q.eq(q.field("type"), "incoming"))
-        .collect(),
-      ctx.db
-        .query("loans")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .filter((q) => q.eq(q.field("type"), "outgoing"))
-        .collect(),
-    ]);
-
-    // OPTIMIZATION: Database-level filtering for accession status counts
-    // Avoids fetching all accessions and filtering in memory
-    // Each filtered query transfers only records matching the specific status
-    const [pendingAccessions, approvedAccessions, rejectedAccessions] =
-      await Promise.all([
-        ctx.db
-          .query("accessions")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-          .filter((q) => q.eq(q.field("status"), "pending"))
-          .collect(),
-        ctx.db
-          .query("accessions")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-          .filter((q) => q.eq(q.field("status"), "approved"))
-          .collect(),
-        ctx.db
-          .query("accessions")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-          .filter((q) => q.eq(q.field("status"), "rejected"))
-          .collect(),
-      ]);
-
-    // OPTIMIZATION: Database-level filtering for deaccession status counts
-    // Same pattern as accessions - filter before collect to minimize memory usage
-    const [pendingDeaccessions, approvedDeaccessions, rejectedDeaccessions] =
-      await Promise.all([
-        ctx.db
-          .query("deaccessions")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-          .filter((q) => q.eq(q.field("status"), "pending"))
-          .collect(),
-        ctx.db
-          .query("deaccessions")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-          .filter((q) => q.eq(q.field("status"), "approved"))
-          .collect(),
-        ctx.db
-          .query("deaccessions")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-          .filter((q) => q.eq(q.field("status"), "rejected"))
-          .collect(),
-      ]);
-
-    // Fetch locations for counting
-    const locations = await ctx.db
+    // Query locations first as they're needed for filtering collections
+    let locations = await ctx.db
       .query("locations")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
       .collect();
 
-    // OPTIMIZATION: Fetch group images upfront to avoid N+1 query problem
-    // Instead of querying for items/images inside the map loop (sequential)
-    // We fetch all needed data upfront in parallel, then build the response
-    const topGroups = [...collectionGroups]
-      .sort((a, b) => b._creationTime - a._creationTime)
-      .slice(0, 4);
+    // Filter by siteId if provided
+    if (args.siteId !== undefined) {
+      locations = locations.filter((loc) => loc.siteId === args.siteId);
+    }
 
-    // Batch fetch all group items for the top groups to avoid nested queries
-    const groupItemsMap = new Map<
-      string,
-      Array<{ collectionId: Id<"collections"> }>
-    >();
-    for (const group of topGroups) {
-      const items = await ctx.db
+    let collectionGroups = await ctx.db
+      .query("collectionGroups")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    let collections = await ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    // Filter collections by site if siteId is provided
+    if (args.siteId !== undefined) {
+      const locationIds = new Set(locations.map((loc) => loc._id));
+      collections = collections.filter(
+        (c) => c.currentLocationId && locationIds.has(c.currentLocationId),
+      );
+
+      // Filter collectionGroups to only those with items from filtered collections
+      const collectionIds = new Set(collections.map((c) => c._id));
+      const collectionGroupItems = await ctx.db
         .query("collectionGroupItems")
-        .withIndex("by_collectionGroup", (q) =>
-          q.eq("collectionGroupId", group._id),
-        )
-        .take(20);
-      groupItemsMap.set(group._id, items);
+        .collect();
+      const groupIdsForSite = new Set(
+        collectionGroupItems
+          .filter((item) => collectionIds.has(item.collectionId))
+          .map((item) => item.collectionGroupId),
+      );
+      collectionGroups = collectionGroups.filter((g) =>
+        groupIdsForSite.has(g._id),
+      );
     }
 
-    // Collect all collection IDs from group items
-    const collectionIdsFromGroups = new Set<Id<"collections">>();
-    for (const items of groupItemsMap.values()) {
-      for (const item of items) {
-        collectionIdsFromGroups.add(item.collectionId);
-      }
-    }
+    let loans = await ctx.db
+      .query("loans")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
 
-    // Fetch all media files for these collections at once
-    const mediaByCollectionMap = new Map<string, Array<any>>();
-    await Promise.all(
-      Array.from(collectionIdsFromGroups).map(async (collectionId) => {
-        const media = await ctx.db
-          .query("mediaFiles")
-          .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-          .filter((q) => q.eq(q.field("fileType"), "image"))
-          .collect();
-        if (media.length > 0) {
-          mediaByCollectionMap.set(collectionId, media);
-        }
-      }),
-    );
+    let accessions = await ctx.db
+      .query("accessions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    let deaccessions = await ctx.db
+      .query("deaccessions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    // Filter accessions, deaccessions, and loans by site if siteId is provided
+    if (args.siteId !== undefined) {
+      const collectionIds = new Set(collections.map((c) => c._id));
+
+      // Filter accessions by collectionId
+      accessions = accessions.filter(
+        (a) => a.collectionId && collectionIds.has(a.collectionId),
+      );
+
+      // Filter deaccessions by collectionId
+      deaccessions = deaccessions.filter((d) =>
+        collectionIds.has(d.collectionId),
+      );
+
+      // Filter loans by checking loanItems
+      const loanItems = await ctx.db.query("loanItems").collect();
+      const loanIdsForSite = new Set(
+        loanItems
+          .filter((item) => collectionIds.has(item.collectionId))
+          .map((item) => item.loanId),
+      );
+      loans = loans.filter((l) => loanIdsForSite.has(l._id));
+    }
 
     const recentCollectionGroups = await Promise.all(
-      topGroups.map(async (group) => {
-        let imageUrl: string | undefined;
+      [...collectionGroups]
+        .sort((a, b) => b._creationTime - a._creationTime)
+        .slice(0, 4)
+        .map(async (group) => {
+          let imageUrl: string | undefined;
 
-        // 1. Try group's own image first
-        if (group.imageId) {
-          imageUrl = (await ctx.storage.getUrl(group.imageId)) ?? undefined;
-        }
-
-        // 2. Fallback to item images if no group image
-        if (!imageUrl) {
-          const groupItems = groupItemsMap.get(group._id) ?? [];
-
-          // Look for primary image first
-          for (const groupItem of groupItems) {
-            const mediaFiles =
-              mediaByCollectionMap.get(groupItem.collectionId) ?? [];
-            const primaryMedia = mediaFiles.find((m) => m.isPrimary === true);
-
-            if (primaryMedia) {
-              if (primaryMedia.thumbnailStorageId) {
-                imageUrl =
-                  (await ctx.storage.getUrl(primaryMedia.thumbnailStorageId)) ??
-                  undefined;
-              } else {
-                imageUrl =
-                  (await ctx.storage.getUrl(primaryMedia.storageId)) ??
-                  undefined;
-              }
-              break;
-            }
+          // 1. Try group's own image first
+          if (group.imageId) {
+            imageUrl = (await ctx.storage.getUrl(group.imageId)) ?? undefined;
           }
 
-          // If no primary, try any image
+          // 2. Fallback to item images if no group image
           if (!imageUrl) {
-            for (const groupItem of groupItems) {
-              const mediaFiles =
-                mediaByCollectionMap.get(groupItem.collectionId) ?? [];
-              const anyMedia = mediaFiles[0];
+            // Find items in this group
+            const groupItems = await ctx.db
+              .query("collectionGroupItems")
+              .withIndex("by_collectionGroup", (q) =>
+                q.eq("collectionGroupId", group._id),
+              )
+              .take(20);
 
-              if (anyMedia) {
-                if (anyMedia.thumbnailStorageId) {
+            // Look for primary image first
+            for (const groupItem of groupItems) {
+              const primaryMedia = await ctx.db
+                .query("mediaFiles")
+                .withIndex("by_collection", (q) =>
+                  q.eq("collectionId", groupItem.collectionId),
+                )
+                .filter((q) =>
+                  q.and(
+                    q.eq(q.field("isPrimary"), true),
+                    q.eq(q.field("fileType"), "image"),
+                  ),
+                )
+                .first();
+
+              if (primaryMedia) {
+                if (primaryMedia.thumbnailStorageId) {
                   imageUrl =
-                    (await ctx.storage.getUrl(anyMedia.thumbnailStorageId)) ??
+                    (await ctx.storage.getUrl(primaryMedia.thumbnailStorageId)) ??
                     undefined;
                 } else {
                   imageUrl =
-                    (await ctx.storage.getUrl(anyMedia.storageId)) ?? undefined;
+                    (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined;
                 }
                 break;
               }
             }
+
+            // If no primary, try any image
+            if (!imageUrl) {
+              for (const groupItem of groupItems) {
+                const anyMedia = await ctx.db
+                  .query("mediaFiles")
+                  .withIndex("by_collection", (q) =>
+                    q.eq("collectionId", groupItem.collectionId),
+                  )
+                  .filter((q) => q.eq(q.field("fileType"), "image"))
+                  .first();
+
+                if (anyMedia) {
+                  if (anyMedia.thumbnailStorageId) {
+                    imageUrl =
+                      (await ctx.storage.getUrl(anyMedia.thumbnailStorageId)) ??
+                      undefined;
+                  } else {
+                    imageUrl =
+                      (await ctx.storage.getUrl(anyMedia.storageId)) ?? undefined;
+                  }
+                  break;
+                }
+              }
+            }
           }
-        }
 
-        return {
-          id: group._id,
-          name: group.name,
-          description: group.description,
-          itemsCount: group.itemsCount ?? 0,
-          imageUrl,
-          storageLocation: group.storageLocation,
-          valuation: group.valuation,
-        };
-      }),
-    );
-
-    // Optimize: Fetch collection media upfront to avoid nested queries
-    const topCollections = [...collections]
-      .sort((a, b) => b._creationTime - a._creationTime)
-      .slice(0, 6);
-
-    // Fetch all primary media for top collections at once
-    const primaryMediaMap = new Map<string, any>();
-    await Promise.all(
-      topCollections.map(async (collection) => {
-        const primaryMedia = await ctx.db
-          .query("mediaFiles")
-          .withIndex("by_collection", (q) =>
-            q.eq("collectionId", collection._id),
-          )
-          .filter((q) => q.eq(q.field("isPrimary"), true))
-          .first();
-        if (primaryMedia) {
-          primaryMediaMap.set(collection._id, primaryMedia);
-        }
-      }),
+          return {
+            id: group._id,
+            name: group.name,
+            description: group.description,
+            itemsCount: group.itemsCount ?? 0,
+            imageUrl,
+            storageLocation: group.storageLocation,
+            valuation: group.valuation,
+          };
+        }),
     );
 
     const recentObjects = await Promise.all(
-      topCollections.map(async (collection) => {
-        const primaryMedia = primaryMediaMap.get(collection._id);
+      [...collections]
+        .sort((a, b) => b._creationTime - a._creationTime)
+        .slice(0, 6)
+        .map(async (collection) => {
+          const primaryMedia = await ctx.db
+            .query("mediaFiles")
+            .withIndex("by_collection", (q) =>
+              q.eq("collectionId", collection._id),
+            )
+            .filter((q) => q.eq(q.field("isPrimary"), true))
+            .first();
 
-        const imageUrl = primaryMedia?.storageId
-          ? (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined
-          : undefined;
+          const imageUrl = primaryMedia?.storageId
+            ? (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined
+            : undefined;
 
-        return {
-          id: collection._id,
-          title: collection.title,
-          accessionNumber: collection.accessionNumber,
-          objectType: collection.objectType,
-          status: collection.status,
-          imageUrl,
-        };
-      }),
+          return {
+            id: collection._id,
+            title: collection.title,
+            accessionNumber: collection.accessionNumber,
+            objectType: collection.objectType,
+            status: collection.status,
+            imageUrl,
+          };
+        }),
     );
 
-    // Optimize: Fetch audit log entities upfront to avoid nested queries
-    const auditLogEvents = await ctx.db
+    let auditLogEntries = await ctx.db
       .query("auditLog")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
       .collect();
 
-    const topEvents = [...auditLogEvents]
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, 12);
+    // Filter audit log by site if siteId is provided
+    if (args.siteId !== undefined) {
+      const collectionIds = new Set(collections.map((c) => c._id));
+      const loanIds = new Set(loans.map((l) => l._id));
+      const accessionIds = new Set(accessions.map((a) => a._id));
+      const deaccessionIds = new Set(deaccessions.map((d) => d._id));
+      const collectionGroupIds = new Set(collectionGroups.map((g) => g._id));
 
-    // Helper to validate if a string looks like a valid Convex ID
-    const isValidConvexId = (id: string): boolean => {
-      // Convex IDs are base64url encoded, typically 32+ characters
-      // and contain only alphanumeric, underscore, and hyphen
-      return id != null && id.length >= 20 && /^[a-zA-Z0-9_-]+$/.test(id);
-    };
-
-    // Categorize events by type and collect valid entity IDs
-    const eventsByType = {
-      collections: [] as string[],
-      loans: [] as string[],
-      accessions: [] as string[],
-      deaccessions: [] as string[],
-    };
-
-    for (const event of topEvents) {
-      if (!isValidConvexId(event.entityId)) continue;
-
-      if (event.entityType.includes("loan")) {
-        eventsByType.loans.push(event.entityId);
-      } else if (event.entityType.includes("accession")) {
-        eventsByType.accessions.push(event.entityId);
-      } else if (event.entityType.includes("deaccession")) {
-        eventsByType.deaccessions.push(event.entityId);
-      } else if (event.entityType.includes("collection")) {
-        eventsByType.collections.push(event.entityId);
-      }
+      auditLogEntries = auditLogEntries.filter((event) => {
+        if (event.entityType.includes("collection")) {
+          const entityId = event.entityId as unknown as Id<"collections">;
+          return (
+            collectionIds.has(entityId) || collectionGroupIds.has(entityId)
+          );
+        }
+        if (event.entityType.includes("loan")) {
+          const entityId = event.entityId as unknown as Id<"loans">;
+          return loanIds.has(entityId);
+        }
+        if (event.entityType.includes("accession")) {
+          const entityId = event.entityId as unknown as Id<"accessions">;
+          return accessionIds.has(entityId);
+        }
+        if (event.entityType.includes("deaccession")) {
+          const entityId = event.entityId as unknown as Id<"deaccessions">;
+          return deaccessionIds.has(entityId);
+        }
+        return false;
+      });
     }
 
-    // Fetch all entities at once
-    const [collectionsMap, loansMap, accessionsMap, deaccessionsMap] =
-      await Promise.all([
-        Promise.all(
-          eventsByType.collections.map(async (id) => {
-            try {
-              const entity = await ctx.db.get(id as Id<"collections">);
-              return { id, entity };
-            } catch {
-              return { id, entity: null };
+    const recentActivity = await Promise.all(
+      [...auditLogEntries]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 12)
+        .map(async (event) => {
+          let type: "collection" | "loan" | "accession" | "deaccession" =
+            "collection";
+
+          if (event.entityType.includes("loan")) {
+            type = "loan";
+          } else if (event.entityType.includes("accession")) {
+            type = "accession";
+          } else if (event.entityType.includes("deaccession")) {
+            type = "deaccession";
+          } else if (event.entityType.includes("collection")) {
+            type = "collection";
+          }
+
+          let title = event.entityType;
+          let subtitle: string | undefined = event.action;
+          let status: string | undefined;
+
+          // Helper to validate if a string looks like a valid Convex ID
+          const isValidConvexId = (id: string): boolean => {
+            // Convex IDs are base64url encoded, typically 32+ characters
+            // and contain only alphanumeric, underscore, and hyphen
+            return id != null && id.length >= 20 && /^[a-zA-Z0-9_-]+$/.test(id);
+          };
+
+          if (type === "collection") {
+            if (isValidConvexId(event.entityId)) {
+              try {
+                const collectionId =
+                  event.entityId as unknown as Id<"collections">;
+                const collection = await ctx.db.get(collectionId);
+                title = collection?.title ?? event.entityType;
+                subtitle = collection?.accessionNumber ?? event.action;
+                status = collection?.status;
+              } catch {
+                // Invalid ID or entity not found, use defaults
+              }
             }
-          }),
-        ).then(
-          (results) => new Map(results.map(({ id, entity }) => [id, entity])),
-        ),
-        Promise.all(
-          eventsByType.loans.map(async (id) => {
-            try {
-              const entity = await ctx.db.get(id as Id<"loans">);
-              return { id, entity };
-            } catch {
-              return { id, entity: null };
+          } else if (type === "loan") {
+            if (isValidConvexId(event.entityId)) {
+              try {
+                const loanId = event.entityId as unknown as Id<"loans">;
+                const loan = await ctx.db.get(loanId);
+                title = loan?.loanNumber ?? event.entityType;
+                subtitle = loan?.lenderBorrowerName ?? event.action;
+                status = loan?.status;
+              } catch {
+                // Invalid ID or entity not found, use defaults
+              }
             }
-          }),
-        ).then(
-          (results) => new Map(results.map(({ id, entity }) => [id, entity])),
-        ),
-        Promise.all(
-          eventsByType.accessions.map(async (id) => {
-            try {
-              const entity = await ctx.db.get(id as Id<"accessions">);
-              return { id, entity };
-            } catch {
-              return { id, entity: null };
+          } else if (type === "accession") {
+            if (isValidConvexId(event.entityId)) {
+              try {
+                const accessionId =
+                  event.entityId as unknown as Id<"accessions">;
+                const accession = await ctx.db.get(accessionId);
+                title = accession?.accessionNumber ?? event.entityType;
+                subtitle = accession?.source ?? event.action;
+                status = accession?.status;
+              } catch {
+                // Invalid ID or entity not found, use defaults
+              }
             }
-          }),
-        ).then(
-          (results) => new Map(results.map(({ id, entity }) => [id, entity])),
-        ),
-        Promise.all(
-          eventsByType.deaccessions.map(async (id) => {
-            try {
-              const entity = await ctx.db.get(id as Id<"deaccessions">);
-              return { id, entity };
-            } catch {
-              return { id, entity: null };
+          } else if (type === "deaccession") {
+            if (isValidConvexId(event.entityId)) {
+              try {
+                const deaccessionId =
+                  event.entityId as unknown as Id<"deaccessions">;
+                const deaccession = await ctx.db.get(deaccessionId);
+                title = deaccession?.deaccessionNumber ?? event.entityType;
+                subtitle = deaccession?.reason ?? event.action;
+                status = deaccession?.status;
+              } catch {
+                // Invalid ID or entity not found, use defaults
+              }
             }
-          }),
-        ).then(
-          (results) => new Map(results.map(({ id, entity }) => [id, entity])),
-        ),
-      ]);
+          }
 
-    const recentActivity = topEvents.map((event) => {
-      let type: "collection" | "loan" | "accession" | "deaccession" =
-        "collection";
-
-      if (event.entityType.includes("loan")) {
-        type = "loan";
-      } else if (event.entityType.includes("accession")) {
-        type = "accession";
-      } else if (event.entityType.includes("deaccession")) {
-        type = "deaccession";
-      } else if (event.entityType.includes("collection")) {
-        type = "collection";
-      }
-
-      let title = event.entityType;
-      let subtitle: string | undefined = event.action;
-      let status: string | undefined;
-
-      if (type === "collection" && isValidConvexId(event.entityId)) {
-        const collection = collectionsMap.get(event.entityId);
-        if (collection) {
-          title = collection.title ?? event.entityType;
-          subtitle = collection.accessionNumber ?? event.action;
-          status = collection.status;
-        }
-      } else if (type === "loan" && isValidConvexId(event.entityId)) {
-        const loan = loansMap.get(event.entityId);
-        if (loan) {
-          title = loan.loanNumber ?? event.entityType;
-          subtitle = loan.lenderBorrowerName ?? event.action;
-          status = loan.status;
-        }
-      } else if (type === "accession" && isValidConvexId(event.entityId)) {
-        const accession = accessionsMap.get(event.entityId);
-        if (accession) {
-          title = accession.accessionNumber ?? event.entityType;
-          subtitle = accession.source ?? event.action;
-          status = accession.status;
-        }
-      } else if (type === "deaccession" && isValidConvexId(event.entityId)) {
-        const deaccession = deaccessionsMap.get(event.entityId);
-        if (deaccession) {
-          title = deaccession.deaccessionNumber ?? event.entityType;
-          subtitle = deaccession.reason ?? event.action;
-          status = deaccession.status;
-        }
-      }
-
-      return {
-        type,
-        id: event._id,
-        entityId: event.entityId,
-        title,
-        subtitle,
-        timestamp: event.timestamp,
-        status,
-      };
-    });
+          return {
+            type,
+            id: event.entityId,
+            title,
+            subtitle,
+            timestamp: event.timestamp,
+            status,
+          };
+        }),
+    );
 
     return {
       collections: {
@@ -585,28 +444,30 @@ export const getAnalytics = query({
       },
       objects: {
         total: collections.length,
-        active: activeCollections.length,
-        loaned: loanedCollections.length,
-        deaccessioned: deaccessionedCollections.length,
-        onDisplay: onDisplayCollections.length,
+        active: collections.filter((c) => c.status === "active").length,
+        loaned: collections.filter((c) => c.status === "loaned").length,
+        deaccessioned: collections.filter((c) => c.status === "deaccessioned")
+          .length,
+        onDisplay: collections.filter((c) => c.displayStatus === "on_display")
+          .length,
       },
       loans: {
-        total: allLoans.length,
-        pending: pendingLoans.length,
-        active: activeLoans.length,
-        returned: returnedLoans.length,
-        incoming: incomingLoans.length,
-        outgoing: outgoingLoans.length,
+        total: loans.length,
+        pending: loans.filter((l) => l.status === "pending").length,
+        active: loans.filter((l) => l.status === "active").length,
+        returned: loans.filter((l) => l.status === "returned").length,
+        incoming: loans.filter((l) => l.type === "incoming").length,
+        outgoing: loans.filter((l) => l.type === "outgoing").length,
       },
       accessions: {
-        pending: pendingAccessions.length,
-        approved: approvedAccessions.length,
-        rejected: rejectedAccessions.length,
+        pending: accessions.filter((a) => a.status === "pending").length,
+        approved: accessions.filter((a) => a.status === "approved").length,
+        rejected: accessions.filter((a) => a.status === "rejected").length,
       },
       deaccessions: {
-        pending: pendingDeaccessions.length,
-        approved: approvedDeaccessions.length,
-        rejected: rejectedDeaccessions.length,
+        pending: deaccessions.filter((d) => d.status === "pending").length,
+        approved: deaccessions.filter((d) => d.status === "approved").length,
+        rejected: deaccessions.filter((d) => d.status === "rejected").length,
       },
       locations: {
         total: locations.length,

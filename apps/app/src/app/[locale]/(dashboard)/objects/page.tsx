@@ -1,11 +1,9 @@
 "use client";
 
-import { AdvancedSearchDialog } from "@/components/advanced-search-dialog";
 import { DeaccessionDialog } from "@/components/deaccession-dialog";
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { useObjectFilters } from "@/hooks/use-url-filters";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -51,6 +49,7 @@ import { BulkActionsBar } from "./_components/bulk-actions-bar";
 import { BulkAddToGroupDialog } from "./_components/bulk-add-to-group-dialog";
 import { BulkDeaccessionDialog } from "./_components/bulk-deaccession-dialog";
 import { BulkMoveLocationDialog } from "./_components/bulk-move-location-dialog";
+import { BulkPrintLabelsDialog } from "./_components/bulk-print-labels-dialog";
 import {
   type ColumnConfig,
   ColumnConfigDropdown,
@@ -139,7 +138,6 @@ function CollectionFiltersAndList({
 }) {
   const t = useScopedI18n("objects");
   const [showFilters, setShowFilters] = useState(false);
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const { filters, setFilters, resetFilters, hasActiveFilters } =
     useObjectFilters();
 
@@ -153,6 +151,8 @@ function CollectionFiltersAndList({
   const [showBulkDeaccessionDialog, setShowBulkDeaccessionDialog] =
     useState(false);
   const [showAddToGroupDialog, setShowAddToGroupDialog] = useState(false);
+  const [showBulkPrintLabelsDialog, setShowBulkPrintLabelsDialog] =
+    useState(false);
 
   const bulkExport = useQuery(
     api.collections.bulkExport,
@@ -386,12 +386,16 @@ function CollectionFiltersAndList({
               {t("title")}
             </h2>
             <div className="h-4 w-px bg-zinc-800" />
-            <SearchAutocomplete
-              value={filters.search || ""}
-              onValueChange={(value) => setFilters({ search: value })}
-              placeholder={t("searchPlaceholder")}
-              className="w-64"
-            />
+            <div className="relative group">
+              <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
+              <input
+                type="text"
+                placeholder={t("searchPlaceholder")}
+                value={filters.search || ""}
+                onChange={(e) => setFilters({ search: e.target.value })}
+                className="w-64 bg-zinc-900/50 border border-zinc-800 rounded-md py-1.5 pl-8 pr-3 text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-indigo-500/50 focus:bg-zinc-900/80 transition-all"
+              />
+            </div>
             <button
               type="button"
               onClick={() => setShowFilters(!showFilters)}
@@ -404,45 +408,6 @@ function CollectionFiltersAndList({
               <Filter className="h-3.5 w-3.5" />
               {t("filters.title")}
             </button>
-
-            <button
-              type="button"
-              onClick={() => setShowAdvancedFilters(true)}
-              className="flex items-center gap-2 px-3 py-1.5 border rounded-md text-xs transition-colors bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
-            >
-              <Search className="h-3.5 w-3.5" />
-              Advanced Filters
-            </button>
-
-            <SavedViewsDropdown
-              organizationId={organizationId}
-              currentFilters={{
-                search: filters.search || "",
-                status: filters.status,
-                objectType: filters.objectType || "",
-                culture: filters.culture || "",
-                period: filters.period || "",
-                materials: filters.materials || "",
-                collectionGroupId: filters.collectionGroupId || "",
-                locationId: filters.locationId || "",
-                catalogedFrom: filters.catalogedFrom || "",
-                catalogedTo: filters.catalogedTo || "",
-              }}
-              onApplyView={(savedFilters) => {
-                setFilters({
-                  search: savedFilters.search,
-                  status: savedFilters.status,
-                  objectType: savedFilters.objectType,
-                  culture: savedFilters.culture,
-                  period: savedFilters.period,
-                  materials: savedFilters.materials,
-                  collectionGroupId: savedFilters.collectionGroupId,
-                  locationId: savedFilters.locationId,
-                  catalogedFrom: savedFilters.catalogedFrom,
-                  catalogedTo: savedFilters.catalogedTo,
-                });
-              }}
-            />
 
             {hasActiveFilters && (
               <button
@@ -641,6 +606,7 @@ function CollectionFiltersAndList({
         onAddToGroup={() => setShowAddToGroupDialog(true)}
         onMoveLocation={() => setShowMoveLocationDialog(true)}
         onExport={handleBulkExport}
+        onPrintLabels={() => setShowBulkPrintLabelsDialog(true)}
         onDeaccession={() => setShowBulkDeaccessionDialog(true)}
       />
 
@@ -667,21 +633,11 @@ function CollectionFiltersAndList({
         onSuccess={handleBulkSuccess}
       />
 
-      <AdvancedSearchDialog
-        open={showAdvancedFilters}
-        onOpenChange={setShowAdvancedFilters}
-        initialFilterGroups={filters.advancedFilters}
-        initialGroupOperator={filters.filterCombinations}
-        onApply={(filterGroups, groupOperator) => {
-          setFilters({
-            advancedFilters: filterGroups,
-            filterCombinations: groupOperator,
-          });
-          setShowAdvancedFilters(false);
-          toast.success(
-            `Applied ${filterGroups.reduce((sum, g) => sum + g.filters.length, 0)} advanced filters`,
-          );
-        }}
+      <BulkPrintLabelsDialog
+        open={showBulkPrintLabelsDialog}
+        onOpenChange={setShowBulkPrintLabelsDialog}
+        selectedIds={Array.from(selectedIds)}
+        onSuccess={handleBulkSuccess}
       />
     </div>
   );

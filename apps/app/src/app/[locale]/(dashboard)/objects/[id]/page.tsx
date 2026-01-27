@@ -50,6 +50,7 @@ import {
   Maximize2,
   Pencil,
   Printer,
+  QrCode,
   Send,
   Share2,
   Trash2,
@@ -72,6 +73,7 @@ import {
   PhysicalTab,
   PrintPreviewModal,
   ProvenanceTab,
+  QRLabelModal,
   RecordContextSidebar,
   VehicleDetailsTab,
   WineDetailsTab,
@@ -190,6 +192,7 @@ export default function ObjectDetailPage() {
 
   // Print modal state
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [isQrLabelModalOpen, setIsQrLabelModalOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
   const router = useRouter();
@@ -330,6 +333,15 @@ export default function ObjectDetailPage() {
                 onClick={() => setIsPrintModalOpen(true)}
               >
                 <Printer className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                title={t("detail.printLabel")}
+                onClick={() => setIsQrLabelModalOpen(true)}
+              >
+                <QrCode className="h-4 w-4" />
               </Button>
               <div className="h-4 w-px bg-border" />
               <PermissionGate permission="collections.update">
@@ -876,6 +888,15 @@ export default function ObjectDetailPage() {
         locationPath={locationPath}
         locale={locale}
       />
+
+      {collection && (
+        <QRLabelModal
+          isOpen={isQrLabelModalOpen}
+          onClose={() => setIsQrLabelModalOpen(false)}
+          collection={collection}
+          qrCodeUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/${locale}/objects/${collectionId}`}
+        />
+      )}
     </>
   );
 }

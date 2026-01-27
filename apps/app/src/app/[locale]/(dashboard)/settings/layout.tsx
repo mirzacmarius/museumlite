@@ -9,10 +9,10 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const t = useScopedI18n("settings.sidebar");
   const pathname = usePathname();
   const isSettingsPath = pathname === "/settings";
-  const isNotificationsPath = pathname === "/settings/notifications";
   const isBillingPath = pathname === "/settings/billing";
   const isUsersPath = pathname === "/settings/users";
   const isRolesPath = pathname === "/settings/roles";
+  const isSitesPath = pathname === "/settings/sites";
   const isOrganizationPath = pathname === "/settings/organization";
   const isIntegrationsPath = pathname?.startsWith("/settings/integrations");
   const isModulesPath = pathname === "/settings/modules";
@@ -22,17 +22,13 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const navItems = [
     { href: "/settings", label: t("general"), active: isSettingsPath },
     {
-      href: "/settings/notifications",
-      label: t("notifications"),
-      active: isNotificationsPath,
-    },
-    {
       href: "/settings/organization",
       label: t("organization"),
       active: isOrganizationPath,
     },
     { href: "/settings/users", label: t("users"), active: isUsersPath },
     { href: "/settings/roles", label: t("roles"), active: isRolesPath },
+    { href: "/settings/sites", label: t("sites"), active: isSitesPath },
     {
       href: "/settings/integrations",
       label: t("integrations"),
@@ -92,20 +88,6 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
             </span>
           </Link>
           <Link
-            href="/settings/notifications"
-            className={cn(
-              `${buttonVariants({ variant: "ghost" })} ${isNotificationsPath && "bg-primary/5"} justify-start rounded-md`,
-            )}
-          >
-            <span
-              className={cn(
-                `text-sm text-primary/80 ${isNotificationsPath && "font-medium text-primary"}`,
-              )}
-            >
-              {t("notifications")}
-            </span>
-          </Link>
-          <Link
             href="/settings/organization"
             className={cn(
               `${buttonVariants({ variant: "ghost" })} ${isOrganizationPath && "bg-primary/5"} justify-start rounded-md`,
@@ -145,6 +127,20 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
               )}
             >
               {t("roles")}
+            </span>
+          </Link>
+          <Link
+            href="/settings/sites"
+            className={cn(
+              `${buttonVariants({ variant: "ghost" })} ${isSitesPath && "bg-primary/5"} justify-start rounded-md`,
+            )}
+          >
+            <span
+              className={cn(
+                `text-sm text-primary/80 ${isSitesPath && "font-medium text-primary"}`,
+              )}
+            >
+              {t("sites")}
             </span>
           </Link>
           <Link

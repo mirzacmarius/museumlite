@@ -159,6 +159,77 @@ export async function canAccess(
   return await hasPermission(ctx, organizationId, permissionName);
 }
 
+/**
+ * Get all sites a user has access to
+ */
+export async function getUserSites(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+): Promise<Id<"sites">[]> {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) {
+    return [];
+  }
+
+  // Get all sites for the organization
+  const sites = await ctx.db
+    .query("sites")
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+    .collect();
+
+  // Get user's site access records
+  const userSites = await ctx.db
+    .query("userSites")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .collect();
+
+  // Filter sites where user has access
+  const accessibleSiteIds = new Set(
+    userSites
+      .filter((us) => us.canAccess)
+      .map((us) => us.siteId),
+  );
+
+  return sites
+    .filter((site) => accessibleSiteIds.has(site._id))
+    .map((site) => site._id);
+}
+
+/**
+ * Check if user has access to a specific site
+ */
+export async function hasSiteAccess(
+  ctx: QueryCtx | MutationCtx,
+  siteId: Id<"sites">,
+): Promise<boolean> {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) {
+    return false;
+  }
+
+  const userSite = await ctx.db
+    .query("userSites")
+    .withIndex("by_user_and_site", (q) =>
+      q.eq("userId", userId).eq("siteId", siteId),
+    )
+    .first();
+
+  return userSite?.canAccess ?? false;
+}
+
+/**
+ * Assert that user has site access, throw error if not
+ */
+export async function requireSiteAccess(
+  ctx: QueryCtx | MutationCtx,
+  siteId: Id<"sites">,
+): Promise<void> {
+  const has = await hasSiteAccess(ctx, siteId);
+  if (!has) {
+    throw new Error(`Site access denied: ${siteId}`);
+  }
+}
+
 type WorkflowType =
   | "accession"
   | "deaccession"

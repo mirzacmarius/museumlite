@@ -21,6 +21,7 @@ import {
   LogOut,
   MapPin,
   Plus,
+  QrCode,
   Search,
   Settings2,
   Shield,
@@ -414,6 +415,7 @@ export function AppSidebar({
     { title: "Overview", url: "/", icon: LayoutGrid },
     { title: "Object Catalog", url: "/objects", icon: Database },
     { title: "Digital Assets", url: "/media", icon: Image },
+    { title: "Scan", url: "/scan", icon: QrCode },
   ];
 
   const navCollectionManagement = [

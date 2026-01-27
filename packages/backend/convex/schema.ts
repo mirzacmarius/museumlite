@@ -198,6 +198,28 @@ export default defineSchema({
     isSystemRole: v.boolean(),
   }).index("by_organization", ["organizationId"]),
 
+  // Sites (physical locations/branches within an organization)
+  sites: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    address: v.optional(v.string()),
+    isActive: v.boolean(),
+    isPrimary: v.boolean(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_active", ["organizationId", "isActive"]),
+
+  // User-site relationships for site-level access control
+  userSites: defineTable({
+    userId: v.id("users"),
+    siteId: v.id("sites"),
+    canAccess: v.boolean(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_site", ["siteId"])
+    .index("by_user_and_site", ["userId", "siteId"]),
+
   // Granular permission definitions
   permissions: defineTable({
     name: v.string(),
@@ -210,6 +232,7 @@ export default defineSchema({
       v.literal("users"),
       v.literal("organization"),
       v.literal("accounts"),
+      v.literal("sites"),
     ),
   }).index("by_category", ["category"]),
 
@@ -392,30 +415,6 @@ export default defineSchema({
     .searchIndex("search_index", {
       searchField: "title",
       filterFields: ["organizationId", "status", "collectionType"],
-    })
-    .searchIndex("search_creator", {
-      searchField: "creator",
-      filterFields: ["organizationId", "status", "collectionType"],
-    })
-    .searchIndex("search_accession_number", {
-      searchField: "accessionNumber",
-      filterFields: ["organizationId", "status"],
-    })
-    .searchIndex("search_description", {
-      searchField: "description",
-      filterFields: ["organizationId", "status", "collectionType"],
-    })
-    .searchIndex("search_materials", {
-      searchField: "materials",
-      filterFields: ["organizationId", "collectionType"],
-    })
-    .searchIndex("search_object_type", {
-      searchField: "objectType",
-      filterFields: ["organizationId", "collectionType"],
-    })
-    .searchIndex("search_culture", {
-      searchField: "culture",
-      filterFields: ["organizationId"],
     }),
 
   // Accession number counter tracking
@@ -1090,6 +1089,7 @@ export default defineSchema({
   // Hierarchical location structure
   locations: defineTable({
     organizationId: v.id("organizations"),
+    siteId: v.optional(v.id("sites")),
     name: v.string(),
     type: v.string(), // Flexible per org (building/floor/room/cabinet/shelf/box)
     parentLocationId: v.optional(v.id("locations")),
@@ -1892,11 +1892,7 @@ export default defineSchema({
     .index("by_startDate", ["startDate"])
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_organization_and_startDate", ["organizationId", "startDate"])
-    .index("by_location", ["locationId"])
-    .searchIndex("search_exhibitions", {
-      searchField: "title",
-      filterFields: ["organizationId", "status"],
-    }),
+    .index("by_location", ["locationId"]),
 
   // Track objects in exhibitions and their original locations
   exhibitionObjects: defineTable({
@@ -3564,15 +3560,7 @@ export default defineSchema({
     .index("by_organization", ["organizationId"])
     .index("by_account", ["accountId"])
     .index("by_organization_and_account", ["organizationId", "accountId"])
-    .index("by_email", ["email"])
-    .searchIndex("search_first_name", {
-      searchField: "firstName",
-      filterFields: ["organizationId", "accountId", "isActive"],
-    })
-    .searchIndex("search_last_name", {
-      searchField: "lastName",
-      filterFields: ["organizationId", "accountId", "isActive"],
-    }),
+    .index("by_email", ["email"]),
 
   accountRelationships: defineTable({
     organizationId: v.id("organizations"),
@@ -3881,31 +3869,6 @@ export default defineSchema({
     .index("by_user_and_module", ["userId", "module"])
     .index("by_organization_and_user", ["organizationId", "userId"])
     .index("by_organization_and_module", ["organizationId", "module"]),
-
-  // Search history tracking per user
-  searchHistory: defineTable({
-    organizationId: v.id("organizations"),
-    userId: v.id("users"),
-    // Module where the search was performed
-    module: v.union(
-      v.literal("objects"),
-      v.literal("loans"),
-      v.literal("accounts"),
-      v.literal("locations"),
-      v.literal("accessions"),
-    ),
-    // The search query string
-    query: v.string(),
-    // Serialized filter state (JSON string of filter key-value pairs)
-    filters: v.optional(v.string()),
-    // Number of results returned
-    resultCount: v.optional(v.number()),
-    searchedAt: v.number(),
-  })
-    .index("by_user", ["userId"])
-    .index("by_user_and_module", ["userId", "module"])
-    .index("by_organization_and_user", ["organizationId", "userId"])
-    .index("by_user_and_searched_at", ["userId", "searchedAt"]),
 
   // ============================================
   // OBJECT COMMENTS

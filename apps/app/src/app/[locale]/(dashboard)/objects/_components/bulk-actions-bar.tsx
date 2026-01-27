@@ -2,7 +2,7 @@
 
 import { PermissionGate } from "@/components/permission-gate";
 import { Button } from "@v1/ui/button";
-import { Archive, Download, FolderPlus, MapPin, X } from "lucide-react";
+import { Archive, Download, FolderPlus, MapPin, Printer, X } from "lucide-react";
 
 interface BulkActionsBarProps {
   selectedCount: number;
@@ -10,6 +10,7 @@ interface BulkActionsBarProps {
   onMoveLocation: () => void;
   onAddToGroup: () => void;
   onExport: () => void;
+  onPrintLabels: () => void;
   onDeaccession: () => void;
 }
 
@@ -19,6 +20,7 @@ export function BulkActionsBar({
   onMoveLocation,
   onAddToGroup,
   onExport,
+  onPrintLabels,
   onDeaccession,
 }: BulkActionsBarProps) {
   if (selectedCount === 0) return null;
@@ -59,6 +61,13 @@ export function BulkActionsBar({
             <Button variant="outline" size="sm" onClick={onExport}>
               <Download className="mr-2 h-4 w-4" />
               Export
+            </Button>
+          </PermissionGate>
+
+          <PermissionGate permission="collections.read">
+            <Button variant="outline" size="sm" onClick={onPrintLabels}>
+              <Printer className="mr-2 h-4 w-4" />
+              Print Labels
             </Button>
           </PermissionGate>
 

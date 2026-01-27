@@ -15,7 +15,6 @@ import {
   requireModuleEnabled,
 } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
-import { filterCondition } from "./schema";
 
 /**
  * Generate accession number based on organization format template
@@ -1170,206 +1169,6 @@ export const search = query({
 });
 
 /**
- * Type for filter conditions used in advanced filtering
- */
-type FilterCondition = {
-  field: string;
-  operator: "eq" | "ne" | "in" | "contains" | "gt" | "lt" | "gte" | "lte";
-  value: unknown;
-};
-
-/**
- * Apply a single filter condition to a collection object
- */
-function applyFilter(
-  collection: Record<string, unknown>,
-  filter: FilterCondition,
-): boolean {
-  const fieldValue = collection[filter.field];
-
-  switch (filter.operator) {
-    case "eq":
-      return fieldValue === filter.value;
-    case "ne":
-      return fieldValue !== filter.value;
-    case "in":
-      if (Array.isArray(filter.value)) {
-        return filter.value.includes(fieldValue);
-      }
-      return false;
-    case "contains":
-      if (typeof fieldValue === "string" && typeof filter.value === "string") {
-        return fieldValue.toLowerCase().includes(filter.value.toLowerCase());
-      }
-      if (Array.isArray(fieldValue)) {
-        return fieldValue.includes(filter.value);
-      }
-      return false;
-    case "gt":
-      if (typeof fieldValue === "number" && typeof filter.value === "number") {
-        return fieldValue > filter.value;
-      }
-      return false;
-    case "lt":
-      if (typeof fieldValue === "number" && typeof filter.value === "number") {
-        return fieldValue < filter.value;
-      }
-      return false;
-    case "gte":
-      if (typeof fieldValue === "number" && typeof filter.value === "number") {
-        return fieldValue >= filter.value;
-      }
-      return false;
-    case "lte":
-      if (typeof fieldValue === "number" && typeof filter.value === "number") {
-        return fieldValue <= filter.value;
-      }
-      return false;
-    default:
-      return false;
-  }
-}
-
-/**
- * Apply a group of filters with AND/OR logic
- */
-function applyFilterGroup(
-  collection: Record<string, unknown>,
-  filters: FilterCondition[],
-  operator: "AND" | "OR",
-): boolean {
-  if (filters.length === 0) {
-    return true;
-  }
-
-  if (operator === "AND") {
-    return filters.every((filter) => applyFilter(collection, filter));
-  }
-
-  // OR logic
-  return filters.some((filter) => applyFilter(collection, filter));
-}
-
-/**
- * Advanced filter query with dynamic field combinations and AND/OR logic
- * Supports complex queries with multiple filter groups
- */
-export const advancedFilter = query({
-  args: {
-    organizationId: v.id("organizations"),
-    filterGroups: v.array(
-      v.object({
-        filters: v.array(filterCondition),
-        operator: v.union(v.literal("AND"), v.literal("OR")),
-      }),
-    ),
-    groupOperator: v.union(v.literal("AND"), v.literal("OR")),
-    paginationOpts: paginationOptsValidator,
-    status: v.optional(
-      v.union(
-        v.literal("active"),
-        v.literal("loaned"),
-        v.literal("deaccessioned"),
-        v.literal("archived"),
-        v.literal("deleted"),
-      ),
-    ),
-  },
-  returns: v.object({
-    page: v.array(
-      v.object({
-        _id: v.id("collections"),
-        accessionNumber: v.string(),
-        title: v.string(),
-        collectionGroupId: v.optional(v.id("collectionGroups")),
-        objectType: v.optional(v.string()),
-        currentLocationId: v.optional(v.id("locations")),
-        status: v.union(
-          v.literal("active"),
-          v.literal("loaned"),
-          v.literal("deaccessioned"),
-          v.literal("archived"),
-          v.literal("deleted"),
-        ),
-        _creationTime: v.number(),
-      }),
-    ),
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
-  handler: async (ctx, args) => {
-    // Check permission
-    await requirePermission(ctx, args.organizationId, "collections.read");
-
-    // Query all collections for the organization
-    let query = ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      );
-
-    // Apply status filter at database level for performance
-    if (args.status) {
-      query = query.filter((q) => q.eq(q.field("status"), args.status));
-    } else {
-      // When no status filter is provided, exclude deaccessioned items
-      query = query.filter((q) => q.neq(q.field("status"), "deaccessioned"));
-    }
-
-    let allResults = await query.collect();
-
-    // Apply advanced filters
-    if (args.filterGroups.length > 0) {
-      allResults = allResults.filter((collection) => {
-        const groupResults = args.filterGroups.map((group) =>
-          applyFilterGroup(
-            collection as unknown as Record<string, unknown>,
-            group.filters as FilterCondition[],
-            group.operator,
-          ),
-        );
-
-        // Apply operator between filter groups
-        if (args.groupOperator === "AND") {
-          return groupResults.every((result) => result);
-        }
-        // OR logic
-        return groupResults.some((result) => result);
-      });
-    }
-
-    // Sort by creation time (newest first)
-    allResults.sort((a, b) => b._creationTime - a._creationTime);
-
-    // Handle pagination manually
-    const cursor = args.paginationOpts.cursor
-      ? Number.parseInt(args.paginationOpts.cursor, 10)
-      : 0;
-    const startIndex = cursor;
-    const endIndex = Math.min(
-      startIndex + args.paginationOpts.numItems,
-      allResults.length,
-    );
-    const page = allResults.slice(startIndex, endIndex);
-
-    return {
-      page: page.map((item) => ({
-        _id: item._id,
-        accessionNumber: item.accessionNumber,
-        title: item.title,
-        collectionGroupId: item.collectionGroupId,
-        objectType: item.objectType,
-        currentLocationId: item.currentLocationId,
-        status: item.status,
-        _creationTime: item._creationTime,
-      })),
-      isDone: endIndex >= allResults.length,
-      continueCursor: endIndex.toString(),
-    };
-  },
-});
-
-/**
  * Update collection object
  */
 export const update = mutation({
@@ -1795,6 +1594,90 @@ export const restoreCollection = mutation({
     });
 
     return null;
+  },
+});
+
+/**
+ * Get multiple collections by IDs in a single batch query
+ */
+export const getBatch = query({
+  args: {
+    organizationId: v.id("organizations"),
+    collectionIds: v.array(v.id("collections")),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("collections"),
+      _creationTime: v.number(),
+      organizationId: v.id("organizations"),
+      accessionNumber: v.string(),
+      title: v.string(),
+      alternativeTitle: v.optional(v.string()),
+      creator: v.optional(v.string()),
+      objectType: v.optional(v.string()),
+      objectName: v.optional(v.string()),
+      culture: v.optional(v.string()),
+      period: v.optional(v.string()),
+      dateCreated: v.optional(v.string()),
+      materials: v.optional(v.string()),
+      technique: v.optional(v.string()),
+      dimensions: v.optional(v.string()),
+      dimensionHeight: v.optional(v.number()),
+      dimensionWidth: v.optional(v.number()),
+      dimensionDepth: v.optional(v.number()),
+      dimensionWeight: v.optional(v.number()),
+      dimensionUnit: v.optional(v.string()),
+      weightUnit: v.optional(v.string()),
+      description: v.optional(v.string()),
+      condition: v.optional(v.string()),
+      inscriptions: v.optional(v.string()),
+      tags: v.optional(v.array(v.string())),
+      provenance: v.optional(v.string()),
+      exhibitionHistory: v.optional(v.string()),
+      creditLine: v.optional(v.string()),
+      parentObjectId: v.optional(v.id("collections")),
+      currentLocationId: v.optional(v.id("locations")),
+      alternateAccessionNumbers: v.optional(v.array(v.string())),
+      acquisitionMethod: v.optional(v.string()),
+      legalRestrictions: v.optional(v.boolean()),
+      isPubliclyVisible: v.optional(v.boolean()),
+      isHighResDownloadable: v.optional(v.boolean()),
+      isSearchable: v.optional(v.boolean()),
+      isValuationVisible: v.optional(v.boolean()),
+      publicSlug: v.optional(v.string()),
+      displayStatus: v.optional(v.string()),
+      status: v.union(
+        v.literal("active"),
+        v.literal("loaned"),
+        v.literal("deaccessioned"),
+        v.literal("archived"),
+        v.literal("deleted"),
+      ),
+      catalogedBy: v.id("users"),
+      catalogedAt: v.number(),
+      lastModifiedBy: v.optional(v.id("users")),
+      lastModifiedAt: v.optional(v.number()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Check permission
+    await requirePermission(ctx, args.organizationId, "collections.view");
+
+    // Fetch all collections
+    const collections = await Promise.all(
+      args.collectionIds.map((id) => ctx.db.get(id)),
+    );
+
+    // Filter out nulls and verify organization ownership
+    return collections.filter(
+      (c): c is NonNullable<typeof c> =>
+        c !== null && c.organizationId === args.organizationId,
+    );
   },
 });
 
