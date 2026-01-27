@@ -348,7 +348,9 @@ export const listBatchJobs = query({
       jobsQuery = ctx.db
         .query("batchJobs")
         .withIndex("by_organization_and_status", (q) =>
-          q.eq("organizationId", args.organizationId).eq("status", args.status!),
+          q
+            .eq("organizationId", args.organizationId)
+            .eq("status", args.status!),
         );
     } else {
       jobsQuery = ctx.db
@@ -363,7 +365,9 @@ export const listBatchJobs = query({
     // Sort by creation date descending
     jobs.sort((a, b) => b.createdAt - a.createdAt);
 
-    const limitedJobs = args.limit ? jobs.slice(0, args.limit) : jobs.slice(0, 50);
+    const limitedJobs = args.limit
+      ? jobs.slice(0, args.limit)
+      : jobs.slice(0, 50);
 
     const enriched = await Promise.all(
       limitedJobs.map(async (job) => {
@@ -425,7 +429,10 @@ export const processBatchJob = internalMutation({
     }
 
     // Get chunk of items to process
-    const endIndex = Math.min(startIndex + BATCH_CHUNK_SIZE, job.targetIds.length);
+    const endIndex = Math.min(
+      startIndex + BATCH_CHUNK_SIZE,
+      job.targetIds.length,
+    );
     const chunkIds = job.targetIds.slice(startIndex, endIndex);
 
     let successCount = job.successCount;
@@ -455,7 +462,12 @@ export const processBatchJob = internalMutation({
 
         // Process based on job type
         if (job.jobType === "bulk_edit" && job.editPayload) {
-          await processBulkEdit(ctx, collection, job.editPayload, job.createdBy);
+          await processBulkEdit(
+            ctx,
+            collection,
+            job.editPayload,
+            job.createdBy,
+          );
           successCount++;
         } else if (job.jobType === "bulk_move" && job.movePayload) {
           const moveResult = await processBulkMove(
@@ -467,7 +479,10 @@ export const processBatchJob = internalMutation({
           if (moveResult.success) {
             successCount++;
           } else {
-            errors.push({ itemId: collectionId, error: moveResult.error ?? "Move failed" });
+            errors.push({
+              itemId: collectionId,
+              error: moveResult.error ?? "Move failed",
+            });
             failureCount++;
           }
         } else if (job.jobType === "bulk_status_change" && job.statusPayload) {
@@ -480,7 +495,8 @@ export const processBatchJob = internalMutation({
           successCount++;
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
         errors.push({ itemId: collectionId, error: errorMessage });
         failureCount++;
       }
@@ -501,10 +517,14 @@ export const processBatchJob = internalMutation({
 
     // Schedule next chunk if not complete
     if (!isComplete) {
-      await ctx.scheduler.runAfter(100, internal.batchOperations.processBatchJob, {
-        jobId: args.jobId,
-        startIndex: endIndex,
-      });
+      await ctx.scheduler.runAfter(
+        100,
+        internal.batchOperations.processBatchJob,
+        {
+          jobId: args.jobId,
+          startIndex: endIndex,
+        },
+      );
     } else {
       // Send completion notification
       await ctx.runMutation(internal.notifications.sendBatchJobCompleted, {
@@ -781,7 +801,8 @@ export const quickBulkEdit = mutation({
         await ctx.db.patch(collectionId, updates);
         successCount++;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
         errors.push({ itemId: collectionId, error: errorMessage });
         failureCount++;
       }
@@ -886,7 +907,8 @@ export const quickBulkStatusChange = mutation({
         await ctx.db.patch(collectionId, updates);
         successCount++;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
         errors.push({ itemId: collectionId, error: errorMessage });
         failureCount++;
       }

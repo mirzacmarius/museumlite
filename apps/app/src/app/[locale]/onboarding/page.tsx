@@ -6,110 +6,307 @@ import { api } from "@v1/backend/convex/_generated/api";
 import * as validators from "@v1/backend/convex/utils/validators";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
 import { useMutation, useQuery } from "convex/react";
-import { Loader2 } from "lucide-react";
+import { Building2, Loader2, User } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { useFormStatus } from "react-dom";
+import { useEffect, useState } from "react";
 
-export default function OnboardingUsername() {
+type Step = "username" | "organization";
+
+export default function OnboardingPage() {
   const t = useI18n();
-  const user = useQuery(api.users.getUser);
-  const updateUsername = useMutation(api.users.updateUsername);
   const router = useRouter();
+  const user = useQuery(api.users.getUser);
+  const organizations = useQuery(api.organizations.listUserOrganizations);
+  const updateUsername = useMutation(api.users.updateUsername);
+  const createOrganization = useMutation(api.organizations.create);
 
-  const { pending } = useFormStatus();
+  const [currentStep, setCurrentStep] = useState<Step>("username");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orgError, setOrgError] = useState<string | null>(null);
+  const [orgFormData, setOrgFormData] = useState({
+    name: "",
+    slug: "",
+    type: "museum" as "museum" | "gallery" | "library" | "collector",
+  });
 
-  const form = useForm({
-    defaultValues: {
-      username: "",
-    },
+  const usernameForm = useForm({
+    defaultValues: { username: "" },
     onSubmit: async ({ value }) => {
-      await updateUsername({
-        username: value.username,
-      });
+      await updateUsername({ username: value.username });
+      setCurrentStep("organization");
     },
   });
 
   useEffect(() => {
-    if (!user) {
+    if (!user || organizations === undefined) return;
+
+    if (user.username && organizations && organizations.length > 0) {
+      router.push("/");
       return;
     }
-    if (user?.username) {
-      router.push("/");
+
+    if (user.username) {
+      setCurrentStep("organization");
     }
-  }, [user]);
+  }, [user, organizations, router]);
+
+  const handleOrgSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOrgError(null);
+    setIsSubmitting(true);
+
+    try {
+      const slug =
+        orgFormData.slug ||
+        orgFormData.name
+          .toLowerCase()
+          .replace(/\s+/g, "-")
+          .replace(/[^a-z0-9-]/g, "");
+
+      await createOrganization({
+        name: orgFormData.name,
+        slug,
+        type: orgFormData.type,
+      });
+
+      router.push("/");
+    } catch (err) {
+      setOrgError(
+        err instanceof Error ? err.message : t("organizationsNew.createFailed"),
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (!user) {
-    return null;
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-96 flex-col items-center justify-center gap-6">
-      <div className="flex flex-col items-center gap-2">
-        <span className="mb-2 select-none text-6xl">👋</span>
-        <h3 className="text-center text-2xl font-medium text-primary">
-          {t("onboardingPage.welcome")}
-        </h3>
-        <p className="text-center text-base font-normal text-primary/60">
-          {t("onboardingPage.description")}
-        </p>
-      </div>
-      <form
-        className="flex w-full flex-col items-start gap-1"
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          form.handleSubmit();
-        }}
-      >
-        <div className="flex w-full flex-col gap-1.5">
-          <label htmlFor="username" className="sr-only">
-            {t("onboardingPage.usernameLabel")}
-          </label>
-          <form.Field
-            name="username"
-            validators={{
-              onSubmit: validators.username,
+    <div className="mx-auto flex h-full w-full max-w-md flex-col items-center justify-center gap-8 px-4">
+      <StepIndicator currentStep={currentStep} />
+
+      {currentStep === "username" && (
+        <div className="flex w-full flex-col items-center gap-6">
+          <div className="flex flex-col items-center gap-2">
+            <span className="mb-2 select-none text-6xl">👋</span>
+            <h3 className="text-center text-2xl font-medium text-primary">
+              {t("onboardingPage.welcome")}
+            </h3>
+            <p className="text-center text-base font-normal text-primary/60">
+              {t("onboardingPage.description")}
+            </p>
+          </div>
+
+          <form
+            className="flex w-full flex-col items-start gap-1"
+            onSubmit={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              usernameForm.handleSubmit();
             }}
-            // biome-ignore lint/correctness/noChildrenProp: tanstack best practice
-            children={(field) => (
+          >
+            <div className="flex w-full flex-col gap-1.5">
+              <label htmlFor="username" className="sr-only">
+                {t("onboardingPage.usernameLabel")}
+              </label>
+              <usernameForm.Field
+                name="username"
+                validators={{ onSubmit: validators.username }}
+                // biome-ignore lint/correctness/noChildrenProp: tanstack best practice
+                children={(field) => (
+                  <Input
+                    placeholder={t("onboardingPage.usernameLabel")}
+                    autoComplete="off"
+                    required
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    className={`bg-transparent ${
+                      field.state.meta?.errors.length > 0 &&
+                      "border-destructive focus-visible:ring-destructive"
+                    }`}
+                  />
+                )}
+              />
+            </div>
+
+            {usernameForm.state.fieldMeta.username?.errors.length > 0 && (
+              <span className="mb-2 text-sm text-destructive dark:text-destructive-foreground">
+                {usernameForm.state.fieldMeta.username?.errors.join(" ")}
+              </span>
+            )}
+
+            <Button type="submit" size="sm" className="mt-2 w-full">
+              {usernameForm.state.isSubmitting ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                t("onboardingPage.continue")
+              )}
+            </Button>
+          </form>
+
+          <p className="px-6 text-center text-sm font-normal leading-normal text-primary/60">
+            {t("onboardingPage.updateNote")}
+          </p>
+        </div>
+      )}
+
+      {currentStep === "organization" && (
+        <div className="flex w-full flex-col items-center gap-6">
+          <div className="flex flex-col items-center gap-2">
+            <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Building2 className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-center text-2xl font-medium text-primary">
+              {t("onboardingPage.orgTitle")}
+            </h3>
+            <p className="text-center text-base font-normal text-primary/60">
+              {t("onboardingPage.orgDescription")}
+            </p>
+          </div>
+
+          <form onSubmit={handleOrgSubmit} className="w-full space-y-4">
+            <div>
+              <label htmlFor="name" className="mb-2 block text-sm font-medium">
+                {t("organizationsNew.nameLabel")}
+              </label>
               <Input
-                placeholder={t("onboardingPage.usernameLabel")}
-                autoComplete="off"
+                id="name"
+                type="text"
+                value={orgFormData.name}
+                onChange={(e) =>
+                  setOrgFormData({ ...orgFormData, name: e.target.value })
+                }
+                placeholder={t("organizationsNew.namePlaceholder")}
                 required
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-                className={`bg-transparent ${
-                  field.state.meta?.errors.length > 0 &&
-                  "border-destructive focus-visible:ring-destructive"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="slug" className="mb-2 block text-sm font-medium">
+                {t("organizationsNew.slugLabel")}
+              </label>
+              <Input
+                id="slug"
+                type="text"
+                value={orgFormData.slug}
+                onChange={(e) =>
+                  setOrgFormData({ ...orgFormData, slug: e.target.value })
+                }
+                placeholder={t("organizationsNew.slugPlaceholder")}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t("organizationsNew.slugHelp")}
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="type" className="mb-2 block text-sm font-medium">
+                {t("organizationsNew.typeLabel")}
+              </label>
+              <Select
+                value={orgFormData.type}
+                onValueChange={(value) =>
+                  setOrgFormData({
+                    ...orgFormData,
+                    type: value as typeof orgFormData.type,
+                  })
+                }
+              >
+                <SelectTrigger id="type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="museum">
+                    {t("organizationsNew.types.museum")}
+                  </SelectItem>
+                  <SelectItem value="gallery">
+                    {t("organizationsNew.types.gallery")}
+                  </SelectItem>
+                  <SelectItem value="library">
+                    {t("organizationsNew.types.library")}
+                  </SelectItem>
+                  <SelectItem value="collector">
+                    {t("organizationsNew.types.collector")}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {orgError && (
+              <div className="rounded-lg border border-destructive bg-destructive/10 p-3">
+                <p className="text-sm text-destructive">{orgError}</p>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isSubmitting || !orgFormData.name}
+            >
+              {isSubmitting ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                t("organizationsNew.submit")
+              )}
+            </Button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StepIndicator({ currentStep }: { currentStep: Step }) {
+  const steps = [
+    { id: "username" as const, icon: User },
+    { id: "organization" as const, icon: Building2 },
+  ];
+
+  return (
+    <div className="flex items-center gap-3">
+      {steps.map((step, index) => {
+        const isActive = step.id === currentStep;
+        const isPast = currentStep === "organization" && step.id === "username";
+        const Icon = step.icon;
+
+        return (
+          <div key={step.id} className="flex items-center gap-3">
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : isPast
+                    ? "bg-primary/20 text-primary"
+                    : "bg-muted text-muted-foreground"
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+            </div>
+            {index < steps.length - 1 && (
+              <div
+                className={`h-0.5 w-8 transition-colors ${
+                  isPast ? "bg-primary/40" : "bg-muted"
                 }`}
               />
             )}
-          />
-        </div>
-
-        <div className="flex flex-col">
-          {form.state.fieldMeta.username?.errors.length > 0 && (
-            <span className="mb-2 text-sm text-destructive dark:text-destructive-foreground">
-              {form.state.fieldMeta.username?.errors.join(" ")}
-            </span>
-          )}
-        </div>
-
-        <Button type="submit" size="sm" className="w-full">
-          {pending ? (
-            <Loader2 className="animate-spin" />
-          ) : (
-            t("onboardingPage.continue")
-          )}
-        </Button>
-      </form>
-
-      <p className="px-6 text-center text-sm font-normal leading-normal text-primary/60">
-        {t("onboardingPage.updateNote")}
-      </p>
+          </div>
+        );
+      })}
     </div>
   );
 }

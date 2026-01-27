@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { useMutation, useQuery } from "convex/react";
-import { Trash2, UserCog, UserPlus } from "lucide-react";
+import { Clock, Mail, Trash2, UserCog, UserPlus } from "lucide-react";
 import { useState } from "react";
 
 export default function UsersSettingsPage() {
@@ -55,9 +55,18 @@ export default function UsersSettingsPage() {
       : "skip",
   );
 
+  const pendingInvitations = useQuery(
+    api.invitations.listPendingInvitations,
+    currentOrganizationId
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
+  );
+
   const inviteUser = useMutation(api.organizations.inviteUser);
   const removeUser = useMutation(api.organizations.removeUser);
   const updateUserRole = useMutation(api.organizations.updateUserRole);
+  const resendInvitation = useMutation(api.invitations.resendInvitation);
+  const cancelInvitation = useMutation(api.invitations.cancelInvitation);
 
   if (!currentOrganizationId) {
     return (
@@ -125,6 +134,35 @@ export default function UsersSettingsPage() {
     } catch (err) {
       console.error("Error updating user role:", err);
       alert(err instanceof Error ? err.message : t("updateRoleFailed"));
+    }
+  };
+
+  const handleResendInvitation = async (invitationId: string) => {
+    try {
+      const result = await resendInvitation({
+        invitationId: invitationId as Id<"organizationInvitations">,
+      });
+      if ("error" in result) {
+        alert(result.error);
+      }
+    } catch (err) {
+      console.error("Error resending invitation:", err);
+      alert(err instanceof Error ? err.message : t("resendFailed"));
+    }
+  };
+
+  const handleCancelInvitation = async (invitationId: string) => {
+    if (!confirm(t("cancelConfirm"))) {
+      return;
+    }
+
+    try {
+      await cancelInvitation({
+        invitationId: invitationId as Id<"organizationInvitations">,
+      });
+    } catch (err) {
+      console.error("Error cancelling invitation:", err);
+      alert(err instanceof Error ? err.message : t("cancelFailed"));
     }
   };
 
@@ -313,6 +351,99 @@ export default function UsersSettingsPage() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="flex w-full flex-col gap-4">
+        <div>
+          <h3 className="text-lg font-medium">{t("pendingInvitations")}</h3>
+          <p className="text-sm text-muted-foreground">
+            {t("pendingInvitationsCount", {
+              count: pendingInvitations?.length || 0,
+              plural: pendingInvitations?.length !== 1 ? "s" : "",
+            })}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border bg-card">
+          {pendingInvitations === undefined ? (
+            <div className="flex h-32 items-center justify-center">
+              <p className="text-muted-foreground">{t("loadingInvitations")}</p>
+            </div>
+          ) : pendingInvitations.length === 0 ? (
+            <div className="flex h-32 items-center justify-center">
+              <p className="text-muted-foreground">
+                {t("noPendingInvitations")}
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {pendingInvitations.map(
+                (invitation: {
+                  _id: Id<"organizationInvitations">;
+                  email: string;
+                  roleName: string;
+                  expiresAt: number;
+                  inviterName?: string;
+                  isExpired: boolean;
+                }) => (
+                  <div
+                    key={invitation._id}
+                    className="flex items-center justify-between p-4"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                        <Mail className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{invitation.email}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {invitation.roleName}
+                        </p>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          {invitation.isExpired ? (
+                            <span className="text-destructive">
+                              {t("expired")}
+                            </span>
+                          ) : (
+                            <span>
+                              {t("expires", {
+                                date: formatDate(
+                                  new Date(invitation.expiresAt),
+                                  locale,
+                                ),
+                              })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <PermissionGate permission="users.invite">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleResendInvitation(invitation._id)}
+                        >
+                          {t("resend")}
+                        </Button>
+                      </PermissionGate>
+                      <PermissionGate permission="users.invite">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCancelInvitation(invitation._id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          {t("cancelInvitation")}
+                        </Button>
+                      </PermissionGate>
+                    </div>
+                  </div>
+                ),
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

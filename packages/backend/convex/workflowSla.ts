@@ -231,7 +231,9 @@ export const checkAllOrganizationsSla = internalMutation({
     totalBreaches: v.number(),
     totalWarnings: v.number(),
   }),
-  handler: async (ctx): Promise<{
+  handler: async (
+    ctx,
+  ): Promise<{
     organizationsChecked: number;
     totalBreaches: number;
     totalWarnings: number;

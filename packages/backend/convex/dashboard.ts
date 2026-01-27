@@ -178,11 +178,13 @@ export const getAnalytics = query({
               if (primaryMedia) {
                 if (primaryMedia.thumbnailStorageId) {
                   imageUrl =
-                    (await ctx.storage.getUrl(primaryMedia.thumbnailStorageId)) ??
-                    undefined;
+                    (await ctx.storage.getUrl(
+                      primaryMedia.thumbnailStorageId,
+                    )) ?? undefined;
                 } else {
                   imageUrl =
-                    (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined;
+                    (await ctx.storage.getUrl(primaryMedia.storageId)) ??
+                    undefined;
                 }
                 break;
               }
@@ -206,7 +208,8 @@ export const getAnalytics = query({
                       undefined;
                   } else {
                     imageUrl =
-                      (await ctx.storage.getUrl(anyMedia.storageId)) ?? undefined;
+                      (await ctx.storage.getUrl(anyMedia.storageId)) ??
+                      undefined;
                   }
                   break;
                 }

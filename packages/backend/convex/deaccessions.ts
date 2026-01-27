@@ -1247,7 +1247,10 @@ export const requestRegulatoryApproval = mutation({
       action: "regulatory_approval_requested",
       entityType: "deaccession",
       entityId: args.deaccessionId,
-      changes: { approverEmail: args.approverEmail, approverName: args.approverName },
+      changes: {
+        approverEmail: args.approverEmail,
+        approverName: args.approverName,
+      },
     });
 
     // Note: In production, this URL would be your actual domain
@@ -1465,7 +1468,9 @@ export const getCurrentAppraisal = query({
     // Get most recent appraisal
     const appraisals = await ctx.db
       .query("appraisals")
-      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", args.collectionId),
+      )
       .collect();
 
     if (appraisals.length === 0) {

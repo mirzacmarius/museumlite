@@ -21,24 +21,19 @@ export default async function Layout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await fetchQuery(
-    api.users.getUser,
-    {},
-    { token: await convexAuthNextjsToken() },
-  );
-  if (!user?.username) {
+  const token = await convexAuthNextjsToken();
+  const [user, organizations] = await Promise.all([
+    fetchQuery(api.users.getUser, {}, { token }),
+    fetchQuery(api.organizations.listUserOrganizations, {}, { token }),
+  ]);
+
+  if (!user?.username || !organizations || organizations.length === 0) {
     return redirect("/onboarding");
   }
-  const preloadedUser = await preloadQuery(
-    api.users.getUser,
-    {},
-    { token: await convexAuthNextjsToken() },
-  );
-  const preloadedProducts = await preloadQuery(
-    api.subscriptions.listAllProducts,
-    {},
-    { token: await convexAuthNextjsToken() },
-  );
+  const [preloadedUser, preloadedProducts] = await Promise.all([
+    preloadQuery(api.users.getUser, {}, { token }),
+    preloadQuery(api.subscriptions.listAllProducts, {}, { token }),
+  ]);
   return (
     <OrganizationProvider>
       <PermissionProvider>
