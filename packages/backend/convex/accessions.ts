@@ -1011,16 +1011,18 @@ export const getWorkflowHistory = query({
 
     const history = accession.workflowHistory ?? [];
 
-    // Enrich with approver names
-    const enrichedHistory = await Promise.all(
-      history.map(async (item) => {
-        const approver = await ctx.db.get(item.approvedBy);
-        return {
-          ...item,
-          approverName: approver?.name || approver?.username || undefined,
-        };
-      }),
-    );
+    // Batch fetch approver accounts to avoid N+1 queries
+    const approverIds = history.map((item) => item.approvedBy);
+    const approverMap = await batchLookup(ctx, approverIds, "accounts");
+
+    // Enrich with approver names using batch lookup map
+    const enrichedHistory = history.map((item) => {
+      const approver = approverMap.get(item.approvedBy);
+      return {
+        ...item,
+        approverName: approver?.name || approver?.username || undefined,
+      };
+    });
 
     return enrichedHistory;
   },
