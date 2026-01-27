@@ -41,6 +41,10 @@ export default function DashboardSettings() {
     signOut();
   };
 
+  const handleGenerateUploadUrl = async (mimeType: string) => {
+    return await generateUploadUrl({ mimeType });
+  };
+
   const nameForm = useForm({
     defaultValues: {
       name: user?.name || "",
@@ -100,7 +104,7 @@ export default function DashboardSettings() {
             className="peer sr-only"
             required
             tabIndex={user ? -1 : 0}
-            generateUploadUrl={generateUploadUrl}
+            generateUploadUrl={handleGenerateUploadUrl}
             onUploadComplete={handleUpdateUserImage}
           />
         </div>
