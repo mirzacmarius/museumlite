@@ -444,6 +444,16 @@ export const sendNotification = internalMutation({
       createdAt: Date.now(),
     });
 
+    // Send email notification if user has instant email enabled
+    await ctx.runMutation(internal.notifications.sendEmailNotification, {
+      organizationId: args.organizationId,
+      userId: args.userId,
+      type: args.type,
+      title: args.title,
+      message: args.message,
+      relatedEntityId: args.relatedEntityId,
+    });
+
     return notificationId;
   },
 });
