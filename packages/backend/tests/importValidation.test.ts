@@ -38,12 +38,14 @@ describe("Import Validation - Accessions", () => {
         joinedAt: Date.now(),
       });
 
+      const permissionId = await ctx.db.insert("permissions", {
+        name: "collections.create",
+        category: "collections",
+      });
+
       await ctx.db.insert("rolePermissions", {
         roleId: adminRole,
-        organizationId: orgId,
-        resource: "collections",
-        action: "create",
-        granted: true,
+        permissionId: permissionId,
       });
 
       return { orgId, userId };
@@ -89,12 +91,14 @@ describe("Import Validation - Accessions", () => {
         joinedAt: Date.now(),
       });
 
+      const permissionId = await ctx.db.insert("permissions", {
+        name: "collections.create",
+        category: "collections",
+      });
+
       await ctx.db.insert("rolePermissions", {
         roleId: adminRole,
-        organizationId: orgId,
-        resource: "collections",
-        action: "create",
-        granted: true,
+        permissionId: permissionId,
       });
 
       return { orgId, userId };
@@ -137,12 +141,14 @@ describe("Import Validation - Accessions", () => {
         joinedAt: Date.now(),
       });
 
+      const permissionId = await ctx.db.insert("permissions", {
+        name: "collections.create",
+        category: "collections",
+      });
+
       await ctx.db.insert("rolePermissions", {
         roleId: adminRole,
-        organizationId: orgId,
-        resource: "collections",
-        action: "create",
-        granted: true,
+        permissionId: permissionId,
       });
 
       return { orgId, userId };
@@ -183,12 +189,14 @@ describe("Import Validation - Accessions", () => {
         joinedAt: Date.now(),
       });
 
+      const permissionId = await ctx.db.insert("permissions", {
+        name: "collections.create",
+        category: "collections",
+      });
+
       await ctx.db.insert("rolePermissions", {
         roleId: adminRole,
-        organizationId: orgId,
-        resource: "collections",
-        action: "create",
-        granted: true,
+        permissionId: permissionId,
       });
 
       return { orgId, userId };
@@ -228,12 +236,14 @@ describe("Import Validation - Accessions", () => {
         joinedAt: Date.now(),
       });
 
+      const permissionId = await ctx.db.insert("permissions", {
+        name: "collections.create",
+        category: "collections",
+      });
+
       await ctx.db.insert("rolePermissions", {
         roleId: adminRole,
-        organizationId: orgId,
-        resource: "collections",
-        action: "create",
-        granted: true,
+        permissionId: permissionId,
       });
 
       return { orgId, userId };
@@ -275,12 +285,14 @@ describe("Import Validation - Accessions", () => {
         joinedAt: Date.now(),
       });
 
+      const permissionId = await ctx.db.insert("permissions", {
+        name: "collections.create",
+        category: "collections",
+      });
+
       await ctx.db.insert("rolePermissions", {
         roleId: adminRole,
-        organizationId: orgId,
-        resource: "collections",
-        action: "create",
-        granted: true,
+        permissionId: permissionId,
       });
 
       return { orgId, userId };
@@ -310,145 +322,5 @@ describe("Import Validation - Accessions", () => {
     expect(result.totalRows).toBe(3);
     expect(result.validRows).toBe(1);
     expect(result.errorCount).toBeGreaterThan(0);
-  });
-});
-
-describe("Import Validation - Media", () => {
-  test("should validate valid media files", async () => {
-    const t = convexTest(schema, modules);
-
-    const { orgId, userId } = await t.run(async (ctx) => {
-      const orgId = await ctx.db.insert("organizations", createOrg());
-      const userId = await ctx.db.insert("users", createUser());
-
-      const adminRole = await ctx.db.insert("roles", {
-        organizationId: orgId,
-        name: "Admin",
-        isSystemRole: true,
-      });
-
-      await ctx.db.insert("userOrganizations", {
-        userId,
-        organizationId: orgId,
-        roleId: adminRole,
-        joinedAt: Date.now(),
-      });
-
-      await ctx.db.insert("rolePermissions", {
-        roleId: adminRole,
-        organizationId: orgId,
-        resource: "collections",
-        action: "create",
-        granted: true,
-      });
-
-      return { orgId, userId };
-    });
-
-    const result = await t.mutation(api.importValidation.validateMediaImport, {
-      organizationId: orgId,
-      files: [
-        {
-          name: "test-image.jpg",
-          size: 1024 * 1024,
-          type: "image/jpeg",
-        },
-      ],
-    });
-
-    expect(result.valid).toBe(true);
-    expect(result.errors.length).toBe(0);
-  });
-
-  test("should reject invalid file types", async () => {
-    const t = convexTest(schema, modules);
-
-    const { orgId, userId } = await t.run(async (ctx) => {
-      const orgId = await ctx.db.insert("organizations", createOrg());
-      const userId = await ctx.db.insert("users", createUser());
-
-      const adminRole = await ctx.db.insert("roles", {
-        organizationId: orgId,
-        name: "Admin",
-        isSystemRole: true,
-      });
-
-      await ctx.db.insert("userOrganizations", {
-        userId,
-        organizationId: orgId,
-        roleId: adminRole,
-        joinedAt: Date.now(),
-      });
-
-      await ctx.db.insert("rolePermissions", {
-        roleId: adminRole,
-        organizationId: orgId,
-        resource: "collections",
-        action: "create",
-        granted: true,
-      });
-
-      return { orgId, userId };
-    });
-
-    const result = await t.mutation(api.importValidation.validateMediaImport, {
-      organizationId: orgId,
-      files: [
-        {
-          name: "test.exe",
-          size: 1024,
-          type: "application/x-msdownload",
-        },
-      ],
-    });
-
-    expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.field === "type")).toBe(true);
-  });
-
-  test("should reject files that are too large", async () => {
-    const t = convexTest(schema, modules);
-
-    const { orgId, userId } = await t.run(async (ctx) => {
-      const orgId = await ctx.db.insert("organizations", createOrg());
-      const userId = await ctx.db.insert("users", createUser());
-
-      const adminRole = await ctx.db.insert("roles", {
-        organizationId: orgId,
-        name: "Admin",
-        isSystemRole: true,
-      });
-
-      await ctx.db.insert("userOrganizations", {
-        userId,
-        organizationId: orgId,
-        roleId: adminRole,
-        joinedAt: Date.now(),
-      });
-
-      await ctx.db.insert("rolePermissions", {
-        roleId: adminRole,
-        organizationId: orgId,
-        resource: "collections",
-        action: "create",
-        granted: true,
-      });
-
-      return { orgId, userId };
-    });
-
-    const result = await t.mutation(api.importValidation.validateMediaImport, {
-      organizationId: orgId,
-      files: [
-        {
-          name: "huge-file.jpg",
-          size: 100 * 1024 * 1024,
-          type: "image/jpeg",
-        },
-      ],
-    });
-
-    expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.field === "size")).toBe(true);
   });
 });

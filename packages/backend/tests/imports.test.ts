@@ -44,8 +44,6 @@ test("getImportTemplate returns PastPerfect template", async () => {
     });
   });
 
-  t.setUser(user);
-
   const template = await t.query.imports.getImportTemplate({
     templateName: "PastPerfect",
   });
@@ -69,8 +67,6 @@ test("getImportTemplate returns TMS template", async () => {
     });
   });
 
-  t.setUser(user);
-
   const template = await t.query.imports.getImportTemplate({
     templateName: "TMS",
   });
@@ -93,8 +89,6 @@ test("listImportTemplates returns both PastPerfect and TMS templates", async () 
       name: "Test User",
     });
   });
-
-  t.setUser(user);
 
   const templates = await t.query.imports.listImportTemplates({});
 
