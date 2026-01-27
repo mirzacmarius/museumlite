@@ -330,6 +330,92 @@ export function validateCollections(
 }
 
 /**
+ * General mutation to validate import data of any type
+ */
+export const validateImport = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    type: v.union(v.literal("accession"), v.literal("collection")),
+    rows: v.array(
+      v.union(
+        v.object({
+          accessionNumber: v.optional(v.string()),
+          dateReceived: v.string(),
+          source: v.string(),
+          method: v.string(),
+          cost: v.optional(v.string()),
+          notes: v.optional(v.string()),
+        }),
+        v.object({
+          title: v.string(),
+          accessionNumber: v.optional(v.string()),
+          maker: v.optional(v.string()),
+          date: v.optional(v.string()),
+          medium: v.optional(v.string()),
+          dimensions: v.optional(v.string()),
+          location: v.optional(v.string()),
+          condition: v.optional(v.string()),
+          notes: v.optional(v.string()),
+        }),
+      ),
+    ),
+  },
+  returns: v.object({
+    isValid: v.boolean(),
+    totalRows: v.number(),
+    validRows: v.number(),
+    errorCount: v.number(),
+    warningCount: v.number(),
+    infoCount: v.number(),
+    errors: v.array(
+      v.object({
+        row: v.number(),
+        field: v.string(),
+        message: v.string(),
+        severity: v.union(
+          v.literal("error"),
+          v.literal("warning"),
+          v.literal("info"),
+        ),
+        value: v.optional(v.string()),
+      }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(ctx, args.organizationId, "collections.create");
+
+    let report: ValidationReport;
+
+    if (args.type === "accession") {
+      report = validateAccessions(args.rows as AccessionImportRow[]);
+    } else if (args.type === "collection") {
+      report = validateCollections(args.rows as CollectionImportRow[]);
+    } else {
+      throw new Error(`Unsupported import type: ${args.type}`);
+    }
+
+    // Store validation report for tracking
+    await ctx.db.insert("importValidationReports", {
+      organizationId: args.organizationId,
+      entityType: args.type,
+      totalRows: report.totalRows,
+      validRows: report.validRows,
+      errorCount: report.errorCount,
+      warningCount: report.warningCount,
+      createdBy: userId,
+      createdAt: Date.now(),
+    });
+
+    return report;
+  },
+});
+
+/**
  * Mutation to validate accession import data before committing
  */
 export const validateAccessionImport = mutation({
