@@ -58,8 +58,8 @@ export const listPendingInvitations = query({
       throw new Error("Not authenticated");
     }
 
-    // Check permission to view invitations
-    await requirePermission(ctx, args.organizationId, "users.view");
+    // Check permission to view invitations (users.invite permission allows viewing pending invitations)
+    await requirePermission(ctx, args.organizationId, "users.invite");
 
     // Get all pending invitations for the organization
     const invitations = await ctx.db

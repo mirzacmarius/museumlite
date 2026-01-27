@@ -95,6 +95,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@radix-ui/react-visually-hidden": "^1.2.4",
     "@xixixao/uploadstuff": "^0.0.5",
     "chrono-node": "^2.9.0",
     "class-variance-authority": "^0.7.1",

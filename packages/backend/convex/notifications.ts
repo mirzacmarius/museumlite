@@ -8,12 +8,6 @@ import {
   mutation,
   query,
 } from "./_generated/server";
-import {
-  sendLoanApprovedEmail,
-  sendLoanPendingEmail,
-  sendLoanRejectedEmail,
-} from "./email/templates/loanNotification";
-import { sendTaskAssignedEmail } from "./email/templates/assignmentNotification";
 
 // ============================================
 // Notification Type Constants
@@ -1033,97 +1027,91 @@ export const sendEmailNotification = internalMutation({
       return null; // No email address, cannot send
     }
 
-    // Send appropriate email based on notification type
-    try {
-      const emailData = args.emailData ?? {};
+    // Send appropriate email based on notification type via actions (runs in Node.js)
+    const emailData = args.emailData ?? {};
 
-      switch (args.type) {
-        case NOTIFICATION_TYPES.LOAN_APPROVED:
-          if (
-            emailData.loanId &&
-            emailData.itemName &&
-            emailData.borrowerName &&
-            emailData.startDate &&
-            emailData.endDate
-          ) {
-            await sendLoanApprovedEmail({
-              email: userEmail,
-              loanId: emailData.loanId,
-              itemName: emailData.itemName,
-              borrowerName: emailData.borrowerName,
-              startDate: emailData.startDate,
-              endDate: emailData.endDate,
-              loanUrl: emailData.loanUrl,
-            });
-            return true;
-          }
-          break;
+    switch (args.type) {
+      case NOTIFICATION_TYPES.LOAN_APPROVED:
+        if (
+          emailData.loanId &&
+          emailData.itemName &&
+          emailData.borrowerName &&
+          emailData.startDate &&
+          emailData.endDate
+        ) {
+          await ctx.scheduler.runAfter(0, internal.email.actions.sendLoanApprovedEmailAction, {
+            email: userEmail,
+            loanId: emailData.loanId,
+            itemName: emailData.itemName,
+            borrowerName: emailData.borrowerName,
+            startDate: emailData.startDate,
+            endDate: emailData.endDate,
+            loanUrl: emailData.loanUrl,
+          });
+          return true;
+        }
+        break;
 
-        case NOTIFICATION_TYPES.LOAN_REJECTED:
-          if (
-            emailData.loanId &&
-            emailData.itemName &&
-            emailData.borrowerName &&
-            emailData.startDate &&
-            emailData.endDate
-          ) {
-            await sendLoanRejectedEmail({
-              email: userEmail,
-              loanId: emailData.loanId,
-              itemName: emailData.itemName,
-              borrowerName: emailData.borrowerName,
-              startDate: emailData.startDate,
-              endDate: emailData.endDate,
-              loanUrl: emailData.loanUrl,
-            });
-            return true;
-          }
-          break;
+      case NOTIFICATION_TYPES.LOAN_REJECTED:
+        if (
+          emailData.loanId &&
+          emailData.itemName &&
+          emailData.borrowerName &&
+          emailData.startDate &&
+          emailData.endDate
+        ) {
+          await ctx.scheduler.runAfter(0, internal.email.actions.sendLoanRejectedEmailAction, {
+            email: userEmail,
+            loanId: emailData.loanId,
+            itemName: emailData.itemName,
+            borrowerName: emailData.borrowerName,
+            startDate: emailData.startDate,
+            endDate: emailData.endDate,
+            loanUrl: emailData.loanUrl,
+          });
+          return true;
+        }
+        break;
 
-        case NOTIFICATION_TYPES.LOAN_PENDING_APPROVAL:
-          if (
-            emailData.loanId &&
-            emailData.itemName &&
-            emailData.borrowerName &&
-            emailData.startDate &&
-            emailData.endDate
-          ) {
-            await sendLoanPendingEmail({
-              email: userEmail,
-              loanId: emailData.loanId,
-              itemName: emailData.itemName,
-              borrowerName: emailData.borrowerName,
-              startDate: emailData.startDate,
-              endDate: emailData.endDate,
-              loanUrl: emailData.loanUrl,
-            });
-            return true;
-          }
-          break;
+      case NOTIFICATION_TYPES.LOAN_PENDING_APPROVAL:
+        if (
+          emailData.loanId &&
+          emailData.itemName &&
+          emailData.borrowerName &&
+          emailData.startDate &&
+          emailData.endDate
+        ) {
+          await ctx.scheduler.runAfter(0, internal.email.actions.sendLoanPendingEmailAction, {
+            email: userEmail,
+            loanId: emailData.loanId,
+            itemName: emailData.itemName,
+            borrowerName: emailData.borrowerName,
+            startDate: emailData.startDate,
+            endDate: emailData.endDate,
+            loanUrl: emailData.loanUrl,
+          });
+          return true;
+        }
+        break;
 
-        case NOTIFICATION_TYPES.TASK_ASSIGNED:
-          if (emailData.taskTitle && emailData.assignedBy) {
-            await sendTaskAssignedEmail({
-              email: userEmail,
-              taskTitle: emailData.taskTitle,
-              assignedBy: emailData.assignedBy,
-              dueDate: emailData.dueDate,
-              taskUrl: emailData.taskUrl,
-            });
-            return true;
-          }
-          break;
+      case NOTIFICATION_TYPES.TASK_ASSIGNED:
+        if (emailData.taskTitle && emailData.assignedBy) {
+          await ctx.scheduler.runAfter(0, internal.email.actions.sendTaskAssignedEmailAction, {
+            email: userEmail,
+            taskTitle: emailData.taskTitle,
+            assignedBy: emailData.assignedBy,
+            dueDate: emailData.dueDate,
+            taskUrl: emailData.taskUrl,
+          });
+          return true;
+        }
+        break;
 
-        default:
-          // Notification type not configured for email, skip
-          return null;
-      }
-
-      return null; // Missing required email data
-    } catch (error) {
-      // Log error but don't throw - email sending is best-effort
-      console.error("Failed to send email notification:", error);
-      return false;
+      default:
+        // Notification type not configured for email, skip
+        return null;
     }
+
+    return null; // Missing required email data
   },
 });

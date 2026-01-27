@@ -8,7 +8,6 @@ import {
   mutation,
   query,
 } from "./_generated/server";
-import { sendInvitationEmail } from "./email/templates/invitationEmail";
 import { getNextCounterPreview } from "./utils/accessionCounter";
 import {
   AccessionNumberParser,
@@ -1009,8 +1008,8 @@ export const inviteUser = mutation({
         throw new Error("Failed to load invitation details");
       }
 
-      // Send invitation email
-      await sendInvitationEmail({
+      // Send invitation email via action (runs in Node.js with full API support)
+      await ctx.scheduler.runAfter(0, internal.email.actions.sendInvitationEmailAction, {
         email: args.email,
         organizationName: organization.name,
         inviterName: inviter.name ?? inviter.email ?? "Someone",

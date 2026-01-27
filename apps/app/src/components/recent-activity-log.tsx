@@ -136,12 +136,12 @@ export function RecentActivityLog({
                 </td>
               </tr>
             ) : (
-              activities.map((activity) => {
+              activities.map((activity, index) => {
                 const href = getActivityLink(activity.type, activity.id);
 
                 return (
                   <tr
-                    key={`${activity.type}-${activity.id}`}
+                    key={`${activity.type}-${activity.id}-${activity.timestamp}-${index}`}
                     className="hover:bg-zinc-900/40 transition-colors cursor-pointer group"
                   >
                     <td className="p-0">

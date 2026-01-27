@@ -7,18 +7,18 @@ import { Logo } from "@v1/ui/logo";
 import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import { AlertCircle, CheckCircle, Loader2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { use, useState } from "react";
 import { useMutation } from "convex/react";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     token: string;
     locale: string;
-  };
+  }>;
 }
 
 export default function InvitePage({ params }: PageProps) {
-  const { token } = params;
+  const { token } = use(params);
   const t = useScopedI18n("invitePage");
   const locale = useCurrentLocale();
   const router = useRouter();
