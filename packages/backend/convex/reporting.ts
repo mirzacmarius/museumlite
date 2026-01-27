@@ -935,6 +935,8 @@ export const getAccessionTrends = query({
       timestamp: v.number(),
       receivedCount: v.number(),
       approvedCount: v.number(),
+      rejectedCount: v.number(),
+      pendingCount: v.number(),
       approvalRate: v.optional(v.number()),
       averageProcessingTime: v.optional(v.number()),
     }),
@@ -969,12 +971,29 @@ export const getAccessionTrends = query({
           a.approvedAt < bucket.end,
       );
 
+      const rejectedInBucket = accessions.filter(
+        (a) =>
+          a.status === "rejected" &&
+          a.approvedAt &&
+          a.approvedAt >= bucket.start &&
+          a.approvedAt < bucket.end,
+      );
+
+      const pendingInBucket = accessions.filter(
+        (a) =>
+          a.status === "pending" &&
+          a.dateReceived >= bucket.start &&
+          a.dateReceived < bucket.end,
+      );
+
       const receivedCount = receivedInBucket.length;
       const approvedCount = approvedInBucket.length;
+      const rejectedCount = rejectedInBucket.length;
+      const pendingCount = pendingInBucket.length;
 
       const approvalRate =
-        receivedCount > 0
-          ? Math.round((approvedCount / receivedCount) * 100)
+        (approvedCount + rejectedCount) > 0
+          ? Math.round((approvedCount / (approvedCount + rejectedCount)) * 100)
           : undefined;
 
       const processingTimes = approvedInBucket
@@ -984,8 +1003,9 @@ export const getAccessionTrends = query({
       const averageProcessingTime =
         processingTimes.length > 0
           ? Math.round(
-              processingTimes.reduce((sum, time) => sum + time, 0) /
-                processingTimes.length,
+              (processingTimes.reduce((sum, time) => sum + time, 0) /
+                processingTimes.length) /
+              (1000 * 60 * 60 * 24)  // Convert milliseconds to days
             )
           : undefined;
 
@@ -994,6 +1014,8 @@ export const getAccessionTrends = query({
         timestamp: bucket.start,
         receivedCount,
         approvedCount,
+        rejectedCount,
+        pendingCount,
         approvalRate,
         averageProcessingTime,
       };
