@@ -950,6 +950,114 @@ export const getConservationTrends = query({
   },
 });
 
+/**
+ * Get accession activity trends
+ */
+export const getAccessionTrends = query({
+  args: {
+    organizationId: v.id("organizations"),
+    period: v.union(
+      v.literal("daily"),
+      v.literal("weekly"),
+      v.literal("monthly"),
+    ),
+    startDate: v.number(),
+    endDate: v.number(),
+  },
+  returns: v.array(
+    v.object({
+      date: v.string(),
+      timestamp: v.number(),
+      receivedCount: v.number(),
+      approvedCount: v.number(),
+      rejectedCount: v.number(),
+      pendingCount: v.number(),
+      approvalRate: v.optional(v.number()),
+      averageProcessingTime: v.optional(v.number()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    await requireFeatureAccess(ctx, args.organizationId, "reporting");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.view_analytics",
+    );
+
+    const accessions = await ctx.db
+      .query("accessions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const buckets = generateDateBuckets(args.startDate, args.endDate, args.period);
+
+    return buckets.map((bucket) => {
+      const receivedInBucket = accessions.filter(
+        (a) => a.dateReceived >= bucket.start && a.dateReceived < bucket.end,
+      );
+
+      const approvedInBucket = accessions.filter(
+        (a) =>
+          a.status === "approved" &&
+          a.approvedAt &&
+          a.approvedAt >= bucket.start &&
+          a.approvedAt < bucket.end,
+      );
+
+      const rejectedInBucket = accessions.filter(
+        (a) =>
+          a.status === "rejected" &&
+          a.approvedAt &&
+          a.approvedAt >= bucket.start &&
+          a.approvedAt < bucket.end,
+      );
+
+      const pendingInBucket = accessions.filter(
+        (a) =>
+          a.status === "pending" &&
+          a.dateReceived >= bucket.start &&
+          a.dateReceived < bucket.end,
+      );
+
+      const receivedCount = receivedInBucket.length;
+      const approvedCount = approvedInBucket.length;
+      const rejectedCount = rejectedInBucket.length;
+      const pendingCount = pendingInBucket.length;
+
+      const approvalRate =
+        (approvedCount + rejectedCount) > 0
+          ? Math.round((approvedCount / (approvedCount + rejectedCount)) * 100)
+          : undefined;
+
+      const processingTimes = approvedInBucket
+        .filter((a) => a.approvedAt)
+        .map((a) => a.approvedAt! - a.dateReceived);
+
+      const averageProcessingTime =
+        processingTimes.length > 0
+          ? Math.round(
+              (processingTimes.reduce((sum, time) => sum + time, 0) /
+                processingTimes.length) /
+              (1000 * 60 * 60 * 24)  // Convert milliseconds to days
+            )
+          : undefined;
+
+      return {
+        date: bucket.label,
+        timestamp: bucket.start,
+        receivedCount,
+        approvedCount,
+        rejectedCount,
+        pendingCount,
+        approvalRate,
+        averageProcessingTime,
+      };
+    });
+  },
+});
+
 // ============================================
 // 2.10.3 COLLECTION HEALTH DASHBOARD
 // ============================================
