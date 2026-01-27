@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { env } from "./env";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
@@ -595,7 +596,15 @@ export const assignTask = mutation({
     });
 
     if (args.assigneeId && args.assigneeId !== userId) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
+      // Get user who is assigning the task
+      const assigningUser = await ctx.db.get(userId);
+      const assignedByName = assigningUser?.name ?? assigningUser?.email ?? "A team member";
+
+      // Get organization for building deep link
+      const org = await ctx.db.get(task.organizationId);
+      const taskUrl = org ? `${env.SITE_URL}/${org.slug}/installations/${task.installationId}/tasks/${args.taskId}` : undefined;
+
+      await ctx.runMutation(internal.notifications.sendNotification, {
         organizationId: task.organizationId,
         userId: args.assigneeId,
         type: "task_assigned",
@@ -603,6 +612,12 @@ export const assignTask = mutation({
         message: `You have been assigned to: ${task.title}`,
         relatedEntityType: "installationTask",
         relatedEntityId: args.taskId,
+        emailData: {
+          taskTitle: task.title,
+          assignedBy: assignedByName,
+          dueDate: task.dueDate ? new Date(task.dueDate).toLocaleDateString() : undefined,
+          taskUrl,
+        },
       });
     }
 

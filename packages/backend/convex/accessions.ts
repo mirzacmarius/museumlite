@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import { env } from "./env";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
@@ -1163,6 +1164,32 @@ export const assign = mutation({
       entityId: args.accessionId,
       changes: { assignedTo: args.userId },
     });
+
+    // Send notification to assignee if different from current user
+    if (args.userId !== currentUserId) {
+      // Get user who is assigning
+      const assigningUser = await ctx.db.get(currentUserId);
+      const assignedByName = assigningUser?.name ?? assigningUser?.email ?? "A team member";
+
+      // Get organization for building deep link
+      const org = await ctx.db.get(accession.organizationId);
+      const taskUrl = org ? `${env.SITE_URL}/${org.slug}/accessions/${args.accessionId}` : undefined;
+
+      await ctx.runMutation(internal.notifications.sendNotification, {
+        organizationId: accession.organizationId,
+        userId: args.userId,
+        type: "task_assigned",
+        title: "Accession Assigned",
+        message: `You have been assigned to accession: ${accession.accessionNumber}`,
+        relatedEntityType: "accession",
+        relatedEntityId: args.accessionId,
+        emailData: {
+          taskTitle: `Accession ${accession.accessionNumber}`,
+          assignedBy: assignedByName,
+          taskUrl,
+        },
+      });
+    }
 
     return null;
   },

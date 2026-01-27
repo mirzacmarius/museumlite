@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { env } from "./env";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
@@ -692,14 +693,27 @@ export const assignDeaccession = mutation({
     });
 
     if (args.userId !== currentUserId) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
+      // Get user who is assigning
+      const assigningUser = await ctx.db.get(currentUserId);
+      const assignedByName = assigningUser?.name ?? assigningUser?.email ?? "A team member";
+
+      // Get organization for building deep link
+      const org = await ctx.db.get(deaccession.organizationId);
+      const taskUrl = org ? `${env.SITE_URL}/${org.slug}/deaccessions/${args.deaccessionId}` : undefined;
+
+      await ctx.runMutation(internal.notifications.sendNotification, {
         organizationId: deaccession.organizationId,
         userId: args.userId,
-        type: "workflow_assigned",
+        type: "task_assigned",
         title: "Deaccession Assigned to You",
         message: `Deaccession ${deaccession.deaccessionNumber} has been assigned to you.`,
         relatedEntityType: "deaccession",
         relatedEntityId: args.deaccessionId,
+        emailData: {
+          taskTitle: `Deaccession ${deaccession.deaccessionNumber}`,
+          assignedBy: assignedByName,
+          taskUrl,
+        },
       });
     }
 
@@ -795,14 +809,27 @@ export const assignLoan = mutation({
     });
 
     if (args.userId !== currentUserId) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
+      // Get user who is assigning
+      const assigningUser = await ctx.db.get(currentUserId);
+      const assignedByName = assigningUser?.name ?? assigningUser?.email ?? "A team member";
+
+      // Get organization for building deep link
+      const org = await ctx.db.get(loan.organizationId);
+      const taskUrl = org ? `${env.SITE_URL}/${org.slug}/loans/${args.loanId}` : undefined;
+
+      await ctx.runMutation(internal.notifications.sendNotification, {
         organizationId: loan.organizationId,
         userId: args.userId,
-        type: "workflow_assigned",
+        type: "task_assigned",
         title: "Loan Assigned to You",
         message: `Loan ${loan.loanNumber} has been assigned to you.`,
         relatedEntityType: "loan",
         relatedEntityId: args.loanId,
+        emailData: {
+          taskTitle: `Loan ${loan.loanNumber}`,
+          assignedBy: assignedByName,
+          taskUrl,
+        },
       });
     }
 
