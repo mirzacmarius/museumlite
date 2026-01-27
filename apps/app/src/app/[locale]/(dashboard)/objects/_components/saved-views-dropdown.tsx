@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDistanceLocale } from "@/lib/format-date";
+import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -64,6 +66,7 @@ export function SavedViewsDropdown({
     name: string;
   } | null>(null);
   const hasLoadedDefault = useRef(false);
+  const locale = useCurrentLocale();
 
   const savedViews = useQuery(api.savedViews.list, {
     organizationId,
@@ -197,12 +200,23 @@ export function SavedViewsDropdown({
                 className="flex-1 text-left"
                 onClick={() => handleApply(view)}
               >
-                <span className="flex items-center gap-2">
-                  {view.isDefault && (
-                    <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                <div className="flex flex-col gap-1">
+                  <span className="flex items-center gap-2">
+                    {view.isDefault && (
+                      <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                    )}
+                    {view.name}
+                  </span>
+                  {view.lastUsedAt && (
+                    <span className="text-xs text-muted-foreground">
+                      Used{" "}
+                      {formatDistanceLocale(
+                        new Date(view.lastUsedAt),
+                        locale,
+                      ).toLowerCase()}
+                    </span>
                   )}
-                  {view.name}
-                </span>
+                </div>
               </button>
               <div className="flex items-center gap-1">
                 <button

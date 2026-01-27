@@ -5,6 +5,57 @@ import { useCallback, useMemo } from "react";
 
 type ObjectStatus = "active" | "deaccessioned" | "all";
 
+// Advanced filter types matching AdvancedSearchDialog
+export type FilterOperator =
+  | "eq"
+  | "ne"
+  | "in"
+  | "contains"
+  | "gt"
+  | "lt"
+  | "gte"
+  | "lte";
+
+export type FilterValue =
+  | string
+  | number
+  | boolean
+  | null
+  | string[]
+  | number[];
+
+export interface FilterCondition {
+  field: string;
+  operator: FilterOperator;
+  value: FilterValue;
+}
+
+export interface FilterGroup {
+  filters: FilterCondition[];
+  operator: "AND" | "OR";
+}
+
+// Custom parser for JSON serialization of advanced filters
+const parseAsJson = <T,>(defaultValue: T) => ({
+  parse: (value: string | null) => {
+    if (!value) return defaultValue;
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return defaultValue;
+    }
+  },
+  serialize: (value: T) => {
+    if (
+      (Array.isArray(value) && value.length === 0) ||
+      value === defaultValue
+    ) {
+      return null;
+    }
+    return JSON.stringify(value);
+  },
+});
+
 export function useObjectFilters() {
   const [search, setSearch] = useQueryState(
     "search",
@@ -51,6 +102,16 @@ export function useObjectFilters() {
     parseAsString.withDefault(""),
   );
 
+  // Advanced filter state using JSON serialization
+  const [advancedFilters, setAdvancedFilters] = useQueryState(
+    "advancedFilters",
+    parseAsJson<FilterGroup[]>([]),
+  );
+  const [filterCombinations, setFilterCombinations] = useQueryState(
+    "filterCombinations",
+    parseAsStringLiteral(["AND", "OR"] as const).withDefault("AND"),
+  );
+
   const filters = useMemo(
     () => ({
       search,
@@ -63,6 +124,8 @@ export function useObjectFilters() {
       locationId,
       catalogedFrom,
       catalogedTo,
+      advancedFilters,
+      filterCombinations: filterCombinations as "AND" | "OR",
     }),
     [
       search,
@@ -75,6 +138,8 @@ export function useObjectFilters() {
       locationId,
       catalogedFrom,
       catalogedTo,
+      advancedFilters,
+      filterCombinations,
     ],
   );
 
@@ -97,6 +162,14 @@ export function useObjectFilters() {
         setCatalogedFrom(newFilters.catalogedFrom || null);
       if (newFilters.catalogedTo !== undefined)
         setCatalogedTo(newFilters.catalogedTo || null);
+      if (newFilters.advancedFilters !== undefined)
+        setAdvancedFilters(
+          newFilters.advancedFilters.length > 0
+            ? newFilters.advancedFilters
+            : null,
+        );
+      if (newFilters.filterCombinations !== undefined)
+        setFilterCombinations(newFilters.filterCombinations || null);
     },
     [
       setSearch,
@@ -109,6 +182,8 @@ export function useObjectFilters() {
       setLocationId,
       setCatalogedFrom,
       setCatalogedTo,
+      setAdvancedFilters,
+      setFilterCombinations,
     ],
   );
 
@@ -123,6 +198,8 @@ export function useObjectFilters() {
     setLocationId(null);
     setCatalogedFrom(null);
     setCatalogedTo(null);
+    setAdvancedFilters(null);
+    setFilterCombinations(null);
   }, [
     setSearch,
     setStatus,
@@ -134,9 +211,15 @@ export function useObjectFilters() {
     setLocationId,
     setCatalogedFrom,
     setCatalogedTo,
+    setAdvancedFilters,
+    setFilterCombinations,
   ]);
 
   const hasActiveFilters = useMemo(() => {
+    const hasAdvancedFilters =
+      advancedFilters.length > 0 &&
+      advancedFilters.some((group) => group.filters.length > 0);
+
     return (
       search !== "" ||
       status !== "all" ||
@@ -147,7 +230,8 @@ export function useObjectFilters() {
       collectionGroupId !== "" ||
       locationId !== "" ||
       catalogedFrom !== "" ||
-      catalogedTo !== ""
+      catalogedTo !== "" ||
+      hasAdvancedFilters
     );
   }, [
     search,
@@ -160,6 +244,7 @@ export function useObjectFilters() {
     locationId,
     catalogedFrom,
     catalogedTo,
+    advancedFilters,
   ]);
 
   return {
@@ -177,6 +262,8 @@ export function useObjectFilters() {
     setLocationId,
     setCatalogedFrom,
     setCatalogedTo,
+    setAdvancedFilters,
+    setFilterCombinations,
   };
 }
 

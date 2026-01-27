@@ -198,28 +198,6 @@ export default defineSchema({
     isSystemRole: v.boolean(),
   }).index("by_organization", ["organizationId"]),
 
-  // Pending organization invitations
-  organizationInvitations: defineTable({
-    organizationId: v.id("organizations"),
-    email: v.string(),
-    roleId: v.id("roles"),
-    token: v.string(),
-    expiresAt: v.number(),
-    invitedBy: v.id("users"),
-    status: v.union(
-      v.literal("pending"),
-      v.literal("accepted"),
-      v.literal("declined"),
-      v.literal("expired"),
-    ),
-    createdAt: v.number(),
-    acceptedAt: v.optional(v.number()),
-  })
-    .index("by_token", ["token"])
-    .index("by_organization", ["organizationId"])
-    .index("by_email", ["email"])
-    .index("by_status", ["status"]),
-
   // Granular permission definitions
   permissions: defineTable({
     name: v.string(),
@@ -414,6 +392,30 @@ export default defineSchema({
     .searchIndex("search_index", {
       searchField: "title",
       filterFields: ["organizationId", "status", "collectionType"],
+    })
+    .searchIndex("search_creator", {
+      searchField: "creator",
+      filterFields: ["organizationId", "status", "collectionType"],
+    })
+    .searchIndex("search_accession_number", {
+      searchField: "accessionNumber",
+      filterFields: ["organizationId", "status"],
+    })
+    .searchIndex("search_description", {
+      searchField: "description",
+      filterFields: ["organizationId", "status", "collectionType"],
+    })
+    .searchIndex("search_materials", {
+      searchField: "materials",
+      filterFields: ["organizationId", "collectionType"],
+    })
+    .searchIndex("search_object_type", {
+      searchField: "objectType",
+      filterFields: ["organizationId", "collectionType"],
+    })
+    .searchIndex("search_culture", {
+      searchField: "culture",
+      filterFields: ["organizationId"],
     }),
 
   // Accession number counter tracking
@@ -1893,7 +1895,7 @@ export default defineSchema({
     .index("by_location", ["locationId"])
     .searchIndex("search_exhibitions", {
       searchField: "title",
-      filterFields: ["organizationId"],
+      filterFields: ["organizationId", "status"],
     }),
 
   // Track objects in exhibitions and their original locations
@@ -3562,7 +3564,15 @@ export default defineSchema({
     .index("by_organization", ["organizationId"])
     .index("by_account", ["accountId"])
     .index("by_organization_and_account", ["organizationId", "accountId"])
-    .index("by_email", ["email"]),
+    .index("by_email", ["email"])
+    .searchIndex("search_first_name", {
+      searchField: "firstName",
+      filterFields: ["organizationId", "accountId", "isActive"],
+    })
+    .searchIndex("search_last_name", {
+      searchField: "lastName",
+      filterFields: ["organizationId", "accountId", "isActive"],
+    }),
 
   accountRelationships: defineTable({
     organizationId: v.id("organizations"),
@@ -3871,6 +3881,31 @@ export default defineSchema({
     .index("by_user_and_module", ["userId", "module"])
     .index("by_organization_and_user", ["organizationId", "userId"])
     .index("by_organization_and_module", ["organizationId", "module"]),
+
+  // Search history tracking per user
+  searchHistory: defineTable({
+    organizationId: v.id("organizations"),
+    userId: v.id("users"),
+    // Module where the search was performed
+    module: v.union(
+      v.literal("objects"),
+      v.literal("loans"),
+      v.literal("accounts"),
+      v.literal("locations"),
+      v.literal("accessions"),
+    ),
+    // The search query string
+    query: v.string(),
+    // Serialized filter state (JSON string of filter key-value pairs)
+    filters: v.optional(v.string()),
+    // Number of results returned
+    resultCount: v.optional(v.number()),
+    searchedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_module", ["userId", "module"])
+    .index("by_organization_and_user", ["organizationId", "userId"])
+    .index("by_user_and_searched_at", ["userId", "searchedAt"]),
 
   // ============================================
   // OBJECT COMMENTS
