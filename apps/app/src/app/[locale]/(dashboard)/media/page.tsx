@@ -21,13 +21,16 @@ import { useMutation, useQuery } from "convex/react";
 import {
   Box,
   Building2,
+  Clock,
   Download,
+  Edit,
   Eye,
   File,
   FileText,
   Image,
   Loader2,
   Plus,
+  RotateCcw,
   Search,
   Star,
   Upload,
@@ -35,6 +38,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { MediaEditorDialog } from "@/components/media-editor-dialog";
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -369,15 +373,19 @@ function MediaDetailModal({
   const t = useI18n();
   const locale = useCurrentLocale();
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [caption, setCaption] = useState("");
   const [photographer, setPhotographer] = useState("");
   const [copyright, setCopyright] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [revertVersionId, setRevertVersionId] = useState<Id<"mediaVersions"> | null>(null);
 
   const media = useQuery(api.media.listByOrganization, "skip");
   const updateMedia = useMutation(api.media.update);
   const setPrimary = useMutation(api.media.setPrimary);
   const deleteMedia = useMutation(api.media.deleteMedia);
+  const revertToVersion = useMutation(api.mediaVersions.revertToVersion);
+  const versions = useQuery(api.mediaVersions.listVersions, { mediaId });
 
   const item = media?.page.find((m) => m._id === mediaId);
 
@@ -412,6 +420,15 @@ function MediaDetailModal({
     if (confirm(t("mediaPage.deleteConfirm"))) {
       await deleteMedia({ mediaId });
       onClose();
+    }
+  };
+
+  const handleRevert = async (versionId: Id<"mediaVersions">) => {
+    try {
+      await revertToVersion({ versionId });
+      setRevertVersionId(null);
+    } catch (error) {
+      console.error("Failed to revert version:", error);
     }
   };
 
@@ -579,6 +596,17 @@ function MediaDetailModal({
                     {t("mediaPage.details.editMetadata")}
                   </Button>
                 )}
+                {item.fileType === "image" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsEditorOpen(true)}
+                    className="border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                  >
+                    <Edit className="mr-1 h-3 w-3" />
+                    Edit
+                  </Button>
+                )}
                 {!item.isPrimary && item.fileType === "image" && (
                   <Button
                     size="sm"
@@ -597,7 +625,163 @@ function MediaDetailModal({
             </div>
           </div>
         )}
+
+        {/* Version History Section */}
+        {item && item.fileType === "image" && versions && versions.length > 0 && (
+          <div className="mt-6 space-y-3 border-t border-zinc-800 pt-6">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-zinc-500" />
+              <h3 className="text-sm font-semibold text-zinc-200">
+                Version History
+              </h3>
+              <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
+                {versions.length}
+              </span>
+            </div>
+
+            <ScrollArea className="h-48">
+              <div className="space-y-2 pr-4">
+                {versions.map((version: { _id: Id<"mediaVersions">; versionNumber: number; editType: string; editMetadata?: unknown; createdAt: number; url: string | null }) => {
+                  const isCurrentVersion = item?.currentVersionId === version._id;
+                  return (
+                    <div
+                      key={version._id}
+                      className={`flex gap-3 rounded-lg border p-3 transition-colors ${
+                        isCurrentVersion
+                          ? "border-indigo-500/30 bg-indigo-500/5"
+                          : "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700"
+                      }`}
+                    >
+                      {/* Thumbnail */}
+                      <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded border border-zinc-800 bg-zinc-950">
+                        {version.url ? (
+                          <img
+                            src={version.url}
+                            alt={`Version ${version.versionNumber}`}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <File className="h-6 w-6 text-zinc-700" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Version Info */}
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-zinc-200">
+                              Version {version.versionNumber}
+                            </p>
+                            {isCurrentVersion && (
+                              <span className="rounded bg-indigo-500/20 px-1.5 py-0.5 text-[10px] font-medium text-indigo-400">
+                                Current
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-zinc-500">
+                            {formatDistanceLocale(
+                              new Date(version.createdAt),
+                              locale,
+                              { addSuffix: true }
+                            )}
+                          </p>
+                        </div>
+
+                        {/* Edit Type Badge */}
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex rounded bg-zinc-800 px-2 py-0.5 text-xs capitalize text-zinc-300">
+                            {version.editType}
+                          </span>
+
+                          {/* Edit Metadata Details */}
+                          {version.editMetadata && (
+                            <span className="text-xs text-zinc-500">
+                              {version.editType === "crop" &&
+                                version.editMetadata.crop &&
+                                `Cropped to ${Math.round(version.editMetadata.crop.width)}×${Math.round(version.editMetadata.crop.height)}`}
+                              {version.editType === "rotate" &&
+                                version.editMetadata.rotation !== undefined &&
+                                `Rotated ${version.editMetadata.rotation}°`}
+                              {version.editType === "adjust" &&
+                                (version.editMetadata.brightness ||
+                                  version.editMetadata.contrast) &&
+                                `B: ${version.editMetadata.brightness || 100}%, C: ${version.editMetadata.contrast || 100}%`}
+                              {version.editType === "watermark" &&
+                                version.editMetadata.watermarkText &&
+                                `"${version.editMetadata.watermarkText}"`}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Revert Button */}
+                      <div className="flex items-center">
+                        {!isCurrentVersion && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setRevertVersionId(version._id)}
+                            className="border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                          >
+                            <RotateCcw className="mr-1 h-3 w-3" />
+                            Revert
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </div>
+        )}
       </DialogContent>
+      <MediaEditorDialog
+        mediaId={mediaId}
+        isOpen={isEditorOpen}
+        onClose={() => setIsEditorOpen(false)}
+        onSaved={() => {
+          setIsEditorOpen(false);
+        }}
+      />
+
+      {/* Revert Confirmation Dialog */}
+      {revertVersionId && (
+        <Dialog open onOpenChange={() => setRevertVersionId(null)}>
+          <DialogContent className="max-w-md border-zinc-800 bg-zinc-900">
+            <DialogHeader>
+              <DialogTitle className="text-zinc-200">
+                Revert to Version?
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-zinc-400">
+                Are you sure you want to revert to this version? This will make
+                the selected version the current version of this media file.
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setRevertVersionId(null)}
+                  className="border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => handleRevert(revertVersionId)}
+                  className="bg-indigo-600 hover:bg-indigo-500"
+                >
+                  Revert
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   );
 }

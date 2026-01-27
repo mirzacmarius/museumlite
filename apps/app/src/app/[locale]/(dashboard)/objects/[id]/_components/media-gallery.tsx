@@ -4,6 +4,7 @@ import {
   DropzoneUploader,
   type UploadFile,
 } from "@/components/dropzone-uploader";
+import { MediaEditorDialog } from "@/components/media-editor-dialog";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
@@ -81,6 +82,7 @@ export function MediaGallery({
   const updateOrder = useMutation(api.media.updateOrder);
 
   const [editingMedia, setEditingMedia] = useState<string | null>(null);
+  const [editingImageId, setEditingImageId] = useState<Id<"mediaFiles"> | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState<string | null>(
     null,
   );
@@ -516,6 +518,19 @@ export function MediaGallery({
                                   <Star className="h-3.5 w-3.5" />
                                 </Button>
                               )}
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingImageId(file._id as Id<"mediaFiles">);
+                                }}
+                                title={common("edit")}
+                                className="h-7 w-7 p-0"
+                              >
+                                <Edit className="h-3.5 w-3.5" />
+                              </Button>
                               <MediaEditDialog
                                 media={file}
                                 onUpdate={async (updates) => {
@@ -601,6 +616,12 @@ export function MediaGallery({
                   onClose={closeLightbox}
                 />
               )}
+
+              <MediaEditorDialog
+                mediaId={editingImageId}
+                isOpen={!!editingImageId}
+                onClose={() => setEditingImageId(null)}
+              />
             </>
           )}
         </div>
@@ -645,6 +666,15 @@ export function MediaGallery({
                       </Button>
                     )}
                     <PermissionGate permission="media.upload">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setEditingMedia(doc._id)}
+                        title={common("edit")}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
                       <MediaEditDialog
                         media={doc}
                         onUpdate={async (updates) => {

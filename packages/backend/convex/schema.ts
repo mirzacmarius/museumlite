@@ -171,6 +171,22 @@ export default defineSchema({
             portalSlug: v.optional(v.string()),
           }),
         ),
+        watermarkSettings: v.optional(
+          v.object({
+            isEnabled: v.optional(v.boolean()),
+            text: v.optional(v.string()),
+            opacity: v.optional(v.number()),
+            position: v.optional(
+              v.union(
+                v.literal("center"),
+                v.literal("top-left"),
+                v.literal("top-right"),
+                v.literal("bottom-left"),
+                v.literal("bottom-right"),
+              ),
+            ),
+          }),
+        ),
       }),
     ),
     subscriptionTier: v.optional(
@@ -198,28 +214,6 @@ export default defineSchema({
     isSystemRole: v.boolean(),
   }).index("by_organization", ["organizationId"]),
 
-  // Sites (physical locations/branches within an organization)
-  sites: defineTable({
-    organizationId: v.id("organizations"),
-    name: v.string(),
-    description: v.optional(v.string()),
-    address: v.optional(v.string()),
-    isActive: v.boolean(),
-    isPrimary: v.boolean(),
-  })
-    .index("by_organization", ["organizationId"])
-    .index("by_organization_and_active", ["organizationId", "isActive"]),
-
-  // User-site relationships for site-level access control
-  userSites: defineTable({
-    userId: v.id("users"),
-    siteId: v.id("sites"),
-    canAccess: v.boolean(),
-  })
-    .index("by_user", ["userId"])
-    .index("by_site", ["siteId"])
-    .index("by_user_and_site", ["userId", "siteId"]),
-
   // Granular permission definitions
   permissions: defineTable({
     name: v.string(),
@@ -232,7 +226,6 @@ export default defineSchema({
       v.literal("users"),
       v.literal("organization"),
       v.literal("accounts"),
-      v.literal("sites"),
     ),
   }).index("by_category", ["category"]),
 
@@ -589,6 +582,10 @@ export default defineSchema({
     usageRestrictions: v.optional(v.string()),
     requiresAcknowledgment: v.optional(v.boolean()),
     acknowledgmentText: v.optional(v.string()),
+
+    // Version Tracking
+    currentVersionId: v.optional(v.id("mediaVersions")),
+    versionCount: v.optional(v.number()),
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
@@ -596,6 +593,46 @@ export default defineSchema({
     .index("by_collection_and_category", ["collectionId", "mediaCategory"])
     .index("by_content_hash", ["organizationId", "contentHash"])
     .index("by_rights_status", ["organizationId", "rightsStatus"]),
+
+  // Media versions - tracks edited versions of media files
+  mediaVersions: defineTable({
+    originalMediaId: v.id("mediaFiles"),
+    organizationId: v.id("organizations"),
+    storageId: v.id("_storage"),
+    versionNumber: v.number(),
+    editType: v.union(
+      v.literal("crop"),
+      v.literal("rotate"),
+      v.literal("adjust"),
+      v.literal("watermark"),
+    ),
+    editMetadata: v.optional(v.any()), // Stores crop coords, rotation angle, brightness/contrast values, watermark text
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_original_media", ["originalMediaId"])
+    .index("by_organization", ["organizationId"])
+    .index("by_original_media_and_version", ["originalMediaId", "versionNumber"]),
+
+  // Media edit history - chronological log of all edit operations
+  mediaEditHistory: defineTable({
+    mediaId: v.id("mediaFiles"),
+    versionId: v.optional(v.id("mediaVersions")),
+    organizationId: v.id("organizations"),
+    operation: v.union(
+      v.literal("crop"),
+      v.literal("rotate"),
+      v.literal("adjust"),
+      v.literal("watermark"),
+    ),
+    parameters: v.optional(v.any()), // Stores operation-specific parameters
+    appliedBy: v.id("users"),
+    appliedAt: v.number(),
+  })
+    .index("by_media", ["mediaId"])
+    .index("by_version", ["versionId"])
+    .index("by_organization", ["organizationId"])
+    .index("by_media_and_appliedAt", ["mediaId", "appliedAt"]),
 
   // Media download tracking for rights management (2.9.3)
   mediaDownloads: defineTable({
@@ -1089,7 +1126,6 @@ export default defineSchema({
   // Hierarchical location structure
   locations: defineTable({
     organizationId: v.id("organizations"),
-    siteId: v.optional(v.id("sites")),
     name: v.string(),
     type: v.string(), // Flexible per org (building/floor/room/cabinet/shelf/box)
     parentLocationId: v.optional(v.id("locations")),

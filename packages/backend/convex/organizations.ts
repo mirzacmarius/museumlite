@@ -302,6 +302,31 @@ export const get = query({
           enableDetailedConditionReports: v.optional(v.boolean()),
           enabledIntegrations: v.optional(v.array(v.string())),
           enabledModules: v.optional(v.array(enabledModuleValidator)),
+          portalSettings: v.optional(
+            v.object({
+              isEnabled: v.optional(v.boolean()),
+              isSearchEnabled: v.optional(v.boolean()),
+              isHighResEnabled: v.optional(v.boolean()),
+              isValuationVisible: v.optional(v.boolean()),
+              portalSlug: v.optional(v.string()),
+            }),
+          ),
+          watermarkSettings: v.optional(
+            v.object({
+              isEnabled: v.optional(v.boolean()),
+              text: v.optional(v.string()),
+              opacity: v.optional(v.number()),
+              position: v.optional(
+                v.union(
+                  v.literal("center"),
+                  v.literal("top-left"),
+                  v.literal("top-right"),
+                  v.literal("bottom-left"),
+                  v.literal("bottom-right"),
+                ),
+              ),
+            }),
+          ),
         }),
       ),
       subscriptionTier: v.optional(
@@ -503,6 +528,31 @@ export const getSettings = query({
       locationTypes: v.optional(v.array(v.string())),
       enableDetailedConditionReports: v.optional(v.boolean()),
       enabledIntegrations: v.optional(v.array(v.string())),
+      portalSettings: v.optional(
+        v.object({
+          isEnabled: v.optional(v.boolean()),
+          isSearchEnabled: v.optional(v.boolean()),
+          isHighResEnabled: v.optional(v.boolean()),
+          isValuationVisible: v.optional(v.boolean()),
+          portalSlug: v.optional(v.string()),
+        }),
+      ),
+      watermarkSettings: v.optional(
+        v.object({
+          isEnabled: v.optional(v.boolean()),
+          text: v.optional(v.string()),
+          opacity: v.optional(v.number()),
+          position: v.optional(
+            v.union(
+              v.literal("center"),
+              v.literal("top-left"),
+              v.literal("top-right"),
+              v.literal("bottom-left"),
+              v.literal("bottom-right"),
+            ),
+          ),
+        }),
+      ),
     }),
     v.null(),
   ),
@@ -848,6 +898,71 @@ export const updatePortalSettings = mutation({
 });
 
 /**
+ * Update watermark settings
+ */
+export const updateWatermarkSettings = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    watermarkSettings: v.object({
+      isEnabled: v.optional(v.boolean()),
+      text: v.optional(v.string()),
+      opacity: v.optional(v.number()),
+      position: v.optional(
+        v.union(
+          v.literal("center"),
+          v.literal("top-left"),
+          v.literal("top-right"),
+          v.literal("bottom-left"),
+          v.literal("bottom-right"),
+        ),
+      ),
+    }),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Permission check
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
+
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) {
+      throw new Error("Organization not found");
+    }
+
+    // Merge settings
+    await ctx.db.patch(args.organizationId, {
+      settings: {
+        ...org.settings,
+        watermarkSettings: {
+          ...org.settings?.watermarkSettings,
+          ...args.watermarkSettings,
+        },
+      },
+    });
+
+    // Audit log
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "updated_watermark_settings",
+      entityType: "organization",
+      entityId: args.organizationId,
+      changes: args.watermarkSettings,
+    });
+
+    return null;
+  },
+});
+
+/**
  * Get portal settings for an organization
  */
 export const getPortalSettings = query({
@@ -988,36 +1103,8 @@ export const inviteUser = mutation({
       .first();
 
     if (!user) {
-      // User doesn't exist - create invitation for them
-      const invitation = await ctx.runMutation(
-        internal.invitations.createInvitationInternal,
-        {
-          organizationId: args.organizationId,
-          email: args.email,
-          roleId: args.roleId,
-          invitedBy: userId,
-        },
-      );
-
-      // Get organization, role, and inviter details for the email
-      const organization = await ctx.db.get(args.organizationId);
-      const role = await ctx.db.get(args.roleId);
-      const inviter = await ctx.db.get(userId);
-
-      if (!organization || !role || !inviter) {
-        throw new Error("Failed to load invitation details");
-      }
-
-      // Send invitation email via action (runs in Node.js with full API support)
-      await ctx.scheduler.runAfter(0, internal.email.actions.sendInvitationEmailAction, {
-        email: args.email,
-        organizationName: organization.name,
-        inviterName: inviter.name ?? inviter.email ?? "Someone",
-        role: role.name,
-        token: invitation.token,
-      });
-
-      return null;
+      // TODO: Send invitation email
+      throw new Error("User not found. Email invitation not yet implemented.");
     }
 
     // Check if user is already in organization

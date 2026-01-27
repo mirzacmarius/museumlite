@@ -119,3 +119,62 @@ describe("getUsageStats", () => {
     expect(stats.exports.limit).toBeNull();
   });
 });
+
+describe("watermark settings", () => {
+  test("should update watermark settings", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-watermark-org",
+        type: "museum",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Admin User",
+        email: "admin@test.com",
+      });
+    });
+
+    // Create admin role with permission
+    const roleId = await t.run(async (ctx) => {
+      return await ctx.db.insert("roles", {
+        organizationId: orgId,
+        name: "Admin",
+        isSystemRole: true,
+      });
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("userOrganizations", {
+        userId,
+        organizationId: orgId,
+        roleId,
+        joinedAt: Date.now(),
+      });
+    });
+
+    // Update watermark settings
+    await t.mutation(api.organizations.updateWatermarkSettings, {
+      organizationId: orgId,
+      isEnabled: true,
+      text: "© 2026 Test Museum",
+      opacity: 0.7,
+      position: "bottom-right",
+    }, { as: userId });
+
+    // Verify settings were saved
+    const org = await t.run(async (ctx) => {
+      return await ctx.db.get(orgId);
+    });
+
+    expect(org?.settings?.watermarkSettings).toBeDefined();
+    expect(org?.settings?.watermarkSettings?.isEnabled).toBe(true);
+    expect(org?.settings?.watermarkSettings?.text).toBe("© 2026 Test Museum");
+    expect(org?.settings?.watermarkSettings?.opacity).toBe(0.7);
+    expect(org?.settings?.watermarkSettings?.position).toBe("bottom-right");
+  });
+});

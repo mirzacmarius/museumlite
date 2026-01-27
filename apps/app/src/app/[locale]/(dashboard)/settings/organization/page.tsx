@@ -39,7 +39,7 @@ import { Switch } from "@v1/ui/switch";
 import { Textarea } from "@v1/ui/textarea";
 import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
-import { Save, Trash2 } from "lucide-react";
+import { Save, Trash2, Droplet } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 export default function OrganizationSettingsPage() {
@@ -64,6 +64,13 @@ export default function OrganizationSettingsPage() {
     enableDetailedConditionReports: false,
   });
 
+  const [watermarkSettings, setWatermarkSettings] = useState({
+    isEnabled: false,
+    text: "",
+    opacity: 0.5,
+    position: "bottom-right" as "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right",
+  });
+
   const organization = useQuery(
     api.organizations.get,
     currentOrganizationId
@@ -75,6 +82,7 @@ export default function OrganizationSettingsPage() {
   const createTemplate = useMutation(api.accessionTemplates.create);
   const removeTemplate = useMutation(api.accessionTemplates.remove);
   const updateTemplate = useMutation(api.accessionTemplates.update);
+  const updateWatermarkSettings = useMutation(api.organizations.updateWatermarkSettings);
 
   // Query custom conditions (for display only)
   const customConditions = useQuery(
@@ -127,6 +135,14 @@ export default function OrganizationSettingsPage() {
         locationTypes: organization.settings?.locationTypes || [],
         enableDetailedConditionReports:
           organization.settings?.enableDetailedConditionReports ?? false,
+      });
+
+      // Initialize watermark settings
+      setWatermarkSettings({
+        isEnabled: organization.settings?.watermarkSettings?.isEnabled ?? false,
+        text: organization.settings?.watermarkSettings?.text || "",
+        opacity: organization.settings?.watermarkSettings?.opacity ?? 0.5,
+        position: organization.settings?.watermarkSettings?.position || "bottom-right",
       });
     }
   }, [organization]);
@@ -333,6 +349,32 @@ export default function OrganizationSettingsPage() {
       ...formData,
       locationTypes: formData.locationTypes.filter((_, i) => i !== index),
     });
+  };
+
+  const handleSaveWatermarkSettings = async () => {
+    if (!currentOrganizationId) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      await updateWatermarkSettings({
+        organizationId: currentOrganizationId as Id<"organizations">,
+        watermarkSettings: {
+          isEnabled: watermarkSettings.isEnabled,
+          text: watermarkSettings.text.trim() || undefined,
+          opacity: watermarkSettings.opacity,
+          position: watermarkSettings.position,
+        },
+      });
+    } catch (err) {
+      console.error("Error updating watermark settings:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to update watermark settings",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -654,6 +696,147 @@ export default function OrganizationSettingsPage() {
                   }
                 />
               </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-border bg-card p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <Droplet className="h-5 w-5" />
+              <h2 className="text-lg font-medium">Watermark Settings</h2>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="watermarkEnabled">Enable Watermark</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Apply watermark to edited images
+                  </p>
+                </div>
+                <Switch
+                  id="watermarkEnabled"
+                  checked={watermarkSettings.isEnabled}
+                  onCheckedChange={(checked) =>
+                    setWatermarkSettings({
+                      ...watermarkSettings,
+                      isEnabled: checked,
+                    })
+                  }
+                />
+              </div>
+
+              {watermarkSettings.isEnabled && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="watermarkText">Watermark Text</Label>
+                    <Input
+                      id="watermarkText"
+                      value={watermarkSettings.text}
+                      onChange={(e) =>
+                        setWatermarkSettings({
+                          ...watermarkSettings,
+                          text: e.target.value,
+                        })
+                      }
+                      placeholder="© Your Organization Name"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Text to display on edited images
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="watermarkPosition">Position</Label>
+                    <Select
+                      value={watermarkSettings.position}
+                      onValueChange={(value: "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right") =>
+                        setWatermarkSettings({
+                          ...watermarkSettings,
+                          position: value,
+                        })
+                      }
+                    >
+                      <SelectTrigger id="watermarkPosition">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="center">Center</SelectItem>
+                        <SelectItem value="top-left">Top Left</SelectItem>
+                        <SelectItem value="top-right">Top Right</SelectItem>
+                        <SelectItem value="bottom-left">Bottom Left</SelectItem>
+                        <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="watermarkOpacity">Opacity</Label>
+                      <span className="text-sm text-muted-foreground">
+                        {Math.round(watermarkSettings.opacity * 100)}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      id="watermarkOpacity"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={watermarkSettings.opacity}
+                      onChange={(e) =>
+                        setWatermarkSettings({
+                          ...watermarkSettings,
+                          opacity: Number.parseFloat(e.target.value),
+                        })
+                      }
+                      className="w-full accent-primary"
+                    />
+                  </div>
+
+                  {/* Watermark Preview */}
+                  <div className="rounded-lg border bg-muted/20 p-4">
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">
+                      Preview
+                    </p>
+                    <div className="relative h-32 overflow-hidden rounded border bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
+                      {watermarkSettings.text && (
+                        <div
+                          className={cn(
+                            "absolute text-sm font-medium text-foreground",
+                            {
+                              "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2":
+                                watermarkSettings.position === "center",
+                              "left-4 top-4":
+                                watermarkSettings.position === "top-left",
+                              "right-4 top-4":
+                                watermarkSettings.position === "top-right",
+                              "bottom-4 left-4":
+                                watermarkSettings.position === "bottom-left",
+                              "bottom-4 right-4":
+                                watermarkSettings.position === "bottom-right",
+                            },
+                          )}
+                          style={{
+                            opacity: watermarkSettings.opacity,
+                          }}
+                        >
+                          {watermarkSettings.text}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      onClick={handleSaveWatermarkSettings}
+                      disabled={isSubmitting || !watermarkSettings.text.trim()}
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Watermark Settings
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
