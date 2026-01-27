@@ -3455,6 +3455,9 @@ export default {
     continue: "Continue",
     updateNote:
       "You can update your username at any time from your account settings.",
+    orgTitle: "Create Your Organization",
+    orgDescription:
+      "Set up your organization to start managing your collection.",
   },
   loginPage: {
     title: "Login",

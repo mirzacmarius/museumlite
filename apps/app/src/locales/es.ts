@@ -3364,6 +3364,9 @@ export default {
     continue: "Continuar",
     updateNote:
       "Puede actualizar su nombre de usuario en cualquier momento desde la configuración de su cuenta.",
+    orgTitle: "Crea tu organización",
+    orgDescription:
+      "Configura tu organización para empezar a gestionar tu colección.",
   },
   loginPage: {
     title: "Iniciar Sesión",

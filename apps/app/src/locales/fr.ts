@@ -3384,6 +3384,9 @@ export default {
     continue: "Continuer",
     updateNote:
       "Vous pouvez mettre à jour votre nom d'utilisateur à tout moment depuis les paramètres de votre compte.",
+    orgTitle: "Créez votre organisation",
+    orgDescription:
+      "Configurez votre organisation pour commencer à gérer votre collection.",
   },
   loginPage: {
     title: "Connexion",

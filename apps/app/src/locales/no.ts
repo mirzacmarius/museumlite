@@ -3347,6 +3347,9 @@ export default {
     continue: "Fortsett",
     updateNote:
       "Du kan oppdatere brukernavnet ditt når som helst fra kontoinnstillingene dine.",
+    orgTitle: "Opprett din organisasjon",
+    orgDescription:
+      "Sett opp organisasjonen din for å begynne å administrere samlingen din.",
   },
   loginPage: {
     title: "Logg Inn",
