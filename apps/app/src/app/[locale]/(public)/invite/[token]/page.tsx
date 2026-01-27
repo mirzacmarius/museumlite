@@ -44,7 +44,7 @@ export default function InvitePage({ params }: PageProps) {
           router.push(`/${locale}/`);
         }, 1500);
       } else if (!result.success && "error" in result) {
-        setError(result.error);
+        setError(result.error ?? null);
       }
     } catch (err) {
       setError(t("acceptFailed"));
@@ -65,7 +65,7 @@ export default function InvitePage({ params }: PageProps) {
           router.push(`/${locale}/login`);
         }, 1500);
       } else if (!result.success && "error" in result) {
-        setError(result.error);
+        setError(result.error ?? null);
       }
     } catch (err) {
       setError(t("declineFailed"));
