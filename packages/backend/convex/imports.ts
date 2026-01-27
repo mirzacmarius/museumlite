@@ -2007,3 +2007,313 @@ export const getImportTemplate = query({
     return templates[args.type] ?? templates.objects;
   },
 });
+
+// ============================================
+// FIELD MAPPING CONFIGURATIONS
+// ============================================
+
+export const saveFieldMapping = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    entityType: v.union(
+      v.literal("objects"),
+      v.literal("accessions"),
+      v.literal("locations"),
+      v.literal("accounts"),
+      v.literal("loans"),
+    ),
+    mappings: v.array(
+      v.object({
+        sourceField: v.string(),
+        targetField: v.string(),
+        transformType: v.optional(
+          v.union(
+            v.literal("none"),
+            v.literal("date"),
+            v.literal("number"),
+            v.literal("boolean"),
+            v.literal("uppercase"),
+            v.literal("lowercase"),
+            v.literal("trim"),
+          ),
+        ),
+        defaultValue: v.optional(v.string()),
+        required: v.optional(v.boolean()),
+      }),
+    ),
+    isDefault: v.optional(v.boolean()),
+  },
+  returns: v.id("importFieldMappings"),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(ctx, args.organizationId, "collections.create");
+
+    // If marking as default, unset any existing defaults for this entity type
+    if (args.isDefault) {
+      const existingDefaults = await ctx.db
+        .query("importFieldMappings")
+        .withIndex("by_organization_and_type", (q) =>
+          q
+            .eq("organizationId", args.organizationId)
+            .eq("entityType", args.entityType),
+        )
+        .filter((q) => q.eq(q.field("isDefault"), true))
+        .collect();
+
+      for (const existing of existingDefaults) {
+        await ctx.db.patch(existing._id, { isDefault: false });
+      }
+    }
+
+    const mappingId = await ctx.db.insert("importFieldMappings", {
+      organizationId: args.organizationId,
+      name: args.name,
+      description: args.description,
+      entityType: args.entityType,
+      mappings: args.mappings,
+      isDefault: args.isDefault || false,
+      createdBy: userId,
+      createdAt: Date.now(),
+    });
+
+    return mappingId;
+  },
+});
+
+export const updateFieldMapping = mutation({
+  args: {
+    mappingId: v.id("importFieldMappings"),
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    mappings: v.optional(
+      v.array(
+        v.object({
+          sourceField: v.string(),
+          targetField: v.string(),
+          transformType: v.optional(
+            v.union(
+              v.literal("none"),
+              v.literal("date"),
+              v.literal("number"),
+              v.literal("boolean"),
+              v.literal("uppercase"),
+              v.literal("lowercase"),
+              v.literal("trim"),
+            ),
+          ),
+          defaultValue: v.optional(v.string()),
+          required: v.optional(v.boolean()),
+        }),
+      ),
+    ),
+    isDefault: v.optional(v.boolean()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const mapping = await ctx.db.get(args.mappingId);
+    if (!mapping) {
+      throw new Error("Field mapping not found");
+    }
+
+    await requirePermission(ctx, mapping.organizationId, "collections.create");
+
+    // If marking as default, unset any existing defaults for this entity type
+    if (args.isDefault) {
+      const existingDefaults = await ctx.db
+        .query("importFieldMappings")
+        .withIndex("by_organization_and_type", (q) =>
+          q
+            .eq("organizationId", mapping.organizationId)
+            .eq("entityType", mapping.entityType),
+        )
+        .filter((q) => q.eq(q.field("isDefault"), true))
+        .collect();
+
+      for (const existing of existingDefaults) {
+        if (existing._id !== args.mappingId) {
+          await ctx.db.patch(existing._id, { isDefault: false });
+        }
+      }
+    }
+
+    const updates: Record<string, unknown> = {
+      updatedAt: Date.now(),
+    };
+
+    if (args.name !== undefined) updates.name = args.name;
+    if (args.description !== undefined) updates.description = args.description;
+    if (args.mappings !== undefined) updates.mappings = args.mappings;
+    if (args.isDefault !== undefined) updates.isDefault = args.isDefault;
+
+    await ctx.db.patch(args.mappingId, updates);
+
+    return null;
+  },
+});
+
+export const getFieldMapping = query({
+  args: {
+    mappingId: v.id("importFieldMappings"),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id("importFieldMappings"),
+      organizationId: v.id("organizations"),
+      name: v.string(),
+      description: v.optional(v.string()),
+      entityType: v.union(
+        v.literal("objects"),
+        v.literal("accessions"),
+        v.literal("locations"),
+        v.literal("accounts"),
+        v.literal("loans"),
+      ),
+      mappings: v.array(
+        v.object({
+          sourceField: v.string(),
+          targetField: v.string(),
+          transformType: v.optional(
+            v.union(
+              v.literal("none"),
+              v.literal("date"),
+              v.literal("number"),
+              v.literal("boolean"),
+              v.literal("uppercase"),
+              v.literal("lowercase"),
+              v.literal("trim"),
+            ),
+          ),
+          defaultValue: v.optional(v.string()),
+          required: v.optional(v.boolean()),
+        }),
+      ),
+      isDefault: v.optional(v.boolean()),
+      createdBy: v.id("users"),
+      createdAt: v.number(),
+      updatedAt: v.optional(v.number()),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
+    const mapping = await ctx.db.get(args.mappingId);
+    if (!mapping) return null;
+
+    return mapping;
+  },
+});
+
+export const listFieldMappings = query({
+  args: {
+    organizationId: v.id("organizations"),
+    entityType: v.optional(
+      v.union(
+        v.literal("objects"),
+        v.literal("accessions"),
+        v.literal("locations"),
+        v.literal("accounts"),
+        v.literal("loans"),
+      ),
+    ),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("importFieldMappings"),
+      name: v.string(),
+      description: v.optional(v.string()),
+      entityType: v.union(
+        v.literal("objects"),
+        v.literal("accessions"),
+        v.literal("locations"),
+        v.literal("accounts"),
+        v.literal("loans"),
+      ),
+      mappings: v.array(
+        v.object({
+          sourceField: v.string(),
+          targetField: v.string(),
+          transformType: v.optional(
+            v.union(
+              v.literal("none"),
+              v.literal("date"),
+              v.literal("number"),
+              v.literal("boolean"),
+              v.literal("uppercase"),
+              v.literal("lowercase"),
+              v.literal("trim"),
+            ),
+          ),
+          defaultValue: v.optional(v.string()),
+          required: v.optional(v.boolean()),
+        }),
+      ),
+      isDefault: v.optional(v.boolean()),
+      createdAt: v.number(),
+      updatedAt: v.optional(v.number()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+
+    let query = ctx.db
+      .query("importFieldMappings")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      );
+
+    const mappings = await query.collect();
+
+    const filtered = args.entityType
+      ? mappings.filter((m) => m.entityType === args.entityType)
+      : mappings;
+
+    return filtered.map((m) => ({
+      _id: m._id,
+      name: m.name,
+      description: m.description,
+      entityType: m.entityType,
+      mappings: m.mappings,
+      isDefault: m.isDefault,
+      createdAt: m.createdAt,
+      updatedAt: m.updatedAt,
+    }));
+  },
+});
+
+export const deleteFieldMapping = mutation({
+  args: {
+    mappingId: v.id("importFieldMappings"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const mapping = await ctx.db.get(args.mappingId);
+    if (!mapping) {
+      throw new Error("Field mapping not found");
+    }
+
+    await requirePermission(ctx, mapping.organizationId, "collections.create");
+
+    await ctx.db.delete(args.mappingId);
+
+    return null;
+  },
+});

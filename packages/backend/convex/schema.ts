@@ -2227,6 +2227,45 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_organization", ["organizationId"]),
 
+  // Import field mapping configurations
+  importFieldMappings: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    entityType: v.union(
+      v.literal("objects"),
+      v.literal("accessions"),
+      v.literal("locations"),
+      v.literal("accounts"),
+      v.literal("loans"),
+    ),
+    mappings: v.array(
+      v.object({
+        sourceField: v.string(),
+        targetField: v.string(),
+        transformType: v.optional(
+          v.union(
+            v.literal("none"),
+            v.literal("date"),
+            v.literal("number"),
+            v.literal("boolean"),
+            v.literal("uppercase"),
+            v.literal("lowercase"),
+            v.literal("trim"),
+          ),
+        ),
+        defaultValue: v.optional(v.string()),
+        required: v.optional(v.boolean()),
+      }),
+    ),
+    isDefault: v.optional(v.boolean()),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_type", ["organizationId", "entityType"]),
+
   exportUsage: defineTable({
     organizationId: v.id("organizations"),
     periodStart: v.number(),
