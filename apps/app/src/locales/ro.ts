@@ -1,4 +1,9 @@
 export default {
+  loginPage: {
+    title: "Autentificare",
+    heading: "Bine ai revenit",
+    description: "Conectează-te la contul tău pentru a continua",
+  },
   dashboard: {
     title: "Creează Aplicația Ta",
     description:

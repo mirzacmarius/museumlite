@@ -3461,6 +3461,8 @@ export default {
   },
   loginPage: {
     title: "Login",
+    heading: "Welcome back",
+    description: "Sign in to your account to continue",
   },
   accessions: {
     title: "Accessions",

@@ -3370,6 +3370,8 @@ export default {
   },
   loginPage: {
     title: "Iniciar Sesión",
+    heading: "Bienvenido de nuevo",
+    description: "Inicia sesión en tu cuenta para continuar",
   },
   accessions: {
     title: "Adquisiciones",

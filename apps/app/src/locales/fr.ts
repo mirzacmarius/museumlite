@@ -3390,6 +3390,8 @@ export default {
   },
   loginPage: {
     title: "Connexion",
+    heading: "Bienvenue",
+    description: "Connectez-vous à votre compte pour continuer",
   },
   accessions: {
     title: "Acquisitions",
