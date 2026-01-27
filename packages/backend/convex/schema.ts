@@ -2215,6 +2215,18 @@ export default defineSchema({
     .index("by_organization", ["organizationId"])
     .index("by_status", ["status"]),
 
+  // Import validation reports
+  importValidationReports: defineTable({
+    organizationId: v.id("organizations"),
+    entityType: v.string(),
+    totalRows: v.number(),
+    validRows: v.number(),
+    errorCount: v.number(),
+    warningCount: v.number(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_organization", ["organizationId"]),
+
   exportUsage: defineTable({
     organizationId: v.id("organizations"),
     periodStart: v.number(),
