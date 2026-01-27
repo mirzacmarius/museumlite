@@ -1,0 +1,13 @@
+
+[2026-01-27] Subtask 4-1 Completed: Replace generateAccountNumber with shared utility
+- Migrated accounts.ts to use shared numberGenerator utilities
+- Added imports: getNextGlobalValue, padNumber from utils/numberGenerator
+- Replaced manual counter logic with getNextGlobalValue() helper
+- Simplified from 29 lines to 16 lines
+- Maintains exact same format: ACC-{5-digit}
+- Uses global counter (no year scoping) via getNextGlobalValue()
+- Follows pattern established by loans.ts and transit.ts migrations
+- Commit: 9d58c2b
+
+Status: ✓ COMPLETED
+Next: Proceed with insurance module migration (subtask-5-1)

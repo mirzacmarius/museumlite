@@ -56,6 +56,7 @@ describe("Year-based counters", () => {
       return await ctx.db.insert("organizations", {
         name: "Test Org",
         slug: "test-org",
+        type: "museum",
         settings: {},
       });
     });
@@ -100,6 +101,7 @@ describe("Year-based counters", () => {
       return await ctx.db.insert("organizations", {
         name: "Test Org",
         slug: "test-org",
+        type: "museum",
         settings: {},
       });
     });
@@ -152,6 +154,7 @@ describe("Year-based counters", () => {
       return await ctx.db.insert("organizations", {
         name: "Test Org",
         slug: "test-org",
+        type: "museum",
         settings: {},
       });
     });
@@ -187,6 +190,7 @@ describe("Year-based counters", () => {
       return await ctx.db.insert("organizations", {
         name: "Test Org",
         slug: "test-org",
+        type: "museum",
         settings: {},
       });
     });
@@ -216,6 +220,7 @@ describe("Year-based counters", () => {
       return await ctx.db.insert("organizations", {
         name: "Test Org",
         slug: "test-org",
+        type: "museum",
         settings: {},
       });
     });
@@ -245,6 +250,7 @@ describe("Year-based counters", () => {
       return await ctx.db.insert("organizations", {
         name: "Test Org",
         slug: "test-org",
+        type: "museum",
         settings: {},
       });
     });
@@ -299,6 +305,7 @@ describe("Global counters", () => {
       return await ctx.db.insert("organizations", {
         name: "Test Org",
         slug: "test-org",
+        type: "museum",
         settings: {},
       });
     });
@@ -336,6 +343,7 @@ describe("Global counters", () => {
       return await ctx.db.insert("organizations", {
         name: "Test Org",
         slug: "test-org",
+        type: "museum",
         settings: {},
       });
     });
@@ -382,6 +390,7 @@ describe("Global counters", () => {
       return await ctx.db.insert("organizations", {
         name: "Test Org",
         slug: "test-org",
+        type: "museum",
         settings: {},
       });
     });
@@ -414,6 +423,7 @@ describe("Global counters", () => {
       return await ctx.db.insert("organizations", {
         name: "Test Org",
         slug: "test-org",
+        type: "museum",
         settings: {},
       });
     });
@@ -453,6 +463,7 @@ describe("Organization isolation", () => {
       return await ctx.db.insert("organizations", {
         name: "Org 1",
         slug: "org-1",
+        type: "museum",
         settings: {},
       });
     });
@@ -461,6 +472,7 @@ describe("Organization isolation", () => {
       return await ctx.db.insert("organizations", {
         name: "Org 2",
         slug: "org-2",
+        type: "museum",
         settings: {},
       });
     });
@@ -509,6 +521,7 @@ describe("Organization isolation", () => {
       return await ctx.db.insert("organizations", {
         name: "Org 1",
         slug: "org-1",
+        type: "museum",
         settings: {},
       });
     });
@@ -517,6 +530,7 @@ describe("Organization isolation", () => {
       return await ctx.db.insert("organizations", {
         name: "Org 2",
         slug: "org-2",
+        type: "museum",
         settings: {},
       });
     });
