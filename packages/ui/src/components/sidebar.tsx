@@ -35,12 +35,7 @@ const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 function isMac(): boolean {
   if (typeof window === "undefined") return false;
 
-  // Check modern API first
-  if (navigator.userAgentData?.platform) {
-    return navigator.userAgentData.platform.toLowerCase().includes("mac");
-  }
-
-  // Fallback to traditional method
+  // Use standard, well-supported API
   return navigator.platform.toLowerCase().includes("mac");
 }
 
