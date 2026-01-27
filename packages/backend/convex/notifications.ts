@@ -429,6 +429,23 @@ export const sendNotification = internalMutation({
     message: v.string(),
     relatedEntityType: v.optional(v.string()),
     relatedEntityId: v.optional(v.string()),
+    // Additional data for email templates
+    emailData: v.optional(
+      v.object({
+        // For loan notifications
+        loanId: v.optional(v.string()),
+        itemName: v.optional(v.string()),
+        borrowerName: v.optional(v.string()),
+        startDate: v.optional(v.string()),
+        endDate: v.optional(v.string()),
+        loanUrl: v.optional(v.string()),
+        // For task assignments
+        taskTitle: v.optional(v.string()),
+        assignedBy: v.optional(v.string()),
+        dueDate: v.optional(v.string()),
+        taskUrl: v.optional(v.string()),
+      }),
+    ),
   },
   returns: v.id("notifications"),
   handler: async (ctx, args) => {
@@ -452,6 +469,7 @@ export const sendNotification = internalMutation({
       title: args.title,
       message: args.message,
       relatedEntityId: args.relatedEntityId,
+      emailData: args.emailData,
     });
 
     return notificationId;
