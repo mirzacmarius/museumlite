@@ -4,6 +4,7 @@ import { ViewVerticalIcon } from "@radix-ui/react-icons";
 import { Slot } from "@radix-ui/react-slot";
 import { Button } from "@v1/ui/button";
 import { useIsMobile } from "@v1/ui/hooks/use-mobile";
+import { usePlatform } from "@v1/ui/hooks";
 import { Input } from "@v1/ui/input";
 import { Separator } from "@v1/ui/separator";
 import {
@@ -30,14 +31,6 @@ const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
-
-// Platform detection utility for keyboard shortcuts
-function isMac(): boolean {
-  if (typeof window === "undefined") return false;
-
-  // Use standard, well-supported API
-  return navigator.platform.toLowerCase().includes("mac");
-}
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed";
@@ -289,11 +282,9 @@ const SidebarTrigger = React.forwardRef<
   React.ComponentProps<typeof Button>
 >(({ className, onClick, ...props }, ref) => {
   const { toggleSidebar } = useSidebar();
-  const [modifierKey, setModifierKey] = React.useState("⌘");
+  const { isMac } = usePlatform();
 
-  React.useEffect(() => {
-    setModifierKey(isMac() ? "⌘" : "Ctrl");
-  }, []);
+  const shortcutText = isMac ? "⌘B" : "Ctrl+B";
 
   return (
     <Tooltip>
@@ -314,16 +305,8 @@ const SidebarTrigger = React.forwardRef<
           <span className="sr-only">Toggle Sidebar</span>
         </Button>
       </TooltipTrigger>
-      <TooltipContent side="right" align="center">
-        <div className="flex items-center gap-2">
-          <span>Toggle Sidebar</span>
-          <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium">
-            {modifierKey}
-          </kbd>
-          <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium">
-            B
-          </kbd>
-        </div>
+      <TooltipContent>
+        <p>Toggle Sidebar ({shortcutText})</p>
       </TooltipContent>
     </Tooltip>
   );
@@ -335,6 +318,9 @@ const SidebarRail = React.forwardRef<
   React.ComponentProps<"button">
 >(({ className, ...props }, ref) => {
   const { toggleSidebar } = useSidebar();
+  const { isMac } = usePlatform();
+
+  const shortcutText = isMac ? "⌘B" : "Ctrl+B";
 
   return (
     <button
@@ -343,7 +329,7 @@ const SidebarRail = React.forwardRef<
       aria-label="Toggle Sidebar"
       tabIndex={-1}
       onClick={toggleSidebar}
-      title="Toggle Sidebar"
+      title={`Toggle Sidebar (${shortcutText})`}
       className={cn(
         "absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-sidebar-border group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:flex",
         "[[data-side=left]_&]:cursor-w-resize [[data-side=right]_&]:cursor-e-resize",
@@ -781,7 +767,6 @@ const SidebarMenuSubButton = React.forwardRef<
 SidebarMenuSubButton.displayName = "SidebarMenuSubButton";
 
 export {
-  isMac,
   Sidebar,
   SidebarContent,
   SidebarFooter,
