@@ -6,6 +6,7 @@ import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
+import { batchLookup } from "./utils/batchLookup";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
@@ -260,18 +261,19 @@ export const list = query({
     // Apply search filter if provided
     if (args.search && args.search.trim().length > 0) {
       const searchLower = args.search.toLowerCase();
-      // Get collection titles for accessions to include in search
-      const accessionsWithCollectionInfo = await Promise.all(
-        allResults.map(async (accession) => {
-          let collectionTitle = "";
-          if (accession.collectionId) {
-            const collection = await ctx.db.get(accession.collectionId);
-            collectionTitle = collection?.title || "";
-          }
+      // Batch fetch collections to avoid N+1 queries
+      const collectionIds = allResults
+        .map((a) => a.collectionId)
+        .filter(Boolean) as Id<"collections">[];
+      const collectionMap = await batchLookup(ctx, collectionIds, "collections");
 
-          return { ...accession, collectionTitle };
-        }),
-      );
+      // Get collection titles for accessions to include in search
+      const accessionsWithCollectionInfo = allResults.map((accession) => {
+        const collectionTitle = accession.collectionId
+          ? collectionMap.get(accession.collectionId)?.title || ""
+          : "";
+        return { ...accession, collectionTitle };
+      });
 
       allResults = accessionsWithCollectionInfo
         .filter((accession) => {
@@ -2007,6 +2009,25 @@ export const bulkExport = query({
       throw new Error("Not authenticated");
     }
 
+    // Fetch all accessions first
+    const accessions = await Promise.all(
+      args.accessionIds.map((id) => ctx.db.get(id)),
+    );
+
+    // Filter out null accessions and check permissions
+    const validAccessions = [];
+    for (const accession of accessions) {
+      if (!accession) continue;
+      await requirePermission(ctx, accession.organizationId, "accessions.read");
+      validAccessions.push(accession);
+    }
+
+    // Batch fetch collections to avoid N+1 queries
+    const collectionIds = validAccessions
+      .map((a) => a.collectionId)
+      .filter(Boolean) as Id<"collections">[];
+    const collectionMap = await batchLookup(ctx, collectionIds, "collections");
+
     const results: Array<{
       _id: Id<"accessions">;
       accessionNumber: string;
@@ -2026,17 +2047,12 @@ export const bulkExport = query({
       sourceVerified?: boolean;
     }> = [];
 
-    for (const accessionId of args.accessionIds) {
-      const accession = await ctx.db.get(accessionId);
-      if (!accession) continue;
-
-      await requirePermission(ctx, accession.organizationId, "accessions.read");
-
-      // Get collection info
+    for (const accession of validAccessions) {
+      // Get collection info using batch lookup map
       let collectionTitle: string | undefined;
       let collectionAccessionNumber: string | undefined;
       if (accession.collectionId) {
-        const collection = await ctx.db.get(accession.collectionId);
+        const collection = collectionMap.get(accession.collectionId);
         if (collection) {
           collectionTitle = collection.title;
           collectionAccessionNumber = collection.accessionNumber;
