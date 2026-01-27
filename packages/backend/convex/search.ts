@@ -57,6 +57,14 @@ export const globalSearch = query({
         type: v.optional(v.string()),
       }),
     ),
+    exhibitions: v.array(
+      v.object({
+        _id: v.id("exhibitions"),
+        title: v.string(),
+        location: v.optional(v.string()),
+        status: v.string(),
+      }),
+    ),
   }),
   handler: async (ctx, args) => {
     const searchLimit = args.limit ?? 5;
@@ -97,6 +105,12 @@ export const globalSearch = query({
         _id: Id<"locations">;
         name: string;
         type?: string;
+      }>,
+      exhibitions: [] as Array<{
+        _id: Id<"exhibitions">;
+        title: string;
+        location?: string;
+        status: string;
       }>,
     };
 
