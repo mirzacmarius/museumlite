@@ -6,6 +6,18 @@ import { action, internalMutation, mutation, query } from "./_generated/server";
 import { polar } from "./subscriptions";
 import { username } from "./utils/validators";
 
+/**
+ * Valid image types for user avatars
+ */
+const AVATAR_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+
+/**
+ * Validate avatar file type
+ */
+function validateAvatarFileType(mimeType: string): boolean {
+  return AVATAR_IMAGE_TYPES.includes(mimeType as any);
+}
+
 export const getUser = query({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
@@ -66,12 +78,20 @@ export const updateName = mutation({
 });
 
 export const generateUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    mimeType: v.string(),
+  },
+  handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("User not found");
     }
+
+    // Validate file type
+    if (!validateAvatarFileType(args.mimeType)) {
+      throw new Error(`Unsupported file type: ${args.mimeType}`);
+    }
+
     return await ctx.storage.generateUploadUrl();
   },
 });
