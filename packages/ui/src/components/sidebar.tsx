@@ -31,6 +31,19 @@ const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
+// Platform detection utility for keyboard shortcuts
+function isMac(): boolean {
+  if (typeof window === "undefined") return false;
+
+  // Check modern API first
+  if (navigator.userAgentData?.platform) {
+    return navigator.userAgentData.platform.toLowerCase().includes("mac");
+  }
+
+  // Fallback to traditional method
+  return navigator.platform.toLowerCase().includes("mac");
+}
+
 type SidebarContextProps = {
   state: "expanded" | "collapsed";
   open: boolean;
@@ -753,6 +766,7 @@ const SidebarMenuSubButton = React.forwardRef<
 SidebarMenuSubButton.displayName = "SidebarMenuSubButton";
 
 export {
+  isMac,
   Sidebar,
   SidebarContent,
   SidebarFooter,
