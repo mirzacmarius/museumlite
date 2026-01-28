@@ -1384,3 +1384,667 @@ describe("notification type validation", () => {
     expect(notification?.type).toBe(customType);
   });
 });
+
+// ============================================
+// Read/Unread State Management Tests
+// ============================================
+
+describe("notification read/unread state management", () => {
+  test("should create notifications as unread by default", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const notificationId = await t.mutation(internal.notifications.sendNotification, {
+      organizationId: orgId,
+      userId,
+      type: "task_assigned",
+      title: "New Task",
+      message: "You have a new task",
+    });
+
+    const notification = await t.run(async (ctx) => {
+      return await ctx.db.get(notificationId);
+    });
+
+    expect(notification?.read).toBe(false);
+  });
+
+  test("should toggle notification from unread to read", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const notificationId = await t.run(async (ctx) => {
+      return await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId,
+        type: "loan_approved",
+        title: "Loan Approved",
+        message: "Your loan has been approved",
+        read: false,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Verify initial state
+    const initialNotification = await t.run(async (ctx) => {
+      return await ctx.db.get(notificationId);
+    });
+    expect(initialNotification?.read).toBe(false);
+
+    // Toggle to read
+    await t.run(async (ctx) => {
+      await ctx.db.patch(notificationId, { read: true });
+    });
+
+    const updatedNotification = await t.run(async (ctx) => {
+      return await ctx.db.get(notificationId);
+    });
+    expect(updatedNotification?.read).toBe(true);
+  });
+
+  test("should toggle notification from read to unread", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const notificationId = await t.run(async (ctx) => {
+      return await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId,
+        type: "loan_approved",
+        title: "Loan Approved",
+        message: "Your loan has been approved",
+        read: true,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Verify initial state
+    const initialNotification = await t.run(async (ctx) => {
+      return await ctx.db.get(notificationId);
+    });
+    expect(initialNotification?.read).toBe(true);
+
+    // Toggle to unread
+    await t.run(async (ctx) => {
+      await ctx.db.patch(notificationId, { read: false });
+    });
+
+    const updatedNotification = await t.run(async (ctx) => {
+      return await ctx.db.get(notificationId);
+    });
+    expect(updatedNotification?.read).toBe(false);
+  });
+
+  test("should handle marking already-read notification as read", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const notificationId = await t.run(async (ctx) => {
+      return await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId,
+        type: "task_completed",
+        title: "Task Completed",
+        message: "Task was completed",
+        read: true,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Mark as read again
+    await t.run(async (ctx) => {
+      await ctx.db.patch(notificationId, { read: true });
+    });
+
+    const notification = await t.run(async (ctx) => {
+      return await ctx.db.get(notificationId);
+    });
+
+    expect(notification?.read).toBe(true);
+  });
+
+  test("should handle marking already-unread notification as unread", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const notificationId = await t.run(async (ctx) => {
+      return await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId,
+        type: "task_assigned",
+        title: "Task Assigned",
+        message: "New task for you",
+        read: false,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Mark as unread again
+    await t.run(async (ctx) => {
+      await ctx.db.patch(notificationId, { read: false });
+    });
+
+    const notification = await t.run(async (ctx) => {
+      return await ctx.db.get(notificationId);
+    });
+
+    expect(notification?.read).toBe(false);
+  });
+
+  test("should correctly count unread notifications", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    // Create 3 unread and 2 read notifications
+    await t.run(async (ctx) => {
+      await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId,
+        type: "task_assigned",
+        title: "Unread 1",
+        message: "Message 1",
+        read: false,
+        createdAt: Date.now(),
+      });
+
+      await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId,
+        type: "task_assigned",
+        title: "Unread 2",
+        message: "Message 2",
+        read: false,
+        createdAt: Date.now(),
+      });
+
+      await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId,
+        type: "task_assigned",
+        title: "Unread 3",
+        message: "Message 3",
+        read: false,
+        createdAt: Date.now(),
+      });
+
+      await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId,
+        type: "task_completed",
+        title: "Read 1",
+        message: "Message 4",
+        read: true,
+        createdAt: Date.now(),
+      });
+
+      await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId,
+        type: "task_completed",
+        title: "Read 2",
+        message: "Message 5",
+        read: true,
+        createdAt: Date.now(),
+      });
+    });
+
+    const unreadNotifications = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("notifications")
+        .withIndex("by_user_and_read", (q) =>
+          q.eq("userId", userId).eq("read", false),
+        )
+        .collect();
+    });
+
+    expect(unreadNotifications).toHaveLength(3);
+  });
+
+  test("should update unread count after marking notification as read", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    // Create 2 unread notifications
+    const notificationIds = await t.run(async (ctx) => {
+      const id1 = await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId,
+        type: "task_assigned",
+        title: "Unread 1",
+        message: "Message 1",
+        read: false,
+        createdAt: Date.now(),
+      });
+
+      const id2 = await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId,
+        type: "task_assigned",
+        title: "Unread 2",
+        message: "Message 2",
+        read: false,
+        createdAt: Date.now(),
+      });
+
+      return [id1, id2];
+    });
+
+    // Verify initial count
+    const initialUnread = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("notifications")
+        .withIndex("by_user_and_read", (q) =>
+          q.eq("userId", userId).eq("read", false),
+        )
+        .collect();
+    });
+    expect(initialUnread).toHaveLength(2);
+
+    // Mark one as read
+    await t.run(async (ctx) => {
+      await ctx.db.patch(notificationIds[0], { read: true });
+    });
+
+    // Verify updated count
+    const updatedUnread = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("notifications")
+        .withIndex("by_user_and_read", (q) =>
+          q.eq("userId", userId).eq("read", false),
+        )
+        .collect();
+    });
+    expect(updatedUnread).toHaveLength(1);
+  });
+
+  test("should bulk mark multiple notifications as read", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const notificationIds = await t.run(async (ctx) => {
+      const ids = [];
+      for (let i = 0; i < 5; i++) {
+        const id = await ctx.db.insert("notifications", {
+          organizationId: orgId,
+          userId,
+          type: "task_assigned",
+          title: `Notification ${i}`,
+          message: `Message ${i}`,
+          read: false,
+          createdAt: Date.now(),
+        });
+        ids.push(id);
+      }
+      return ids;
+    });
+
+    // Bulk mark as read
+    await t.run(async (ctx) => {
+      for (const id of notificationIds) {
+        await ctx.db.patch(id, { read: true });
+      }
+    });
+
+    // Verify all are read
+    const notifications = await t.run(async (ctx) => {
+      return await Promise.all(notificationIds.map((id) => ctx.db.get(id)));
+    });
+
+    expect(notifications.every((n) => n?.read === true)).toBe(true);
+
+    // Verify unread count is 0
+    const unreadNotifications = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("notifications")
+        .withIndex("by_user_and_read", (q) =>
+          q.eq("userId", userId).eq("read", false),
+        )
+        .collect();
+    });
+
+    expect(unreadNotifications).toHaveLength(0);
+  });
+
+  test("should maintain separate read states for different users", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+      });
+    });
+
+    const userId1 = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "User 1",
+        email: "user1@example.com",
+      });
+    });
+
+    const userId2 = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "User 2",
+        email: "user2@example.com",
+      });
+    });
+
+    // Create notifications for both users
+    const user1NotificationId = await t.run(async (ctx) => {
+      return await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId: userId1,
+        type: "task_assigned",
+        title: "User 1 Task",
+        message: "Task for user 1",
+        read: false,
+        createdAt: Date.now(),
+      });
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId: userId2,
+        type: "task_assigned",
+        title: "User 2 Task",
+        message: "Task for user 2",
+        read: false,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Mark user1's notification as read
+    await t.run(async (ctx) => {
+      await ctx.db.patch(user1NotificationId, { read: true });
+    });
+
+    // Verify user1 has no unread
+    const user1Unread = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("notifications")
+        .withIndex("by_user_and_read", (q) =>
+          q.eq("userId", userId1).eq("read", false),
+        )
+        .collect();
+    });
+
+    // Verify user2 still has 1 unread
+    const user2Unread = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("notifications")
+        .withIndex("by_user_and_read", (q) =>
+          q.eq("userId", userId2).eq("read", false),
+        )
+        .collect();
+    });
+
+    expect(user1Unread).toHaveLength(0);
+    expect(user2Unread).toHaveLength(1);
+  });
+
+  test("should filter notifications by read state", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    // Create mix of read and unread
+    await t.run(async (ctx) => {
+      await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId,
+        type: "task_assigned",
+        title: "Unread 1",
+        message: "Message 1",
+        read: false,
+        createdAt: Date.now(),
+      });
+
+      await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId,
+        type: "task_assigned",
+        title: "Read 1",
+        message: "Message 2",
+        read: true,
+        createdAt: Date.now(),
+      });
+
+      await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId,
+        type: "task_assigned",
+        title: "Unread 2",
+        message: "Message 3",
+        read: false,
+        createdAt: Date.now(),
+      });
+
+      await ctx.db.insert("notifications", {
+        organizationId: orgId,
+        userId,
+        type: "task_assigned",
+        title: "Read 2",
+        message: "Message 4",
+        read: true,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Query only unread
+    const unreadNotifications = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("notifications")
+        .withIndex("by_user_and_read", (q) =>
+          q.eq("userId", userId).eq("read", false),
+        )
+        .collect();
+    });
+
+    // Query only read
+    const readNotifications = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("notifications")
+        .withIndex("by_user_and_read", (q) =>
+          q.eq("userId", userId).eq("read", true),
+        )
+        .collect();
+    });
+
+    expect(unreadNotifications).toHaveLength(2);
+    expect(readNotifications).toHaveLength(2);
+    expect(unreadNotifications.every((n) => n.read === false)).toBe(true);
+    expect(readNotifications.every((n) => n.read === true)).toBe(true);
+  });
+
+  test("should mark all unread notifications as read", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    // Create multiple unread notifications
+    await t.run(async (ctx) => {
+      for (let i = 0; i < 10; i++) {
+        await ctx.db.insert("notifications", {
+          organizationId: orgId,
+          userId,
+          type: "system_announcement",
+          title: `Notification ${i}`,
+          message: `Message ${i}`,
+          read: false,
+          createdAt: Date.now(),
+        });
+      }
+    });
+
+    // Get all unread notifications
+    const unreadNotifications = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("notifications")
+        .withIndex("by_user_and_read", (q) =>
+          q.eq("userId", userId).eq("read", false),
+        )
+        .collect();
+    });
+
+    expect(unreadNotifications).toHaveLength(10);
+
+    // Mark all as read
+    await t.run(async (ctx) => {
+      for (const notification of unreadNotifications) {
+        await ctx.db.patch(notification._id, { read: true });
+      }
+    });
+
+    // Verify all are now read
+    const remainingUnread = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("notifications")
+        .withIndex("by_user_and_read", (q) =>
+          q.eq("userId", userId).eq("read", false),
+        )
+        .collect();
+    });
+
+    expect(remainingUnread).toHaveLength(0);
+  });
+});
