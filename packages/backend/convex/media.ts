@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
+import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { enforceMediaQuota } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
@@ -547,6 +548,107 @@ export const getPrimaryImageUrl = query({
     }
 
     return null;
+  },
+});
+
+/**
+ * Get primary image thumbnail URLs for multiple collection objects (batched)
+ * This avoids N+1 query patterns when fetching primary images for multiple collections
+ */
+export const getBatchPrimaryImageUrls = query({
+  args: {
+    collectionIds: v.array(v.id("collections")),
+  },
+  returns: v.array(
+    v.object({
+      collectionId: v.id("collections"),
+      url: v.union(v.string(), v.null()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    if (args.collectionIds.length === 0) {
+      return [];
+    }
+
+    // Batch fetch collections for permission check
+    const collections = await batchGetByIds(
+      ctx,
+      args.collectionIds,
+      "collections",
+    );
+    const collectionMap = createLookupMap(collections);
+
+    // Check permissions (assume all collections are from the same org)
+    const firstValidCollection = collections.find((c) => c !== null);
+    if (firstValidCollection) {
+      await requirePermission(
+        ctx,
+        firstValidCollection.organizationId,
+        "media.read",
+      );
+    }
+
+    // Batch query for primary media for each collection
+    const primaryMediaResults = await Promise.all(
+      args.collectionIds.map(async (collectionId) => {
+        const collection = collectionMap.get(collectionId);
+        if (!collection) {
+          return { collectionId, media: null };
+        }
+
+        const primaryMedia = await ctx.db
+          .query("mediaFiles")
+          .withIndex("by_collection", (q) =>
+            q.eq("collectionId", collectionId),
+          )
+          .filter((q) => q.eq(q.field("isPrimary"), true))
+          .first();
+
+        return { collectionId, media: primaryMedia };
+      }),
+    );
+
+    // Collect all storage IDs that need URLs
+    const storageIdsToFetch: Array<{
+      collectionId: Id<"collections">;
+      storageId: Id<"_storage">;
+    }> = [];
+
+    for (const result of primaryMediaResults) {
+      if (result.media) {
+        if (result.media.thumbnailStorageId) {
+          storageIdsToFetch.push({
+            collectionId: result.collectionId,
+            storageId: result.media.thumbnailStorageId,
+          });
+        } else if (result.media.fileType === "image") {
+          storageIdsToFetch.push({
+            collectionId: result.collectionId,
+            storageId: result.media.storageId,
+          });
+        }
+      }
+    }
+
+    // Batch fetch all URLs
+    const urlResults = await Promise.all(
+      storageIdsToFetch.map(async (item) => ({
+        collectionId: item.collectionId,
+        url: await ctx.storage.getUrl(item.storageId),
+      })),
+    );
+
+    // Create map of collectionId -> url
+    const urlMap = new Map<Id<"collections">, string | null>();
+    for (const result of urlResults) {
+      urlMap.set(result.collectionId, result.url);
+    }
+
+    // Map results in order
+    return args.collectionIds.map((collectionId) => ({
+      collectionId,
+      url: urlMap.get(collectionId) || null,
+    }));
   },
 });
 
