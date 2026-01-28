@@ -621,3 +621,519 @@ describe("State Transition Validation", () => {
     expect(result.valid).toBe(true);
   });
 });
+
+// ============================================
+// Workflow Approval Modes Tests
+// ============================================
+
+describe("Workflow Approval Modes", () => {
+  test("single approval mode marks as fully approved after one approval", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, userId, roleId } = await createOrgWithRole(t, [
+      "settings.read",
+    ]);
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "accession",
+        steps: [
+          { stepNumber: 1, roleId, name: "Step 1", approvalMode: "single" },
+        ],
+        canInitiateRoles: [roleId],
+      });
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowStepApprovals", {
+        organizationId,
+        workflowType: "accession",
+        entityId: "test-entity-123",
+        stepNumber: 1,
+        approvedBy: userId,
+        approvedAt: Date.now(),
+      });
+    });
+
+    // #when
+    const status = await t.run(async (ctx) => {
+      return await ctx.runQuery(internal.workflows.checkStepApprovalStatus, {
+        organizationId,
+        workflowType: "accession",
+        entityId: "test-entity-123",
+        stepNumber: 1,
+        userId,
+      });
+    });
+
+    // #then
+    expect(status.approvalMode).toBe("single");
+    expect(status.currentApprovals).toBe(1);
+    expect(status.requiredApprovals).toBe(1);
+    expect(status.isFullyApproved).toBe(true);
+    expect(status.userHasApproved).toBe(true);
+  });
+
+  test("single approval mode defaults when approvalMode not specified", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, userId, roleId } = await createOrgWithRole(t, [
+      "settings.read",
+    ]);
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "loan",
+        steps: [{ stepNumber: 1, roleId, name: "Review" }],
+        canInitiateRoles: [roleId],
+      });
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowStepApprovals", {
+        organizationId,
+        workflowType: "loan",
+        entityId: "loan-entity-456",
+        stepNumber: 1,
+        approvedBy: userId,
+        approvedAt: Date.now(),
+      });
+    });
+
+    // #when
+    const status = await t.run(async (ctx) => {
+      return await ctx.runQuery(internal.workflows.checkStepApprovalStatus, {
+        organizationId,
+        workflowType: "loan",
+        entityId: "loan-entity-456",
+        stepNumber: 1,
+        userId,
+      });
+    });
+
+    // #then
+    expect(status.approvalMode).toBe("single");
+    expect(status.isFullyApproved).toBe(true);
+  });
+
+  test("multi approval mode requires threshold before fully approved", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, userId, roleId } = await createOrgWithRole(t, [
+      "settings.read",
+    ]);
+
+    const userId2 = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Second User",
+        email: `second-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "deaccession",
+        steps: [
+          {
+            stepNumber: 1,
+            roleId,
+            name: "Committee Vote",
+            approvalMode: "multi",
+            requiredApprovals: 3,
+          },
+        ],
+        canInitiateRoles: [roleId],
+      });
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowStepApprovals", {
+        organizationId,
+        workflowType: "deaccession",
+        entityId: "deacc-entity-123",
+        stepNumber: 1,
+        approvedBy: userId,
+        approvedAt: Date.now(),
+      });
+      await ctx.db.insert("workflowStepApprovals", {
+        organizationId,
+        workflowType: "deaccession",
+        entityId: "deacc-entity-123",
+        stepNumber: 1,
+        approvedBy: userId2,
+        approvedAt: Date.now(),
+      });
+    });
+
+    // #when
+    const status = await t.run(async (ctx) => {
+      return await ctx.runQuery(internal.workflows.checkStepApprovalStatus, {
+        organizationId,
+        workflowType: "deaccession",
+        entityId: "deacc-entity-123",
+        stepNumber: 1,
+        userId,
+      });
+    });
+
+    // #then
+    expect(status.approvalMode).toBe("multi");
+    expect(status.currentApprovals).toBe(2);
+    expect(status.requiredApprovals).toBe(3);
+    expect(status.isFullyApproved).toBe(false);
+    expect(status.userHasApproved).toBe(true);
+  });
+
+  test("multi approval mode marks fully approved when threshold met", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, userId, roleId } = await createOrgWithRole(t, [
+      "settings.read",
+    ]);
+
+    const userId2 = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Second User",
+        email: `second-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+    });
+
+    const userId3 = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Third User",
+        email: `third-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "deaccession",
+        steps: [
+          {
+            stepNumber: 1,
+            roleId,
+            name: "Committee Vote",
+            approvalMode: "multi",
+            requiredApprovals: 3,
+          },
+        ],
+        canInitiateRoles: [roleId],
+      });
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowStepApprovals", {
+        organizationId,
+        workflowType: "deaccession",
+        entityId: "deacc-entity-456",
+        stepNumber: 1,
+        approvedBy: userId,
+        approvedAt: Date.now(),
+      });
+      await ctx.db.insert("workflowStepApprovals", {
+        organizationId,
+        workflowType: "deaccession",
+        entityId: "deacc-entity-456",
+        stepNumber: 1,
+        approvedBy: userId2,
+        approvedAt: Date.now(),
+      });
+      await ctx.db.insert("workflowStepApprovals", {
+        organizationId,
+        workflowType: "deaccession",
+        entityId: "deacc-entity-456",
+        stepNumber: 1,
+        approvedBy: userId3,
+        approvedAt: Date.now(),
+      });
+    });
+
+    // #when
+    const status = await t.run(async (ctx) => {
+      return await ctx.runQuery(internal.workflows.checkStepApprovalStatus, {
+        organizationId,
+        workflowType: "deaccession",
+        entityId: "deacc-entity-456",
+        stepNumber: 1,
+        userId,
+      });
+    });
+
+    // #then
+    expect(status.approvalMode).toBe("multi");
+    expect(status.currentApprovals).toBe(3);
+    expect(status.requiredApprovals).toBe(3);
+    expect(status.isFullyApproved).toBe(true);
+    expect(status.userHasApproved).toBe(true);
+  });
+
+  test("unanimous approval mode requires all users with role to approve", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, userId, roleId } = await createOrgWithRole(t, [
+      "settings.read",
+    ]);
+
+    const userId2 = await t.run(async (ctx) => {
+      const newUserId = await ctx.db.insert("users", {
+        name: "Second Reviewer",
+        email: `reviewer2-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+
+      await ctx.db.insert("userOrganizations", {
+        userId: newUserId,
+        organizationId,
+        roleId,
+        joinedAt: Date.now(),
+      });
+
+      return newUserId;
+    });
+
+    const userId3 = await t.run(async (ctx) => {
+      const newUserId = await ctx.db.insert("users", {
+        name: "Third Reviewer",
+        email: `reviewer3-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+
+      await ctx.db.insert("userOrganizations", {
+        userId: newUserId,
+        organizationId,
+        roleId,
+        joinedAt: Date.now(),
+      });
+
+      return newUserId;
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "accession",
+        steps: [
+          {
+            stepNumber: 1,
+            roleId,
+            name: "Board Approval",
+            approvalMode: "unanimous",
+          },
+        ],
+        canInitiateRoles: [roleId],
+      });
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowStepApprovals", {
+        organizationId,
+        workflowType: "accession",
+        entityId: "unanimous-entity-789",
+        stepNumber: 1,
+        approvedBy: userId,
+        approvedAt: Date.now(),
+      });
+      await ctx.db.insert("workflowStepApprovals", {
+        organizationId,
+        workflowType: "accession",
+        entityId: "unanimous-entity-789",
+        stepNumber: 1,
+        approvedBy: userId2,
+        approvedAt: Date.now(),
+      });
+    });
+
+    // #when
+    const status = await t.run(async (ctx) => {
+      return await ctx.runQuery(internal.workflows.checkStepApprovalStatus, {
+        organizationId,
+        workflowType: "accession",
+        entityId: "unanimous-entity-789",
+        stepNumber: 1,
+        userId,
+      });
+    });
+
+    // #then
+    expect(status.approvalMode).toBe("unanimous");
+    expect(status.currentApprovals).toBe(2);
+    expect(status.requiredApprovals).toBe(3);
+    expect(status.isFullyApproved).toBe(false);
+    expect(status.userHasApproved).toBe(true);
+  });
+
+  test("unanimous approval mode marks fully approved when all users approve", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, userId, roleId } = await createOrgWithRole(t, [
+      "settings.read",
+    ]);
+
+    const userId2 = await t.run(async (ctx) => {
+      const newUserId = await ctx.db.insert("users", {
+        name: "Second Board Member",
+        email: `board2-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+
+      await ctx.db.insert("userOrganizations", {
+        userId: newUserId,
+        organizationId,
+        roleId,
+        joinedAt: Date.now(),
+      });
+
+      return newUserId;
+    });
+
+    const userId3 = await t.run(async (ctx) => {
+      const newUserId = await ctx.db.insert("users", {
+        name: "Third Board Member",
+        email: `board3-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+
+      await ctx.db.insert("userOrganizations", {
+        userId: newUserId,
+        organizationId,
+        roleId,
+        joinedAt: Date.now(),
+      });
+
+      return newUserId;
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "loan",
+        steps: [
+          {
+            stepNumber: 1,
+            roleId,
+            name: "Board Vote",
+            approvalMode: "unanimous",
+          },
+        ],
+        canInitiateRoles: [roleId],
+      });
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowStepApprovals", {
+        organizationId,
+        workflowType: "loan",
+        entityId: "unanimous-loan-999",
+        stepNumber: 1,
+        approvedBy: userId,
+        approvedAt: Date.now(),
+      });
+      await ctx.db.insert("workflowStepApprovals", {
+        organizationId,
+        workflowType: "loan",
+        entityId: "unanimous-loan-999",
+        stepNumber: 1,
+        approvedBy: userId2,
+        approvedAt: Date.now(),
+      });
+      await ctx.db.insert("workflowStepApprovals", {
+        organizationId,
+        workflowType: "loan",
+        entityId: "unanimous-loan-999",
+        stepNumber: 1,
+        approvedBy: userId3,
+        approvedAt: Date.now(),
+      });
+    });
+
+    // #when
+    const status = await t.run(async (ctx) => {
+      return await ctx.runQuery(internal.workflows.checkStepApprovalStatus, {
+        organizationId,
+        workflowType: "loan",
+        entityId: "unanimous-loan-999",
+        stepNumber: 1,
+        userId,
+      });
+    });
+
+    // #then
+    expect(status.approvalMode).toBe("unanimous");
+    expect(status.currentApprovals).toBe(3);
+    expect(status.requiredApprovals).toBe(3);
+    expect(status.isFullyApproved).toBe(true);
+    expect(status.userHasApproved).toBe(true);
+  });
+
+  test("checkStepApprovalStatus returns correct approvers list", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, userId, roleId } = await createOrgWithRole(t, [
+      "settings.read",
+    ]);
+
+    const userId2 = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Approver Two",
+        email: `approver2-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "accession",
+        steps: [
+          {
+            stepNumber: 1,
+            roleId,
+            name: "Review",
+            approvalMode: "multi",
+            requiredApprovals: 2,
+          },
+        ],
+        canInitiateRoles: [roleId],
+      });
+    });
+
+    const approval1Time = Date.now();
+    const approval2Time = Date.now() + 1000;
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowStepApprovals", {
+        organizationId,
+        workflowType: "accession",
+        entityId: "approvers-test-321",
+        stepNumber: 1,
+        approvedBy: userId,
+        approvedAt: approval1Time,
+      });
+      await ctx.db.insert("workflowStepApprovals", {
+        organizationId,
+        workflowType: "accession",
+        entityId: "approvers-test-321",
+        stepNumber: 1,
+        approvedBy: userId2,
+        approvedAt: approval2Time,
+      });
+    });
+
+    // #when
+    const status = await t.run(async (ctx) => {
+      return await ctx.runQuery(internal.workflows.checkStepApprovalStatus, {
+        organizationId,
+        workflowType: "accession",
+        entityId: "approvers-test-321",
+        stepNumber: 1,
+        userId,
+      });
+    });
+
+    // #then
+    expect(status.approvers).toHaveLength(2);
+    expect(status.approvers[0].userId).toBe(userId);
+    expect(status.approvers[0].approvedAt).toBe(approval1Time);
+    expect(status.approvers[1].userId).toBe(userId2);
+    expect(status.approvers[1].approvedAt).toBe(approval2Time);
+  });
+});
