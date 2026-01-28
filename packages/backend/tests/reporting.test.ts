@@ -588,3 +588,664 @@ describe("scheduledReports CRUD", () => {
     expect(reportAfter?.isActive).toBe(false);
   });
 });
+
+describe("report schedules", () => {
+  test("should create daily scheduled report", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-daily-schedule",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Daily Schedule Report",
+        reportType: "operational_kpis",
+        schedule: "daily",
+        scheduledTime: "08:00",
+        timezone: "America/New_York",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.schedule).toBe("daily");
+    expect(report?.scheduledTime).toBe("08:00");
+    expect(report?.timezone).toBe("America/New_York");
+  });
+
+  test("should create weekly scheduled report with day", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-weekly-schedule",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Weekly Schedule Report",
+        reportType: "collection_health",
+        schedule: "weekly",
+        scheduledDay: 1, // Monday
+        scheduledTime: "09:00",
+        timezone: "UTC",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.schedule).toBe("weekly");
+    expect(report?.scheduledDay).toBe(1);
+    expect(report?.scheduledTime).toBe("09:00");
+  });
+
+  test("should create monthly scheduled report with day of month", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-monthly-schedule",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Monthly Schedule Report",
+        reportType: "loan_performance",
+        schedule: "monthly",
+        scheduledDay: 15, // 15th of month
+        scheduledTime: "10:00",
+        timezone: "America/Los_Angeles",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.schedule).toBe("monthly");
+    expect(report?.scheduledDay).toBe(15);
+    expect(report?.scheduledTime).toBe("10:00");
+    expect(report?.timezone).toBe("America/Los_Angeles");
+  });
+
+  test("should create quarterly scheduled report", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-quarterly-schedule",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Quarterly Schedule Report",
+        reportType: "compliance_audit",
+        schedule: "quarterly",
+        scheduledDay: 1, // First day of quarter
+        scheduledTime: "11:00",
+        timezone: "Europe/London",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.schedule).toBe("quarterly");
+    expect(report?.scheduledDay).toBe(1);
+    expect(report?.timezone).toBe("Europe/London");
+  });
+
+  test("should create on-demand report without next run time", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-ondemand-schedule",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "On-Demand Report",
+        reportType: "custom",
+        schedule: "on_demand",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.schedule).toBe("on_demand");
+    expect(report?.nextRunAt).toBeUndefined();
+  });
+
+  test("should handle different timezones", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-timezones",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const timezones = [
+      "America/New_York",
+      "America/Los_Angeles",
+      "Europe/London",
+      "Asia/Tokyo",
+      "UTC",
+    ];
+
+    for (const timezone of timezones) {
+      const reportId = await t.run(async (ctx) => {
+        return await ctx.db.insert("scheduledReports", {
+          organizationId: orgId,
+          name: `Report ${timezone}`,
+          reportType: "operational_kpis",
+          schedule: "daily",
+          scheduledTime: "09:00",
+          timezone: timezone,
+          isActive: true,
+          createdBy: userId,
+          createdAt: Date.now(),
+        });
+      });
+
+      const report = await t.run(async (ctx) => {
+        return await ctx.db.get(reportId);
+      });
+
+      expect(report?.timezone).toBe(timezone);
+    }
+  });
+});
+
+describe("report date ranges", () => {
+  test("should create report with last_7_days date range", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-7days",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Last 7 Days Report",
+        reportType: "accession_activity",
+        reportConfig: {
+          dateRange: "last_7_days",
+        },
+        schedule: "weekly",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.reportConfig?.dateRange).toBe("last_7_days");
+  });
+
+  test("should create report with last_30_days date range", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-30days",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Last 30 Days Report",
+        reportType: "collection_health",
+        reportConfig: {
+          dateRange: "last_30_days",
+        },
+        schedule: "monthly",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.reportConfig?.dateRange).toBe("last_30_days");
+  });
+
+  test("should create report with last_90_days date range", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-90days",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Last 90 Days Report",
+        reportType: "loan_performance",
+        reportConfig: {
+          dateRange: "last_90_days",
+        },
+        schedule: "quarterly",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.reportConfig?.dateRange).toBe("last_90_days");
+  });
+
+  test("should create report with last_year date range", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-lastyear",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Last Year Report",
+        reportType: "conservation_status",
+        reportConfig: {
+          dateRange: "last_year",
+        },
+        schedule: "monthly",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.reportConfig?.dateRange).toBe("last_year");
+  });
+
+  test("should create report with year_to_date date range", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-ytd",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Year to Date Report",
+        reportType: "operational_kpis",
+        reportConfig: {
+          dateRange: "year_to_date",
+        },
+        schedule: "weekly",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.reportConfig?.dateRange).toBe("year_to_date");
+  });
+
+  test("should create report with custom date range", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-custom-dates",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const startDate = Date.now() - 60 * 24 * 60 * 60 * 1000; // 60 days ago
+    const endDate = Date.now(); // Now
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Custom Date Range Report",
+        reportType: "insurance_coverage",
+        reportConfig: {
+          dateRange: "custom",
+          customStartDate: startDate,
+          customEndDate: endDate,
+        },
+        schedule: "on_demand",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.reportConfig?.dateRange).toBe("custom");
+    expect(report?.reportConfig?.customStartDate).toBe(startDate);
+    expect(report?.reportConfig?.customEndDate).toBe(endDate);
+  });
+
+  test("should create report with comparison period - previous_period", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-comparison-previous",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Comparison Report - Previous Period",
+        reportType: "collection_health",
+        reportConfig: {
+          dateRange: "last_30_days",
+          includeComparison: true,
+          comparisonPeriod: "previous_period",
+        },
+        schedule: "monthly",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.reportConfig?.includeComparison).toBe(true);
+    expect(report?.reportConfig?.comparisonPeriod).toBe("previous_period");
+  });
+
+  test("should create report with comparison period - same_period_last_year", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-comparison-lastyear",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Comparison Report - Last Year",
+        reportType: "operational_kpis",
+        reportConfig: {
+          dateRange: "last_90_days",
+          includeComparison: true,
+          comparisonPeriod: "same_period_last_year",
+        },
+        schedule: "quarterly",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.reportConfig?.includeComparison).toBe(true);
+    expect(report?.reportConfig?.comparisonPeriod).toBe("same_period_last_year");
+  });
+
+  test("should update report date range configuration", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-update-daterange",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Date Range Update Test",
+        reportType: "loan_performance",
+        reportConfig: {
+          dateRange: "last_7_days",
+        },
+        schedule: "weekly",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Update the date range
+    await t.run(async (ctx) => {
+      await ctx.db.patch(reportId, {
+        reportConfig: {
+          dateRange: "last_90_days",
+          includeComparison: true,
+          comparisonPeriod: "previous_period",
+        },
+        updatedAt: Date.now(),
+      });
+    });
+
+    const updatedReport = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(updatedReport?.reportConfig?.dateRange).toBe("last_90_days");
+    expect(updatedReport?.reportConfig?.includeComparison).toBe(true);
+    expect(updatedReport?.reportConfig?.comparisonPeriod).toBe("previous_period");
+  });
+});
