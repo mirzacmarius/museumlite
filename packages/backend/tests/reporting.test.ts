@@ -1249,3 +1249,868 @@ describe("report date ranges", () => {
     expect(updatedReport?.reportConfig?.comparisonPeriod).toBe("previous_period");
   });
 });
+
+describe("report filters", () => {
+  test("should create report with location filters", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-location-filters",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    // Create test locations
+    const location1 = await t.run(async (ctx) => {
+      return await ctx.db.insert("locations", {
+        organizationId: orgId,
+        name: "Gallery 1",
+        locationType: "gallery",
+      });
+    });
+
+    const location2 = await t.run(async (ctx) => {
+      return await ctx.db.insert("locations", {
+        organizationId: orgId,
+        name: "Storage Room A",
+        locationType: "storage",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Location Filter Report",
+        reportType: "location_utilization",
+        reportConfig: {
+          dateRange: "last_30_days",
+          filters: {
+            locationIds: [location1, location2],
+          },
+        },
+        schedule: "monthly",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.reportConfig?.filters).toBeDefined();
+    expect(report?.reportConfig?.filters?.locationIds).toHaveLength(2);
+    expect(report?.reportConfig?.filters?.locationIds).toContain(location1);
+    expect(report?.reportConfig?.filters?.locationIds).toContain(location2);
+  });
+
+  test("should create report with collection group filters", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-collection-filters",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    // Create test collection groups
+    const group1 = await t.run(async (ctx) => {
+      return await ctx.db.insert("collectionGroups", {
+        organizationId: orgId,
+        name: "Impressionist Paintings",
+        description: "19th century impressionist works",
+      });
+    });
+
+    const group2 = await t.run(async (ctx) => {
+      return await ctx.db.insert("collectionGroups", {
+        organizationId: orgId,
+        name: "Modern Sculpture",
+        description: "20th century sculptures",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Collection Group Filter Report",
+        reportType: "collection_health",
+        reportConfig: {
+          dateRange: "last_90_days",
+          filters: {
+            collectionGroupIds: [group1, group2],
+          },
+        },
+        schedule: "quarterly",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.reportConfig?.filters).toBeDefined();
+    expect(report?.reportConfig?.filters?.collectionGroupIds).toHaveLength(2);
+    expect(report?.reportConfig?.filters?.collectionGroupIds).toContain(group1);
+    expect(report?.reportConfig?.filters?.collectionGroupIds).toContain(group2);
+  });
+
+  test("should create report with object type filters", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-objecttype-filters",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Object Type Filter Report",
+        reportType: "conservation_status",
+        reportConfig: {
+          dateRange: "year_to_date",
+          filters: {
+            objectTypes: ["painting", "sculpture", "textile"],
+          },
+        },
+        schedule: "monthly",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.reportConfig?.filters).toBeDefined();
+    expect(report?.reportConfig?.filters?.objectTypes).toHaveLength(3);
+    expect(report?.reportConfig?.filters?.objectTypes).toEqual([
+      "painting",
+      "sculpture",
+      "textile",
+    ]);
+  });
+
+  test("should create report with multiple filter types combined", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-combined-filters",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const locationId = await t.run(async (ctx) => {
+      return await ctx.db.insert("locations", {
+        organizationId: orgId,
+        name: "Main Gallery",
+        locationType: "gallery",
+      });
+    });
+
+    const groupId = await t.run(async (ctx) => {
+      return await ctx.db.insert("collectionGroups", {
+        organizationId: orgId,
+        name: "Renaissance Art",
+        description: "Renaissance period artworks",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Combined Filters Report",
+        reportType: "compliance_audit",
+        reportConfig: {
+          dateRange: "last_year",
+          filters: {
+            locationIds: [locationId],
+            collectionGroupIds: [groupId],
+            objectTypes: ["painting", "drawing"],
+          },
+        },
+        schedule: "quarterly",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.reportConfig?.filters).toBeDefined();
+    expect(report?.reportConfig?.filters?.locationIds).toHaveLength(1);
+    expect(report?.reportConfig?.filters?.locationIds).toContain(locationId);
+    expect(report?.reportConfig?.filters?.collectionGroupIds).toHaveLength(1);
+    expect(report?.reportConfig?.filters?.collectionGroupIds).toContain(groupId);
+    expect(report?.reportConfig?.filters?.objectTypes).toHaveLength(2);
+    expect(report?.reportConfig?.filters?.objectTypes).toEqual([
+      "painting",
+      "drawing",
+    ]);
+  });
+
+  test("should update report filters", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-update-filters",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Filter Update Test",
+        reportType: "loan_performance",
+        reportConfig: {
+          dateRange: "last_30_days",
+          filters: {
+            objectTypes: ["painting"],
+          },
+        },
+        schedule: "monthly",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Verify initial filters
+    const reportBefore = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(reportBefore?.reportConfig?.filters?.objectTypes).toEqual([
+      "painting",
+    ]);
+
+    // Update filters
+    await t.run(async (ctx) => {
+      await ctx.db.patch(reportId, {
+        reportConfig: {
+          dateRange: "last_30_days",
+          filters: {
+            objectTypes: ["painting", "sculpture", "photograph"],
+          },
+        },
+        updatedAt: Date.now(),
+      });
+    });
+
+    const reportAfter = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(reportAfter?.reportConfig?.filters?.objectTypes).toHaveLength(3);
+    expect(reportAfter?.reportConfig?.filters?.objectTypes).toEqual([
+      "painting",
+      "sculpture",
+      "photograph",
+    ]);
+  });
+
+  test("should remove filters from report", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-remove-filters",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const locationId = await t.run(async (ctx) => {
+      return await ctx.db.insert("locations", {
+        organizationId: orgId,
+        name: "Test Gallery",
+        locationType: "gallery",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Filter Removal Test",
+        reportType: "location_utilization",
+        reportConfig: {
+          dateRange: "last_30_days",
+          filters: {
+            locationIds: [locationId],
+            objectTypes: ["painting"],
+          },
+        },
+        schedule: "weekly",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Remove filters by updating config without filters
+    await t.run(async (ctx) => {
+      await ctx.db.patch(reportId, {
+        reportConfig: {
+          dateRange: "last_30_days",
+        },
+        updatedAt: Date.now(),
+      });
+    });
+
+    const reportAfter = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(reportAfter?.reportConfig?.filters).toBeUndefined();
+  });
+
+  test("should create report with empty filters object", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-empty-filters",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Empty Filters Report",
+        reportType: "operational_kpis",
+        reportConfig: {
+          dateRange: "last_7_days",
+          filters: {},
+        },
+        schedule: "daily",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.reportConfig?.filters).toBeDefined();
+    expect(report?.reportConfig?.filters?.locationIds).toBeUndefined();
+    expect(report?.reportConfig?.filters?.collectionGroupIds).toBeUndefined();
+    expect(report?.reportConfig?.filters?.objectTypes).toBeUndefined();
+  });
+});
+
+describe("email recipient management", () => {
+  test("should create report with single email recipient", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-single-recipient",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Single Recipient Report",
+        reportType: "collection_health",
+        schedule: "weekly",
+        emailRecipients: ["curator@museum.com"],
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.emailRecipients).toBeDefined();
+    expect(report?.emailRecipients).toHaveLength(1);
+    expect(report?.emailRecipients).toEqual(["curator@museum.com"]);
+  });
+
+  test("should create report with multiple email recipients", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-multiple-recipients",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const recipients = [
+      "curator@museum.com",
+      "director@museum.com",
+      "registrar@museum.com",
+      "conservation@museum.com",
+    ];
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Multiple Recipients Report",
+        reportType: "compliance_audit",
+        schedule: "monthly",
+        emailRecipients: recipients,
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.emailRecipients).toBeDefined();
+    expect(report?.emailRecipients).toHaveLength(4);
+    expect(report?.emailRecipients).toEqual(recipients);
+  });
+
+  test("should create report without email recipients", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-no-recipients",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "No Recipients Report",
+        reportType: "operational_kpis",
+        schedule: "daily",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.emailRecipients).toBeUndefined();
+  });
+
+  test("should add email recipients to existing report", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-add-recipients",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Add Recipients Test",
+        reportType: "loan_performance",
+        schedule: "weekly",
+        emailRecipients: ["curator@museum.com"],
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Verify initial recipients
+    const reportBefore = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(reportBefore?.emailRecipients).toEqual(["curator@museum.com"]);
+
+    // Add more recipients
+    await t.run(async (ctx) => {
+      await ctx.db.patch(reportId, {
+        emailRecipients: [
+          "curator@museum.com",
+          "director@museum.com",
+          "admin@museum.com",
+        ],
+        updatedAt: Date.now(),
+      });
+    });
+
+    const reportAfter = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(reportAfter?.emailRecipients).toHaveLength(3);
+    expect(reportAfter?.emailRecipients).toContain("curator@museum.com");
+    expect(reportAfter?.emailRecipients).toContain("director@museum.com");
+    expect(reportAfter?.emailRecipients).toContain("admin@museum.com");
+  });
+
+  test("should remove email recipient from report", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-remove-recipient",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Remove Recipient Test",
+        reportType: "conservation_status",
+        schedule: "monthly",
+        emailRecipients: [
+          "curator@museum.com",
+          "director@museum.com",
+          "temp@museum.com",
+        ],
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Remove one recipient
+    await t.run(async (ctx) => {
+      await ctx.db.patch(reportId, {
+        emailRecipients: ["curator@museum.com", "director@museum.com"],
+        updatedAt: Date.now(),
+      });
+    });
+
+    const reportAfter = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(reportAfter?.emailRecipients).toHaveLength(2);
+    expect(reportAfter?.emailRecipients).not.toContain("temp@museum.com");
+    expect(reportAfter?.emailRecipients).toContain("curator@museum.com");
+    expect(reportAfter?.emailRecipients).toContain("director@museum.com");
+  });
+
+  test("should replace all email recipients", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-replace-recipients",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Replace Recipients Test",
+        reportType: "insurance_coverage",
+        schedule: "quarterly",
+        emailRecipients: ["old1@museum.com", "old2@museum.com"],
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Replace all recipients
+    await t.run(async (ctx) => {
+      await ctx.db.patch(reportId, {
+        emailRecipients: ["new1@museum.com", "new2@museum.com", "new3@museum.com"],
+        updatedAt: Date.now(),
+      });
+    });
+
+    const reportAfter = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(reportAfter?.emailRecipients).toHaveLength(3);
+    expect(reportAfter?.emailRecipients).not.toContain("old1@museum.com");
+    expect(reportAfter?.emailRecipients).not.toContain("old2@museum.com");
+    expect(reportAfter?.emailRecipients).toContain("new1@museum.com");
+    expect(reportAfter?.emailRecipients).toContain("new2@museum.com");
+    expect(reportAfter?.emailRecipients).toContain("new3@museum.com");
+  });
+
+  test("should clear all email recipients", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-clear-recipients",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Clear Recipients Test",
+        reportType: "accession_activity",
+        schedule: "weekly",
+        emailRecipients: ["curator@museum.com", "director@museum.com"],
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Clear recipients by setting empty array
+    await t.run(async (ctx) => {
+      await ctx.db.patch(reportId, {
+        emailRecipients: [],
+        updatedAt: Date.now(),
+      });
+    });
+
+    const reportAfter = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(reportAfter?.emailRecipients).toBeDefined();
+    expect(reportAfter?.emailRecipients).toHaveLength(0);
+  });
+
+  test("should handle email recipients with custom subject", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-email-subject",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Custom Subject Report",
+        reportType: "collection_health",
+        schedule: "monthly",
+        emailRecipients: ["curator@museum.com"],
+        emailSubject: "Monthly Collection Health Report - {{date}}",
+        includeAttachment: true,
+        attachmentFormat: "pdf",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const report = await t.run(async (ctx) => {
+      return await ctx.db.get(reportId);
+    });
+
+    expect(report?.emailRecipients).toEqual(["curator@museum.com"]);
+    expect(report?.emailSubject).toBe("Monthly Collection Health Report - {{date}}");
+    expect(report?.includeAttachment).toBe(true);
+    expect(report?.attachmentFormat).toBe("pdf");
+  });
+
+  test("should handle email recipients with different attachment formats", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-attachment-formats",
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    });
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    });
+
+    const formats = ["pdf", "csv", "excel"] as const;
+
+    for (const format of formats) {
+      const reportId = await t.run(async (ctx) => {
+        return await ctx.db.insert("scheduledReports", {
+          organizationId: orgId,
+          name: `${format.toUpperCase()} Format Report`,
+          reportType: "operational_kpis",
+          schedule: "weekly",
+          emailRecipients: ["data@museum.com"],
+          includeAttachment: true,
+          attachmentFormat: format,
+          isActive: true,
+          createdBy: userId,
+          createdAt: Date.now(),
+        });
+      });
+
+      const report = await t.run(async (ctx) => {
+        return await ctx.db.get(reportId);
+      });
+
+      expect(report?.attachmentFormat).toBe(format);
+      expect(report?.includeAttachment).toBe(true);
+    }
+  });
+});
