@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
-import { api } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 import { modules } from "./testSetup";
@@ -346,5 +346,278 @@ describe("Workflow Config CRUD", () => {
         id: configId,
       }),
     ).rejects.toThrow("Not authenticated");
+  });
+});
+
+// ============================================
+// State Transition Validation Tests
+// ============================================
+
+describe("State Transition Validation", () => {
+  test("allows valid sequential transition (step 1 → 2)", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, roleId } = await createOrgWithRole(t, [
+      "settings.read",
+      "settings.update",
+    ]);
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "accession",
+        steps: [
+          { stepNumber: 1, roleId, name: "Step 1" },
+          { stepNumber: 2, roleId, name: "Step 2" },
+        ],
+        canInitiateRoles: [roleId],
+      });
+    });
+
+    // #when
+    const result = await t.run(async (ctx) => {
+      return await ctx.runQuery(internal.workflows.validateTransition, {
+        organizationId,
+        workflowType: "accession",
+        fromStep: 1,
+        toStep: 2,
+      });
+    });
+
+    // #then
+    expect(result.valid).toBe(true);
+  });
+
+  test("rejects invalid skip transition (step 1 → 3) when not allowed", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, roleId } = await createOrgWithRole(t, [
+      "settings.read",
+      "settings.update",
+    ]);
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "accession",
+        steps: [
+          { stepNumber: 1, roleId, name: "Step 1" },
+          { stepNumber: 2, roleId, name: "Step 2" },
+          { stepNumber: 3, roleId, name: "Step 3" },
+        ],
+        canInitiateRoles: [roleId],
+      });
+    });
+
+    // #when
+    const result = await t.run(async (ctx) => {
+      return await ctx.runQuery(internal.workflows.validateTransition, {
+        organizationId,
+        workflowType: "accession",
+        fromStep: 1,
+        toStep: 3,
+      });
+    });
+
+    // #then
+    expect(result.valid).toBe(false);
+    expect(result.reason).toContain("Only sequential transitions allowed");
+  });
+
+  test("allows transition when specified in allowedNextSteps", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, roleId } = await createOrgWithRole(t, [
+      "settings.read",
+      "settings.update",
+    ]);
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "accession",
+        steps: [
+          { stepNumber: 1, roleId, name: "Step 1", allowedNextSteps: [2, 3] },
+          { stepNumber: 2, roleId, name: "Step 2" },
+          { stepNumber: 3, roleId, name: "Step 3" },
+        ],
+        canInitiateRoles: [roleId],
+      });
+    });
+
+    // #when
+    const result = await t.run(async (ctx) => {
+      return await ctx.runQuery(internal.workflows.validateTransition, {
+        organizationId,
+        workflowType: "accession",
+        fromStep: 1,
+        toStep: 3,
+      });
+    });
+
+    // #then
+    expect(result.valid).toBe(true);
+  });
+
+  test("rejects transition not in allowedNextSteps", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, roleId } = await createOrgWithRole(t, [
+      "settings.read",
+      "settings.update",
+    ]);
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "accession",
+        steps: [
+          { stepNumber: 1, roleId, name: "Step 1", allowedNextSteps: [2] },
+          { stepNumber: 2, roleId, name: "Step 2" },
+          { stepNumber: 3, roleId, name: "Step 3" },
+        ],
+        canInitiateRoles: [roleId],
+      });
+    });
+
+    // #when
+    const result = await t.run(async (ctx) => {
+      return await ctx.runQuery(internal.workflows.validateTransition, {
+        organizationId,
+        workflowType: "accession",
+        fromStep: 1,
+        toStep: 3,
+      });
+    });
+
+    // #then
+    expect(result.valid).toBe(false);
+    expect(result.reason).toContain("not allowed");
+  });
+
+  test("allows transition to -1 (complete) from any step", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, roleId } = await createOrgWithRole(t, [
+      "settings.read",
+      "settings.update",
+    ]);
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "accession",
+        steps: [
+          { stepNumber: 1, roleId, name: "Step 1" },
+          { stepNumber: 2, roleId, name: "Step 2" },
+        ],
+        canInitiateRoles: [roleId],
+      });
+    });
+
+    // #when
+    const result = await t.run(async (ctx) => {
+      return await ctx.runQuery(internal.workflows.validateTransition, {
+        organizationId,
+        workflowType: "accession",
+        fromStep: 1,
+        toStep: -1,
+      });
+    });
+
+    // #then
+    expect(result.valid).toBe(true);
+  });
+
+  test("allows all transitions when no workflow config exists", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId } = await createOrgWithRole(t, [
+      "settings.read",
+      "settings.update",
+    ]);
+
+    // #when
+    const result = await t.run(async (ctx) => {
+      return await ctx.runQuery(internal.workflows.validateTransition, {
+        organizationId,
+        workflowType: "accession",
+        fromStep: 1,
+        toStep: 5,
+      });
+    });
+
+    // #then
+    expect(result.valid).toBe(true);
+    expect(result.reason).toContain("No workflow config");
+  });
+
+  test("rejects transition from non-existent step", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, roleId } = await createOrgWithRole(t, [
+      "settings.read",
+      "settings.update",
+    ]);
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "accession",
+        steps: [
+          { stepNumber: 1, roleId, name: "Step 1" },
+          { stepNumber: 2, roleId, name: "Step 2" },
+        ],
+        canInitiateRoles: [roleId],
+      });
+    });
+
+    // #when
+    const result = await t.run(async (ctx) => {
+      return await ctx.runQuery(internal.workflows.validateTransition, {
+        organizationId,
+        workflowType: "accession",
+        fromStep: 5,
+        toStep: 2,
+      });
+    });
+
+    // #then
+    expect(result.valid).toBe(false);
+    expect(result.reason).toContain("not found in workflow config");
+  });
+
+  test("allows transition from step 0 to step 1 (workflow initiation)", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, roleId } = await createOrgWithRole(t, [
+      "settings.read",
+      "settings.update",
+    ]);
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "accession",
+        steps: [
+          { stepNumber: 1, roleId, name: "Step 1" },
+          { stepNumber: 2, roleId, name: "Step 2" },
+        ],
+        canInitiateRoles: [roleId],
+      });
+    });
+
+    // #when
+    const result = await t.run(async (ctx) => {
+      return await ctx.runQuery(internal.workflows.validateTransition, {
+        organizationId,
+        workflowType: "accession",
+        fromStep: 0,
+        toStep: 1,
+      });
+    });
+
+    // #then
+    expect(result.valid).toBe(true);
   });
 });
