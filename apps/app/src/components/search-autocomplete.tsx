@@ -164,9 +164,9 @@ export function SearchAutocomplete({
               <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
                 Recent Searches
               </div>
-              {searchHistory?.map((history, index) => (
+              {searchHistory?.map((history) => (
                 <button
-                  key={`history-${history._id}-${index}`}
+                  key={history._id}
                   type="button"
                   onClick={() => handleSelectSuggestion(history.query)}
                   className={cn(
@@ -196,9 +196,9 @@ export function SearchAutocomplete({
                   Suggestions
                 </div>
               )}
-              {suggestions?.map((suggestion, index) => (
+              {Array.from(new Set(suggestions ?? [])).map((suggestion) => (
                 <button
-                  key={`suggestion-${suggestion}-${index}`}
+                  key={suggestion}
                   type="button"
                   onClick={() => handleSelectSuggestion(suggestion)}
                   className={cn(

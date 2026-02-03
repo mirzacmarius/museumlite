@@ -63,9 +63,21 @@ const LazyPieChart = dynamic(
 
 export function LoanStatusChart({ data }: LoanStatusChartProps) {
   const chartData = [
-    { name: "Pending", value: data.pending, color: CHART_COLOR_ARRAY[0] },
-    { name: "Active", value: data.active, color: CHART_COLOR_ARRAY[1] },
-    { name: "Returned", value: data.returned, color: CHART_COLOR_ARRAY[2] },
+    {
+      name: "Pending",
+      value: data.pending,
+      color: CHART_COLOR_ARRAY[0] ?? "rgb(129, 140, 248)",
+    },
+    {
+      name: "Active",
+      value: data.active,
+      color: CHART_COLOR_ARRAY[1] ?? "rgb(52, 211, 153)",
+    },
+    {
+      name: "Returned",
+      value: data.returned,
+      color: CHART_COLOR_ARRAY[2] ?? "rgb(251, 191, 36)",
+    },
   ].filter((d) => d.value > 0);
 
   const total = chartData.reduce((sum, d) => sum + d.value, 0);

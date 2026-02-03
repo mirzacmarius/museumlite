@@ -58,6 +58,7 @@ export default function EditCollectionPage() {
     api.roles.listRoles,
     currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
   );
+  type Role = NonNullable<typeof roles>[number];
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -280,7 +281,7 @@ export default function EditCollectionPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">{t("form.anyRole")}</SelectItem>
-                    {roles?.map((role) => (
+                    {roles?.map((role: Role) => (
                       <SelectItem key={role._id} value={role._id}>
                         {role.name}
                       </SelectItem>

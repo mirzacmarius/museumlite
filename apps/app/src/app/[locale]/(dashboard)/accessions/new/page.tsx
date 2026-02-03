@@ -76,7 +76,9 @@ export default function NewAccessionPage() {
             ),
           );
 
-          const uploadUrl = await generateUploadUrl({});
+          const uploadUrl = await generateUploadUrl({
+            mimeType: upload.file.type || "application/octet-stream",
+          });
 
           const response = await fetch(uploadUrl, {
             method: "POST",

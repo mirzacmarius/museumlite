@@ -69,17 +69,41 @@ export function AdvancedSearchDialog({
   initialFilterGroups = [],
   initialGroupOperator = "AND",
 }: AdvancedSearchDialogProps) {
-  const [filterGroups, setFilterGroups] = useState<FilterGroup[]>(
-    initialFilterGroups.length > 0
-      ? initialFilterGroups
-      : [{ filters: [], operator: "AND" }],
+  type FilterConditionWithId = FilterCondition & { id: string };
+  type FilterGroupWithId = Omit<FilterGroup, "filters"> & {
+    id: string;
+    filters: FilterConditionWithId[];
+  };
+
+  const createId = () => {
+    const uuid = globalThis.crypto?.randomUUID?.();
+    if (uuid) return uuid;
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  };
+
+  const toStateGroups = (groups: FilterGroup[]): FilterGroupWithId[] => {
+    if (groups.length === 0) {
+      return [{ id: createId(), filters: [], operator: "AND" }];
+    }
+    return groups.map((g) => ({
+      id: createId(),
+      operator: g.operator,
+      filters: g.filters.map((f) => ({ ...f, id: createId() })),
+    }));
+  };
+
+  const [filterGroups, setFilterGroups] = useState<FilterGroupWithId[]>(() =>
+    toStateGroups(initialFilterGroups),
   );
   const [groupOperator, setGroupOperator] = useState<"AND" | "OR">(
     initialGroupOperator,
   );
 
   const addFilterGroup = () => {
-    setFilterGroups([...filterGroups, { filters: [], operator: "AND" }]);
+    setFilterGroups([
+      ...filterGroups,
+      { id: createId(), filters: [], operator: "AND" },
+    ]);
   };
 
   const removeFilterGroup = (groupIndex: number) => {
@@ -91,6 +115,7 @@ export function AdvancedSearchDialog({
   const addFilter = (groupIndex: number) => {
     const newFilterGroups = [...filterGroups];
     newFilterGroups[groupIndex].filters.push({
+      id: createId(),
       field: "title",
       operator: "contains",
       value: "",
@@ -112,6 +137,8 @@ export function AdvancedSearchDialog({
     updates: Partial<FilterCondition>,
   ) => {
     const newFilterGroups = [...filterGroups];
+    const existingFilter = newFilterGroups[groupIndex]?.filters[filterIndex];
+    if (!existingFilter) return;
     newFilterGroups[groupIndex].filters[filterIndex] = {
       ...newFilterGroups[groupIndex].filters[filterIndex],
       ...updates,
@@ -129,19 +156,25 @@ export function AdvancedSearchDialog({
     // Filter out empty filter groups
     const validFilterGroups = filterGroups
       .map((group) => ({
-        ...group,
+        operator: group.operator,
         filters: group.filters.filter(
           (f) => f.value !== "" && f.value !== null,
         ),
       }))
       .filter((group) => group.filters.length > 0);
 
-    onApply(validFilterGroups, groupOperator);
+    onApply(
+      validFilterGroups.map((g) => ({
+        operator: g.operator,
+        filters: g.filters.map(({ id: _id, ...filter }) => filter),
+      })),
+      groupOperator,
+    );
     onOpenChange(false);
   };
 
   const handleClear = () => {
-    setFilterGroups([{ filters: [], operator: "AND" }]);
+    setFilterGroups([{ id: createId(), filters: [], operator: "AND" }]);
     setGroupOperator("AND");
   };
 
@@ -192,7 +225,7 @@ export function AdvancedSearchDialog({
           <div className="space-y-4">
             {filterGroups.map((group, groupIndex) => (
               <div
-                key={groupIndex}
+                key={group.id}
                 className="border rounded-lg p-4 space-y-3 bg-card"
               >
                 <div className="flex items-center justify-between">
@@ -241,7 +274,7 @@ export function AdvancedSearchDialog({
                 <div className="space-y-2">
                   {group.filters.map((filter, filterIndex) => (
                     <div
-                      key={filterIndex}
+                      key={filter.id}
                       className="flex items-end gap-2 p-2 bg-muted/30 rounded"
                     >
                       <div className="flex-1 space-y-1">

@@ -1,11 +1,8 @@
 "use client";
 
 import { useScopedI18n } from "@/locales/client";
-import {
-  LabelSize,
-  QRLabelGenerator,
-  type LabelData,
-} from "@/components/qr-label-generator";
+import { QRLabelGenerator } from "@/components/qr-label-generator";
+import type { LabelData, LabelSize } from "@/components/qr-label-generator";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,

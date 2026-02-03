@@ -19,11 +19,8 @@ import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
 import { useQuery } from "convex/react";
 import { Printer } from "lucide-react";
 import { useRef, useState } from "react";
-import {
-  LabelSize,
-  QRLabelSheet,
-  type LabelData,
-} from "@/components/qr-label-generator";
+import { QRLabelSheet } from "@/components/qr-label-generator";
+import type { LabelData, LabelSize } from "@/components/qr-label-generator";
 
 interface BulkPrintLabelsDialogProps {
   open: boolean;

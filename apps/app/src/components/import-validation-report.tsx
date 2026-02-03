@@ -37,8 +37,11 @@ export function ImportValidationReport({
             </span>
           </div>
           <ul className="mt-2 space-y-1 text-sm text-destructive">
-            {errorsByType.error.slice(0, maxDisplay).map((error, index) => (
-              <li key={`error-${index}`} className="flex items-start gap-2">
+            {errorsByType.error.slice(0, maxDisplay).map((error) => (
+              <li
+                key={`${error.severity}-${error.rowNumber ?? "na"}-${error.message}`}
+                className="flex items-start gap-2"
+              >
                 {error.rowNumber && (
                   <span className="font-mono text-xs opacity-70">
                     Row {error.rowNumber}:
@@ -66,8 +69,11 @@ export function ImportValidationReport({
             </span>
           </div>
           <ul className="mt-2 space-y-1 text-sm text-amber-600">
-            {errorsByType.warning.slice(0, maxDisplay).map((error, index) => (
-              <li key={`warning-${index}`} className="flex items-start gap-2">
+            {errorsByType.warning.slice(0, maxDisplay).map((error) => (
+              <li
+                key={`${error.severity}-${error.rowNumber ?? "na"}-${error.message}`}
+                className="flex items-start gap-2"
+              >
                 {error.rowNumber && (
                   <span className="font-mono text-xs opacity-70">
                     Row {error.rowNumber}:
@@ -97,8 +103,11 @@ export function ImportValidationReport({
             </span>
           </div>
           <ul className="mt-2 space-y-1 text-sm text-blue-600">
-            {errorsByType.info.slice(0, maxDisplay).map((error, index) => (
-              <li key={`info-${index}`} className="flex items-start gap-2">
+            {errorsByType.info.slice(0, maxDisplay).map((error) => (
+              <li
+                key={`${error.severity}-${error.rowNumber ?? "na"}-${error.message}`}
+                className="flex items-start gap-2"
+              >
                 {error.rowNumber && (
                   <span className="font-mono text-xs opacity-70">
                     Row {error.rowNumber}:

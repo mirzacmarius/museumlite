@@ -12,6 +12,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { Html5Qrcode } from "html5-qrcode";
 
 interface BarcodeScannerProps {
   onScanSuccess: (decodedText: string, format: string) => void;
@@ -45,7 +46,7 @@ export function BarcodeScanner({
   const [flashEnabled, setFlashEnabled] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
   const scannerRef = useRef<HTMLDivElement>(null);
-  const html5QrCodeRef = useRef<any>(null);
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const isCleaningUpRef = useRef(false);
 
   const stopScanner = useCallback(async () => {
@@ -69,14 +70,20 @@ export function BarcodeScanner({
 
     try {
       const stream = html5QrCodeRef.current.getRunningTrackCameraCapabilities();
-      const track = stream?.getVideoTracks()[0];
+      const track = stream.getVideoTracks()[0];
+      if (!track) {
+        setErrorMessage("Flash not supported on this device");
+        return;
+      }
 
       if (track?.getCapabilities) {
         const capabilities = track.getCapabilities();
         if (capabilities.torch) {
-          await track.applyConstraints({
-            advanced: [{ torch: !flashEnabled } as any],
-          });
+          type TorchConstraintSet = MediaTrackConstraintSet & {
+            torch?: boolean;
+          };
+          const constraintSet: TorchConstraintSet = { torch: !flashEnabled };
+          await track.applyConstraints({ advanced: [constraintSet] });
           setFlashEnabled(!flashEnabled);
         }
       }

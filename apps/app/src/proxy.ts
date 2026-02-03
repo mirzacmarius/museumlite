@@ -18,10 +18,12 @@ export default convexAuthNextjsMiddleware(
   async (request, { convexAuth }) => {
     const isAuthenticated = await convexAuth.isAuthenticated();
     const isSignIn = isSignInPage(request);
+    const isInvitePage = request.nextUrl.pathname.startsWith("/invite/");
+    const isPublic = isSignIn || isInvitePage;
     if (isSignIn && isAuthenticated) {
       return nextjsMiddlewareRedirect(request, "/");
     }
-    if (!isSignIn && !isAuthenticated) {
+    if (!isPublic && !isAuthenticated) {
       return nextjsMiddlewareRedirect(request, "/login");
     }
 

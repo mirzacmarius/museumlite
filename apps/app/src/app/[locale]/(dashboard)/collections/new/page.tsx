@@ -46,6 +46,7 @@ export default function NewCollectionPage() {
     api.roles.listRoles,
     currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
   );
+  type Role = NonNullable<typeof roles>[number];
 
   if (!currentOrganizationId) {
     return (
@@ -179,7 +180,7 @@ export default function NewCollectionPage() {
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {roles?.map((role) => (
+                  {roles?.map((role: Role) => (
                     <SelectItem key={role._id} value={role._id}>
                       {role.name}
                     </SelectItem>

@@ -61,8 +61,10 @@ export default function NewAccountPage() {
 
   const permissions = useQuery(api.roles.listPermissions, {});
 
+  type Role = NonNullable<typeof roles>[number];
+
   // Get roles that have loans permissions
-  const rolesWithLoansPermissions = roles?.filter((role) => {
+  const rolesWithLoansPermissions = roles?.filter((role: Role) => {
     return role.permissions.some((perm) => perm.category === "loans");
   });
 

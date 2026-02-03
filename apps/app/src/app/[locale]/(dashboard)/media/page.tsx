@@ -390,6 +390,42 @@ function MediaDetailModal({
 
   const item = media?.page.find((m) => m._id === mediaId);
 
+  const isRecord = (value: unknown): value is Record<string, unknown> => {
+    return typeof value === "object" && value !== null;
+  };
+
+  const isCropMetadata = (
+    value: unknown,
+  ): value is { crop: { width: number; height: number } } => {
+    if (!isRecord(value)) return false;
+    const crop = value.crop;
+    if (!isRecord(crop)) return false;
+    return typeof crop.width === "number" && typeof crop.height === "number";
+  };
+
+  const isRotateMetadata = (value: unknown): value is { rotation: number } => {
+    if (!isRecord(value)) return false;
+    return typeof value.rotation === "number";
+  };
+
+  const isAdjustMetadata = (
+    value: unknown,
+  ): value is { brightness?: number; contrast?: number } => {
+    if (!isRecord(value)) return false;
+    const brightnessOk =
+      value.brightness === undefined || typeof value.brightness === "number";
+    const contrastOk =
+      value.contrast === undefined || typeof value.contrast === "number";
+    return brightnessOk && contrastOk;
+  };
+
+  const isWatermarkMetadata = (
+    value: unknown,
+  ): value is { watermarkText: string } => {
+    if (!isRecord(value)) return false;
+    return typeof value.watermarkText === "string";
+  };
+
   useEffect(() => {
     if (item) {
       setCaption(item.caption || "");
@@ -645,15 +681,7 @@ function MediaDetailModal({
 
               <ScrollArea className="h-48">
                 <div className="space-y-2 pr-4">
-                  {versions.map(
-                    (version: {
-                      _id: Id<"mediaVersions">;
-                      versionNumber: number;
-                      editType: string;
-                      editMetadata?: unknown;
-                      createdAt: number;
-                      url: string | null;
-                    }) => {
+                  {versions.map((version) => {
                       const isCurrentVersion =
                         item?.currentVersionId === version._id;
                       return (
@@ -712,18 +740,20 @@ function MediaDetailModal({
                               {version.editMetadata && (
                                 <span className="text-xs text-zinc-500">
                                   {version.editType === "crop" &&
-                                    version.editMetadata.crop &&
+                                    isCropMetadata(version.editMetadata) &&
                                     `Cropped to ${Math.round(version.editMetadata.crop.width)}×${Math.round(version.editMetadata.crop.height)}`}
                                   {version.editType === "rotate" &&
-                                    version.editMetadata.rotation !==
-                                      undefined &&
+                                    isRotateMetadata(version.editMetadata) &&
                                     `Rotated ${version.editMetadata.rotation}°`}
                                   {version.editType === "adjust" &&
-                                    (version.editMetadata.brightness ||
-                                      version.editMetadata.contrast) &&
-                                    `B: ${version.editMetadata.brightness || 100}%, C: ${version.editMetadata.contrast || 100}%`}
+                                    isAdjustMetadata(version.editMetadata) &&
+                                    (version.editMetadata.brightness !==
+                                      undefined ||
+                                      version.editMetadata.contrast !==
+                                        undefined) &&
+                                    `B: ${version.editMetadata.brightness ?? 100}%, C: ${version.editMetadata.contrast ?? 100}%`}
                                   {version.editType === "watermark" &&
-                                    version.editMetadata.watermarkText &&
+                                    isWatermarkMetadata(version.editMetadata) &&
                                     `"${version.editMetadata.watermarkText}"`}
                                 </span>
                               )}
@@ -746,8 +776,7 @@ function MediaDetailModal({
                           </div>
                         </div>
                       );
-                    },
-                  )}
+                    })}
                 </div>
               </ScrollArea>
             </div>

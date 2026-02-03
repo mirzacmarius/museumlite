@@ -41,6 +41,10 @@ export default function EditAccountPage() {
   );
   const permissions = useQuery(api.roles.listPermissions, {});
 
+  type Role = NonNullable<typeof roles>[number];
+  type Permission = NonNullable<typeof permissions>[number];
+  type PermissionCategory = Permission["category"];
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -87,22 +91,25 @@ export default function EditAccountPage() {
   }, [account]);
 
   // Get roles that have loans permissions
-  const rolesWithLoansPermissions = roles?.filter((role) => {
+  const rolesWithLoansPermissions = roles?.filter((role: Role) => {
     // Check if role has any loans-related permissions
     return role.permissions.some((perm) => perm.category === "loans");
   });
 
   const groupedPermissions = permissions?.reduce(
-    (acc, perm) => {
+    (acc: Partial<Record<PermissionCategory, Permission[]>>, perm: Permission) => {
       const category = perm.category;
-      if (!acc[category]) {
-        acc[category] = [];
-      }
-      acc[category]!.push(perm);
+      const existing = acc[category] ?? [];
+      acc[category] = [...existing, perm];
       return acc;
     },
-    {} as Record<string, Array<(typeof permissions)[0]>>,
+    {},
   );
+  const groupedPermissionEntries = groupedPermissions
+    ? (Object.entries(groupedPermissions) as Array<
+        [PermissionCategory, Permission[]]
+      >)
+    : [];
 
   const toggleRole = (roleId: Id<"roles">) => {
     setFormData((prev) => ({
@@ -482,38 +489,35 @@ export default function EditAccountPage() {
               </div>
 
               {/* Permissions Details */}
-              {groupedPermissions &&
-                Object.keys(groupedPermissions).length > 0 && (
+              {groupedPermissionEntries.length > 0 && (
                   <div className="space-y-4">
                     <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                       <Shield className="h-4 w-4" />
                       Available Permissions
                     </h3>
                     <div className="space-y-4 rounded-lg border border-border p-4">
-                      {Object.entries(groupedPermissions).map(
-                        ([category, perms]) => (
-                          <div key={category} className="space-y-2">
-                            <h4 className="text-sm font-medium capitalize">
-                              {category}
-                            </h4>
-                            <div className="space-y-1 pl-4">
-                              {perms.map((perm) => (
-                                <div
-                                  key={perm._id}
-                                  className="text-xs text-muted-foreground"
-                                >
-                                  • {perm.name}
-                                  {perm.description && (
-                                    <span className="ml-2">
-                                      - {perm.description}
-                                    </span>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
+                      {groupedPermissionEntries.map(([category, perms]) => (
+                        <div key={category} className="space-y-2">
+                          <h4 className="text-sm font-medium capitalize">
+                            {category}
+                          </h4>
+                          <div className="space-y-1 pl-4">
+                            {perms.map((perm) => (
+                              <div
+                                key={perm._id}
+                                className="text-xs text-muted-foreground"
+                              >
+                                • {perm.name}
+                                {perm.description && (
+                                  <span className="ml-2">
+                                    - {perm.description}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
                           </div>
-                        ),
-                      )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}

@@ -222,7 +222,6 @@ export default function DashboardPage() {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      console.log("Settings clicked for:", group.name);
                     }}
                   >
                     <Settings className="h-3.5 w-3.5 text-muted-foreground" />

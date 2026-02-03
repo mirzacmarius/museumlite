@@ -53,6 +53,7 @@ export default function AccountDetailPage() {
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
+  type Role = NonNullable<typeof roles>[number];
 
   if (!currentOrganizationId) {
     return (
@@ -338,7 +339,7 @@ export default function AccountDetailPage() {
                   </h3>
                   <div className="space-y-2">
                     {account.roleIds.map((roleId) => {
-                      const role = roles.find((r) => r._id === roleId);
+                      const role = roles.find((r: Role) => r._id === roleId);
                       if (!role) return null;
                       return (
                         <div

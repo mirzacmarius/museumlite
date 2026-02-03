@@ -772,9 +772,11 @@ export default function ImportObjectsPage() {
                       </span>
                     </div>
                     <ul className="mt-2 max-h-96 space-y-1 overflow-auto text-sm text-destructive">
-                      {state.validationErrors.map((error, index) => (
-                        <li key={`${error}-${index}`}>{error}</li>
-                      ))}
+                      {Array.from(new Set(state.validationErrors)).map(
+                        (error) => (
+                          <li key={error}>{error}</li>
+                        ),
+                      )}
                     </ul>
                   </div>
                 )}
