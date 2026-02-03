@@ -39,6 +39,38 @@ export default {
     helpText:
       "Acceptând, ești de acord să te alături acestei organizații cu rolul specificat.",
   },
+  onboardingPage: {
+    welcome: "Bine ai venit!",
+    description: "Să începem alegând un nume de utilizator.",
+    usernameLabel: "Nume de utilizator",
+    continue: "Continuă",
+    updateNote:
+      "Îți poți actualiza numele de utilizator oricând din setările contului.",
+    orgTitle: "Creează organizația ta",
+    orgDescription:
+      "Configurează organizația pentru a începe să gestionezi colecția ta.",
+  },
+  organizationsNew: {
+    title: "Detalii organizație",
+    description:
+      "Creează o organizație nouă pentru a începe să gestionezi colecțiile",
+    nameLabel: "Nume organizație *",
+    namePlaceholder: "ex: Metropolitan Museum of Art",
+    slugLabel: "Slug (identificator URL)",
+    slugPlaceholder: "Generat automat din nume",
+    slugHelp: "Lasă gol pentru a genera automat din nume",
+    typeLabel: "Tip organizație *",
+    types: {
+      museum: "Muzeu",
+      gallery: "Galerie",
+      library: "Bibliotecă",
+      collector: "Colecționar",
+    },
+    submit: "Creează organizația",
+    submitting: "Se creează...",
+    cancel: "Anulează",
+    createFailed: "Nu s-a putut crea organizația",
+  },
   dashboard: {
     title: "Creează Aplicația Ta",
     description:

@@ -1,5 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
@@ -69,20 +69,34 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new Error("Not authenticated");
+      throw new ConvexError("Not authenticated");
+    }
+
+    const name = args.name.trim();
+    if (!name) {
+      throw new ConvexError("Organization name is required");
+    }
+
+    const normalizedSlug = (args.slug || name)
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
+    if (!normalizedSlug) {
+      throw new ConvexError("Organization slug is required");
     }
 
     // Check if slug is unique
     const existing = await ctx.db
       .query("organizations")
-      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .withIndex("by_slug", (q) => q.eq("slug", normalizedSlug))
       .first();
 
     if (existing) {
-      throw new Error("Organization slug already exists");
+      throw new ConvexError("Organization slug already exists");
     }
 
-    const orgPrefix = args.slug.toUpperCase().substring(0, 3);
+    const orgPrefix = normalizedSlug.toUpperCase().substring(0, 3);
     const defaultAccessionFormat = `${orgPrefix}-{YYYY}-{####}`;
 
     const defaultSettings = {
@@ -102,8 +116,8 @@ export const create = mutation({
       : defaultSettings;
 
     const organizationId = await ctx.db.insert("organizations", {
-      name: args.name,
-      slug: args.slug,
+      name,
+      slug: normalizedSlug,
       type: args.type,
       settings: mergedSettings,
       subscriptionTier: "free",
@@ -258,8 +272,8 @@ export const create = mutation({
       entityType: "organization",
       entityId: organizationId,
       changes: {
-        name: args.name,
-        slug: args.slug,
+        name,
+        slug: normalizedSlug,
         type: args.type,
       },
     });
