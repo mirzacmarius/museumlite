@@ -1,13 +1,14 @@
 import "./src/env.mjs";
 import { withSentryConfig } from "@sentry/nextjs";
 
-const isVercel = Boolean(process.env.VERCEL);
+const disableTypecheck =
+  process.env.NEXT_DISABLE_TYPECHECK === "1" || Boolean(process.env.VERCEL);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   turbopack: {},
   typescript: {
-    ignoreBuildErrors: isVercel,
+    ignoreBuildErrors: disableTypecheck,
   },
   images: {
     remotePatterns: [
