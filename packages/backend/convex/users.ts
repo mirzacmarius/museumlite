@@ -1,10 +1,8 @@
-"use node";
-
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { asyncMap } from "convex-helpers";
+
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { action, internalMutation, mutation, query } from "./_generated/server";
+import { action, mutation, query } from "./_generated/server";
 import { polar } from "./subscriptions";
 import { username } from "./utils/validators";
 
@@ -150,32 +148,6 @@ export const removeUserImage = mutation({
   },
 });
 
-export const deleteUserAccount = internalMutation({
-  args: {
-    userId: v.id("users"),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    await asyncMap(
-      ["google" /* add other providers as needed */],
-      async (provider) => {
-        const authAccount = await ctx.db
-          .query("authAccounts")
-          .withIndex("userIdAndProvider", (q) =>
-            q.eq("userId", args.userId).eq("provider", provider),
-          )
-          .first();
-        if (!authAccount) {
-          return;
-        }
-        await ctx.db.delete(authAccount._id);
-      },
-    );
-    await ctx.db.delete(args.userId);
-    return null;
-  },
-});
-
 export const deleteCurrentUserAccount = action({
   args: {},
   returns: v.null(),
@@ -194,7 +166,7 @@ export const deleteCurrentUserAccount = action({
         revokeImmediately: true,
       });
     }
-    await ctx.runMutation(internal.users.deleteUserAccount, {
+    await ctx.runMutation(internal.usersMutations.deleteUserAccount, {
       userId,
     });
     return null;
