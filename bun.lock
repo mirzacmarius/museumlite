@@ -15,7 +15,7 @@
         "@vercel/speed-insights": "^1.3.1",
         "chalk": "^4.1.2",
         "chrono-node": "^2.9.0",
-        "convex": "^1.31.4",
+        "convex": "^1.31.7",
         "convex-test": "^0.0.41",
         "dotenv": "^16.6.1",
         "framer-motion": "^12.26.2",
@@ -46,7 +46,7 @@
         "@v1/backend": "workspace:*",
         "@v1/ui": "workspace:*",
         "@xixixao/uploadstuff": "^0.0.5",
-        "convex": "^1.31.4",
+        "convex": "^1.31.7",
         "dub": "^0.36.5",
         "geist": "^1.3.1",
         "html5-qrcode": "^2.3.8",
@@ -85,7 +85,7 @@
         "@v1/ui": "workspace:*",
         "@vercel/analytics": "^1.6.1",
         "@vercel/speed-insights": "^1.3.1",
-        "convex": "^1.31.4",
+        "convex": "^1.31.7",
         "geist": "^1.3.1",
         "next": "^16.1.1-canary.32",
         "react": "^19.2.1",
@@ -116,7 +116,7 @@
         "@convex-dev/auth": "^0.0.80",
         "@convex-dev/polar": "npm:@erquhart/convex-polar@0.2.0-alpha.5",
         "@polar-sh/sdk": "^0.26.1",
-        "convex": "^1.31.4",
+        "convex": "^1.31.7",
         "convex-helpers": "^0.1.63",
         "openai": "^4.61.1",
         "qrcode": "^1.5.4",
@@ -125,7 +125,7 @@
       },
       "devDependencies": {
         "@edge-runtime/vm": "^5.0.0",
-        "@types/qrcode": "^1.5.5",
+        "@types/qrcode": "^1.5.6",
         "@types/react": "^19.2.2",
         "@types/react-dom": "^19.2.2",
         "convex-test": "^0.0.41",
@@ -1275,7 +1275,7 @@
 
     "convert-source-map": ["convert-source-map@2.0.0", "", {}, "sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg=="],
 
-    "convex": ["convex@1.31.4", "", { "dependencies": { "esbuild": "0.27.0", "prettier": "^3.0.0" }, "peerDependencies": { "@auth0/auth0-react": "^2.0.1", "@clerk/clerk-react": "^4.12.8 || ^5.0.0", "react": "^18.0.0 || ^19.0.0-0 || ^19.0.0" }, "optionalPeers": ["@auth0/auth0-react", "@clerk/clerk-react", "react"], "bin": { "convex": "bin/main.js" } }, "sha512-iDm283Gb/CFRb30cvhH6Z9qlYof6dhtin415FarKUKB3K7gumO0rn8snY0CTvUrThV3UnCtttbuL/1oY7LscyA=="],
+    "convex": ["convex@1.31.7", "", { "dependencies": { "esbuild": "0.27.0", "prettier": "^3.0.0" }, "peerDependencies": { "@auth0/auth0-react": "^2.0.1", "@clerk/clerk-react": "^4.12.8 || ^5.0.0", "react": "^18.0.0 || ^19.0.0-0 || ^19.0.0" }, "optionalPeers": ["@auth0/auth0-react", "@clerk/clerk-react", "react"], "bin": { "convex": "bin/main.js" } }, "sha512-PtNMe1mAIOvA8Yz100QTOaIdgt2rIuWqencVXrb4McdhxBHZ8IJ1eXTnrgCC9HydyilGT1pOn+KNqT14mqn9fQ=="],
 
     "convex-helpers": ["convex-helpers@0.1.71", "", { "peerDependencies": { "convex": "^1.13.0", "hono": "^4.0.5", "react": "^17.0.2 || ^18.0.0 || ^19.0.0", "zod": "^3.22.4" }, "optionalPeers": ["hono", "react", "zod"], "bin": { "convex-helpers": "bin.cjs" } }, "sha512-/uucsexesq9CNl1J+wZIdjcvPWd9nXcZKE8sIGokduhmtPI+6GtXz/dkpNm9pgFXx6yPJ51lFMuuZFAkVicI0A=="],
 

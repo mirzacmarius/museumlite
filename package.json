@@ -32,7 +32,7 @@
     "@vercel/speed-insights": "^1.3.1",
     "chalk": "^4.1.2",
     "chrono-node": "^2.9.0",
-    "convex": "^1.31.4",
+    "convex": "^1.31.7",
     "convex-test": "^0.0.41",
     "dotenv": "^16.6.1",
     "framer-motion": "^12.26.2",
