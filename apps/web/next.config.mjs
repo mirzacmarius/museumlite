@@ -1,18 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Force webpack instead of Turbopack due to thread-stream compatibility issues
-  // Turbopack doesn't support worker threads used by pino/thread-stream
-  // Next.js 16 canary defaults to Turbopack, configuring webpack forces webpack usage
-  webpack: (config, { isServer }) => {
-    // Exclude thread-stream from being processed (server-only)
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        "thread-stream": false,
-      };
-    }
-    return config;
-  },
+  // Required for Next.js 16 - explicitly configure turbopack
+  turbopack: {},
   images: {
     remotePatterns: [
       {
@@ -22,8 +11,9 @@ const nextConfig = {
     ],
   },
   // Exclude server-only packages from client bundle
+  // pino and thread-stream use worker threads which aren't bundler-compatible
   serverExternalPackages: ["pino", "thread-stream"],
-  // Skip TypeScript checking during Vercel builds (same as app)
+  // Skip TypeScript checking during Vercel builds
   typescript: {
     ignoreBuildErrors:
       process.env.SKIP_TYPE_CHECK === "true" ||

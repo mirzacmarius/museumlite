@@ -5,7 +5,6 @@ import {
   type PostEventPayload,
   useOpenPanel,
 } from "@openpanel/nextjs";
-import { logger } from "@v1/logger";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -22,7 +21,9 @@ const track = (options: { event: string } & PostEventPayload["properties"]) => {
   const { track: openTrack } = useOpenPanel();
 
   if (!isProd) {
-    logger.info("Track", options);
+    // Use console.log for client-side dev logging
+    // pino uses worker threads which aren't compatible with browser bundlers
+    console.log("[Analytics]", options);
 
     return;
   }
@@ -33,3 +34,4 @@ const track = (options: { event: string } & PostEventPayload["properties"]) => {
 };
 
 export { Provider, track };
+
