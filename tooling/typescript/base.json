@@ -3,7 +3,8 @@
   "display": "Default",
   "compilerOptions": {
     "esModuleInterop": true,
-    "incremental": false,
+    "incremental": true,
+    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
     "isolatedModules": true,
     "lib": ["es2022", "DOM", "DOM.Iterable"],
     "module": "NodeNext",
