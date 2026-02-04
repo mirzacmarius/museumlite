@@ -234,7 +234,7 @@ export default function WorkflowsSettingsPage() {
               {t("configureSteps")}
             </p>
           </div>
-          <PermissionGate permission="settings.update">
+          <PermissionGate permission="organization.manage_settings">
             <Button
               variant="outline"
               size="sm"

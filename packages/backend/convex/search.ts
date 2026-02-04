@@ -215,6 +215,13 @@ export const globalSearch = query({
         type: v.optional(v.string()),
       }),
     ),
+    exhibitions: v.array(
+      v.object({
+        _id: v.id("exhibitions"),
+        title: v.string(),
+        status: v.optional(v.string()),
+      }),
+    ),
   }),
   handler: async (ctx, args) => {
     const startTime = Date.now();
@@ -256,6 +263,11 @@ export const globalSearch = query({
         _id: Id<"locations">;
         name: string;
         type?: string;
+      }>,
+      exhibitions: [] as Array<{
+        _id: Id<"exhibitions">;
+        title: string;
+        status?: string;
       }>,
     };
 

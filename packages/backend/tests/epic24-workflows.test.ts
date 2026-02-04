@@ -11,6 +11,23 @@ type OrgSetup = {
   roleId: Id<"roles">;
 };
 
+function getPermissionCategory(permissionName: string) {
+  const prefix = permissionName.split(".")[0];
+  switch (prefix) {
+    case "collections":
+    case "loans":
+    case "locations":
+    case "sites":
+    case "media":
+    case "users":
+    case "organization":
+    case "accounts":
+      return prefix;
+    default:
+      return "collections";
+  }
+}
+
 async function createOrgWithRole(
   t: ReturnType<typeof convexTest>,
   permissionNames: string[],
@@ -42,11 +59,11 @@ async function createOrgWithRole(
     });
   });
 
-  for (const permissionName of permissionNames) {
+  for (const permissionName of new Set(permissionNames)) {
     const permissionId = await t.run(async (ctx) => {
       return await ctx.db.insert("permissions", {
         name: permissionName,
-        category: "collections",
+        category: getPermissionCategory(permissionName),
       });
     });
 
@@ -79,8 +96,7 @@ describe("Epic 24: State Transition Validation", () => {
     // #given
     const t = convexTest(schema, modules);
     const { organizationId, roleId } = await createOrgWithRole(t, [
-      "settings.read",
-      "settings.update",
+      "organization.manage_settings",
     ]);
 
     await t.run(async (ctx) => {
@@ -113,8 +129,7 @@ describe("Epic 24: State Transition Validation", () => {
     // #given
     const t = convexTest(schema, modules);
     const { organizationId, roleId } = await createOrgWithRole(t, [
-      "settings.read",
-      "settings.update",
+      "organization.manage_settings",
     ]);
 
     await t.run(async (ctx) => {
@@ -149,8 +164,7 @@ describe("Epic 24: State Transition Validation", () => {
     // #given
     const t = convexTest(schema, modules);
     const { organizationId, roleId } = await createOrgWithRole(t, [
-      "settings.read",
-      "settings.update",
+      "organization.manage_settings",
     ]);
 
     await t.run(async (ctx) => {
@@ -184,8 +198,7 @@ describe("Epic 24: State Transition Validation", () => {
     // #given
     const t = convexTest(schema, modules);
     const { organizationId, roleId } = await createOrgWithRole(t, [
-      "settings.read",
-      "settings.update",
+      "organization.manage_settings",
     ]);
 
     await t.run(async (ctx) => {
@@ -221,8 +234,7 @@ describe("Epic 24: State Transition Validation", () => {
     // #given
     const t = convexTest(schema, modules);
     const { organizationId } = await createOrgWithRole(t, [
-      "settings.read",
-      "settings.update",
+      "organization.manage_settings",
     ]);
 
     // #when
@@ -250,7 +262,7 @@ describe("Epic 24: Multi-Approver Logic", () => {
     // #given
     const t = convexTest(schema, modules);
     const { organizationId, userId, roleId } = await createOrgWithRole(t, [
-      "settings.read",
+      "organization.manage_settings",
     ]);
 
     await t.run(async (ctx) => {
@@ -297,7 +309,7 @@ describe("Epic 24: Multi-Approver Logic", () => {
     // #given
     const t = convexTest(schema, modules);
     const { organizationId, userId, roleId } = await createOrgWithRole(t, [
-      "settings.read",
+      "organization.manage_settings",
     ]);
 
     const userId2 = await t.run(async (ctx) => {
@@ -366,7 +378,7 @@ describe("Epic 24: Multi-Approver Logic", () => {
     // #given
     const t = convexTest(schema, modules);
     const { organizationId, userId } = await createOrgWithRole(t, [
-      "settings.read",
+      "organization.manage_settings",
     ]);
 
     await t.run(async (ctx) => {
@@ -398,7 +410,7 @@ describe("Epic 24: Multi-Approver Logic", () => {
     // #given
     const t = convexTest(schema, modules);
     const { organizationId, userId } = await createOrgWithRole(t, [
-      "settings.read",
+      "organization.manage_settings",
     ]);
 
     const userId2 = await t.run(async (ctx) => {
@@ -499,7 +511,7 @@ describe("Epic 24: Workflow Templates", () => {
     const t = convexTest(schema, modules);
     const { organizationId, userId, roleId } = await createOrgWithRole(
       t,
-      ["settings.read", "settings.update"],
+      ["organization.manage_settings"],
       "Admin",
     );
 
@@ -555,7 +567,7 @@ describe("Epic 24: Workflow Templates", () => {
     const t = convexTest(schema, modules);
     const { organizationId, userId } = await createOrgWithRole(
       t,
-      ["settings.read", "settings.update"],
+      ["organization.manage_settings"],
       "Admin",
     );
 

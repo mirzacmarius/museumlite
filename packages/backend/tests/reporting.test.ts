@@ -1275,7 +1275,9 @@ describe("report filters", () => {
       return await ctx.db.insert("locations", {
         organizationId: orgId,
         name: "Gallery 1",
-        locationType: "gallery",
+        type: "gallery",
+        sortOrder: 1,
+        isActive: true,
       });
     });
 
@@ -1283,7 +1285,9 @@ describe("report filters", () => {
       return await ctx.db.insert("locations", {
         organizationId: orgId,
         name: "Storage Room A",
-        locationType: "storage",
+        type: "storage",
+        sortOrder: 2,
+        isActive: true,
       });
     });
 
@@ -1340,6 +1344,8 @@ describe("report filters", () => {
         organizationId: orgId,
         name: "Impressionist Paintings",
         description: "19th century impressionist works",
+        createdAt: Date.now(),
+        createdBy: userId,
       });
     });
 
@@ -1348,6 +1354,8 @@ describe("report filters", () => {
         organizationId: orgId,
         name: "Modern Sculpture",
         description: "20th century sculptures",
+        createdAt: Date.now(),
+        createdBy: userId,
       });
     });
 
@@ -1452,7 +1460,9 @@ describe("report filters", () => {
       return await ctx.db.insert("locations", {
         organizationId: orgId,
         name: "Main Gallery",
-        locationType: "gallery",
+        type: "gallery",
+        sortOrder: 1,
+        isActive: true,
       });
     });
 
@@ -1461,6 +1471,8 @@ describe("report filters", () => {
         organizationId: orgId,
         name: "Renaissance Art",
         description: "Renaissance period artworks",
+        createdAt: Date.now(),
+        createdBy: userId,
       });
     });
 
@@ -1594,7 +1606,9 @@ describe("report filters", () => {
       return await ctx.db.insert("locations", {
         organizationId: orgId,
         name: "Test Gallery",
-        locationType: "gallery",
+        type: "gallery",
+        sortOrder: 1,
+        isActive: true,
       });
     });
 

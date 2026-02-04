@@ -40,6 +40,13 @@ async function createTestSetup(
     });
   });
 
+  const mediaReadPermissionId = await t.run(async (ctx) => {
+    return await ctx.db.insert("permissions", {
+      name: "media.read",
+      category: "media",
+    });
+  });
+
   const roleId = await t.run(async (ctx) => {
     const roleId = await ctx.db.insert("roles", {
       organizationId,
@@ -50,6 +57,11 @@ async function createTestSetup(
     await ctx.db.insert("rolePermissions", {
       roleId,
       permissionId: mediaUploadPermissionId,
+    });
+
+    await ctx.db.insert("rolePermissions", {
+      roleId,
+      permissionId: mediaReadPermissionId,
     });
 
     return roleId;
@@ -67,19 +79,16 @@ async function createTestSetup(
   const collectionId = await t.run(async (ctx) => {
     return await ctx.db.insert("collections", {
       organizationId,
-      title: "Test Collection",
-      type: "fine_art",
       accessionNumber: "TEST-001",
+      title: "Test Collection",
       status: "active",
       catalogedBy: userId,
       catalogedAt: Date.now(),
-      createdBy: userId,
-      createdAt: Date.now(),
     });
   });
 
   const storageId = await t.run(async (ctx) => {
-    return "test-storage-id" as Id<"_storage">;
+    return await ctx.storage.store(new Blob([new Uint8Array([0xff])], { type: "image/jpeg" }));
   });
 
   const mediaFileId = await t.run(async (ctx) => {

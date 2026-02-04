@@ -52,7 +52,11 @@ export const list = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "settings.read");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     const configs = await ctx.db
       .query("workflowConfigs")
@@ -98,7 +102,11 @@ export const get = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "settings.read");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     const config = await ctx.db
       .query("workflowConfigs")
@@ -146,7 +154,11 @@ export const upsert = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "settings.update");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     const existing = await ctx.db
       .query("workflowConfigs")
@@ -218,7 +230,11 @@ export const remove = mutation({
       throw new Error("Workflow config not found");
     }
 
-    await requirePermission(ctx, config.organizationId, "settings.update");
+    await requirePermission(
+      ctx,
+      config.organizationId,
+      "organization.manage_settings",
+    );
 
     await ctx.db.delete(args.id);
 
@@ -993,7 +1009,11 @@ export const createTemplateFromConfig = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "settings.read");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     const config = await ctx.db
       .query("workflowConfigs")
@@ -1055,7 +1075,11 @@ export const applyTemplateToOrganization = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "settings.update");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     const template = await ctx.db.get(args.templateId);
     if (!template) {

@@ -144,6 +144,7 @@ export default {
       organization: "Organizație",
       users: "Utilizatori",
       roles: "Roluri",
+      sites: "Locații",
       integrations: "Integrări",
       modules: "Module",
       billing: "Facturare",
@@ -597,6 +598,10 @@ export default {
     validationError: "Eroare de validare",
     unknownError: "A apărut o eroare necunoscută",
     noResults: "Nu s-au găsit rezultate",
+    toast: {
+      exportSuccess: "Export reușit",
+      exportFailed: "Export eșuat",
+    },
     export: {
       title: "Exportă",
       description: "Exportă datele în format CSV",

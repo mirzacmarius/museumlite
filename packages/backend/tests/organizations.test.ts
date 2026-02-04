@@ -148,6 +148,20 @@ describe("watermark settings", () => {
       });
     });
 
+    const permissionId = await t.run(async (ctx) => {
+      return await ctx.db.insert("permissions", {
+        name: "organization.manage_settings",
+        category: "organization",
+      });
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("rolePermissions", {
+        roleId,
+        permissionId,
+      });
+    });
+
     await t.run(async (ctx) => {
       await ctx.db.insert("userOrganizations", {
         userId,
@@ -162,10 +176,12 @@ describe("watermark settings", () => {
       api.organizations.updateWatermarkSettings,
       {
         organizationId: orgId,
-        isEnabled: true,
-        text: "© 2026 Test Museum",
-        opacity: 0.7,
-        position: "bottom-right",
+        watermarkSettings: {
+          isEnabled: true,
+          text: "© 2026 Test Museum",
+          opacity: 0.7,
+          position: "bottom-right",
+        },
       },
       { as: userId },
     );

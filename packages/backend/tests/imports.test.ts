@@ -1,5 +1,6 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
+import { api } from "../convex/_generated/api";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
@@ -37,16 +38,20 @@ test("should rollback failed import", async () => {
 test("getImportTemplate returns PastPerfect template", async () => {
   const t = convexTest(schema, modules);
 
-  const user = await t.run(async (ctx) => {
+  const userId = await t.run(async (ctx) => {
     return await ctx.db.insert("users", {
       email: "test@example.com",
       name: "Test User",
     });
   });
 
-  const template = await t.query.imports.getImportTemplate({
-    templateName: "PastPerfect",
-  });
+  const template = await t.query(
+    api.imports.getImportTemplate,
+    {
+      templateName: "PastPerfect",
+    },
+    { as: userId },
+  );
 
   expect(template).not.toBeNull();
   expect(template?.name).toBe("PastPerfect");
@@ -60,16 +65,20 @@ test("getImportTemplate returns PastPerfect template", async () => {
 test("getImportTemplate returns TMS template", async () => {
   const t = convexTest(schema, modules);
 
-  const user = await t.run(async (ctx) => {
+  const userId = await t.run(async (ctx) => {
     return await ctx.db.insert("users", {
       email: "test@example.com",
       name: "Test User",
     });
   });
 
-  const template = await t.query.imports.getImportTemplate({
-    templateName: "TMS",
-  });
+  const template = await t.query(
+    api.imports.getImportTemplate,
+    {
+      templateName: "TMS",
+    },
+    { as: userId },
+  );
 
   expect(template).not.toBeNull();
   expect(template?.name).toBe("TMS");
@@ -83,14 +92,14 @@ test("getImportTemplate returns TMS template", async () => {
 test("listImportTemplates returns both PastPerfect and TMS templates", async () => {
   const t = convexTest(schema, modules);
 
-  const user = await t.run(async (ctx) => {
+  const userId = await t.run(async (ctx) => {
     return await ctx.db.insert("users", {
       email: "test@example.com",
       name: "Test User",
     });
   });
 
-  const templates = await t.query.imports.listImportTemplates({});
+  const templates = await t.query(api.imports.listImportTemplates, {}, { as: userId });
 
   expect(templates).toBeDefined();
   expect(templates.length).toBe(2);

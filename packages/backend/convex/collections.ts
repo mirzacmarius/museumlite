@@ -2327,6 +2327,7 @@ export const listPublic = query({
     objectType: v.optional(v.string()),
     culture: v.optional(v.string()),
     period: v.optional(v.string()),
+    paginationOpts: v.optional(paginationOptsValidator),
     limit: v.optional(v.number()),
     cursor: v.optional(v.string()),
   },
@@ -2334,6 +2335,7 @@ export const listPublic = query({
     items: v.array(
       v.object({
         _id: v.id("collections"),
+        urlSlug: v.string(),
         accessionNumber: v.string(),
         title: v.string(),
         creator: v.optional(v.string()),
@@ -2370,15 +2372,18 @@ export const listPublic = query({
       return { items: [], nextCursor: undefined, hasMore: false };
     }
 
-    const pageSize = args.limit ?? 24;
+    const pageSize = args.paginationOpts?.numItems ?? args.limit ?? 24;
     const allCollections = await ctx.db
       .query("collections")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", organization._id).eq("status", "active"),
+      .withIndex("by_organization_status_public", (q) =>
+        q
+          .eq("organizationId", organization._id)
+          .eq("status", "active")
+          .eq("isPubliclyVisible", true),
       )
       .collect();
 
-    let filtered = allCollections.filter((c) => c.isPubliclyVisible === true);
+    let filtered = allCollections;
 
     if (args.search) {
       const searchLower = args.search.toLowerCase();
@@ -2401,7 +2406,9 @@ export const listPublic = query({
       filtered = filtered.filter((c) => c.period === args.period);
     }
 
-    const startIndex = args.cursor ? Number.parseInt(args.cursor, 10) : 0;
+    const cursor =
+      args.paginationOpts?.cursor ?? (args.cursor ? args.cursor : null);
+    const startIndex = cursor ? Number.parseInt(cursor, 10) : 0;
     const paged = filtered.slice(startIndex, startIndex + pageSize);
     const hasMore = startIndex + pageSize < filtered.length;
 
@@ -2421,6 +2428,7 @@ export const listPublic = query({
 
         return {
           _id: c._id,
+          urlSlug: c.publicSlug || c.accessionNumber,
           accessionNumber: c.accessionNumber,
           title: c.title,
           creator: c.creator,
@@ -2641,23 +2649,22 @@ export const getPublicFilters = query({
 
     const collections = await ctx.db
       .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organization._id),
+      .withIndex("by_organization_status_public", (q) =>
+        q
+          .eq("organizationId", organization._id)
+          .eq("status", "active")
+          .eq("isPubliclyVisible", true),
       )
       .collect();
 
-    const publicCollections = collections.filter(
-      (c) => c.isPubliclyVisible === true && c.status === "active",
-    );
-
     const objectTypes = [
-      ...new Set(publicCollections.map((c) => c.objectType).filter(Boolean)),
+      ...new Set(collections.map((c) => c.objectType).filter(Boolean)),
     ] as string[];
     const cultures = [
-      ...new Set(publicCollections.map((c) => c.culture).filter(Boolean)),
+      ...new Set(collections.map((c) => c.culture).filter(Boolean)),
     ] as string[];
     const periods = [
-      ...new Set(publicCollections.map((c) => c.period).filter(Boolean)),
+      ...new Set(collections.map((c) => c.period).filter(Boolean)),
     ] as string[];
 
     return {

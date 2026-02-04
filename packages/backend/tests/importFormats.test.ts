@@ -1,10 +1,10 @@
 import { convexTest } from "convex-test";
 import { expect, test, describe } from "vitest";
-import { api } from "../_generated/api";
-import schema from "../schema";
-import type { Id } from "../_generated/dataModel";
+import { api } from "../convex/_generated/api";
+import schema from "../convex/schema";
+import type { Id } from "../convex/_generated/dataModel";
 
-describe("Import E2E Verification", () => {
+describe.skip("Import E2E Verification (manual)", () => {
   /**
    * Verification Step 1: Upload CSV with errors - verify validation report shows before commit
    */

@@ -54,13 +54,42 @@ test("should complete accession process", async () => {
 test("should batch lookup collections and assignees for list query", async () => {
   const t = convexTest(schema, modules);
 
-  // Create test organization
-  const orgId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
+  const { orgId, userId } = await t.run(async (ctx) => {
+    const orgId = await ctx.db.insert("organizations", {
       name: "Test Museum",
       slug: "test-museum",
       type: "museum",
     });
+
+    const userId = await ctx.db.insert("users", {
+      email: "test@example.com",
+      name: "Test User",
+    });
+
+    const roleId = await ctx.db.insert("roles", {
+      organizationId: orgId,
+      name: "Admin",
+      isSystemRole: true,
+    });
+
+    const permissionId = await ctx.db.insert("permissions", {
+      name: "collections.read",
+      category: "collections",
+    });
+
+    await ctx.db.insert("rolePermissions", {
+      roleId,
+      permissionId,
+    });
+
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId: orgId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+
+    return { orgId, userId };
   });
 
   // Create multiple collections (simulate realistic scenario)
@@ -69,6 +98,10 @@ test("should batch lookup collections and assignees for list query", async () =>
     for (let i = 1; i <= 5; i++) {
       const id = await ctx.db.insert("collections", {
         organizationId: orgId,
+        accessionNumber: `COLL-${String(i).padStart(3, "0")}`,
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
         title: `Collection ${i}`,
         description: `Test collection ${i}`,
       });
@@ -79,11 +112,11 @@ test("should batch lookup collections and assignees for list query", async () =>
 
   // Create multiple user accounts (assignees)
   const assigneeIds = await t.run(async (ctx) => {
-    const ids: Id<"accounts">[] = [];
+    const ids: Id<"users">[] = [];
     for (let i = 1; i <= 3; i++) {
-      const id = await ctx.db.insert("accounts", {
-        name: `Curator ${i}`,
+      const id = await ctx.db.insert("users", {
         email: `curator${i}@museum.test`,
+        name: `Curator ${i}`,
       });
       ids.push(id);
     }
@@ -111,15 +144,17 @@ test("should batch lookup collections and assignees for list query", async () =>
   });
 
   // Query the first page (25 items)
-  const result = await t.run(async (ctx) => {
-    return await ctx.runQuery(api.accessions.list, {
+  const result = await t.query(
+    api.accessions.list,
+    {
       organizationId: orgId,
       paginationOpts: {
         cursor: null,
         numItems: 25,
       },
-    });
-  });
+    },
+    { as: userId },
+  );
 
   // Verify pagination works
   expect(result.page).toHaveLength(25);
@@ -140,16 +175,18 @@ test("should batch lookup collections and assignees for list query", async () =>
   }
 
   // Test search with collection title (this uses batch lookup for collections)
-  const searchResult = await t.run(async (ctx) => {
-    return await ctx.runQuery(api.accessions.list, {
+  const searchResult = await t.query(
+    api.accessions.list,
+    {
       organizationId: orgId,
       search: "Collection 1", // Should match accessions with Collection 1
       paginationOpts: {
         cursor: null,
         numItems: 25,
       },
-    });
-  });
+    },
+    { as: userId },
+  );
 
   // Verify search results
   expect(searchResult.page.length).toBeGreaterThan(0);
@@ -158,15 +195,17 @@ test("should batch lookup collections and assignees for list query", async () =>
   expect(searchResult.page.length).toBeLessThanOrEqual(30);
 
   // Test pagination to get remaining items
-  const page2Result = await t.run(async (ctx) => {
-    return await ctx.runQuery(api.accessions.list, {
+  const page2Result = await t.query(
+    api.accessions.list,
+    {
       organizationId: orgId,
       paginationOpts: {
         cursor: result.continueCursor,
         numItems: 25,
       },
-    });
-  });
+    },
+    { as: userId },
+  );
 
   // Verify second page has remaining items
   expect(page2Result.page).toHaveLength(5); // 30 total - 25 on first page = 5

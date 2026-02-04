@@ -1,7 +1,12 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { mutation, query, internalMutation } from "./_generated/server";
+import {
+  type MutationCtx,
+  internalMutation,
+  mutation,
+  query,
+} from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
@@ -21,7 +26,7 @@ import {
  * Format: DA-{ORG}-{YEAR}-{SEQUENCE} e.g. DA-MUS-2025-001
  */
 async function generateDeaccessionNumber(
-  ctx: any,
+  ctx: MutationCtx,
   organizationId: Id<"organizations">,
 ): Promise<string> {
   const org = await ctx.db.get(organizationId);

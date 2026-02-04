@@ -11,6 +11,23 @@ type OrgSetup = {
   roleId: Id<"roles">;
 };
 
+function getPermissionCategory(permissionName: string) {
+  const prefix = permissionName.split(".")[0];
+  switch (prefix) {
+    case "collections":
+    case "loans":
+    case "locations":
+    case "sites":
+    case "media":
+    case "users":
+    case "organization":
+    case "accounts":
+      return prefix;
+    default:
+      return "collections";
+  }
+}
+
 async function createOrgWithRole(
   t: ReturnType<typeof convexTest>,
   permissionNames: string[],
@@ -42,11 +59,11 @@ async function createOrgWithRole(
     });
   });
 
-  for (const permissionName of permissionNames) {
+  for (const permissionName of new Set(permissionNames)) {
     const permissionId = await t.run(async (ctx) => {
       return await ctx.db.insert("permissions", {
         name: permissionName,
-        category: "collections",
+        category: getPermissionCategory(permissionName),
       });
     });
 
@@ -78,12 +95,14 @@ describe("Workflow Config CRUD", () => {
   test("list returns empty array when no configs exist", async () => {
     // #given
     const t = convexTest(schema, modules);
-    const { organizationId } = await createOrgWithRole(t, ["settings.read"]);
+    const { organizationId, userId } = await createOrgWithRole(t, [
+      "organization.manage_settings",
+    ]);
 
     // #when
     const result = await t.query(api.workflows.list, {
       organizationId,
-    });
+    }, { as: userId });
 
     // #then
     expect(result).toEqual([]);
@@ -92,8 +111,8 @@ describe("Workflow Config CRUD", () => {
   test("list returns all workflow configs for an organization", async () => {
     // #given
     const t = convexTest(schema, modules);
-    const { organizationId, roleId } = await createOrgWithRole(t, [
-      "settings.read",
+    const { organizationId, userId, roleId } = await createOrgWithRole(t, [
+      "organization.manage_settings",
     ]);
 
     await t.run(async (ctx) => {
@@ -115,7 +134,7 @@ describe("Workflow Config CRUD", () => {
     // #when
     const result = await t.query(api.workflows.list, {
       organizationId,
-    });
+    }, { as: userId });
 
     // #then
     expect(result).toHaveLength(2);
@@ -126,13 +145,15 @@ describe("Workflow Config CRUD", () => {
   test("get returns null when workflow config does not exist", async () => {
     // #given
     const t = convexTest(schema, modules);
-    const { organizationId } = await createOrgWithRole(t, ["settings.read"]);
+    const { organizationId, userId } = await createOrgWithRole(t, [
+      "organization.manage_settings",
+    ]);
 
     // #when
     const result = await t.query(api.workflows.get, {
       organizationId,
       workflowType: "accession",
-    });
+    }, { as: userId });
 
     // #then
     expect(result).toBeNull();
@@ -141,8 +162,8 @@ describe("Workflow Config CRUD", () => {
   test("get returns workflow config when it exists", async () => {
     // #given
     const t = convexTest(schema, modules);
-    const { organizationId, roleId } = await createOrgWithRole(t, [
-      "settings.read",
+    const { organizationId, userId, roleId } = await createOrgWithRole(t, [
+      "organization.manage_settings",
     ]);
 
     await t.run(async (ctx) => {
@@ -161,7 +182,7 @@ describe("Workflow Config CRUD", () => {
     const result = await t.query(api.workflows.get, {
       organizationId,
       workflowType: "accession",
-    });
+    }, { as: userId });
 
     // #then
     expect(result).not.toBeNull();
@@ -175,14 +196,8 @@ describe("Workflow Config CRUD", () => {
     // #given
     const t = convexTest(schema, modules);
     const { organizationId, userId, roleId } = await createOrgWithRole(t, [
-      "settings.update",
+      "organization.manage_settings",
     ]);
-
-    t.setUser({
-      type: "user",
-      tokenIdentifier: `test|${userId}`,
-      id: userId,
-    });
 
     // #when
     const configId = await t.mutation(api.workflows.upsert, {
@@ -190,7 +205,7 @@ describe("Workflow Config CRUD", () => {
       workflowType: "accession",
       steps: [{ stepNumber: 1, roleId, name: "Initial Review" }],
       canInitiateRoles: [roleId],
-    });
+    }, { as: userId });
 
     // #then
     expect(configId).toBeDefined();
@@ -209,14 +224,8 @@ describe("Workflow Config CRUD", () => {
     // #given
     const t = convexTest(schema, modules);
     const { organizationId, userId, roleId } = await createOrgWithRole(t, [
-      "settings.update",
+      "organization.manage_settings",
     ]);
-
-    t.setUser({
-      type: "user",
-      tokenIdentifier: `test|${userId}`,
-      id: userId,
-    });
 
     const existingConfigId = await t.run(async (ctx) => {
       return await ctx.db.insert("workflowConfigs", {
@@ -236,7 +245,7 @@ describe("Workflow Config CRUD", () => {
         { stepNumber: 2, roleId, name: "Updated Step 2" },
       ],
       canInitiateRoles: [roleId],
-    });
+    }, { as: userId });
 
     // #then
     expect(configId).toBe(existingConfigId);
@@ -254,14 +263,8 @@ describe("Workflow Config CRUD", () => {
     // #given
     const t = convexTest(schema, modules);
     const { organizationId, userId, roleId } = await createOrgWithRole(t, [
-      "settings.update",
+      "organization.manage_settings",
     ]);
-
-    t.setUser({
-      type: "user",
-      tokenIdentifier: `test|${userId}`,
-      id: userId,
-    });
 
     const configId = await t.run(async (ctx) => {
       return await ctx.db.insert("workflowConfigs", {
@@ -275,7 +278,7 @@ describe("Workflow Config CRUD", () => {
     // #when
     await t.mutation(api.workflows.remove, {
       id: configId,
-    });
+    }, { as: userId });
 
     // #then
     const config = await t.run(async (ctx) => {
@@ -288,21 +291,36 @@ describe("Workflow Config CRUD", () => {
   test("remove throws error when config not found", async () => {
     // #given
     const t = convexTest(schema, modules);
-    const { userId } = await createOrgWithRole(t, ["settings.update"]);
+    const { userId } = await createOrgWithRole(t, [
+      "organization.manage_settings",
+    ]);
 
-    t.setUser({
-      type: "user",
-      tokenIdentifier: `test|${userId}`,
-      id: userId,
+    const fakeId = await t.run(async (ctx) => {
+      const organizationId = await ctx.db.insert("organizations", {
+        name: "Temp Org",
+        slug: `temp-org-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      });
+      const roleId = await ctx.db.insert("roles", {
+        organizationId,
+        name: "Temp Role",
+        isSystemRole: true,
+      });
+      const configId = await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "accession",
+        steps: [{ stepNumber: 1, roleId, name: "Temp Step" }],
+        canInitiateRoles: [roleId],
+      });
+      await ctx.db.delete(configId);
+      return configId;
     });
-
-    const fakeId = "k17b7y7ys45s4d67k9p4ycpqhh6z9rh4" as Id<"workflowConfigs">;
 
     // #when #then
     await expect(
       t.mutation(api.workflows.remove, {
         id: fakeId,
-      }),
+      }, { as: userId }),
     ).rejects.toThrow("Workflow config not found");
   });
 
@@ -310,7 +328,7 @@ describe("Workflow Config CRUD", () => {
     // #given
     const t = convexTest(schema, modules);
     const { organizationId, roleId } = await createOrgWithRole(t, [
-      "settings.update",
+      "organization.manage_settings",
     ]);
 
     // #when #then
@@ -328,7 +346,7 @@ describe("Workflow Config CRUD", () => {
     // #given
     const t = convexTest(schema, modules);
     const { organizationId, roleId } = await createOrgWithRole(t, [
-      "settings.update",
+      "organization.manage_settings",
     ]);
 
     const configId = await t.run(async (ctx) => {

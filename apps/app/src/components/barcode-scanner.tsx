@@ -69,24 +69,15 @@ export function BarcodeScanner({
     if (!html5QrCodeRef.current) return;
 
     try {
-      const stream = html5QrCodeRef.current.getRunningTrackCameraCapabilities();
-      const track = stream.getVideoTracks()[0];
-      if (!track) {
-        setErrorMessage("Flash not supported on this device");
-        return;
-      }
+      type TorchConstraintSet = MediaTrackConstraintSet & { torch?: boolean };
+      const constraintSet: TorchConstraintSet = {};
+      Object.assign(constraintSet, { torch: !flashEnabled });
 
-      if (track?.getCapabilities) {
-        const capabilities = track.getCapabilities();
-        if (capabilities.torch) {
-          type TorchConstraintSet = MediaTrackConstraintSet & {
-            torch?: boolean;
-          };
-          const constraintSet: TorchConstraintSet = { torch: !flashEnabled };
-          await track.applyConstraints({ advanced: [constraintSet] });
-          setFlashEnabled(!flashEnabled);
-        }
-      }
+      await html5QrCodeRef.current.applyVideoConstraints({
+        advanced: [constraintSet],
+      });
+
+      setFlashEnabled(!flashEnabled);
     } catch (error) {
       setErrorMessage("Flash not supported on this device");
     }

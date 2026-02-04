@@ -66,6 +66,7 @@ describe("Import Validation - Accessions", () => {
           },
         ],
       },
+      { as: userId },
     );
 
     expect(result.isValid).toBe(true);
@@ -119,6 +120,7 @@ describe("Import Validation - Accessions", () => {
           },
         ],
       },
+      { as: userId },
     );
 
     expect(result.isValid).toBe(false);
@@ -172,6 +174,7 @@ describe("Import Validation - Accessions", () => {
           },
         ],
       },
+      { as: userId },
     );
 
     expect(result.isValid).toBe(false);
@@ -227,6 +230,7 @@ describe("Import Validation - Accessions", () => {
           },
         ],
       },
+      { as: userId },
     );
 
     expect(
@@ -282,6 +286,7 @@ describe("Import Validation - Accessions", () => {
           },
         ],
       },
+      { as: userId },
     );
 
     expect(result.isValid).toBe(false);
@@ -345,6 +350,7 @@ describe("Import Validation - Accessions", () => {
           },
         ],
       },
+      { as: userId },
     );
 
     expect(result.totalRows).toBe(3);

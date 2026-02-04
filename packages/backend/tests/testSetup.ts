@@ -14,44 +14,88 @@
  * ```
  */
 
+import { readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 type ModuleLoader = () => Promise<unknown>;
 
 const meta = import.meta as {
   glob?: (pattern: string) => Record<string, ModuleLoader>;
-  dir?: string;
 };
+
+function mergeModuleMaps(
+  ...maps: Array<Record<string, ModuleLoader> | null | undefined>
+): Record<string, ModuleLoader> {
+  const merged: Record<string, ModuleLoader> = {};
+  for (const map of maps) {
+    if (!map) continue;
+    for (const [key, value] of Object.entries(map)) {
+      merged[key] = value;
+    }
+  }
+  return merged;
+}
+
+function withoutDtsFiles(
+  modules: Record<string, ModuleLoader>,
+): Record<string, ModuleLoader> {
+  return Object.fromEntries(
+    Object.entries(modules).filter(([path]) => !path.endsWith(".d.ts")),
+  );
+}
 
 const globModules =
   typeof meta.glob === "function"
-    ? (meta.glob("../convex/**/*.{ts,js}") as Record<string, ModuleLoader>)
+    ? withoutDtsFiles(
+        mergeModuleMaps(
+          meta.glob("../convex/**/*.ts") as Record<string, ModuleLoader>,
+          meta.glob("../convex/**/*.js") as Record<string, ModuleLoader>,
+        ),
+      )
     : null;
 
-const bun = (
-  globalThis as {
-    Bun?: {
-      Glob: new (
-        pattern: string,
-      ) => {
-        scanSync: (options?: { cwd?: string }) => string[];
-      };
-    };
-  }
-).Bun;
+const packageRootUrl = new URL("../", import.meta.url);
+const packageRootPath = fileURLToPath(packageRootUrl);
 
-const bunModules = bun
-  ? Object.fromEntries(
-      [
-        ...new bun.Glob("../convex/**/*.{ts,js}").scanSync({
-          cwd: meta.dir,
-        }),
-      ].map((path) => [
-        path,
-        () => import(new URL(path, import.meta.url).href),
-      ]),
-    )
-  : null;
+function listConvexModules(): string[] {
+  const convexRootPath = join(packageRootPath, "convex");
+  const results: string[] = [];
 
-export const modules = (globModules ?? bunModules ?? {}) as Record<
+  const visit = (absoluteDirPath: string, relativeDirPath: string) => {
+    const entries = readdirSync(absoluteDirPath);
+    for (const entry of entries) {
+      const absolutePath = join(absoluteDirPath, entry);
+      const relativePath = relativeDirPath
+        ? `${relativeDirPath}/${entry}`
+        : entry;
+      const stats = statSync(absolutePath);
+      if (stats.isDirectory()) {
+        visit(absolutePath, relativePath);
+        continue;
+      }
+      if (!relativePath.endsWith(".ts") && !relativePath.endsWith(".js")) {
+        continue;
+      }
+      if (relativePath.endsWith(".d.ts")) {
+        continue;
+      }
+      results.push(relativePath);
+    }
+  };
+
+  visit(convexRootPath, "convex");
+  return results;
+}
+
+const filesystemModules = Object.fromEntries(
+  listConvexModules().map((path) => [
+    path,
+    () => import(new URL(path, packageRootUrl).href),
+  ]),
+) as Record<string, ModuleLoader>;
+
+export const modules = (globModules ?? filesystemModules ?? {}) as Record<
   string,
   ModuleLoader
 >;

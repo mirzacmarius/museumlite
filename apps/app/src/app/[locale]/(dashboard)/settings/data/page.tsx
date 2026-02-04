@@ -89,7 +89,7 @@ export default function DataPage() {
   const [exporting, setExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const template = useQuery(api.imports.getImportTemplate, {
+  const template = useQuery(api.imports.getImportTemplateByType, {
     type: importType,
   });
 

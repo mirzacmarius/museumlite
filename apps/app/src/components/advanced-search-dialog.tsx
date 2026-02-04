@@ -113,22 +113,35 @@ export function AdvancedSearchDialog({
   };
 
   const addFilter = (groupIndex: number) => {
-    const newFilterGroups = [...filterGroups];
-    newFilterGroups[groupIndex].filters.push({
-      id: createId(),
-      field: "title",
-      operator: "contains",
-      value: "",
-    });
-    setFilterGroups(newFilterGroups);
+    setFilterGroups((previousGroups) =>
+      previousGroups.map((group, index) => {
+        if (index !== groupIndex) return group;
+        return {
+          ...group,
+          filters: [
+            ...group.filters,
+            {
+              id: createId(),
+              field: "title",
+              operator: "contains",
+              value: "",
+            },
+          ],
+        };
+      }),
+    );
   };
 
   const removeFilter = (groupIndex: number, filterIndex: number) => {
-    const newFilterGroups = [...filterGroups];
-    newFilterGroups[groupIndex].filters = newFilterGroups[
-      groupIndex
-    ].filters.filter((_, i) => i !== filterIndex);
-    setFilterGroups(newFilterGroups);
+    setFilterGroups((previousGroups) =>
+      previousGroups.map((group, index) => {
+        if (index !== groupIndex) return group;
+        return {
+          ...group,
+          filters: group.filters.filter((_, i) => i !== filterIndex),
+        };
+      }),
+    );
   };
 
   const updateFilter = (
@@ -136,20 +149,27 @@ export function AdvancedSearchDialog({
     filterIndex: number,
     updates: Partial<FilterCondition>,
   ) => {
-    const newFilterGroups = [...filterGroups];
-    const existingFilter = newFilterGroups[groupIndex]?.filters[filterIndex];
-    if (!existingFilter) return;
-    newFilterGroups[groupIndex].filters[filterIndex] = {
-      ...newFilterGroups[groupIndex].filters[filterIndex],
-      ...updates,
-    };
-    setFilterGroups(newFilterGroups);
+    setFilterGroups((previousGroups) =>
+      previousGroups.map((group, index) => {
+        if (index !== groupIndex) return group;
+        const existingFilter = group.filters[filterIndex];
+        if (!existingFilter) return group;
+        return {
+          ...group,
+          filters: group.filters.map((filter, i) =>
+            i === filterIndex ? { ...existingFilter, ...updates } : filter,
+          ),
+        };
+      }),
+    );
   };
 
   const updateGroupOperator = (groupIndex: number, operator: "AND" | "OR") => {
-    const newFilterGroups = [...filterGroups];
-    newFilterGroups[groupIndex].operator = operator;
-    setFilterGroups(newFilterGroups);
+    setFilterGroups((previousGroups) =>
+      previousGroups.map((group, index) =>
+        index === groupIndex ? { ...group, operator } : group,
+      ),
+    );
   };
 
   const handleApply = () => {

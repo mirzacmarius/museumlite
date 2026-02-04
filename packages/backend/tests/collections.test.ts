@@ -8,51 +8,152 @@
 
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
+import { api } from "../convex/_generated/api";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
 
 describe("collections publishing", () => {
-  test("should filter public collections by isPubliclyVisible", async () => {
+  test("listPublic returns empty when org not found", async () => {
     const t = convexTest(schema, modules);
 
-    // Test that only isPubliclyVisible=true collections appear in public queries
-    // This is a placeholder - full implementation would create test data
-    expect(true).toBe(true);
+    const result = await t.query(api.collections.listPublic, {
+      organizationSlug: "missing-org",
+    });
+
+    expect(result.items).toEqual([]);
+    expect(result.hasMore).toBe(false);
   });
 
-  test("should respect isSearchable flag in search results", async () => {
+  test("listPublic returns empty without public_portal access", async () => {
     const t = convexTest(schema, modules);
 
-    // Test that isSearchable=false collections don't appear in search
-    expect(true).toBe(true);
+    await t.run(async (ctx) => {
+      const organizationId = await ctx.db.insert("organizations", {
+        name: "Free Org",
+        slug: "free-org",
+        type: "museum",
+        subscriptionTier: "free",
+        settings: { portalSettings: { isEnabled: true, portalSlug: "gallery" } },
+      });
+
+      const userId = await ctx.db.insert("users", { email: "u@example.com" });
+
+      await ctx.db.insert("collections", {
+        organizationId,
+        accessionNumber: "A-1",
+        title: "Public Item",
+        status: "active",
+        isPubliclyVisible: true,
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      });
+    });
+
+    const result = await t.query(api.collections.listPublic, {
+      organizationSlug: "free-org",
+    });
+
+    expect(result.items).toEqual([]);
+    expect(result.hasMore).toBe(false);
   });
 
-  test("should hide valuation when isValuationVisible is false", async () => {
+  test("listPublic returns empty when portal is disabled", async () => {
     const t = convexTest(schema, modules);
 
-    // Test that valuation data is not returned when isValuationVisible=false
-    expect(true).toBe(true);
+    await t.run(async (ctx) => {
+      const organizationId = await ctx.db.insert("organizations", {
+        name: "Pro Org",
+        slug: "pro-org",
+        type: "museum",
+        subscriptionTier: "pro",
+        settings: { portalSettings: { isEnabled: false, portalSlug: "gallery" } },
+      });
+
+      const userId = await ctx.db.insert("users", { email: "u2@example.com" });
+
+      await ctx.db.insert("collections", {
+        organizationId,
+        accessionNumber: "A-2",
+        title: "Public Item",
+        status: "active",
+        isPubliclyVisible: true,
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      });
+    });
+
+    const result = await t.query(api.collections.listPublic, {
+      organizationSlug: "pro-org",
+    });
+
+    expect(result.items).toEqual([]);
+    expect(result.hasMore).toBe(false);
   });
 
-  test("should show valuation when isValuationVisible is true", async () => {
+  test("getPublic returns null when item not publicly visible", async () => {
     const t = convexTest(schema, modules);
 
-    // Test that valuation data is returned when isValuationVisible=true
-    expect(true).toBe(true);
+    await t.run(async (ctx) => {
+      const organizationId = await ctx.db.insert("organizations", {
+        name: "Pro Org 2",
+        slug: "pro-org-2",
+        type: "museum",
+        subscriptionTier: "pro",
+        settings: { portalSettings: { isEnabled: true, portalSlug: "gallery" } },
+      });
+
+      const userId = await ctx.db.insert("users", { email: "u3@example.com" });
+
+      await ctx.db.insert("collections", {
+        organizationId,
+        accessionNumber: "A-3",
+        title: "Private Item",
+        status: "active",
+        isPubliclyVisible: false,
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      });
+    });
+
+    const result = await t.query(api.collections.getPublic, {
+      organizationSlug: "pro-org-2",
+      accessionNumber: "A-3",
+    });
+
+    expect(result).toBeNull();
   });
 
-  test("should resolve object by publicSlug", async () => {
+  test("listPublic urlSlug uses publicSlug when present", async () => {
     const t = convexTest(schema, modules);
 
-    // Test that getPublic can find objects by publicSlug
-    expect(true).toBe(true);
-  });
+    await t.run(async (ctx) => {
+      const organizationId = await ctx.db.insert("organizations", {
+        name: "Pro Org 3",
+        slug: "pro-org-3",
+        type: "museum",
+        subscriptionTier: "pro",
+        settings: { portalSettings: { isEnabled: true, portalSlug: "gallery" } },
+      });
 
-  test("should resolve object by accessionNumber when no publicSlug", async () => {
-    const t = convexTest(schema, modules);
+      const userId = await ctx.db.insert("users", { email: "u4@example.com" });
 
-    // Test that getPublic falls back to accessionNumber
-    expect(true).toBe(true);
+      await ctx.db.insert("collections", {
+        organizationId,
+        accessionNumber: "A-4",
+        publicSlug: "my-public-slug",
+        title: "Public Item",
+        status: "active",
+        isPubliclyVisible: true,
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      });
+    });
+
+    const result = await t.query(api.collections.listPublic, {
+      organizationSlug: "pro-org-3",
+    });
+
+    expect(result.items[0]?.urlSlug).toBe("my-public-slug");
   });
 });

@@ -35,9 +35,14 @@ describe("auditLog detailed logging", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -105,9 +110,14 @@ describe("auditLog detailed logging", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -183,9 +193,14 @@ describe("auditLog detailed logging", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -252,9 +267,14 @@ describe("auditLog detailed logging", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -381,9 +401,14 @@ describe("auditLog detailed logging", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -497,9 +522,14 @@ describe("auditLog detailed logging", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -568,9 +598,14 @@ describe("auditLog detailed logging", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -635,9 +670,14 @@ describe("auditLog detailed logging", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -703,9 +743,14 @@ describe("auditLog detailed logging", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -778,9 +823,14 @@ describe("auditLog detailed logging", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -858,9 +908,14 @@ describe("auditLog detailed logging", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -923,9 +978,14 @@ describe("auditLog detailed logging", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -1008,9 +1068,14 @@ describe("auditLog detailed logging", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -1077,9 +1142,14 @@ describe("auditLog detailed logging", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -1147,9 +1217,14 @@ describe("auditLog detailed logging", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -1216,9 +1291,14 @@ describe("auditLog detailed logging", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, user1Id, user2Id };

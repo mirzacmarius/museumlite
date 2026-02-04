@@ -278,22 +278,6 @@ export default function InvitePage({ params }: PageProps) {
             >
               {t("signInToAccept")}
             </Button>
-            <Button
-              variant="outline"
-              className="w-full"
-              size="lg"
-              onClick={handleDecline}
-              disabled={isDeclining}
-            >
-              {isDeclining ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("declining")}
-                </>
-              ) : (
-                t("decline")
-              )}
-            </Button>
           </Unauthenticated>
 
           <Authenticated>

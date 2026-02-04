@@ -18,7 +18,6 @@ import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 
 export default function NotificationSettingsPage() {
-  const t = useScopedI18n("settings.notifications");
   const tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
   const [isSubmitting, setIsSubmitting] = useState(false);

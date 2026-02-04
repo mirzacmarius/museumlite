@@ -40,9 +40,15 @@ describe("auditLog", () => {
         });
 
         // Add permission to role
+
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId, roleId };
@@ -112,9 +118,14 @@ describe("auditLog", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -186,9 +197,14 @@ describe("auditLog", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, user1Id, user2Id };
@@ -255,9 +271,14 @@ describe("auditLog", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -329,9 +350,14 @@ describe("auditLog", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -405,9 +431,14 @@ describe("auditLog", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -480,9 +511,14 @@ describe("auditLog", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -565,9 +601,14 @@ describe("auditLog", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, user1Id, user2Id };
@@ -637,9 +678,14 @@ describe("auditLog", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -717,9 +763,14 @@ describe("auditLog", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -782,9 +833,14 @@ describe("auditLog", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -843,9 +899,14 @@ describe("auditLog", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "collections.read",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -908,9 +969,14 @@ describe("audit (notifications & activity)", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "organization.view_analytics",
+          category: "organization",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "organization.view_analytics",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -968,9 +1034,14 @@ describe("audit (notifications & activity)", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "organization.view_analytics",
+          category: "organization",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "organization.view_analytics",
+          permissionId,
         });
 
         return { orgId, userId };
@@ -1037,9 +1108,14 @@ describe("audit (notifications & activity)", () => {
           joinedAt: Date.now(),
         });
 
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "organization.view_analytics",
+          category: "organization",
+        });
+
         await ctx.db.insert("rolePermissions", {
           roleId,
-          permission: "organization.view_analytics",
+          permissionId,
         });
 
         return { orgId, userId };

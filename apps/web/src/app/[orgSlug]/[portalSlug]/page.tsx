@@ -195,6 +195,7 @@ export default function PublicPortalPage() {
             {collections.items.map(
               (item: {
                 _id: string;
+                urlSlug: string;
                 accessionNumber: string;
                 title: string;
                 creator?: string;
@@ -203,7 +204,7 @@ export default function PublicPortalPage() {
               }) => (
                 <Link
                   key={item._id}
-                  href={`${basePath}/${encodeURIComponent(item.accessionNumber)}`}
+                  href={`${basePath}/${encodeURIComponent(item.urlSlug || item.accessionNumber)}`}
                   className="group block"
                 >
                   <div className="aspect-square relative rounded-lg overflow-hidden bg-white/5 border border-white/10 mb-3">
@@ -238,6 +239,7 @@ export default function PublicPortalPage() {
             {collections.items.map(
               (item: {
                 _id: string;
+                urlSlug: string;
                 accessionNumber: string;
                 title: string;
                 creator?: string;
@@ -247,7 +249,7 @@ export default function PublicPortalPage() {
               }) => (
                 <Link
                   key={item._id}
-                  href={`${basePath}/${encodeURIComponent(item.accessionNumber)}`}
+                  href={`${basePath}/${encodeURIComponent(item.urlSlug || item.accessionNumber)}`}
                   className="group flex gap-4 p-4 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
                 >
                   <div className="w-24 h-24 relative rounded overflow-hidden flex-shrink-0">

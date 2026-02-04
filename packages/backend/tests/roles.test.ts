@@ -7,6 +7,42 @@ import schema from "../convex/schema";
 import { modules } from "./testSetup";
 
 describe("roles", () => {
+  test('permissions category supports "sites"', async () => {
+    const t = convexTest(schema, modules);
+
+    const organizationId = await t.run(async (ctx) => {
+      const organizationId = await ctx.db.insert("organizations", {
+        name: "Org",
+        slug: "org",
+        type: "museum",
+      });
+
+      const roleId = await ctx.db.insert("roles", {
+        organizationId,
+        name: "Admin",
+        isSystemRole: true,
+      });
+
+      const permissionId = await ctx.db.insert("permissions", {
+        name: "sites.read",
+        description: "Read sites",
+        category: "sites",
+      });
+
+      await ctx.db.insert("rolePermissions", { roleId, permissionId });
+
+      return organizationId;
+    });
+
+    const permissions = await t.query(api.roles.listPermissions, {});
+    expect(permissions.some((p) => p.category === "sites")).toBe(true);
+
+    const roles = await t.query(api.roles.listRoles, { organizationId });
+    expect(
+      roles.some((role) => role.permissions.some((p) => p.category === "sites")),
+    ).toBe(true);
+  });
+
   describe("createRole", () => {
     test("should create a custom role with permissions", async () => {
       const t = convexTest(schema, modules);
@@ -859,7 +895,20 @@ describe("roles", () => {
     test("should return null for non-existent role", async () => {
       const t = convexTest(schema, modules);
 
-      const fakeRoleId = "jh71bn7mx8qpvnnh5zt0ewynnx6y4s8r" as Id<"roles">;
+      const fakeRoleId = await t.run(async (ctx) => {
+        const organizationId = await ctx.db.insert("organizations", {
+          name: "Temp Org",
+          slug: `temp-org-${Math.random().toString(36).slice(2, 8)}`,
+          type: "museum",
+        });
+        const roleId = await ctx.db.insert("roles", {
+          organizationId,
+          name: "Temp Role",
+          isSystemRole: false,
+        });
+        await ctx.db.delete(roleId);
+        return roleId;
+      });
 
       const role = await t.query(api.roles.getRole, {
         roleId: fakeRoleId,

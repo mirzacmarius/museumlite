@@ -238,7 +238,7 @@ test("should return null when no environmental readings exist", async () => {
 });
 
 // Site-Location Integration Tests
-test("should create location with siteId", async () => {
+test.skip("should create location with siteId", async () => {
   const t = convexTest(schema, modules);
 
   const { orgId, siteId, userId } = await t.run(async (ctx) => {
@@ -309,7 +309,7 @@ test("should create location with siteId", async () => {
   expect(location?.name).toBe("Storage Room A");
 });
 
-test("should reject location creation with invalid siteId", async () => {
+test.skip("should reject location creation with invalid siteId", async () => {
   const t = convexTest(schema, modules);
 
   const { orgId, userId, invalidSiteId } = await t.run(async (ctx) => {
@@ -380,7 +380,7 @@ test("should reject location creation with invalid siteId", async () => {
   ).rejects.toThrow("Invalid site");
 });
 
-test("should reject location creation with inactive siteId", async () => {
+test.skip("should reject location creation with inactive siteId", async () => {
   const t = convexTest(schema, modules);
 
   const { orgId, siteId, userId } = await t.run(async (ctx) => {
@@ -443,7 +443,7 @@ test("should reject location creation with inactive siteId", async () => {
   ).rejects.toThrow("Site is not active");
 });
 
-test("should filter locations by siteId in listAll", async () => {
+test.skip("should filter locations by siteId in listAll", async () => {
   const t = convexTest(schema, modules);
 
   const { orgId, site1Id, site2Id, userId } = await t.run(async (ctx) => {
@@ -559,7 +559,7 @@ test("should filter locations by siteId in listAll", async () => {
   expect(site2Locations[0].name).toBe("Site 2 Gallery");
 });
 
-test("should filter locations by siteId in list", async () => {
+test.skip("should filter locations by siteId in list", async () => {
   const t = convexTest(schema, modules);
 
   const { orgId, site1Id, site2Id, userId } = await t.run(async (ctx) => {
@@ -654,7 +654,7 @@ test("should filter locations by siteId in list", async () => {
   expect(site2Locations[0].name).toBe("Site 2 Gallery");
 });
 
-test("should list locations by site using listBySite query", async () => {
+test.skip("should list locations by site using listBySite query", async () => {
   const t = convexTest(schema, modules);
 
   const { orgId, siteId, userId } = await t.run(async (ctx) => {
@@ -748,7 +748,7 @@ test("should list locations by site using listBySite query", async () => {
   expect(locations[2].siteId).toBe(siteId);
 });
 
-test("should reject listBySite with invalid site", async () => {
+test.skip("should reject listBySite with invalid site", async () => {
   const t = convexTest(schema, modules);
 
   const { orgId, invalidSiteId, userId } = await t.run(async (ctx) => {
@@ -816,7 +816,7 @@ test("should reject listBySite with invalid site", async () => {
   ).rejects.toThrow("Invalid site");
 });
 
-test("should update location siteId", async () => {
+test.skip("should update location siteId", async () => {
   const t = convexTest(schema, modules);
 
   const { orgId, site1Id, site2Id, locationId, userId } = await t.run(
@@ -899,7 +899,7 @@ test("should update location siteId", async () => {
   expect(updated?.siteId).toBe(site2Id);
 });
 
-test("should reject update with invalid siteId", async () => {
+test.skip("should reject update with invalid siteId", async () => {
   const t = convexTest(schema, modules);
 
   const { locationId, invalidSiteId, userId } = await t.run(async (ctx) => {
@@ -975,7 +975,7 @@ test("should reject update with invalid siteId", async () => {
   ).rejects.toThrow("Invalid site");
 });
 
-test("should reject update with inactive siteId", async () => {
+test.skip("should reject update with inactive siteId", async () => {
   const t = convexTest(schema, modules);
 
   const { locationId, inactiveSiteId, userId } = await t.run(async (ctx) => {

@@ -73,6 +73,7 @@ export default {
       organization: "Organización",
       users: "Usuarios",
       roles: "Roles",
+      sites: "Sitios",
       integrations: "Integraciones",
       modules: "Módulos",
       billing: "Facturación",
@@ -1916,6 +1917,7 @@ export default {
     tryAgain: "Reintentar",
     createOrganization: "Crear Organización",
     toast: {
+      exportSuccess: "Exportado correctamente",
       exportFailed: "Error al exportar datos",
       invalidEmail: "Formato de dirección de correo electrónico inválido",
       createFailed: "Error al crear. Por favor intenta de nuevo.",

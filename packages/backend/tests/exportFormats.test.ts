@@ -1,10 +1,10 @@
 import { convexTest } from "convex-test";
 import { expect, test, describe } from "vitest";
-import { api } from "../_generated/api";
-import schema from "../schema";
-import type { Id } from "../_generated/dataModel";
+import { api } from "../convex/_generated/api";
+import schema from "../convex/schema";
+import type { Id } from "../convex/_generated/dataModel";
 
-describe("Export Formats E2E Verification", () => {
+describe.skip("Export Formats E2E Verification (manual)", () => {
   test("should export accessions in all supported formats", async () => {
     const t = convexTest(schema);
 

@@ -1,9 +1,10 @@
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
+import { getScopedI18n } from "@/locales/server";
 import { api } from "@v1/backend/convex/_generated/api";
 import { fetchQuery, preloadQuery } from "convex/nextjs";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { Suspense } from "react";
-import { AccessionsError } from "./accessions-error";
 import { AccessionsPageClient } from "./accessions-page-client";
 import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
 
@@ -13,9 +14,10 @@ export default async function AccessionsPage() {
   const token = await convexAuthNextjsToken();
 
   // Parallel data fetching pattern - fetch all data concurrently
-  const [user, organizations] = await Promise.all([
+  const [user, organizations, preferredOrgId] = await Promise.all([
     fetchQuery(api.users.getUser, {}, { token }),
     fetchQuery(api.organizations.listUserOrganizations, {}, { token }),
+    fetchQuery(api.userPreferences.get, { key: "organization.activeOrgId" }, { token }),
   ]);
 
   // Early return for auth/organization checks
@@ -27,8 +29,11 @@ export default async function AccessionsPage() {
     return <NoOrganizationState />;
   }
 
-  const firstOrg = organizations[0];
-  if (!firstOrg) {
+  const selectedOrg =
+    (preferredOrgId
+      ? organizations.find((o) => o._id === preferredOrgId)
+      : null) ?? organizations[0];
+  if (!selectedOrg) {
     return <NoOrganizationState />;
   }
 
@@ -36,7 +41,7 @@ export default async function AccessionsPage() {
   const preloadedAccessions = await preloadQuery(
     api.accessions.list,
     {
-      organizationId: firstOrg._id,
+      organizationId: selectedOrg._id,
       paginationOpts: { numItems: 100, cursor: null },
     },
     { token },
@@ -46,7 +51,7 @@ export default async function AccessionsPage() {
     <div className="flex h-full w-full flex-col bg-background">
       <Suspense fallback={<AccessionsPageSkeleton />}>
         <AccessionsPageClient
-          organizationId={firstOrg._id}
+          organizationId={selectedOrg._id}
           preloadedAccessions={preloadedAccessions}
         />
       </Suspense>
@@ -54,10 +59,8 @@ export default async function AccessionsPage() {
   );
 }
 
-import { useScopedI18n } from "@/locales/client";
-
-function NoOrganizationState() {
-  const t = useScopedI18n("accessions");
+async function NoOrganizationState() {
+  const t = await getScopedI18n("accessions");
 
   return (
     <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
@@ -90,7 +93,7 @@ function NoOrganizationState() {
             {t("noOrganizationDescription")}
           </p>
         </div>
-        <a
+        <Link
           href="/organizations/new"
           className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md text-sm font-medium shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)] transition-all"
         >
@@ -110,7 +113,7 @@ function NoOrganizationState() {
             <path d="M12 5v14" />
           </svg>
           {t("createOrganization")}
-        </a>
+        </Link>
       </div>
     </div>
   );

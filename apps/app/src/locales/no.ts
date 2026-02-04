@@ -70,6 +70,7 @@ export default {
       organization: "Organisasjon",
       users: "Brukere",
       roles: "Roller",
+      sites: "Steder",
       integrations: "Integrasjoner",
       modules: "Moduler",
       billing: "Fakturering",
@@ -1917,6 +1918,7 @@ export default {
     tryAgain: "Prøv igjen",
     createOrganization: "Opprett Organisasjon",
     toast: {
+      exportSuccess: "Eksportert",
       exportFailed: "Kunne ikke eksportere data",
       invalidEmail: "Ugyldig e-postadresseformat",
       createFailed: "Kunne ikke opprette. Vennligst prøv igjen.",

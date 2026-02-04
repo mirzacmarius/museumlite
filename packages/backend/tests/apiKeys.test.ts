@@ -20,9 +20,6 @@ async function createTestSetup(
       name: "Test Museum",
       slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
       type: "museum",
-      settings: {
-        enabledModules: ["apiKeys"],
-      },
     });
   });
 
@@ -358,18 +355,14 @@ describe("API Key Generation Security", () => {
         name: "Test Museum 2",
         slug: `test-museum-2-${Math.random().toString(36).slice(2, 8)}`,
         type: "museum",
-        settings: {
-          enabledModules: ["apiKeys"],
-        },
       });
     });
 
     const manageSettingsPermissionId = await t.run(async (ctx) => {
-      const permissions = await ctx.db
-        .query("permissions")
-        .filter((q) => q.eq(q.field("name"), "organization.manage_settings"))
-        .collect();
-      return permissions[0]._id;
+      return await ctx.db.insert("permissions", {
+        name: "organization.manage_settings",
+        category: "organization",
+      });
     });
 
     const role2Id = await t.run(async (ctx) => {
