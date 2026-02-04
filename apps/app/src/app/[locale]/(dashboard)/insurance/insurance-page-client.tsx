@@ -317,7 +317,7 @@ export function InsurancePageClient() {
                     <EmptyState
                       title="No policies yet"
                       description="Create your first policy to start tracking coverage."
-                      icon={<Shield className="h-10 w-10 text-muted-foreground" />}
+                      icon={Shield}
                     />
                   ) : (
                     <Table>
@@ -400,7 +400,7 @@ export function InsurancePageClient() {
                     <EmptyState
                       title="No claims yet"
                       description="Create a claim to track incidents and reimbursements."
-                      icon={<Shield className="h-10 w-10 text-muted-foreground" />}
+                      icon={Shield}
                     />
                   ) : (
                     <Table>

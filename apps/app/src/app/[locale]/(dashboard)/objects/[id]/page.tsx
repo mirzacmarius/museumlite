@@ -26,8 +26,6 @@ export default async function ObjectDetailPage({
         preloadedCollectionGroup={null}
         preloadedLocationPath={null}
         preloadedMedia={null}
-        preloadedParentObject={null}
-        preloadedSiblingObjects={null}
       />
     );
   }
@@ -36,8 +34,6 @@ export default async function ObjectDetailPage({
     preloadedCollectionGroup,
     preloadedLocationPath,
     preloadedMedia,
-    preloadedParentObject,
-    preloadedSiblingObjects,
   ] = await Promise.all([
     collection.collectionGroupId
       ? preloadQuery(
@@ -58,16 +54,6 @@ export default async function ObjectDetailPage({
       { collectionId: collection._id },
       { token },
     ),
-    preloadQuery(
-      api.collections.getParentObjectWithThumbnail,
-      { collectionId: collection._id },
-      { token },
-    ),
-    preloadQuery(
-      api.collections.getSiblingObjects,
-      { collectionId: collection._id },
-      { token },
-    ),
   ]);
 
   return (
@@ -77,8 +63,6 @@ export default async function ObjectDetailPage({
       preloadedCollectionGroup={preloadedCollectionGroup}
       preloadedLocationPath={preloadedLocationPath}
       preloadedMedia={preloadedMedia}
-      preloadedParentObject={preloadedParentObject}
-      preloadedSiblingObjects={preloadedSiblingObjects}
     />
   );
 }

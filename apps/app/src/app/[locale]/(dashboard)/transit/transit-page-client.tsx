@@ -42,11 +42,12 @@ type TransitStatus =
   | "in_transit"
   | "out_for_delivery"
   | "delivered"
+  | "delayed"
+  | "held"
   | "cancelled"
-  | "returned"
-  | "damaged";
+  | "returned";
 
-type TransitType = "all" | "incoming" | "outgoing" | "internal" | "exhibition";
+type TransitType = "all" | "incoming" | "outgoing" | "internal" | "return";
 
 const statusOptions: Array<{ label: string; value: TransitStatus }> = [
   { label: "All statuses", value: "all" },
@@ -55,8 +56,9 @@ const statusOptions: Array<{ label: string; value: TransitStatus }> = [
   { label: "In transit", value: "in_transit" },
   { label: "Out for delivery", value: "out_for_delivery" },
   { label: "Delivered", value: "delivered" },
+  { label: "Delayed", value: "delayed" },
+  { label: "Held", value: "held" },
   { label: "Returned", value: "returned" },
-  { label: "Damaged", value: "damaged" },
   { label: "Cancelled", value: "cancelled" },
 ];
 
@@ -65,7 +67,7 @@ const typeOptions: Array<{ label: string; value: TransitType }> = [
   { label: "Incoming", value: "incoming" },
   { label: "Outgoing", value: "outgoing" },
   { label: "Internal", value: "internal" },
-  { label: "Exhibition", value: "exhibition" },
+  { label: "Return", value: "return" },
 ];
 
 const statusColor: Record<string, string> = {
@@ -74,8 +76,9 @@ const statusColor: Record<string, string> = {
   in_transit: "bg-amber-500/10 text-amber-400 border-amber-500/20",
   out_for_delivery: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
   delivered: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  delayed: "bg-rose-500/10 text-rose-400 border-rose-500/20",
+  held: "bg-purple-500/10 text-purple-400 border-purple-500/20",
   returned: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
-  damaged: "bg-rose-500/10 text-rose-400 border-rose-500/20",
   cancelled: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
 };
 
@@ -241,7 +244,7 @@ export function TransitPageClient() {
                 <EmptyState
                   title="No transit records yet"
                   description="Log a shipment or movement to start tracking transit activity."
-                  icon={<Container className="h-10 w-10 text-muted-foreground" />}
+                  icon={Container}
                 />
               ) : (
                 <Table>
@@ -313,7 +316,7 @@ function TransitForm({
   organizationId: Id<"organizations">;
   onSubmit: (payload: {
     organizationId: Id<"organizations">;
-    transitType: "incoming" | "outgoing" | "internal" | "exhibition";
+    transitType: "incoming" | "outgoing" | "internal" | "return";
     originName: string;
     destinationName: string;
     carrier: string;
@@ -323,7 +326,7 @@ function TransitForm({
   }) => Promise<void>;
 }) {
   const [form, setForm] = useState({
-    transitType: "incoming" as "incoming" | "outgoing" | "internal" | "exhibition",
+    transitType: "incoming" as "incoming" | "outgoing" | "internal" | "return",
     originName: "",
     destinationName: "",
     carrier: "",
@@ -398,7 +401,7 @@ function TransitForm({
             <SelectItem value="incoming">Incoming</SelectItem>
             <SelectItem value="outgoing">Outgoing</SelectItem>
             <SelectItem value="internal">Internal</SelectItem>
-            <SelectItem value="exhibition">Exhibition</SelectItem>
+            <SelectItem value="return">Return</SelectItem>
           </SelectContent>
         </Select>
       </div>
