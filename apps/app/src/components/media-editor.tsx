@@ -326,7 +326,7 @@ export function MediaEditor({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-background backdrop-blur-sm"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-background backdrop-blur-sm"
           onClick={onClose}
         >
           {/* Top toolbar */}
