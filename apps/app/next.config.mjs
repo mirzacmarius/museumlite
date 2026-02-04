@@ -1,15 +1,16 @@
 import "./src/env.mjs";
 import { withSentryConfig } from "@sentry/nextjs";
 
-const disableTypecheck =
-  process.env.NEXT_DISABLE_TYPECHECK === "1" || Boolean(process.env.VERCEL);
+// Skip TypeScript checking during Vercel builds to prevent OOM and speed up deployment
+// Type checking should be done in CI/pre-commit hooks instead
+const skipTypeCheck =
+  process.env.SKIP_TYPE_CHECK === "true" ||
+  process.env.NEXT_DISABLE_TYPECHECK === "1" ||
+  Boolean(process.env.VERCEL);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   turbopack: {},
-  typescript: {
-    ignoreBuildErrors: disableTypecheck,
-  },
   images: {
     remotePatterns: [
       {
@@ -18,10 +19,10 @@ const nextConfig = {
       },
     ],
   },
-  // Optimize TypeScript checking for memory-constrained environments
+  // Skip TypeScript checking during build to prevent OOM
+  // Type checking runs in CI/pre-commit hooks for faster deployments
   typescript: {
-    // Only ignore build errors if explicitly enabled via env var (fallback)
-    ignoreBuildErrors: process.env.SKIP_TYPE_CHECK === "true",
+    ignoreBuildErrors: skipTypeCheck,
   },
   // Note: Test files are excluded via tsconfig.json exclude patterns
   // This ensures they don't consume memory during TypeScript type checking
