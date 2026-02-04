@@ -3,8 +3,7 @@
   "display": "Default",
   "compilerOptions": {
     "esModuleInterop": true,
-    "incremental": true,
-    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
+    "incremental": false,
     "isolatedModules": true,
     "lib": [
       "es2022",
@@ -18,8 +17,6 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
-    "target": "ES2022",
-    "maxNodeModuleJsDepth": 1,
-    "assumeChangesOnlyAffectDirectDependencies": true
+    "target": "ES2022"
   }
 }

@@ -18,16 +18,7 @@
         "OPENPANEL_SECRET_KEY",
         "SENTRY_AUTH_TOKEN",
         "SENTRY_ORG",
-        "SENTRY_PROJECT",
-        "RESEND_SENDER_EMAIL_AUTH",
-        "POLAR_ORGANIZATION_TOKEN",
-        "POLAR_WEBHOOK_SECRET",
-        "AUTH_GOOGLE_ID",
-        "AUTH_GOOGLE_SECRET",
-        "LOGTAIL_URL",
-        "LOGTAIL_SOURCE_TOKEN",
-        "SITE_URL",
-        "CONVEX_DEPLOY_KEY"
+        "SENTRY_PROJECT"
       ],
       "inputs": [
         "$TURBO_DEFAULT$",
