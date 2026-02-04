@@ -20,6 +20,7 @@ import {
   requireFeatureAccess,
 } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
+import { getStorageUsageFromMedia } from "./utils/storageUsage";
 
 type EnabledModule =
   | "library"
@@ -623,9 +624,16 @@ export const getUsageStats = query({
         q.eq("organizationId", args.organizationId),
       )
       .collect();
-    const storageUsed = mediaFiles.reduce(
-      (total, file) => total + file.fileSize,
-      0,
+    const mediaVersions = await ctx.db
+      .query("mediaVersions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+    const { totalSize: storageUsed } = await getStorageUsageFromMedia(
+      ctx,
+      mediaFiles,
+      mediaVersions,
     );
 
     // Get export count for current month

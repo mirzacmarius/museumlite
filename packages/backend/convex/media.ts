@@ -6,6 +6,7 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { enforceMediaQuota } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
+import { getStorageUsageFromMedia } from "./utils/storageUsage";
 
 const MAX_SMALL_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
@@ -852,9 +853,19 @@ export const getStorageStats = query({
         q.eq("organizationId", args.organizationId),
       )
       .collect();
+    const mediaVersions = await ctx.db
+      .query("mediaVersions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
 
     const totalFiles = allMedia.length;
-    const totalSize = allMedia.reduce((sum, m) => sum + m.fileSize, 0);
+    const { totalSize } = await getStorageUsageFromMedia(
+      ctx,
+      allMedia,
+      mediaVersions,
+    );
 
     const typeMap = new Map<string, { count: number; size: number }>();
     for (const m of allMedia) {

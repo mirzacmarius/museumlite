@@ -95,6 +95,7 @@ import type * as utils_legacyTemplates from "../utils/legacyTemplates.js";
 import type * as utils_numberGenerator from "../utils/numberGenerator.js";
 import type * as utils_permissions from "../utils/permissions.js";
 import type * as utils_spectrum from "../utils/spectrum.js";
+import type * as utils_storageUsage from "../utils/storageUsage.js";
 import type * as utils_validators from "../utils/validators.js";
 import type * as vehicleDetails from "../vehicleDetails.js";
 import type * as web from "../web.js";
@@ -198,6 +199,7 @@ declare const fullApi: ApiFromModules<{
   "utils/numberGenerator": typeof utils_numberGenerator;
   "utils/permissions": typeof utils_permissions;
   "utils/spectrum": typeof utils_spectrum;
+  "utils/storageUsage": typeof utils_storageUsage;
   "utils/validators": typeof utils_validators;
   vehicleDetails: typeof vehicleDetails;
   web: typeof web;
