@@ -667,10 +667,20 @@ export default defineSchema({
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
+    .index("by_organization_and_uploadedAt", ["organizationId", "uploadedAt"])
+    .index("by_organization_and_fileType_and_uploadedAt", [
+      "organizationId",
+      "fileType",
+      "uploadedAt",
+    ])
     .index("by_uploadStatus", ["uploadStatus"])
     .index("by_collection_and_category", ["collectionId", "mediaCategory"])
     .index("by_content_hash", ["organizationId", "contentHash"])
-    .index("by_rights_status", ["organizationId", "rightsStatus"]),
+    .index("by_rights_status", ["organizationId", "rightsStatus"])
+    .searchIndex("search_media_files", {
+      searchField: "fileName",
+      filterFields: ["organizationId", "fileType"],
+    }),
 
   // Media versions - tracks edited versions of media files
   mediaVersions: defineTable({

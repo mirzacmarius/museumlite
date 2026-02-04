@@ -34,4 +34,3 @@ const track = (options: { event: string } & PostEventPayload["properties"]) => {
 };
 
 export { Provider, track };
-

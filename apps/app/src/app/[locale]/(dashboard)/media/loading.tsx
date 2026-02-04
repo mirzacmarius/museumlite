@@ -1,7 +1,3 @@
-"use client";
-
-import { SkeletonList } from "@v1/ui/skeleton-variants";
-
 export default function MediaLoading() {
   return (
     <div className="flex h-full w-full flex-col bg-background">

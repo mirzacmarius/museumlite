@@ -701,12 +701,8 @@ export const getUploadProgress = query({
 export const listByOrganization = query({
   args: {
     organizationId: v.id("organizations"),
-    fileType: v.optional(v.string()),
-    uploaderId: v.optional(v.id("users")),
-    dateFrom: v.optional(v.number()),
-    dateTo: v.optional(v.number()),
     search: v.optional(v.string()),
-    collectionId: v.optional(v.id("collections")),
+    fileType: v.optional(v.string()),
     paginationOpts: v.object({
       numItems: v.number(),
       cursor: v.union(v.string(), v.null()),
@@ -747,53 +743,50 @@ export const listByOrganization = query({
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "media.read");
 
-    let results = await ctx.db
-      .query("mediaFiles")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const search = args.search?.trim();
+    const fileType = args.fileType;
+    const paginationResult = search
+      ? await ctx.db
+          .query("mediaFiles")
+          .withSearchIndex("search_media_files", (q) => {
+            const withOrg = q
+              .search("fileName", search)
+              .eq("organizationId", args.organizationId);
+            return fileType ? withOrg.eq("fileType", fileType) : withOrg;
+          })
+          .paginate(args.paginationOpts)
+      : fileType
+        ? await ctx.db
+            .query("mediaFiles")
+            .withIndex("by_organization_and_fileType_and_uploadedAt", (q) =>
+              q.eq("organizationId", args.organizationId).eq("fileType", fileType),
+            )
+            .order("desc")
+            .paginate(args.paginationOpts)
+        : await ctx.db
+            .query("mediaFiles")
+            .withIndex("by_organization_and_uploadedAt", (q) =>
+              q.eq("organizationId", args.organizationId),
+            )
+            .order("desc")
+            .paginate(args.paginationOpts);
 
-    if (args.fileType) {
-      results = results.filter((m) => m.fileType === args.fileType);
-    }
-    if (args.uploaderId) {
-      results = results.filter((m) => m.uploadedBy === args.uploaderId);
-    }
-    if (args.dateFrom) {
-      results = results.filter((m) => m.uploadedAt >= args.dateFrom!);
-    }
-    if (args.dateTo) {
-      results = results.filter((m) => m.uploadedAt <= args.dateTo!);
-    }
-    if (args.collectionId) {
-      results = results.filter((m) => m.collectionId === args.collectionId);
-    }
-    if (args.search) {
-      const searchLower = args.search.toLowerCase();
-      results = results.filter(
-        (m) =>
-          m.fileName.toLowerCase().includes(searchLower) ||
-          m.caption?.toLowerCase().includes(searchLower) ||
-          m.photographer?.toLowerCase().includes(searchLower),
-      );
-    }
-
-    results.sort((a, b) => b.uploadedAt - a.uploadedAt);
-
-    const startIndex = args.paginationOpts.cursor
-      ? results.findIndex((m) => m._id === args.paginationOpts.cursor) + 1
-      : 0;
-    const pageResults = results.slice(
-      startIndex,
-      startIndex + args.paginationOpts.numItems,
+    const collectionIds = paginationResult.page.map((m) => m.collectionId);
+    const uploaderIds = paginationResult.page.map((m) => m.uploadedBy);
+    const collections = await batchGetByIds<"collections">(
+      ctx,
+      collectionIds,
+      "collections",
     );
-    const hasMore = startIndex + args.paginationOpts.numItems < results.length;
+    const uploaders = await batchGetByIds<"users">(ctx, uploaderIds, "users");
+
+    const collectionMap = createLookupMap<"collections">(collections);
+    const uploaderMap = createLookupMap<"users">(uploaders);
 
     const enriched = await Promise.all(
-      pageResults.map(async (media) => {
-        const collection = await ctx.db.get(media.collectionId);
-        const uploader = await ctx.db.get(media.uploadedBy);
+      paginationResult.page.map(async (media) => {
+        const collection = collectionMap.get(media.collectionId);
+        const uploader = uploaderMap.get(media.uploadedBy);
         const url = await ctx.storage.getUrl(media.storageId);
         const thumbnailUrl = media.thumbnailStorageId
           ? await ctx.storage.getUrl(media.thumbnailStorageId)
@@ -803,7 +796,7 @@ export const listByOrganization = query({
           _id: media._id,
           _creationTime: media._creationTime,
           collectionId: media.collectionId,
-          collectionTitle: collection?.title || "Unknown",
+          collectionTitle: collection?.title ?? "Unknown",
           accessionNumber: collection?.accessionNumber,
           storageId: media.storageId,
           thumbnailStorageId: media.thumbnailStorageId,
@@ -819,7 +812,7 @@ export const listByOrganization = query({
           url,
           thumbnailUrl,
           uploadedAt: media.uploadedAt,
-          uploaderName: uploader?.name || uploader?.username,
+          uploaderName: uploader?.name ?? uploader?.username,
           currentVersionId: media.currentVersionId,
           versionCount: media.versionCount,
         };
@@ -828,10 +821,8 @@ export const listByOrganization = query({
 
     return {
       page: enriched,
-      continueCursor: hasMore
-        ? pageResults[pageResults.length - 1]?._id ?? null
-        : null,
-      isDone: !hasMore,
+      continueCursor: paginationResult.continueCursor,
+      isDone: paginationResult.isDone,
     };
   },
 });
