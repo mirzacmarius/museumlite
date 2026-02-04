@@ -111,18 +111,19 @@ export const updateRole = mutation({
     } = {};
 
     if (args.name !== undefined) {
+      const nextName = args.name;
       // Check if new name conflicts
       const existing = await ctx.db
         .query("roles")
         .withIndex("by_organization_and_name", (q) =>
-          q.eq("organizationId", role.organizationId).eq("name", args.name),
+          q.eq("organizationId", role.organizationId).eq("name", nextName),
         )
         .first();
 
       if (existing && existing._id !== args.roleId) {
         throw new Error("Role name already exists");
       }
-      updates.name = args.name;
+      updates.name = nextName;
     }
 
     if (args.description !== undefined) {

@@ -20,10 +20,6 @@ import { fileURLToPath } from "node:url";
 
 type ModuleLoader = () => Promise<unknown>;
 
-const meta = import.meta as {
-  glob?: (pattern: string) => Record<string, ModuleLoader>;
-};
-
 function mergeModuleMaps(
   ...maps: Array<Record<string, ModuleLoader> | null | undefined>
 ): Record<string, ModuleLoader> {
@@ -46,11 +42,11 @@ function withoutDtsFiles(
 }
 
 const globModules =
-  typeof meta.glob === "function"
+  typeof import.meta.glob === "function"
     ? withoutDtsFiles(
         mergeModuleMaps(
-          meta.glob("../convex/**/*.ts") as Record<string, ModuleLoader>,
-          meta.glob("../convex/**/*.js") as Record<string, ModuleLoader>,
+          import.meta.glob("../convex/**/*.ts") as Record<string, ModuleLoader>,
+          import.meta.glob("../convex/**/*.js") as Record<string, ModuleLoader>,
         ),
       )
     : null;

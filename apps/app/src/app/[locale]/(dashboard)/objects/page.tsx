@@ -4,12 +4,14 @@ import { DeaccessionDialog } from "@/components/deaccession-dialog";
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useCursorStackPagination } from "@/hooks/use-cursor-stack-pagination";
 import { useObjectFilters } from "@/hooks/use-url-filters";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
+import { CursorPagination } from "@v1/ui/cursor-pagination";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,21 +19,11 @@ import {
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
 import { EmptyState } from "@v1/ui/empty-state";
-import { Input } from "@v1/ui/input";
-import { Label } from "@v1/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@v1/ui/select";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
   Archive,
   Building2,
-  Filter,
   LayoutGrid,
   List,
   MapPin,
@@ -39,11 +31,10 @@ import {
   Package,
   Plus,
   Search,
-  X,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BulkActionsBar } from "./_components/bulk-actions-bar";
 import { BulkAddToGroupDialog } from "./_components/bulk-add-to-group-dialog";
@@ -55,8 +46,9 @@ import {
   ColumnConfigDropdown,
   useDefaultColumns,
 } from "./_components/column-config";
+import { ObjectAppliedFilters } from "./_components/object-applied-filters";
+import { ObjectFiltersDropdown } from "./_components/object-filters-dropdown";
 import { ObjectGridView } from "./_components/object-grid-view";
-import { SavedViewsDropdown } from "./_components/saved-views-dropdown";
 import { type ViewMode, ViewToggle } from "./_components/view-toggle";
 
 export default function CollectionsPage() {
@@ -137,12 +129,13 @@ function CollectionFiltersAndList({
   onExport: () => Promise<Record<string, unknown>[] | undefined>;
 }) {
   const t = useScopedI18n("objects");
-  const [showFilters, setShowFilters] = useState(false);
-  const { filters, setFilters, resetFilters, hasActiveFilters } =
-    useObjectFilters();
+  const { filters, setFilters, resetFilters } = useObjectFilters();
 
-  const [cursor, setCursor] = useState<string | null>(null);
-  const prevFiltersRef = useRef(filters);
+  const resetKey = useMemo(
+    () => JSON.stringify({ organizationId, filters }),
+    [filters, organizationId],
+  );
+  const { cursor, goNext, reset } = useCursorStackPagination({ resetKey });
 
   const [selectedIds, setSelectedIds] = useState<Set<Id<"collections">>>(
     new Set(),
@@ -178,6 +171,7 @@ function CollectionFiltersAndList({
   const locations = useQuery(api.locations.listAllWithPaths, {
     organizationId,
   });
+  const typeOptions = useQuery(api.typeOptions.list, { organizationId });
 
   useEffect(() => {
     if (savedViewMode) {
@@ -229,13 +223,12 @@ function CollectionFiltersAndList({
     });
   };
 
-  // Reset cursor when filters change
-  useEffect(() => {
-    if (JSON.stringify(prevFiltersRef.current) !== JSON.stringify(filters)) {
-      prevFiltersRef.current = filters;
-      setCursor(null);
-    }
-  }, [filters]);
+  const statusFilter =
+    filters.status !== "any" && filters.status !== "all"
+      ? filters.status
+      : undefined;
+  const includeDeaccessioned =
+    filters.status === "all" ? true : undefined;
 
   const collections = useQuery(
     api.collections.list,
@@ -244,10 +237,8 @@ function CollectionFiltersAndList({
           organizationId,
           paginationOpts: { numItems: 50, cursor },
           search: filters.search || undefined,
-          status:
-            filters.status !== "all"
-              ? (filters.status as "deaccessioned")
-              : undefined,
+          status: statusFilter,
+          includeDeaccessioned,
           objectType: filters.objectType || undefined,
           culture: filters.culture || undefined,
           period: filters.period || undefined,
@@ -268,14 +259,16 @@ function CollectionFiltersAndList({
       : "skip",
   );
 
-  const uniqueObjectTypes = useMemo(() => {
-    if (!collections?.page) return [];
+  const objectTypeOptions = useMemo(() => {
     const types = new Set<string>();
-    collections.page.forEach((item) => {
+    typeOptions?.forEach((option) => {
+      if (option.name) types.add(option.name);
+    });
+    collections?.page?.forEach((item) => {
       if (item.objectType) types.add(item.objectType);
     });
-    return Array.from(types).sort();
-  }, [collections]);
+    return Array.from(types).filter((t) => t.trim() !== "").sort();
+  }, [collections, typeOptions]);
 
   const handleSelectItem = (id: Id<"collections">, selected: boolean) => {
     setSelectedIds((prev) => {
@@ -396,29 +389,18 @@ function CollectionFiltersAndList({
                 className="w-64 bg-zinc-900/50 border border-zinc-800 rounded-md py-1.5 pl-8 pr-3 text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-indigo-500/50 focus:bg-zinc-900/80 transition-all"
               />
             </div>
-            <button
-              type="button"
-              onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-3 py-1.5 border rounded-md text-xs transition-colors ${
-                showFilters || hasActiveFilters
-                  ? "bg-zinc-800 border-zinc-700 text-zinc-200"
-                  : "bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              <Filter className="h-3.5 w-3.5" />
-              {t("filters.title")}
-            </button>
-
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300"
-              >
-                <X className="h-3 w-3" />
-                {t("filters.clear")}
-              </button>
-            )}
+            <ObjectFiltersDropdown
+              filters={{
+                status: filters.status,
+                objectType: filters.objectType,
+                locationId: filters.locationId,
+                collectionGroupId: filters.collectionGroupId,
+              }}
+              onChange={setFilters}
+              objectTypes={objectTypeOptions}
+              locations={locations}
+              collectionGroups={collectionGroups}
+            />
           </div>
           <div className="flex items-center gap-3">
             <div className="flex bg-zinc-900 p-0.5 rounded-md border border-zinc-800">
@@ -477,107 +459,25 @@ function CollectionFiltersAndList({
           </div>
         </div>
 
-        {showFilters && (
-          <div className="px-6 py-3 border-t border-zinc-800/60 bg-zinc-900/40 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in slide-in-from-top-2 duration-200">
-            <div className="space-y-1">
-              <label className="text-[10px] text-zinc-500 uppercase font-medium">
-                {t("filters.status")}
-              </label>
-              <Select
-                value={filters.status}
-                onValueChange={(value) =>
-                  setFilters({
-                    status: value as "active" | "deaccessioned" | "all",
-                  })
-                }
-              >
-                <SelectTrigger className="w-full h-8 bg-zinc-950 border border-zinc-800 rounded text-xs px-2 text-zinc-300 focus:ring-0 focus:border-zinc-700">
-                  <SelectValue placeholder={t("filters.allStatuses")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("filters.active")}</SelectItem>
-                  <SelectItem value="deaccessioned">
-                    {t("filters.deaccessioned")}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] text-zinc-500 uppercase font-medium">
-                {t("filters.objectType")}
-              </label>
-              <Select
-                value={filters.objectType || "all"}
-                onValueChange={(value) =>
-                  setFilters({ objectType: value === "all" ? "" : value })
-                }
-              >
-                <SelectTrigger className="w-full h-8 bg-zinc-950 border border-zinc-800 rounded text-xs px-2 text-zinc-300 focus:ring-0 focus:border-zinc-700">
-                  <SelectValue placeholder={t("filters.allTypes")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("filters.allTypes")}</SelectItem>
-                  {uniqueObjectTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] text-zinc-500 uppercase font-medium">
-                {t("filters.location")}
-              </label>
-              <Select
-                value={filters.locationId || "all"}
-                onValueChange={(value) =>
-                  setFilters({ locationId: value === "all" ? "" : value })
-                }
-              >
-                <SelectTrigger className="w-full h-8 bg-zinc-950 border border-zinc-800 rounded text-xs px-2 text-zinc-300 focus:ring-0 focus:border-zinc-700">
-                  <SelectValue placeholder={t("filters.allLocations")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">
-                    {t("filters.allLocations")}
-                  </SelectItem>
-                  {locations?.map((location) => (
-                    <SelectItem key={location._id} value={location._id}>
-                      {location.path.map((p) => p.name).join(" > ")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] text-zinc-500 uppercase font-medium">
-                {t("filters.collectionGroup")}
-              </label>
-              <Select
-                value={filters.collectionGroupId || "all"}
-                onValueChange={(value) =>
-                  setFilters({
-                    collectionGroupId: value === "all" ? "" : value,
-                  })
-                }
-              >
-                <SelectTrigger className="w-full h-8 bg-zinc-950 border border-zinc-800 rounded text-xs px-2 text-zinc-300 focus:ring-0 focus:border-zinc-700">
-                  <SelectValue placeholder={t("filters.allGroups")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("filters.allGroups")}</SelectItem>
-                  {collectionGroups?.map((group) => (
-                    <SelectItem key={group._id} value={group._id}>
-                      {group.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        {(filters.search !== "" ||
+          filters.status !== "any" ||
+          filters.objectType !== "" ||
+          filters.locationId !== "" ||
+          filters.collectionGroupId !== "") && (
+          <div className="px-6 pb-4">
+            <ObjectAppliedFilters
+              filters={{
+                search: filters.search,
+                status: filters.status,
+                objectType: filters.objectType,
+                locationId: filters.locationId,
+                collectionGroupId: filters.collectionGroupId,
+              }}
+              locations={locations}
+              collectionGroups={collectionGroups}
+              onChange={setFilters}
+              onClearAll={resetFilters}
+            />
           </div>
         )}
       </div>
@@ -593,10 +493,10 @@ function CollectionFiltersAndList({
           onSelectAll={handleSelectAll}
           onLoadMore={() => {
             if (collections && !collections.isDone) {
-              setCursor(collections.continueCursor);
+              goNext(collections.continueCursor);
             }
           }}
-          onReset={() => setCursor(null)}
+          onReset={reset}
         />
       </div>
 
@@ -807,25 +707,20 @@ function CollectionList({
         </div>
       )}
 
-      <div className="px-6 py-3 border-t border-zinc-800/60 bg-zinc-950 flex items-center justify-between text-xs text-zinc-500 shrink-0">
-        <div>
-          {t("pagination.showing")}{" "}
-          <span className="text-zinc-300">{collections.page.length}</span>{" "}
-          {t("pagination.items")}
-        </div>
-        <div className="flex gap-2">
-          {!collections.isDone && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onLoadMore}
-              className="h-7 text-xs bg-zinc-900 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-300"
-            >
-              {t("pagination.loadMore")}
-            </Button>
-          )}
-        </div>
-      </div>
+      <CursorPagination
+        variant="loadMore"
+        isDone={collections.isDone}
+        onLoadMore={onLoadMore}
+        loadMoreLabel={t("pagination.loadMore")}
+        countLabel={
+          <>
+            {t("pagination.showing")}{" "}
+            <span className="text-zinc-300">{collections.page.length}</span>{" "}
+            {t("pagination.items")}
+          </>
+        }
+        className="shrink-0 border-t border-zinc-800/60 bg-zinc-950"
+      />
     </div>
   );
 }

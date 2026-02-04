@@ -8,7 +8,14 @@ import {
 } from "nuqs";
 import { useCallback, useMemo } from "react";
 
-type ObjectStatus = "active" | "deaccessioned" | "all";
+export type ObjectStatus =
+  | "any"
+  | "all"
+  | "active"
+  | "loaned"
+  | "deaccessioned"
+  | "archived"
+  | "deleted";
 
 // Advanced filter types matching AdvancedSearchDialog
 export type FilterOperator =
@@ -62,10 +69,14 @@ export function useObjectFilters() {
   const [status, setStatus] = useQueryState(
     "status",
     parseAsStringLiteral([
-      "active",
-      "deaccessioned",
+      "any",
       "all",
-    ] as const).withDefault("all"),
+      "active",
+      "loaned",
+      "deaccessioned",
+      "archived",
+      "deleted",
+    ] as const).withDefault("any"),
   );
   const [objectType, setObjectType] = useQueryState(
     "objectType",
@@ -220,7 +231,7 @@ export function useObjectFilters() {
 
     return (
       search !== "" ||
-      status !== "all" ||
+      status !== "any" ||
       objectType !== "" ||
       culture !== "" ||
       period !== "" ||
@@ -262,6 +273,56 @@ export function useObjectFilters() {
     setCatalogedTo,
     setAdvancedFilters,
     setFilterCombinations,
+  };
+}
+
+export type MediaFileType = "all" | "image" | "document" | "3d";
+
+export function useMediaFilters() {
+  const [search, setSearch] = useQueryState(
+    "search",
+    parseAsString.withDefault(""),
+  );
+  const [fileType, setFileType] = useQueryState(
+    "fileType",
+    parseAsStringLiteral(["all", "image", "document", "3d"] as const).withDefault(
+      "all",
+    ),
+  );
+
+  const filters = useMemo(
+    () => ({
+      search,
+      fileType: fileType as MediaFileType,
+    }),
+    [fileType, search],
+  );
+
+  const setFilters = useCallback(
+    (newFilters: Partial<typeof filters>) => {
+      if (newFilters.search !== undefined) setSearch(newFilters.search || null);
+      if (newFilters.fileType !== undefined)
+        setFileType(newFilters.fileType || null);
+    },
+    [setFileType, setSearch],
+  );
+
+  const resetFilters = useCallback(() => {
+    setSearch(null);
+    setFileType(null);
+  }, [setFileType, setSearch]);
+
+  const hasActiveFilters = useMemo(() => {
+    return search !== "" || fileType !== "all";
+  }, [fileType, search]);
+
+  return {
+    filters,
+    setFilters,
+    resetFilters,
+    hasActiveFilters,
+    setSearch,
+    setFileType,
   };
 }
 

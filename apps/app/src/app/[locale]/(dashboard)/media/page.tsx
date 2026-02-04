@@ -3,9 +3,13 @@
 import { useOrganization } from "@/components/organization-provider";
 import { formatDistanceLocale } from "@/lib/format-date";
 import { useCurrentLocale, useI18n } from "@/locales/client";
+import { useCursorStackPagination } from "@/hooks/use-cursor-stack-pagination";
+import { useMediaFilters } from "@/hooks/use-url-filters";
+import type { MediaFileType } from "@/hooks/use-url-filters";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { CursorPagination } from "@v1/ui/cursor-pagination";
 import {
   Dialog,
   DialogContent,
@@ -37,8 +41,9 @@ import {
   Video,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MediaEditorDialog } from "@/components/media-editor-dialog";
+import { MediaAppliedFilters } from "./_components/media-applied-filters";
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -114,23 +119,22 @@ function MediaBrowser({
   organizationId: Id<"organizations">;
 }) {
   const t = useI18n();
-  const [fileType, setFileType] = useState<string>("all");
-  const [search, setSearch] = useState("");
-  const [cursor, setCursor] = useState<string | null>(null);
+  const { filters, setFilters, resetFilters } = useMediaFilters();
+  const resetKey = useMemo(
+    () => JSON.stringify({ organizationId, filters }),
+    [filters, organizationId],
+  );
+  const { cursor, goNext, goPrev, canGoPrev } = useCursorStackPagination({
+    resetKey,
+  });
   const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
-  const prevFiltersRef = useRef({ fileType, search });
-
-  useEffect(() => {
-    setCursor(null);
-    prevFiltersRef.current = { fileType, search };
-  }, [organizationId, fileType, search]);
 
   const stats = useQuery(api.media.getStorageStats, { organizationId });
 
   const media = useQuery(api.media.listByOrganization, {
     organizationId,
-    fileType: fileType !== "all" ? fileType : undefined,
-    search: search || undefined,
+    fileType: filters.fileType !== "all" ? filters.fileType : undefined,
+    search: filters.search || undefined,
     paginationOpts: { numItems: 48, cursor },
   });
 
@@ -164,7 +168,7 @@ function MediaBrowser({
     }
   };
 
-  const tabs = [
+  const tabs: Array<{ id: MediaFileType; label: string }> = [
     { id: "all", label: "All Assets" },
     { id: "image", label: "Images" },
     { id: "document", label: "Documents" },
@@ -203,9 +207,9 @@ function MediaBrowser({
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setFileType(tab.id)}
+                onClick={() => setFilters({ fileType: tab.id })}
                 className={`rounded-full px-3 py-1.5 text-xs transition-colors ${
-                  fileType === tab.id
+                  filters.fileType === tab.id
                     ? "bg-zinc-200 font-semibold text-zinc-900"
                     : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
                 }`}
@@ -219,12 +223,19 @@ function MediaBrowser({
             <input
               type="text"
               placeholder="Search files..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={filters.search}
+              onChange={(e) => setFilters({ search: e.target.value })}
               className="w-48 rounded-full border border-zinc-800 bg-zinc-900 py-1 pl-8 pr-4 text-xs text-zinc-300 transition-all focus:border-zinc-700 focus:outline-none"
             />
           </div>
         </div>
+
+        <MediaAppliedFilters
+          className="pt-1"
+          filters={{ fileType: filters.fileType, search: filters.search }}
+          onChange={setFilters}
+          onClearAll={resetFilters}
+        />
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
@@ -328,29 +339,25 @@ function MediaBrowser({
         )}
       </div>
 
-      {media && !media.isDone && (
-        <div className="flex items-center justify-between border-t border-zinc-800/60 bg-zinc-950 px-6 py-3 text-xs text-zinc-500">
-          <div>
-            Showing <span className="text-zinc-300">{media.page.length}</span>{" "}
-            files
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled
-              className="rounded border border-zinc-800 bg-zinc-900 px-3 py-1 transition-colors hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              onClick={() => setCursor(media.continueCursor)}
-              className="rounded border border-zinc-800 bg-zinc-900 px-3 py-1 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
-            >
-              Next
-            </button>
-          </div>
-        </div>
+      {media && (
+        <CursorPagination
+          variant="nextPrev"
+          canPrev={canGoPrev}
+          canNext={!media.isDone && !!media.continueCursor}
+          onPrev={goPrev}
+          onNext={() => {
+            if (media.isDone) return;
+            if (!media.continueCursor) return;
+            goNext(media.continueCursor);
+          }}
+          countLabel={
+            <>
+              Showing{" "}
+              <span className="text-zinc-300">{media.page.length}</span> files
+            </>
+          }
+          className="border-t border-zinc-800/60 bg-zinc-950"
+        />
       )}
 
       {selectedMedia && (

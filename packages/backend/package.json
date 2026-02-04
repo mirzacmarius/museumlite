@@ -29,6 +29,7 @@
     "@edge-runtime/vm": "^5.0.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
+    "@types/qrcode": "^1.5.5",
     "convex-test": "^0.0.41",
     "vitest": "^4.0.17"
   }
