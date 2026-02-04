@@ -57,6 +57,11 @@ export async function MediaPageData({
     { organizationId: selectedOrg._id },
     { token },
   );
+  const preloadedUsage = await preloadQuery(
+    api.organizations.getUsageStats,
+    { organizationId: selectedOrg._id },
+    { token },
+  );
 
   const preloadedMedia = await preloadQuery(
     api.media.listByOrganization,
@@ -74,6 +79,7 @@ export async function MediaPageData({
       organizationId={selectedOrg._id}
       initialFilters={{ fileType, search }}
       preloadedStats={preloadedStats}
+      preloadedUsage={preloadedUsage}
       preloadedMedia={preloadedMedia}
     />
   );

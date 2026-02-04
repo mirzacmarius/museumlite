@@ -37,6 +37,7 @@ type MediaPageClientProps = {
   organizationId: Id<"organizations">;
   initialFilters: { fileType: MediaFileType; search: string };
   preloadedStats: Preloaded<typeof api.media.getStorageStats>;
+  preloadedUsage: Preloaded<typeof api.organizations.getUsageStats>;
   preloadedMedia: Preloaded<typeof api.media.listByOrganization>;
 };
 
@@ -44,6 +45,7 @@ export function MediaPageClient({
   organizationId,
   initialFilters,
   preloadedStats,
+  preloadedUsage,
   preloadedMedia,
 }: MediaPageClientProps) {
   const t = useI18n();
@@ -81,6 +83,12 @@ export function MediaPageClient({
     shouldUsePreloaded ? "skip" : { organizationId },
   );
   const stats = shouldUsePreloaded ? preloadedStatsResult : liveStatsResult;
+  const preloadedUsageResult = usePreloadedQuery(preloadedUsage);
+  const liveUsageResult = useQuery(
+    api.organizations.getUsageStats,
+    shouldUsePreloaded ? "skip" : { organizationId },
+  );
+  const usage = shouldUsePreloaded ? preloadedUsageResult : liveUsageResult;
 
   const queryArgs = useMemo(
     () => ({
@@ -123,7 +131,11 @@ export function MediaPageClient({
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 <span>{formatFileSize(stats.totalSize)} Used</span>
                 <span className="text-zinc-700">/</span>
-                <span>2TB Total</span>
+                {usage?.storage.limit === null ? (
+                  <span>Unlimited</span>
+                ) : (
+                  <span>{formatFileSize(usage.storage.limit)} Total</span>
+                )}
               </div>
             )}
             <button
