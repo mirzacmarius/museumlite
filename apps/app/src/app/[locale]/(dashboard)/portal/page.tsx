@@ -1,10 +1,12 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { FeatureGuard } from "@v1/ui/feature-guard";
 import { useQuery } from "convex/react";
 import { Building2, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
@@ -14,10 +16,12 @@ import { PortalSettingsSidebar } from "./_components/portal-settings-sidebar";
 export default function PublicPortalPage() {
   const common = useScopedI18n("common");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
+  const { hasFeature } = useFeatureAccess();
+  const isPortalLocked = !hasFeature("public_portal");
 
   const portalSettings = useQuery(
     api.organizations.getPortalSettings,
-    currentOrganizationId
+    currentOrganizationId && !isPortalLocked
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
@@ -53,6 +57,18 @@ export default function PublicPortalPage() {
     );
   }
 
+  if (isPortalLocked) {
+    return (
+      <FeatureGuard
+        featureName="Public Portal"
+        isLocked
+        tierNeeded="pro"
+      >
+        <div className="min-h-[400px]" />
+      </FeatureGuard>
+    );
+  }
+
   if (portalSettings === undefined) {
     return (
       <div className="flex h-full w-full items-center justify-center">
@@ -62,24 +78,26 @@ export default function PublicPortalPage() {
   }
 
   return (
-    <div className="flex h-full w-full flex-col bg-background px-4 sm:px-6 py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-foreground">
-          Public Portal
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Configure and preview your public-facing collection portal
-        </p>
-      </div>
+    <FeatureGuard featureName="Public Portal" isLocked={false} tierNeeded="pro">
+      <div className="flex h-full w-full flex-col bg-background px-4 sm:px-6 py-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-foreground">
+            Public Portal
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Configure and preview your public-facing collection portal
+          </p>
+        </div>
 
-      <div className="flex flex-1 gap-6 min-h-0">
-        <PortalSettingsSidebar />
-        <PortalPreview
-          isEnabled={portalSettings.isEnabled}
-          orgSlug={portalSettings.orgSlug}
-          portalSlug={portalSettings.portalSlug}
-        />
+        <div className="flex flex-1 gap-6 min-h-0">
+          <PortalSettingsSidebar />
+          <PortalPreview
+            isEnabled={portalSettings.isEnabled}
+            orgSlug={portalSettings.orgSlug}
+            portalSlug={portalSettings.portalSlug}
+          />
+        </div>
       </div>
-    </div>
+    </FeatureGuard>
   );
 }
