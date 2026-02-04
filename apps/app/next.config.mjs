@@ -12,6 +12,11 @@ const nextConfig = {
       },
     ],
   },
+  // Optimize TypeScript checking for memory-constrained environments
+  typescript: {
+    // Only ignore build errors if explicitly enabled via env var (fallback)
+    ignoreBuildErrors: process.env.SKIP_TYPE_CHECK === "true",
+  },
 };
 
 export default withSentryConfig(nextConfig, {
