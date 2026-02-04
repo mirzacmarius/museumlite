@@ -1,9 +1,20 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
+
+function authedForUser(
+  t: ReturnType<typeof convexTest>,
+  userId: Id<"users">,
+) {
+  return t.withIdentity({
+    subject: `${userId}|session-1`,
+    issuer: "https://example.test",
+  });
+}
 
 test("should create import job from CSV", async () => {
   const t = convexTest(schema, modules);
@@ -45,13 +56,10 @@ test("getImportTemplate returns PastPerfect template", async () => {
     });
   });
 
-  const template = await t.query(
-    api.imports.getImportTemplate,
-    {
-      templateName: "PastPerfect",
-    },
-    { as: userId },
-  );
+  const authed = authedForUser(t, userId);
+  const template = await authed.query(api.imports.getImportTemplate, {
+    templateName: "PastPerfect",
+  });
 
   expect(template).not.toBeNull();
   expect(template?.name).toBe("PastPerfect");
@@ -72,13 +80,10 @@ test("getImportTemplate returns TMS template", async () => {
     });
   });
 
-  const template = await t.query(
-    api.imports.getImportTemplate,
-    {
-      templateName: "TMS",
-    },
-    { as: userId },
-  );
+  const authed = authedForUser(t, userId);
+  const template = await authed.query(api.imports.getImportTemplate, {
+    templateName: "TMS",
+  });
 
   expect(template).not.toBeNull();
   expect(template?.name).toBe("TMS");
@@ -99,7 +104,8 @@ test("listImportTemplates returns both PastPerfect and TMS templates", async () 
     });
   });
 
-  const templates = await t.query(api.imports.listImportTemplates, {}, { as: userId });
+  const authed = authedForUser(t, userId);
+  const templates = await authed.query(api.imports.listImportTemplates, {});
 
   expect(templates).toBeDefined();
   expect(templates.length).toBe(2);

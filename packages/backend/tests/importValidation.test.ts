@@ -1,9 +1,20 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
+
+function authedForUser(
+  t: ReturnType<typeof convexTest>,
+  userId: Id<"users">,
+) {
+  return t.withIdentity({
+    subject: `${userId}|session-1`,
+    issuer: "https://example.test",
+  });
+}
 
 const createOrg = () => ({
   name: "Test Museum",
@@ -51,7 +62,8 @@ describe("Import Validation - Accessions", () => {
       return { orgId, userId };
     });
 
-    const result = await t.mutation(
+    const authed = authedForUser(t, userId);
+    const result = await authed.mutation(
       api.importValidation.validateAccessionImport,
       {
         organizationId: orgId,
@@ -66,7 +78,6 @@ describe("Import Validation - Accessions", () => {
           },
         ],
       },
-      { as: userId },
     );
 
     expect(result.isValid).toBe(true);
@@ -108,7 +119,8 @@ describe("Import Validation - Accessions", () => {
       return { orgId, userId };
     });
 
-    const result = await t.mutation(
+    const authed = authedForUser(t, userId);
+    const result = await authed.mutation(
       api.importValidation.validateAccessionImport,
       {
         organizationId: orgId,
@@ -120,7 +132,6 @@ describe("Import Validation - Accessions", () => {
           },
         ],
       },
-      { as: userId },
     );
 
     expect(result.isValid).toBe(false);
@@ -162,7 +173,8 @@ describe("Import Validation - Accessions", () => {
       return { orgId, userId };
     });
 
-    const result = await t.mutation(
+    const authed = authedForUser(t, userId);
+    const result = await authed.mutation(
       api.importValidation.validateAccessionImport,
       {
         organizationId: orgId,
@@ -174,7 +186,6 @@ describe("Import Validation - Accessions", () => {
           },
         ],
       },
-      { as: userId },
     );
 
     expect(result.isValid).toBe(false);
@@ -218,7 +229,8 @@ describe("Import Validation - Accessions", () => {
       return { orgId, userId };
     });
 
-    const result = await t.mutation(
+    const authed = authedForUser(t, userId);
+    const result = await authed.mutation(
       api.importValidation.validateAccessionImport,
       {
         organizationId: orgId,
@@ -230,7 +242,6 @@ describe("Import Validation - Accessions", () => {
           },
         ],
       },
-      { as: userId },
     );
 
     expect(
@@ -273,7 +284,8 @@ describe("Import Validation - Accessions", () => {
       return { orgId, userId };
     });
 
-    const result = await t.mutation(
+    const authed = authedForUser(t, userId);
+    const result = await authed.mutation(
       api.importValidation.validateAccessionImport,
       {
         organizationId: orgId,
@@ -286,7 +298,6 @@ describe("Import Validation - Accessions", () => {
           },
         ],
       },
-      { as: userId },
     );
 
     expect(result.isValid).toBe(false);
@@ -328,7 +339,8 @@ describe("Import Validation - Accessions", () => {
       return { orgId, userId };
     });
 
-    const result = await t.mutation(
+    const authed = authedForUser(t, userId);
+    const result = await authed.mutation(
       api.importValidation.validateAccessionImport,
       {
         organizationId: orgId,
@@ -350,7 +362,6 @@ describe("Import Validation - Accessions", () => {
           },
         ],
       },
-      { as: userId },
     );
 
     expect(result.totalRows).toBe(3);

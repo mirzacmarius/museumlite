@@ -2,7 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { useQuery } from "convex/react";
+import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { Suspense } from "react";
 import { KanbanColumn } from "./kanban-column";
@@ -17,7 +17,7 @@ type WorkflowStep = {
 type AccessionKanbanProps = {
   organizationId: Id<"organizations">;
   searchQuery: string;
-  preloadedAccessions: unknown;
+  preloadedAccessions: Preloaded<typeof api.accessions.list>;
 };
 
 export function AccessionKanban({
@@ -28,6 +28,7 @@ export function AccessionKanban({
   const workflowSteps = useQuery(api.accessions.getWorkflowSteps, {
     organizationId,
   });
+  const accessions = usePreloadedQuery(preloadedAccessions);
 
   if (workflowSteps === undefined) {
     return (
@@ -47,12 +48,11 @@ export function AccessionKanban({
         {workflowSteps.steps.map((step: WorkflowStep) => (
           <Suspense key={step.stepNumber} fallback={<KanbanColumnSkeleton />}>
             <KanbanColumn
-              organizationId={organizationId}
               stepNumber={step.stepNumber}
               stepName={step.name}
               roleName={step.roleName}
               searchQuery={searchQuery}
-              preloadedAccessions={preloadedAccessions}
+              accessions={accessions}
             />
           </Suspense>
         ))}

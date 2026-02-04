@@ -218,8 +218,9 @@ export async function canInitiateWorkflow(
 
   const workflowConfig = await ctx.db
     .query("workflowConfigs")
-    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-    .filter((q) => q.eq(q.field("workflowType"), workflowType))
+    .withIndex("by_organization_and_workflowType", (q) =>
+      q.eq("organizationId", organizationId).eq("workflowType", workflowType),
+    )
     .first();
 
   if (!workflowConfig) {
@@ -254,8 +255,9 @@ export async function canApproveAtStep(
 
   const workflowConfig = await ctx.db
     .query("workflowConfigs")
-    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-    .filter((q) => q.eq(q.field("workflowType"), workflowType))
+    .withIndex("by_organization_and_workflowType", (q) =>
+      q.eq("organizationId", organizationId).eq("workflowType", workflowType),
+    )
     .first();
 
   if (!workflowConfig) {
@@ -285,8 +287,9 @@ export async function getUsersToNotifyForWorkflowStep(
 ): Promise<Id<"users">[]> {
   const workflowConfig = await ctx.db
     .query("workflowConfigs")
-    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-    .filter((q) => q.eq(q.field("workflowType"), workflowType))
+    .withIndex("by_organization_and_workflowType", (q) =>
+      q.eq("organizationId", organizationId).eq("workflowType", workflowType),
+    )
     .first();
 
   if (!workflowConfig) {

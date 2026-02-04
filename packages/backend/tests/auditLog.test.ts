@@ -1,9 +1,20 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
+
+function authedForUser(
+  t: ReturnType<typeof convexTest>,
+  userId: Id<"users">,
+) {
+  return t.withIdentity({
+    subject: `${userId}|session-1`,
+    issuer: "https://example.test",
+  });
+}
 
 describe("auditLog detailed logging", () => {
   describe("mutation operation logging", () => {
@@ -66,12 +77,12 @@ describe("auditLog detailed logging", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
         },
-        { as: userId },
       );
 
       expect(result.entries).toHaveLength(1);
@@ -149,12 +160,12 @@ describe("auditLog detailed logging", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
         },
-        { as: userId },
       );
 
       expect(result.entries).toHaveLength(1);
@@ -225,12 +236,12 @@ describe("auditLog detailed logging", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
         },
-        { as: userId },
       );
 
       expect(result.entries).toHaveLength(1);
@@ -311,14 +322,14 @@ describe("auditLog detailed logging", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.getByEntity,
         {
           organizationId: orgId,
           entityType: "accession",
           entityId: "acc_seq",
         },
-        { as: userId },
       );
 
       expect(result).toHaveLength(3);
@@ -425,12 +436,12 @@ describe("auditLog detailed logging", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
         },
-        { as: userId },
       );
 
       expect(result.entries).toHaveLength(1);
@@ -554,13 +565,13 @@ describe("auditLog detailed logging", () => {
         }
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
           action: "bulk_created",
         },
-        { as: userId },
       );
 
       expect(result.entries).toHaveLength(10);
@@ -629,12 +640,12 @@ describe("auditLog detailed logging", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
         },
-        { as: userId },
       );
 
       expect(result.entries).toHaveLength(1);
@@ -700,12 +711,12 @@ describe("auditLog detailed logging", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
         },
-        { as: userId },
       );
 
       expect(result.entries).toHaveLength(1);
@@ -779,14 +790,14 @@ describe("auditLog detailed logging", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
           fromDate: startDate,
           toDate: endDate,
         },
-        { as: userId },
       );
 
       expect(result.entries).toHaveLength(2);
@@ -865,13 +876,13 @@ describe("auditLog detailed logging", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
           action: "export",
         },
-        { as: userId },
       );
 
       expect(result.entries).toHaveLength(2);
@@ -937,12 +948,12 @@ describe("auditLog detailed logging", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
         },
-        { as: userId },
       );
 
       expect(result.entries).toHaveLength(1);
@@ -1023,14 +1034,14 @@ describe("auditLog detailed logging", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
           fromDate: quarterStart,
           toDate: now,
         },
-        { as: userId },
       );
 
       expect(result.entries).toHaveLength(3);
@@ -1098,12 +1109,12 @@ describe("auditLog detailed logging", () => {
         }
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
         },
-        { as: userId },
       );
 
       expect(result.entries).toHaveLength(5);
@@ -1171,12 +1182,12 @@ describe("auditLog detailed logging", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
         },
-        { as: userId },
       );
 
       expect(result.entries).toHaveLength(1);
@@ -1247,12 +1258,12 @@ describe("auditLog detailed logging", () => {
         await Promise.all(promises);
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
         },
-        { as: userId },
       );
 
       expect(result.entries).toHaveLength(5);
@@ -1324,12 +1335,12 @@ describe("auditLog detailed logging", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, user1Id);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
         },
-        { as: user1Id },
       );
 
       expect(result.entries).toHaveLength(2);

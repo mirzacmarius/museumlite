@@ -1,33 +1,91 @@
 import { convexTest } from "convex-test";
-import { expect, test, describe } from "vitest";
+import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
-import schema from "../convex/schema";
 import type { Id } from "../convex/_generated/dataModel";
+import schema from "../convex/schema";
+import { modules } from "./testSetup";
 
-describe.skip("Import E2E Verification (manual)", () => {
+type OrgSetup = {
+  orgId: Id<"organizations">;
+  userId: Id<"users">;
+};
+
+function authedForUser(
+  t: ReturnType<typeof convexTest>,
+  userId: Id<"users">,
+) {
+  return t.withIdentity({
+    subject: `${userId}|session-1`,
+    issuer: "https://example.test",
+  });
+}
+
+async function createOrgWithUser(
+  t: ReturnType<typeof convexTest>,
+  permissionNames: string[],
+): Promise<OrgSetup> {
+  return await t.run(async (ctx) => {
+    const orgId = await ctx.db.insert("organizations", {
+      name: "Test Museum",
+      slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
+      type: "museum",
+    });
+
+    const userId = await ctx.db.insert("users", {
+      email: "test@example.com",
+      name: "Test User",
+    });
+
+    const roleId = await ctx.db.insert("roles", {
+      organizationId: orgId,
+      name: "Admin",
+      isSystemRole: true,
+    });
+
+    for (const permissionName of permissionNames) {
+      const category =
+        (permissionName.split(".")[0] as
+          | "collections"
+          | "loans"
+          | "locations"
+          | "sites"
+          | "media"
+          | "users"
+          | "organization"
+          | "accounts") ?? "collections";
+
+      const permissionId = await ctx.db.insert("permissions", {
+        name: permissionName,
+        category,
+      });
+
+      await ctx.db.insert("rolePermissions", {
+        roleId,
+        permissionId,
+      });
+    }
+
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId: orgId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+
+    return { orgId, userId };
+  });
+}
+
+describe("Import E2E Verification (manual)", () => {
   /**
    * Verification Step 1: Upload CSV with errors - verify validation report shows before commit
    */
   test("should validate CSV with errors and show validation report", async () => {
-    const t = convexTest(schema);
-
-    // Create organization and user
-    const asUser = t.withIdentity({ subject: "user123" });
-    const userId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("users", {
-        email: "test@example.com",
-        name: "Test User",
-        profileImageUrl: "https://example.com/avatar.png",
-      });
-    });
-
-    const orgId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum",
-        ownerId: userId,
-      });
-    });
+    const t = convexTest(schema, modules);
+    const { orgId, userId } = await createOrgWithUser(t, [
+      "collections.create",
+    ]);
+    const asUser = authedForUser(t, userId);
 
     // Prepare import data with errors
     const invalidRows = [
@@ -105,24 +163,11 @@ describe.skip("Import E2E Verification (manual)", () => {
    * Verification Step 2: Fix errors and reimport - verify data imports correctly
    */
   test("should import data successfully after fixing validation errors", async () => {
-    const t = convexTest(schema);
-
-    const asUser = t.withIdentity({ subject: "user456" });
-    const userId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("users", {
-        email: "curator@example.com",
-        name: "Test Curator",
-        profileImageUrl: "https://example.com/avatar.png",
-      });
-    });
-
-    const orgId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("organizations", {
-        name: "Test Gallery",
-        slug: "test-gallery",
-        ownerId: userId,
-      });
-    });
+    const t = convexTest(schema, modules);
+    const { orgId, userId } = await createOrgWithUser(t, [
+      "collections.create",
+    ]);
+    const asUser = authedForUser(t, userId);
 
     // First attempt - with errors
     const invalidRows = [
@@ -181,6 +226,7 @@ describe.skip("Import E2E Verification (manual)", () => {
       organizationId: orgId as Id<"organizations">,
       jobId,
       rows: validRows,
+      batchIndex: 0,
     });
 
     // Verify data was actually imported
@@ -204,31 +250,18 @@ describe.skip("Import E2E Verification (manual)", () => {
    * Verification Step 3: Upload CSV with custom fields - verify field mapper works
    */
   test("should handle CSV with custom field names via field mapping", async () => {
-    const t = convexTest(schema);
-
-    const asUser = t.withIdentity({ subject: "user789" });
-    const userId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("users", {
-        email: "registrar@example.com",
-        name: "Test Registrar",
-        profileImageUrl: "https://example.com/avatar.png",
-      });
-    });
-
-    const orgId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("organizations", {
-        name: "Custom Museum",
-        slug: "custom-museum",
-        ownerId: userId,
-      });
-    });
+    const t = convexTest(schema, modules);
+    const { orgId, userId } = await createOrgWithUser(t, [
+      "collections.create",
+    ]);
+    const asUser = authedForUser(t, userId);
 
     // Create custom field mapping
     const mappingId = await asUser.mutation(api.imports.saveFieldMapping, {
       organizationId: orgId as Id<"organizations">,
       name: "Custom Accession Import",
       description: "Maps custom CSV fields to accession fields",
-      entityType: "accession",
+      entityType: "accessions",
       mappings: [
         {
           sourceField: "Item_Number",
@@ -238,7 +271,7 @@ describe.skip("Import E2E Verification (manual)", () => {
         {
           sourceField: "Received_Date",
           targetField: "dateReceived",
-          transform: "date",
+          transformType: "date",
           required: true,
         },
         {
@@ -249,13 +282,12 @@ describe.skip("Import E2E Verification (manual)", () => {
         {
           sourceField: "Acquisition_Type",
           targetField: "method",
-          transform: "method",
           required: true,
         },
         {
           sourceField: "Purchase_Price",
           targetField: "cost",
-          transform: "number",
+          transformType: "number",
         },
       ],
       isDefault: false,
@@ -281,24 +313,11 @@ describe.skip("Import E2E Verification (manual)", () => {
    * Verification Step 4: Map fields and import - verify mapping applied correctly
    */
   test("should apply field mapping and import data with custom field names", async () => {
-    const t = convexTest(schema);
-
-    const asUser = t.withIdentity({ subject: "user999" });
-    const userId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("users", {
-        email: "mapper@example.com",
-        name: "Field Mapper",
-        profileImageUrl: "https://example.com/avatar.png",
-      });
-    });
-
-    const orgId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("organizations", {
-        name: "Mapping Museum",
-        slug: "mapping-museum",
-        ownerId: userId,
-      });
-    });
+    const t = convexTest(schema, modules);
+    const { orgId, userId } = await createOrgWithUser(t, [
+      "collections.create",
+    ]);
+    const asUser = authedForUser(t, userId);
 
     // This simulates custom CSV data with non-standard field names
     // In a real scenario, the frontend would apply the field mapping
@@ -343,6 +362,7 @@ describe.skip("Import E2E Verification (manual)", () => {
       organizationId: orgId as Id<"organizations">,
       jobId,
       rows: [mappedData],
+      batchIndex: 0,
     });
 
     // Verify imported data has correct values from custom fields
@@ -367,29 +387,15 @@ describe.skip("Import E2E Verification (manual)", () => {
    * Verification Step 5: Import using PastPerfect template - verify legacy data imports
    */
   test("should import using PastPerfect legacy template", async () => {
-    const t = convexTest(schema);
-
-    const asUser = t.withIdentity({ subject: "pastperfect-user" });
-    const userId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("users", {
-        email: "pastperfect@example.com",
-        name: "PastPerfect User",
-        profileImageUrl: "https://example.com/avatar.png",
-      });
-    });
-
-    const orgId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("organizations", {
-        name: "PastPerfect Museum",
-        slug: "pastperfect-museum",
-        ownerId: userId,
-      });
-    });
+    const t = convexTest(schema, modules);
+    const { orgId, userId } = await createOrgWithUser(t, [
+      "collections.create",
+    ]);
+    const asUser = authedForUser(t, userId);
 
     // Get PastPerfect template
     const template = await asUser.query(api.imports.getImportTemplate, {
       templateName: "PastPerfect",
-      entityType: "collection",
     });
 
     expect(template).toBeDefined();
@@ -409,7 +415,18 @@ describe.skip("Import E2E Verification (manual)", () => {
     };
 
     // Apply PastPerfect template mapping
-    const mappedCollection = {
+    const validationRow = {
+      accessionNumber: pastPerfectData.ObjectID,
+      title: pastPerfectData.Title,
+      maker: pastPerfectData.Maker,
+      date: pastPerfectData.DateMade,
+      medium: pastPerfectData.Materials,
+      dimensions: pastPerfectData.Dimensions,
+      condition: pastPerfectData.Condition,
+      notes: pastPerfectData.Description,
+    };
+
+    const objectRow = {
       accessionNumber: pastPerfectData.ObjectID,
       title: pastPerfectData.Title,
       creator: pastPerfectData.Maker,
@@ -419,7 +436,6 @@ describe.skip("Import E2E Verification (manual)", () => {
       description: pastPerfectData.Description,
       condition: pastPerfectData.Condition,
       objectType: "Photograph",
-      status: "active" as const,
     };
 
     // Validate collection data
@@ -427,7 +443,7 @@ describe.skip("Import E2E Verification (manual)", () => {
       api.importValidation.validateCollectionImport,
       {
         organizationId: orgId as Id<"organizations">,
-        rows: [mappedCollection],
+        rows: [validationRow],
       },
     );
 
@@ -441,10 +457,11 @@ describe.skip("Import E2E Verification (manual)", () => {
       totalItems: 1,
     });
 
-    await asUser.mutation(api.imports.importCollectionsBatch, {
+    await asUser.mutation(api.imports.importObjectsBatch, {
       organizationId: orgId as Id<"organizations">,
       jobId,
-      rows: [mappedCollection],
+      rows: [objectRow],
+      batchIndex: 0,
     });
 
     // Verify imported collection
@@ -470,29 +487,15 @@ describe.skip("Import E2E Verification (manual)", () => {
    * Verification Step 6: Import using TMS template - verify legacy data imports
    */
   test("should import using TMS (The Museum System) legacy template", async () => {
-    const t = convexTest(schema);
-
-    const asUser = t.withIdentity({ subject: "tms-user" });
-    const userId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("users", {
-        email: "tms@example.com",
-        name: "TMS User",
-        profileImageUrl: "https://example.com/avatar.png",
-      });
-    });
-
-    const orgId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("organizations", {
-        name: "TMS Museum",
-        slug: "tms-museum",
-        ownerId: userId,
-      });
-    });
+    const t = convexTest(schema, modules);
+    const { orgId, userId } = await createOrgWithUser(t, [
+      "collections.create",
+    ]);
+    const asUser = authedForUser(t, userId);
 
     // Get TMS template
     const template = await asUser.query(api.imports.getImportTemplate, {
       templateName: "TMS",
-      entityType: "collection",
     });
 
     expect(template).toBeDefined();
@@ -500,9 +503,7 @@ describe.skip("Import E2E Verification (manual)", () => {
     expect(template?.system).toBe("TMS");
 
     // List all available templates
-    const allTemplates = await asUser.query(api.imports.listImportTemplates, {
-      entityType: "collection",
-    });
+    const allTemplates = await asUser.query(api.imports.listImportTemplates, {});
 
     expect(allTemplates.length).toBeGreaterThanOrEqual(2);
     expect(allTemplates.some((t) => t.name === "TMS")).toBe(true);
@@ -523,7 +524,18 @@ describe.skip("Import E2E Verification (manual)", () => {
     };
 
     // Apply TMS template mapping
-    const mappedCollection = {
+    const validationRow = {
+      accessionNumber: tmsData.ObjectNumber,
+      title: tmsData.ObjectTitle,
+      maker: tmsData.ArtistName,
+      date: tmsData.CreationDate,
+      medium: tmsData.Medium,
+      dimensions: `${tmsData.Height} x ${tmsData.Width} x ${tmsData.Depth} cm`,
+      condition: tmsData.ConditionStatus,
+      notes: tmsData.PhysicalDescription,
+    };
+
+    const objectRow = {
       accessionNumber: tmsData.ObjectNumber,
       title: tmsData.ObjectTitle,
       creator: tmsData.ArtistName,
@@ -533,7 +545,6 @@ describe.skip("Import E2E Verification (manual)", () => {
       description: tmsData.PhysicalDescription,
       condition: tmsData.ConditionStatus,
       objectType: "Vessel",
-      status: "active" as const,
     };
 
     // Validate collection data
@@ -541,7 +552,7 @@ describe.skip("Import E2E Verification (manual)", () => {
       api.importValidation.validateCollectionImport,
       {
         organizationId: orgId as Id<"organizations">,
-        rows: [mappedCollection],
+        rows: [validationRow],
       },
     );
 
@@ -554,10 +565,11 @@ describe.skip("Import E2E Verification (manual)", () => {
       totalItems: 1,
     });
 
-    await asUser.mutation(api.imports.importCollectionsBatch, {
+    await asUser.mutation(api.imports.importObjectsBatch, {
       organizationId: orgId as Id<"organizations">,
       jobId,
-      rows: [mappedCollection],
+      rows: [objectRow],
+      batchIndex: 0,
     });
 
     // Verify imported collection
@@ -584,30 +596,17 @@ describe.skip("Import E2E Verification (manual)", () => {
    * Additional test: Verify field mapping listing and deletion
    */
   test("should list and delete field mappings", async () => {
-    const t = convexTest(schema);
-
-    const asUser = t.withIdentity({ subject: "mapping-admin" });
-    const userId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("users", {
-        email: "admin@example.com",
-        name: "Admin User",
-        profileImageUrl: "https://example.com/avatar.png",
-      });
-    });
-
-    const orgId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("organizations", {
-        name: "Admin Museum",
-        slug: "admin-museum",
-        ownerId: userId,
-      });
-    });
+    const t = convexTest(schema, modules);
+    const { orgId, userId } = await createOrgWithUser(t, [
+      "collections.create",
+    ]);
+    const asUser = authedForUser(t, userId);
 
     // Create multiple field mappings
     const mapping1 = await asUser.mutation(api.imports.saveFieldMapping, {
       organizationId: orgId as Id<"organizations">,
       name: "Test Mapping 1",
-      entityType: "accession",
+      entityType: "accessions",
       mappings: [
         {
           sourceField: "field1",
@@ -620,7 +619,7 @@ describe.skip("Import E2E Verification (manual)", () => {
     const mapping2 = await asUser.mutation(api.imports.saveFieldMapping, {
       organizationId: orgId as Id<"organizations">,
       name: "Test Mapping 2",
-      entityType: "collection",
+      entityType: "objects",
       mappings: [
         { sourceField: "field2", targetField: "title", required: true },
       ],
@@ -638,7 +637,7 @@ describe.skip("Import E2E Verification (manual)", () => {
       api.imports.listFieldMappings,
       {
         organizationId: orgId as Id<"organizations">,
-        entityType: "accession",
+        entityType: "accessions",
       },
     );
 
@@ -665,24 +664,11 @@ describe.skip("Import E2E Verification (manual)", () => {
    * Additional test: Complex validation scenario with multiple error types
    */
   test("should handle complex validation with multiple error types", async () => {
-    const t = convexTest(schema);
-
-    const asUser = t.withIdentity({ subject: "complex-user" });
-    const userId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("users", {
-        email: "complex@example.com",
-        name: "Complex User",
-        profileImageUrl: "https://example.com/avatar.png",
-      });
-    });
-
-    const orgId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("organizations", {
-        name: "Complex Museum",
-        slug: "complex-museum",
-        ownerId: userId,
-      });
-    });
+    const t = convexTest(schema, modules);
+    const { orgId, userId } = await createOrgWithUser(t, [
+      "collections.create",
+    ]);
+    const asUser = authedForUser(t, userId);
 
     const complexRows = [
       {
@@ -734,7 +720,7 @@ describe.skip("Import E2E Verification (manual)", () => {
     );
 
     expect(validation.totalRows).toBe(5);
-    expect(validation.validRows).toBe(1); // Only first row is valid
+    expect(validation.validRows).toBe(3); // Rows with warnings are still valid
     expect(validation.errorCount).toBeGreaterThan(0);
     expect(validation.warningCount).toBeGreaterThan(0);
 

@@ -1,10 +1,8 @@
 "use client";
 
 import { useScopedI18n } from "@/locales/client";
-import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { ScrollArea } from "@v1/ui/scroll-area";
-import { useQuery } from "convex/react";
 import {
   CheckCircle,
   Clock,
@@ -26,12 +24,11 @@ type AccessionItem = {
 };
 
 type KanbanColumnProps = {
-  organizationId: Id<"organizations">;
   stepNumber: number;
   stepName: string;
   roleName?: string;
   searchQuery: string;
-  preloadedAccessions: unknown;
+  accessions: { page: AccessionItem[] } | null;
 };
 
 const stepDotStyles: Record<number, string> = {
@@ -73,17 +70,13 @@ function getInitials(name: string): string {
 }
 
 export function KanbanColumn({
-  organizationId,
   stepNumber,
   stepName,
   roleName,
   searchQuery,
+  accessions,
 }: KanbanColumnProps) {
   const t = useScopedI18n("accessions");
-  const accessions = useQuery(api.accessions.list, {
-    organizationId,
-    paginationOpts: { numItems: 100, cursor: null },
-  });
 
   const dotStyle = getStepDotStyle(stepNumber);
   const icon = getStepIcon(stepNumber);

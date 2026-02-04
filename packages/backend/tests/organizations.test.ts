@@ -1,9 +1,20 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
+
+function authedForUser(
+  t: ReturnType<typeof convexTest>,
+  userId: Id<"users">,
+) {
+  return t.withIdentity({
+    subject: `${userId}|session-1`,
+    issuer: "https://example.test",
+  });
+}
 
 test("should create organization", async () => {
   const t = convexTest(schema, modules);
@@ -163,28 +174,25 @@ describe("watermark settings", () => {
     });
 
     await t.run(async (ctx) => {
-      await ctx.db.insert("userOrganizations", {
-        userId,
-        organizationId: orgId,
-        roleId,
-        joinedAt: Date.now(),
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId: orgId,
+      roleId,
+      joinedAt: Date.now(),
       });
     });
 
     // Update watermark settings
-    await t.mutation(
-      api.organizations.updateWatermarkSettings,
-      {
-        organizationId: orgId,
-        watermarkSettings: {
-          isEnabled: true,
-          text: "© 2026 Test Museum",
-          opacity: 0.7,
-          position: "bottom-right",
-        },
+    const authed = authedForUser(t, userId);
+    await authed.mutation(api.organizations.updateWatermarkSettings, {
+      organizationId: orgId,
+      watermarkSettings: {
+        isEnabled: true,
+        text: "© 2026 Test Museum",
+        opacity: 0.7,
+        position: "bottom-right",
       },
-      { as: userId },
-    );
+    });
 
     // Verify settings were saved
     const org = await t.run(async (ctx) => {

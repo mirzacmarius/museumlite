@@ -11,6 +11,16 @@ type OrgSetup = {
   roleId: Id<"roles">;
 };
 
+function authedForUser(
+  t: ReturnType<typeof convexTest>,
+  userId: Id<"users">,
+) {
+  return t.withIdentity({
+    subject: `${userId}|session-1`,
+    issuer: "https://example.test",
+  });
+}
+
 function getPermissionCategory(permissionName: string) {
   const prefix = permissionName.split(".")[0];
   switch (prefix) {
@@ -100,9 +110,10 @@ describe("Workflow Config CRUD", () => {
     ]);
 
     // #when
-    const result = await t.query(api.workflows.list, {
+    const authed = authedForUser(t, userId);
+    const result = await authed.query(api.workflows.list, {
       organizationId,
-    }, { as: userId });
+    });
 
     // #then
     expect(result).toEqual([]);
@@ -132,9 +143,10 @@ describe("Workflow Config CRUD", () => {
     });
 
     // #when
-    const result = await t.query(api.workflows.list, {
+    const authed = authedForUser(t, userId);
+    const result = await authed.query(api.workflows.list, {
       organizationId,
-    }, { as: userId });
+    });
 
     // #then
     expect(result).toHaveLength(2);
@@ -150,10 +162,11 @@ describe("Workflow Config CRUD", () => {
     ]);
 
     // #when
-    const result = await t.query(api.workflows.get, {
+    const authed = authedForUser(t, userId);
+    const result = await authed.query(api.workflows.get, {
       organizationId,
       workflowType: "accession",
-    }, { as: userId });
+    });
 
     // #then
     expect(result).toBeNull();
@@ -179,10 +192,11 @@ describe("Workflow Config CRUD", () => {
     });
 
     // #when
-    const result = await t.query(api.workflows.get, {
+    const authed = authedForUser(t, userId);
+    const result = await authed.query(api.workflows.get, {
       organizationId,
       workflowType: "accession",
-    }, { as: userId });
+    });
 
     // #then
     expect(result).not.toBeNull();
@@ -200,12 +214,13 @@ describe("Workflow Config CRUD", () => {
     ]);
 
     // #when
-    const configId = await t.mutation(api.workflows.upsert, {
+    const authed = authedForUser(t, userId);
+    const configId = await authed.mutation(api.workflows.upsert, {
       organizationId,
       workflowType: "accession",
       steps: [{ stepNumber: 1, roleId, name: "Initial Review" }],
       canInitiateRoles: [roleId],
-    }, { as: userId });
+    });
 
     // #then
     expect(configId).toBeDefined();
@@ -237,7 +252,8 @@ describe("Workflow Config CRUD", () => {
     });
 
     // #when
-    const configId = await t.mutation(api.workflows.upsert, {
+    const authed = authedForUser(t, userId);
+    const configId = await authed.mutation(api.workflows.upsert, {
       organizationId,
       workflowType: "accession",
       steps: [
@@ -245,7 +261,7 @@ describe("Workflow Config CRUD", () => {
         { stepNumber: 2, roleId, name: "Updated Step 2" },
       ],
       canInitiateRoles: [roleId],
-    }, { as: userId });
+    });
 
     // #then
     expect(configId).toBe(existingConfigId);
@@ -276,9 +292,10 @@ describe("Workflow Config CRUD", () => {
     });
 
     // #when
-    await t.mutation(api.workflows.remove, {
+    const authed = authedForUser(t, userId);
+    await authed.mutation(api.workflows.remove, {
       id: configId,
-    }, { as: userId });
+    });
 
     // #then
     const config = await t.run(async (ctx) => {
@@ -318,9 +335,9 @@ describe("Workflow Config CRUD", () => {
 
     // #when #then
     await expect(
-      t.mutation(api.workflows.remove, {
+      authedForUser(t, userId).mutation(api.workflows.remove, {
         id: fakeId,
-      }, { as: userId }),
+      }),
     ).rejects.toThrow("Workflow config not found");
   });
 

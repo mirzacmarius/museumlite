@@ -2,9 +2,25 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { customFieldValue } from "./schema";
 import { requirePermission } from "./utils/permissions";
+
+async function validateSite(
+  ctx: MutationCtx | QueryCtx,
+  organizationId: Id<"organizations">,
+  siteId: Id<"sites">,
+) {
+  const site = await ctx.db.get(siteId);
+  if (!site || site.organizationId !== organizationId) {
+    throw new Error("Invalid site");
+  }
+  if (!site.isActive) {
+    throw new Error("Site is not active");
+  }
+  return site;
+}
 
 /**
  * Create location
@@ -12,6 +28,7 @@ import { requirePermission } from "./utils/permissions";
 export const create = mutation({
   args: {
     organizationId: v.id("organizations"),
+    siteId: v.optional(v.id("sites")),
     name: v.string(),
     type: v.string(),
     parentLocationId: v.optional(v.id("locations")),
@@ -35,6 +52,10 @@ export const create = mutation({
 
     // Check permission
     await requirePermission(ctx, args.organizationId, "locations.create");
+
+    if (args.siteId) {
+      await validateSite(ctx, args.organizationId, args.siteId);
+    }
 
     // Validate parent location if provided
     if (args.parentLocationId) {
@@ -68,6 +89,7 @@ export const create = mutation({
 
     const locationId = await ctx.db.insert("locations", {
       organizationId: args.organizationId,
+      siteId: args.siteId,
       name: args.name,
       type: args.type,
       parentLocationId: args.parentLocationId,
@@ -90,6 +112,7 @@ export const create = mutation({
 export const listAll = query({
   args: {
     organizationId: v.id("organizations"),
+    siteId: v.optional(v.id("sites")),
   },
   returns: v.array(
     v.object({
@@ -106,11 +129,23 @@ export const listAll = query({
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "locations.read");
 
-    const locations = await ctx.db
-      .query("locations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
+    if (args.siteId) {
+      await validateSite(ctx, args.organizationId, args.siteId);
+    }
+
+    const baseQuery = args.siteId
+      ? ctx.db
+          .query("locations")
+          .withIndex("by_organization_and_site", (q) =>
+            q.eq("organizationId", args.organizationId).eq("siteId", args.siteId),
+          )
+      : ctx.db
+          .query("locations")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          );
+
+    const locations = await baseQuery
       .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
 
@@ -131,12 +166,59 @@ export const listAll = query({
 });
 
 /**
+ * List locations for a specific site
+ */
+export const listBySite = query({
+  args: {
+    organizationId: v.id("organizations"),
+    siteId: v.id("sites"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("locations"),
+      name: v.string(),
+      type: v.string(),
+      parentLocationId: v.optional(v.id("locations")),
+      sortOrder: v.number(),
+      isActive: v.boolean(),
+      siteId: v.optional(v.id("sites")),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "locations.read");
+
+    await validateSite(ctx, args.organizationId, args.siteId);
+
+    const locations = await ctx.db
+      .query("locations")
+      .withIndex("by_organization_and_site", (q) =>
+        q.eq("organizationId", args.organizationId).eq("siteId", args.siteId),
+      )
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    const sortedLocations = locations.sort((a, b) => a.sortOrder - b.sortOrder);
+
+    return sortedLocations.map((loc) => ({
+      _id: loc._id,
+      name: loc.name,
+      type: loc.type,
+      parentLocationId: loc.parentLocationId,
+      sortOrder: loc.sortOrder,
+      isActive: loc.isActive,
+      siteId: loc.siteId,
+    }));
+  },
+});
+
+/**
  * List locations (hierarchical tree)
  */
 export const list = query({
   args: {
     organizationId: v.id("organizations"),
     parentLocationId: v.optional(v.union(v.id("locations"), v.literal("root"))),
+    siteId: v.optional(v.id("sites")),
   },
   returns: v.array(
     v.object({
@@ -169,11 +251,21 @@ export const list = query({
     // Check permission
     await requirePermission(ctx, args.organizationId, "locations.read");
 
-    let query = ctx.db
-      .query("locations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
+    if (args.siteId) {
+      await validateSite(ctx, args.organizationId, args.siteId);
+    }
+
+    let query = (args.siteId
+      ? ctx.db
+          .query("locations")
+          .withIndex("by_organization_and_site", (q) =>
+            q.eq("organizationId", args.organizationId).eq("siteId", args.siteId),
+          )
+      : ctx.db
+          .query("locations")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          ))
       .filter((q) => q.eq(q.field("isActive"), true));
 
     // Filter by parent
@@ -309,6 +401,7 @@ export const get = query({
 export const update = mutation({
   args: {
     locationId: v.id("locations"),
+    siteId: v.optional(v.id("sites")),
     name: v.optional(v.string()),
     type: v.optional(v.string()),
     parentLocationId: v.optional(v.id("locations")),
@@ -337,6 +430,12 @@ export const update = mutation({
 
     // Check permission
     await requirePermission(ctx, location.organizationId, "locations.update");
+
+    if (args.siteId !== undefined && args.siteId !== location.siteId) {
+      if (args.siteId) {
+        await validateSite(ctx, location.organizationId, args.siteId);
+      }
+    }
 
     // Validate parent location if changing
     if (
@@ -371,6 +470,7 @@ export const update = mutation({
     }
 
     const updates: {
+      siteId?: Id<"sites">;
       name?: string;
       type?: string;
       parentLocationId?: Id<"locations">;
@@ -381,6 +481,7 @@ export const update = mutation({
       customFields?: Record<string, any>;
     } = {};
 
+    if (args.siteId !== undefined) updates.siteId = args.siteId;
     if (args.name !== undefined) updates.name = args.name;
     if (args.type !== undefined) updates.type = args.type;
     if (args.parentLocationId !== undefined)

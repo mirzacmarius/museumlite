@@ -212,7 +212,9 @@ export default defineSchema({
     name: v.string(),
     description: v.optional(v.string()),
     isSystemRole: v.boolean(),
-  }).index("by_organization", ["organizationId"]),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_name", ["organizationId", "name"]),
 
   // Granular permission definitions
   permissions: defineTable({
@@ -1205,6 +1207,7 @@ export default defineSchema({
   // Hierarchical location structure
   locations: defineTable({
     organizationId: v.id("organizations"),
+    siteId: v.optional(v.id("sites")),
     name: v.string(),
     type: v.string(), // Flexible per org (building/floor/room/cabinet/shelf/box)
     parentLocationId: v.optional(v.id("locations")),
@@ -1243,6 +1246,7 @@ export default defineSchema({
     ),
   })
     .index("by_organization", ["organizationId"])
+    .index("by_organization_and_site", ["organizationId", "siteId"])
     .index("by_parentLocation", ["parentLocationId"])
     .index("by_organization_and_type", ["organizationId", "type"])
     .searchIndex("search_locations", {
@@ -2177,7 +2181,11 @@ export default defineSchema({
     templateId: v.optional(v.id("workflowTemplates")),
   })
     .index("by_organization", ["organizationId"])
-    .index("by_workflowType", ["workflowType"]),
+    .index("by_workflowType", ["workflowType"])
+    .index("by_organization_and_workflowType", [
+      "organizationId",
+      "workflowType",
+    ]),
 
   // Epic 24: Unified workflow history table (queryable across all workflow types)
   workflowHistory: defineTable({

@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
+import { requireFeatureAccess } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -21,6 +22,8 @@ export const create = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
+
+    await requireFeatureAccess(ctx, args.organizationId, "public_portal");
 
     // Check permission
     await requirePermission(ctx, args.organizationId, "sites.create");
@@ -85,6 +88,8 @@ export const get = query({
       return null;
     }
 
+    await requireFeatureAccess(ctx, site.organizationId, "public_portal");
+
     // Check permission
     await requirePermission(ctx, site.organizationId, "sites.read");
 
@@ -113,6 +118,8 @@ export const list = query({
     }),
   ),
   handler: async (ctx, args) => {
+    await requireFeatureAccess(ctx, args.organizationId, "public_portal");
+
     // Check permission
     await requirePermission(ctx, args.organizationId, "sites.read");
 
@@ -161,6 +168,8 @@ export const update = mutation({
     if (!site) {
       throw new Error("Site not found");
     }
+
+    await requireFeatureAccess(ctx, site.organizationId, "public_portal");
 
     // Check permission
     await requirePermission(ctx, site.organizationId, "sites.update");
@@ -219,6 +228,8 @@ export const archive = mutation({
       throw new Error("Site not found");
     }
 
+    await requireFeatureAccess(ctx, site.organizationId, "public_portal");
+
     // Check permission
     await requirePermission(ctx, site.organizationId, "sites.delete");
 
@@ -256,6 +267,8 @@ export const grantUserSiteAccess = mutation({
     if (!site) {
       throw new Error("Site not found");
     }
+
+    await requireFeatureAccess(ctx, site.organizationId, "public_portal");
 
     // Check permission
     await requirePermission(ctx, site.organizationId, "sites.update");
@@ -323,6 +336,8 @@ export const revokeUserSiteAccess = mutation({
     if (!site) {
       throw new Error("Site not found");
     }
+
+    await requireFeatureAccess(ctx, site.organizationId, "public_portal");
 
     // Check permission
     await requirePermission(ctx, site.organizationId, "sites.update");

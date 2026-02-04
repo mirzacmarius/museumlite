@@ -9,13 +9,67 @@ import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Skeleton } from "@v1/ui/skeleton";
 import { useQuery } from "convex/react";
 import { BarChart3 } from "lucide-react";
-import { AuditTrailCard } from "./_components/audit-trail-card";
-import { ComplianceReportCard } from "./_components/compliance-report-card";
-import { ExhibitionPipelineCard } from "./_components/exhibition-pipeline-card";
-import { InventoryValuationCard } from "./_components/inventory-valuation-card";
-import { LoanCalendarCard } from "./_components/loan-calendar-card";
-import { LocationUtilizationCard } from "./_components/location-utilization-card";
-import { ReportExportsCard } from "./_components/report-exports-card";
+import dynamic from "next/dynamic";
+
+const chartFallback = () => (
+  <Skeleton className="h-[400px] w-full rounded-xl bg-muted/20" />
+);
+
+const InventoryValuationCard = dynamic(
+  () =>
+    import("./_components/inventory-valuation-card").then(
+      (mod) => mod.InventoryValuationCard,
+    ),
+  { loading: chartFallback },
+);
+
+const LoanCalendarCard = dynamic(
+  () =>
+    import("./_components/loan-calendar-card").then(
+      (mod) => mod.LoanCalendarCard,
+    ),
+  { loading: chartFallback },
+);
+
+const ExhibitionPipelineCard = dynamic(
+  () =>
+    import("./_components/exhibition-pipeline-card").then(
+      (mod) => mod.ExhibitionPipelineCard,
+    ),
+  { loading: chartFallback },
+);
+
+const ComplianceReportCard = dynamic(
+  () =>
+    import("./_components/compliance-report-card").then(
+      (mod) => mod.ComplianceReportCard,
+    ),
+  { loading: chartFallback },
+);
+
+const AuditTrailCard = dynamic(
+  () =>
+    import("./_components/audit-trail-card").then(
+      (mod) => mod.AuditTrailCard,
+    ),
+  { loading: chartFallback },
+);
+
+const LocationUtilizationCard = dynamic(
+  () =>
+    import("./_components/location-utilization-card").then(
+      (mod) => mod.LocationUtilizationCard,
+    ),
+  { loading: chartFallback },
+);
+
+const ReportExportsCard = dynamic(
+  () =>
+    import("./_components/report-exports-card").then(
+      (mod) => mod.ReportExportsCard,
+    ),
+  { loading: () => <Skeleton className="h-[350px] w-full rounded-xl bg-muted/20" /> },
+);
 
 export default function AnalyticsPage() {
   const t = useI18n();

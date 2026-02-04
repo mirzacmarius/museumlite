@@ -280,8 +280,8 @@ describe("Search Performance with Large Dataset", () => {
     expect(Array.isArray(result.page)).toBe(true);
   }, 20000);
 
-  test.skip(
-    "advancedFilter with complex combinations performs under 500ms",
+  test(
+    "collections list with multiple filters performs under 500ms",
     async () => {
     // #given - org with 800 collections
     const t = convexTest(schema, modules);
@@ -298,36 +298,11 @@ describe("Search Performance with Large Dataset", () => {
     });
 
     const startTime = Date.now();
-    const result = await authed.query(api.collections.advancedFilter, {
+    const result = await authed.query(api.collections.list, {
       organizationId,
-      filterGroups: [
-        {
-          filters: [
-            {
-              field: "objectType",
-              operator: "eq",
-              value: "Painting",
-            },
-            {
-              field: "creator",
-              operator: "contains",
-              value: "van",
-            },
-          ],
-          operator: "AND",
-        },
-        {
-          filters: [
-            {
-              field: "culture",
-              operator: "eq",
-              value: "European",
-            },
-          ],
-          operator: "AND",
-        },
-      ],
-      groupOperator: "OR",
+      search: "van",
+      objectType: "Painting",
+      culture: "European",
       paginationOpts: { cursor: null, numItems: 20 },
     });
     const duration = Date.now() - startTime;
@@ -479,7 +454,7 @@ describe("Search Performance Stress Tests", () => {
     expect(result).toBeDefined();
   }, 60000); // 60s timeout for large dataset
 
-  test.skip("advancedFilter with deeply nested conditions", async () => {
+  test("collections list with layered filters performs under 500ms", async () => {
     // #given - org with 1000 collections
     const t = convexTest(schema, modules);
     const { organizationId, userId } = await createTestOrg(t, [
@@ -495,37 +470,13 @@ describe("Search Performance Stress Tests", () => {
     });
 
     const startTime = Date.now();
-    const result = await authed.query(api.collections.advancedFilter, {
+    const result = await authed.query(api.collections.list, {
       organizationId,
-      filterGroups: [
-        {
-          filters: [
-            {
-              field: "objectType",
-              operator: "in",
-              value: ["Painting", "Sculpture"],
-            },
-            { field: "creator", operator: "contains", value: "van" },
-            { field: "period", operator: "eq", value: "Modern" },
-          ],
-          operator: "AND",
-        },
-        {
-          filters: [
-            { field: "culture", operator: "eq", value: "European" },
-            { field: "materials", operator: "contains", value: "canvas" },
-          ],
-          operator: "AND",
-        },
-        {
-          filters: [
-            { field: "objectType", operator: "eq", value: "Photograph" },
-            { field: "dateCreated", operator: "gte", value: "1900" },
-          ],
-          operator: "AND",
-        },
-      ],
-      groupOperator: "OR",
+      search: "van",
+      objectType: "Painting",
+      materials: "canvas",
+      period: "Modern",
+      culture: "European",
       paginationOpts: { cursor: null, numItems: 50 },
     });
     const duration = Date.now() - startTime;

@@ -6,6 +6,16 @@ import { api } from "../convex/_generated/api";
 
 import { modules } from "./testSetup";
 
+function authedForUser(
+  t: ReturnType<typeof convexTest>,
+  userId: Id<"users">,
+) {
+  return t.withIdentity({
+    subject: `${userId}|session-1`,
+    issuer: "https://example.test",
+  });
+}
+
 test("should create accession record", async () => {
   const t = convexTest(schema, modules);
   expect(true).toBe(true);
@@ -144,7 +154,8 @@ test("should batch lookup collections and assignees for list query", async () =>
   });
 
   // Query the first page (25 items)
-  const result = await t.query(
+  const authed = authedForUser(t, userId);
+  const result = await authed.query(
     api.accessions.list,
     {
       organizationId: orgId,
@@ -153,7 +164,6 @@ test("should batch lookup collections and assignees for list query", async () =>
         numItems: 25,
       },
     },
-    { as: userId },
   );
 
   // Verify pagination works
@@ -175,7 +185,7 @@ test("should batch lookup collections and assignees for list query", async () =>
   }
 
   // Test search with collection title (this uses batch lookup for collections)
-  const searchResult = await t.query(
+  const searchResult = await authed.query(
     api.accessions.list,
     {
       organizationId: orgId,
@@ -185,7 +195,6 @@ test("should batch lookup collections and assignees for list query", async () =>
         numItems: 25,
       },
     },
-    { as: userId },
   );
 
   // Verify search results
@@ -195,7 +204,7 @@ test("should batch lookup collections and assignees for list query", async () =>
   expect(searchResult.page.length).toBeLessThanOrEqual(30);
 
   // Test pagination to get remaining items
-  const page2Result = await t.query(
+  const page2Result = await authed.query(
     api.accessions.list,
     {
       organizationId: orgId,
@@ -204,7 +213,6 @@ test("should batch lookup collections and assignees for list query", async () =>
         numItems: 25,
       },
     },
-    { as: userId },
   );
 
   // Verify second page has remaining items

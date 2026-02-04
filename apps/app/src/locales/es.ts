@@ -2384,31 +2384,31 @@ export default {
     },
   },
   collections: {
-    title: "Colecciones",
-    description: "Administra tus colecciones de objetos",
+    title: "Grupos de Colecciones",
+    description: "Administra grupos de colecciones de objetos",
     importCSV: "Importar CSV",
-    newCollection: "Nueva Colección",
-    searchPlaceholder: "Buscar colecciones...",
-    noCollections: "No se encontraron colecciones",
-    createFirst: "Crea Tu Primera Colección",
+    newCollection: "Nuevo Grupo de Colecciones",
+    searchPlaceholder: "Buscar grupos de colecciones...",
+    noCollections: "No se encontraron grupos de colecciones",
+    createFirst: "Crea Tu Primer Grupo de Colecciones",
     back: "Atrás",
-    backToCollections: "Volver a Colecciones",
-    backToCollection: "Volver a la Colección",
+    backToCollections: "Volver a Grupos de Colecciones",
+    backToCollection: "Volver al Grupo de Colecciones",
     items: "elementos",
     created: "Creado",
     redirecting: "Redirigiendo...",
-    notFound: "Colección no encontrada",
+    notFound: "Grupo de colecciones no encontrado",
     noOrganizationTitle: "No se Encontró Organización",
     noOrganizationDescription:
-      "Necesitas crear una organización para comenzar a administrar colecciones.",
+      "Necesitas crear una organización para comenzar a administrar grupos de colecciones.",
     createOrganization: "Crear Organización",
     selectOrganization: "Selecciona una Organización",
     selectOrganizationDescription:
-      "Por favor selecciona una organización para ver colecciones.",
+      "Por favor selecciona una organización para ver grupos de colecciones.",
     selectOrganizationEdit:
-      "Por favor selecciona una organización para editar colecciones.",
+      "Por favor selecciona una organización para editar grupos de colecciones.",
     selectOrganizationCreate:
-      "Por favor selecciona una organización para crear colecciones.",
+      "Por favor selecciona una organización para crear grupos de colecciones.",
     selectOrganizationImport:
       "Por favor selecciona una organización para importar objetos.",
     selectOrganizationContinue: "Selecciona una organización para continuar.",
@@ -3387,6 +3387,13 @@ export default {
     orgTitle: "Crea tu organización",
     orgDescription:
       "Configura tu organización para empezar a gestionar tu colección.",
+    dataTitle: "Añade tus primeros datos",
+    dataDescription:
+      "Crea un objeto, importa registros existentes o configura tu primer grupo de colecciones.",
+    addFirstObject: "Añadir tu primer objeto",
+    importObjects: "Importar objetos",
+    createCollectionGroup: "Crear grupo de colecciones",
+    skipForNow: "Omitir por ahora",
   },
   loginPage: {
     title: "Iniciar Sesión",

@@ -7,10 +7,11 @@ import { ObjectDetailClient } from "./object-detail-client";
 export default async function ObjectDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const token = await convexAuthNextjsToken();
-  const collectionId = params.id as Id<"collections">;
+  const { id } = await params;
+  const collectionId = id as Id<"collections">;
   const collection = await fetchQuery(
     api.collections.get,
     { collectionId },

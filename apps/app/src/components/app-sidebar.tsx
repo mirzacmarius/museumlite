@@ -447,7 +447,7 @@ export function AppSidebar({
       title: "Installations",
       url: "/installations",
       icon: Hammer,
-      locked: !hasFeature("exhibitions"),
+      locked: !hasFeature("installations"),
     },
   ];
 
@@ -475,7 +475,12 @@ export function AppSidebar({
   ];
 
   const navAdministration = [
-    { title: "Public Portal", url: "/portal", icon: Globe },
+    {
+      title: "Public Portal",
+      url: "/portal",
+      icon: Globe,
+      locked: !hasFeature("public_portal"),
+    },
     { title: "Settings", url: "/settings", icon: Settings2 },
   ];
 
@@ -595,7 +600,7 @@ export function AppSidebar({
         </NavSection>
 
         <NavSection
-          title="Collections"
+          title="Collection Groups"
           defaultOpen
           actionIcon={<Plus className="w-3 h-3" />}
           onAction={() => router.push("/collections/new")}
@@ -614,13 +619,13 @@ export function AppSidebar({
             ))}
             {(!collectionGroups || collectionGroups.length === 0) && (
               <div className="px-3 py-2 text-[11px] text-zinc-500/60">
-                No collections yet
+                No collection groups yet
               </div>
             )}
             {collectionGroups && collectionGroups.length > 5 && (
               <NavItem
                 href="/collections"
-                title={`View all ${collectionGroups.length} collections`}
+                title={`View all ${collectionGroups.length} collection groups`}
                 isActive={pathname === "/collections"}
               />
             )}

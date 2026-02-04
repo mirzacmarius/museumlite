@@ -32,10 +32,9 @@ export const createRole = mutation({
     // Check if role name already exists for this organization
     const existing = await ctx.db
       .query("roles")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
+      .withIndex("by_organization_and_name", (q) =>
+        q.eq("organizationId", args.organizationId).eq("name", args.name),
       )
-      .filter((q) => q.eq(q.field("name"), args.name))
       .first();
 
     if (existing) {
@@ -115,10 +114,9 @@ export const updateRole = mutation({
       // Check if new name conflicts
       const existing = await ctx.db
         .query("roles")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", role.organizationId),
+        .withIndex("by_organization_and_name", (q) =>
+          q.eq("organizationId", role.organizationId).eq("name", args.name),
         )
-        .filter((q) => q.eq(q.field("name"), args.name))
         .first();
 
       if (existing && existing._id !== args.roleId) {

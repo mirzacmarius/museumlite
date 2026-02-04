@@ -1999,31 +1999,31 @@ export default {
     },
   },
   collections: {
-    title: "Collections",
-    description: "Manage your object collections",
+    title: "Collection Groups",
+    description: "Manage groups of objects in your collection",
     importCSV: "Import CSV",
-    newCollection: "New Collection",
-    searchPlaceholder: "Search collections...",
-    noCollections: "No collections found",
-    createFirst: "Create Your First Collection",
+    newCollection: "New Collection Group",
+    searchPlaceholder: "Search collection groups...",
+    noCollections: "No collection groups found",
+    createFirst: "Create Your First Collection Group",
     back: "Back",
-    backToCollections: "Back to Collections",
-    backToCollection: "Back to Collection",
+    backToCollections: "Back to Collection Groups",
+    backToCollection: "Back to Collection Group",
     items: "items",
     created: "Created",
     redirecting: "Redirecting...",
-    notFound: "Collection not found",
+    notFound: "Collection group not found",
     noOrganizationTitle: "No Organization Found",
     noOrganizationDescription:
-      "You need to create an organization to start managing collections.",
+      "You need to create an organization to start managing collection groups.",
     createOrganization: "Create Organization",
     selectOrganization: "Select an Organization",
     selectOrganizationDescription:
-      "Please select an organization to view collections.",
+      "Please select an organization to view collection groups.",
     selectOrganizationEdit:
-      "Please select an organization to edit collections.",
+      "Please select an organization to edit collection groups.",
     selectOrganizationCreate:
-      "Please select an organization to create collections.",
+      "Please select an organization to create collection groups.",
     selectOrganizationImport:
       "Please select an organization to import objects.",
     selectOrganizationContinue: "Select an organization to continue.",
@@ -3490,6 +3490,13 @@ export default {
     orgTitle: "Create Your Organization",
     orgDescription:
       "Set up your organization to start managing your collection.",
+    dataTitle: "Add Your First Data",
+    dataDescription:
+      "Create an object, import existing records, or set up your first collection group.",
+    addFirstObject: "Add Your First Object",
+    importObjects: "Import Objects",
+    createCollectionGroup: "Create Collection Group",
+    skipForNow: "Skip for now",
   },
   loginPage: {
     title: "Login",

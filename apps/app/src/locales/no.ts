@@ -2378,31 +2378,31 @@ export default {
     },
   },
   collections: {
-    title: "Samlinger",
-    description: "Administrer objektsamlingene dine",
+    title: "Samlingsgrupper",
+    description: "Administrer samlingsgrupper av objekter",
     importCSV: "Importer CSV",
-    newCollection: "Ny Samling",
-    searchPlaceholder: "Søk samlinger...",
-    noCollections: "Ingen samlinger funnet",
-    createFirst: "Opprett Din Første Samling",
+    newCollection: "Ny Samlingsgruppe",
+    searchPlaceholder: "Søk samlingsgrupper...",
+    noCollections: "Ingen samlingsgrupper funnet",
+    createFirst: "Opprett Din Første Samlingsgruppe",
     back: "Tilbake",
-    backToCollections: "Tilbake til Samlinger",
-    backToCollection: "Tilbake til Samlingen",
+    backToCollections: "Tilbake til Samlingsgrupper",
+    backToCollection: "Tilbake til Samlingsgruppen",
     items: "elementer",
     created: "Opprettet",
     redirecting: "Omdirigerer...",
-    notFound: "Samling ikke funnet",
+    notFound: "Samlingsgruppe ikke funnet",
     noOrganizationTitle: "Ingen Organisasjon Funnet",
     noOrganizationDescription:
-      "Du må opprette en organisasjon for å begynne å administrere samlinger.",
+      "Du må opprette en organisasjon for å begynne å administrere samlingsgrupper.",
     createOrganization: "Opprett Organisasjon",
     selectOrganization: "Velg en Organisasjon",
     selectOrganizationDescription:
-      "Vennligst velg en organisasjon for å se samlinger.",
+      "Vennligst velg en organisasjon for å se samlingsgrupper.",
     selectOrganizationEdit:
-      "Vennligst velg en organisasjon for å redigere samlinger.",
+      "Vennligst velg en organisasjon for å redigere samlingsgrupper.",
     selectOrganizationCreate:
-      "Vennligst velg en organisasjon for å opprette samlinger.",
+      "Vennligst velg en organisasjon for å opprette samlingsgrupper.",
     selectOrganizationImport:
       "Vennligst velg en organisasjon for å importere objekter.",
     selectOrganizationContinue: "Velg en organisasjon for å fortsette.",
@@ -3368,6 +3368,13 @@ export default {
     orgTitle: "Opprett din organisasjon",
     orgDescription:
       "Sett opp organisasjonen din for å begynne å administrere samlingen din.",
+    dataTitle: "Legg til dine første data",
+    dataDescription:
+      "Opprett et objekt, importer eksisterende oppføringer eller opprett din første samlingsgruppe.",
+    addFirstObject: "Legg til ditt første objekt",
+    importObjects: "Importer objekter",
+    createCollectionGroup: "Opprett samlingsgruppe",
+    skipForNow: "Hopp over nå",
   },
   loginPage: {
     title: "Logg Inn",

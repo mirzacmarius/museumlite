@@ -3,6 +3,7 @@
 import { useI18n } from "@/locales/client";
 import { useForm } from "@tanstack/react-form";
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import * as validators from "@v1/backend/convex/utils/validators";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
@@ -14,11 +15,12 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { useMutation, useQuery } from "convex/react";
-import { Building2, Loader2, User } from "lucide-react";
+import { Building2, Database, FolderPlus, Loader2, Plus, Upload, User } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-type Step = "username" | "organization";
+type Step = "username" | "organization" | "firstData";
 
 export default function OnboardingPage() {
   const t = useI18n();
@@ -31,6 +33,9 @@ export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState<Step>("username");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orgError, setOrgError] = useState<string | null>(null);
+  const [createdOrgId, setCreatedOrgId] = useState<Id<"organizations"> | null>(
+    null,
+  );
   const [orgFormData, setOrgFormData] = useState({
     name: "",
     slug: "",
@@ -45,18 +50,40 @@ export default function OnboardingPage() {
     },
   });
 
+  const firstOrganizationId =
+    createdOrgId ?? organizations?.[0]?._id ?? null;
+
+  const collectionsPreview = useQuery(
+    api.collections.list,
+    firstOrganizationId
+      ? {
+          organizationId: firstOrganizationId,
+          paginationOpts: { numItems: 1, cursor: null },
+        }
+      : "skip",
+  );
+
   useEffect(() => {
     if (!user || organizations === undefined) return;
 
-    if (user.username && organizations && organizations.length > 0) {
-      router.push("/");
+    const hasOrganization =
+      organizations.length > 0 || createdOrgId !== null;
+    if (user.username && hasOrganization) {
+      if (collectionsPreview === undefined) return;
+
+      if (collectionsPreview.page.length > 0) {
+        router.push("/");
+        return;
+      }
+
+      setCurrentStep("firstData");
       return;
     }
 
     if (user.username) {
       setCurrentStep("organization");
     }
-  }, [user, organizations, router]);
+  }, [user, organizations, router, collectionsPreview, createdOrgId]);
 
   const handleOrgSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,13 +98,14 @@ export default function OnboardingPage() {
           .replace(/\s+/g, "-")
           .replace(/[^a-z0-9-]/g, "");
 
-      await createOrganization({
+      const organizationId = await createOrganization({
         name: orgFormData.name,
         slug,
         type: orgFormData.type,
       });
 
-      router.push("/");
+      setCreatedOrgId(organizationId);
+      setCurrentStep("firstData");
     } catch (err) {
       setOrgError(
         err instanceof Error ? err.message : t("organizationsNew.createFailed"),
@@ -267,6 +295,47 @@ export default function OnboardingPage() {
           </form>
         </div>
       )}
+
+      {currentStep === "firstData" && (
+        <div className="flex w-full flex-col items-center gap-6">
+          <div className="flex flex-col items-center gap-2">
+            <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Database className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-center text-2xl font-medium text-primary">
+              {t("onboardingPage.dataTitle")}
+            </h3>
+            <p className="text-center text-base font-normal text-primary/60">
+              {t("onboardingPage.dataDescription")}
+            </p>
+          </div>
+
+          <div className="grid w-full gap-3">
+            <Button asChild>
+              <Link href="/objects/new">
+                <Plus className="mr-2 h-4 w-4" />
+                {t("onboardingPage.addFirstObject")}
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/collections/import">
+                <Upload className="mr-2 h-4 w-4" />
+                {t("onboardingPage.importObjects")}
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/collections/new">
+                <FolderPlus className="mr-2 h-4 w-4" />
+                {t("onboardingPage.createCollectionGroup")}
+              </Link>
+            </Button>
+          </div>
+
+          <Button variant="ghost" onClick={() => router.push("/")}>
+            {t("onboardingPage.skipForNow")}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -275,13 +344,15 @@ function StepIndicator({ currentStep }: { currentStep: Step }) {
   const steps = [
     { id: "username" as const, icon: User },
     { id: "organization" as const, icon: Building2 },
+    { id: "firstData" as const, icon: Database },
   ];
+  const currentIndex = steps.findIndex((step) => step.id === currentStep);
 
   return (
     <div className="flex items-center gap-3">
       {steps.map((step, index) => {
-        const isActive = step.id === currentStep;
-        const isPast = currentStep === "organization" && step.id === "username";
+        const isActive = index === currentIndex;
+        const isPast = index < currentIndex;
         const Icon = step.icon;
 
         return (

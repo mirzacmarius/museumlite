@@ -21,6 +21,7 @@ async function createOrgWithRole(
       name: "Test Museum",
       slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
       type: "museum",
+      subscriptionTier: "pro",
     });
   });
 

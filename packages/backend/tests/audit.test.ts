@@ -1,9 +1,20 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api, internal } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
+
+function authedForUser(
+  t: ReturnType<typeof convexTest>,
+  userId: Id<"users">,
+) {
+  return t.withIdentity({
+    subject: `${userId}|session-1`,
+    issuer: "https://example.test",
+  });
+}
 
 describe("auditLog", () => {
   describe("list", () => {
@@ -76,12 +87,12 @@ describe("auditLog", () => {
       });
 
       // List audit logs
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
         },
-        { as: userId },
       );
 
       expect(result.entries).toHaveLength(2);
@@ -151,13 +162,13 @@ describe("auditLog", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
           entityType: "accession",
         },
-        { as: userId },
       );
 
       expect(result.entries).toHaveLength(1);
@@ -230,13 +241,13 @@ describe("auditLog", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, user1Id);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
           userId: user1Id,
         },
-        { as: user1Id },
       );
 
       expect(result.entries).toHaveLength(1);
@@ -308,14 +319,14 @@ describe("auditLog", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
           fromDate: yesterday + 1000,
           toDate: tomorrow,
         },
-        { as: userId },
       );
 
       expect(result.entries).toHaveLength(1);
@@ -377,26 +388,25 @@ describe("auditLog", () => {
         }
       });
 
-      const firstPage = await t.query(
+      const authed = authedForUser(t, userId);
+      const firstPage = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
           limit: 2,
         },
-        { as: userId },
       );
 
       expect(firstPage.entries).toHaveLength(2);
       expect(firstPage.nextCursor).toBeDefined();
 
-      const secondPage = await t.query(
+      const secondPage = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
           limit: 2,
           cursor: firstPage.nextCursor,
         },
-        { as: userId },
       );
 
       expect(secondPage.entries).toHaveLength(2);
@@ -455,12 +465,12 @@ describe("auditLog", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.auditLog.list,
         {
           organizationId: orgId,
         },
-        { as: userId },
       );
 
       expect(result.entries[0]?.userName).toBe("John Doe");
@@ -553,12 +563,12 @@ describe("auditLog", () => {
         });
       });
 
-      const actions = await t.query(
+      const authed = authedForUser(t, userId);
+      const actions = await authed.query(
         api.auditLog.getAvailableActions,
         {
           organizationId: orgId,
         },
-        { as: userId },
       );
 
       expect(actions).toHaveLength(2);
@@ -634,12 +644,12 @@ describe("auditLog", () => {
         });
       });
 
-      const users = await t.query(
+      const authed = authedForUser(t, user1Id);
+      const users = await authed.query(
         api.auditLog.getActiveUsers,
         {
           organizationId: orgId,
         },
-        { as: user1Id },
       );
 
       expect(users).toHaveLength(2);
@@ -720,14 +730,14 @@ describe("auditLog", () => {
         });
       });
 
-      const logs = await t.query(
+      const authed = authedForUser(t, userId);
+      const logs = await authed.query(
         api.auditLog.getByEntity,
         {
           organizationId: orgId,
           entityType: "accession",
           entityId: "acc_123",
         },
-        { as: userId },
       );
 
       expect(logs).toHaveLength(2);
@@ -789,7 +799,8 @@ describe("auditLog", () => {
         }
       });
 
-      const logs = await t.query(
+      const authed = authedForUser(t, userId);
+      const logs = await authed.query(
         api.auditLog.getByEntity,
         {
           organizationId: orgId,
@@ -797,7 +808,6 @@ describe("auditLog", () => {
           entityId: "acc_123",
           limit: 2,
         },
-        { as: userId },
       );
 
       expect(logs).toHaveLength(2);
@@ -859,12 +869,12 @@ describe("auditLog", () => {
         }
       });
 
-      const logs = await t.query(
+      const authed = authedForUser(t, userId);
+      const logs = await authed.query(
         api.auditLog.getRecent,
         {
           organizationId: orgId,
         },
-        { as: userId },
       );
 
       expect(logs).toHaveLength(3);
@@ -925,13 +935,13 @@ describe("auditLog", () => {
         }
       });
 
-      const logs = await t.query(
+      const authed = authedForUser(t, userId);
+      const logs = await authed.query(
         api.auditLog.getRecent,
         {
           organizationId: orgId,
           limit: 5,
         },
-        { as: userId },
       );
 
       expect(logs).toHaveLength(5);
@@ -993,13 +1003,10 @@ describe("audit (notifications & activity)", () => {
         });
       });
 
-      const result = await t.query(
-        api.audit.listOrganizationActivity,
-        {
-          organizationId: orgId,
-        },
-        { as: userId },
-      );
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(api.audit.listOrganizationActivity, {
+        organizationId: orgId,
+      });
 
       expect(result.activities).toHaveLength(1);
       expect(result.activities[0]?.action).toBe("create");
@@ -1067,14 +1074,11 @@ describe("audit (notifications & activity)", () => {
         });
       });
 
-      const result = await t.query(
-        api.audit.listOrganizationActivity,
-        {
-          organizationId: orgId,
-          entityType: "accession",
-        },
-        { as: userId },
-      );
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(api.audit.listOrganizationActivity, {
+        organizationId: orgId,
+        entityType: "accession",
+      });
 
       expect(result.activities).toHaveLength(1);
       expect(result.activities[0]?.entityType).toBe("accession");
@@ -1144,14 +1148,11 @@ describe("audit (notifications & activity)", () => {
         });
       });
 
-      const result = await t.query(
-        api.audit.listOrganizationActivity,
-        {
-          organizationId: orgId,
-          startDate: yesterday + 1000,
-        },
-        { as: userId },
-      );
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(api.audit.listOrganizationActivity, {
+        organizationId: orgId,
+        startDate: yesterday + 1000,
+      });
 
       expect(result.activities).toHaveLength(1);
       expect(result.activities[0]?.entityId).toBe("acc_new");
@@ -1177,7 +1178,8 @@ describe("audit (notifications & activity)", () => {
         return { orgId, userId };
       });
 
-      await t.mutation(
+      const authed = authedForUser(t, userId);
+      await authed.mutation(
         internal.audit.logAction,
         {
           organizationId: orgId,
@@ -1186,7 +1188,6 @@ describe("audit (notifications & activity)", () => {
           entityType: "accession",
           entityId: "acc_123",
         },
-        { as: userId },
       );
 
       const logs = await t.run(async (ctx) => {
@@ -1220,7 +1221,8 @@ describe("audit (notifications & activity)", () => {
         return { orgId, userId };
       });
 
-      await t.mutation(
+      const authed = authedForUser(t, userId);
+      await authed.mutation(
         internal.audit.logAction,
         {
           organizationId: orgId,
@@ -1234,7 +1236,6 @@ describe("audit (notifications & activity)", () => {
             newValue: "approved",
           },
         },
-        { as: userId },
       );
 
       const logs = await t.run(async (ctx) => {
@@ -1270,7 +1271,8 @@ describe("audit (notifications & activity)", () => {
         return { orgId, userId };
       });
 
-      const notificationId = await t.mutation(
+      const authed = authedForUser(t, userId);
+      const notificationId = await authed.mutation(
         api.audit.createNotification,
         {
           organizationId: orgId,
@@ -1278,7 +1280,6 @@ describe("audit (notifications & activity)", () => {
           title: "Test Notification",
           message: "This is a test notification",
         },
-        { as: userId },
       );
 
       expect(notificationId).toBeDefined();
@@ -1310,7 +1311,8 @@ describe("audit (notifications & activity)", () => {
         return { orgId, userId };
       });
 
-      const notificationId = await t.mutation(
+      const authed = authedForUser(t, userId);
+      const notificationId = await authed.mutation(
         api.audit.createNotification,
         {
           organizationId: orgId,
@@ -1320,7 +1322,6 @@ describe("audit (notifications & activity)", () => {
           relatedEntityType: "accession",
           relatedEntityId: "acc_123",
         },
-        { as: userId },
       );
 
       const notification = await t.run(async (ctx) => {
@@ -1387,7 +1388,8 @@ describe("audit (notifications & activity)", () => {
         return { orgId, userId };
       });
 
-      const notificationId = await t.mutation(
+      const authed = authedForUser(t, userId);
+      const notificationId = await authed.mutation(
         api.audit.createNotification,
         {
           organizationId: orgId,
@@ -1395,15 +1397,13 @@ describe("audit (notifications & activity)", () => {
           title: "Test",
           message: "Test message",
         },
-        { as: userId },
       );
 
-      await t.mutation(
+      await authed.mutation(
         api.audit.markRead,
         {
           notificationId,
         },
-        { as: userId },
       );
 
       const notification = await t.run(async (ctx) => {
@@ -1436,7 +1436,8 @@ describe("audit (notifications & activity)", () => {
         return { orgId, user1Id, user2Id };
       });
 
-      const notificationId = await t.mutation(
+      const authedUser1 = authedForUser(t, user1Id);
+      const notificationId = await authedUser1.mutation(
         api.audit.createNotification,
         {
           organizationId: orgId,
@@ -1444,17 +1445,12 @@ describe("audit (notifications & activity)", () => {
           title: "Test",
           message: "Test message",
         },
-        { as: user1Id },
       );
 
       await expect(
-        t.mutation(
-          api.audit.markRead,
-          {
-            notificationId,
-          },
-          { as: user2Id },
-        ),
+        authedForUser(t, user2Id).mutation(api.audit.markRead, {
+          notificationId,
+        }),
       ).rejects.toThrow("Unauthorized");
     });
   });
@@ -1493,12 +1489,12 @@ describe("audit (notifications & activity)", () => {
         }
       });
 
-      await t.mutation(
+      const authed = authedForUser(t, userId);
+      await authed.mutation(
         api.audit.markAllRead,
         {
           organizationId: orgId,
         },
-        { as: userId },
       );
 
       const notifications = await t.run(async (ctx) => {
@@ -1545,12 +1541,12 @@ describe("audit (notifications & activity)", () => {
         }
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.audit.listNotifications,
         {
           organizationId: orgId,
         },
-        { as: userId },
       );
 
       expect(result.notifications).toHaveLength(3);
@@ -1597,13 +1593,13 @@ describe("audit (notifications & activity)", () => {
         });
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.audit.listNotifications,
         {
           organizationId: orgId,
           unreadOnly: true,
         },
-        { as: userId },
       );
 
       expect(result.notifications).toHaveLength(1);
@@ -1642,13 +1638,13 @@ describe("audit (notifications & activity)", () => {
         }
       });
 
-      const result = await t.query(
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(
         api.audit.listNotifications,
         {
           organizationId: orgId,
           limit: 5,
         },
-        { as: userId },
       );
 
       expect(result.notifications).toHaveLength(5);

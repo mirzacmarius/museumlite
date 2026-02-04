@@ -49,6 +49,13 @@ export default {
     orgTitle: "Creează organizația ta",
     orgDescription:
       "Configurează organizația pentru a începe să gestionezi colecția ta.",
+    dataTitle: "Adaugă primele tale date",
+    dataDescription:
+      "Creează un obiect, importă înregistrări existente sau creează primul tău grup de colecții.",
+    addFirstObject: "Adaugă primul tău obiect",
+    importObjects: "Importă obiecte",
+    createCollectionGroup: "Creează un grup de colecții",
+    skipForNow: "Sari peste momentan",
   },
   organizationsNew: {
     title: "Detalii organizație",

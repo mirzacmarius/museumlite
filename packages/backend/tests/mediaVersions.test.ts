@@ -6,6 +6,16 @@ import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
 
+function authedForUser(
+  t: ReturnType<typeof convexTest>,
+  userId: Id<"users">,
+) {
+  return t.withIdentity({
+    subject: `${userId}|session-1`,
+    issuer: "https://example.test",
+  });
+}
+
 type TestSetup = {
   organizationId: Id<"organizations">;
   userId: Id<"users">;
@@ -123,7 +133,8 @@ describe("mediaVersions", () => {
     const t = convexTest(schema, modules);
     const setup = await createTestSetup(t);
 
-    const versionId = await t.mutation(
+    const authed = authedForUser(t, setup.userId);
+    const versionId = await authed.mutation(
       api.mediaVersions.createVersion,
       {
         mediaId: setup.mediaFileId,
@@ -131,7 +142,6 @@ describe("mediaVersions", () => {
         editType: "crop",
         editMetadata: { x: 0, y: 0, width: 100, height: 100 },
       },
-      { as: setup.userId },
     );
 
     expect(versionId).toBeDefined();
@@ -148,27 +158,26 @@ describe("mediaVersions", () => {
   test("should increment version number correctly", async () => {
     const t = convexTest(schema, modules);
     const setup = await createTestSetup(t);
+    const authed = authedForUser(t, setup.userId);
 
     // Create version 1
-    await t.mutation(
+    await authed.mutation(
       api.mediaVersions.createVersion,
       {
         mediaId: setup.mediaFileId,
         storageId: setup.storageId,
         editType: "crop",
       },
-      { as: setup.userId },
     );
 
     // Create version 2
-    const version2Id = await t.mutation(
+    const version2Id = await authed.mutation(
       api.mediaVersions.createVersion,
       {
         mediaId: setup.mediaFileId,
         storageId: setup.storageId,
         editType: "rotate",
       },
-      { as: setup.userId },
     );
 
     const version2 = await t.run(async (ctx) => {
@@ -181,44 +190,41 @@ describe("mediaVersions", () => {
   test("should list versions sorted by version number", async () => {
     const t = convexTest(schema, modules);
     const setup = await createTestSetup(t);
+    const authed = authedForUser(t, setup.userId);
 
     // Create multiple versions
-    await t.mutation(
+    await authed.mutation(
       api.mediaVersions.createVersion,
       {
         mediaId: setup.mediaFileId,
         storageId: setup.storageId,
         editType: "crop",
       },
-      { as: setup.userId },
     );
 
-    await t.mutation(
+    await authed.mutation(
       api.mediaVersions.createVersion,
       {
         mediaId: setup.mediaFileId,
         storageId: setup.storageId,
         editType: "rotate",
       },
-      { as: setup.userId },
     );
 
-    await t.mutation(
+    await authed.mutation(
       api.mediaVersions.createVersion,
       {
         mediaId: setup.mediaFileId,
         storageId: setup.storageId,
         editType: "adjust",
       },
-      { as: setup.userId },
     );
 
-    const versions = await t.query(
+    const versions = await authed.query(
       api.mediaVersions.listVersions,
       {
         mediaId: setup.mediaFileId,
       },
-      { as: setup.userId },
     );
 
     expect(versions.length).toBe(3);
@@ -230,35 +236,33 @@ describe("mediaVersions", () => {
   test("should revert to previous version", async () => {
     const t = convexTest(schema, modules);
     const setup = await createTestSetup(t);
+    const authed = authedForUser(t, setup.userId);
 
     // Create versions
-    const version1Id = await t.mutation(
+    const version1Id = await authed.mutation(
       api.mediaVersions.createVersion,
       {
         mediaId: setup.mediaFileId,
         storageId: setup.storageId,
         editType: "crop",
       },
-      { as: setup.userId },
     );
 
-    await t.mutation(
+    await authed.mutation(
       api.mediaVersions.createVersion,
       {
         mediaId: setup.mediaFileId,
         storageId: setup.storageId,
         editType: "rotate",
       },
-      { as: setup.userId },
     );
 
     // Revert to version 1
-    await t.mutation(
+    await authed.mutation(
       api.mediaVersions.revertToVersion,
       {
         versionId: version1Id,
       },
-      { as: setup.userId },
     );
 
     const mediaFile = await t.run(async (ctx) => {
@@ -298,17 +302,16 @@ describe("mediaVersions", () => {
     });
 
     // Try to create version without permission - should throw
-    await expect(async () => {
-      await t.mutation(
+    await expect(
+      authedForUser(t, unauthorizedUserId).mutation(
         api.mediaVersions.createVersion,
         {
           mediaId: setup.mediaFileId,
           storageId: setup.storageId,
           editType: "crop",
         },
-        { as: unauthorizedUserId },
-      );
-    }).rejects.toThrow();
+      ),
+    ).rejects.toThrow();
   });
 
   test("should enforce organization isolation", async () => {
@@ -361,16 +364,15 @@ describe("mediaVersions", () => {
     });
 
     // Try to create version for media in different org - should throw
-    await expect(async () => {
-      await t.mutation(
+    await expect(
+      authedForUser(t, otherUserId).mutation(
         api.mediaVersions.createVersion,
         {
           mediaId: setup.mediaFileId,
           storageId: setup.storageId,
           editType: "crop",
         },
-        { as: otherUserId },
-      );
-    }).rejects.toThrow();
+      ),
+    ).rejects.toThrow();
   });
 });

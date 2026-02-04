@@ -1,30 +1,88 @@
 import { convexTest } from "convex-test";
-import { expect, test, describe } from "vitest";
+import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
-import schema from "../convex/schema";
 import type { Id } from "../convex/_generated/dataModel";
+import schema from "../convex/schema";
+import { modules } from "./testSetup";
 
-describe.skip("Export Formats E2E Verification (manual)", () => {
+type OrgSetup = {
+  orgId: Id<"organizations">;
+  userId: Id<"users">;
+};
+
+function authedForUser(
+  t: ReturnType<typeof convexTest>,
+  userId: Id<"users">,
+) {
+  return t.withIdentity({
+    subject: `${userId}|session-1`,
+    issuer: "https://example.test",
+  });
+}
+
+async function createOrgWithUser(
+  t: ReturnType<typeof convexTest>,
+  permissionNames: string[],
+): Promise<OrgSetup> {
+  return await t.run(async (ctx) => {
+    const orgId = await ctx.db.insert("organizations", {
+      name: "Test Museum",
+      slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
+      type: "museum",
+    });
+
+    const userId = await ctx.db.insert("users", {
+      email: "test@example.com",
+      name: "Test User",
+    });
+
+    const roleId = await ctx.db.insert("roles", {
+      organizationId: orgId,
+      name: "Admin",
+      isSystemRole: true,
+    });
+
+    for (const permissionName of permissionNames) {
+      const category =
+        (permissionName.split(".")[0] as
+          | "collections"
+          | "loans"
+          | "locations"
+          | "sites"
+          | "media"
+          | "users"
+          | "organization"
+          | "accounts") ?? "collections";
+
+      const permissionId = await ctx.db.insert("permissions", {
+        name: permissionName,
+        category,
+      });
+
+      await ctx.db.insert("rolePermissions", {
+        roleId,
+        permissionId,
+      });
+    }
+
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId: orgId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+
+    return { orgId, userId };
+  });
+}
+
+describe("Export Formats E2E Verification (manual)", () => {
   test("should export accessions in all supported formats", async () => {
-    const t = convexTest(schema);
-
-    // Create organization and user
-    const asUser = t.withIdentity({ subject: "user123" });
-    const userId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("users", {
-        email: "test@example.com",
-        name: "Test User",
-        profileImageUrl: "https://example.com/avatar.png",
-      });
-    });
-
-    const orgId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum",
-        ownerId: userId,
-      });
-    });
+    const t = convexTest(schema, modules);
+    const { orgId, userId } = await createOrgWithUser(t, [
+      "collections.read",
+    ]);
+    const asUser = authedForUser(t, userId);
 
     // Create test data - accession
     const accessionId = await asUser.run(async (ctx) => {
@@ -33,7 +91,7 @@ describe.skip("Export Formats E2E Verification (manual)", () => {
         accessionNumber: "ACC-2024-001",
         dateReceived: Date.now(),
         source: "Test Donor",
-        method: "Gift",
+        method: "gift",
         cost: 1000,
         notes: "Test accession for export verification",
         status: "approved",
@@ -100,31 +158,17 @@ describe.skip("Export Formats E2E Verification (manual)", () => {
     expect(spectrumExport).toContain('<?xml version="1.0" encoding="UTF-8"?>');
     expect(spectrumExport).toContain("spectrum:entries");
     expect(spectrumExport).toContain(
-      "<ObjectNumber>ACC-2024-001</ObjectNumber>",
+      "<entryNumber>ACC-2024-001</entryNumber>",
     );
     console.log("✓ SPECTRUM export verified - valid SPECTRUM XML structure");
   });
 
   test("should export collections in all supported formats", async () => {
-    const t = convexTest(schema);
-
-    // Create organization and user
-    const asUser = t.withIdentity({ subject: "user456" });
-    const userId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("users", {
-        email: "curator@example.com",
-        name: "Test Curator",
-        profileImageUrl: "https://example.com/avatar.png",
-      });
-    });
-
-    const orgId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("organizations", {
-        name: "Test Gallery",
-        slug: "test-gallery",
-        ownerId: userId,
-      });
-    });
+    const t = convexTest(schema, modules);
+    const { orgId, userId } = await createOrgWithUser(t, [
+      "collections.read",
+    ]);
+    const asUser = authedForUser(t, userId);
 
     // Create test collection item
     const collectionId = await asUser.run(async (ctx) => {
@@ -145,6 +189,8 @@ describe.skip("Export Formats E2E Verification (manual)", () => {
         condition: "Excellent",
         provenance: "Acquired from Test Gallery",
         status: "active",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
       });
     });
 
@@ -219,32 +265,18 @@ describe.skip("Export Formats E2E Verification (manual)", () => {
 
     expect(spectrumExport).toContain('<?xml version="1.0" encoding="UTF-8"?>');
     expect(spectrumExport).toContain("spectrum:objects");
-    expect(spectrumExport).toContain("<ObjectNumber>2024.001</ObjectNumber>");
-    expect(spectrumExport).toContain("<ObjectTitle>Test Artwork</ObjectTitle>");
-    expect(spectrumExport).toContain("<Maker>Test Artist</Maker>");
+    expect(spectrumExport).toContain("<objectNumber>2024.001</objectNumber>");
+    expect(spectrumExport).toContain("<title>Test Artwork</title>");
+    expect(spectrumExport).toContain("<maker>Test Artist</maker>");
     console.log("✓ SPECTRUM export verified - standard compliance");
   });
 
   test("should handle empty exports gracefully", async () => {
-    const t = convexTest(schema);
-
-    // Create organization with no data
-    const asUser = t.withIdentity({ subject: "user789" });
-    const userId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("users", {
-        email: "empty@example.com",
-        name: "Empty User",
-        profileImageUrl: "https://example.com/avatar.png",
-      });
-    });
-
-    const orgId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("organizations", {
-        name: "Empty Museum",
-        slug: "empty-museum",
-        ownerId: userId,
-      });
-    });
+    const t = convexTest(schema, modules);
+    const { orgId, userId } = await createOrgWithUser(t, [
+      "collections.read",
+    ]);
+    const asUser = authedForUser(t, userId);
 
     // Test empty CSV export
     const csvExport = await asUser.mutation(
@@ -288,24 +320,11 @@ describe.skip("Export Formats E2E Verification (manual)", () => {
   });
 
   test("should properly escape special characters in exports", async () => {
-    const t = convexTest(schema);
-
-    const asUser = t.withIdentity({ subject: "user999" });
-    const userId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("users", {
-        email: "special@example.com",
-        name: "Special User",
-        profileImageUrl: "https://example.com/avatar.png",
-      });
-    });
-
-    const orgId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("organizations", {
-        name: "Special Museum",
-        slug: "special-museum",
-        ownerId: userId,
-      });
-    });
+    const t = convexTest(schema, modules);
+    const { orgId, userId } = await createOrgWithUser(t, [
+      "collections.read",
+    ]);
+    const asUser = authedForUser(t, userId);
 
     // Create collection with special characters
     await asUser.run(async (ctx) => {
@@ -317,6 +336,8 @@ describe.skip("Export Formats E2E Verification (manual)", () => {
         objectType: "Painting",
         description: 'Description with\nnewlines and "quotes"',
         status: "active",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
       });
     });
 

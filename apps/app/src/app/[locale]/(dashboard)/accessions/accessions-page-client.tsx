@@ -2,7 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { useMutation } from "convex/react";
+import { type Preloaded, useMutation } from "convex/react";
 import { useCallback, useState } from "react";
 
 import {
@@ -18,7 +18,7 @@ import { AccessionsStats } from "./accessions-stats";
 
 type AccessionsPageClientProps = {
   organizationId: Id<"organizations">;
-  preloadedAccessions: unknown;
+  preloadedAccessions: Preloaded<typeof api.accessions.list>;
   accessionsStats?: {
     pending: number;
     approved: number;

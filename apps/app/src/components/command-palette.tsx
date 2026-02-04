@@ -178,7 +178,9 @@ export function CommandPalette() {
           onValueChange={setSearch}
         />
         <CommandList>
-          <CommandEmpty>No matches. Try objects or collections.</CommandEmpty>
+          <CommandEmpty>
+            No matches. Try objects or collection groups.
+          </CommandEmpty>
 
           {hasSearch && searchResults && (
             <>
@@ -196,7 +198,7 @@ export function CommandPalette() {
               )}
 
               {searchResults.collectionGroups.length > 0 && (
-                <CommandGroup heading="Collections">
+                <CommandGroup heading="Collection Groups">
                   {searchResults.collectionGroups.map((group) => (
                     <CommandItem
                       key={group._id}
@@ -315,7 +317,7 @@ export function CommandPalette() {
               onSelect={() => runCommand(() => router.push("/collections/new"))}
             >
               <Plus className="mr-2 h-4 w-4" />
-              <span>New Collection</span>
+              <span>New Collection Group</span>
             </CommandItem>
           </CommandGroup>
           <CommandSeparator />
@@ -334,7 +336,7 @@ export function CommandPalette() {
               onSelect={() => runCommand(() => router.push("/collections"))}
             >
               <Archive className="mr-2 h-4 w-4" />
-              <span>Collections</span>
+              <span>Collection Groups</span>
             </CommandItem>
             <CommandItem
               onSelect={() => runCommand(() => router.push("/accessions"))}
