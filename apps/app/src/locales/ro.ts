@@ -553,6 +553,7 @@ export default {
     search: "Caută",
     filter: "Filtrează",
     clear: "Șterge",
+    clearAll: "Șterge tot",
     close: "Închide",
     confirm: "Confirmă",
     back: "Înapoi",

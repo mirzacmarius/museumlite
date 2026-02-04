@@ -20,9 +20,7 @@ export function usePlatform() {
 
       // Fallback to navigator.platform
       if (typeof navigator !== "undefined" && navigator.platform) {
-        setIsMac(
-          navigator.platform.toUpperCase().indexOf("MAC") >= 0,
-        );
+        setIsMac(navigator.platform.toUpperCase().indexOf("MAC") >= 0);
         return;
       }
 

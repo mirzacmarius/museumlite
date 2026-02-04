@@ -5,6 +5,6 @@ export default defineConfig({
     environment: "node",
     server: { deps: { inline: ["convex-test", "@convex-dev/polar"] } },
     setupFiles: ["tests/vitest.setup.ts"],
-    include: ["tests/**/*.test.ts"],
+    include: ["tests/**/*.test.ts", "convex/**/*.test.ts"],
   },
 });

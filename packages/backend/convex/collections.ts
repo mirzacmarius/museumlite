@@ -748,6 +748,7 @@ export const list = query({
     organizationId: v.id("organizations"),
     paginationOpts: paginationOptsValidator,
     collectionGroupId: v.optional(v.id("collectionGroups")),
+    includeDeaccessioned: v.optional(v.boolean()),
     status: v.optional(
       v.union(
         v.literal("active"),
@@ -846,7 +847,7 @@ export const list = query({
       let searchResults = await searchQuery.collect();
 
       // Filter out deaccessioned items if no status filter is provided
-      if (!args.status) {
+      if (!args.status && !args.includeDeaccessioned) {
         searchResults = searchResults.filter(
           (c) => c.status !== "deaccessioned",
         );
@@ -875,7 +876,9 @@ export const list = query({
         if (searchResultIds.has(c._id)) return false;
 
         // Filter out deaccessioned items if no status filter is provided
-        if (!args.status && c.status === "deaccessioned") return false;
+        if (!args.status && !args.includeDeaccessioned && c.status === "deaccessioned") {
+          return false;
+        }
 
         return (
           c.accessionNumber?.toLowerCase().includes(searchLower) ||
@@ -894,7 +897,7 @@ export const list = query({
       allResults = [...searchResults, ...additionalResults];
 
       // Apply deaccession filter if no status specified (safety net for search results)
-      if (!args.status) {
+      if (!args.status && !args.includeDeaccessioned) {
         allResults = allResults.filter((c) => c.status !== "deaccessioned");
       }
     } else {
@@ -908,7 +911,7 @@ export const list = query({
       // Apply database-level filters
       if (args.status) {
         query = query.filter((q) => q.eq(q.field("status"), args.status));
-      } else {
+      } else if (!args.includeDeaccessioned) {
         // When no status filter is provided, exclude deaccessioned items
         query = query.filter((q) => q.neq(q.field("status"), "deaccessioned"));
       }
@@ -945,7 +948,7 @@ export const list = query({
       allResults = await query.collect();
 
       // Apply deaccession filter if no status specified (safety net for non-search results)
-      if (!args.status) {
+      if (!args.status && !args.includeDeaccessioned) {
         allResults = allResults.filter((c) => c.status !== "deaccessioned");
       }
     }

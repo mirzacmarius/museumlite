@@ -53,13 +53,12 @@ export const getUser = query({
     const subscription = await polar.getCurrentSubscription(ctx, {
       userId: user._id,
     });
+    const avatarUrl = user.imageId ? await ctx.storage.getUrl(user.imageId) : null;
     return {
       ...user,
       name: user.name || user.username,
       subscription,
-      avatarUrl: user.imageId
-        ? await ctx.storage.getUrl(user.imageId)
-        : undefined,
+      avatarUrl: avatarUrl ?? undefined,
     };
   },
 });
