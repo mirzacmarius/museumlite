@@ -1061,6 +1061,8 @@ export const getWithMetadata = query({
     v.object({
       _id: v.id("mediaFiles"),
       collectionId: v.id("collections"),
+      collectionTitle: v.string(),
+      accessionNumber: v.optional(v.string()),
       fileName: v.string(),
       fileType: v.string(),
       fileSize: v.number(),
@@ -1071,6 +1073,8 @@ export const getWithMetadata = query({
       copyright: v.optional(v.string()),
       url: v.union(v.string(), v.null()),
       thumbnailUrl: v.union(v.string(), v.null()),
+      uploadedAt: v.number(),
+      currentVersionId: v.optional(v.id("mediaVersions")),
       metadata: v.optional(metadataValidator),
       metadataExtracted: v.optional(v.boolean()),
       rightsStatus: v.optional(
@@ -1110,6 +1114,7 @@ export const getWithMetadata = query({
 
     await requirePermission(ctx, media.organizationId, "media.read");
 
+    const collection = await ctx.db.get(media.collectionId);
     const url = await ctx.storage.getUrl(media.storageId);
     const thumbnailUrl = media.thumbnailStorageId
       ? await ctx.storage.getUrl(media.thumbnailStorageId)
@@ -1118,6 +1123,8 @@ export const getWithMetadata = query({
     return {
       _id: media._id,
       collectionId: media.collectionId,
+      collectionTitle: collection?.title || "Unknown",
+      accessionNumber: collection?.accessionNumber,
       fileName: media.fileName,
       fileType: media.fileType,
       fileSize: media.fileSize,
@@ -1128,6 +1135,8 @@ export const getWithMetadata = query({
       copyright: media.copyright,
       url,
       thumbnailUrl,
+      uploadedAt: media.uploadedAt,
+      currentVersionId: media.currentVersionId,
       metadata: media.metadata,
       metadataExtracted: media.metadataExtracted,
       rightsStatus: media.rightsStatus,

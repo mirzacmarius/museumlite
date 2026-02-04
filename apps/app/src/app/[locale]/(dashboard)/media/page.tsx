@@ -18,6 +18,7 @@ import { Label } from "@v1/ui/label";
 import { ScrollArea } from "@v1/ui/scroll-area";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import {
   Box,
   Building2,
@@ -117,7 +118,8 @@ function MediaBrowser({
   const [fileType, setFileType] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [cursor, setCursor] = useState<string | null>(null);
-  const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
+  const [selectedMedia, setSelectedMedia] =
+    useState<Id<"mediaFiles"> | null>(null);
   const prevFiltersRef = useRef({ fileType, search });
 
   useEffect(() => {
@@ -170,6 +172,9 @@ function MediaBrowser({
     { id: "document", label: "Documents" },
     { id: "3d", label: "3D Models" },
   ];
+
+  const selectedItem =
+    media?.page.find((item) => item._id === selectedMedia) ?? null;
 
   return (
     <div className="flex h-full flex-col">
@@ -355,7 +360,8 @@ function MediaBrowser({
 
       {selectedMedia && (
         <MediaDetailModal
-          mediaId={selectedMedia as Id<"mediaFiles">}
+          mediaId={selectedMedia}
+          initialItem={selectedItem}
           onClose={() => setSelectedMedia(null)}
         />
       )}
@@ -363,11 +369,20 @@ function MediaBrowser({
   );
 }
 
+type MediaListResponse = FunctionReturnType<typeof api.media.listByOrganization>;
+type MediaListItem = MediaListResponse["page"][number];
+type MediaDetailItem = NonNullable<
+  FunctionReturnType<typeof api.media.getWithMetadata>
+>;
+type MediaDisplayItem = MediaListItem | MediaDetailItem;
+
 function MediaDetailModal({
   mediaId,
+  initialItem,
   onClose,
 }: {
   mediaId: Id<"mediaFiles">;
+  initialItem: MediaListItem | null;
   onClose: () => void;
 }) {
   const t = useI18n();
@@ -381,14 +396,17 @@ function MediaDetailModal({
   const [revertVersionId, setRevertVersionId] =
     useState<Id<"mediaVersions"> | null>(null);
 
-  const media = useQuery(api.media.listByOrganization, "skip");
+  const remoteItem = useQuery(api.media.getWithMetadata, { mediaId });
   const updateMedia = useMutation(api.media.update);
   const setPrimary = useMutation(api.media.setPrimary);
   const deleteMedia = useMutation(api.media.deleteMedia);
   const revertToVersion = useMutation(api.mediaVersions.revertToVersion);
   const versions = useQuery(api.mediaVersions.listVersions, { mediaId });
 
-  const item = media?.page.find((m) => m._id === mediaId);
+  const item: MediaDisplayItem | null =
+    remoteItem ?? initialItem ?? null;
+  const isLoading = remoteItem === undefined && !initialItem;
+  const isMissing = remoteItem === null && !initialItem;
 
   const isRecord = (value: unknown): value is Record<string, unknown> => {
     return typeof value === "object" && value !== null;
@@ -427,11 +445,12 @@ function MediaDetailModal({
   };
 
   useEffect(() => {
-    if (item) {
-      setCaption(item.caption || "");
-      setPhotographer(item.photographer || "");
-      setCopyright(item.copyright || "");
+    if (!item) {
+      return;
     }
+    setCaption(item.caption || "");
+    setPhotographer(item.photographer || "");
+    setCopyright(item.copyright || "");
   }, [item]);
 
   const handleSave = async () => {
@@ -478,9 +497,23 @@ function MediaDetailModal({
           </DialogTitle>
         </DialogHeader>
 
-        {!item ? (
+        {isLoading ? (
           <div className="flex h-64 items-center justify-center">
             <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+          </div>
+        ) : isMissing ? (
+          <div className="flex h-64 flex-col items-center justify-center gap-3 text-center">
+            <p className="text-sm text-zinc-400">
+              {t("mediaPage.empty")}
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onClose}
+              className="border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+            >
+              {t("mediaPage.details.cancel")}
+            </Button>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2">
@@ -504,10 +537,25 @@ function MediaDetailModal({
                   {item.fileName}
                 </p>
                 <p className="text-xs text-zinc-500">
-                  {formatFileSize(item.fileSize)} &bull;{" "}
-                  {formatDistanceLocale(new Date(item.uploadedAt), locale, {
-                    addSuffix: true,
-                  })}
+                  {formatFileSize(item.fileSize)}
+                  {(() => {
+                    const uploadedAt =
+                      typeof item.uploadedAt === "number"
+                        ? new Date(item.uploadedAt)
+                        : null;
+                    if (!uploadedAt || Number.isNaN(uploadedAt.getTime())) {
+                      return null;
+                    }
+                    return (
+                      <>
+                        {" "}
+                        &bull;{" "}
+                        {formatDistanceLocale(uploadedAt, locale, {
+                          addSuffix: true,
+                        })}
+                      </>
+                    );
+                  })()}
                 </p>
               </div>
 
