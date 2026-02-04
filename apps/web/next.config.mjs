@@ -1,8 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Note: Not using turbopack due to thread-stream compatibility issues
+  // Force webpack instead of Turbopack due to thread-stream compatibility issues
   // Turbopack doesn't support worker threads used by pino/thread-stream
-  // Removing turbopack: {} makes Next.js use webpack (default), which handles this better
+  // Next.js 16 canary defaults to Turbopack, configuring webpack forces webpack usage
+  webpack: (config, { isServer }) => {
+    // Exclude thread-stream from being processed (server-only)
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        "thread-stream": false,
+      };
+    }
+    return config;
+  },
   images: {
     remotePatterns: [
       {
