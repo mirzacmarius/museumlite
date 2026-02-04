@@ -1,5 +1,6 @@
 "use client";
 
+import "@/lib/nuqs-localstorage-shim";
 import {
   createParser,
   parseAsString,
