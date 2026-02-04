@@ -17,6 +17,8 @@ const nextConfig = {
     // Only ignore build errors if explicitly enabled via env var (fallback)
     ignoreBuildErrors: process.env.SKIP_TYPE_CHECK === "true",
   },
+  // Note: Test files are excluded via tsconfig.json exclude patterns
+  // This ensures they don't consume memory during TypeScript type checking
 };
 
 export default withSentryConfig(nextConfig, {
