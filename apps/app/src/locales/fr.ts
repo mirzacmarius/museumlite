@@ -1983,6 +1983,7 @@ export default {
     printManifest: "Imprimer le manifeste",
     setAsPrimary: "Définir comme principal",
     unavailable: "Indisponible",
+    unknown: "Inconnu",
     cannotDeaccession: "Impossible de désaccessionner - élément en prêt actif",
     active: "Actif",
     inactive: "Inactif",

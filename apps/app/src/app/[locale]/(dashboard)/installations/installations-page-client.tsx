@@ -90,16 +90,17 @@ export function InstallationsPageClient() {
   const createTask = useMutation(api.installations.createTask);
 
   const groupedTasks = useMemo(() => {
-    const groups: Record<TaskStatus, typeof tasks> = {
+    type Task = NonNullable<typeof tasks>[number];
+    const groups: Record<TaskStatus, Task[]> = {
       todo: [],
       in_progress: [],
       blocked: [],
       completed: [],
     };
     if (!tasks) return groups;
-    tasks.forEach((task) => {
+    for (const task of tasks) {
       groups[task.status].push(task);
-    });
+    }
     return groups;
   }, [tasks]);
 
@@ -232,7 +233,7 @@ export function InstallationsPageClient() {
                 <EmptyState
                   title="No installation tasks yet"
                   description="Create the first task to start tracking installation work."
-                  icon={<Hammer className="h-10 w-10 text-muted-foreground" />}
+                  icon={Hammer}
                 />
               )}
 

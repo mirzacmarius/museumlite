@@ -58,7 +58,7 @@ export const getUser = query({
       name: user.name || user.username,
       subscription,
       avatarUrl: user.imageId
-        ? await ctx.storage.getUrl(user.imageId)
+        ? (await ctx.storage.getUrl(user.imageId)) ?? undefined
         : undefined,
     };
   },

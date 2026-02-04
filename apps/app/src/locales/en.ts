@@ -1568,6 +1568,7 @@ export default {
     printManifest: "Print Manifest",
     setAsPrimary: "Set as primary",
     unavailable: "Unavailable",
+    unknown: "Unknown",
     cannotDeaccession: "Cannot deaccession - item is on active loan",
     active: "Active",
     inactive: "Inactive",

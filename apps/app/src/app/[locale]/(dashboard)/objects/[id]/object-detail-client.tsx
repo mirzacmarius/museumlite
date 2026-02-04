@@ -2,7 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -50,7 +50,7 @@ import {
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const LoadingPanel = () => (
   <div className="h-32 w-full animate-pulse rounded-xl bg-card/40" />
@@ -203,12 +203,6 @@ type ObjectDetailClientProps = {
   preloadedCollectionGroup: Preloaded<typeof api.collectionGroups.get> | null;
   preloadedLocationPath: Preloaded<typeof api.locations.getLocationPath> | null;
   preloadedMedia: Preloaded<typeof api.media.list> | null;
-  preloadedParentObject: Preloaded<
-    typeof api.collections.getParentObjectWithThumbnail
-  > | null;
-  preloadedSiblingObjects: Preloaded<
-    typeof api.collections.getSiblingObjects
-  > | null;
 };
 
 export function ObjectDetailClient({
@@ -217,11 +211,10 @@ export function ObjectDetailClient({
   preloadedCollectionGroup,
   preloadedLocationPath,
   preloadedMedia,
-  preloadedParentObject,
-  preloadedSiblingObjects,
 }: ObjectDetailClientProps) {
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
+  const locale = useCurrentLocale();
   const { currentOrganizationId } = useOrganization();
   const [activeTab, setActiveTab] = useState<TabId>("general");
 
@@ -232,12 +225,6 @@ export function ObjectDetailClient({
     ? usePreloadedQuery(preloadedLocationPath)
     : null;
   const media = preloadedMedia ? usePreloadedQuery(preloadedMedia) : null;
-  const parentObject = preloadedParentObject
-    ? usePreloadedQuery(preloadedParentObject)
-    : null;
-  const siblingObjects = preloadedSiblingObjects
-    ? usePreloadedQuery(preloadedSiblingObjects)
-    : null;
 
   const tabs = useMemo(() => {
     const collectionType = collection?.collectionType;
@@ -266,6 +253,7 @@ export function ObjectDetailClient({
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isQrLabelModalOpen, setIsQrLabelModalOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
 
   const router = useRouter();
   const deleteCollection = useMutation(api.collections.deleteCollection);
@@ -288,6 +276,13 @@ export function ObjectDetailClient({
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 2000);
   };
+  useEffect(() => {
+    setQrCodeUrl(
+      typeof window === "undefined"
+        ? ""
+        : new URL(`/objects/${collectionId}`, window.location.origin).toString(),
+    );
+  }, [collectionId]);
   const heroLightboxImages: LightboxImage[] = useMemo(() => {
     if (!media) return [];
     return media
@@ -321,6 +316,10 @@ export function ObjectDetailClient({
 
   const locationString =
     locationPath?.map((loc) => loc.name).join(", ") || null;
+  const organizationId = currentOrganizationId as Id<"organizations">;
+  const heroImageForPrint = heroImage?.url
+    ? { url: heroImage.url, thumbnailUrl: heroImage.thumbnailUrl }
+    : null;
 
   return (
     <>
@@ -523,7 +522,7 @@ export function ObjectDetailClient({
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       <span>
-                        {collection.dateCreated || t("detail.unknownDate")}
+                        {collection.dateCreated || common("unknown")}
                       </span>
                     </div>
                     {locationString && (
@@ -569,48 +568,90 @@ export function ObjectDetailClient({
                   <PhysicalTab collection={collection} />
                 )}
                 {activeTab === "media" && (
-                  <MediaTab collection={collection} media={media ?? []} />
+                  <MediaTab
+                    collectionId={collectionId}
+                    onOpenLightbox={(index) => {
+                      setLightboxInitialIndex(index);
+                      setIsHeroLightboxOpen(true);
+                    }}
+                  />
                 )}
                 {activeTab === "digital" && (
                   <DigitalAssetsTab collection={collection} />
                 )}
                 {activeTab === "conservation" && (
-                  <ConservationTab collection={collection} />
+                  <ConservationTab
+                    collectionId={collectionId}
+                    organizationId={organizationId}
+                    locale={locale}
+                  />
                 )}
                 {activeTab === "exhibitions" && (
-                  <ExhibitionsTab collection={collection} />
+                  <ExhibitionsTab
+                    collectionId={collectionId}
+                    organizationId={organizationId}
+                    locale={locale}
+                  />
                 )}
                 {activeTab === "loans" && (
-                  <LoansTab collection={collection} />
+                  <LoansTab collectionId={collectionId} locale={locale} />
                 )}
                 {activeTab === "comments" && (
-                  <CommentsTab collectionId={collection._id} />
+                  <CommentsTab
+                    collectionId={collectionId}
+                    organizationId={organizationId}
+                  />
                 )}
                 {activeTab === "logs" && (
-                  <LogsTab collectionId={collection._id} />
+                  <LogsTab
+                    collectionId={collectionId}
+                    organizationId={organizationId}
+                    locale={locale}
+                  />
                 )}
                 {activeTab === "fine_art" && (
-                  <FineArtDetailsTab collectionId={collection._id} />
+                  <FineArtDetailsTab
+                    collectionId={collectionId}
+                    organizationId={organizationId}
+                  />
                 )}
                 {activeTab === "wine" && (
-                  <WineDetailsTab collectionId={collection._id} />
+                  <WineDetailsTab
+                    collectionId={collectionId}
+                    organizationId={organizationId}
+                  />
                 )}
                 {activeTab === "automotive" && (
-                  <VehicleDetailsTab collectionId={collection._id} />
+                  <VehicleDetailsTab
+                    collectionId={collectionId}
+                    organizationId={organizationId}
+                  />
                 )}
                 {activeTab === "natural_history" && (
-                  <NaturalHistoryDetailsTab collectionId={collection._id} />
+                  <NaturalHistoryDetailsTab
+                    collectionId={collectionId}
+                    organizationId={organizationId}
+                  />
                 )}
                 {activeTab === "archive" && (
-                  <ArchiveDetailsTab collectionId={collection._id} />
+                  <ArchiveDetailsTab
+                    collectionId={collectionId}
+                    organizationId={organizationId}
+                  />
                 )}
               </div>
 
               <aside className="hidden w-80 flex-shrink-0 xl:block">
                 <RecordContextSidebar
-                  collection={collection}
-                  parentObject={parentObject}
-                  siblingObjects={siblingObjects}
+                  collectionId={collectionId}
+                  organizationId={organizationId}
+                  tags={collection.tags}
+                  heroImageUrl={heroImage?.url}
+                  condition={collection.condition}
+                  provenance={collection.provenance}
+                  ownershipHistory={collection.ownershipHistory}
+                  verified={collection.verified}
+                  verifiedByName={collection.verifiedByName}
                 />
               </aside>
             </div>
@@ -622,11 +663,15 @@ export function ObjectDetailClient({
         collection={collection}
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
+        heroImage={heroImageForPrint}
+        locationPath={locationPath ?? undefined}
+        locale={locale}
       />
       <QRLabelModal
         collection={collection}
         isOpen={isQrLabelModalOpen}
         onClose={() => setIsQrLabelModalOpen(false)}
+        qrCodeUrl={qrCodeUrl}
       />
     </>
   );

@@ -1900,6 +1900,7 @@ export default {
     printManifest: "Skriv ut manifest",
     setAsPrimary: "Sett som primær",
     unavailable: "Utilgjengelig",
+    unknown: "Ukjent",
     cannotDeaccession: "Kan ikke avregistrere - gjenstanden er på aktivt utlån",
     active: "Aktiv",
     inactive: "Inaktiv",

@@ -562,6 +562,7 @@ export default {
     no: "Nu",
     all: "Toate",
     none: "Niciunul",
+    unknown: "Necunoscut",
     select: "Selectează",
     selected: "Selectat",
     enabled: "Activat",

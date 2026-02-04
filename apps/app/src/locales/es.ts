@@ -1898,6 +1898,7 @@ export default {
     printManifest: "Imprimir Manifiesto",
     setAsPrimary: "Establecer como principal",
     unavailable: "No disponible",
+    unknown: "Desconocido",
     cannotDeaccession:
       "No se puede desaccesionar - elemento en préstamo activo",
     active: "Activo",
