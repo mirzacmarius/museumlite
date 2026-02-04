@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 interface ScanHistoryItem {
@@ -40,6 +40,7 @@ export default function ScanPage() {
 
   const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
   const [currentScan, setCurrentScan] = useState<string | null>(null);
+  const handledScanRef = useRef<string | null>(null);
 
   // Query to find object by accession number
   const scannedObject = useQuery(
@@ -80,10 +81,12 @@ export default function ScanPage() {
     toast.error(`Scanner error: ${error}`);
   }, []);
 
-  // Handle navigation when object is found
-  if (scannedObject !== undefined && currentScan) {
+  useEffect(() => {
+    if (!currentScan || scannedObject === undefined) return;
+    if (handledScanRef.current === currentScan) return;
+    handledScanRef.current = currentScan;
+
     if (scannedObject) {
-      // Update history with found object
       setScanHistory((prev) =>
         prev.map((item) =>
           item.accessionNumber === currentScan
@@ -96,23 +99,25 @@ export default function ScanPage() {
             : item,
         ),
       );
-
-      // Navigate to object detail page
       router.push(`/objects/${scannedObject._id}`);
       setCurrentScan(null);
-    } else {
-      // Object not found
-      toast.error(`Object not found: ${currentScan}`);
-      setScanHistory((prev) =>
-        prev.map((item) =>
-          item.accessionNumber === currentScan
-            ? { ...item, found: false }
-            : item,
-        ),
-      );
-      setCurrentScan(null);
+      return;
     }
-  }
+
+    toast.error(`Object not found: ${currentScan}`);
+    setScanHistory((prev) =>
+      prev.map((item) =>
+        item.accessionNumber === currentScan ? { ...item, found: false } : item,
+      ),
+    );
+    setCurrentScan(null);
+  }, [currentScan, scannedObject, router]);
+
+  useEffect(() => {
+    if (!currentScan) {
+      handledScanRef.current = null;
+    }
+  }, [currentScan]);
 
   if (isLoading) {
     return (

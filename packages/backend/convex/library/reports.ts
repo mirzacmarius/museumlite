@@ -10,6 +10,7 @@ export const getDashboardStats = query({
   args: {
     organizationId: v.id("organizations"),
   },
+  returns: v.any(),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
     const now = Date.now();
@@ -150,6 +151,7 @@ export const getCirculationReport = query({
     startDate: v.number(),
     endDate: v.number(),
   },
+  returns: v.any(),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
     const circulations = await ctx.db
@@ -225,6 +227,7 @@ export const getPatronReport = query({
     startDate: v.number(),
     endDate: v.number(),
   },
+  returns: v.any(),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
     const allPatronAccounts = await ctx.db
@@ -303,6 +306,7 @@ export const getCollectionReport = query({
   args: {
     organizationId: v.id("organizations"),
   },
+  returns: v.any(),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
     const items = await ctx.db
@@ -381,6 +385,7 @@ export const getFinancialReport = query({
     startDate: v.number(),
     endDate: v.number(),
   },
+  returns: v.any(),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
     // Fines created in period

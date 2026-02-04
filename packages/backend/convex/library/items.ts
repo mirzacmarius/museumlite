@@ -175,6 +175,7 @@ export const get = query({
   args: {
     itemId: v.id("libraryItems"),
   },
+  returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
     const item = await ctx.db.get(args.itemId);
     if (!item) {
@@ -215,6 +216,7 @@ export const list = query({
     yearTo: v.optional(v.number()),
     isCirculating: v.optional(v.boolean()),
   },
+  returns: v.any(),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
     let results: Doc<"libraryItems">[] = [];
@@ -660,6 +662,7 @@ export const getByIsbn = query({
     organizationId: v.id("organizations"),
     isbn: v.string(),
   },
+  returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
     // Try ISBN-10
@@ -692,6 +695,7 @@ export const getByBarcode = query({
     organizationId: v.id("organizations"),
     barcode: v.string(),
   },
+  returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
     const item = await ctx.db

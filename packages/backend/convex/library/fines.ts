@@ -263,6 +263,7 @@ export const get = query({
   args: {
     fineId: v.id("libraryFines"),
   },
+  returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
     const fine = await ctx.db.get(args.fineId);
     if (!fine) {
@@ -295,6 +296,7 @@ export const list = query({
     status: v.optional(fineStatusValidator),
     fineType: v.optional(fineTypeValidator),
   },
+  returns: v.any(),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
 
@@ -341,6 +343,7 @@ export const getPaymentHistory = query({
     accountId: v.id("accounts"),
     paginationOpts: paginationOptsValidator,
   },
+  returns: v.any(),
   handler: async (ctx, args) => {
     const account = await ctx.db.get(args.accountId);
     if (!account) {
@@ -461,6 +464,7 @@ export const getReceipt = query({
   args: {
     paymentId: v.id("libraryPayments"),
   },
+  returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
     const payment = await ctx.db.get(args.paymentId);
     if (!payment) {

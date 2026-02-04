@@ -1230,6 +1230,7 @@ export const getMoveRequest = query({
   args: {
     requestId: v.id("locationMoveRequests"),
   },
+  returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
     const request = await ctx.db.get(args.requestId);
     if (!request) {

@@ -206,6 +206,7 @@ export const getStatistics = query({
   args: {
     organizationId: v.id("organizations"),
   },
+  returns: v.any(),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
     const vendors = await ctx.db

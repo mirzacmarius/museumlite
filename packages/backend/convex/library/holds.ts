@@ -228,6 +228,7 @@ export const get = query({
   args: {
     holdId: v.id("libraryHolds"),
   },
+  returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
     const hold = await ctx.db.get(args.holdId);
     if (!hold) {
@@ -257,6 +258,7 @@ export const listByItem = query({
   args: {
     itemId: v.id("libraryItems"),
   },
+  returns: v.array(v.any()),
   handler: async (ctx, args) => {
     const item = await ctx.db.get(args.itemId);
     if (!item) {
@@ -298,6 +300,7 @@ export const list = query({
     paginationOpts: paginationOptsValidator,
     status: v.optional(holdStatusValidator),
   },
+  returns: v.any(),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
     const query = args.status
@@ -344,6 +347,7 @@ export const listAvailable = query({
     organizationId: v.id("organizations"),
     paginationOpts: paginationOptsValidator,
   },
+  returns: v.any(),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
     const holds = await ctx.db

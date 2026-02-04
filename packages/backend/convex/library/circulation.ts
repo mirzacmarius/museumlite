@@ -344,6 +344,7 @@ export const get = query({
   args: {
     circulationId: v.id("circulations"),
   },
+  returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
     const circulation = await ctx.db.get(args.circulationId);
     if (!circulation) {
@@ -370,6 +371,7 @@ export const getByBarcode = query({
     organizationId: v.id("organizations"),
     barcode: v.string(),
   },
+  returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
     const copy = await ctx.db
@@ -417,6 +419,7 @@ export const listActive = query({
     organizationId: v.id("organizations"),
     paginationOpts: paginationOptsValidator,
   },
+  returns: v.any(),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
     const circulations = await ctx.db
@@ -452,6 +455,7 @@ export const listOverdue = query({
     organizationId: v.id("organizations"),
     paginationOpts: paginationOptsValidator,
   },
+  returns: v.any(),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
     const now = Date.now();
@@ -556,6 +560,7 @@ export const searchForCheckout = query({
     organizationId: v.id("organizations"),
     query: v.string(),
   },
+  returns: v.array(v.any()),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
     const searchQuery = args.query.trim();
@@ -1241,6 +1246,7 @@ export const listRecalls = query({
     ),
     paginationOpts: paginationOptsValidator,
   },
+  returns: v.any(),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
 
@@ -1291,6 +1297,7 @@ export const getRecallByCirculation = query({
   args: {
     circulationId: v.id("circulations"),
   },
+  returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
     const circulation = await ctx.db.get(args.circulationId);
     if (!circulation) {
@@ -1353,6 +1360,7 @@ export const listPatronCheckouts = query({
   args: {
     accountId: v.id("accounts"),
   },
+  returns: v.array(v.any()),
   handler: async (ctx, args) => {
     const account = await ctx.db.get(args.accountId);
     if (!account) {
