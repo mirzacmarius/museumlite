@@ -6,7 +6,8 @@
       "@/*": ["./src/*"]
     },
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "tsBuildInfoFile": ".next/cache/tsbuildinfo.json"
   },
   "include": [
     "next-env.d.ts",
@@ -17,5 +18,15 @@
     "tailwind.config.ts",
     "src/env.mjs"
   ],
-  "exclude": ["node_modules", "**/node_modules/**", "node_modules/@xixixao/**"]
+  "exclude": [
+    "node_modules",
+    "**/node_modules/**",
+    "node_modules/@xixixao/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/*.stories.ts",
+    "**/*.stories.tsx"
+  ]
 }
