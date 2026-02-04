@@ -402,7 +402,7 @@ function WebhooksTab({
   const createWebhook = useMutation(api.webhooks.create);
   const updateWebhook = useMutation(api.webhooks.update);
   const deleteWebhook = useMutation(api.webhooks.deleteWebhook);
-  const testWebhook = useAction(api.webhooks.test);
+  const testWebhook = useAction(api.webhooksActions.test);
 
   const [showCreate, setShowCreate] = useState(false);
   const [createdSecret, setCreatedSecret] = useState<string | null>(null);
