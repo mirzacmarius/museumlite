@@ -69,7 +69,7 @@ export async function MediaPageData({
       organizationId: selectedOrg._id,
       fileType: fileType !== "all" ? fileType : undefined,
       search: search !== "" ? search : undefined,
-      paginationOpts: { numItems: 48, cursor: null },
+      paginationOpts: { numItems: 20, cursor: null },
     },
     { token },
   );

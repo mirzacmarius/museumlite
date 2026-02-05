@@ -95,7 +95,7 @@ export function MediaPageClient({
       organizationId,
       fileType: filters.fileType !== "all" ? filters.fileType : undefined,
       search: filters.search !== "" ? filters.search : undefined,
-      paginationOpts: { numItems: 48, cursor },
+      paginationOpts: { numItems: 20, cursor },
     }),
     [cursor, filters.fileType, filters.search, organizationId],
   );
