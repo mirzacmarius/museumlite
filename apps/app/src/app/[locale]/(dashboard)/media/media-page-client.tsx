@@ -131,7 +131,9 @@ export function MediaPageClient({
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 <span>{formatFileSize(stats.totalSize)} Used</span>
                 <span className="text-zinc-700">/</span>
-                {usage?.storage.limit === null ? (
+                {usage === undefined ? (
+                  <span>Loading...</span>
+                ) : usage.storage.limit === null ? (
                   <span>Unlimited</span>
                 ) : (
                   <span>{formatFileSize(usage.storage.limit)} Total</span>
