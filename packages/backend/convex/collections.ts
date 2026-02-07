@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
@@ -25,21 +25,21 @@ async function generateAccessionNumber(
 ): Promise<string> {
   const org = await ctx.db.get(organizationId);
   if (!org) {
-    throw new Error("Organization not found");
+    throw new ConvexError("Organization not found");
   }
 
-  const template = org.settings?.accessionNumberFormat;
-  const autoGenerate = org.settings?.autoGenerateAccessionNumbers ?? false;
+  const slugPrefix =
+    org.slug
+      ?.toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 3) || "ORG";
+  const template =
+    org.settings?.accessionNumberFormat ?? `${slugPrefix}-{YYYY}-{####}`;
+  const autoGenerate = org.settings?.autoGenerateAccessionNumbers ?? true;
 
   if (!autoGenerate) {
-    throw new Error(
+    throw new ConvexError(
       "Auto-generate accession numbers is disabled. Please enable it in Organization Settings or provide a custom accession number.",
-    );
-  }
-
-  if (!template) {
-    throw new Error(
-      "Accession number format is not configured. Please set up an accession format template in Organization Settings.",
     );
   }
 
@@ -162,7 +162,7 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new Error("Not authenticated");
+      throw new ConvexError("Not authenticated");
     }
 
     // Check permission
@@ -193,7 +193,7 @@ export const create = mutation({
       .first();
 
     if (existing) {
-      throw new Error("Accession number already exists");
+      throw new ConvexError("Accession number already exists");
     }
 
     // Create collection object
