@@ -9,8 +9,20 @@ export async function generateMetadata() {
   };
 }
 
-export default async function Page() {
+interface PageProps {
+  searchParams: Promise<{
+    returnTo?: string | string[];
+  }>;
+}
+
+export default async function Page({ searchParams }: PageProps) {
   const t = await getI18n();
+  const { returnTo } = await searchParams;
+  const requestedReturnTo =
+    typeof returnTo === "string" ? returnTo : returnTo?.[0];
+  const redirectTo = requestedReturnTo?.startsWith("/")
+    ? requestedReturnTo
+    : undefined;
 
   return (
     <div className="h-screen w-screen flex flex-col items-center justify-center px-4">
@@ -23,7 +35,7 @@ export default async function Page() {
         </div>
         <div className="flex flex-col items-center justify-center">
           <Logo width={350} height={350} />
-          <GoogleSignin />
+          <GoogleSignin redirectTo={redirectTo} />
         </div>
       </div>
     </div>

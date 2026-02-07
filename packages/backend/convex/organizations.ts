@@ -1150,12 +1150,34 @@ export const inviteUser = mutation({
 
     await enforceUserQuota(ctx, args.organizationId);
 
-    await ctx.runMutation(internal.invitations.createInvitationInternal, {
-      organizationId: args.organizationId,
-      roleId: args.roleId,
-      email: normalizedEmail,
-      invitedBy: userId,
-    });
+    const invitation = await ctx.runMutation(
+      internal.invitations.createInvitationInternal,
+      {
+        organizationId: args.organizationId,
+        roleId: args.roleId,
+        email: normalizedEmail,
+        invitedBy: userId,
+      },
+    );
+
+    const organization = await ctx.db.get(args.organizationId);
+    if (!organization) {
+      throw new ConvexError("Organization not found");
+    }
+    const inviter = await ctx.db.get(userId);
+    const inviterName = inviter?.name ?? inviter?.email ?? "A team member";
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.email.actions.sendInvitationEmailAction,
+      {
+        email: normalizedEmail,
+        organizationName: organization.name,
+        inviterName,
+        role: role.name,
+        token: invitation.token,
+      },
+    );
 
     return null;
   },

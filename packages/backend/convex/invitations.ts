@@ -394,6 +394,23 @@ export const resendInvitation = mutation({
       },
     });
 
+    const organization = await ctx.db.get(invitation.organizationId);
+    const role = await ctx.db.get(invitation.roleId);
+    const inviter = await ctx.db.get(invitation.invitedBy);
+    const inviterName = inviter?.name ?? inviter?.email ?? "A team member";
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.email.actions.sendInvitationEmailAction,
+      {
+        email: invitation.email,
+        organizationName: organization?.name ?? "MuseumLite",
+        inviterName,
+        role: role?.name ?? "member",
+        token: newToken,
+      },
+    );
+
     return { success: true, token: newToken };
   },
 });
