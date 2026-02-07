@@ -24,15 +24,8 @@ import {
   DialogTitle,
 } from "@v1/ui/dialog";
 import { Switch } from "@v1/ui/switch";
-import { useAction, useMutation, useQuery } from "convex/react";
-import {
-  BookOpen,
-  Check,
-  ChevronRight,
-  ExternalLink,
-  Loader2,
-  Settings,
-} from "lucide-react";
+import { useMutation, useQuery } from "convex/react";
+import { BookOpen, Check, ChevronRight, Loader2, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -70,7 +63,6 @@ export default function IntegrationsSettingsPage() {
 
   const enableIntegration = useMutation(api.integrations.enable);
   const disableIntegration = useMutation(api.integrations.disable);
-  const createCheckoutLink = useAction(api.integrations.createCheckoutLink);
 
   useEffect(() => {
     const subscribedIntegrationId = searchParams?.get("subscribed");
@@ -103,9 +95,6 @@ export default function IntegrationsSettingsPage() {
           toast.success(tToast("integrationEnabled"));
         } else if (result.reason === "already_enabled") {
           toast.info(tToast("integrationAlreadyEnabled"));
-        } else if (result.reason === "subscription_required") {
-          toast.error(tToast("subscriptionNotActive"));
-          return;
         }
 
         setPendingEnableIntegration(null);
@@ -135,9 +124,10 @@ export default function IntegrationsSettingsPage() {
           integrationId,
         });
 
-        if (!result.ok && result.reason === "subscription_required") {
-          setSelectedIntegration(integrationId);
-          setSubscribeDialogOpen(true);
+        if (result.ok) {
+          toast.success(tToast("integrationEnabled"));
+        } else {
+          toast.info(tToast("integrationAlreadyEnabled"));
         }
       } finally {
         setIsToggling(null);
@@ -150,14 +140,25 @@ export default function IntegrationsSettingsPage() {
 
     setIsCreatingCheckout(true);
     try {
-      const { url } = await createCheckoutLink({
+      const result = await enableIntegration({
         organizationId: currentOrganizationId as Id<"organizations">,
         integrationId: selectedIntegration,
-        successUrl: `${window.location.origin}/settings/integrations?subscribed=${selectedIntegration}`,
       });
-      window.location.href = url;
+
+      if (result.ok) {
+        toast.success(tToast("integrationEnabled"));
+      } else if (result.reason === "already_enabled") {
+        toast.info(tToast("integrationAlreadyEnabled"));
+      } else {
+        toast.error(tToast("integrationEnableFailed"));
+      }
+
+      setSubscribeDialogOpen(false);
+      setSelectedIntegration(null);
     } catch (error) {
-      console.error("Failed to create checkout:", error);
+      console.error("Failed to enable integration:", error);
+      toast.error(tToast("integrationEnableFailed"));
+    } finally {
       setIsCreatingCheckout(false);
     }
   };
@@ -349,10 +350,7 @@ export default function IntegrationsSettingsPage() {
                   {t("redirecting")}
                 </>
               ) : (
-                <>
-                  {t("subscribe")}
-                  <ExternalLink className="ml-2 h-4 w-4" />
-                </>
+                <>{t("subscribe")}</>
               )}
             </Button>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { parseDate } from "chrono-node";
+import { format, parseISO } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import * as React from "react";
 import { Button } from "./button";
@@ -12,12 +13,7 @@ function formatDate(date: Date | undefined) {
   if (!date) {
     return "";
   }
-
-  return date.toLocaleDateString("en-US", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
+  return format(date, "MMMM dd, yyyy");
 }
 
 function isValidDate(date: Date | undefined) {
@@ -25,6 +21,18 @@ function isValidDate(date: Date | undefined) {
     return false;
   }
   return !Number.isNaN(date.getTime());
+}
+
+function parseStoredDate(value: string | undefined) {
+  if (!value) {
+    return undefined;
+  }
+  const parsedDate = parseISO(value);
+  return isValidDate(parsedDate) ? parsedDate : undefined;
+}
+
+function toDateString(date: Date) {
+  return format(date, "yyyy-MM-dd");
 }
 
 interface NaturalLanguageDatePickerProps {
@@ -48,30 +56,25 @@ export function NaturalLanguageDatePicker({
   required = false,
   defaultDate,
 }: NaturalLanguageDatePickerProps) {
+  const initialDate = React.useMemo(
+    () => parseStoredDate(value) ?? defaultDate,
+    [value, defaultDate],
+  );
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState(
-    value
-      ? formatDate(new Date(value))
-      : defaultDate
-        ? formatDate(defaultDate)
-        : "",
+    initialDate ? formatDate(initialDate) : "",
   );
-  const [date, setDate] = React.useState<Date | undefined>(
-    value ? new Date(value) : defaultDate,
-  );
-  const [month, setMonth] = React.useState<Date | undefined>(
-    date || defaultDate,
-  );
+  const [date, setDate] = React.useState<Date | undefined>(initialDate);
+  const [month, setMonth] = React.useState<Date | undefined>(initialDate);
 
   // Sync date with value prop changes
   React.useEffect(() => {
-    if (value) {
-      const newDate = new Date(value);
-      if (isValidDate(newDate)) {
-        setDate(newDate);
-        setMonth(newDate);
-        setInputValue(formatDate(newDate));
-      }
+    const nextDate = parseStoredDate(value);
+
+    if (nextDate) {
+      setDate(nextDate);
+      setMonth(nextDate);
+      setInputValue(formatDate(nextDate));
     } else {
       // Show defaultDate in UI but don't auto-set value
       if (defaultDate) {
@@ -94,7 +97,7 @@ export function NaturalLanguageDatePicker({
       if (parsedDate && isValidDate(parsedDate)) {
         setDate(parsedDate);
         setMonth(parsedDate);
-        onChange?.(parsedDate.toISOString().split("T")[0] ?? "");
+        onChange?.(toDateString(parsedDate));
       }
     } else {
       setDate(undefined);
@@ -106,7 +109,7 @@ export function NaturalLanguageDatePicker({
     if (selectedDate) {
       setDate(selectedDate);
       setInputValue(formatDate(selectedDate));
-      onChange?.(selectedDate.toISOString().split("T")[0] ?? "");
+      onChange?.(toDateString(selectedDate));
       setOpen(false);
     }
   };

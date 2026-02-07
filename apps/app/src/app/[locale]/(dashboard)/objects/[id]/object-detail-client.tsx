@@ -27,9 +27,8 @@ import {
 import { ImageLightbox, type LightboxImage } from "@v1/ui/image-lightbox";
 import { SidebarProvider } from "@v1/ui/sidebar";
 import { cn } from "@v1/ui/utils";
-import { useMutation, usePreloadedQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import type { Preloaded } from "convex/react";
 import {
   ArrowLeft,
   Calendar,
@@ -200,31 +199,23 @@ const moduleTabMap: Record<string, { id: TabId; label: string }> = {
 type ObjectDetailClientProps = {
   collectionId: Id<"collections">;
   collection: FunctionReturnType<typeof api.collections.get> | null;
-  preloadedCollectionGroup: Preloaded<typeof api.collectionGroups.get> | null;
-  preloadedLocationPath: Preloaded<typeof api.locations.getLocationPath> | null;
-  preloadedMedia: Preloaded<typeof api.media.list> | null;
+  collectionGroup: FunctionReturnType<typeof api.collectionGroups.get> | null;
+  locationPath: FunctionReturnType<typeof api.locations.getLocationPath> | null;
+  media: FunctionReturnType<typeof api.media.list> | null;
 };
 
 export function ObjectDetailClient({
   collectionId,
   collection,
-  preloadedCollectionGroup,
-  preloadedLocationPath,
-  preloadedMedia,
+  collectionGroup,
+  locationPath,
+  media,
 }: ObjectDetailClientProps) {
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const locale = useCurrentLocale();
   const { currentOrganizationId } = useOrganization();
   const [activeTab, setActiveTab] = useState<TabId>("general");
-
-  const collectionGroup = preloadedCollectionGroup
-    ? usePreloadedQuery(preloadedCollectionGroup)
-    : null;
-  const locationPath = preloadedLocationPath
-    ? usePreloadedQuery(preloadedLocationPath)
-    : null;
-  const media = preloadedMedia ? usePreloadedQuery(preloadedMedia) : null;
 
   const tabs = useMemo(() => {
     const collectionType = collection?.collectionType;
