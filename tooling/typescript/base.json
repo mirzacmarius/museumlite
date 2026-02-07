@@ -3,7 +3,7 @@
   "display": "Default",
   "compilerOptions": {
     "esModuleInterop": true,
-    "incremental": false,
+    "incremental": true,
     "isolatedModules": true,
     "lib": [
       "es2022",
