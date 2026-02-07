@@ -329,14 +329,7 @@ export function MediaGallery({
     setDragOverId(null);
   };
 
-  if (media === undefined) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Loading media...</p>
-      </div>
-    );
-  }
-
+  const isMediaLoading = media === undefined;
   const mediaArray = Array.isArray(media) ? media : [];
 
   const images = mediaArray.filter((m) => {
@@ -376,6 +369,14 @@ export function MediaGallery({
     openLightbox,
     closeLightbox,
   } = useLightbox(lightboxImages);
+
+  if (isMediaLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <p className="text-muted-foreground">Loading media...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
