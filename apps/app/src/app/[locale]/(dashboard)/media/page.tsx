@@ -3,14 +3,15 @@ import MediaLoading from "./loading";
 import { MediaPageData } from "./media-page-data";
 
 type MediaPageProps = {
-  searchParams?: Record<string, string | Array<string> | undefined>;
+  searchParams: Promise<Record<string, string | Array<string> | undefined>>;
 };
 
-export default function MediaPage({ searchParams }: MediaPageProps) {
+export default async function MediaPage({ searchParams }: MediaPageProps) {
+  const resolvedSearchParams = await searchParams;
+
   return (
     <Suspense fallback={<MediaLoading />}>
-      <MediaPageData searchParams={searchParams} />
+      <MediaPageData searchParams={resolvedSearchParams} />
     </Suspense>
   );
 }
-
