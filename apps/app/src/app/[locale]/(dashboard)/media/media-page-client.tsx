@@ -126,14 +126,12 @@ export function MediaPageClient({
             Digital Assets
           </h2>
           <div className="flex items-center gap-3">
-            {stats && (
+            {stats && usage && (
               <div className="mr-4 flex items-center gap-2 text-xs text-zinc-500">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 <span>{formatFileSize(stats.totalSize)} Used</span>
                 <span className="text-zinc-700">/</span>
-                {usage === undefined ? (
-                  <span>Loading...</span>
-                ) : usage.storage.limit === null ? (
+                {usage.storage.limit === null ? (
                   <span>Unlimited</span>
                 ) : (
                   <span>{formatFileSize(usage.storage.limit)} Total</span>

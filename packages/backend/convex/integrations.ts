@@ -33,12 +33,12 @@ export const AVAILABLE_INTEGRATIONS = [
       "Serial subscriptions",
       "Reports & statistics",
     ],
-    requiresSubscription: true,
+    requiresSubscription: false,
   },
 ] as const;
 
 // Integration IDs that require a paid subscription
-export const PAID_INTEGRATIONS = ["library"] as const;
+export const PAID_INTEGRATIONS = [] as const;
 
 export type IntegrationId = (typeof AVAILABLE_INTEGRATIONS)[number]["id"];
 
@@ -147,32 +147,6 @@ export const enable = mutation({
 
     if (enabledIntegrations.includes(args.integrationId)) {
       return { ok: false as const, reason: "already_enabled" as const };
-    }
-
-    // Check if integration requires subscription
-    if (
-      PAID_INTEGRATIONS.includes(
-        args.integrationId as (typeof PAID_INTEGRATIONS)[number],
-      )
-    ) {
-      const subscription = await ctx.db
-        .query("integrationSubscriptions")
-        .withIndex("by_organization_and_integration", (q) =>
-          q
-            .eq("organizationId", args.organizationId)
-            .eq("integrationId", args.integrationId),
-        )
-        .first();
-
-      const isEntitled =
-        subscription &&
-        (subscription.status === "active" ||
-          (subscription.cancelAtPeriodEnd &&
-            subscription.currentPeriodEnd > Date.now()));
-
-      if (!isEntitled) {
-        return { ok: false as const, reason: "subscription_required" as const };
-      }
     }
 
     await ctx.db.patch(args.organizationId, {

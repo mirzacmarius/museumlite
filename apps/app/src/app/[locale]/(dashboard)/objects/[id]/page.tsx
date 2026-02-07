@@ -1,7 +1,7 @@
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { fetchQuery, preloadQuery } from "convex/nextjs";
+import { fetchQuery } from "convex/nextjs";
 import { ObjectDetailClient } from "./object-detail-client";
 
 export default async function ObjectDetailPage({
@@ -23,33 +23,29 @@ export default async function ObjectDetailPage({
       <ObjectDetailClient
         collectionId={collectionId}
         collection={null}
-        preloadedCollectionGroup={null}
-        preloadedLocationPath={null}
-        preloadedMedia={null}
+        collectionGroup={null}
+        locationPath={null}
+        media={null}
       />
     );
   }
 
-  const [
-    preloadedCollectionGroup,
-    preloadedLocationPath,
-    preloadedMedia,
-  ] = await Promise.all([
+  const [collectionGroup, locationPath, media] = await Promise.all([
     collection.collectionGroupId
-      ? preloadQuery(
+      ? fetchQuery(
           api.collectionGroups.get,
           { groupId: collection.collectionGroupId },
           { token },
         )
       : Promise.resolve(null),
     collection.currentLocationId
-      ? preloadQuery(
+      ? fetchQuery(
           api.locations.getLocationPath,
           { locationId: collection.currentLocationId },
           { token },
         )
       : Promise.resolve(null),
-    preloadQuery(
+    fetchQuery(
       api.media.list,
       { collectionId: collection._id },
       { token },
@@ -60,9 +56,9 @@ export default async function ObjectDetailPage({
     <ObjectDetailClient
       collectionId={collectionId}
       collection={collection}
-      preloadedCollectionGroup={preloadedCollectionGroup}
-      preloadedLocationPath={preloadedLocationPath}
-      preloadedMedia={preloadedMedia}
+      collectionGroup={collectionGroup}
+      locationPath={locationPath}
+      media={media}
     />
   );
 }
