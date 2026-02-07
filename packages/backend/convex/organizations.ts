@@ -1112,56 +1112,49 @@ export const inviteUser = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new Error("Not authenticated");
+      throw new ConvexError("Not authenticated");
     }
 
     // Check permission
     await requirePermission(ctx, args.organizationId, "users.invite");
 
-    // Find user by email
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", args.email))
-      .first();
-
-    if (!user) {
-      // TODO: Send invitation email
-      throw new Error("User not found. Email invitation not yet implemented.");
+    const normalizedEmail = args.email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      throw new ConvexError("Email is required");
     }
 
-    // Check if user is already in organization
-    const existing = await ctx.db
-      .query("userOrganizations")
-      .withIndex("by_user_and_organization", (q) =>
-        q.eq("userId", user._id).eq("organizationId", args.organizationId),
-      )
-      .first();
+    const role = await ctx.db.get(args.roleId);
+    if (!role || role.organizationId !== args.organizationId) {
+      throw new ConvexError("Invalid role for organization");
+    }
 
-    if (existing) {
-      throw new Error("User is already in this organization");
+    // If the user already exists, ensure they are not already in the organization.
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", normalizedEmail))
+      .first();
+    if (existingUser) {
+      const existingMembership = await ctx.db
+        .query("userOrganizations")
+        .withIndex("by_user_and_organization", (q) =>
+          q
+            .eq("userId", existingUser._id)
+            .eq("organizationId", args.organizationId),
+        )
+        .first();
+
+      if (existingMembership) {
+        throw new ConvexError("User is already in this organization");
+      }
     }
 
     await enforceUserQuota(ctx, args.organizationId);
 
-    // Add user to organization
-    await ctx.db.insert("userOrganizations", {
-      userId: user._id,
+    await ctx.runMutation(internal.invitations.createInvitationInternal, {
       organizationId: args.organizationId,
       roleId: args.roleId,
+      email: normalizedEmail,
       invitedBy: userId,
-      joinedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: args.organizationId,
-      userId,
-      action: "invited_user",
-      entityType: "user",
-      entityId: user._id,
-      changes: {
-        email: args.email,
-        roleId: args.roleId,
-      },
     });
 
     return null;
