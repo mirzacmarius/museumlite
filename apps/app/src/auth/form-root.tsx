@@ -106,6 +106,22 @@ export function AuthFormRoot({
     }
   };
 
+  const requestPasswordVerificationCode = async () => {
+    try {
+      const result = await signIn("password-with-reset", {
+        email,
+        flow: "email-verification",
+      });
+      if (result.signingIn) {
+        onSignedIn();
+      }
+      return true;
+    } catch {
+      toast.error("Could not send a verification code.");
+      return false;
+    }
+  };
+
   const requestResetCode = async () => {
     if (passwordAccountExists === false) {
       setCodeFlow("otp");
@@ -152,6 +168,12 @@ export function AuthFormRoot({
       await requestResetCode();
       return;
     }
+
+    if (flow === "passwordVerify") {
+      await requestPasswordVerificationCode();
+      return;
+    }
+
     await requestOtpCode();
   };
 
@@ -173,6 +195,11 @@ export function AuthFormRoot({
     setStep("uniqueCode");
   };
 
+  const openPasswordVerificationFlow = () => {
+    setCodeFlow("passwordVerify");
+    setStep("uniqueCode");
+  };
+
   if (step === "email") {
     return (
       <AuthEmailForm defaultEmail={email} onSubmit={handleEmailVerification} />
@@ -188,6 +215,7 @@ export function AuthFormRoot({
         onEmailClear={handleEmailClear}
         onForgotPassword={openResetFlow}
         onModeChange={setMode}
+        onPasswordVerificationRequired={openPasswordVerificationFlow}
         onSignedIn={onSignedIn}
         onUniqueCodeRequest={openOtpFlow}
       />

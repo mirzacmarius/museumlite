@@ -6,4 +6,4 @@ export interface AuthErrorInfo {
   message: string;
 }
 
-export type UniqueCodeFlow = "otp" | "reset";
+export type UniqueCodeFlow = "otp" | "reset" | "passwordVerify";

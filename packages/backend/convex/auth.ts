@@ -26,7 +26,6 @@ const magicLinkEmail = Email({
   id: "magic-link",
   apiKey: env.RESEND_API_KEY,
   from: env.RESEND_SENDER_EMAIL_AUTH,
-  // Match Auth.js Resend provider behavior for magic-link flow.
   authorize: undefined,
   sendVerificationRequest: verifyProvider.sendVerificationRequest,
 });
@@ -39,7 +38,7 @@ const passwordWithReset = Password({
   id: "password-with-reset",
   profile: normalizedEmailProfile,
   reset: ResendOTPPasswordReset,
-  verify: verifyProvider,
+  verify: ResendOTP,
 });
 
 const passwordWithCode = Password({

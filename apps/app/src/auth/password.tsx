@@ -17,6 +17,7 @@ interface AuthPasswordFormProps {
   onEmailClear: () => void;
   onUniqueCodeRequest: () => Promise<void>;
   onForgotPassword: () => Promise<void>;
+  onPasswordVerificationRequired: () => void;
   onSignedIn: () => void;
 }
 
@@ -28,6 +29,7 @@ export function AuthPasswordForm({
   onEmailClear,
   onUniqueCodeRequest,
   onForgotPassword,
+  onPasswordVerificationRequired,
   onSignedIn,
 }: AuthPasswordFormProps) {
   const { signIn } = useAuthActions();
@@ -91,7 +93,8 @@ export function AuthPasswordForm({
         return;
       }
 
-      toast.success("Check your email to verify this sign-in.");
+      onPasswordVerificationRequired();
+      toast.success("Enter the verification code sent to your email.");
     } catch (error) {
       const message = getErrorMessage(error);
       if (message.includes("InvalidAccountId") && !isSignUp) {

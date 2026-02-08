@@ -80,6 +80,22 @@ export function AuthUniqueCodeForm({
         return;
       }
 
+      if (flow === "passwordVerify") {
+        const result = await signIn("password-with-reset", {
+          code,
+          email,
+          flow: "email-verification",
+        });
+
+        if (result.signingIn) {
+          onSignedIn();
+          return;
+        }
+
+        toast.error("Invalid verification code.");
+        return;
+      }
+
       const result = await signIn("resend-otp", { code, email });
 
       if (result.signingIn) {
