@@ -1,6 +1,7 @@
-import { AuthMethods } from "@/components/auth-methods";
+import { AuthRoot } from "@/auth/auth-root";
 import { getI18n } from "@/locales/server";
 import { Logo } from "@v1/ui/logo";
+import Link from "next/link";
 
 export async function generateMetadata() {
   const t = await getI18n();
@@ -16,7 +17,6 @@ interface PageProps {
 }
 
 export default async function Page({ searchParams }: PageProps) {
-  const t = await getI18n();
   const { returnTo } = await searchParams;
   const requestedReturnTo =
     typeof returnTo === "string" ? returnTo : returnTo?.[0];
@@ -25,18 +25,25 @@ export default async function Page({ searchParams }: PageProps) {
     : undefined;
 
   return (
-    <div className="h-screen w-screen flex flex-col items-center justify-center px-4">
-      <div className="flex flex-col items-center justify-center max-w-md w-full space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">
-            {t("loginPage.heading")}
-          </h1>
-          <p className="text-muted-foreground">{t("loginPage.description")}</p>
+    <div className="flex min-h-screen w-full items-center justify-center px-4">
+      <div className="w-full max-w-[26rem]">
+        <div className="mb-6 flex justify-center">
+          <Logo height={120} width={120} />
         </div>
-        <div className="flex flex-col items-center justify-center">
-          <Logo width={350} height={350} />
-          <AuthMethods mode="signIn" redirectTo={redirectTo} />
-        </div>
+        <AuthRoot initialMode="signIn" redirectTo={redirectTo} />
+        <p className="pt-5 text-center text-sm text-white/70">
+          No account yet?{" "}
+          <Link
+            className="font-medium text-white underline underline-offset-4"
+            href={
+              redirectTo
+                ? `/register?returnTo=${encodeURIComponent(redirectTo)}`
+                : "/register"
+            }
+          >
+            Create one
+          </Link>
+        </p>
       </div>
     </div>
   );

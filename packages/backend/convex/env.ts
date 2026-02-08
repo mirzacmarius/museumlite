@@ -9,8 +9,8 @@ export const env = createEnv({
     POLAR_WEBHOOK_SECRET: z.string().min(1),
     POLAR_INTEGRATIONS_WEBHOOK_SECRET: z.optional(z.string().min(1)),
     INTEGRATION_PRODUCT_LIBRARY: z.optional(z.string().min(1)),
-    RESEND_API_KEY: z.optional(z.string().min(1)),
-    RESEND_SENDER_EMAIL_AUTH: z.optional(z.string().email()),
+    RESEND_API_KEY: z.string().min(1),
+    RESEND_SENDER_EMAIL_AUTH: z.string().email(),
     SITE_URL: z.string().url(),
   },
   runtimeEnv: {
