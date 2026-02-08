@@ -49,7 +49,7 @@ const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
   free: {
     objects: 100,
     mediaBytes: 1 * 1024 * 1024 * 1024,
-    users: 1,
+    users: 3,
     exportsPerMonth: 10,
   },
   pro: {

@@ -1148,7 +1148,17 @@ export const inviteUser = mutation({
       }
     }
 
-    await enforceUserQuota(ctx, args.organizationId);
+    try {
+      await enforceUserQuota(ctx, args.organizationId);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === "User limit reached for current tier"
+      ) {
+        throw new ConvexError(error.message);
+      }
+      throw error;
+    }
 
     const invitation = await ctx.runMutation(
       internal.invitations.createInvitationInternal,
