@@ -1,4 +1,4 @@
-import { GoogleSignin } from "@/components/google-signin";
+import { AuthMethods } from "@/components/auth-methods";
 import { getI18n } from "@/locales/server";
 import { Logo } from "@v1/ui/logo";
 
@@ -35,7 +35,7 @@ export default async function Page({ searchParams }: PageProps) {
         </div>
         <div className="flex flex-col items-center justify-center">
           <Logo width={350} height={350} />
-          <GoogleSignin redirectTo={redirectTo} />
+          <AuthMethods mode="signIn" redirectTo={redirectTo} />
         </div>
       </div>
     </div>

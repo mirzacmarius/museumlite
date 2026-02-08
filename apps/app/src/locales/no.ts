@@ -3387,6 +3387,11 @@ export default {
     heading: "Velkommen tilbake",
     description: "Logg inn på kontoen din for å fortsette",
   },
+  registerPage: {
+    title: "Opprett konto",
+    heading: "Opprett kontoen din",
+    description: "Registrer deg for å begynne å bruke Museumlite",
+  },
   invitePage: {
     heading: "Du har blitt invitert!",
     description: "Bli med teamet ditt og start samarbeidet",

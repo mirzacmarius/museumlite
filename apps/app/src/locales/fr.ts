@@ -3424,6 +3424,11 @@ export default {
     heading: "Bienvenue",
     description: "Connectez-vous à votre compte pour continuer",
   },
+  registerPage: {
+    title: "Créer un compte",
+    heading: "Créez votre compte",
+    description: "Inscrivez-vous pour commencer à utiliser Museumlite",
+  },
   invitePage: {
     heading: "Vous avez été invité !",
     description: "Rejoignez votre équipe et commencez à collaborer",

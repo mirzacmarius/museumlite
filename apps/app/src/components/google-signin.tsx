@@ -5,9 +5,10 @@ import { Button } from "@v1/ui/button";
 
 interface GoogleSigninProps {
   redirectTo?: string;
+  label?: string;
 }
 
-export function GoogleSignin({ redirectTo }: GoogleSigninProps) {
+export function GoogleSignin({ redirectTo, label }: GoogleSigninProps) {
   const { signIn } = useAuthActions();
 
   return (
@@ -20,9 +21,9 @@ export function GoogleSignin({ redirectTo }: GoogleSigninProps) {
         signIn("google");
       }}
       variant="outline"
-      className="font-mono"
+      className="w-full font-mono"
     >
-      Sign in with Google
+      {label ?? "Sign in with Google"}
     </Button>
   );
 }

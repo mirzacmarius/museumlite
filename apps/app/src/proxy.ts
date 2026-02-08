@@ -12,7 +12,7 @@ const I18nMiddleware = createI18nMiddleware({
   urlMappingStrategy: "rewrite",
 });
 
-const isSignInPage = createRouteMatcher(["/login"]);
+const isSignInPage = createRouteMatcher(["/login", "/register"]);
 
 export default convexAuthNextjsMiddleware(
   async (request, { convexAuth }) => {

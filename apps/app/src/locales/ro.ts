@@ -4,6 +4,11 @@ export default {
     heading: "Bine ai revenit",
     description: "Conectează-te la contul tău pentru a continua",
   },
+  registerPage: {
+    title: "Creează cont",
+    heading: "Creează-ți contul",
+    description: "Înregistrează-te pentru a începe să folosești Museumlite",
+  },
   invitePage: {
     heading: "Ai fost invitat!",
     description: "Alătură-te echipei tale și începe colaborarea",
