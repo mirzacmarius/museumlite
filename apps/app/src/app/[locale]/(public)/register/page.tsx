@@ -31,6 +31,19 @@ export default async function Page({ searchParams }: PageProps) {
           <Logo height={120} width={120} />
         </div>
         <AuthRoot initialMode="signUp" redirectTo={redirectTo} />
+        <p className="pt-5 text-center text-sm text-white/70">
+          Already have an account?{" "}
+          <Link
+            className="font-medium text-white underline underline-offset-4"
+            href={
+              redirectTo
+                ? `/login?returnTo=${encodeURIComponent(redirectTo)}`
+                : "/login"
+            }
+          >
+            Sign in
+          </Link>
+        </p>
       </div>
     </div>
   );

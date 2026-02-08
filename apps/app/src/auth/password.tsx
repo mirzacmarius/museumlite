@@ -249,16 +249,6 @@ export function AuthPasswordForm({
           </Button>
         ) : null}
       </div>
-
-      <button
-        className="text-xs font-medium text-white/70 transition-colors hover:text-white"
-        onClick={() => onModeChange(mode === "signIn" ? "signUp" : "signIn")}
-        type="button"
-      >
-        {mode === "signIn"
-          ? "Need an account? Create one"
-          : "Already have an account? Sign in"}
-      </button>
     </form>
   );
 }
