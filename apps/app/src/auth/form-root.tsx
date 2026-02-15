@@ -78,11 +78,14 @@ export function AuthFormRoot({
 
       setPasswordAccountExists(result.hasPasswordAccount);
       setMode(result.hasPasswordAccount ? "signIn" : "signUp");
+      setStep("password");
     } catch {
       setPasswordAccountExists(null);
+      setErrorInfo({
+        message: "We couldn't verify this email right now. Please try again.",
+      });
+      toast.error("Could not verify account status. Please try again.");
     }
-
-    setStep("password");
   };
 
   const handleEmailClear = () => {
