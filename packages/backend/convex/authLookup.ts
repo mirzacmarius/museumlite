@@ -20,8 +20,16 @@ export const hasPasswordAccountForEmail = query({
       )
       .unique();
 
+    if (!passwordAccount) {
+      return {
+        hasPasswordAccount: false,
+      };
+    }
+
+    const linkedUser = await ctx.db.get(passwordAccount.userId);
+
     return {
-      hasPasswordAccount: passwordAccount !== null,
+      hasPasswordAccount: linkedUser !== null,
     };
   },
 });

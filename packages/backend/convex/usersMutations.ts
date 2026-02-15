@@ -1,4 +1,3 @@
-import { asyncMap } from "convex-helpers";
 import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
 
@@ -13,21 +12,15 @@ export const deleteUserAccount = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await asyncMap(
-      ["google" /* add other providers as needed */],
-      async (provider) => {
-        const authAccount = await ctx.db
-          .query("authAccounts")
-          .withIndex("userIdAndProvider", (q) =>
-            q.eq("userId", args.userId).eq("provider", provider),
-          )
-          .first();
-        if (!authAccount) {
-          return;
-        }
-        await ctx.db.delete(authAccount._id);
-      },
-    );
+    const authAccounts = await ctx.db
+      .query("authAccounts")
+      .withIndex("userIdAndProvider", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    for (const authAccount of authAccounts) {
+      await ctx.db.delete(authAccount._id);
+    }
+
     await ctx.db.delete(args.userId);
     return null;
   },
