@@ -1,14 +1,10 @@
 {
   "$schema": "https://turborepo.org/schema.json",
-  "globalDependencies": [
-    "**/.env"
-  ],
+  "globalDependencies": ["**/.env"],
   "ui": "stream",
   "tasks": {
     "topo": {
-      "dependsOn": [
-        "^topo"
-      ]
+      "dependsOn": ["^topo"]
     },
     "build": {
       "env": [
@@ -20,19 +16,9 @@
         "SENTRY_ORG",
         "SENTRY_PROJECT"
       ],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env"
-      ],
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**",
-        "next-env.d.ts",
-        ".expo/**"
-      ]
+      "inputs": ["$TURBO_DEFAULT$", ".env"],
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "next-env.d.ts", ".expo/**"]
     },
     "start": {
       "cache": false
@@ -44,22 +30,23 @@
       "cache": false
     },
     "dev": {
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env"
-      ],
+      "inputs": ["$TURBO_DEFAULT$", ".env"],
       "persistent": true,
       "cache": false
     },
     "lint": {
-      "dependsOn": [
-        "^topo"
-      ]
+      "dependsOn": ["^topo"]
     },
     "typecheck": {
-      "dependsOn": [
-        "^topo"
-      ],
+      "dependsOn": ["^topo"],
+      "outputs": [
+        ".next/cache/tsbuildinfo.json",
+        "node_modules/.cache/tsbuildinfo.json",
+        "tsconfig.tsbuildinfo"
+      ]
+    },
+    "typecheck:i18n": {
+      "dependsOn": ["^topo"],
       "outputs": [
         ".next/cache/tsbuildinfo.json",
         "node_modules/.cache/tsbuildinfo.json",

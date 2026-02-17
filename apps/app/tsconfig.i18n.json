@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/locales/en.ts",
+    "src/locales/fr.ts",
+    "src/locales/es.ts",
+    "src/locales/no.ts",
+    "src/locales/ro.ts",
+    "src/locales/client.strict.ts",
+    "src/locales/server.strict.ts"
+  ],
+  "exclude": ["node_modules", "**/node_modules/**"]
+}

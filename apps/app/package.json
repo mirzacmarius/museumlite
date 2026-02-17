@@ -10,7 +10,8 @@
     "format": "biome format --write .",
     "start": "next start",
     "test": "vitest run",
-    "typecheck": "NODE_OPTIONS='--max-old-space-size=8192' tsc --noEmit"
+    "typecheck": "NODE_OPTIONS='--max-old-space-size=8192' tsc --noEmit",
+    "typecheck:i18n": "NODE_OPTIONS='--max-old-space-size=8192' tsc -p tsconfig.i18n.json --noEmit"
   },
   "dependencies": {
     "@auth/core": "0.37.0",
