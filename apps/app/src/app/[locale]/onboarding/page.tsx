@@ -15,7 +15,15 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { useMutation, useQuery } from "convex/react";
-import { Building2, Database, FolderPlus, Loader2, Plus, Upload, User } from "lucide-react";
+import {
+  Building2,
+  Database,
+  FolderPlus,
+  Loader2,
+  Plus,
+  Upload,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -50,8 +58,7 @@ export default function OnboardingPage() {
     },
   });
 
-  const firstOrganizationId =
-    createdOrgId ?? organizations?.[0]?._id ?? null;
+  const firstOrganizationId = createdOrgId ?? organizations?.[0]?._id ?? null;
 
   const collectionsPreview = useQuery(
     api.collections.list,
@@ -66,8 +73,7 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (!user || organizations === undefined) return;
 
-    const hasOrganization =
-      organizations.length > 0 || createdOrgId !== null;
+    const hasOrganization = organizations.length > 0 || createdOrgId !== null;
     if (user.username && hasOrganization) {
       if (collectionsPreview === undefined) return;
 
@@ -107,9 +113,13 @@ export default function OnboardingPage() {
       setCreatedOrgId(organizationId);
       setCurrentStep("firstData");
     } catch (err) {
-      setOrgError(
-        err instanceof Error ? err.message : t("organizationsNew.createFailed"),
-      );
+      const errorText =
+        err instanceof Error ? `${err.message}\n${err.stack ?? ""}` : "";
+      if (errorText.includes("Organization slug already exists")) {
+        setOrgError(t("organizationsNew.slugTaken"));
+      } else {
+        setOrgError(t("organizationsNew.createFailed"));
+      }
     } finally {
       setIsSubmitting(false);
     }

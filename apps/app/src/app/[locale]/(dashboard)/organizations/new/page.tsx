@@ -56,9 +56,13 @@ export default function NewOrganizationPage() {
       // Redirect to dashboard
       router.push("/collections");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t("organizationsNew.createFailed"),
-      );
+      const errorText =
+        err instanceof Error ? `${err.message}\n${err.stack ?? ""}` : "";
+      if (errorText.includes("Organization slug already exists")) {
+        setError(t("organizationsNew.slugTaken"));
+      } else {
+        setError(t("organizationsNew.createFailed"));
+      }
     } finally {
       setIsSubmitting(false);
     }

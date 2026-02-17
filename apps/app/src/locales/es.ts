@@ -3382,6 +3382,8 @@ export default {
     submitting: "Creando...",
     cancel: "Cancelar",
     createFailed: "Error al crear la organización",
+    slugTaken:
+      "El identificador de la organización ya está en uso. Elige otro.",
   },
   onboardingPage: {
     welcome: "¡Bienvenido!",

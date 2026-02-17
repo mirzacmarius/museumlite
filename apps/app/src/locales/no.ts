@@ -3363,6 +3363,7 @@ export default {
     submitting: "Oppretter...",
     cancel: "Avbryt",
     createFailed: "Kunne ikke opprette organisasjon",
+    slugTaken: "Organisasjons-ID er allerede i bruk. Velg en annen.",
   },
   onboardingPage: {
     welcome: "Velkommen!",

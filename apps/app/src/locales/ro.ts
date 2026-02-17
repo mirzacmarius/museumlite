@@ -82,6 +82,8 @@ export default {
     submitting: "Se creează...",
     cancel: "Anulează",
     createFailed: "Nu s-a putut crea organizația",
+    slugTaken:
+      "Identificatorul organizației este deja folosit. Alege unul diferit.",
   },
   dashboard: {
     title: "Creează Aplicația Ta",

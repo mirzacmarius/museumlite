@@ -3485,6 +3485,7 @@ export default {
     submitting: "Creating...",
     cancel: "Cancel",
     createFailed: "Failed to create organization",
+    slugTaken: "Organization ID is already taken. Please choose another one.",
   },
   onboardingPage: {
     welcome: "Welcome!",
