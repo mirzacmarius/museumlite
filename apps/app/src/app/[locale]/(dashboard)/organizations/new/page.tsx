@@ -17,6 +17,35 @@ import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+function getConvexErrorCode(error: unknown): string | null {
+  if (!error || typeof error !== "object" || !("data" in error)) {
+    return null;
+  }
+
+  const data = error.data;
+  if (!data || typeof data !== "object" || !("code" in data)) {
+    return null;
+  }
+
+  const { code } = data;
+  return typeof code === "string" ? code : null;
+}
+
+function isOrganizationSlugTakenError(error: unknown): boolean {
+  const code = getConvexErrorCode(error);
+  if (code === "ORGANIZATION_SLUG_TAKEN") {
+    return true;
+  }
+
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return `${error.message}\n${error.stack ?? ""}`.includes(
+    "Organization slug already exists",
+  );
+}
+
 export default function NewOrganizationPage() {
   const t = useI18n();
   const router = useRouter();
@@ -56,9 +85,7 @@ export default function NewOrganizationPage() {
       // Redirect to dashboard
       router.push("/collections");
     } catch (err) {
-      const errorText =
-        err instanceof Error ? `${err.message}\n${err.stack ?? ""}` : "";
-      if (errorText.includes("Organization slug already exists")) {
+      if (isOrganizationSlugTakenError(err)) {
         setError(t("organizationsNew.slugTaken"));
       } else {
         setError(t("organizationsNew.createFailed"));

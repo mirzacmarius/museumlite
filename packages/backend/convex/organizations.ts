@@ -94,7 +94,10 @@ export const create = mutation({
       .first();
 
     if (existing) {
-      throw new ConvexError("Organization slug already exists");
+      throw new ConvexError({
+        code: "ORGANIZATION_SLUG_TAKEN",
+        message: "Organization slug already exists",
+      });
     }
 
     const orgPrefix = normalizedSlug.toUpperCase().substring(0, 3);

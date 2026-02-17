@@ -30,6 +30,35 @@ import { useEffect, useState } from "react";
 
 type Step = "username" | "organization" | "firstData";
 
+function getConvexErrorCode(error: unknown): string | null {
+  if (!error || typeof error !== "object" || !("data" in error)) {
+    return null;
+  }
+
+  const data = error.data;
+  if (!data || typeof data !== "object" || !("code" in data)) {
+    return null;
+  }
+
+  const { code } = data;
+  return typeof code === "string" ? code : null;
+}
+
+function isOrganizationSlugTakenError(error: unknown): boolean {
+  const code = getConvexErrorCode(error);
+  if (code === "ORGANIZATION_SLUG_TAKEN") {
+    return true;
+  }
+
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return `${error.message}\n${error.stack ?? ""}`.includes(
+    "Organization slug already exists",
+  );
+}
+
 export default function OnboardingPage() {
   const t = useI18n();
   const router = useRouter();
@@ -113,9 +142,7 @@ export default function OnboardingPage() {
       setCreatedOrgId(organizationId);
       setCurrentStep("firstData");
     } catch (err) {
-      const errorText =
-        err instanceof Error ? `${err.message}\n${err.stack ?? ""}` : "";
-      if (errorText.includes("Organization slug already exists")) {
+      if (isOrganizationSlugTakenError(err)) {
         setOrgError(t("organizationsNew.slugTaken"));
       } else {
         setOrgError(t("organizationsNew.createFailed"));
