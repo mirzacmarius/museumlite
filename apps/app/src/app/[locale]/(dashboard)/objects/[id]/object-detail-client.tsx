@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -68,9 +69,7 @@ const CommentsTab = dynamic(
 );
 const ConservationTab = dynamic(
   () =>
-    import("./_components/conservation-tab").then(
-      (mod) => mod.ConservationTab,
-    ),
+    import("./_components/conservation-tab").then((mod) => mod.ConservationTab),
   { loading: LoadingPanel },
 );
 const DigitalAssetsTab = dynamic(
@@ -82,9 +81,7 @@ const DigitalAssetsTab = dynamic(
 );
 const ExhibitionsTab = dynamic(
   () =>
-    import("./_components/exhibitions-tab").then(
-      (mod) => mod.ExhibitionsTab,
-    ),
+    import("./_components/exhibitions-tab").then((mod) => mod.ExhibitionsTab),
   { loading: LoadingPanel },
 );
 const FineArtDetailsTab = dynamic(
@@ -152,9 +149,7 @@ const VehicleDetailsTab = dynamic(
 );
 const WineDetailsTab = dynamic(
   () =>
-    import("./_components/wine-details-tab").then(
-      (mod) => mod.WineDetailsTab,
-    ),
+    import("./_components/wine-details-tab").then((mod) => mod.WineDetailsTab),
   { loading: LoadingPanel },
 );
 
@@ -215,19 +210,49 @@ export function ObjectDetailClient({
   const common = useScopedI18n("common");
   const locale = useCurrentLocale();
   const { currentOrganizationId } = useOrganization();
+  const { hasFeature } = useFeatureAccess();
   const [activeTab, setActiveTab] = useState<TabId>("general");
+  const hasConservationFeature = hasFeature("conservation");
+  const hasExhibitionsFeature = hasFeature("exhibitions");
+  const hasLoansFeature = hasFeature("loans");
 
   const tabs = useMemo(() => {
-    const collectionType = collection?.collectionType;
-    if (!collectionType || collectionType === "general") {
-      return baseTabs;
+    const allTabs = (() => {
+      const collectionType = collection?.collectionType;
+      if (!collectionType || collectionType === "general") {
+        return baseTabs;
+      }
+      const moduleTab = moduleTabMap[collectionType];
+      if (!moduleTab) {
+        return baseTabs;
+      }
+      return [...baseTabs.slice(0, 1), moduleTab, ...baseTabs.slice(1)];
+    })();
+
+    return allTabs.filter((tab) => {
+      if (tab.id === "conservation") {
+        return hasConservationFeature;
+      }
+      if (tab.id === "exhibitions") {
+        return hasExhibitionsFeature;
+      }
+      if (tab.id === "loans") {
+        return hasLoansFeature;
+      }
+      return true;
+    });
+  }, [
+    collection?.collectionType,
+    hasConservationFeature,
+    hasExhibitionsFeature,
+    hasLoansFeature,
+  ]);
+
+  useEffect(() => {
+    if (!tabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab(tabs[0]?.id ?? "general");
     }
-    const moduleTab = moduleTabMap[collectionType];
-    if (!moduleTab) {
-      return baseTabs;
-    }
-    return [...baseTabs.slice(0, 1), moduleTab, ...baseTabs.slice(1)];
-  }, [collection?.collectionType]);
+  }, [activeTab, tabs]);
 
   // Get primary image
   const primaryImage = media?.find(
@@ -271,7 +296,10 @@ export function ObjectDetailClient({
     setQrCodeUrl(
       typeof window === "undefined"
         ? ""
-        : new URL(`/objects/${collectionId}`, window.location.origin).toString(),
+        : new URL(
+            `/objects/${collectionId}`,
+            window.location.origin,
+          ).toString(),
     );
   }, [collectionId]);
   const heroLightboxImages: LightboxImage[] = useMemo(() => {
@@ -512,9 +540,7 @@ export function ObjectDetailClient({
                   <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
-                      <span>
-                        {collection.dateCreated || common("unknown")}
-                      </span>
+                      <span>{collection.dateCreated || common("unknown")}</span>
                     </div>
                     {locationString && (
                       <div className="flex items-center gap-2">
@@ -573,16 +599,11 @@ export function ObjectDetailClient({
                 {activeTab === "conservation" && (
                   <ConservationTab
                     collectionId={collectionId}
-                    organizationId={organizationId}
                     locale={locale}
                   />
                 )}
                 {activeTab === "exhibitions" && (
-                  <ExhibitionsTab
-                    collectionId={collectionId}
-                    organizationId={organizationId}
-                    locale={locale}
-                  />
+                  <ExhibitionsTab collectionId={collectionId} locale={locale} />
                 )}
                 {activeTab === "loans" && (
                   <LoansTab collectionId={collectionId} locale={locale} />

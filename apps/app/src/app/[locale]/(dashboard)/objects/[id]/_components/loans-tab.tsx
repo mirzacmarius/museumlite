@@ -1,8 +1,10 @@
 "use client";
 
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDate } from "@/lib/format-date";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { FeatureGuard } from "@v1/ui/feature-guard";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import { Send } from "lucide-react";
@@ -15,9 +17,27 @@ interface LoansTabProps {
 }
 
 export function LoansTab({ collectionId, locale }: LoansTabProps) {
-  const loans = useQuery(api.loans.getLoansForCollection, {
-    collectionId: collectionId as Id<"collections">,
-  });
+  const { hasFeature } = useFeatureAccess();
+  const hasLoansAccess = hasFeature("loans");
+  const loans = useQuery(
+    api.loans.getLoansForCollection,
+    hasLoansAccess && collectionId
+      ? { collectionId: collectionId as Id<"collections"> }
+      : "skip",
+  );
+
+  if (!hasLoansAccess) {
+    return (
+      <FeatureGuard
+        featureName="Loans"
+        isLocked={true}
+        tierNeeded="pro"
+        showUpgrade={false}
+      >
+        <div />
+      </FeatureGuard>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -1,27 +1,44 @@
 "use client";
 
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDate } from "@/lib/format-date";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { FeatureGuard } from "@v1/ui/feature-guard";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import { Stethoscope } from "lucide-react";
 
 interface ConservationTabProps {
   collectionId: string;
-  organizationId: Id<"organizations">;
   locale: string;
 }
 
 export function ConservationTab({
   collectionId,
-  organizationId,
   locale,
 }: ConservationTabProps) {
+  const { hasFeature } = useFeatureAccess();
+  const hasConservationAccess = hasFeature("conservation");
   const treatments = useQuery(
     api.conservationTreatments?.list,
-    collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
+    hasConservationAccess && collectionId
+      ? { collectionId: collectionId as Id<"collections"> }
+      : "skip",
   );
+
+  if (!hasConservationAccess) {
+    return (
+      <FeatureGuard
+        featureName="Conservation"
+        isLocked={true}
+        tierNeeded="pro"
+        showUpgrade={false}
+      >
+        <div />
+      </FeatureGuard>
+    );
+  }
 
   return (
     <div className="space-y-6">
