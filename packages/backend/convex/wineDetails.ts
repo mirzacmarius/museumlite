@@ -76,7 +76,7 @@ export const get = query({
     }
 
     await requireWineModule(ctx, collection.organizationId);
-    await requirePermission(ctx, collection.organizationId, "collections.view");
+    await requirePermission(ctx, collection.organizationId, "collections.read");
 
     const details = await ctx.db
       .query("wineDetails")
@@ -235,7 +235,7 @@ export const listByBin = query({
     }
 
     await requireWineModule(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.view");
+    await requirePermission(ctx, args.organizationId, "collections.read");
 
     const wines = await ctx.db
       .query("wineDetails")
@@ -280,7 +280,7 @@ export const listDrinkingWindows = query({
     }
 
     await requireWineModule(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.view");
+    await requirePermission(ctx, args.organizationId, "collections.read");
 
     const currentYear = new Date().getFullYear();
 

@@ -1031,7 +1031,7 @@ export const createAlertRule = mutation({
     }
 
     await requireConservationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "organization.manage");
+    await requirePermission(ctx, args.organizationId, "organization.manage_settings");
 
     const ruleId = await ctx.db.insert("conservationAlertRules", {
       organizationId: args.organizationId,
@@ -1093,7 +1093,7 @@ export const updateAlertRule = mutation({
     }
 
     await requireConservationAccess(ctx, rule.organizationId);
-    await requirePermission(ctx, rule.organizationId, "organization.manage");
+    await requirePermission(ctx, rule.organizationId, "organization.manage_settings");
 
     const { ruleId, ...updates } = args;
     const filteredUpdates = Object.fromEntries(
@@ -1135,7 +1135,7 @@ export const deleteAlertRule = mutation({
     }
 
     await requireConservationAccess(ctx, rule.organizationId);
-    await requirePermission(ctx, rule.organizationId, "organization.manage");
+    await requirePermission(ctx, rule.organizationId, "organization.manage_settings");
 
     await ctx.db.patch(args.ruleId, { isActive: false });
 

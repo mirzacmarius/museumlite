@@ -104,10 +104,10 @@ test("collections.create allows module collection types when module is disabled"
       category: "collections",
       description: "Create collections",
     });
-    const viewPermissionId = await ctx.db.insert("permissions", {
-      name: "collections.view",
+    const readPermissionId = await ctx.db.insert("permissions", {
+      name: "collections.read",
       category: "collections",
-      description: "View collection details",
+      description: "Read collections",
     });
     const roleId = await ctx.db.insert("roles", {
       organizationId,
@@ -122,7 +122,7 @@ test("collections.create allows module collection types when module is disabled"
     });
     await ctx.db.insert("rolePermissions", {
       roleId,
-      permissionId: viewPermissionId,
+      permissionId: readPermissionId,
     });
     await ctx.db.insert("userOrganizations", {
       userId,
@@ -151,4 +151,105 @@ test("collections.create allows module collection types when module is disabled"
     collectionId,
   });
   expect(withDetails?.moduleDetails).toBeNull();
+});
+
+test("collections.getWithModuleDetails allows collections.read", async () => {
+  const t = convexTest(schema, modules);
+
+  const { organizationId, userId, collectionId } = await t.run(async (ctx) => {
+    const userId = await ctx.db.insert("users", { name: "Test User" });
+    const organizationId = await ctx.db.insert("organizations", {
+      name: "Test Org",
+      slug: "test-org-read-view-alias",
+      type: "museum",
+    });
+
+    const readPermissionId = await ctx.db.insert("permissions", {
+      name: "collections.read",
+      category: "collections",
+      description: "Read collections",
+    });
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "Reader",
+      description: "Read-only role",
+      isSystemRole: false,
+    });
+
+    await ctx.db.insert("rolePermissions", {
+      roleId,
+      permissionId: readPermissionId,
+    });
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+
+    const collectionId = await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "R-0001",
+      title: "Read Alias Object",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    });
+
+    return { organizationId, userId, collectionId };
+  });
+
+  const asUser = t.withIdentity({ subject: userId });
+  const result = await asUser.query(api.collections.getWithModuleDetails, {
+    collectionId,
+  });
+
+  expect(result?.collection._id).toEqual(collectionId);
+  expect(result?.collection.organizationId).toEqual(organizationId);
+});
+
+test("collections.get requires collections.read permission", async () => {
+  const t = convexTest(schema, modules);
+
+  const { collectionId, userWithoutPermissionId } = await t.run(async (ctx) => {
+    const ownerId = await ctx.db.insert("users", { name: "Owner User" });
+    const userWithoutPermissionId = await ctx.db.insert("users", {
+      name: "No Permission User",
+    });
+    const organizationId = await ctx.db.insert("organizations", {
+      name: "Test Org",
+      slug: "test-org-no-read",
+      type: "museum",
+    });
+
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "NoReadRole",
+      description: "Role without collection read",
+      isSystemRole: false,
+    });
+
+    await ctx.db.insert("userOrganizations", {
+      userId: userWithoutPermissionId,
+      organizationId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+
+    const collectionId = await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "NR-0001",
+      title: "No Read Object",
+      status: "active",
+      catalogedBy: ownerId,
+      catalogedAt: Date.now(),
+    });
+
+    return { collectionId, userWithoutPermissionId };
+  });
+
+  const asUnauthorizedUser = t.withIdentity({ subject: userWithoutPermissionId });
+  await expect(
+    asUnauthorizedUser.query(api.collections.get, { collectionId }),
+  ).rejects.toThrow("Permission denied: collections.read");
 });

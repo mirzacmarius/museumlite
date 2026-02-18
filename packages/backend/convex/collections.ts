@@ -429,8 +429,15 @@ export const get = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
     const collection = await ctx.db.get(args.collectionId);
     if (!collection) return null;
+
+    await requirePermission(ctx, collection.organizationId, "collections.read");
 
     let verifiedByName: string | undefined;
     if (collection.verifiedBy) {
@@ -553,7 +560,7 @@ export const getWithModuleDetails = query({
       return null;
     }
 
-    await requirePermission(ctx, collection.organizationId, "collections.view");
+    await requirePermission(ctx, collection.organizationId, "collections.read");
 
     const collectionType = collection.collectionType;
     type ModuleDetails =
@@ -1590,7 +1597,7 @@ export const restoreCollection = mutation({
     await requirePermission(
       ctx,
       collection.organizationId,
-      "collections.write",
+      "collections.update",
     );
 
     if (collection.status !== "archived" && collection.status !== "deleted") {
@@ -1695,7 +1702,7 @@ export const getBatch = query({
     }
 
     // Check permission
-    await requirePermission(ctx, args.organizationId, "collections.view");
+    await requirePermission(ctx, args.organizationId, "collections.read");
 
     // Fetch all collections
     const collections = await Promise.all(

@@ -195,7 +195,7 @@ export function InsurancePageClient() {
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <PermissionGate permission="organization.manage">
+                <PermissionGate permission="organization.manage_settings">
                   <Dialog open={policyDialogOpen} onOpenChange={setPolicyDialogOpen}>
                     <DialogTrigger asChild>
                       <Button variant="outline">
@@ -222,7 +222,7 @@ export function InsurancePageClient() {
                     </DialogContent>
                   </Dialog>
                 </PermissionGate>
-                <PermissionGate permission="organization.manage">
+                <PermissionGate permission="organization.manage_settings">
                   <Dialog open={claimDialogOpen} onOpenChange={setClaimDialogOpen}>
                     <DialogTrigger asChild>
                       <Button>

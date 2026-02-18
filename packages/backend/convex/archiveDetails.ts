@@ -71,7 +71,7 @@ export const get = query({
     }
 
     await requireArchiveModule(ctx, collection.organizationId);
-    await requirePermission(ctx, collection.organizationId, "collections.view");
+    await requirePermission(ctx, collection.organizationId, "collections.read");
 
     const details = await ctx.db
       .query("archiveDetails")
@@ -232,7 +232,7 @@ export const listExpiredRetention = query({
     }
 
     await requireArchiveModule(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.view");
+    await requirePermission(ctx, args.organizationId, "collections.read");
 
     const now = Date.now();
 
@@ -281,7 +281,7 @@ export const listFlaggedForDestruction = query({
     }
 
     await requireArchiveModule(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.view");
+    await requirePermission(ctx, args.organizationId, "collections.read");
 
     const archives = await ctx.db
       .query("archiveDetails")

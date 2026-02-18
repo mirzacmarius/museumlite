@@ -287,7 +287,7 @@ export const globalSearch = query({
       hasPermission(ctx, args.organizationId, "collections.read"),
       hasPermission(ctx, args.organizationId, "loans.read"),
       hasPermission(ctx, args.organizationId, "accounts.read"),
-      hasPermission(ctx, args.organizationId, "accessions.read"),
+      hasPermission(ctx, args.organizationId, "collections.read"),
       hasPermission(ctx, args.organizationId, "locations.read"),
     ]);
 

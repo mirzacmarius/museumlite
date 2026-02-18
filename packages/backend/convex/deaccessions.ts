@@ -1681,7 +1681,7 @@ export const bulkExport = query({
       await requirePermission(
         ctx,
         deaccession.organizationId,
-        "deaccessions.read",
+        "collections.read",
       );
 
       // Get collection info

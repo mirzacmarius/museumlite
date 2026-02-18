@@ -95,7 +95,7 @@ export const get = query({
     }
 
     await requireAutomotiveModule(ctx, collection.organizationId);
-    await requirePermission(ctx, collection.organizationId, "collections.view");
+    await requirePermission(ctx, collection.organizationId, "collections.read");
 
     const details = await ctx.db
       .query("vehicleDetails")
@@ -140,7 +140,7 @@ export const getByVin = query({
     }
 
     await requireAutomotiveModule(ctx, details.organizationId);
-    await requirePermission(ctx, details.organizationId, "collections.view");
+    await requirePermission(ctx, details.organizationId, "collections.read");
 
     return {
       _id: details._id,

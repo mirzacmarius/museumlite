@@ -500,7 +500,7 @@ export const deleteTransitRecord = mutation({
     await requirePermission(
       ctx,
       transitRecord.organizationId,
-      "organization.manage",
+      "organization.manage_settings",
     );
 
     if (

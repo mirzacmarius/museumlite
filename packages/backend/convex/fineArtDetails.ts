@@ -92,7 +92,7 @@ export const get = query({
     }
 
     await requireFineArtModule(ctx, collection.organizationId);
-    await requirePermission(ctx, collection.organizationId, "collections.view");
+    await requirePermission(ctx, collection.organizationId, "collections.read");
 
     const details = await ctx.db
       .query("fineArtDetails")

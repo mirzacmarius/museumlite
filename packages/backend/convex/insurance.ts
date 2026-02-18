@@ -128,7 +128,7 @@ export const createPolicy = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "organization.manage");
+    await requirePermission(ctx, args.organizationId, "organization.manage_settings");
 
     const existingPolicy = await ctx.db
       .query("insurancePolicies")
@@ -225,7 +225,7 @@ export const updatePolicy = mutation({
       throw new Error("Policy not found");
     }
 
-    await requirePermission(ctx, policy.organizationId, "organization.manage");
+    await requirePermission(ctx, policy.organizationId, "organization.manage_settings");
 
     if (args.policyNumber && args.policyNumber !== policy.policyNumber) {
       const existingPolicy = await ctx.db
@@ -282,7 +282,7 @@ export const deletePolicy = mutation({
       throw new Error("Policy not found");
     }
 
-    await requirePermission(ctx, policy.organizationId, "organization.manage");
+    await requirePermission(ctx, policy.organizationId, "organization.manage_settings");
 
     const activeCoverages = await ctx.db
       .query("insuranceCoverages")
@@ -613,7 +613,7 @@ export const addCoverage = mutation({
       throw new Error("Policy not found");
     }
 
-    await requirePermission(ctx, policy.organizationId, "organization.manage");
+    await requirePermission(ctx, policy.organizationId, "organization.manage_settings");
 
     if (!args.collectionId && !args.exhibitionId && !args.loanId) {
       throw new Error(
@@ -692,7 +692,7 @@ export const removeCoverage = mutation({
     await requirePermission(
       ctx,
       coverage.organizationId,
-      "organization.manage",
+      "organization.manage_settings",
     );
 
     await ctx.db.patch(args.coverageId, {
@@ -789,7 +789,7 @@ export const createClaim = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "organization.manage");
+    await requirePermission(ctx, args.organizationId, "organization.manage_settings");
 
     const policy = await ctx.db.get(args.policyId);
     if (!policy || policy.organizationId !== args.organizationId) {
@@ -864,7 +864,7 @@ export const updateClaim = mutation({
       throw new Error("Claim not found");
     }
 
-    await requirePermission(ctx, claim.organizationId, "organization.manage");
+    await requirePermission(ctx, claim.organizationId, "organization.manage_settings");
 
     const { claimId, status, ...otherUpdates } = args;
     const updates: Record<string, unknown> = Object.fromEntries(
@@ -1404,7 +1404,7 @@ export const uploadPolicyDocument = mutation({
       throw new Error("Policy not found");
     }
 
-    await requirePermission(ctx, policy.organizationId, "organization.manage");
+    await requirePermission(ctx, policy.organizationId, "organization.manage_settings");
 
     const documentIds = policy.documentIds ?? [];
     documentIds.push(args.storageId);
@@ -1437,7 +1437,7 @@ export const uploadClaimDocument = mutation({
       throw new Error("Claim not found");
     }
 
-    await requirePermission(ctx, claim.organizationId, "organization.manage");
+    await requirePermission(ctx, claim.organizationId, "organization.manage_settings");
 
     if (args.documentType === "document") {
       const documentIds = claim.documentIds ?? [];
@@ -1520,7 +1520,7 @@ export const checkExpiringPoliciesInternal = internalMutation({
               .filter((p): p is NonNullable<typeof p> => p !== null)
               .map((p) => p.name);
 
-            if (permissionNames.includes("organization.manage")) {
+            if (permissionNames.includes("organization.manage_settings")) {
               await ctx.runMutation(internal.audit.createNotificationInternal, {
                 organizationId: org._id,
                 userId: userOrg.userId,
@@ -1601,7 +1601,7 @@ export const checkMissingCoverageInternal = internalMutation({
             .filter((p): p is NonNullable<typeof p> => p !== null)
             .map((p) => p.name);
 
-          if (permissionNames.includes("organization.manage")) {
+          if (permissionNames.includes("organization.manage_settings")) {
             await ctx.runMutation(internal.audit.createNotificationInternal, {
               organizationId: org._id,
               userId: userOrg.userId,
@@ -1651,7 +1651,7 @@ export const openDispute = mutation({
       throw new Error("Claim not found");
     }
 
-    await requirePermission(ctx, claim.organizationId, "organization.manage");
+    await requirePermission(ctx, claim.organizationId, "organization.manage_settings");
 
     if (
       claim.status !== "denied" &&
@@ -1709,7 +1709,7 @@ export const updateDisputeStatus = mutation({
       throw new Error("Claim not found");
     }
 
-    await requirePermission(ctx, claim.organizationId, "organization.manage");
+    await requirePermission(ctx, claim.organizationId, "organization.manage_settings");
 
     if (!claim.isDisputed) {
       throw new Error("Claim does not have an open dispute");
@@ -1764,7 +1764,7 @@ export const resolveDispute = mutation({
       throw new Error("Claim not found");
     }
 
-    await requirePermission(ctx, claim.organizationId, "organization.manage");
+    await requirePermission(ctx, claim.organizationId, "organization.manage_settings");
 
     if (!claim.isDisputed) {
       throw new Error("Claim does not have an open dispute");
@@ -1829,7 +1829,7 @@ export const uploadDisputeDocument = mutation({
       throw new Error("Claim not found");
     }
 
-    await requirePermission(ctx, claim.organizationId, "organization.manage");
+    await requirePermission(ctx, claim.organizationId, "organization.manage_settings");
 
     if (!claim.isDisputed) {
       throw new Error("Claim does not have an open dispute");
@@ -1950,7 +1950,7 @@ export const createAutoClaimForTransitDamage = internalMutation({
         .filter((p): p is NonNullable<typeof p> => p !== null)
         .map((p) => p.name);
 
-      if (permissionNames.includes("organization.manage")) {
+      if (permissionNames.includes("organization.manage_settings")) {
         await ctx.runMutation(internal.audit.createNotificationInternal, {
           organizationId: args.organizationId,
           userId: userOrg.userId,
@@ -1994,7 +1994,7 @@ export const linkAppraisalToCoverage = mutation({
     await requirePermission(
       ctx,
       coverage.organizationId,
-      "organization.manage",
+      "organization.manage_settings",
     );
 
     const appraisal = await ctx.db.get(args.appraisalId);
@@ -2252,7 +2252,7 @@ export const addCoverageWithAppraisalCheck = mutation({
       throw new Error("Policy not found");
     }
 
-    await requirePermission(ctx, policy.organizationId, "organization.manage");
+    await requirePermission(ctx, policy.organizationId, "organization.manage_settings");
 
     const collection = await ctx.db.get(args.collectionId);
     if (!collection || collection.organizationId !== policy.organizationId) {

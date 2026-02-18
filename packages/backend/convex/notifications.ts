@@ -671,22 +671,22 @@ export const sendApprovalRequest = internalMutation({
       accession: {
         type: NOTIFICATION_TYPES.ACCESSION_PENDING_APPROVAL,
         title: `Accession Pending Approval: ${args.entityNumber}`,
-        permission: "accessions.approve",
+        permission: "collections.approve_accession",
       },
       deaccession: {
         type: NOTIFICATION_TYPES.DEACCESSION_PENDING_APPROVAL,
         title: `Deaccession Pending Approval: ${args.entityNumber}`,
-        permission: "deaccessions.approve",
+        permission: "collections.approve_deaccession",
       },
       exhibition: {
         type: NOTIFICATION_TYPES.EXHIBITION_PENDING_APPROVAL,
         title: `Exhibition Pending Approval: ${args.entityNumber}`,
-        permission: "exhibitions.approve",
+        permission: "collections.approve_exhibition",
       },
       conservation: {
         type: NOTIFICATION_TYPES.CONSERVATION_PENDING_APPROVAL,
         title: `Conservation Treatment Pending: ${args.entityNumber}`,
-        permission: "conservation.approve",
+        permission: "collections.approve_conservation",
       },
       move_request: {
         type: NOTIFICATION_TYPES.MOVE_REQUEST_CREATED,

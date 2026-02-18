@@ -85,7 +85,7 @@ export const get = query({
     }
 
     await requireNaturalHistoryModule(ctx, collection.organizationId);
-    await requirePermission(ctx, collection.organizationId, "collections.view");
+    await requirePermission(ctx, collection.organizationId, "collections.read");
 
     const details = await ctx.db
       .query("naturalHistoryDetails")
@@ -254,7 +254,7 @@ export const searchByTaxonomy = query({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "collections.view");
+    await requirePermission(ctx, args.organizationId, "collections.read");
 
     const query = ctx.db
       .query("naturalHistoryDetails")
@@ -310,7 +310,7 @@ export const listByLocation = query({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "collections.view");
+    await requirePermission(ctx, args.organizationId, "collections.read");
 
     const specimens = await ctx.db
       .query("naturalHistoryDetails")

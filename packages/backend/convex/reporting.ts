@@ -94,7 +94,7 @@ export const createScheduledReport = mutation({
     }
 
     await requireFeatureAccess(ctx, args.organizationId, "reporting");
-    await requirePermission(ctx, args.organizationId, "organization.manage");
+    await requirePermission(ctx, args.organizationId, "organization.manage_settings");
 
     const nextRunAt = calculateNextRun(
       args.schedule,
@@ -177,7 +177,7 @@ export const updateScheduledReport = mutation({
     }
 
     await requireFeatureAccess(ctx, report.organizationId, "reporting");
-    await requirePermission(ctx, report.organizationId, "organization.manage");
+    await requirePermission(ctx, report.organizationId, "organization.manage_settings");
 
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
 
@@ -242,7 +242,7 @@ export const deleteScheduledReport = mutation({
     }
 
     await requireFeatureAccess(ctx, report.organizationId, "reporting");
-    await requirePermission(ctx, report.organizationId, "organization.manage");
+    await requirePermission(ctx, report.organizationId, "organization.manage_settings");
 
     await ctx.db.delete(args.reportId);
 

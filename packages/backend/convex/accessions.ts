@@ -2070,7 +2070,7 @@ export const bulkExport = query({
         await requirePermission(
           ctx,
           accession.organizationId,
-          "accessions.read",
+          "collections.read",
         );
         validAccessions.push(accession);
       }

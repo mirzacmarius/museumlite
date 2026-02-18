@@ -42,7 +42,7 @@ export const generateQRCode = query({
     }
 
     // Check permission
-    await requirePermission(ctx, args.organizationId, "collections.view");
+    await requirePermission(ctx, args.organizationId, "collections.read");
 
     // Get the collection object
     const collection = await ctx.db.get(args.collectionId);
@@ -126,7 +126,7 @@ export const generateQRCodeByAccessionNumber = query({
     }
 
     // Check permission
-    await requirePermission(ctx, args.organizationId, "collections.view");
+    await requirePermission(ctx, args.organizationId, "collections.read");
 
     // Find the collection by accession number
     const collection = await ctx.db
@@ -219,7 +219,7 @@ export const generateBatchQRCodes = mutation({
     }
 
     // Check permission
-    await requirePermission(ctx, args.organizationId, "collections.view");
+    await requirePermission(ctx, args.organizationId, "collections.read");
 
     if (args.collectionIds.length === 0) {
       throw new Error("No collections selected");

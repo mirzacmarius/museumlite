@@ -422,7 +422,7 @@ export default function ImportAccountsPage() {
                       <X className="mr-2 h-4 w-4" />
                       {t("cancel")}
                     </Button>
-                    <PermissionGate permission="accounts.create">
+                    <PermissionGate permission="accounts.write">
                       <Button
                         onClick={handleStartImport}
                         disabled={state.rows.length === 0}

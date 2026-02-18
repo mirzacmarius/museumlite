@@ -149,7 +149,7 @@ export default function AccountsPage() {
               <PermissionGate permission="accounts.read">
                 <ExportCSVButton onExport={handleExport} filename="accounts" />
               </PermissionGate>
-              <PermissionGate permission="accounts.create">
+              <PermissionGate permission="accounts.write">
                 <Button
                   asChild
                   variant="outline"
@@ -162,7 +162,7 @@ export default function AccountsPage() {
                   </Link>
                 </Button>
               </PermissionGate>
-              <PermissionGate permission="accounts.create">
+              <PermissionGate permission="accounts.write">
                 <Button asChild>
                   <Link href="/accounts/new">
                     <Plus className="h-4 w-4 sm:mr-2" />

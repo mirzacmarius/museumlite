@@ -2679,7 +2679,7 @@ export const listExtensionRequests = query({
       return [];
     }
 
-    await requirePermission(ctx, loan.organizationId, "loans.view");
+    await requirePermission(ctx, loan.organizationId, "loans.read");
 
     const requests = await ctx.db
       .query("loanExtensionRequests")
@@ -2865,7 +2865,7 @@ export const createConditionDispute = mutation({
       throw new Error("Loan not found");
     }
 
-    await requirePermission(ctx, loan.organizationId, "loans.write");
+    await requirePermission(ctx, loan.organizationId, "loans.update");
 
     // Verify the collection item is part of this loan
     const loanItem = await ctx.db
@@ -2948,7 +2948,7 @@ export const startDisputeInvestigation = mutation({
       throw new Error("Dispute not found");
     }
 
-    await requirePermission(ctx, dispute.organizationId, "loans.write");
+    await requirePermission(ctx, dispute.organizationId, "loans.update");
 
     if (dispute.status !== "reported") {
       throw new Error("Dispute is not in reported status");
@@ -3005,7 +3005,7 @@ export const updateDisputeInvestigation = mutation({
       throw new Error("Dispute not found");
     }
 
-    await requirePermission(ctx, dispute.organizationId, "loans.write");
+    await requirePermission(ctx, dispute.organizationId, "loans.update");
 
     if (dispute.status !== "investigating") {
       throw new Error("Dispute is not under investigation");
@@ -3049,7 +3049,7 @@ export const resolveConditionDispute = mutation({
       throw new Error("Dispute not found");
     }
 
-    await requirePermission(ctx, dispute.organizationId, "loans.write");
+    await requirePermission(ctx, dispute.organizationId, "loans.update");
 
     if (dispute.status !== "reported" && dispute.status !== "investigating") {
       throw new Error("Dispute cannot be resolved in current status");
@@ -3151,7 +3151,7 @@ export const withdrawConditionDispute = mutation({
       throw new Error("Dispute not found");
     }
 
-    await requirePermission(ctx, dispute.organizationId, "loans.write");
+    await requirePermission(ctx, dispute.organizationId, "loans.update");
 
     // Only the reporter or admins can withdraw
     if (dispute.reportedBy !== userId) {
