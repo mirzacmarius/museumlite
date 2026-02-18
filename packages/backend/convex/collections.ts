@@ -11,8 +11,7 @@ import { accessionParser } from "./utils/accessionNumberParser";
 import {
   enforceObjectQuota,
   hasFeatureAccess,
-  requireFeatureAccess,
-  requireModuleEnabled,
+  hasModuleEnabled,
 } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
@@ -169,10 +168,6 @@ export const create = mutation({
     await requirePermission(ctx, args.organizationId, "collections.create");
 
     await enforceObjectQuota(ctx, args.organizationId);
-
-    if (args.collectionType && args.collectionType !== "general") {
-      await requireModuleEnabled(ctx, args.organizationId, args.collectionType);
-    }
 
     // Generate or validate accession number
     let accessionNumber: string;
@@ -625,8 +620,10 @@ export const getWithModuleDetails = query({
       | null;
     let moduleDetails: ModuleDetails = null;
 
-    if (collectionType === "fine_art") {
-      await requireModuleEnabled(ctx, collection.organizationId, "fine_art");
+    if (
+      collectionType === "fine_art" &&
+      (await hasModuleEnabled(ctx, collection.organizationId, "fine_art"))
+    ) {
       const details = await ctx.db
         .query("fineArtDetails")
         .withIndex("by_collection", (q) =>
@@ -648,8 +645,10 @@ export const getWithModuleDetails = query({
           },
         };
       }
-    } else if (collectionType === "wine") {
-      await requireModuleEnabled(ctx, collection.organizationId, "wine");
+    } else if (
+      collectionType === "wine" &&
+      (await hasModuleEnabled(ctx, collection.organizationId, "wine"))
+    ) {
       const details = await ctx.db
         .query("wineDetails")
         .withIndex("by_collection", (q) =>
@@ -670,8 +669,10 @@ export const getWithModuleDetails = query({
           },
         };
       }
-    } else if (collectionType === "automotive") {
-      await requireModuleEnabled(ctx, collection.organizationId, "automotive");
+    } else if (
+      collectionType === "automotive" &&
+      (await hasModuleEnabled(ctx, collection.organizationId, "automotive"))
+    ) {
       const details = await ctx.db
         .query("vehicleDetails")
         .withIndex("by_collection", (q) =>
@@ -691,12 +692,14 @@ export const getWithModuleDetails = query({
           },
         };
       }
-    } else if (collectionType === "natural_history") {
-      await requireModuleEnabled(
+    } else if (
+      collectionType === "natural_history" &&
+      (await hasModuleEnabled(
         ctx,
         collection.organizationId,
         "natural_history",
-      );
+      ))
+    ) {
       const details = await ctx.db
         .query("naturalHistoryDetails")
         .withIndex("by_collection", (q) =>
@@ -718,8 +721,10 @@ export const getWithModuleDetails = query({
           },
         };
       }
-    } else if (collectionType === "archive") {
-      await requireModuleEnabled(ctx, collection.organizationId, "archive");
+    } else if (
+      collectionType === "archive" &&
+      (await hasModuleEnabled(ctx, collection.organizationId, "archive"))
+    ) {
       const details = await ctx.db
         .query("archiveDetails")
         .withIndex("by_collection", (q) =>
@@ -893,7 +898,11 @@ export const list = query({
         if (searchResultIds.has(c._id)) return false;
 
         // Filter out deaccessioned items if no status filter is provided
-        if (!args.status && !args.includeDeaccessioned && c.status === "deaccessioned") {
+        if (
+          !args.status &&
+          !args.includeDeaccessioned &&
+          c.status === "deaccessioned"
+        ) {
           return false;
         }
 
