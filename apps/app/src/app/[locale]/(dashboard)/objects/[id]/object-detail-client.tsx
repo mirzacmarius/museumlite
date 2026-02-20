@@ -4,19 +4,8 @@ import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
-import { api } from "@v1/backend/convex/_generated/api";
+import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
 import {
   DropdownMenu,
@@ -28,7 +17,6 @@ import {
 import { ImageLightbox, type LightboxImage } from "@v1/ui/image-lightbox";
 import { SidebarProvider } from "@v1/ui/sidebar";
 import { cn } from "@v1/ui/utils";
-import { useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
   ArrowLeft,
@@ -45,11 +33,9 @@ import {
   QrCode,
   Send,
   Share2,
-  Trash2,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const LoadingPanel = () => (
@@ -279,22 +265,6 @@ export function ObjectDetailClient({
   const [linkCopied, setLinkCopied] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState("");
 
-  const router = useRouter();
-  const deleteCollection = useMutation(api.collections.deleteCollection);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const handleDelete = async () => {
-    if (!collection?._id) return;
-    setIsDeleting(true);
-    try {
-      await deleteCollection({ collectionId: collection._id });
-      router.push("/objects");
-    } catch (error) {
-      console.error("Failed to delete object:", error);
-      setIsDeleting(false);
-    }
-  };
-
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setLinkCopied(true);
@@ -441,38 +411,6 @@ export function ObjectDetailClient({
                     {t("detail.editObject")}
                   </Link>
                 </Button>
-              </PermissionGate>
-              <PermissionGate permission="collections.delete">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive">
-                      <Trash2 className="mr-2 h-3.5 w-3.5" />
-                      Delete
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        {t("detail.deleteTitle")}
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {t("detail.deleteConfirm", { title: collection.title })}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>{common("cancel")}</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        {isDeleting
-                          ? t("detail.deleting")
-                          : t("detail.deleteObject")}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
               </PermissionGate>
             </div>
           </header>

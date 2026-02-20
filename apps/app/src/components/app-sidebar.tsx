@@ -421,7 +421,6 @@ export function AppSidebar({
   const navCoreInventory = [
     { title: "Overview", url: "/", icon: LayoutGrid },
     { title: "Object Catalog", url: "/objects", icon: Database },
-    { title: "Digital Assets", url: "/media", icon: Image },
     { title: "Scan", url: "/scan", icon: QrCode },
   ];
 
@@ -488,6 +487,7 @@ export function AppSidebar({
       icon: Globe,
       locked: !hasFeature("public_portal"),
     },
+    { title: "Digital Assets", url: "/media", icon: Image },
     { title: "Settings", url: "/settings", icon: Settings2 },
   ];
 
