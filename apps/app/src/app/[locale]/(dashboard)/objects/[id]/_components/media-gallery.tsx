@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  DropzoneUploader,
-  type UploadFile,
-} from "@/components/dropzone-uploader";
 import { MediaEditorDialog } from "@/components/media-editor-dialog";
-import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -40,7 +35,6 @@ import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { cn } from "@v1/ui/utils";
-import { useUploadFiles } from "@xixixao/uploadstuff/react";
 import { useMutation, useQuery } from "convex/react";
 import {
   Edit,
@@ -50,7 +44,7 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 interface MediaGalleryProps {
@@ -64,7 +58,6 @@ export function MediaGallery({
   mediaType = "images",
   onOpenLightbox,
 }: MediaGalleryProps) {
-  const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("common.toast");
   const common = useScopedI18n("common");
   const placeholders = useScopedI18n("objects.form.placeholders");
@@ -74,8 +67,6 @@ export function MediaGallery({
     api.media.list,
     collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
   );
-  const generateUploadUrl = useMutation(api.media.generateUploadUrl);
-  const createMedia = useMutation(api.media.create);
   const updateMedia = useMutation(api.media.update);
   const deleteMedia = useMutation(api.media.deleteMedia);
   const setPrimary = useMutation(api.media.setPrimary);
@@ -89,167 +80,8 @@ export function MediaGallery({
     null,
   );
   const [error, setError] = useState<string | null>(null);
-  const [uploadingFiles, setUploadingFiles] = useState<UploadFile[]>([]);
-  const filesRef = useRef<File[]>([]);
-  const uploadIdMapRef = useRef<Map<string, string>>(new Map());
   const [draggedId, setDraggedId] = useState<Id<"mediaFiles"> | null>(null);
   const [dragOverId, setDragOverId] = useState<Id<"mediaFiles"> | null>(null);
-
-  const updateUploadStatus = useCallback(
-    (fileName: string, updates: Partial<Omit<UploadFile, "id" | "file">>) => {
-      const uploadId = uploadIdMapRef.current.get(fileName);
-      if (!uploadId) return;
-
-      setUploadingFiles((prev) =>
-        prev.map((f) => (f.id === uploadId ? { ...f, ...updates } : f)),
-      );
-    },
-    [],
-  );
-
-  const { startUpload } = useUploadFiles(
-    async () => {
-      if (!currentOrganizationId) {
-        throw new Error("Organization missing");
-      }
-
-      const file = filesRef.current.shift();
-
-      if (!file) {
-        throw new Error("No file available for upload");
-      }
-
-      updateUploadStatus(file.name, { status: "uploading", progress: 10 });
-
-      const result = await generateUploadUrl({
-        organizationId: currentOrganizationId as Id<"organizations">,
-        collectionId: collectionId as Id<"collections">,
-        fileName: file.name,
-        fileSize: file.size,
-        mimeType: file.type,
-      });
-
-      if (!result.uploadUrl) {
-        updateUploadStatus(file.name, {
-          status: "error",
-          error: formErrors("failedToGenerateUploadUrl"),
-        });
-        throw new Error(formErrors("failedToGenerateUploadUrl"));
-      }
-
-      updateUploadStatus(file.name, { progress: 30 });
-
-      return result.uploadUrl;
-    },
-    {
-      onUploadComplete: async (uploaded) => {
-        try {
-          if (!uploaded || !Array.isArray(uploaded) || uploaded.length === 0) {
-            setError("Upload completed but no files were returned");
-            return;
-          }
-
-          if (!currentOrganizationId) {
-            setError("Organization not found");
-            return;
-          }
-
-          const isFirstMedia =
-            !media || (Array.isArray(media) && media.length === 0);
-
-          await Promise.all(
-            uploaded.map(async (file, index) => {
-              if (!file) {
-                throw new Error("Upload completed but file data is missing");
-              }
-
-              updateUploadStatus(file.name, { progress: 95 });
-
-              const storageId = (file.response as { storageId: Id<"_storage"> })
-                ?.storageId;
-
-              if (!storageId) {
-                updateUploadStatus(file.name, {
-                  status: "error",
-                  error: "No storage ID returned",
-                });
-                throw new Error(
-                  `Upload completed but no storage ID returned for ${file.name}`,
-                );
-              }
-
-              await createMedia({
-                organizationId: currentOrganizationId as Id<"organizations">,
-                collectionId: collectionId as Id<"collections">,
-                storageId: storageId,
-                fileName: file.name || "unknown",
-                fileSize: file.size || 0,
-                mimeType: file.type || "application/octet-stream",
-                isPrimary:
-                  isFirstMedia && index === 0 && mediaType === "images",
-                mediaCategory: mediaType === "documents" ? "document" : "image",
-              });
-
-              updateUploadStatus(file.name, {
-                status: "complete",
-                progress: 100,
-              });
-            }),
-          );
-
-          setTimeout(() => {
-            setUploadingFiles((prev) =>
-              prev.filter((f) => f.status !== "complete"),
-            );
-          }, 2000);
-        } catch (err) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : formErrors("failedToCreateMedia"),
-          );
-        }
-      },
-      onUploadError: (uploadError) => {
-        setError(
-          uploadError &&
-            typeof uploadError === "object" &&
-            "message" in uploadError
-            ? String(uploadError.message)
-            : "Upload failed",
-        );
-        setUploadingFiles((prev) =>
-          prev.map((f) =>
-            f.status === "uploading"
-              ? { ...f, status: "error", error: "Upload failed" }
-              : f,
-          ),
-        );
-      },
-    },
-  );
-
-  const handleFilesSelected = useCallback(
-    (files: File[]) => {
-      setError(null);
-
-      const newUploads: UploadFile[] = files.map((file) => {
-        const id = `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        uploadIdMapRef.current.set(file.name, id);
-        return {
-          id,
-          file,
-          progress: 0,
-          status: "pending" as const,
-        };
-      });
-
-      setUploadingFiles((prev) => [...prev, ...newUploads]);
-      filesRef.current = [...files];
-      startUpload(files);
-    },
-    [startUpload],
-  );
 
   const handleSetPrimary = async (mediaId: string) => {
     setError(null);
@@ -385,27 +217,6 @@ export function MediaGallery({
           {error}
         </div>
       )}
-
-      <PermissionGate permission="media.upload">
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">
-            {showImages ? "Images & Videos" : "Documents"}
-          </h3>
-          <DropzoneUploader
-            accept={
-              showImages
-                ? "image/*,video/*"
-                : ".pdf,image/jpeg,image/jpg,image/png,image/tiff"
-            }
-            onFilesSelected={handleFilesSelected}
-            uploadingFiles={uploadingFiles}
-            label={
-              showImages ? "Drop images or videos here" : "Drop documents here"
-            }
-            sublabel="or click to browse"
-          />
-        </div>
-      </PermissionGate>
 
       {showImages && (
         <div className="space-y-3">
