@@ -3,11 +3,12 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
-import { requireFeatureAccess } from "./utils/featureGates";
+import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
   getUsersToNotifyForWorkflowStep,
+  hasPermission,
   requirePermission,
 } from "./utils/permissions";
 
@@ -255,8 +256,23 @@ export const list = query({
       return [];
     }
 
-    await requireConservationAccess(ctx, collection.organizationId);
-    await requirePermission(ctx, collection.organizationId, "collections.read");
+    const hasConservationFeature = await hasFeatureAccess(
+      ctx,
+      collection.organizationId,
+      "conservation",
+    );
+    if (!hasConservationFeature) {
+      return [];
+    }
+
+    const canReadCollections = await hasPermission(
+      ctx,
+      collection.organizationId,
+      "collections.read",
+    );
+    if (!canReadCollections) {
+      return [];
+    }
 
     const treatments = await ctx.db
       .query("conservationTreatments")
@@ -1031,7 +1047,11 @@ export const createAlertRule = mutation({
     }
 
     await requireConservationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     const ruleId = await ctx.db.insert("conservationAlertRules", {
       organizationId: args.organizationId,
@@ -1093,7 +1113,11 @@ export const updateAlertRule = mutation({
     }
 
     await requireConservationAccess(ctx, rule.organizationId);
-    await requirePermission(ctx, rule.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      rule.organizationId,
+      "organization.manage_settings",
+    );
 
     const { ruleId, ...updates } = args;
     const filteredUpdates = Object.fromEntries(
@@ -1135,7 +1159,11 @@ export const deleteAlertRule = mutation({
     }
 
     await requireConservationAccess(ctx, rule.organizationId);
-    await requirePermission(ctx, rule.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      rule.organizationId,
+      "organization.manage_settings",
+    );
 
     await ctx.db.patch(args.ruleId, { isActive: false });
 

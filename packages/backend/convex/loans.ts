@@ -1,7 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { env } from "./env";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
@@ -11,7 +10,8 @@ import {
   mutation,
   query,
 } from "./_generated/server";
-import { requireFeatureAccess } from "./utils/featureGates";
+import { env } from "./env";
+import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
 import {
   getCurrentYear,
   getNextYearBasedValue,
@@ -21,6 +21,7 @@ import {
   canApproveAtStep,
   canInitiateWorkflow,
   getUsersToNotifyForWorkflowStep,
+  hasPermission,
   requirePermission,
 } from "./utils/permissions";
 
@@ -2114,10 +2115,26 @@ export const getLoansForCollection = query({
   handler: async (ctx, args) => {
     const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
-      throw new Error("Collection not found");
+      return [];
     }
 
-    await requirePermission(ctx, collection.organizationId, "loans.read");
+    const hasLoansFeature = await hasFeatureAccess(
+      ctx,
+      collection.organizationId,
+      "loans",
+    );
+    if (!hasLoansFeature) {
+      return [];
+    }
+
+    const canReadLoans = await hasPermission(
+      ctx,
+      collection.organizationId,
+      "loans.read",
+    );
+    if (!canReadLoans) {
+      return [];
+    }
 
     const loanItems = await ctx.db
       .query("loanItems")

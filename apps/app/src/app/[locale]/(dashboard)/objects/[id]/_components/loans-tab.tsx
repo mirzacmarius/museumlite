@@ -1,6 +1,5 @@
 "use client";
 
-import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDate } from "@/lib/format-date";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -14,19 +13,18 @@ import type { LoanForCollection } from "./types";
 interface LoansTabProps {
   collectionId: string;
   locale: string;
+  hasAccess: boolean;
 }
 
-export function LoansTab({ collectionId, locale }: LoansTabProps) {
-  const { hasFeature } = useFeatureAccess();
-  const hasLoansAccess = hasFeature("loans");
+export function LoansTab({ collectionId, locale, hasAccess }: LoansTabProps) {
   const loans = useQuery(
     api.loans.getLoansForCollection,
-    hasLoansAccess && collectionId
+    hasAccess && collectionId
       ? { collectionId: collectionId as Id<"collections"> }
       : "skip",
   );
 
-  if (!hasLoansAccess) {
+  if (!hasAccess) {
     return (
       <FeatureGuard
         featureName="Loans"

@@ -3,11 +3,12 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
-import { requireFeatureAccess } from "./utils/featureGates";
+import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
   getUsersToNotifyForWorkflowStep,
+  hasPermission,
   requirePermission,
 } from "./utils/permissions";
 
@@ -307,9 +308,23 @@ export const list = query({
       return [];
     }
 
-    await requireExhibitionAccess(ctx, collection.organizationId);
+    const hasExhibitionsFeature = await hasFeatureAccess(
+      ctx,
+      collection.organizationId,
+      "exhibitions",
+    );
+    if (!hasExhibitionsFeature) {
+      return [];
+    }
 
-    await requirePermission(ctx, collection.organizationId, "collections.read");
+    const canReadCollections = await hasPermission(
+      ctx,
+      collection.organizationId,
+      "collections.read",
+    );
+    if (!canReadCollections) {
+      return [];
+    }
 
     const exhibitions = await ctx.db
       .query("exhibitions")

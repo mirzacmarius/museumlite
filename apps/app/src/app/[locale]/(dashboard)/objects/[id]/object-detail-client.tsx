@@ -212,9 +212,17 @@ export function ObjectDetailClient({
   const { currentOrganizationId } = useOrganization();
   const { hasFeature } = useFeatureAccess();
   const [activeTab, setActiveTab] = useState<TabId>("general");
-  const hasConservationFeature = hasFeature("conservation");
-  const hasExhibitionsFeature = hasFeature("exhibitions");
-  const hasLoansFeature = hasFeature("loans");
+  const featureOrganizationId =
+    collection?.organizationId ?? currentOrganizationId ?? undefined;
+  const hasConservationFeature = featureOrganizationId
+    ? hasFeature("conservation", featureOrganizationId)
+    : false;
+  const hasExhibitionsFeature = featureOrganizationId
+    ? hasFeature("exhibitions", featureOrganizationId)
+    : false;
+  const hasLoansFeature = featureOrganizationId
+    ? hasFeature("loans", featureOrganizationId)
+    : false;
 
   const tabs = useMemo(() => {
     const allTabs = (() => {
@@ -600,13 +608,22 @@ export function ObjectDetailClient({
                   <ConservationTab
                     collectionId={collectionId}
                     locale={locale}
+                    hasAccess={hasConservationFeature}
                   />
                 )}
                 {activeTab === "exhibitions" && (
-                  <ExhibitionsTab collectionId={collectionId} locale={locale} />
+                  <ExhibitionsTab
+                    collectionId={collectionId}
+                    locale={locale}
+                    hasAccess={hasExhibitionsFeature}
+                  />
                 )}
                 {activeTab === "loans" && (
-                  <LoansTab collectionId={collectionId} locale={locale} />
+                  <LoansTab
+                    collectionId={collectionId}
+                    locale={locale}
+                    hasAccess={hasLoansFeature}
+                  />
                 )}
                 {activeTab === "comments" && (
                   <CommentsTab

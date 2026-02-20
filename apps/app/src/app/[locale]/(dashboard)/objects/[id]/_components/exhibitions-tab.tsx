@@ -1,6 +1,5 @@
 "use client";
 
-import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDate } from "@/lib/format-date";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -13,28 +12,31 @@ import { Presentation } from "lucide-react";
 interface ExhibitionsTabProps {
   collectionId: string;
   locale: string;
+  hasAccess: boolean;
 }
 
-export function ExhibitionsTab({ collectionId, locale }: ExhibitionsTabProps) {
+export function ExhibitionsTab({
+  collectionId,
+  locale,
+  hasAccess,
+}: ExhibitionsTabProps) {
   const t = useScopedI18n("exhibitions");
   const tObjects = useScopedI18n("objects");
-  const { hasFeature } = useFeatureAccess();
-  const hasExhibitionsAccess = hasFeature("exhibitions");
   const exhibitions = useQuery(
     api.exhibitions?.list,
-    hasExhibitionsAccess && collectionId
+    hasAccess && collectionId
       ? { collectionId: collectionId as Id<"collections"> }
       : "skip",
   );
 
   const collection = useQuery(
     api.collections.get,
-    hasExhibitionsAccess && collectionId
+    hasAccess && collectionId
       ? { collectionId: collectionId as Id<"collections"> }
       : "skip",
   );
 
-  if (!hasExhibitionsAccess) {
+  if (!hasAccess) {
     return (
       <FeatureGuard
         featureName={tObjects("tabs.exhibitions")}

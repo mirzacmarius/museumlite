@@ -1,4 +1,5 @@
 import { useOrganization } from "@/components/organization-provider";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
 export type SubscriptionTier = "free" | "pro" | "enterprise";
 
@@ -38,15 +39,23 @@ const FEATURE_REQUIREMENTS: Record<FeatureId, SubscriptionTier> = {
 };
 
 export function useFeatureAccess() {
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization, organizations } = useOrganization();
   const tier = currentOrganization?.subscriptionTier ?? "free";
   const enabledModules = currentOrganization?.settings?.enabledModules ?? [];
   const enabledIntegrations =
     currentOrganization?.settings?.enabledIntegrations ?? [];
 
-  const hasFeature = (featureId: FeatureId) => {
+  const hasFeature = (
+    featureId: FeatureId,
+    organizationId?: Id<"organizations">,
+  ) => {
+    const scopedTier =
+      (organizationId
+        ? organizations.find((org) => org._id === organizationId)
+            ?.subscriptionTier
+        : currentOrganization?.subscriptionTier) ?? "free";
     const requiredTier = FEATURE_REQUIREMENTS[featureId];
-    return TIER_ORDER[tier] >= TIER_ORDER[requiredTier];
+    return TIER_ORDER[scopedTier] >= TIER_ORDER[requiredTier];
   };
 
   const hasModule = (moduleId: ModuleId) => {
