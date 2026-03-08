@@ -46,14 +46,17 @@ export default async function Layout({
                 preloadedUser={preloadedUser}
                 preloadedProducts={preloadedProducts}
               />
-              <main className="flex min-h-screen w-full flex-col bg-background">
+              <main className="flex h-screen w-full flex-col overflow-hidden bg-background">
                 <DashboardHeader>
                   <div id="search" className="flex items-center gap-2">
                     <CommandPalette />
                     <NotificationBell />
                   </div>
                 </DashboardHeader>
-                <div id="main-content" className="flex-1">
+                <div
+                  id="main-content"
+                  className="min-h-0 flex-1 overflow-hidden"
+                >
                   {children}
                 </div>
               </main>

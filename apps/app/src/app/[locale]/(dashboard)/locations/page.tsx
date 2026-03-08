@@ -7,14 +7,19 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import { Building2, MapPin, Pencil, Plus } from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AddChildLocationDialog } from "./_components/add-child-location-dialog";
 import { EditLocationDialog } from "./_components/edit-location-dialog";
 import { GalleryView } from "./_components/gallery-view";
 import { LocationHeader } from "./_components/location-header";
 import { LocationSidebar } from "./_components/location-sidebar";
 import { StorageView } from "./_components/storage-view";
+import { getNumericCustomFieldNumber } from "./location-custom-fields";
+import {
+  getDefaultLocationId,
+  getVisibleSidebarLocations,
+  isStorageLocation,
+} from "./location-view-helpers";
 
 export default function LocationsPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
@@ -64,7 +69,7 @@ export default function LocationsPage() {
   }
 
   return (
-    <div className="flex h-full w-full bg-background">
+    <div className="flex h-full min-h-0 w-full bg-background">
       <LocationLayout
         key={currentOrganizationId}
         organizationId={currentOrganizationId}
@@ -87,54 +92,84 @@ function LocationLayout({
     organizationId,
   });
 
+  const { exhibitionLocations, storageLocations } = getVisibleSidebarLocations(
+    allLocations ?? [],
+  );
+  const firstVisibleLocationId = getDefaultLocationId(allLocations ?? []);
+  const allLocationIdList = (allLocations ?? []).map(
+    (location) => location._id,
+  );
+  const allLocationIds = new Set(allLocationIdList);
+  const allLocationIdsKey = allLocationIdList.join(":");
+
+  const canQuerySelectedLocation =
+    !!selectedLocationId &&
+    (!allLocations || allLocationIds.has(selectedLocationId));
+
   const selectedLocation = useQuery(
     api.locations.get,
-    selectedLocationId ? { locationId: selectedLocationId } : "skip",
+    canQuerySelectedLocation && selectedLocationId
+      ? { locationId: selectedLocationId }
+      : "skip",
   );
 
   const environmentalData = useQuery(
     api.locations.getEnvironmentalReadings,
-    selectedLocationId ? { locationId: selectedLocationId } : "skip",
+    canQuerySelectedLocation && selectedLocationId
+      ? { locationId: selectedLocationId }
+      : "skip",
   );
+
+  const selectedLocationType =
+    selectedLocation?.type ??
+    allLocations?.find((location) => location._id === selectedLocationId)?.type;
+  const includesDescendants = selectedLocationType
+    ? isStorageLocation(selectedLocationType)
+    : false;
 
   const objectsAtLocation = useQuery(
     api.locations.getObjectsAtLocation,
-    selectedLocationId ? { locationId: selectedLocationId } : "skip",
+    canQuerySelectedLocation && selectedLocationId
+      ? {
+          locationId: selectedLocationId,
+          ...(includesDescendants ? { includeDescendants: true } : {}),
+        }
+      : "skip",
   );
 
   const occupancy = useQuery(
     api.locations.getOccupancy,
-    selectedLocationId ? { locationId: selectedLocationId } : "skip",
+    canQuerySelectedLocation && selectedLocationId
+      ? { locationId: selectedLocationId }
+      : "skip",
   );
 
-  const exhibitionTypes = [
-    "gallery",
-    "exhibition",
-    "hall",
-    "wing",
-    "room",
-    "building",
-    "floor",
-  ];
-  const storageTypes = ["vault", "storage", "cabinet", "shelf", "archive"];
+  useEffect(() => {
+    if (!allLocations) {
+      return;
+    }
 
-  const exhibitionLocations =
-    allLocations?.filter(
-      (loc) =>
-        exhibitionTypes.some((t) => loc.type.toLowerCase().includes(t)) &&
-        !loc.parentLocationId,
-    ) ?? [];
+    if (!firstVisibleLocationId) {
+      return;
+    }
 
-  const storageLocations =
-    allLocations?.filter(
-      (loc) =>
-        storageTypes.some((t) => loc.type.toLowerCase().includes(t)) &&
-        !loc.parentLocationId,
-    ) ?? [];
+    if (
+      !selectedLocationId ||
+      !allLocationIds.has(selectedLocationId) ||
+      selectedLocation === null
+    ) {
+      setSelectedLocationId(firstVisibleLocationId);
+    }
+  }, [
+    allLocations,
+    firstVisibleLocationId,
+    selectedLocation,
+    selectedLocationId,
+    allLocationIdsKey,
+  ]);
 
   const isStorageView =
-    selectedLocation &&
-    storageTypes.some((t) => selectedLocation.type.toLowerCase().includes(t));
+    !!selectedLocationType && isStorageLocation(selectedLocationType);
 
   const childLocations =
     allLocations?.filter(
@@ -142,8 +177,9 @@ function LocationLayout({
     ) ?? [];
 
   return (
-    <div className="flex h-full w-full">
+    <div className="flex h-full min-h-0 w-full">
       <LocationSidebar
+        allLocations={allLocations ?? []}
         exhibitionLocations={exhibitionLocations}
         storageLocations={storageLocations}
         selectedLocationId={selectedLocationId}
@@ -151,6 +187,10 @@ function LocationLayout({
       />
 
       <AddChildLocationDialog
+        parentLocationId={selectedLocation?._id}
+        parentLocationName={selectedLocation?.name}
+        parentLocationType={selectedLocation?.type}
+        parentLocationAddress={selectedLocation?.address}
         organizationId={organizationId}
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
@@ -161,28 +201,23 @@ function LocationLayout({
         onOpenChange={setEditDialogOpen}
       />
 
-      <div className="flex-1 p-6 overflow-y-auto custom-scrollbar bg-gradient-to-br from-zinc-950 to-zinc-900/50">
-        {!selectedLocationId && (
+      <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-br from-zinc-950 to-zinc-900/50 p-6 custom-scrollbar">
+        {allLocations === undefined && !selectedLocationId && (
+          <div className="flex h-full items-center justify-center">
+            <p className="text-sm text-muted-foreground">
+              Loading locations...
+            </p>
+          </div>
+        )}
+
+        {allLocations && allLocations.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center gap-4">
             <MapPin className="h-12 w-12 text-muted-foreground" />
             <div className="text-center">
-              {allLocations && allLocations.length === 0 ? (
-                <>
-                  <p className="text-muted-foreground">No locations yet</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Add your first location to start organizing objects
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-muted-foreground">
-                    Select a location from the sidebar
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    View details, environmental data, and objects
-                  </p>
-                </>
-              )}
+              <p className="text-muted-foreground">No locations yet</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Add your first location to start organizing objects
+              </p>
             </div>
             <PermissionGate permission="locations.create">
               <Button variant="outline" onClick={() => setAddDialogOpen(true)}>
@@ -190,6 +225,12 @@ function LocationLayout({
                 Add Location
               </Button>
             </PermissionGate>
+          </div>
+        )}
+
+        {allLocations && allLocations.length > 0 && !selectedLocationId && (
+          <div className="flex h-full items-center justify-center">
+            <p className="text-sm text-muted-foreground">Loading location...</p>
           </div>
         )}
 
@@ -229,6 +270,30 @@ function LocationLayout({
                     accessionNumber: obj.accessionNumber,
                   })) ?? []
                 }
+                vitrineCount={
+                  getNumericCustomFieldNumber(
+                    selectedLocation.customFields,
+                    "vitrineCount",
+                  ) ?? undefined
+                }
+                wallCount={
+                  getNumericCustomFieldNumber(
+                    selectedLocation.customFields,
+                    "wallCount",
+                  ) ?? undefined
+                }
+                cabinetCount={
+                  getNumericCustomFieldNumber(
+                    selectedLocation.customFields,
+                    "cabinetCount",
+                  ) ?? undefined
+                }
+                shelfCount={
+                  getNumericCustomFieldNumber(
+                    selectedLocation.customFields,
+                    "shelfCount",
+                  ) ?? undefined
+                }
               />
             )}
 
@@ -243,10 +308,30 @@ function LocationLayout({
                 totalObjects={occupancy?.objectCount ?? 0}
                 capacity={occupancy?.capacity ?? 0}
                 lastAuditDate={undefined}
+                objects={
+                  objectsAtLocation?.map((object) => ({
+                    _id: object._id,
+                    accessionNumber: object.accessionNumber,
+                    title: object.title,
+                    status: object.status,
+                  })) ?? []
+                }
+                includesDescendants={includesDescendants}
               />
             )}
           </>
         )}
+
+        {allLocations &&
+          allLocations.length > 0 &&
+          selectedLocationId &&
+          !selectedLocation && (
+            <div className="flex h-full items-center justify-center">
+              <p className="text-sm text-muted-foreground">
+                Loading location details...
+              </p>
+            </div>
+          )}
       </div>
     </div>
   );

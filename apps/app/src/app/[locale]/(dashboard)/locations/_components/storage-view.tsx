@@ -12,6 +12,13 @@ interface StorageViewProps {
   totalObjects: number;
   capacity: number;
   lastAuditDate?: Date;
+  objects: Array<{
+    _id: string;
+    accessionNumber?: string;
+    title: string;
+    status?: string;
+  }>;
+  includesDescendants?: boolean;
 }
 
 export function StorageView({
@@ -19,6 +26,8 @@ export function StorageView({
   totalObjects,
   capacity,
   lastAuditDate,
+  objects,
+  includesDescendants = false,
 }: StorageViewProps) {
   const occupancyPercent =
     capacity > 0 ? Math.round((totalObjects / capacity) * 100) : 0;
@@ -85,6 +94,59 @@ export function StorageView({
               </tr>
             ) : (
               units.map((unit) => <StorageUnitRow key={unit._id} unit={unit} />)
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-900/20">
+        <div className="border-b border-zinc-800 bg-zinc-900/50 px-4 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-semibold text-zinc-200">
+                Objects in Active Location
+              </h3>
+              {includesDescendants && (
+                <p className="mt-1 text-xs text-zinc-500">
+                  Includes objects in this location and its child units
+                </p>
+              )}
+            </div>
+            <div className="text-xs text-zinc-500">
+              {objects.length.toLocaleString()} objects
+            </div>
+          </div>
+        </div>
+
+        <table className="w-full text-left text-xs">
+          <thead className="border-b border-zinc-800 bg-zinc-900/30 text-zinc-500 font-medium">
+            <tr>
+              <th className="px-4 py-3">Accession Number</th>
+              <th className="px-4 py-3">Title</th>
+              <th className="px-4 py-3 text-right">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-zinc-800/50">
+            {objects.length === 0 ? (
+              <tr>
+                <td colSpan={3} className="px-4 py-8 text-center text-zinc-600">
+                  {includesDescendants
+                    ? "No objects in this location or its child units"
+                    : "No objects in this location"}
+                </td>
+              </tr>
+            ) : (
+              objects.map((object) => (
+                <tr key={object._id} className="hover:bg-zinc-900/40">
+                  <td className="px-4 py-3 font-mono text-zinc-400">
+                    {object.accessionNumber ?? "—"}
+                  </td>
+                  <td className="px-4 py-3 text-zinc-200">{object.title}</td>
+                  <td className="px-4 py-3 text-right text-zinc-400 capitalize">
+                    {object.status ?? "—"}
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>

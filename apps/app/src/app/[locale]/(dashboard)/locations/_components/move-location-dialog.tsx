@@ -24,6 +24,7 @@ import {
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
+import { getAvailableParentLocationOptions } from "../location-parent-options";
 
 interface MoveLocationDialogProps {
   locationId: string;
@@ -85,59 +86,10 @@ export function MoveLocationDialog({
     }
   };
 
-  // Flatten locations for selection, excluding current location and its descendants
-  const flattenLocations = (
-    locs: typeof allLocations,
-  ): Array<{ id: string; name: string; type: string; level: number }> => {
-    if (!locs) return [];
-    const result: Array<{
-      id: string;
-      name: string;
-      type: string;
-      level: number;
-    }> = [];
-
-    // Helper to check if a location is a descendant of the current location
-    const isDescendant = (loc: (typeof locs)[0]): boolean => {
-      if (loc._id === locationId) return true;
-      let current = loc.parentLocationId;
-      while (current) {
-        if (current === locationId) return true;
-        const parent = locs.find((l) => l._id === current);
-        current = parent?.parentLocationId;
-      }
-      return false;
-    };
-
-    // Build tree structure and flatten
-    const processLocation = (loc: (typeof locs)[0], level = 0, prefix = "") => {
-      if (isDescendant(loc)) return;
-
-      const displayName = prefix ? `${prefix} → ${loc.name}` : loc.name;
-      result.push({
-        id: loc._id,
-        name: displayName,
-        type: loc.type,
-        level,
-      });
-
-      // Find children
-      const children = locs.filter((l) => l.parentLocationId === loc._id);
-      for (const child of children) {
-        processLocation(child, level + 1, displayName);
-      }
-    };
-
-    // Process root locations first
-    const roots = locs.filter((l) => !l.parentLocationId);
-    for (const root of roots) {
-      processLocation(root);
-    }
-
-    return result;
-  };
-
-  const availableLocations = flattenLocations(allLocations);
+  const availableLocations = getAvailableParentLocationOptions(
+    allLocations,
+    locationId as Id<"locations">,
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

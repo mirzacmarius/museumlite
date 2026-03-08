@@ -3,43 +3,50 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Lock, Thermometer } from "lucide-react";
 
+interface SidebarLocation {
+  _id: Id<"locations">;
+  name: string;
+  type: string;
+  isActive: boolean;
+  parentLocationId?: Id<"locations">;
+}
+
 interface LocationSidebarProps {
-  exhibitionLocations: Array<{
-    _id: Id<"locations">;
-    name: string;
-    type: string;
-    isActive: boolean;
-  }>;
-  storageLocations: Array<{
-    _id: Id<"locations">;
-    name: string;
-    type: string;
-    isActive: boolean;
-  }>;
+  allLocations: SidebarLocation[];
+  exhibitionLocations: SidebarLocation[];
+  storageLocations: SidebarLocation[];
   selectedLocationId: Id<"locations"> | null;
   onSelectLocation: (id: Id<"locations">) => void;
 }
 
 export function LocationSidebar({
+  allLocations,
   exhibitionLocations,
   storageLocations,
   selectedLocationId,
   onSelectLocation,
 }: LocationSidebarProps) {
+  const getChildren = (parentLocationId: Id<"locations">) =>
+    allLocations.filter(
+      (location) => location.parentLocationId === parentLocationId,
+    );
+
   return (
-    <div className="w-60 border-r border-zinc-800/60 p-4 bg-zinc-950 overflow-y-auto custom-scrollbar">
+    <div className="h-full min-h-0 w-60 shrink-0 overflow-y-auto border-r border-zinc-800/60 bg-zinc-950 p-4 custom-scrollbar">
       {exhibitionLocations.length > 0 && (
         <>
-          <div className="text-[10px] font-bold text-zinc-500 mb-4 uppercase tracking-widest">
+          <div className="mb-4 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
             Exhibition Spaces
           </div>
-          <ul className="space-y-1 text-xs mb-6">
+          <ul className="mb-6 space-y-1 text-xs">
             {exhibitionLocations.map((location) => (
-              <LocationNavItem
+              <LocationNavTreeItem
                 key={location._id}
                 location={location}
-                isSelected={selectedLocationId === location._id}
-                onSelect={() => onSelectLocation(location._id)}
+                childLocations={getChildren(location._id)}
+                getChildren={getChildren}
+                selectedLocationId={selectedLocationId}
+                onSelectLocation={onSelectLocation}
                 isSecure={false}
               />
             ))}
@@ -49,18 +56,19 @@ export function LocationSidebar({
 
       {storageLocations.length > 0 && (
         <>
-          <div className="text-[10px] font-bold text-zinc-500 mb-4 uppercase tracking-widest">
+          <div className="mb-4 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
             Secure Storage
           </div>
           <ul className="space-y-1 text-xs">
             {storageLocations.map((location) => (
-              <LocationNavItem
+              <LocationNavTreeItem
                 key={location._id}
                 location={location}
-                isSelected={selectedLocationId === location._id}
-                onSelect={() => onSelectLocation(location._id)}
+                childLocations={getChildren(location._id)}
+                getChildren={getChildren}
+                selectedLocationId={selectedLocationId}
+                onSelectLocation={onSelectLocation}
                 isSecure={true}
-                isColdStorage={location.type.toLowerCase().includes("cold")}
               />
             ))}
           </ul>
@@ -76,17 +84,68 @@ export function LocationSidebar({
   );
 }
 
+interface LocationNavTreeItemProps {
+  childLocations: SidebarLocation[];
+  getChildren: (parentLocationId: Id<"locations">) => SidebarLocation[];
+  location: SidebarLocation;
+  selectedLocationId: Id<"locations"> | null;
+  onSelectLocation: (id: Id<"locations">) => void;
+  isSecure: boolean;
+  depth?: number;
+}
+
+function LocationNavTreeItem({
+  childLocations,
+  getChildren,
+  location,
+  selectedLocationId,
+  onSelectLocation,
+  isSecure,
+  depth = 0,
+}: LocationNavTreeItemProps) {
+  const isLocationSecure =
+    isSecure ||
+    ["storage", "vault", "cabinet", "shelf", "archive"].some((type) =>
+      location.type.toLowerCase().includes(type),
+    );
+
+  return (
+    <li>
+      <LocationNavItem
+        location={location}
+        isSelected={selectedLocationId === location._id}
+        onSelect={() => onSelectLocation(location._id)}
+        isSecure={isLocationSecure}
+        isColdStorage={location.type.toLowerCase().includes("cold")}
+        depth={depth}
+      />
+      {childLocations.length > 0 && (
+        <ul className="mt-1 space-y-1">
+          {childLocations.map((childLocation) => (
+            <LocationNavTreeItem
+              key={childLocation._id}
+              location={childLocation}
+              childLocations={getChildren(childLocation._id)}
+              getChildren={getChildren}
+              selectedLocationId={selectedLocationId}
+              onSelectLocation={onSelectLocation}
+              isSecure={isLocationSecure}
+              depth={depth + 1}
+            />
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
+
 interface LocationNavItemProps {
-  location: {
-    _id: Id<"locations">;
-    name: string;
-    type: string;
-    isActive: boolean;
-  };
+  location: SidebarLocation;
   isSelected: boolean;
   onSelect: () => void;
   isSecure: boolean;
   isColdStorage?: boolean;
+  depth: number;
 }
 
 function LocationNavItem({
@@ -95,6 +154,7 @@ function LocationNavItem({
   onSelect,
   isSecure,
   isColdStorage,
+  depth,
 }: LocationNavItemProps) {
   const getStatusColor = () => {
     if (!location.isActive) return "bg-zinc-700";
@@ -105,30 +165,27 @@ function LocationNavItem({
   const statusColor = getStatusColor();
 
   return (
-    <li>
-      <button
-        type="button"
-        onClick={onSelect}
-        className={`w-full flex items-center justify-between px-3 py-2 rounded-r cursor-pointer transition-all ${
-          isSelected
-            ? "bg-zinc-900 border-l-2 border-indigo-500 text-zinc-100 font-medium shadow-sm"
-            : "border-l-2 border-transparent text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200"
-        }`}
-      >
-        <span className="truncate">{location.name}</span>
-        {isColdStorage ? (
-          <span className="text-[9px] text-blue-400 bg-blue-500/10 px-1 rounded border border-blue-500/20 flex items-center gap-0.5">
-            <Thermometer className="w-2.5 h-2.5" />
-            4°C
-          </span>
-        ) : isSecure ? (
-          <Lock className="w-3 h-3 text-zinc-600 shrink-0" />
-        ) : (
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${statusColor} shrink-0`}
-          />
-        )}
-      </button>
-    </li>
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`flex w-full items-center justify-between rounded-r px-3 py-2 transition-all ${
+        isSelected
+          ? "border-l-2 border-indigo-500 bg-zinc-900 font-medium text-zinc-100 shadow-sm"
+          : "border-l-2 border-transparent text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200"
+      }`}
+      style={{ paddingLeft: `${depth * 14 + 12}px` }}
+    >
+      <span className="truncate">{location.name}</span>
+      {isColdStorage ? (
+        <span className="flex items-center gap-0.5 rounded border border-blue-500/20 bg-blue-500/10 px-1 text-[9px] text-blue-400">
+          <Thermometer className="h-2.5 w-2.5" />
+          4°C
+        </span>
+      ) : isSecure ? (
+        <Lock className="h-3 w-3 shrink-0 text-zinc-600" />
+      ) : (
+        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusColor}`} />
+      )}
+    </button>
   );
 }

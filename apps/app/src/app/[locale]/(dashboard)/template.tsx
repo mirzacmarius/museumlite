@@ -36,7 +36,7 @@ export default function DashboardTemplate({ children }: TemplateProps) {
       exit="exit"
       variants={pageVariants}
       transition={pageTransition}
-      className="h-full"
+      className="h-full min-h-0"
     >
       {children}
     </motion.div>

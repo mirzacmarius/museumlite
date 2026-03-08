@@ -76,6 +76,87 @@ const ORGANIZATIONS = [
 
 const SEED_USER_EMAIL = "mirzacmarius@gmail.com";
 
+const deepLocationOrganizationSummaryValidator = v.object({
+  organizationId: v.id("organizations"),
+  organizationName: v.string(),
+  targetLocationCount: v.number(),
+  objectCount: v.number(),
+  reassigned: v.number(),
+  unchanged: v.number(),
+  skippedNoCapacity: v.number(),
+  skippedNoEligibleLocation: v.number(),
+});
+
+const deepLocationReassignmentSummaryValidator = v.object({
+  userId: v.id("users"),
+  organizationCount: v.number(),
+  organizationsProcessed: v.number(),
+  objectsConsidered: v.number(),
+  objectsReassigned: v.number(),
+  objectsUnchanged: v.number(),
+  objectsSkippedNoEligibleLocation: v.number(),
+  objectsSkippedNoCapacity: v.number(),
+  organizationsSkippedNoLocations: v.number(),
+  organizations: v.array(deepLocationOrganizationSummaryValidator),
+});
+
+type UserOrganizationContext = {
+  userId: Id<"users">;
+  organizationIds: Array<Id<"organizations">>;
+};
+
+type DeepLocationOrganizationSummary = {
+  organizationId: Id<"organizations">;
+  organizationName: string;
+  targetLocationCount: number;
+  objectCount: number;
+  reassigned: number;
+  unchanged: number;
+  skippedNoCapacity: number;
+  skippedNoEligibleLocation: number;
+};
+
+type DeepLocationReassignmentSummary = {
+  userId: Id<"users">;
+  organizationCount: number;
+  organizationsProcessed: number;
+  objectsConsidered: number;
+  objectsReassigned: number;
+  objectsUnchanged: number;
+  objectsSkippedNoEligibleLocation: number;
+  objectsSkippedNoCapacity: number;
+  organizationsSkippedNoLocations: number;
+  organizations: DeepLocationOrganizationSummary[];
+};
+
+export const runDeepLocationReassignmentForMirza = internalAction({
+  args: {},
+  returns: deepLocationReassignmentSummaryValidator,
+  handler: async (ctx): Promise<DeepLocationReassignmentSummary> => {
+    const userContext: UserOrganizationContext | null = await ctx.runQuery(
+      internal.seedMet.getUserOrganizationsByEmail,
+      {
+        email: SEED_USER_EMAIL,
+      },
+    );
+
+    if (!userContext) {
+      throw new Error("Seed user not found. Please log in first.");
+    }
+
+    const result: DeepLocationReassignmentSummary = await ctx.runMutation(
+      internal.seedMet.reassignObjectsToDeepLocationsForUser,
+      userContext,
+    );
+
+    console.log(
+      `Deep location reassignment complete: ${result.objectsReassigned} reassigned, ${result.objectsUnchanged} unchanged, ${result.objectsSkippedNoCapacity} skipped for capacity, ${result.objectsSkippedNoEligibleLocation} skipped for missing deep locations`,
+    );
+
+    return result;
+  },
+});
+
 const BUILDINGS = [
   "Main Building",
   "East Wing",

@@ -1,5 +1,6 @@
 "use client";
 
+import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -25,6 +26,12 @@ import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import {
+  getNumericCustomFieldValue,
+  LOCATION_UNIT_COUNT_FIELDS,
+  setOptionalNumberCustomField,
+} from "../location-custom-fields";
+import { getAvailableParentLocationOptions } from "../location-parent-options";
 
 const LOCATION_TYPE_KEYS = [
   "building",
@@ -49,20 +56,34 @@ export function EditLocationDialog({
   onOpenChange,
 }: EditLocationDialogProps) {
   const t = useScopedI18n("locations.form");
+  const tLocations = useScopedI18n("locations");
+  const tMove = useScopedI18n("locations.move");
   const tCommon = useScopedI18n("common");
+  const { currentOrganizationId } = useOrganization();
   const [name, setName] = useState("");
   const [type, setType] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [parentLocationId, setParentLocationId] = useState("root");
   const [capacity, setCapacity] = useState<string>("");
   const [temperature, setTemperature] = useState<string>("");
   const [humidity, setHumidity] = useState<string>("");
+  const [vitrineCount, setVitrineCount] = useState("");
+  const [wallCount, setWallCount] = useState("");
+  const [cabinetCount, setCabinetCount] = useState("");
+  const [shelfCount, setShelfCount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch the location details
   const location = useQuery(
     api.locations.get,
     open && locationId ? { locationId: locationId as Id<"locations"> } : "skip",
+  );
+  const allLocations = useQuery(
+    api.locations.listAll,
+    open && currentOrganizationId
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
   );
 
   const updateLocation = useMutation(api.locations.update);
@@ -73,15 +94,36 @@ export function EditLocationDialog({
       setType(location.type);
       setAddress(location.address || "");
       setNotes(location.notes || "");
+      setParentLocationId(location.parentLocationId ?? "root");
       setCapacity(location.capacity?.toString() || "");
       setTemperature(
-        (location.customFields?.temperature as number)?.toString() || "",
+        getNumericCustomFieldValue(location.customFields, "temperature"),
       );
       setHumidity(
-        (location.customFields?.humidity as number)?.toString() || "",
+        getNumericCustomFieldValue(location.customFields, "humidity"),
+      );
+      setVitrineCount(
+        getNumericCustomFieldValue(location.customFields, "vitrineCount"),
+      );
+      setWallCount(
+        getNumericCustomFieldValue(location.customFields, "wallCount"),
+      );
+      setCabinetCount(
+        getNumericCustomFieldValue(location.customFields, "cabinetCount"),
+      );
+      setShelfCount(
+        getNumericCustomFieldValue(location.customFields, "shelfCount"),
       );
     }
   }, [location]);
+
+  const availableParentLocations =
+    open && locationId
+      ? getAvailableParentLocationOptions(
+          allLocations,
+          locationId as Id<"locations">,
+        )
+      : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,17 +140,31 @@ export function EditLocationDialog({
           string | number | boolean | string[] | null
         >),
       };
-      if (temperature) {
-        customFields.temperature = Number.parseFloat(temperature);
-      }
-      if (humidity) {
-        customFields.humidity = Number.parseFloat(humidity);
-      }
+      setOptionalNumberCustomField(
+        customFields,
+        "temperature",
+        temperature,
+        Number.parseFloat,
+      );
+      setOptionalNumberCustomField(
+        customFields,
+        "humidity",
+        humidity,
+        Number.parseFloat,
+      );
+      setOptionalNumberCustomField(customFields, "vitrineCount", vitrineCount);
+      setOptionalNumberCustomField(customFields, "wallCount", wallCount);
+      setOptionalNumberCustomField(customFields, "cabinetCount", cabinetCount);
+      setOptionalNumberCustomField(customFields, "shelfCount", shelfCount);
 
       await updateLocation({
         locationId: locationId as Id<"locations">,
         name,
         type,
+        parentLocationId:
+          parentLocationId === "root"
+            ? undefined
+            : (parentLocationId as Id<"locations">),
         address: address || undefined,
         notes: notes || undefined,
         capacity: capacity ? Number.parseInt(capacity, 10) : undefined,
@@ -171,6 +227,41 @@ export function EditLocationDialog({
               </div>
 
               <div className="grid gap-2">
+                <Label htmlFor="parent-location">
+                  {tLocations("parentLocation")}
+                </Label>
+                <Select
+                  value={parentLocationId}
+                  onValueChange={setParentLocationId}
+                >
+                  <SelectTrigger id="parent-location">
+                    <SelectValue
+                      placeholder={tMove("selectDestinationPlaceholder")}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="root">
+                      <span className="font-medium">{tMove("rootOption")}</span>
+                    </SelectItem>
+                    {availableParentLocations.map((parentLocation) => (
+                      <SelectItem
+                        key={parentLocation.id}
+                        value={parentLocation.id}
+                      >
+                        <span
+                          style={{
+                            paddingLeft: `${parentLocation.level * 12}px`,
+                          }}
+                        >
+                          {parentLocation.name} ({parentLocation.type})
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
                 <Label htmlFor="address">{t("addressLabel")}</Label>
                 <Input
                   id="address"
@@ -190,6 +281,42 @@ export function EditLocationDialog({
                   onChange={(e) => setCapacity(e.target.value)}
                   placeholder={t("capacityPlaceholder")}
                 />
+              </div>
+
+              <div className="grid gap-3">
+                <Label>{t("unitCountsLabel")}</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  {LOCATION_UNIT_COUNT_FIELDS.map((field) => {
+                    const valueByKey = {
+                      vitrineCount,
+                      wallCount,
+                      cabinetCount,
+                      shelfCount,
+                    };
+                    const setterByKey = {
+                      vitrineCount: setVitrineCount,
+                      wallCount: setWallCount,
+                      cabinetCount: setCabinetCount,
+                      shelfCount: setShelfCount,
+                    };
+
+                    return (
+                      <div key={field.key} className="grid gap-2">
+                        <Label htmlFor={field.key}>{t(field.labelKey)}</Label>
+                        <Input
+                          id={field.key}
+                          type="number"
+                          min="0"
+                          value={valueByKey[field.key]}
+                          onChange={(e) =>
+                            setterByKey[field.key](e.target.value)
+                          }
+                          placeholder={t(field.placeholderKey)}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

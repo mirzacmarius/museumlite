@@ -24,6 +24,11 @@ import {
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
+import {
+  hasCustomFieldValues,
+  LOCATION_UNIT_COUNT_FIELDS,
+  setOptionalNumberCustomField,
+} from "../location-custom-fields";
 
 interface AddChildLocationDialogProps {
   parentLocationId?: string;
@@ -64,6 +69,10 @@ export function AddChildLocationDialog({
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [capacity, setCapacity] = useState<string>("");
+  const [vitrineCount, setVitrineCount] = useState("");
+  const [wallCount, setWallCount] = useState("");
+  const [cabinetCount, setCabinetCount] = useState("");
+  const [shelfCount, setShelfCount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -99,6 +108,16 @@ export function AddChildLocationDialog({
 
     setIsSubmitting(true);
     try {
+      const customFields: Record<
+        string,
+        string | number | boolean | string[] | null
+      > = {};
+
+      setOptionalNumberCustomField(customFields, "vitrineCount", vitrineCount);
+      setOptionalNumberCustomField(customFields, "wallCount", wallCount);
+      setOptionalNumberCustomField(customFields, "cabinetCount", cabinetCount);
+      setOptionalNumberCustomField(customFields, "shelfCount", shelfCount);
+
       await createLocation({
         organizationId: organizationId as Id<"organizations">,
         name: name.trim(),
@@ -109,6 +128,9 @@ export function AddChildLocationDialog({
         address: address.trim() || undefined,
         notes: notes.trim() || undefined,
         capacity: capacity ? Number.parseInt(capacity, 10) : undefined,
+        customFields: hasCustomFieldValues(customFields)
+          ? customFields
+          : undefined,
       });
 
       setName("");
@@ -116,6 +138,10 @@ export function AddChildLocationDialog({
       setAddress("");
       setNotes("");
       setCapacity("");
+      setVitrineCount("");
+      setWallCount("");
+      setCabinetCount("");
+      setShelfCount("");
       onOpenChange(false);
       onSuccess?.();
     } catch (err) {
@@ -200,6 +226,39 @@ export function AddChildLocationDialog({
                 onChange={(e) => setCapacity(e.target.value)}
                 placeholder={t("capacityPlaceholder")}
               />
+            </div>
+            <div className="space-y-3">
+              <Label>{t("unitCountsLabel")}</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {LOCATION_UNIT_COUNT_FIELDS.map((field) => {
+                  const valueByKey = {
+                    vitrineCount,
+                    wallCount,
+                    cabinetCount,
+                    shelfCount,
+                  };
+                  const setterByKey = {
+                    vitrineCount: setVitrineCount,
+                    wallCount: setWallCount,
+                    cabinetCount: setCabinetCount,
+                    shelfCount: setShelfCount,
+                  };
+
+                  return (
+                    <div key={field.key} className="space-y-2">
+                      <Label htmlFor={field.key}>{t(field.labelKey)}</Label>
+                      <Input
+                        id={field.key}
+                        type="number"
+                        min="0"
+                        value={valueByKey[field.key]}
+                        onChange={(e) => setterByKey[field.key](e.target.value)}
+                        placeholder={t(field.placeholderKey)}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="notes">{t("notesLabel")}</Label>

@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { action, internalMutation, internalQuery } from "./_generated/server";
+import { internalMutation, internalQuery } from "./_generated/server";
 
 // Tables to clear - hardcoded list (NOT using TableNames to avoid as any)
 // These are verified to exist in schema.ts
@@ -4783,112 +4783,486 @@ export const verifyEntityCounts = internalQuery({
   },
 });
 
-export const assignMissingLocations = internalMutation({
-  args: {
-    userId: v.id("users"),
+const deepLocationTargetValidator = v.object({
+  _id: v.id("locations"),
+  name: v.string(),
+  type: v.string(),
+  sortOrder: v.number(),
+  capacity: v.optional(v.number()),
+  path: v.array(v.string()),
+});
+
+const movableCollectionValidator = v.object({
+  _id: v.id("collections"),
+  accessionNumber: v.string(),
+  title: v.string(),
+  status: v.string(),
+  currentLocationId: v.optional(v.id("locations")),
+});
+
+const deepLocationOrganizationSummaryValidator = v.object({
+  organizationId: v.id("organizations"),
+  organizationName: v.string(),
+  targetLocationCount: v.number(),
+  objectCount: v.number(),
+  reassigned: v.number(),
+  unchanged: v.number(),
+  skippedNoCapacity: v.number(),
+  skippedNoEligibleLocation: v.number(),
+});
+
+const deepLocationReassignmentSummaryValidator = v.object({
+  userId: v.id("users"),
+  organizationCount: v.number(),
+  organizationsProcessed: v.number(),
+  objectsConsidered: v.number(),
+  objectsReassigned: v.number(),
+  objectsUnchanged: v.number(),
+  objectsSkippedNoEligibleLocation: v.number(),
+  objectsSkippedNoCapacity: v.number(),
+  organizationsSkippedNoLocations: v.number(),
+  organizations: v.array(deepLocationOrganizationSummaryValidator),
+});
+
+const DEEP_LOCATION_REASSIGNMENT_REASON =
+  "Deep location reassignment (maintenance)";
+const DEEP_LOCATION_REASSIGNMENT_NOTES =
+  "Assigned to deepest eligible leaf location for seeded maintenance user";
+const PREFERRED_DEEP_LOCATION_TYPES = new Set(["shelf", "vitrine"]);
+const EXCLUDED_COLLECTION_STATUSES = new Set(["loaned", "deaccessioned"]);
+
+type LocationRecord = {
+  _id: Id<"locations">;
+  name: string;
+  type: string;
+  sortOrder: number;
+  parentLocationId?: Id<"locations">;
+  isActive: boolean;
+  status?: "active" | "closed" | "renovation" | "restricted";
+  capacity?: number;
+};
+
+type UserOrganizationContext = {
+  userId: Id<"users">;
+  organizationIds: Array<Id<"organizations">>;
+};
+
+type DeepLocationTarget = {
+  _id: Id<"locations">;
+  name: string;
+  type: string;
+  sortOrder: number;
+  capacity?: number;
+  path: string[];
+};
+
+type MovableCollection = {
+  _id: Id<"collections">;
+  accessionNumber: string;
+  title: string;
+  status: string;
+  currentLocationId?: Id<"locations">;
+};
+
+type DeepLocationOrganizationSummary = {
+  organizationId: Id<"organizations">;
+  organizationName: string;
+  targetLocationCount: number;
+  objectCount: number;
+  reassigned: number;
+  unchanged: number;
+  skippedNoCapacity: number;
+  skippedNoEligibleLocation: number;
+};
+
+type DeepLocationReassignmentSummary = {
+  userId: Id<"users">;
+  organizationCount: number;
+  organizationsProcessed: number;
+  objectsConsidered: number;
+  objectsReassigned: number;
+  objectsUnchanged: number;
+  objectsSkippedNoEligibleLocation: number;
+  objectsSkippedNoCapacity: number;
+  organizationsSkippedNoLocations: number;
+  organizations: DeepLocationOrganizationSummary[];
+};
+
+function buildLocationPathParts(
+  locationId: Id<"locations">,
+  locationsById: ReadonlyMap<Id<"locations">, LocationRecord>,
+) {
+  const pathParts: Array<{
+    _id: Id<"locations">;
+    name: string;
+    sortOrder: number;
+  }> = [];
+  const visited = new Set<Id<"locations">>();
+  let currentLocationId: Id<"locations"> | undefined = locationId;
+
+  while (currentLocationId && !visited.has(currentLocationId)) {
+    visited.add(currentLocationId);
+    const location = locationsById.get(currentLocationId);
+    if (!location) {
+      break;
+    }
+    pathParts.unshift({
+      _id: location._id,
+      name: location.name,
+      sortOrder: location.sortOrder,
+    });
+    currentLocationId = location.parentLocationId;
+  }
+
+  return pathParts;
+}
+
+function compareLocationRecords(
+  locationsById: ReadonlyMap<Id<"locations">, LocationRecord>,
+  left: LocationRecord,
+  right: LocationRecord,
+) {
+  const leftPath = buildLocationPathParts(left._id, locationsById)
+    .map((part) => `${part.sortOrder}:${part.name}:${part._id}`)
+    .join(" / ");
+  const rightPath = buildLocationPathParts(right._id, locationsById)
+    .map((part) => `${part.sortOrder}:${part.name}:${part._id}`)
+    .join(" / ");
+
+  return (
+    leftPath.localeCompare(rightPath) ||
+    left.sortOrder - right.sortOrder ||
+    left.name.localeCompare(right.name) ||
+    left._id.localeCompare(right._id)
+  );
+}
+
+function isEligibleDeepTargetLocation(location: LocationRecord) {
+  return (
+    location.isActive &&
+    location.status !== "closed" &&
+    location.status !== "restricted" &&
+    location.status !== "renovation"
+  );
+}
+
+function compareMovableCollections(
+  left: {
+    _id: Id<"collections">;
+    accessionNumber: string;
+    title: string;
   },
-  returns: v.object({
-    assigned: v.number(),
-    skipped: v.number(),
-  }),
-  handler: async (ctx, args) => {
-    const collectionsWithoutLocation = await ctx.db
-      .query("collections")
-      .filter((q) => q.eq(q.field("currentLocationId"), undefined))
+  right: {
+    _id: Id<"collections">;
+    accessionNumber: string;
+    title: string;
+  },
+) {
+  return (
+    left.accessionNumber.localeCompare(right.accessionNumber) ||
+    left.title.localeCompare(right.title) ||
+    left._id.localeCompare(right._id)
+  );
+}
+
+export const getUserOrganizationsByEmail = internalQuery({
+  args: {
+    email: v.string(),
+  },
+  returns: v.union(
+    v.null(),
+    v.object({
+      userId: v.id("users"),
+      organizationIds: v.array(v.id("organizations")),
+    }),
+  ),
+  handler: async (
+    ctx,
+    args,
+  ): Promise<UserOrganizationContext | null> => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", args.email))
+      .first();
+    const userId = user?._id;
+
+    if (!userId) {
+      return null;
+    }
+
+    const memberships = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 
-    if (collectionsWithoutLocation.length === 0) {
-      return { assigned: 0, skipped: 0 };
+    return {
+      userId,
+      organizationIds: memberships.map((membership) => membership.organizationId),
+    };
+  },
+});
+
+export const getEligibleDeepLocations = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.array(deepLocationTargetValidator),
+  handler: async (ctx, args): Promise<DeepLocationTarget[]> => {
+    const locations = await ctx.db
+      .query("locations")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const activeLocations = locations.filter((location) => location.isActive);
+    const activeChildParentIds = new Set<Id<"locations">>();
+    for (const location of activeLocations) {
+      if (location.parentLocationId) {
+        activeChildParentIds.add(location.parentLocationId);
+      }
     }
 
-    const byOrg = new Map<
-      Id<"organizations">,
-      typeof collectionsWithoutLocation
-    >();
-    for (const c of collectionsWithoutLocation) {
-      const list = byOrg.get(c.organizationId) || [];
-      list.push(c);
-      byOrg.set(c.organizationId, list);
-    }
+    const locationsById = new Map(
+      locations.map((location) => [
+        location._id,
+        {
+          _id: location._id,
+          name: location.name,
+          type: location.type,
+          sortOrder: location.sortOrder,
+          parentLocationId: location.parentLocationId,
+          isActive: location.isActive,
+          status: location.status,
+          capacity: location.capacity,
+        },
+      ]),
+    );
 
-    let assigned = 0;
-    let skipped = 0;
+    const leafLocations = activeLocations.filter(
+      (location) => !activeChildParentIds.has(location._id),
+    );
 
-    for (const [orgId, collections] of byOrg) {
-      const locations = await ctx.db
-        .query("locations")
-        .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
-        .filter((q) =>
-          q.and(
-            q.eq(q.field("isActive"), true),
-            q.or(
-              q.eq(q.field("type"), "room"),
-              q.eq(q.field("type"), "cabinet"),
-              q.eq(q.field("type"), "shelf"),
-              q.eq(q.field("type"), "storage"),
-            ),
-          ),
-        )
-        .collect();
+    const eligibleLeafLocations = leafLocations
+      .filter((location) => isEligibleDeepTargetLocation(location))
+      .map((location) => locationsById.get(location._id)!)
+      .sort((left, right) =>
+        compareLocationRecords(locationsById, left, right),
+      );
 
-      if (locations.length === 0) {
-        skipped += collections.length;
+    const preferredLocations = eligibleLeafLocations.filter((location) =>
+      PREFERRED_DEEP_LOCATION_TYPES.has(location.type),
+    );
+    const selectedLocations =
+      preferredLocations.length > 0
+        ? preferredLocations
+        : eligibleLeafLocations.filter(
+            (location) => !PREFERRED_DEEP_LOCATION_TYPES.has(location.type),
+          );
+
+    return selectedLocations.map((location) => ({
+      _id: location._id,
+      name: location.name,
+      type: location.type,
+      sortOrder: location.sortOrder,
+      capacity: location.capacity,
+      path: buildLocationPathParts(location._id, locationsById).map(
+        (part) => part.name,
+      ),
+    }));
+  },
+});
+
+export const getMovableCollectionsForOrganization = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.array(movableCollectionValidator),
+  handler: async (ctx, args): Promise<MovableCollection[]> => {
+    const collections = await ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    return collections
+      .filter((collection) => !EXCLUDED_COLLECTION_STATUSES.has(collection.status))
+      .sort(compareMovableCollections)
+      .map((collection) => ({
+        _id: collection._id,
+        accessionNumber: collection.accessionNumber,
+        title: collection.title,
+        status: collection.status,
+        currentLocationId: collection.currentLocationId,
+      }));
+  },
+});
+
+export const reassignObjectsToDeepLocationsForUser = internalMutation({
+  args: {
+    userId: v.id("users"),
+    organizationIds: v.array(v.id("organizations")),
+  },
+  returns: deepLocationReassignmentSummaryValidator,
+  handler: async (
+    ctx,
+    args,
+  ): Promise<DeepLocationReassignmentSummary> => {
+    const summary: DeepLocationReassignmentSummary = {
+      userId: args.userId,
+      organizationCount: args.organizationIds.length,
+      organizationsProcessed: 0,
+      objectsConsidered: 0,
+      objectsReassigned: 0,
+      objectsUnchanged: 0,
+      objectsSkippedNoEligibleLocation: 0,
+      objectsSkippedNoCapacity: 0,
+      organizationsSkippedNoLocations: 0,
+      organizations: [],
+    };
+
+    for (const organizationId of args.organizationIds) {
+      const organization = await ctx.db.get(organizationId);
+      if (!organization) {
         continue;
       }
 
-      for (const collection of collections) {
-        const randomLocation =
-          locations[Math.floor(Math.random() * locations.length)]!;
+      const movableCollections = await ctx.runQuery(
+        internal.seedMet.getMovableCollectionsForOrganization,
+        { organizationId },
+      );
 
+      if (movableCollections.length === 0) {
+        continue;
+      }
+
+      summary.organizationsProcessed += 1;
+      summary.objectsConsidered += movableCollections.length;
+
+      const targetLocations = await ctx.runQuery(
+        internal.seedMet.getEligibleDeepLocations,
+        { organizationId },
+      );
+
+      const organizationSummary = {
+        organizationId,
+        organizationName: organization.name,
+        targetLocationCount: targetLocations.length,
+        objectCount: movableCollections.length,
+        reassigned: 0,
+        unchanged: 0,
+        skippedNoCapacity: 0,
+        skippedNoEligibleLocation: 0,
+      };
+
+      if (targetLocations.length === 0) {
+        organizationSummary.skippedNoEligibleLocation = movableCollections.length;
+        summary.objectsSkippedNoEligibleLocation += movableCollections.length;
+        summary.organizationsSkippedNoLocations += 1;
+        summary.organizations.push(organizationSummary);
+        continue;
+      }
+
+      const allCollections = await ctx.db
+        .query("collections")
+        .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+        .collect();
+
+      const targetLocationIds = new Set(
+        targetLocations.map(
+          (targetLocation: DeepLocationTarget) => targetLocation._id,
+        ),
+      );
+      const occupancyByLocationId = new Map<Id<"locations">, number>();
+
+      for (const collection of allCollections) {
+        if (
+          collection.currentLocationId &&
+          targetLocationIds.has(collection.currentLocationId)
+        ) {
+          occupancyByLocationId.set(
+            collection.currentLocationId,
+            (occupancyByLocationId.get(collection.currentLocationId) ?? 0) + 1,
+          );
+        }
+      }
+
+      let roundRobinIndex = 0;
+
+      for (const collection of movableCollections) {
+        let selectedTarget = null as (typeof targetLocations)[number] | null;
+
+        for (let offset = 0; offset < targetLocations.length; offset += 1) {
+          const candidate =
+            targetLocations[(roundRobinIndex + offset) % targetLocations.length]!;
+          const currentOccupancy =
+            (occupancyByLocationId.get(candidate._id) ?? 0) -
+            (collection.currentLocationId === candidate._id ? 1 : 0);
+
+          if (candidate.capacity === undefined || currentOccupancy < candidate.capacity) {
+            selectedTarget = candidate;
+            roundRobinIndex = (roundRobinIndex + offset) % targetLocations.length;
+            break;
+          }
+        }
+
+        if (!selectedTarget) {
+          organizationSummary.skippedNoCapacity += 1;
+          summary.objectsSkippedNoCapacity += 1;
+          continue;
+        }
+
+        if (collection.currentLocationId === selectedTarget._id) {
+          organizationSummary.unchanged += 1;
+          summary.objectsUnchanged += 1;
+          roundRobinIndex = (roundRobinIndex + 1) % targetLocations.length;
+          continue;
+        }
+
+        if (
+          collection.currentLocationId &&
+          targetLocationIds.has(collection.currentLocationId)
+        ) {
+          occupancyByLocationId.set(
+            collection.currentLocationId,
+            Math.max(
+              0,
+              (occupancyByLocationId.get(collection.currentLocationId) ?? 0) - 1,
+            ),
+          );
+        }
+
+        occupancyByLocationId.set(
+          selectedTarget._id,
+          (occupancyByLocationId.get(selectedTarget._id) ?? 0) + 1,
+        );
+
+        const movedAt = Date.now();
         await ctx.db.patch(collection._id, {
-          currentLocationId: randomLocation._id,
+          currentLocationId: selectedTarget._id,
+          lastModifiedBy: args.userId,
+          lastModifiedAt: movedAt,
         });
 
         await ctx.db.insert("locationHistory", {
           collectionId: collection._id,
-          fromLocationId: undefined,
-          toLocationId: randomLocation._id,
+          fromLocationId: collection.currentLocationId,
+          toLocationId: selectedTarget._id,
           movedBy: args.userId,
-          movedAt: Date.now(),
-          reason: "Initial location assignment (migration)",
+          movedAt,
+          reason: DEEP_LOCATION_REASSIGNMENT_REASON,
+          notes: DEEP_LOCATION_REASSIGNMENT_NOTES,
         });
 
-        assigned++;
+        organizationSummary.reassigned += 1;
+        summary.objectsReassigned += 1;
+        roundRobinIndex = (roundRobinIndex + 1) % targetLocations.length;
       }
+
+      summary.organizations.push(organizationSummary);
     }
 
-    return { assigned, skipped };
-  },
-});
-
-export const runAssignMissingLocations = action({
-  args: {},
-  returns: v.object({
-    assigned: v.number(),
-    skipped: v.number(),
-  }),
-  handler: async (ctx): Promise<{ assigned: number; skipped: number }> => {
-    const userId: Id<"users"> | null = await ctx.runQuery(
-      internal.seedMet.findUserByEmail,
-      {
-        email: "mirzacmarius@gmail.com",
-      },
-    );
-
-    if (!userId) {
-      throw new Error("Seed user not found. Please log in first.");
-    }
-
-    const result: { assigned: number; skipped: number } = await ctx.runMutation(
-      internal.seedMet.assignMissingLocations,
-      {
-        userId,
-      },
-    );
-
-    console.log(
-      `Location assignment complete: ${result.assigned} assigned, ${result.skipped} skipped`,
-    );
-    return result;
+    return summary;
   },
 });

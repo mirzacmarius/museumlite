@@ -10,32 +10,84 @@ interface GalleryObject {
 
 interface GalleryViewProps {
   objects: GalleryObject[];
+  vitrineCount?: number;
+  wallCount?: number;
+  cabinetCount?: number;
+  shelfCount?: number;
 }
 
-export function GalleryView({ objects }: GalleryViewProps) {
-  const vitrineObjects = objects.slice(0, 8);
-  const wallObjects = objects.slice(8, 14);
-  const drawerObjects = objects.slice(14, 18);
+const DEFAULT_VITRINE_COUNT = 4;
+const DEFAULT_WALL_COUNT = 6;
+const DEFAULT_CABINET_COUNT = 4;
+const DEFAULT_SHELF_COUNT = 4;
+const VITRINE_TYPES = ["Roman", "Greek", "Busts", "Tools", "Ceramics", "Coins"];
 
-  const vitrines = [
-    { id: "VIT-01", type: "Roman", objects: vitrineObjects.slice(0, 2) },
-    { id: "VIT-02", type: "Greek", objects: vitrineObjects.slice(2, 4) },
-    { id: "VIT-03", type: "Busts", objects: vitrineObjects.slice(4, 6) },
-    { id: "VIT-04", type: "Tools", objects: vitrineObjects.slice(6, 8) },
-  ];
+export function GalleryView({
+  objects,
+  vitrineCount = DEFAULT_VITRINE_COUNT,
+  wallCount = DEFAULT_WALL_COUNT,
+  cabinetCount = DEFAULT_CABINET_COUNT,
+  shelfCount = DEFAULT_SHELF_COUNT,
+}: GalleryViewProps) {
+  const normalizedVitrineCount = Math.max(0, vitrineCount);
+  const normalizedWallCount = Math.max(0, wallCount);
+  const normalizedCabinetCount = Math.max(0, cabinetCount);
+  const normalizedShelfCount = Math.max(0, shelfCount);
 
-  const wallSlots = Array.from({ length: 6 }, (_, i) => ({
+  const vitrineCapacity = normalizedVitrineCount * 2;
+  const wallCapacity = normalizedWallCount;
+  const cabinetCapacity = normalizedCabinetCount * 2;
+  const shelfCapacity = normalizedShelfCount * 2;
+
+  const vitrineObjects = objects.slice(0, vitrineCapacity);
+  const wallObjects = objects.slice(
+    vitrineCapacity,
+    vitrineCapacity + wallCapacity,
+  );
+  const cabinetObjects = objects.slice(
+    vitrineCapacity + wallCapacity,
+    vitrineCapacity + wallCapacity + cabinetCapacity,
+  );
+  const shelfObjects = objects.slice(
+    vitrineCapacity + wallCapacity + cabinetCapacity,
+    vitrineCapacity + wallCapacity + cabinetCapacity + shelfCapacity,
+  );
+
+  const vitrines = Array.from(
+    { length: normalizedVitrineCount },
+    (_, index) => ({
+      id: `VIT-${String(index + 1).padStart(2, "0")}`,
+      type: VITRINE_TYPES[index % VITRINE_TYPES.length] ?? "Display",
+      objects: vitrineObjects.slice(index * 2, index * 2 + 2),
+    }),
+  );
+
+  const wallSlots = Array.from({ length: normalizedWallCount }, (_, i) => ({
     id: `W${i + 1}`,
     object: wallObjects[i],
   }));
 
-  const drawers = Array.from({ length: 4 }, (_, i) => ({
-    id: `DRW-A${i + 1}`,
-    object: drawerObjects[i],
+  const cabinets = Array.from(
+    { length: normalizedCabinetCount },
+    (_, index) => ({
+      id: `CAB-${String(index + 1).padStart(2, "0")}`,
+      objects: cabinetObjects.slice(index * 2, index * 2 + 2),
+    }),
+  );
+
+  const shelves = Array.from({ length: normalizedShelfCount }, (_, index) => ({
+    id: `SH-${String(index + 1).padStart(2, "0")}`,
+    objects: shelfObjects.slice(index * 2, index * 2 + 2),
   }));
 
-  const totalSlots = 18;
-  const occupiedSlots = Math.min(objects.length, totalSlots);
+  const occupiedVitrines = vitrines.filter(
+    (vitrine) => vitrine.objects.length > 0,
+  );
+  const occupiedWalls = wallSlots.filter((slot) => slot.object);
+  const occupiedCabinets = cabinets.filter(
+    (cabinet) => cabinet.objects.length > 0,
+  );
+  const occupiedShelves = shelves.filter((shelf) => shelf.objects.length > 0);
 
   return (
     <div className="space-y-8">
@@ -45,57 +97,76 @@ export function GalleryView({ objects }: GalleryViewProps) {
             Freestanding Vitrines
           </h3>
           <div className="text-xs text-zinc-500">
-            Occupancy:{" "}
+            In use:{" "}
             <span className="text-zinc-300">
-              {occupiedSlots}/{totalSlots} Slots
+              {occupiedVitrines.length}/{normalizedVitrineCount} Vitrines
             </span>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
           {vitrines.map((vitrine) => (
             <VitrineCard key={vitrine.id} vitrine={vitrine} />
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div>
           <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide mb-4">
             Wall Mounted Display
           </h3>
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6 relative overflow-hidden">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
-            <div className="grid grid-cols-6 gap-2 relative z-10">
+            <div
+              className="relative z-10 grid gap-2"
+              style={{
+                gridTemplateColumns: `repeat(${Math.max(
+                  1,
+                  Math.min(normalizedWallCount, 6),
+                )}, minmax(0, 1fr))`,
+              }}
+            >
               {wallSlots.map((slot) => (
                 <WallSlot key={slot.id} slot={slot} />
               ))}
             </div>
             <div className="mt-4 flex justify-between items-center text-xs text-zinc-500">
-              <span>North Wall • Case W-01</span>
-              <span>Security: Locked</span>
+              <span>{normalizedWallCount} walls configured</span>
+              <span>{occupiedWalls.length} in use</span>
             </div>
           </div>
         </div>
 
         <div>
           <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide mb-4">
-            Secure Drawers
+            Cabinets
           </h3>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden flex flex-col">
-            <div className="flex-1 bg-zinc-950 p-1 space-y-1">
-              {drawers.map((drawer) => (
-                <DrawerRow key={drawer.id} drawer={drawer} />
-              ))}
-            </div>
-            <div className="bg-zinc-950 border-t border-zinc-800 p-2 text-center">
-              <button
-                type="button"
-                className="text-[10px] text-indigo-400 hover:text-indigo-300"
-              >
-                View Manifest
-              </button>
-            </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {cabinets.map((cabinet) => (
+              <UnitStackCard key={cabinet.id} unit={cabinet} />
+            ))}
           </div>
+          <div className="mt-3 text-right text-xs text-zinc-500">
+            {occupiedCabinets.length}/{normalizedCabinetCount} cabinets in use
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-4 flex items-end justify-between">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-300">
+            Shelves
+          </h3>
+          <div className="text-xs text-zinc-500">
+            <span className="text-zinc-300">
+              {occupiedShelves.length}/{normalizedShelfCount} shelves in use
+            </span>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {shelves.map((shelf) => (
+            <UnitStackCard key={shelf.id} unit={shelf} />
+          ))}
         </div>
       </div>
     </div>
@@ -184,38 +255,60 @@ function WallSlot({ slot }: WallSlotProps) {
   );
 }
 
-interface DrawerRowProps {
-  drawer: {
+interface UnitStackCardProps {
+  unit: {
     id: string;
-    object?: GalleryObject;
+    objects: GalleryObject[];
   };
 }
 
-function DrawerRow({ drawer }: DrawerRowProps) {
-  const isEmpty = !drawer.object;
+function UnitStackCard({ unit }: UnitStackCardProps) {
+  const isEmpty = unit.objects.length === 0;
   const statusColor = isEmpty ? "bg-zinc-600" : "bg-emerald-500";
 
   return (
     <div
-      className={`h-10 rounded border flex items-center px-3 justify-between transition-colors ${
+      className={`rounded-xl border p-3 transition-colors ${
         isEmpty
-          ? "bg-zinc-900 border-zinc-800/50 opacity-50"
-          : "bg-zinc-800/50 border-zinc-700/50 hover:bg-zinc-800 cursor-pointer group"
+          ? "border-zinc-800/50 bg-zinc-900/40 opacity-70"
+          : "border-zinc-700/50 bg-zinc-900/70"
       }`}
     >
-      <div className="flex items-center gap-2">
-        <div className={`w-1.5 h-1.5 rounded-full ${statusColor}`} />
-        <span
-          className={`text-xs font-mono ${isEmpty ? "text-zinc-500" : "text-zinc-300"}`}
-        >
-          {drawer.id}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className={`h-1.5 w-1.5 rounded-full ${statusColor}`} />
+          <span
+            className={`font-mono text-xs ${isEmpty ? "text-zinc-500" : "text-zinc-300"}`}
+          >
+            {unit.id}
+          </span>
+        </div>
+        <span className="text-[10px] text-zinc-500">
+          {unit.objects.length}/2
         </span>
       </div>
-      <span
-        className={`text-[9px] ${isEmpty ? "text-zinc-600" : "text-zinc-500 group-hover:text-zinc-300"}`}
-      >
-        {isEmpty ? "Empty" : drawer.object?.title.slice(0, 15)}
-      </span>
+
+      <div className="mt-3 space-y-2">
+        {unit.objects.length === 0 ? (
+          <div className="rounded border border-dashed border-zinc-800 px-2 py-3 text-center text-[10px] text-zinc-600">
+            Empty
+          </div>
+        ) : (
+          unit.objects.map((object) => (
+            <div
+              key={object._id}
+              className="rounded border border-white/5 bg-black/20 px-2 py-2"
+            >
+              <div className="font-mono text-[10px] text-zinc-500">
+                {object.accessionNumber ?? "—"}
+              </div>
+              <div className="truncate text-xs text-zinc-200">
+                {object.title}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }

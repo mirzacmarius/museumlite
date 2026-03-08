@@ -549,9 +549,9 @@ export default function CollectionEditPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-        <div className="flex w-full flex-col rounded-lg border border-border bg-card">
+    <div className="flex h-full min-h-0 w-full bg-background px-6">
+      <div className="z-10 mx-auto flex h-full min-h-0 w-full max-w-screen-xl gap-12">
+        <div className="flex h-full min-h-0 w-full flex-col rounded-lg border border-border bg-card">
           <div className="flex w-full items-center justify-between gap-4 rounded-t-lg border-b border-border p-6">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="sm" asChild>
@@ -606,16 +606,20 @@ export default function CollectionEditPage() {
             </div>
           </div>
 
-          <form id="object-edit-form" onSubmit={handleSubmit} className="p-4">
+          <form
+            id="object-edit-form"
+            onSubmit={handleSubmit}
+            className="min-h-0 flex-1 overflow-y-auto p-4"
+          >
             {error && (
               <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
 
-            <div className="flex gap-4">
+            <div className="flex min-h-0 gap-4">
               {/* Left column - Form sections */}
-              <div className="flex-1 space-y-4">
+              <div className="min-w-0 flex-1 space-y-4">
                 {/* Basic Information Section */}
                 <div className="rounded-lg border border-border bg-card p-4">
                   <h3 className="mb-3 text-base font-semibold">

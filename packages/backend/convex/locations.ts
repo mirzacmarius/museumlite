@@ -137,7 +137,9 @@ export const listAll = query({
       ? ctx.db
           .query("locations")
           .withIndex("by_organization_and_site", (q) =>
-            q.eq("organizationId", args.organizationId).eq("siteId", args.siteId),
+            q
+              .eq("organizationId", args.organizationId)
+              .eq("siteId", args.siteId),
           )
       : ctx.db
           .query("locations")
@@ -255,18 +257,21 @@ export const list = query({
       await validateSite(ctx, args.organizationId, args.siteId);
     }
 
-    let query = (args.siteId
-      ? ctx.db
-          .query("locations")
-          .withIndex("by_organization_and_site", (q) =>
-            q.eq("organizationId", args.organizationId).eq("siteId", args.siteId),
-          )
-      : ctx.db
-          .query("locations")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          ))
-      .filter((q) => q.eq(q.field("isActive"), true));
+    let query = (
+      args.siteId
+        ? ctx.db
+            .query("locations")
+            .withIndex("by_organization_and_site", (q) =>
+              q
+                .eq("organizationId", args.organizationId)
+                .eq("siteId", args.siteId),
+            )
+        : ctx.db
+            .query("locations")
+            .withIndex("by_organization", (q) =>
+              q.eq("organizationId", args.organizationId),
+            )
+    ).filter((q) => q.eq(q.field("isActive"), true));
 
     // Filter by parent
     if (args.parentLocationId === "root") {
@@ -1607,6 +1612,7 @@ export const reorder = mutation({
 export const getObjectsAtLocation = query({
   args: {
     locationId: v.id("locations"),
+    includeDescendants: v.optional(v.boolean()),
   },
   returns: v.array(
     v.object({
@@ -1630,19 +1636,88 @@ export const getObjectsAtLocation = query({
 
     await requirePermission(ctx, location.organizationId, "locations.read");
 
-    const objects = await ctx.db
-      .query("collections")
-      .withIndex("by_currentLocation", (q) =>
-        q.eq("currentLocationId", args.locationId),
-      )
-      .collect();
+    const locationIds = new Set<Id<"locations">>([args.locationId]);
 
-    return objects.map((obj) => ({
-      _id: obj._id,
-      accessionNumber: obj.accessionNumber,
-      title: obj.title,
-      status: obj.status,
-    }));
+    if (args.includeDescendants) {
+      const visitedLocationIds = new Set<Id<"locations">>([args.locationId]);
+      const pendingLocationIds: Id<"locations">[] = [args.locationId];
+
+      while (pendingLocationIds.length > 0) {
+        const currentLocationId = pendingLocationIds.shift();
+        if (!currentLocationId) {
+          continue;
+        }
+
+        const children = await ctx.db
+          .query("locations")
+          .withIndex("by_parentLocation", (q) =>
+            q.eq("parentLocationId", currentLocationId),
+          )
+          .collect();
+
+        for (const child of children) {
+          if (
+            !child.isActive ||
+            child.organizationId !== location.organizationId ||
+            visitedLocationIds.has(child._id)
+          ) {
+            continue;
+          }
+
+          visitedLocationIds.add(child._id);
+          locationIds.add(child._id);
+          pendingLocationIds.push(child._id);
+        }
+      }
+    }
+
+    const objectsById = new Map<
+      Id<"collections">,
+      {
+        _id: Id<"collections">;
+        accessionNumber: string;
+        title: string;
+        status: "active" | "loaned" | "deaccessioned" | "archived" | "deleted";
+      }
+    >();
+
+    for (const locationId of locationIds) {
+      const objects = await ctx.db
+        .query("collections")
+        .withIndex("by_currentLocation", (q) =>
+          q.eq("currentLocationId", locationId),
+        )
+        .collect();
+
+      for (const object of objects) {
+        objectsById.set(object._id, {
+          _id: object._id,
+          accessionNumber: object.accessionNumber,
+          title: object.title,
+          status: object.status,
+        });
+      }
+    }
+
+    return Array.from(objectsById.values()).sort((left, right) => {
+      const accessionComparison = left.accessionNumber.localeCompare(
+        right.accessionNumber,
+        undefined,
+        { numeric: true, sensitivity: "base" },
+      );
+      if (accessionComparison !== 0) {
+        return accessionComparison;
+      }
+
+      const titleComparison = left.title.localeCompare(right.title, undefined, {
+        sensitivity: "base",
+      });
+      if (titleComparison !== 0) {
+        return titleComparison;
+      }
+
+      return left._id.localeCompare(right._id);
+    });
   },
 });
 
