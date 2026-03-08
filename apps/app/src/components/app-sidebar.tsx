@@ -422,9 +422,6 @@ export function AppSidebar({
     { title: "Overview", url: "/", icon: LayoutGrid },
     { title: "Object Catalog", url: "/objects", icon: Database },
     { title: "Scan", url: "/scan", icon: QrCode },
-  ];
-
-  const navCollectionManagement = [
     { title: "Accessions", url: "/accessions", icon: FileCheck },
     { title: "Deaccessions", url: "/deaccessions", icon: FileX },
     { title: "Location & Tracking", url: "/locations", icon: MapPin },
@@ -636,25 +633,6 @@ export function AppSidebar({
                 isActive={pathname === "/collections"}
               />
             )}
-          </SidebarMenu>
-        </NavSection>
-
-        <NavSection
-          title="Collection Management"
-          forceOpen={navCollectionManagement.some((item) =>
-            isPathActive(item.url),
-          )}
-        >
-          <SidebarMenu>
-            {navCollectionManagement.map((item) => (
-              <NavItem
-                key={item.title}
-                href={item.url}
-                icon={item.icon}
-                title={item.title}
-                isActive={isPathActive(item.url)}
-              />
-            ))}
           </SidebarMenu>
         </NavSection>
 
