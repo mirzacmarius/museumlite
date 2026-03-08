@@ -11,6 +11,10 @@ import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { TypeCombobox } from "@/components/type-combobox";
+import {
+  parseStringListField,
+  serializeStringListField,
+} from "@/lib/string-list-field";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -314,16 +318,7 @@ export default function CollectionEditPage() {
   // Load existing data
   useEffect(() => {
     if (collection) {
-      // Parse materials from JSON string to array
-      let materialsArray: string[] = [];
-      if (collection.materials) {
-        try {
-          materialsArray = JSON.parse(collection.materials);
-        } catch {
-          // If not valid JSON, treat as empty array
-          materialsArray = [];
-        }
-      }
+      const materialsArray = parseStringListField(collection.materials);
 
       let objectTypeArray: string[] = [];
       if (collection.objectType) {
@@ -502,9 +497,7 @@ export default function CollectionEditPage() {
     setIsSubmitting(true);
     try {
       // Convert materials array to JSON string for backend
-      const materialsString = Array.isArray(formData.materials)
-        ? JSON.stringify(formData.materials)
-        : formData.materials;
+      const materialsString = serializeStringListField(formData.materials);
 
       // Convert objectType array to JSON string for backend
       const objectTypeString = Array.isArray(formData.objectType)

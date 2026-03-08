@@ -1,6 +1,7 @@
 "use client";
 
 import { formatDate } from "@/lib/format-date";
+import { formatStringListField } from "@/lib/string-list-field";
 import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
@@ -32,6 +33,7 @@ export function PrintPreviewModal({
 }: PrintPreviewModalProps) {
   const t = useScopedI18n("objects.printPreview");
   const tCommon = useScopedI18n("common");
+  const materials = formatStringListField(collection.materials);
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="flex flex-col max-w-[210mm] w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0">
@@ -153,12 +155,12 @@ export function PrintPreviewModal({
                 {t("physicalDescription")}
               </h2>
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
-                {collection.materials && (
+                {materials && (
                   <div>
                     <p className="text-xs font-medium text-gray-500">
                       {t("materials")}
                     </p>
-                    <p className="text-black">{collection.materials}</p>
+                    <p className="text-black">{materials}</p>
                   </div>
                 )}
                 {collection.technique && (

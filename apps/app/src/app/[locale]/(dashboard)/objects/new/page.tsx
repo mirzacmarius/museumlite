@@ -27,6 +27,7 @@ import { ObjectCombobox } from "@/components/object-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { TypeCombobox } from "@/components/type-combobox";
+import { serializeStringListField } from "@/lib/string-list-field";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { NaturalLanguageDatePicker } from "@v1/ui/natural-language-date-picker";
 import { useMutation } from "convex/react";
@@ -240,9 +241,7 @@ export default function CollectionFormPage() {
     setIsSubmitting(true);
     try {
       // Convert materials array to JSON string for backend
-      const materialsString = Array.isArray(formData.materials)
-        ? JSON.stringify(formData.materials)
-        : formData.materials;
+      const materialsString = serializeStringListField(formData.materials);
 
       // Convert objectType array to JSON string for backend
       const objectTypeString = Array.isArray(formData.objectType)

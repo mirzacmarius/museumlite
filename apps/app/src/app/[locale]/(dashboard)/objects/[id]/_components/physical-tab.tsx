@@ -1,5 +1,6 @@
 "use client";
 
+import { formatStringListField } from "@/lib/string-list-field";
 import { Hammer, Ruler, Search } from "lucide-react";
 import type { CollectionData } from "./types";
 
@@ -8,6 +9,11 @@ interface PhysicalTabProps {
 }
 
 export function PhysicalTab({ collection }: PhysicalTabProps) {
+  const materials = formatStringListField(
+    collection.materials,
+    "Not specified",
+  );
+
   return (
     <div className="space-y-8">
       {/* Stats Cards */}
@@ -22,7 +28,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
               <span className="font-serif text-xs text-foreground">M</span>
             </div>
             <span className="text-sm font-medium text-foreground">
-              {collection.materials || "Not specified"}
+              {materials}
             </span>
           </div>
         </div>
