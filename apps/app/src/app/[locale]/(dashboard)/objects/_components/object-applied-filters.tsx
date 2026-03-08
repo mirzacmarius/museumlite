@@ -3,10 +3,7 @@
 import type { ObjectStatus } from "@/hooks/use-url-filters";
 import { useScopedI18n } from "@/locales/client";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import {
-  AppliedFilterChip,
-  AppliedFiltersBar,
-} from "@v1/ui/filters-dropdown";
+import { AppliedFilterChip, AppliedFiltersBar } from "@v1/ui/filters-dropdown";
 import { useMemo } from "react";
 
 interface LocationPathItem {
@@ -40,7 +37,10 @@ interface ObjectAppliedFiltersProps {
   className?: string;
 }
 
-function statusLabel(t: ReturnType<typeof useScopedI18n>, status: ObjectStatus) {
+function statusLabel(
+  t: ReturnType<typeof useScopedI18n>,
+  status: ObjectStatus,
+) {
   switch (status) {
     case "any":
       return "";
@@ -79,7 +79,9 @@ export function ObjectAppliedFilters({
 
   const groupLabel = useMemo(() => {
     if (!filters.collectionGroupId) return null;
-    const match = collectionGroups?.find((g) => g._id === filters.collectionGroupId);
+    const match = collectionGroups?.find(
+      (g) => g._id === filters.collectionGroupId,
+    );
     return match?.name ?? null;
   }, [collectionGroups, filters.collectionGroupId]);
 

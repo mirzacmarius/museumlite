@@ -31,7 +31,7 @@ import { serializeStringListField } from "@/lib/string-list-field";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { NaturalLanguageDatePicker } from "@v1/ui/natural-language-date-picker";
 import { useMutation } from "convex/react";
-import { ArrowLeft, Plus, Save, Star, Upload, X } from "lucide-react";
+import { ArrowLeft, Camera, Plus, Save, Star, Upload, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -78,6 +78,7 @@ export default function CollectionFormPage() {
   const createMedia = useMutation(api.media.create);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -422,7 +423,7 @@ export default function CollectionFormPage() {
     <div className="flex h-full w-full bg-background px-6 py-8">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
-          <div className="flex w-full items-center justify-between rounded-lg p-6">
+          <div className="flex w-full items-center justify-between gap-4 rounded-t-lg border-b border-border p-6">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/objects">
@@ -432,13 +433,27 @@ export default function CollectionFormPage() {
               </Button>
               <h2 className="text-xl font-medium text-primary">New Object</h2>
             </div>
+
+            <div className="flex items-center gap-3">
+              <Button type="button" variant="outline" asChild>
+                <Link href="/objects">{common("cancel")}</Link>
+              </Button>
+              <Button
+                type="submit"
+                form="object-create-form"
+                disabled={isSubmitting}
+              >
+                <Save className="mr-2 h-4 w-4" />
+                {isSubmitting
+                  ? selectedFiles.length > 0
+                    ? t("form.actions.creatingAndUploading")
+                    : common("creating")
+                  : t("form.actions.createObject")}
+              </Button>
+            </div>
           </div>
 
-          <div className="flex w-full px-6">
-            <div className="w-full border-b border-border" />
-          </div>
-
-          <form onSubmit={handleSubmit} className="p-4">
+          <form id="object-create-form" onSubmit={handleSubmit} className="p-4">
             {error && (
               <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
@@ -698,6 +713,7 @@ export default function CollectionFormPage() {
                     <div>
                       <Label htmlFor="description">Description</Label>
                       <Textarea
+                        autoResize
                         id="description"
                         value={formData.description || ""}
                         onChange={(e) =>
@@ -711,6 +727,7 @@ export default function CollectionFormPage() {
                     <div>
                       <Label htmlFor="provenance">Provenance</Label>
                       <Textarea
+                        autoResize
                         id="provenance"
                         value={formData.provenance || ""}
                         onChange={(e) =>
@@ -726,6 +743,7 @@ export default function CollectionFormPage() {
                         Exhibition History
                       </Label>
                       <Textarea
+                        autoResize
                         id="exhibitionHistory"
                         value={formData.exhibitionHistory || ""}
                         onChange={(e) =>
@@ -793,6 +811,7 @@ export default function CollectionFormPage() {
                           Info about the Donation
                         </Label>
                         <Textarea
+                          autoResize
                           id="donation_info"
                           value={formData.donation_info || ""}
                           onChange={(e) =>
@@ -899,21 +918,6 @@ export default function CollectionFormPage() {
                     </Button>
                   </div>
                 </div>
-
-                {/* Form Actions */}
-                <div className="flex justify-end gap-4">
-                  <Button type="button" variant="outline" asChild>
-                    <Link href="/objects">{common("cancel")}</Link>
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {isSubmitting
-                      ? selectedFiles.length > 0
-                        ? t("form.actions.creatingAndUploading")
-                        : common("creating")
-                      : t("form.actions.createObject")}
-                  </Button>
-                </div>
               </div>
 
               {/* Right column - Media Uploader */}
@@ -934,15 +938,35 @@ export default function CollectionFormPage() {
                       multiple
                     />
 
-                    <Button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full mb-4"
-                      variant="outline"
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload Images
-                    </Button>
+                    <input
+                      ref={cameraInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+
+                    <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <Button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full"
+                        variant="outline"
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={() => cameraInputRef.current?.click()}
+                        className="w-full"
+                        variant="outline"
+                      >
+                        <Camera className="mr-2 h-4 w-4" />
+                        Take Photo
+                      </Button>
+                    </div>
 
                     {selectedFiles.length > 0 ? (
                       <div className="grid grid-cols-3 gap-2">

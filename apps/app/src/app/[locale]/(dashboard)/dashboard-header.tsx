@@ -16,7 +16,14 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
     const cleanPath = path.replace(`/${locale}`, "") || "/";
 
     if (cleanPath === "/" || cleanPath === "") return "Collections Overview";
+    if (cleanPath === "/objects/new") return "New Object";
+    if (/^\/objects\/[^/]+\/edit$/.test(cleanPath)) return "Edit Object";
+    if (/^\/objects\/[^/]+$/.test(cleanPath)) return "Object Details";
     if (cleanPath.startsWith("/objects")) return "Object Catalog";
+    if (cleanPath === "/exhibitions/new") return "New Exhibition";
+    if (/^\/exhibitions\/[^/]+\/edit$/.test(cleanPath))
+      return "Edit Exhibition";
+    if (/^\/exhibitions\/[^/]+$/.test(cleanPath)) return "Exhibition Details";
     if (cleanPath.startsWith("/exhibitions")) return "Exhibition Management";
 
     const segment = cleanPath.split("/").pop();
@@ -41,9 +48,7 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        {children}
-      </div>
+      <div className="flex items-center gap-3">{children}</div>
     </header>
   );
 }

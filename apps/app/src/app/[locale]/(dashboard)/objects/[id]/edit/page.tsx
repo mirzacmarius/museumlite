@@ -39,6 +39,7 @@ import {
   AlertOctagon,
   Archive,
   ArrowLeft,
+  Camera,
   CheckCircle,
   Plus,
   Save,
@@ -134,6 +135,7 @@ export default function CollectionEditPage() {
     ) || [];
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<File[]>([]);
 
@@ -550,7 +552,7 @@ export default function CollectionEditPage() {
     <div className="flex h-full w-full bg-background px-6">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
-          <div className="flex w-full items-center justify-between rounded-lg p-6">
+          <div className="flex w-full items-center justify-between gap-4 rounded-t-lg border-b border-border p-6">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="sm" asChild>
                 <Link href={`/objects/${collectionId}`}>
@@ -560,13 +562,51 @@ export default function CollectionEditPage() {
               </Button>
               <h2 className="text-xl font-medium text-primary">Edit Object</h2>
             </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              <PermissionGate permission="collections.approve_deaccession">
+                {collection.status === "active" && !hasActiveLoan && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => setDeaccessionDialogOpen(true)}
+                  >
+                    <Archive className="mr-2 h-4 w-4" />
+                    Deaccession Object
+                  </Button>
+                )}
+                {collection.status === "active" && hasActiveLoan && (
+                  <div
+                    className="flex items-center text-xs text-muted-foreground"
+                    title={common("cannotDeaccession")}
+                  >
+                    <AlertOctagon className="mr-2 h-4 w-4" />
+                    Cannot deaccession (On Loan)
+                  </div>
+                )}
+              </PermissionGate>
+
+              <Button type="button" variant="outline" asChild>
+                <Link href={`/objects/${collectionId}`}>
+                  {common("cancel")}
+                </Link>
+              </Button>
+              <Button
+                type="submit"
+                form="object-edit-form"
+                disabled={isSubmitting}
+              >
+                <Save className="mr-2 h-4 w-4" />
+                {isSubmitting
+                  ? common("updating")
+                  : t("form.actions.updateObject")}
+              </Button>
+            </div>
           </div>
 
-          <div className="flex w-full px-6">
-            <div className="w-full border-b border-border" />
-          </div>
-
-          <form onSubmit={handleSubmit} className="p-4">
+          <form id="object-edit-form" onSubmit={handleSubmit} className="p-4">
             {error && (
               <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
@@ -828,6 +868,7 @@ export default function CollectionEditPage() {
                     <div>
                       <Label htmlFor="description">Description</Label>
                       <Textarea
+                        autoResize
                         id="description"
                         value={formData.description || ""}
                         onChange={(e) =>
@@ -841,6 +882,7 @@ export default function CollectionEditPage() {
                     <div>
                       <Label htmlFor="provenance">Provenance</Label>
                       <Textarea
+                        autoResize
                         id="provenance"
                         value={formData.provenance || ""}
                         onChange={(e) =>
@@ -856,6 +898,7 @@ export default function CollectionEditPage() {
                         Exhibition History
                       </Label>
                       <Textarea
+                        autoResize
                         id="exhibitionHistory"
                         value={formData.exhibitionHistory || ""}
                         onChange={(e) =>
@@ -913,6 +956,7 @@ export default function CollectionEditPage() {
                         Info about the Donation
                       </Label>
                       <Textarea
+                        autoResize
                         id="donation_info"
                         value={formData.donation_info || ""}
                         onChange={(e) =>
@@ -1312,47 +1356,6 @@ export default function CollectionEditPage() {
                     </div>
                   </div>
                 </div>
-
-                {/* Form Actions */}
-                <div className="flex items-center justify-between gap-4">
-                  <PermissionGate permission="collections.approve_deaccession">
-                    {collection.status === "active" && !hasActiveLoan && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => setDeaccessionDialogOpen(true)}
-                      >
-                        <Archive className="mr-2 h-4 w-4" />
-                        Deaccession Object
-                      </Button>
-                    )}
-                    {collection.status === "active" && hasActiveLoan && (
-                      <div
-                        className="flex items-center text-xs text-muted-foreground"
-                        title={common("cannotDeaccession")}
-                      >
-                        <AlertOctagon className="mr-2 h-4 w-4" />
-                        Cannot deaccession (On Loan)
-                      </div>
-                    )}
-                  </PermissionGate>
-
-                  <div className="flex gap-4 ml-auto">
-                    <Button type="button" variant="outline" asChild>
-                      <Link href={`/objects/${collectionId}`}>
-                        {common("cancel")}
-                      </Link>
-                    </Button>
-                    <Button type="submit" disabled={isSubmitting}>
-                      <Save className="mr-2 h-4 w-4" />
-                      {isSubmitting
-                        ? common("updating")
-                        : t("form.actions.updateObject")}
-                    </Button>
-                  </div>
-                </div>
               </div>
 
               {/* Right column - Media Uploader */}
@@ -1373,15 +1376,35 @@ export default function CollectionEditPage() {
                       multiple
                     />
 
-                    <Button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full mb-4"
-                      variant="outline"
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload Images
-                    </Button>
+                    <input
+                      ref={cameraInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+
+                    <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <Button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full"
+                        variant="outline"
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={() => cameraInputRef.current?.click()}
+                        className="w-full"
+                        variant="outline"
+                      >
+                        <Camera className="mr-2 h-4 w-4" />
+                        Take Photo
+                      </Button>
+                    </div>
 
                     {images && images.length > 0 ? (
                       <div className="grid grid-cols-3 gap-2">

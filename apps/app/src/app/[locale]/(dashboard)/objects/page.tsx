@@ -197,6 +197,12 @@ function CollectionFiltersAndList({
     }
   }, [savedColumns, defaultColumns]);
 
+  useEffect(() => {
+    if (filters.status === "deaccessioned") {
+      setFilters({ status: "any" });
+    }
+  }, [filters.status, setFilters]);
+
   const handleViewModeChange = (mode: ViewMode) => {
     setViewMode(mode);
     setViewPreference({
@@ -224,11 +230,11 @@ function CollectionFiltersAndList({
   };
 
   const statusFilter =
-    filters.status !== "any" && filters.status !== "all"
+    filters.status !== "any" &&
+    filters.status !== "all" &&
+    filters.status !== "deaccessioned"
       ? filters.status
       : undefined;
-  const includeDeaccessioned =
-    filters.status === "all" ? true : undefined;
 
   const collections = useQuery(
     api.collections.list,
@@ -238,7 +244,6 @@ function CollectionFiltersAndList({
           paginationOpts: { numItems: 50, cursor },
           search: filters.search || undefined,
           status: statusFilter,
-          includeDeaccessioned,
           objectType: filters.objectType || undefined,
           culture: filters.culture || undefined,
           period: filters.period || undefined,
@@ -267,7 +272,9 @@ function CollectionFiltersAndList({
     collections?.page?.forEach((item) => {
       if (item.objectType) types.add(item.objectType);
     });
-    return Array.from(types).filter((t) => t.trim() !== "").sort();
+    return Array.from(types)
+      .filter((t) => t.trim() !== "")
+      .sort();
   }, [collections, typeOptions]);
 
   const handleSelectItem = (id: Id<"collections">, selected: boolean) => {

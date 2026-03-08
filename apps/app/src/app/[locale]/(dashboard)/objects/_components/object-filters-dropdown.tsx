@@ -5,9 +5,9 @@ import { useScopedI18n } from "@/locales/client";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
   FilterOptionRow,
+  FilterSection,
   FiltersDropdown,
   FiltersSearchInput,
-  FilterSection,
 } from "@v1/ui/filters-dropdown";
 import { useMemo, useState } from "react";
 
@@ -46,7 +46,10 @@ function titleMatchesQuery(title: string, query: string) {
   return title.toLowerCase().includes(query.trim().toLowerCase());
 }
 
-function statusLabel(t: ReturnType<typeof useScopedI18n>, status: ObjectStatus) {
+function statusLabel(
+  t: ReturnType<typeof useScopedI18n>,
+  status: ObjectStatus,
+) {
   switch (status) {
     case "any":
       return t("filters.anyStatus");
@@ -83,7 +86,6 @@ export function ObjectFiltersDropdown({
       { value: "all", label: statusLabel(t, "all") },
       { value: "active", label: statusLabel(t, "active") },
       { value: "loaned", label: statusLabel(t, "loaned") },
-      { value: "deaccessioned", label: statusLabel(t, "deaccessioned") },
       { value: "archived", label: statusLabel(t, "archived") },
       { value: "deleted", label: statusLabel(t, "deleted") },
     ],
@@ -145,7 +147,9 @@ export function ObjectFiltersDropdown({
                       onClick={() =>
                         onChange({
                           status:
-                            filters.status === option.value ? "any" : option.value,
+                            filters.status === option.value
+                              ? "any"
+                              : option.value,
                         })
                       }
                       title={option.label}
@@ -216,7 +220,9 @@ export function ObjectFiltersDropdown({
                         onClick={() =>
                           onChange({
                             locationId:
-                              filters.locationId === location._id ? "" : location._id,
+                              filters.locationId === location._id
+                                ? ""
+                                : location._id,
                           })
                         }
                         title={label}
