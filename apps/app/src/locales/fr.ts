@@ -114,6 +114,7 @@ export default {
     organization: {
       title: "Paramètres de l'Organisation",
       description: "Gérez les paramètres et préférences de votre organisation",
+      addOrganization: "Ajouter une organisation",
       basicInformation: "Informations de Base",
       nameLabel: "Nom de l'Organisation *",
       typeLabel: "Type d'Organisation",

@@ -112,6 +112,7 @@ export default {
     organization: {
       title: "Organization Settings",
       description: "Manage your organization's settings and preferences",
+      addOrganization: "Add Organization",
       basicInformation: "Basic Information",
       nameLabel: "Organization Name *",
       typeLabel: "Organization Type",

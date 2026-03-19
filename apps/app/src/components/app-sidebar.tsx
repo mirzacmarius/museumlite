@@ -551,18 +551,6 @@ export function AppSidebar({
                     )}
                   </DropdownMenuItem>
                 ))}
-                <DropdownMenuSeparator className="bg-zinc-800/50" />
-                <DropdownMenuItem
-                  className="gap-2 p-2 focus:bg-zinc-900 focus:text-zinc-200"
-                  onClick={() => router.push("/organizations/new")}
-                >
-                  <div className="flex size-6 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900">
-                    <Plus className="size-4 text-zinc-500" />
-                  </div>
-                  <div className="font-medium text-zinc-500">
-                    Add organization
-                  </div>
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>

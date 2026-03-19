@@ -1,6 +1,5 @@
 "use client";
 
-import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import {
   DropdownMenu,
@@ -11,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
 import { Building2, Check, ChevronDown, Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useOrganization } from "./organization-provider";
 
 export function OrganizationSwitcher() {
@@ -21,7 +19,6 @@ export function OrganizationSwitcher() {
     setCurrentOrganizationId,
     isLoading,
   } = useOrganization();
-  const router = useRouter();
 
   if (isLoading) {
     return (
@@ -35,7 +32,7 @@ export function OrganizationSwitcher() {
   if (organizations.length === 0) {
     return (
       <Button variant="ghost" className="gap-2 px-2" asChild>
-        <a href="/organizations/new">
+        <a href="/settings/organization/new">
           <Plus className="h-4 w-4" />
           <span className="text-sm font-medium">Create Organization</span>
         </a>
@@ -80,14 +77,6 @@ export function OrganizationSwitcher() {
             </div>
           </DropdownMenuItem>
         ))}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={() => router.push("/organizations/new")}
-          className="cursor-pointer"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          <span>Create New Organization</span>
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

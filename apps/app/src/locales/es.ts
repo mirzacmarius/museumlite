@@ -116,6 +116,7 @@ export default {
       title: "Configuración de la Organización",
       description:
         "Administra la configuración y preferencias de tu organización",
+      addOrganization: "Agregar organización",
       basicInformation: "Información Básica",
       nameLabel: "Nombre de la Organización *",
       typeLabel: "Tipo de Organización",

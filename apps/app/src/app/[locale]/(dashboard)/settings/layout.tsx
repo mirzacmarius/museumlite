@@ -13,7 +13,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const isUsersPath = pathname === "/settings/users";
   const isRolesPath = pathname === "/settings/roles";
   const isSitesPath = pathname === "/settings/sites";
-  const isOrganizationPath = pathname === "/settings/organization";
+  const isOrganizationPath = pathname?.startsWith("/settings/organization");
   const isIntegrationsPath = pathname?.startsWith("/settings/integrations");
   const isModulesPath = pathname === "/settings/modules";
   const isActivityPath = pathname === "/settings/activity";

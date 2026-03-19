@@ -39,7 +39,8 @@ import { Switch } from "@v1/ui/switch";
 import { Textarea } from "@v1/ui/textarea";
 import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
-import { Save, Trash2, Droplet } from "lucide-react";
+import { Droplet, Plus, Save, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 export default function OrganizationSettingsPage() {
@@ -273,28 +274,56 @@ export default function OrganizationSettingsPage() {
     }
   };
 
+  const pageHeader = (
+    <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-2">
+        <h2 className="text-xl font-medium text-primary">
+          {t("organization.title")}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {t("organization.description")}
+        </p>
+      </div>
+      <Button asChild>
+        <Link href="/settings/organization/new">
+          <Plus className="mr-2 h-4 w-4" />
+          {t("organization.addOrganization")}
+        </Link>
+      </Button>
+    </div>
+  );
+
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">
-          Please select an organization to manage settings.
-        </p>
+      <div className="flex w-full flex-col gap-6">
+        {pageHeader}
+        <div className="flex min-h-48 items-center justify-center rounded-lg border border-border bg-card p-6">
+          <p className="text-muted-foreground">
+            Please select an organization to manage settings.
+          </p>
+        </div>
       </div>
     );
   }
 
   if (organization === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">{tCommon("loading")}</p>
+      <div className="flex w-full flex-col gap-6">
+        {pageHeader}
+        <div className="flex min-h-48 items-center justify-center rounded-lg border border-border bg-card p-6">
+          <p className="text-muted-foreground">{tCommon("loading")}</p>
+        </div>
       </div>
     );
   }
 
   if (organization === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">{tCommon("noResults")}</p>
+      <div className="flex w-full flex-col gap-6">
+        {pageHeader}
+        <div className="flex min-h-48 items-center justify-center rounded-lg border border-border bg-card p-6">
+          <p className="text-muted-foreground">{tCommon("noResults")}</p>
+        </div>
       </div>
     );
   }
@@ -389,14 +418,7 @@ export default function OrganizationSettingsPage() {
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <div className="flex w-full flex-col gap-2">
-        <h2 className="text-xl font-medium text-primary">
-          {t("organization.title")}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          {t("organization.description")}
-        </p>
-      </div>
+      {pageHeader}
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
           <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
