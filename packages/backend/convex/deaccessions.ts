@@ -394,10 +394,27 @@ export const get = query({
       "collections.read",
     );
 
-    // Ensure workflowHistory is always an array (even if empty)
     return {
-      ...deaccession,
+      _id: deaccession._id,
+      _creationTime: deaccession._creationTime,
+      organizationId: deaccession.organizationId,
+      collectionId: deaccession.collectionId,
+      deaccessionNumber: deaccession.deaccessionNumber,
+      dateDeaccessioned: deaccession.dateDeaccessioned,
+      reason: deaccession.reason,
+      method: deaccession.method,
+      disposition: deaccession.disposition,
+      approvedBy: deaccession.approvedBy,
+      approvedAt: deaccession.approvedAt,
+      status: deaccession.status,
+      notes: deaccession.notes,
+      workflowStep: deaccession.workflowStep,
       workflowHistory: deaccession.workflowHistory ?? [],
+      proceedsAmount: deaccession.proceedsAmount,
+      proceedsCurrency: deaccession.proceedsCurrency,
+      proceedsRecipient: deaccession.proceedsRecipient,
+      proceedsDate: deaccession.proceedsDate,
+      proceedsNotes: deaccession.proceedsNotes,
     };
   },
 });
