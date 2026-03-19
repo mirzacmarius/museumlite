@@ -420,8 +420,8 @@ export default function CollectionFormPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-background px-6 py-8">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+    <div className="flex h-full w-full flex-col overflow-y-auto bg-background px-6 py-8">
+      <div className="z-10 mx-auto flex w-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
           <div className="flex w-full items-center justify-between gap-4 rounded-t-lg border-b border-border p-6">
             <div className="flex items-center gap-4">
