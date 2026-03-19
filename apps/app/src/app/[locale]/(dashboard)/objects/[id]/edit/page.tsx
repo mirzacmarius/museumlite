@@ -112,6 +112,10 @@ export default function CollectionEditPage() {
     api.collections.get,
     collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
   );
+  const pendingMoveRequest = useQuery(
+    api.objectMoves.getPendingForCollection,
+    collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
+  );
 
   const media = useQuery(
     api.media.list,
@@ -564,7 +568,7 @@ export default function CollectionEditPage() {
             </div>
 
             <div className="flex flex-wrap items-center justify-end gap-3">
-              <PermissionGate permission="collections.approve_deaccession">
+              <PermissionGate permission="collections.update">
                 {collection.status === "active" && !hasActiveLoan && (
                   <Button
                     type="button"
@@ -574,7 +578,7 @@ export default function CollectionEditPage() {
                     onClick={() => setDeaccessionDialogOpen(true)}
                   >
                     <Archive className="mr-2 h-4 w-4" />
-                    Deaccession Object
+                    Remove / Transfer Object
                   </Button>
                 )}
                 {collection.status === "active" && hasActiveLoan && (
@@ -583,7 +587,7 @@ export default function CollectionEditPage() {
                     title={common("cannotDeaccession")}
                   >
                     <AlertOctagon className="mr-2 h-4 w-4" />
-                    Cannot deaccession (On Loan)
+                    Cannot remove or transfer (On Loan)
                   </div>
                 )}
               </PermissionGate>
@@ -611,6 +615,29 @@ export default function CollectionEditPage() {
             onSubmit={handleSubmit}
             className="min-h-0 flex-1 overflow-y-auto p-4"
           >
+            {pendingMoveRequest && (
+              <div className="mb-4 rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-blue-100">
+                      Pending move request
+                    </p>
+                    <p className="text-sm text-blue-200/80">
+                      This object is pending transfer to{" "}
+                      {pendingMoveRequest.targetOrganizationName}.
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link
+                      href={`/objects/move-requests/${pendingMoveRequest._id}`}
+                    >
+                      View request
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {error && (
               <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
                 {error}

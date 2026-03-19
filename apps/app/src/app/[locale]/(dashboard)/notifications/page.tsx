@@ -13,6 +13,7 @@ import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
 import {
   AlertTriangle,
+  ArrowRightLeft,
   ArrowRight,
   Bell,
   CalendarClock,
@@ -65,6 +66,10 @@ function getNotificationIcon(type: string) {
     case "deaccession_pending":
     case "deaccession_approved":
       return Package;
+    case "move_request_created":
+    case "move_request_approved":
+    case "workflow_rejected":
+      return ArrowRightLeft;
     case "location":
       return MapPin;
     default:
@@ -91,6 +96,8 @@ function getNotificationLink(
       return `/loans/${entityId}`;
     case "location":
       return `/locations/${entityId}`;
+    case "move_request":
+      return `/objects/move-requests/${entityId}`;
     default:
       return null;
   }

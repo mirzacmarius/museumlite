@@ -6,7 +6,7 @@ import { Button } from "@v1/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
-import { Bell, Check, CheckCheck } from "lucide-react";
+import { ArrowRightLeft, Bell, Check, CheckCheck } from "lucide-react";
 import Link from "next/link";
 import { useOrganization } from "./organization-provider";
 
@@ -83,6 +83,8 @@ export function NotificationBell() {
         return `/loans/${entityId}`;
       case "location":
         return `/locations/${entityId}`;
+      case "move_request":
+        return `/objects/move-requests/${entityId}`;
       default:
         return null;
     }
@@ -151,9 +153,11 @@ export function NotificationBell() {
                       )}
                     >
                       <div className="mt-0.5 flex-shrink-0">
-                        {!notification.read && (
+                        {notification.relatedEntityType === "move_request" ? (
+                          <ArrowRightLeft className="h-4 w-4 text-primary" />
+                        ) : !notification.read ? (
                           <div className="h-2 w-2 rounded-full bg-primary" />
-                        )}
+                        ) : null}
                       </div>
                       <div className="flex flex-1 flex-col gap-1">
                         <p className="text-sm font-medium">

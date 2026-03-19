@@ -4,7 +4,7 @@ import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
-import type { api } from "@v1/backend/convex/_generated/api";
+import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import {
@@ -17,9 +17,11 @@ import {
 import { ImageLightbox, type LightboxImage } from "@v1/ui/image-lightbox";
 import { SidebarProvider } from "@v1/ui/sidebar";
 import { cn } from "@v1/ui/utils";
+import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
   ArrowLeft,
+  ArrowRightLeft,
   Calendar,
   Check,
   FileDown,
@@ -209,6 +211,9 @@ export function ObjectDetailClient({
   const hasLoansFeature = featureOrganizationId
     ? hasFeature("loans", featureOrganizationId)
     : false;
+  const pendingMoveRequest = useQuery(api.objectMoves.getPendingForCollection, {
+    collectionId,
+  });
 
   const tabs = useMemo(() => {
     const allTabs = (() => {
@@ -453,6 +458,30 @@ export function ObjectDetailClient({
 
                 {/* Hero Info */}
                 <div className="flex-1 space-y-4">
+                  {pendingMoveRequest && (
+                    <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm font-medium text-blue-100">
+                            <ArrowRightLeft className="h-4 w-4" />
+                            Pending organization transfer
+                          </div>
+                          <p className="text-sm text-blue-200/80">
+                            This object is awaiting approval to move to{" "}
+                            {pendingMoveRequest.targetOrganizationName}.
+                          </p>
+                        </div>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link
+                            href={`/objects/move-requests/${pendingMoveRequest._id}`}
+                          >
+                            View request
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Status, Accession & Alternates Row */}
                   <div className="flex flex-wrap items-center gap-2.5">
                     {/* Display Status Badge */}

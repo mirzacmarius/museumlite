@@ -68,6 +68,7 @@ import type * as migrations from "../migrations.js";
 import type * as naturalHistoryDetails from "../naturalHistoryDetails.js";
 import type * as notifications from "../notifications.js";
 import type * as objectComments from "../objectComments.js";
+import type * as objectMoves from "../objectMoves.js";
 import type * as organizations from "../organizations.js";
 import type * as otp_ResendOTP from "../otp/ResendOTP.js";
 import type * as passwordReset_ResendOTPPasswordReset from "../passwordReset/ResendOTPPasswordReset.js";
@@ -175,6 +176,7 @@ declare const fullApi: ApiFromModules<{
   naturalHistoryDetails: typeof naturalHistoryDetails;
   notifications: typeof notifications;
   objectComments: typeof objectComments;
+  objectMoves: typeof objectMoves;
   organizations: typeof organizations;
   "otp/ResendOTP": typeof otp_ResendOTP;
   "passwordReset/ResendOTPPasswordReset": typeof passwordReset_ResendOTPPasswordReset;

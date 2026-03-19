@@ -177,7 +177,7 @@ function ObjectGridItem({
                 onClick={(e) => e.stopPropagation()}
                 className="bg-zinc-950 border-zinc-800 text-zinc-300"
               >
-                <PermissionGate permission="collections.create">
+                <PermissionGate permission="collections.update">
                   <DropdownMenuItem
                     className="hover:bg-zinc-900 focus:bg-zinc-900 cursor-pointer"
                     onClick={(e) => {
@@ -187,7 +187,7 @@ function ObjectGridItem({
                     }}
                   >
                     <Archive className="mr-2 h-4 w-4" />
-                    Deaccession
+                    Remove / Transfer
                   </DropdownMenuItem>
                 </PermissionGate>
               </DropdownMenuContent>

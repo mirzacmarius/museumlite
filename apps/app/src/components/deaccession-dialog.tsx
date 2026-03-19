@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
+import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import {
@@ -28,6 +29,7 @@ import { format } from "date-fns";
 import {
   AlertTriangle,
   Archive,
+  ArrowRightLeft,
   Calendar as CalendarIcon,
   CheckCircle,
   DollarSign,
@@ -37,7 +39,8 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-type RemovalType = "sold" | "archived" | "deleted";
+type RemovalType = "sold" | "archived" | "deleted" | "move";
+type AccessionMode = "keep" | "auto" | "manual";
 
 interface DeaccessionDialogProps {
   open: boolean;
@@ -62,6 +65,11 @@ export function DeaccessionDialog({
   >("sale");
   const [disposition, setDisposition] = useState("");
   const [notes, setNotes] = useState("");
+  const [accessionMode, setAccessionMode] = useState<AccessionMode>("keep");
+  const [targetOrganizationId, setTargetOrganizationId] = useState<
+    Id<"organizations"> | ""
+  >("");
+  const [manualAccessionNumber, setManualAccessionNumber] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,14 +79,33 @@ export function DeaccessionDialog({
   const softDeleteCollection = useMutation(
     api.collections.softDeleteCollection,
   );
+  const createMoveRequest = useMutation(api.objectMoves.createRequest);
 
   const workflowConfigs = useQuery(
     api.organizations.getWorkflowConfigs,
     organizationId ? { organizationId } : "skip",
   );
+  const targetOrganizations = useQuery(
+    api.objectMoves.listEligibleTargetOrganizations,
+    open ? { collectionId } : "skip",
+  );
+  const moveEligibility = useQuery(
+    api.objectMoves.getEligibility,
+    removalType === "move" && targetOrganizationId
+      ? {
+          collectionId,
+          targetOrganizationId: targetOrganizationId as Id<"organizations">,
+        }
+      : open
+        ? {
+            collectionId,
+          }
+        : "skip",
+  );
 
   const deaccessionWorkflow = workflowConfigs?.find(
-    (w: { workflowType: string }) => w.workflowType === "deaccession",
+    (workflow: { workflowType: string }) =>
+      workflow.workflowType === "deaccession",
   );
 
   const resetForm = () => {
@@ -88,6 +115,9 @@ export function DeaccessionDialog({
     setNotes("");
     setDate(new Date());
     setMethod("sale");
+    setAccessionMode("keep");
+    setTargetOrganizationId("");
+    setManualAccessionNumber("");
     setError(null);
   };
 
@@ -95,6 +125,25 @@ export function DeaccessionDialog({
     if (!reason.trim()) {
       setError("Reason is required");
       return;
+    }
+
+    if (removalType === "move") {
+      if (!targetOrganizationId) {
+        setError("Destination organization is required");
+        return;
+      }
+
+      if (accessionMode === "manual" && !manualAccessionNumber.trim()) {
+        setError("A manual accession number is required");
+        return;
+      }
+
+      if (moveEligibility && !moveEligibility.isEligible) {
+        setError(
+          "This object cannot be moved until the blocking issues are resolved",
+        );
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -130,11 +179,28 @@ export function DeaccessionDialog({
         resetForm();
         onOpenChange(false);
         router.push("/objects");
+      } else if (removalType === "move") {
+        const requestId = await createMoveRequest({
+          collectionId,
+          targetOrganizationId: targetOrganizationId as Id<"organizations">,
+          accessionMode,
+          requestedAccessionNumber:
+            accessionMode === "manual"
+              ? manualAccessionNumber.trim()
+              : undefined,
+          reason: reason.trim(),
+          notes: notes.trim() || undefined,
+        });
+        resetForm();
+        onOpenChange(false);
+        router.push(`/objects/move-requests/${requestId}`);
       }
     } catch (err) {
-      console.error("Failed to process removal:", err);
+      console.error("Failed to process object removal or transfer:", err);
       setError(
-        err instanceof Error ? err.message : "Failed to process removal",
+        err instanceof Error
+          ? err.message
+          : "Failed to process object removal or transfer",
       );
     } finally {
       setIsSubmitting(false);
@@ -146,13 +212,15 @@ export function DeaccessionDialog({
     onOpenChange(false);
   };
 
+  const blockers = moveEligibility?.blockers ?? [];
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Remove Object</DialogTitle>
+          <DialogTitle>Remove or Transfer Object</DialogTitle>
           <DialogDescription>
-            Choose how to remove "{collectionTitle}" from the collection.
+            Choose how to remove or transfer "{collectionTitle}".
           </DialogDescription>
         </DialogHeader>
 
@@ -161,19 +229,19 @@ export function DeaccessionDialog({
             <button
               type="button"
               onClick={() => setRemovalType("sold")}
-              className="flex items-start gap-4 rounded-lg border border-border p-4 text-left hover:bg-muted/50 transition-colors"
+              className="flex items-start gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted/50"
             >
               <div className="rounded-full bg-green-500/10 p-2">
                 <DollarSign className="h-5 w-5 text-green-500" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold">Object Sold</h3>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Record the sale of this object. Enter details about the
                   transaction including buyer information and sale price.
                 </p>
                 {deaccessionWorkflow && (
-                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                  <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
                     Requires approval workflow
                   </p>
                 )}
@@ -182,18 +250,38 @@ export function DeaccessionDialog({
 
             <button
               type="button"
+              onClick={() => setRemovalType("move")}
+              className="flex items-start gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted/50"
+            >
+              <div className="rounded-full bg-blue-500/10 p-2">
+                <ArrowRightLeft className="h-5 w-5 text-blue-500" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold">Move to Another Organization</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Request approval to transfer this object to another
+                  organization you belong to. You can keep the current accession
+                  number or assign a new one.
+                </p>
+                <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+                  Requires administrator approval before the move is executed
+                </p>
+              </div>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setRemovalType("archived")}
-              className="flex items-start gap-4 rounded-lg border border-border p-4 text-left hover:bg-muted/50 transition-colors"
+              className="flex items-start gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted/50"
             >
               <div className="rounded-full bg-amber-500/10 p-2">
                 <Archive className="h-5 w-5 text-amber-500" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold">Archive Object</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Remove from active collection but preserve all data, history,
-                  and media. The object will no longer be visible in normal
-                  views but can be restored later.
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Remove from the active collection but preserve all data,
+                  history, and media. The object can be restored later.
                 </p>
               </div>
             </button>
@@ -201,16 +289,16 @@ export function DeaccessionDialog({
             <button
               type="button"
               onClick={() => setRemovalType("deleted")}
-              className="flex items-start gap-4 rounded-lg border border-border p-4 text-left hover:bg-muted/50 transition-colors"
+              className="flex items-start gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted/50"
             >
               <div className="rounded-full bg-red-500/10 p-2">
                 <Trash2 className="h-5 w-5 text-red-500" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold">Delete Object</h3>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Move to trash. Use this if the object was added incorrectly or
-                  is a duplicate. Can be permanently deleted later or restored.
+                  is a duplicate. It can be restored later.
                 </p>
               </div>
             </button>
@@ -229,14 +317,14 @@ export function DeaccessionDialog({
             </Button>
 
             {deaccessionWorkflow && (
-              <div className="rounded-lg bg-blue-50 border border-blue-200 p-4 dark:bg-blue-950 dark:border-blue-800">
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                  <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
                   <div className="text-sm">
                     <p className="font-medium text-blue-900 dark:text-blue-100">
                       Approval Required
                     </p>
-                    <p className="text-blue-700 dark:text-blue-300 mt-1">
+                    <p className="mt-1 text-blue-700 dark:text-blue-300">
                       This sale requires{" "}
                       {deaccessionWorkflow.steps.length === 1
                         ? "administrator approval"
@@ -249,14 +337,14 @@ export function DeaccessionDialog({
             )}
 
             {!deaccessionWorkflow && workflowConfigs !== undefined && (
-              <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 dark:bg-amber-950 dark:border-amber-800">
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                  <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
                   <div className="text-sm">
                     <p className="font-medium text-amber-900 dark:text-amber-100">
                       No Approval Workflow
                     </p>
-                    <p className="text-amber-700 dark:text-amber-300 mt-1">
+                    <p className="mt-1 text-amber-700 dark:text-amber-300">
                       This sale will be automatically approved.
                     </p>
                   </div>
@@ -283,7 +371,9 @@ export function DeaccessionDialog({
                   <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={(d) => d && setDate(d)}
+                    onSelect={(selectedDate) =>
+                      selectedDate && setDate(selectedDate)
+                    }
                     initialFocus
                   />
                 </PopoverContent>
@@ -295,7 +385,7 @@ export function DeaccessionDialog({
               <Textarea
                 id="reason"
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                onChange={(event) => setReason(event.target.value)}
                 placeholder="Describe why this object is being sold..."
                 rows={3}
                 required
@@ -306,7 +396,7 @@ export function DeaccessionDialog({
               <Label htmlFor="method">Sale Method *</Label>
               <Select
                 value={method}
-                onValueChange={(v) => setMethod(v as typeof method)}
+                onValueChange={(value) => setMethod(value as typeof method)}
               >
                 <SelectTrigger id="method">
                   <SelectValue placeholder="Select sale method" />
@@ -333,7 +423,7 @@ export function DeaccessionDialog({
               <Textarea
                 id="disposition"
                 value={disposition}
-                onChange={(e) => setDisposition(e.target.value)}
+                onChange={(event) => setDisposition(event.target.value)}
                 placeholder="Buyer name, sale price, auction house..."
                 rows={3}
               />
@@ -344,11 +434,157 @@ export function DeaccessionDialog({
               <Textarea
                 id="notes"
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={(event) => setNotes(event.target.value)}
                 placeholder="Any additional comments..."
                 rows={2}
               />
             </div>
+          </div>
+        )}
+
+        {removalType === "move" && (
+          <div className="space-y-4 py-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setRemovalType(null)}
+              className="mb-2"
+            >
+              ← Back to options
+            </Button>
+
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                <div className="text-sm">
+                  <p className="font-medium text-blue-900 dark:text-blue-100">
+                    Administrator Approval Required
+                  </p>
+                  <p className="mt-1 text-blue-700 dark:text-blue-300">
+                    The object will remain in its current organization until a
+                    source organization administrator approves the move.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="target-organization">
+                Destination Organization *
+              </Label>
+              <Select
+                value={targetOrganizationId || undefined}
+                onValueChange={(value) =>
+                  setTargetOrganizationId(value as Id<"organizations">)
+                }
+              >
+                <SelectTrigger id="target-organization">
+                  <SelectValue placeholder="Select destination organization" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(targetOrganizations ?? []).map((organization) => (
+                    <SelectItem key={organization._id} value={organization._id}>
+                      {organization.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {targetOrganizations !== undefined &&
+                targetOrganizations.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    There are no eligible destination organizations available
+                    for your account.
+                  </p>
+                )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="move-reason">Reason for Move *</Label>
+              <Textarea
+                id="move-reason"
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                placeholder="Explain why this object should be moved to another organization..."
+                rows={4}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="accession-mode">
+                Accession Number Handling *
+              </Label>
+              <Select
+                value={accessionMode}
+                onValueChange={(value) =>
+                  setAccessionMode(value as AccessionMode)
+                }
+              >
+                <SelectTrigger id="accession-mode">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="keep">
+                    Keep current accession number
+                  </SelectItem>
+                  <SelectItem value="auto">
+                    Generate a new accession number
+                  </SelectItem>
+                  <SelectItem value="manual">
+                    Enter a new accession number manually
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                If you assign a new accession number, the current one will be
+                stored in Alternate Accession Numbers.
+              </p>
+            </div>
+
+            {accessionMode === "manual" && (
+              <div className="space-y-2">
+                <Label htmlFor="manual-accession-number">
+                  New Accession Number *
+                </Label>
+                <Input
+                  id="manual-accession-number"
+                  value={manualAccessionNumber}
+                  onChange={(event) =>
+                    setManualAccessionNumber(event.target.value)
+                  }
+                  placeholder="Enter the new accession number"
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="move-notes">Additional Notes</Label>
+              <Textarea
+                id="move-notes"
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                placeholder="Add any context for the reviewing administrator..."
+                rows={3}
+              />
+            </div>
+
+            {blockers.length > 0 && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                  <div className="space-y-2 text-sm">
+                    <p className="font-medium text-amber-900 dark:text-amber-100">
+                      This object cannot be moved yet
+                    </p>
+                    <ul className="list-disc space-y-1 pl-4 text-amber-700 dark:text-amber-300">
+                      {blockers.map((blocker) => (
+                        <li key={blocker.code}>{blocker.message}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -363,14 +599,14 @@ export function DeaccessionDialog({
               ← Back to options
             </Button>
 
-            <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 dark:bg-amber-950 dark:border-amber-800">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
               <div className="flex items-start gap-3">
-                <Archive className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                <Archive className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
                 <div className="text-sm">
                   <p className="font-medium text-amber-900 dark:text-amber-100">
                     Archiving Object
                   </p>
-                  <p className="text-amber-700 dark:text-amber-300 mt-1">
+                  <p className="mt-1 text-amber-700 dark:text-amber-300">
                     This object will be removed from the active collection but
                     all data, history, and media will be preserved. You can
                     restore it at any time.
@@ -386,7 +622,7 @@ export function DeaccessionDialog({
               <Textarea
                 id="archive-reason"
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                onChange={(event) => setReason(event.target.value)}
                 placeholder="Enter reason for archiving this object..."
                 rows={4}
                 required
@@ -406,14 +642,14 @@ export function DeaccessionDialog({
               ← Back to options
             </Button>
 
-            <div className="rounded-lg bg-red-50 border border-red-200 p-4 dark:bg-red-950 dark:border-red-800">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
               <div className="flex items-start gap-3">
-                <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                <Trash2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600 dark:text-red-400" />
                 <div className="text-sm">
                   <p className="font-medium text-red-900 dark:text-red-100">
                     Deleting Object
                   </p>
-                  <p className="text-red-700 dark:text-red-300 mt-1">
+                  <p className="mt-1 text-red-700 dark:text-red-300">
                     This object will be moved to trash. Use this if the object
                     was added incorrectly or is a duplicate. You can restore it
                     later or permanently delete it from trash.
@@ -429,8 +665,8 @@ export function DeaccessionDialog({
               <Textarea
                 id="delete-reason"
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Enter reason for deleting this object (e.g., duplicate entry, added in error)..."
+                onChange={(event) => setReason(event.target.value)}
+                placeholder="Enter reason for deleting this object (for example, duplicate entry or added in error)..."
                 rows={4}
                 required
               />
@@ -455,13 +691,23 @@ export function DeaccessionDialog({
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting || !reason.trim()}
+              disabled={
+                isSubmitting ||
+                !reason.trim() ||
+                (removalType === "move" &&
+                  (!targetOrganizationId ||
+                    (moveEligibility !== undefined &&
+                      !moveEligibility.isEligible) ||
+                    (accessionMode === "manual" &&
+                      !manualAccessionNumber.trim())))
+              }
               variant={removalType === "deleted" ? "destructive" : "default"}
             >
               {isSubmitting && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
               {removalType === "sold" && "Submit for Approval"}
+              {removalType === "move" && "Submit Move Request"}
               {removalType === "archived" && "Archive Object"}
               {removalType === "deleted" && "Delete Object"}
             </Button>

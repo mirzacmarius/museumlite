@@ -1328,6 +1328,43 @@ export default defineSchema({
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_toLocation", ["toLocationId"]),
 
+  // Cross-organization move requests for objects
+  organizationMoveRequests: defineTable({
+    collectionId: v.id("collections"),
+    sourceOrganizationId: v.id("organizations"),
+    targetOrganizationId: v.id("organizations"),
+    sourceAccessionNumber: v.string(),
+    accessionMode: v.union(
+      v.literal("keep"),
+      v.literal("auto"),
+      v.literal("manual"),
+    ),
+    requestedAccessionNumber: v.optional(v.string()),
+    finalAccessionNumber: v.optional(v.string()),
+    reason: v.string(),
+    notes: v.optional(v.string()),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("executed"),
+      v.literal("rejected"),
+      v.literal("cancelled"),
+    ),
+    requestedBy: v.id("users"),
+    requestedAt: v.number(),
+    reviewedBy: v.optional(v.id("users")),
+    reviewedAt: v.optional(v.number()),
+    reviewNotes: v.optional(v.string()),
+    executedBy: v.optional(v.id("users")),
+    executedAt: v.optional(v.number()),
+  })
+    .index("by_source_organization", ["sourceOrganizationId"])
+    .index("by_target_organization", ["targetOrganizationId"])
+    .index("by_collection", ["collectionId"])
+    .index("by_source_organization_and_status", [
+      "sourceOrganizationId",
+      "status",
+    ]),
+
   // Unified accounts (museum lenders/borrowers + library patrons)
   accounts: defineTable({
     organizationId: v.id("organizations"),
