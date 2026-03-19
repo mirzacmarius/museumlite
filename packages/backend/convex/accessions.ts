@@ -398,9 +398,27 @@ export const get = query({
     await requirePermission(ctx, accession.organizationId, "collections.read");
 
     // Ensure workflowHistory is always an array (even if empty)
+    const workflowHistory = accession.workflowHistory ?? [];
+
+    // IMPORTANT: Convex return validators are strict. Do not spread `accession`,
+    // because the DB document may include additional fields (for example
+    // `assignedTo`) that are not part of this query's `returns` shape.
     return {
-      ...accession,
-      workflowHistory: accession.workflowHistory ?? [],
+      _id: accession._id,
+      _creationTime: accession._creationTime,
+      organizationId: accession.organizationId,
+      collectionId: accession.collectionId,
+      accessionNumber: accession.accessionNumber,
+      dateReceived: accession.dateReceived,
+      source: accession.source,
+      method: accession.method,
+      cost: accession.cost,
+      approvedBy: accession.approvedBy,
+      approvedAt: accession.approvedAt,
+      status: accession.status,
+      notes: accession.notes,
+      workflowStep: accession.workflowStep,
+      workflowHistory,
     };
   },
 });

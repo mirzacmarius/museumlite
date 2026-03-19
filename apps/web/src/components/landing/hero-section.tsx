@@ -4,11 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, PlayCircle, Sparkles } from "lucide-react";
 import { Button } from "@v1/ui/button";
 import Link from "next/link";
-
-function getDeterministicRandom(seed: number) {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
+import { seededRandom } from "./seeded-rng";
 
 export function HeroSection() {
   return (
@@ -21,25 +17,26 @@ export function HeroSection() {
         {[...Array(20)].map((_, i) => {
           const particleId = `particle-${i}`;
           const baseSeed = i + 1;
-          const randomX = getDeterministicRandom(baseSeed) * 100;
-          const randomY = getDeterministicRandom(baseSeed + 1) * 100;
-          const randomAnimateY = getDeterministicRandom(baseSeed + 2) * -100;
-          const randomWidth = getDeterministicRandom(baseSeed + 3) * 4;
-          const randomHeight = getDeterministicRandom(baseSeed + 4) * 4;
-          const randomScale = getDeterministicRandom(baseSeed + 5) * 0.5 + 0.5;
-          const randomDuration = getDeterministicRandom(baseSeed + 6) * 10 + 10;
+
+          const randomX = seededRandom(baseSeed) * 100;
+          const randomY = seededRandom(baseSeed + 1) * 100;
+          const randomAnimateY = seededRandom(baseSeed + 2) * -100;
+          const randomWidth = seededRandom(baseSeed + 3) * 4;
+          const randomHeight = seededRandom(baseSeed + 4) * 4;
+          const randomScale = seededRandom(baseSeed + 5) * 0.5 + 0.5;
+          const randomDuration = seededRandom(baseSeed + 6) * 10 + 10;
 
           return (
             <motion.div
               key={particleId}
               className="absolute bg-white rounded-full opacity-20"
               initial={{
-                x: `${randomX}%`,
-                y: `${randomY}%`,
-                scale: randomScale,
+                x: `${randomX.toFixed(5)}%`,
+                y: `${randomY.toFixed(5)}%`,
+                scale: Number(randomScale.toFixed(5)),
               }}
               animate={{
-                y: [null, `${randomAnimateY}%`],
+                y: [null, `${randomAnimateY.toFixed(5)}%`],
                 opacity: [0.2, 0.5, 0.2],
               }}
               transition={{
@@ -48,8 +45,8 @@ export function HeroSection() {
                 ease: "linear",
               }}
               style={{
-                width: `${randomWidth}px`,
-                height: `${randomHeight}px`,
+                width: `${randomWidth.toFixed(5)}px`,
+                height: `${randomHeight.toFixed(5)}px`,
               }}
             />
           );

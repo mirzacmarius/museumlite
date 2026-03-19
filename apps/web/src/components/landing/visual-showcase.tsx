@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { seededRandom } from "./seeded-rng";
 
 export function VisualShowcase() {
   return (
@@ -77,7 +78,7 @@ export function VisualShowcase() {
                           <motion.div
                             initial={{ height: "20%" }}
                             whileInView={{
-                              height: `${Math.random() * 60 + 20}%`,
+                              height: `${(seededRandom(i + 1000) * 60 + 20).toFixed(3)}%`,
                             }}
                             transition={{
                               duration: 2,
