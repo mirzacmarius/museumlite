@@ -129,6 +129,55 @@ describe("Accounts CRUD", () => {
     expect(account?.accountType).toBe("lender");
   });
 
+  test("should create a private-person account with date of birth", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+
+    const authed = t.withIdentity({
+      subject: `${userId}|session-private-person`,
+      issuer: "https://example.test",
+    });
+
+    const dateOfBirth = Date.parse("1990-04-18T00:00:00Z");
+
+    const accountId = await authed.mutation(api.accounts.create, {
+      organizationId,
+      accountType: "lender",
+      holderType: "privatePerson",
+      businessName: "Jane Doe",
+      dateOfBirth,
+      notes: "Private lender",
+    });
+
+    const account = await authed.query(api.accounts.get, { accountId });
+    expect(account?.holderType).toBe("privatePerson");
+    expect(account?.businessName).toBe("Jane Doe");
+    expect(account?.dateOfBirth).toBe(dateOfBirth);
+    expect(account?.notes).toBe("Private lender");
+  });
+
+  test("should create an organization account with organization number", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+
+    const authed = t.withIdentity({
+      subject: `${userId}|session-organization`,
+      issuer: "https://example.test",
+    });
+
+    const accountId = await authed.mutation(api.accounts.create, {
+      organizationId,
+      accountType: "borrower",
+      holderType: "organization",
+      businessName: "Nordic Art Logistics",
+      taxId: "987 654 321",
+    });
+
+    const account = await authed.query(api.accounts.get, { accountId });
+    expect(account?.holderType).toBe("organization");
+    expect(account?.taxId).toBe("987 654 321");
+  });
+
   test("should list accounts with pagination", async () => {
     const t = convexTest(schema, modules);
     const { organizationId, userId } = await createTestSetup(t);

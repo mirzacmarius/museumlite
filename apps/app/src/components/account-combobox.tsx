@@ -1,6 +1,11 @@
 "use client";
 
-import { useI18n, useScopedI18n } from "@/locales/client";
+import {
+  DEFAULT_ACCOUNT_HOLDER_TYPE,
+  type AccountHolderType,
+  parseDateInputValue,
+} from "@/lib/account-holder";
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -23,6 +28,8 @@ import {
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
+import { Textarea } from "@v1/ui/textarea";
 import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -57,7 +64,10 @@ interface AccountComboboxProps {
 }
 
 interface NewAccountForm {
+  holderType: AccountHolderType;
   businessName: string;
+  taxId: string;
+  dateOfBirth: string;
   phone: string;
   email: string;
   address: string;
@@ -68,10 +78,14 @@ interface NewAccountForm {
   contactPerson: string;
   contactPhone: string;
   contactEmail: string;
+  notes: string;
 }
 
 const initialFormState: NewAccountForm = {
+  holderType: DEFAULT_ACCOUNT_HOLDER_TYPE,
   businessName: "",
+  taxId: "",
+  dateOfBirth: "",
   phone: "",
   email: "",
   address: "",
@@ -82,6 +96,7 @@ const initialFormState: NewAccountForm = {
   contactPerson: "",
   contactPhone: "",
   contactEmail: "",
+  notes: "",
 };
 
 export function AccountCombobox({
@@ -92,7 +107,6 @@ export function AccountCombobox({
   placeholder = "Select or create account...",
   disabled = false,
 }: AccountComboboxProps) {
-  const t = useI18n();
   const tToast = useScopedI18n("common.toast");
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -146,12 +160,19 @@ export function AccountCombobox({
       return;
     }
 
+    const isOrganization = formData.holderType === "organization";
+
     setIsSubmitting(true);
     try {
       const accountId = await createAccount({
         organizationId: organizationId as Id<"organizations">,
         accountType: "institution",
+        holderType: formData.holderType,
         businessName: formData.businessName.trim(),
+        taxId: isOrganization ? formData.taxId.trim() || undefined : undefined,
+        dateOfBirth: isOrganization
+          ? undefined
+          : parseDateInputValue(formData.dateOfBirth),
         phone: formData.phone.trim() || undefined,
         email: formData.email.trim() || undefined,
         address: formData.address.trim() || undefined,
@@ -159,9 +180,16 @@ export function AccountCombobox({
         zipCode: formData.zipCode.trim() || undefined,
         city: formData.city.trim() || undefined,
         country: formData.country.trim() || undefined,
-        contactPerson: formData.contactPerson.trim() || undefined,
-        contactPhone: formData.contactPhone.trim() || undefined,
-        contactEmail: formData.contactEmail.trim() || undefined,
+        contactPerson: isOrganization
+          ? formData.contactPerson.trim() || undefined
+          : undefined,
+        contactPhone: isOrganization
+          ? formData.contactPhone.trim() || undefined
+          : undefined,
+        contactEmail: isOrganization
+          ? formData.contactEmail.trim() || undefined
+          : undefined,
+        notes: formData.notes.trim() || undefined,
       });
 
       toast.success(tToast("accountCreated"));
@@ -342,11 +370,70 @@ export function AccountCombobox({
 
           <div className="grid gap-4 py-4">
             <div className="space-y-4">
-              <h4 className="font-medium text-sm">Business Information</h4>
+              <h4 className="text-sm font-medium">Account Holder</h4>
               <div className="grid gap-4">
+                <div className="space-y-3">
+                  <Label>Holder type</Label>
+                  <RadioGroup
+                    className="grid gap-3 sm:grid-cols-2"
+                    value={formData.holderType}
+                    onValueChange={(value) =>
+                      setFormData({
+                        ...formData,
+                        holderType: value as AccountHolderType,
+                      })
+                    }
+                  >
+                    <Label
+                      htmlFor="holderType-organization"
+                      className={cn(
+                        "flex cursor-pointer items-start gap-3 rounded-md border border-border p-4",
+                        formData.holderType === "organization" &&
+                          "border-primary bg-primary/5",
+                      )}
+                    >
+                      <RadioGroupItem
+                        id="holderType-organization"
+                        value="organization"
+                        className="mt-0.5"
+                      />
+                      <div className="space-y-1">
+                        <div className="font-medium">
+                          Business / Organization
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Use this for companies, museums, galleries, and
+                          institutions.
+                        </p>
+                      </div>
+                    </Label>
+                    <Label
+                      htmlFor="holderType-privatePerson"
+                      className={cn(
+                        "flex cursor-pointer items-start gap-3 rounded-md border border-border p-4",
+                        formData.holderType === "privatePerson" &&
+                          "border-primary bg-primary/5",
+                      )}
+                    >
+                      <RadioGroupItem
+                        id="holderType-privatePerson"
+                        value="privatePerson"
+                        className="mt-0.5"
+                      />
+                      <div className="space-y-1">
+                        <div className="font-medium">Private Person</div>
+                        <p className="text-sm text-muted-foreground">
+                          Use this for individuals acting in their own name.
+                        </p>
+                      </div>
+                    </Label>
+                  </RadioGroup>
+                </div>
                 <div>
                   <Label htmlFor="businessName">
-                    Business Name / Organisation *
+                    {formData.holderType === "organization"
+                      ? "Business Name / Organisation *"
+                      : "Full Name *"}
                   </Label>
                   <Input
                     id="businessName"
@@ -354,11 +441,43 @@ export function AccountCombobox({
                     onChange={(e) =>
                       setFormData({ ...formData, businessName: e.target.value })
                     }
-                    placeholder="Enter business or organization name"
+                    placeholder={
+                      formData.holderType === "organization"
+                        ? "Enter business or organization name"
+                        : "Enter full name"
+                    }
                     autoFocus
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                {formData.holderType === "organization" ? (
+                  <div>
+                    <Label htmlFor="taxId">Organization Number</Label>
+                    <Input
+                      id="taxId"
+                      value={formData.taxId}
+                      onChange={(e) =>
+                        setFormData({ ...formData, taxId: e.target.value })
+                      }
+                      placeholder="Enter organization number"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                    <Input
+                      id="dateOfBirth"
+                      type="date"
+                      value={formData.dateOfBirth}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          dateOfBirth: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                )}
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <Label htmlFor="phone">Phone</Label>
                     <Input
@@ -411,7 +530,7 @@ export function AccountCombobox({
                     placeholder="Apartment, suite, unit, etc."
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid gap-4 sm:grid-cols-3">
                   <div>
                     <Label htmlFor="zipCode">Zip Code</Label>
                     <Input
@@ -449,55 +568,70 @@ export function AccountCombobox({
               </div>
             </div>
 
-            <div className="space-y-4">
-              <h4 className="font-medium text-sm">Contact Person</h4>
-              <div className="grid gap-4">
-                <div>
-                  <Label htmlFor="contactPerson">Name</Label>
-                  <Input
-                    id="contactPerson"
-                    value={formData.contactPerson}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contactPerson: e.target.value,
-                      })
-                    }
-                    placeholder="Contact person name"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+            {formData.holderType === "organization" && (
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium">Contact Person</h4>
+                <div className="grid gap-4">
                   <div>
-                    <Label htmlFor="contactPhone">Phone</Label>
+                    <Label htmlFor="contactPerson">Name</Label>
                     <Input
-                      id="contactPhone"
-                      value={formData.contactPhone}
+                      id="contactPerson"
+                      value={formData.contactPerson}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          contactPhone: e.target.value,
+                          contactPerson: e.target.value,
                         })
                       }
-                      placeholder="+47 123 45 678"
+                      placeholder="Contact person name"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="contactEmail">Email</Label>
-                    <Input
-                      id="contactEmail"
-                      type="email"
-                      value={formData.contactEmail}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          contactEmail: e.target.value,
-                        })
-                      }
-                      placeholder="person@company.com"
-                    />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <Label htmlFor="contactPhone">Phone</Label>
+                      <Input
+                        id="contactPhone"
+                        value={formData.contactPhone}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            contactPhone: e.target.value,
+                          })
+                        }
+                        placeholder="+47 123 45 678"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="contactEmail">Email</Label>
+                      <Input
+                        id="contactEmail"
+                        type="email"
+                        value={formData.contactEmail}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            contactEmail: e.target.value,
+                          })
+                        }
+                        placeholder="person@company.com"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">Additional Information / Notes</Label>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) =>
+                  setFormData({ ...formData, notes: e.target.value })
+                }
+                placeholder="Anything else that should be stored with this account"
+                rows={4}
+              />
             </div>
           </div>
 

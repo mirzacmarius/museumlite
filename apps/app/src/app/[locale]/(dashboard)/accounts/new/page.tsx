@@ -1,6 +1,11 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import {
+  DEFAULT_ACCOUNT_HOLDER_TYPE,
+  type AccountHolderType,
+  parseDateInputValue,
+} from "@/lib/account-holder";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -8,6 +13,7 @@ import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
+import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -17,7 +23,7 @@ import {
 } from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
-import { ArrowLeft, Loader2, Save, Shield, UserCog, Users } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Shield, UserCog } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -32,7 +38,10 @@ export default function NewAccountPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
+    holderType: DEFAULT_ACCOUNT_HOLDER_TYPE as AccountHolderType,
     businessName: "",
+    taxId: "",
+    dateOfBirth: "",
     phone: "",
     email: "",
     address: "",
@@ -58,9 +67,6 @@ export default function NewAccountPage() {
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
-
-  const permissions = useQuery(api.roles.listPermissions, {});
-
   type Role = NonNullable<typeof roles>[number];
 
   // Get roles that have loans permissions
@@ -93,11 +99,18 @@ export default function NewAccountPage() {
       return;
     }
 
+    const isOrganization = formData.holderType === "organization";
+
     setIsSubmitting(true);
     try {
       await createAccount({
         organizationId: currentOrganizationId,
+        holderType: formData.holderType,
         businessName: formData.businessName,
+        taxId: isOrganization ? formData.taxId || undefined : undefined,
+        dateOfBirth: isOrganization
+          ? undefined
+          : parseDateInputValue(formData.dateOfBirth),
         phone: formData.phone || undefined,
         email: formData.email || undefined,
         address: formData.address || undefined,
@@ -105,9 +118,15 @@ export default function NewAccountPage() {
         zipCode: formData.zipCode || undefined,
         city: formData.city || undefined,
         country: formData.country || undefined,
-        contactPerson: formData.contactPerson || undefined,
-        contactPhone: formData.contactPhone || undefined,
-        contactEmail: formData.contactEmail || undefined,
+        contactPerson: isOrganization
+          ? formData.contactPerson || undefined
+          : undefined,
+        contactPhone: isOrganization
+          ? formData.contactPhone || undefined
+          : undefined,
+        contactEmail: isOrganization
+          ? formData.contactEmail || undefined
+          : undefined,
         notes: formData.notes || undefined,
         accountType: formData.accountType,
         roleIds:
@@ -154,15 +173,74 @@ export default function NewAccountPage() {
               </div>
             )}
 
-            {/* Business Information */}
+            {/* Account Holder */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground">
-                {t("form.businessInformation")}
+                Account Holder
               </h3>
               <div className="space-y-4">
+                <div className="space-y-3">
+                  <Label>Holder Type</Label>
+                  <RadioGroup
+                    className="grid gap-3 md:grid-cols-2"
+                    value={formData.holderType}
+                    onValueChange={(value) =>
+                      setFormData({
+                        ...formData,
+                        holderType: value as AccountHolderType,
+                      })
+                    }
+                  >
+                    <Label
+                      htmlFor="holder-type-organization"
+                      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 ${
+                        formData.holderType === "organization"
+                          ? "border-primary bg-primary/5"
+                          : "border-border"
+                      }`}
+                    >
+                      <RadioGroupItem
+                        id="holder-type-organization"
+                        value="organization"
+                        className="mt-0.5"
+                      />
+                      <div className="space-y-1">
+                        <div className="font-medium">
+                          Business / Organization
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Companies, museums, galleries, and institutions.
+                        </p>
+                      </div>
+                    </Label>
+                    <Label
+                      htmlFor="holder-type-privatePerson"
+                      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 ${
+                        formData.holderType === "privatePerson"
+                          ? "border-primary bg-primary/5"
+                          : "border-border"
+                      }`}
+                    >
+                      <RadioGroupItem
+                        id="holder-type-privatePerson"
+                        value="privatePerson"
+                        className="mt-0.5"
+                      />
+                      <div className="space-y-1">
+                        <div className="font-medium">Private Person</div>
+                        <p className="text-sm text-muted-foreground">
+                          Individuals acting in their own name.
+                        </p>
+                      </div>
+                    </Label>
+                  </RadioGroup>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="businessName">
-                    {t("form.businessName")}{" "}
+                    {formData.holderType === "organization"
+                      ? t("form.businessName")
+                      : "Full Name"}{" "}
                     <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -171,12 +249,45 @@ export default function NewAccountPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, businessName: e.target.value })
                     }
-                    placeholder={t("form.placeholders.businessName")}
+                    placeholder={
+                      formData.holderType === "organization"
+                        ? t("form.placeholders.businessName")
+                        : "e.g., Jane Doe"
+                    }
                     required
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {formData.holderType === "organization" ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="taxId">Organization Number</Label>
+                    <Input
+                      id="taxId"
+                      value={formData.taxId}
+                      onChange={(e) =>
+                        setFormData({ ...formData, taxId: e.target.value })
+                      }
+                      placeholder="e.g., 987 654 321"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                    <Input
+                      id="dateOfBirth"
+                      type="date"
+                      value={formData.dateOfBirth}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          dateOfBirth: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                )}
+
+                <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="phone">{t("form.phone")}</Label>
                     <Input
@@ -232,7 +343,7 @@ export default function NewAccountPage() {
                     placeholder={t("form.placeholders.addressLine2")}
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid gap-4 md:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="city">{t("form.city")}</Label>
                     <Input
@@ -271,66 +382,70 @@ export default function NewAccountPage() {
             </div>
 
             {/* Contact Person */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                {t("form.contactPerson")}
-              </h3>
+            {formData.holderType === "organization" && (
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="contactPerson">{t("form.contactName")}</Label>
-                  <Input
-                    id="contactPerson"
-                    value={formData.contactPerson}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contactPerson: e.target.value,
-                      })
-                    }
-                    placeholder={t("form.placeholders.contactName")}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  {t("form.contactPerson")}
+                </h3>
+                <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="contactPhone">
-                      {t("form.contactPhone")}
+                    <Label htmlFor="contactPerson">
+                      {t("form.contactName")}
                     </Label>
                     <Input
-                      id="contactPhone"
-                      value={formData.contactPhone}
+                      id="contactPerson"
+                      value={formData.contactPerson}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          contactPhone: e.target.value,
+                          contactPerson: e.target.value,
                         })
                       }
-                      placeholder={t("form.placeholders.phone")}
+                      placeholder={t("form.placeholders.contactName")}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="contactEmail">
-                      {t("form.contactEmail")}
-                    </Label>
-                    <Input
-                      id="contactEmail"
-                      type="email"
-                      value={formData.contactEmail}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          contactEmail: e.target.value,
-                        })
-                      }
-                      placeholder={t("form.placeholders.contactEmail")}
-                    />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="contactPhone">
+                        {t("form.contactPhone")}
+                      </Label>
+                      <Input
+                        id="contactPhone"
+                        value={formData.contactPhone}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            contactPhone: e.target.value,
+                          })
+                        }
+                        placeholder={t("form.placeholders.phone")}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="contactEmail">
+                        {t("form.contactEmail")}
+                      </Label>
+                      <Input
+                        id="contactEmail"
+                        type="email"
+                        value={formData.contactEmail}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            contactEmail: e.target.value,
+                          })
+                        }
+                        placeholder={t("form.placeholders.contactEmail")}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes">{t("form.notes")}</Label>
+              <Label htmlFor="notes">Additional Information / Notes</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}

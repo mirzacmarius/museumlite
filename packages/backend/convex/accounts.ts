@@ -37,6 +37,11 @@ const accountTypeValidator = v.union(
   v.literal("patron"),
 );
 
+const holderTypeValidator = v.union(
+  v.literal("organization"),
+  v.literal("privatePerson"),
+);
+
 export const list = query({
   args: {
     organizationId: v.id("organizations"),
@@ -183,9 +188,11 @@ export const create = mutation({
   args: {
     organizationId: v.id("organizations"),
     accountType: accountTypeValidator,
+    holderType: v.optional(holderTypeValidator),
 
     // Business/Organization info (for institutions)
     businessName: v.optional(v.string()),
+    taxId: v.optional(v.string()),
     contactPerson: v.optional(v.string()),
     contactPhone: v.optional(v.string()),
     contactEmail: v.optional(v.string()),
@@ -247,14 +254,17 @@ export const create = mutation({
     }
 
     const accountNumber = await generateAccountNumber(ctx, args.organizationId);
+    const holderType = args.holderType ?? "organization";
 
     const accountId = await ctx.db.insert("accounts", {
       organizationId: args.organizationId,
       accountNumber,
       accountType: args.accountType,
+      holderType,
 
       // Business/Organization info
       businessName: args.businessName?.trim() || undefined,
+      taxId: args.taxId?.trim() || undefined,
       contactPerson: args.contactPerson?.trim() || undefined,
       contactPhone: args.contactPhone?.trim() || undefined,
       contactEmail: args.contactEmail?.trim() || undefined,
@@ -316,6 +326,7 @@ export const create = mutation({
       entityId: accountId,
       changes: {
         accountType: args.accountType,
+        holderType,
         accountNumber,
         businessName: args.businessName?.trim() || undefined,
         firstName: args.firstName?.trim() || undefined,
@@ -334,7 +345,9 @@ export const update = mutation({
   args: {
     accountId: v.id("accounts"),
     accountType: v.optional(accountTypeValidator),
+    holderType: v.optional(holderTypeValidator),
     businessName: v.optional(v.string()),
+    taxId: v.optional(v.string()),
     contactPerson: v.optional(v.string()),
     contactPhone: v.optional(v.string()),
     contactEmail: v.optional(v.string()),
@@ -385,8 +398,11 @@ export const update = mutation({
     };
 
     if (args.accountType !== undefined) updates.accountType = args.accountType;
+    if (args.holderType !== undefined) updates.holderType = args.holderType;
     if (args.businessName !== undefined)
       updates.businessName = args.businessName.trim() || undefined;
+    if (args.taxId !== undefined)
+      updates.taxId = args.taxId.trim() || undefined;
     if (args.contactPerson !== undefined)
       updates.contactPerson = args.contactPerson.trim() || undefined;
     if (args.contactPhone !== undefined)

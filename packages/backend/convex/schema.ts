@@ -1345,6 +1345,11 @@ export default defineSchema({
       ),
     ),
 
+    // Account holder classification - distinguishes organizations from people
+    holderType: v.optional(
+      v.union(v.literal("organization"), v.literal("privatePerson")),
+    ),
+
     // Business/Organization info (for institutions - lender/borrower/institution)
     businessName: v.optional(v.string()),
     contactPerson: v.optional(v.string()),
