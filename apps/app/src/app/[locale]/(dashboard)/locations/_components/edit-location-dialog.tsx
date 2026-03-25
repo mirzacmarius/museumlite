@@ -61,6 +61,7 @@ export function EditLocationDialog({
   const tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
   const [name, setName] = useState("");
+  const [locationCode, setLocationCode] = useState("");
   const [type, setType] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
@@ -73,6 +74,7 @@ export function EditLocationDialog({
   const [cabinetCount, setCabinetCount] = useState("");
   const [shelfCount, setShelfCount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch the location details
   const location = useQuery(
@@ -91,6 +93,7 @@ export function EditLocationDialog({
   useEffect(() => {
     if (location) {
       setName(location.name);
+      setLocationCode(location.locationCode);
       setType(location.type);
       setAddress(location.address || "");
       setNotes(location.notes || "");
@@ -128,6 +131,15 @@ export function EditLocationDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!location) return;
+    setError(null);
+    if (!locationCode.trim()) {
+      setError(t("errors.locationIdRequired"));
+      return;
+    }
+    if (locationCode.trim().length > 50) {
+      setError(t("errors.locationIdTooLong"));
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -160,6 +172,7 @@ export function EditLocationDialog({
       await updateLocation({
         locationId: locationId as Id<"locations">,
         name,
+        locationCode: locationCode.trim(),
         type,
         parentLocationId:
           parentLocationId === "root"
@@ -172,7 +185,9 @@ export function EditLocationDialog({
       });
       onOpenChange(false);
     } catch (error) {
-      console.error("Failed to update location:", error);
+      setError(
+        error instanceof Error ? error.message : t("errors.createFailed"),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -193,6 +208,11 @@ export function EditLocationDialog({
         ) : (
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
+              {error && (
+                <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
               <div className="grid gap-2">
                 <Label htmlFor="name">{t("nameLabel")}</Label>
                 <Input
@@ -201,6 +221,18 @@ export function EditLocationDialog({
                   onChange={(e) => setName(e.target.value)}
                   placeholder={t("nameEnterPlaceholder")}
                   required
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="locationCode">{t("locationIdLabel")}</Label>
+                <Input
+                  id="locationCode"
+                  value={locationCode}
+                  onChange={(e) => setLocationCode(e.target.value)}
+                  placeholder={t("locationIdPlaceholder")}
+                  required
+                  maxLength={50}
                 />
               </div>
 

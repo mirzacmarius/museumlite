@@ -5,6 +5,7 @@ import { ChevronRight, Droplets, Thermometer } from "lucide-react";
 interface LocationHeaderProps {
   location: {
     name: string;
+    locationCode: string;
     type: string;
     isActive: boolean;
   };
@@ -86,6 +87,13 @@ export function LocationHeader({
             {statusBadge.text}
           </span>
         </h2>
+        <div className="mt-2 text-sm text-zinc-400">
+          <span className="text-zinc-500">Location ID</span>
+          <span className="mx-2 text-zinc-700">•</span>
+          <span className="font-medium text-zinc-200">
+            {location.locationCode}
+          </span>
+        </div>
       </div>
 
       <div className="flex gap-4">

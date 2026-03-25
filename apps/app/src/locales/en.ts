@@ -1418,7 +1418,7 @@ export default {
     objectCount: "Objects at this Location",
     importTitle: "Import Locations from CSV",
     importDescription:
-      "Upload a CSV file with your location data. Required columns: name, type.",
+      "Upload a CSV file with your location data. Required columns: name, locationCode, type.",
     downloadTemplate: "Download Template",
     dropCSVHere: "Drop CSV file here or click to upload",
     maxRows: "Maximum 1000 rows per import",
@@ -1452,12 +1452,14 @@ export default {
       csvMustHaveRows: "CSV must have a header row and at least one data row",
       missingRequiredColumns: "Missing required columns: {columns}",
       nameRequired: "Name is required",
+      locationCodeRequired: "Location ID is required",
       typeRequired: "Type is required",
       andMore: "... and {count} more",
       showingRows: "Showing {shown} of {total} rows",
     },
     tableHeaders: {
       name: "Name",
+      locationCode: "Location ID",
       type: "Type",
       parentLocation: "Parent Location",
       address: "Address",
@@ -1474,6 +1476,8 @@ export default {
       nameLabel: "Name *",
       namePlaceholder: "e.g., East Wing, Drawer 3",
       nameEnterPlaceholder: "Enter location name",
+      locationIdLabel: "Location ID *",
+      locationIdPlaceholder: "e.g., A-12-3",
       typeLabel: "Type *",
       typePlaceholder: "Select a type",
       locationTypes: {
@@ -1512,6 +1516,10 @@ export default {
       saveChanges: "Save Changes",
       errors: {
         nameRequired: "Please enter a location name",
+        locationIdRequired: "Please enter a location ID",
+        locationIdTooLong: "Location ID must be 50 characters or fewer",
+        locationIdDuplicate:
+          "Location ID already exists in this parent location",
         typeRequired: "Please select a location type",
         createFailed: "Failed to create location",
       },

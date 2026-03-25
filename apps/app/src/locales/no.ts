@@ -1751,7 +1751,7 @@ export default {
     objectCount: "Objekter på denne Plasseringen",
     importTitle: "Importer Plasseringer fra CSV",
     importDescription:
-      "Last opp en CSV-fil med plasseringsdata. Obligatoriske kolonner: navn, type.",
+      "Last opp en CSV-fil med plasseringsdata. Obligatoriske kolonner: name, locationCode, type.",
     downloadTemplate: "Last ned Mal",
     dropCSVHere: "Slipp CSV-fil her eller klikk for å laste opp",
     maxRows: "Maksimum 1000 rader per import",
@@ -1785,12 +1785,14 @@ export default {
       csvMustHaveRows: "CSV må ha en overskriftsrad og minst én datarad",
       missingRequiredColumns: "Mangler påkrevde kolonner: {columns}",
       nameRequired: "Navn er påkrevd",
+      locationCodeRequired: "Plasserings-ID er påkrevd",
       typeRequired: "Type er påkrevd",
       andMore: "... og {count} til",
       showingRows: "Viser {shown} av {total} rader",
     },
     tableHeaders: {
       name: "Navn",
+      locationCode: "Plasserings-ID",
       type: "Type",
       parentLocation: "Overordnet Plassering",
       address: "Adresse",
@@ -1807,6 +1809,8 @@ export default {
       nameLabel: "Navn *",
       namePlaceholder: "f.eks., Øst-fløy, Skuff 3",
       nameEnterPlaceholder: "Skriv inn plasseringsnavn",
+      locationIdLabel: "Plasserings-ID *",
+      locationIdPlaceholder: "f.eks., A-12-3",
       typeLabel: "Type *",
       typePlaceholder: "Velg en type",
       locationTypes: {
@@ -1845,6 +1849,10 @@ export default {
       saveChanges: "Lagre Endringer",
       errors: {
         nameRequired: "Vennligst skriv inn et plasseringsnavn",
+        locationIdRequired: "Vennligst skriv inn en plasserings-ID",
+        locationIdTooLong: "Plasserings-ID må være 50 tegn eller færre",
+        locationIdDuplicate:
+          "Plasserings-ID finnes allerede i denne overordnede plasseringen",
         typeRequired: "Vennligst velg en plasseringstype",
         createFailed: "Kunne ikke opprette plassering",
       },

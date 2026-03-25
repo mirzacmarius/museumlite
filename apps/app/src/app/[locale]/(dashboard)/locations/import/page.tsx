@@ -27,26 +27,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
-
-interface ParsedRow {
-  name: string;
-  type: string;
-  parentLocation?: string;
-  address?: string;
-  capacity?: string;
-  notes?: string;
-}
-
-interface ParseError {
-  type:
-    | "csvMustHaveRows"
-    | "missingHeaderRow"
-    | "missingRequiredColumns"
-    | "nameRequired"
-    | "typeRequired";
-  row?: number;
-  columns?: string;
-}
+import { parseCSV } from "./import-csv";
+import type { ParseError, ParsedRow } from "./import-csv";
 
 interface ImportState {
   step: "upload" | "preview" | "importing" | "complete";
@@ -55,117 +37,6 @@ interface ImportState {
   parseErrors: ParseError[];
   runtimeErrors: string[];
   jobId: Id<"importJobs"> | null;
-}
-
-const REQUIRED_COLUMNS = ["name", "type"];
-const OPTIONAL_COLUMNS = ["parentLocation", "address", "capacity", "notes"];
-const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
-
-function parseCSV(text: string): { rows: ParsedRow[]; errors: ParseError[] } {
-  const lines = text.split(/\r?\n/).filter((line) => line.trim());
-  if (lines.length < 2) {
-    return {
-      rows: [],
-      errors: [{ type: "csvMustHaveRows" }],
-    };
-  }
-
-  const headerLine = lines[0];
-  if (!headerLine) {
-    return { rows: [], errors: [{ type: "missingHeaderRow" }] };
-  }
-
-  const headers = headerLine
-    .split(",")
-    .map((h) => h.trim().replace(/^"|"$/g, ""));
-
-  const missingRequired = REQUIRED_COLUMNS.filter(
-    (col) => !headers.some((h) => h.toLowerCase() === col.toLowerCase()),
-  );
-
-  if (missingRequired.length > 0) {
-    return {
-      rows: [],
-      errors: [
-        { type: "missingRequiredColumns", columns: missingRequired.join(", ") },
-      ],
-    };
-  }
-
-  const columnMap = new Map<string, number>();
-  for (const col of ALL_COLUMNS) {
-    const idx = headers.findIndex((h) => h.toLowerCase() === col.toLowerCase());
-    if (idx !== -1) {
-      columnMap.set(col, idx);
-    }
-  }
-
-  const rows: ParsedRow[] = [];
-  const errors: ParseError[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line || !line.trim()) continue;
-
-    const values = parseCSVLine(line);
-
-    const getValue = (col: string): string => {
-      const idx = columnMap.get(col);
-      if (idx === undefined) return "";
-      return (values[idx] || "").trim();
-    };
-
-    const name = getValue("name");
-    const type = getValue("type");
-
-    if (!name) {
-      errors.push({ type: "nameRequired", row: i + 1 });
-      continue;
-    }
-
-    if (!type) {
-      errors.push({ type: "typeRequired", row: i + 1 });
-      continue;
-    }
-
-    rows.push({
-      name,
-      type,
-      parentLocation: getValue("parentLocation") || undefined,
-      address: getValue("address") || undefined,
-      capacity: getValue("capacity") || undefined,
-      notes: getValue("notes") || undefined,
-    });
-  }
-
-  return { rows, errors };
-}
-
-function parseCSVLine(line: string): string[] {
-  const result: string[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-
-    if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char === "," && !inQuotes) {
-      result.push(current);
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-
-  result.push(current);
-  return result;
 }
 
 function useTranslatedParseError() {
@@ -182,6 +53,8 @@ function useTranslatedParseError() {
         return t("missingRequiredColumns", { columns: error.columns ?? "" });
       case "nameRequired":
         return `${rowPrefix}${t("nameRequired")}`;
+      case "locationCodeRequired":
+        return `${rowPrefix}${t("locationCodeRequired")}`;
       case "typeRequired":
         return `${rowPrefix}${t("typeRequired")}`;
       default:
@@ -302,9 +175,10 @@ export default function ImportLocationsPage() {
   }, []);
 
   const downloadTemplate = useCallback(() => {
-    const headers = "name,type,parentLocation,address,capacity,notes";
+    const headers =
+      "name,locationCode,type,parentLocation,address,capacity,notes";
     const example =
-      '"Main Gallery","gallery","","123 Museum Ave","100","Primary exhibition space"';
+      '"Main Gallery","G-001","gallery","","123 Museum Ave","100","Primary exhibition space"';
     const csv = `${headers}\n${example}`;
 
     const blob = new Blob([csv], { type: "text/csv" });
@@ -384,7 +258,8 @@ export default function ImportLocationsPage() {
                   </h3>
                   <ul className="space-y-1 text-sm text-muted-foreground">
                     <li>
-                      <strong>{t("requiredColumns")}:</strong> name, type
+                      <strong>{t("requiredColumns")}:</strong> name,
+                      locationCode, type
                     </li>
                     <li>
                       <strong>{t("optionalColumns")}:</strong> parentLocation,
@@ -470,6 +345,7 @@ export default function ImportLocationsPage() {
                       <TableRow>
                         <TableHead className="w-12">#</TableHead>
                         <TableHead>{t("tableHeaders.name")}</TableHead>
+                        <TableHead>{t("tableHeaders.locationCode")}</TableHead>
                         <TableHead>{t("tableHeaders.type")}</TableHead>
                         <TableHead>
                           {t("tableHeaders.parentLocation")}
@@ -486,6 +362,7 @@ export default function ImportLocationsPage() {
                             {rowIndex + 1}
                           </TableCell>
                           <TableCell>{row.name}</TableCell>
+                          <TableCell>{row.locationCode}</TableCell>
                           <TableCell>{row.type}</TableCell>
                           <TableCell>{row.parentLocation || "-"}</TableCell>
                           <TableCell>{row.address || "-"}</TableCell>

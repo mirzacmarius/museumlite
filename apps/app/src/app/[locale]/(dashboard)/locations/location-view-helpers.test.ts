@@ -17,18 +17,21 @@ describe("location view helpers", () => {
       {
         _id: locationId("loc-storage"),
         name: "Storage A",
+        locationCode: "ST-001",
         type: "storage",
         isActive: true,
       },
       {
         _id: locationId("loc-gallery"),
         name: "Gallery A",
+        locationCode: "G-001",
         type: "gallery",
         isActive: true,
       },
       {
         _id: locationId("loc-room"),
         name: "Room A",
+        locationCode: "R-001",
         type: "room",
         isActive: true,
       },
@@ -42,12 +45,14 @@ describe("location view helpers", () => {
       {
         _id: locationId("loc-storage"),
         name: "Storage A",
+        locationCode: "ST-001",
         type: "storage",
         isActive: true,
       },
       {
         _id: locationId("loc-vault"),
         name: "Vault A",
+        locationCode: "V-001",
         type: "vault",
         isActive: true,
       },
@@ -61,12 +66,14 @@ describe("location view helpers", () => {
       {
         _id: locationId("loc-gallery"),
         name: "Gallery A",
+        locationCode: "G-001",
         type: "gallery",
         isActive: true,
       },
       {
         _id: locationId("loc-shelf"),
         name: "Shelf A",
+        locationCode: "SH-001",
         type: "shelf",
         isActive: true,
         parentLocationId: locationId("loc-storage"),
@@ -74,6 +81,7 @@ describe("location view helpers", () => {
       {
         _id: locationId("loc-storage"),
         name: "Storage A",
+        locationCode: "ST-001",
         type: "storage",
         isActive: true,
       },

@@ -2,8 +2,37 @@ import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 
 import { modules } from "../tests/testSetup";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import schema from "./schema";
+
+function buildLocation({
+  organizationId,
+  name,
+  locationCode,
+  type,
+  sortOrder,
+  isActive = true,
+  parentLocationId,
+}: {
+  organizationId: Id<"organizations">;
+  name: string;
+  locationCode: string;
+  type: string;
+  sortOrder: number;
+  isActive?: boolean;
+  parentLocationId?: Id<"locations">;
+}) {
+  return {
+    organizationId,
+    name,
+    locationCode,
+    locationCodeNormalized: locationCode.toLowerCase(),
+    type,
+    parentLocationId,
+    sortOrder,
+    isActive,
+  };
+}
 
 async function createOrgUserWithLocationsReadPermission() {
   const t = convexTest(schema, modules);
@@ -49,25 +78,91 @@ async function createOrgUserWithLocationsReadPermission() {
   };
 }
 
+async function createOrgUserWithLocationPermissions() {
+  const t = convexTest(schema, modules);
+
+  const context = await t.run(async (ctx) => {
+    const userId = await ctx.db.insert("users", { name: "Location Manager" });
+    const organizationId = await ctx.db.insert("organizations", {
+      name: "Location Admin Org",
+      slug: `location-admin-org-${Math.random().toString(36).slice(2, 8)}`,
+      type: "museum",
+    });
+
+    const readPermissionId = await ctx.db.insert("permissions", {
+      name: "locations.read",
+      category: "locations",
+      description: "Read locations",
+    });
+    const createPermissionId = await ctx.db.insert("permissions", {
+      name: "locations.create",
+      category: "locations",
+      description: "Create locations",
+    });
+    const updatePermissionId = await ctx.db.insert("permissions", {
+      name: "locations.update",
+      category: "locations",
+      description: "Update locations",
+    });
+
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "Location Manager",
+      description: "Manages locations",
+      isSystemRole: false,
+    });
+
+    for (const permissionId of [
+      readPermissionId,
+      createPermissionId,
+      updatePermissionId,
+    ]) {
+      await ctx.db.insert("rolePermissions", {
+        roleId,
+        permissionId,
+      });
+    }
+
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+
+    return { organizationId, userId };
+  });
+
+  return {
+    t,
+    asUser: t.withIdentity({ subject: context.userId }),
+    ...context,
+  };
+}
+
 test("locations.getObjectsAtLocation direct mode returns only direct objects", async () => {
   const { t, asUser, organizationId, userId } =
     await createOrgUserWithLocationsReadPermission();
 
   const { parentLocationId } = await t.run(async (ctx) => {
     const parentLocationId = await ctx.db.insert("locations", {
-      organizationId,
-      name: "Main Storage",
-      type: "storage",
-      sortOrder: 0,
-      isActive: true,
+      ...buildLocation({
+        organizationId,
+        name: "Main Storage",
+        locationCode: "ST-001",
+        type: "storage",
+        sortOrder: 0,
+      }),
     });
     const childLocationId = await ctx.db.insert("locations", {
-      organizationId,
-      name: "Shelf A",
-      type: "shelf",
-      parentLocationId,
-      sortOrder: 0,
-      isActive: true,
+      ...buildLocation({
+        organizationId,
+        name: "Shelf A",
+        locationCode: "SH-001",
+        type: "shelf",
+        parentLocationId,
+        sortOrder: 0,
+      }),
     });
 
     await ctx.db.insert("collections", {
@@ -105,27 +200,33 @@ test("locations.getObjectsAtLocation descendant mode includes child and grandchi
 
   const { parentLocationId } = await t.run(async (ctx) => {
     const parentLocationId = await ctx.db.insert("locations", {
-      organizationId,
-      name: "Main Storage",
-      type: "storage",
-      sortOrder: 0,
-      isActive: true,
+      ...buildLocation({
+        organizationId,
+        name: "Main Storage",
+        locationCode: "ST-001",
+        type: "storage",
+        sortOrder: 0,
+      }),
     });
     const childLocationId = await ctx.db.insert("locations", {
-      organizationId,
-      name: "Shelf A",
-      type: "shelf",
-      parentLocationId,
-      sortOrder: 0,
-      isActive: true,
+      ...buildLocation({
+        organizationId,
+        name: "Shelf A",
+        locationCode: "SH-001",
+        type: "shelf",
+        parentLocationId,
+        sortOrder: 0,
+      }),
     });
     const grandchildLocationId = await ctx.db.insert("locations", {
-      organizationId,
-      name: "Box 1",
-      type: "archive box",
-      parentLocationId: childLocationId,
-      sortOrder: 0,
-      isActive: true,
+      ...buildLocation({
+        organizationId,
+        name: "Box 1",
+        locationCode: "BX-001",
+        type: "archive box",
+        parentLocationId: childLocationId,
+        sortOrder: 0,
+      }),
     });
 
     await ctx.db.insert("collections", {
@@ -177,19 +278,24 @@ test("locations.getObjectsAtLocation descendant mode excludes inactive descendan
 
   const { parentLocationId } = await t.run(async (ctx) => {
     const parentLocationId = await ctx.db.insert("locations", {
-      organizationId,
-      name: "Main Storage",
-      type: "storage",
-      sortOrder: 0,
-      isActive: true,
+      ...buildLocation({
+        organizationId,
+        name: "Main Storage",
+        locationCode: "ST-001",
+        type: "storage",
+        sortOrder: 0,
+      }),
     });
     const inactiveChildLocationId = await ctx.db.insert("locations", {
-      organizationId,
-      name: "Retired Shelf",
-      type: "shelf",
-      parentLocationId,
-      sortOrder: 0,
-      isActive: false,
+      ...buildLocation({
+        organizationId,
+        name: "Retired Shelf",
+        locationCode: "SH-002",
+        type: "shelf",
+        parentLocationId,
+        sortOrder: 0,
+        isActive: false,
+      }),
     });
 
     await ctx.db.insert("collections", {
@@ -228,11 +334,13 @@ test("locations.getObjectsAtLocation descendant mode deduplicates repeated trave
 
   const selfReferencingLocationId = await t.run(async (ctx) => {
     const locationId = await ctx.db.insert("locations", {
-      organizationId,
-      name: "Looping Shelf",
-      type: "shelf",
-      sortOrder: 0,
-      isActive: true,
+      ...buildLocation({
+        organizationId,
+        name: "Looping Shelf",
+        locationCode: "SH-LOOP",
+        type: "shelf",
+        sortOrder: 0,
+      }),
     });
 
     await ctx.db.patch(locationId, {
@@ -291,11 +399,13 @@ test("locations.getObjectsAtLocation requires locations.read permission in desce
     });
 
     const locationId = await ctx.db.insert("locations", {
-      organizationId,
-      name: "Restricted Storage",
-      type: "storage",
-      sortOrder: 0,
-      isActive: true,
+      ...buildLocation({
+        organizationId,
+        name: "Restricted Storage",
+        locationCode: "RST-001",
+        type: "storage",
+        sortOrder: 0,
+      }),
     });
 
     await ctx.db.insert("collections", {
@@ -327,11 +437,13 @@ test("locations.getObjectsAtLocation sorts by accession number and title", async
 
   const locationId = await t.run(async (ctx) =>
     ctx.db.insert("locations", {
-      organizationId,
-      name: "Sorted Storage",
-      type: "storage",
-      sortOrder: 0,
-      isActive: true,
+      ...buildLocation({
+        organizationId,
+        name: "Sorted Storage",
+        locationCode: "SRT-001",
+        type: "storage",
+        sortOrder: 0,
+      }),
     }),
   );
 
@@ -373,4 +485,238 @@ test("locations.getObjectsAtLocation sorts by accession number and title", async
   expect(
     result.map((object) => `${object.accessionNumber}:${object.title}`),
   ).toEqual(["A-002:Bravo", "A-010:Alpha", "A-010:Zulu"]);
+});
+
+test("locations.create requires a location ID", async () => {
+  const { asUser, organizationId } =
+    await createOrgUserWithLocationPermissions();
+
+  await expect(
+    asUser.mutation(api.locations.create, {
+      organizationId,
+      name: "Cabinet A",
+      locationCode: "   ",
+      type: "cabinet",
+    }),
+  ).rejects.toThrow("Please enter a location ID");
+});
+
+test("locations.create enforces sibling-unique location IDs case-insensitively", async () => {
+  const { asUser, organizationId } =
+    await createOrgUserWithLocationPermissions();
+
+  const parentLocationId = await asUser.mutation(api.locations.create, {
+    organizationId,
+    name: "Storage",
+    locationCode: "ST-001",
+    type: "storage",
+  });
+
+  await asUser.mutation(api.locations.create, {
+    organizationId,
+    name: "Cabinet A",
+    locationCode: "A",
+    type: "cabinet",
+    parentLocationId,
+  });
+
+  await expect(
+    asUser.mutation(api.locations.create, {
+      organizationId,
+      name: "Shelf A",
+      locationCode: "a",
+      type: "shelf",
+      parentLocationId,
+    }),
+  ).rejects.toThrow("Location ID already exists in this parent location");
+});
+
+test("locations.create allows the same location ID under different parents", async () => {
+  const { asUser, organizationId } =
+    await createOrgUserWithLocationPermissions();
+
+  const storageOneId = await asUser.mutation(api.locations.create, {
+    organizationId,
+    name: "Storage One",
+    locationCode: "ST-001",
+    type: "storage",
+  });
+  const storageTwoId = await asUser.mutation(api.locations.create, {
+    organizationId,
+    name: "Storage Two",
+    locationCode: "ST-002",
+    type: "storage",
+  });
+
+  await asUser.mutation(api.locations.create, {
+    organizationId,
+    name: "Cabinet A",
+    locationCode: "A",
+    type: "cabinet",
+    parentLocationId: storageOneId,
+  });
+
+  await expect(
+    asUser.mutation(api.locations.create, {
+      organizationId,
+      name: "Cabinet B",
+      locationCode: "A",
+      type: "cabinet",
+      parentLocationId: storageTwoId,
+    }),
+  ).resolves.toBeDefined();
+});
+
+test("locations.update blocks changing a location ID to a sibling duplicate", async () => {
+  const { asUser, organizationId } =
+    await createOrgUserWithLocationPermissions();
+
+  const parentLocationId = await asUser.mutation(api.locations.create, {
+    organizationId,
+    name: "Storage",
+    locationCode: "ST-001",
+    type: "storage",
+  });
+
+  const cabinetId = await asUser.mutation(api.locations.create, {
+    organizationId,
+    name: "Cabinet A",
+    locationCode: "A",
+    type: "cabinet",
+    parentLocationId,
+  });
+  const shelfId = await asUser.mutation(api.locations.create, {
+    organizationId,
+    name: "Shelf A",
+    locationCode: "B",
+    type: "shelf",
+    parentLocationId,
+  });
+
+  await expect(
+    asUser.mutation(api.locations.update, {
+      locationId: shelfId,
+      locationCode: "a",
+    }),
+  ).rejects.toThrow("Location ID already exists in this parent location");
+
+  const updatedCabinet = await asUser.query(api.locations.get, {
+    locationId: cabinetId,
+  });
+  expect(updatedCabinet?.locationCode).toBe("A");
+});
+
+test("location queries include locationCode in returned data", async () => {
+  const { asUser, organizationId } =
+    await createOrgUserWithLocationPermissions();
+
+  const parentLocationId = await asUser.mutation(api.locations.create, {
+    organizationId,
+    name: "Storage",
+    locationCode: "ST-001",
+    type: "storage",
+  });
+  const childLocationId = await asUser.mutation(api.locations.create, {
+    organizationId,
+    name: "Shelf A",
+    locationCode: "SH-001",
+    type: "shelf",
+    parentLocationId,
+  });
+
+  const location = await asUser.query(api.locations.get, {
+    locationId: parentLocationId,
+  });
+  const allLocations = await asUser.query(api.locations.listAll, {
+    organizationId,
+  });
+  const locationTree = await asUser.query(api.locations.list, {
+    organizationId,
+    parentLocationId: "root",
+  });
+  const pathLocations = await asUser.query(api.locations.listAllWithPaths, {
+    organizationId,
+  });
+  const locationPath = await asUser.query(api.locations.getLocationPath, {
+    locationId: childLocationId,
+  });
+
+  expect(location?.locationCode).toBe("ST-001");
+  expect(location?.children[0]?.locationCode).toBe("SH-001");
+  expect(
+    allLocations.find((entry) => entry._id === childLocationId)?.locationCode,
+  ).toBe("SH-001");
+  expect(locationTree[0]?.locationCode).toBe("ST-001");
+  expect(locationTree[0]?.children?.[0]?.locationCode).toBe("SH-001");
+  expect(
+    pathLocations.find((entry) => entry._id === childLocationId)?.locationCode,
+  ).toBe("SH-001");
+  expect(locationPath.map((entry) => entry.locationCode)).toEqual([
+    "ST-001",
+    "SH-001",
+  ]);
+});
+
+test("backfillLocationCodes assigns sibling-unique placeholder location IDs", async () => {
+  const t = convexTest(schema, modules);
+
+  const organizationId = await t.run(async (ctx) =>
+    ctx.db.insert("organizations", {
+      name: "Migration Org",
+      slug: `migration-org-${Math.random().toString(36).slice(2, 8)}`,
+      type: "museum",
+    }),
+  );
+
+  const parentLocationId = await t.run(async (ctx) =>
+    ctx.db.insert("locations", {
+      organizationId,
+      name: "Storage",
+      locationCode: "",
+      locationCodeNormalized: "",
+      type: "storage",
+      sortOrder: 0,
+      isActive: true,
+    }),
+  );
+
+  const [cabinetId, shelfId] = await t.run(async (ctx) =>
+    Promise.all([
+      ctx.db.insert("locations", {
+        organizationId,
+        name: "Cabinet A",
+        locationCode: "",
+        locationCodeNormalized: "",
+        type: "cabinet",
+        parentLocationId,
+        sortOrder: 0,
+        isActive: true,
+      }),
+      ctx.db.insert("locations", {
+        organizationId,
+        name: "Shelf A",
+        locationCode: "",
+        locationCodeNormalized: "",
+        type: "shelf",
+        parentLocationId,
+        sortOrder: 1,
+        isActive: true,
+      }),
+    ]),
+  );
+
+  await t.mutation(internal.migrations.backfillLocationCodes, {});
+
+  const result = await t.run(async (ctx) =>
+    Promise.all([
+      ctx.db.get(parentLocationId),
+      ctx.db.get(cabinetId),
+      ctx.db.get(shelfId),
+    ]),
+  );
+
+  expect(result[0]?.locationCode).toBe("ST-001");
+  expect(result[1]?.locationCode).toBe("C-001");
+  expect(result[2]?.locationCode).toBe("SH-002");
+  expect(result[1]?.locationCodeNormalized).toBe("c-001");
 });

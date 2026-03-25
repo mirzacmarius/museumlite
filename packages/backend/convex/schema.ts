@@ -556,7 +556,10 @@ export default defineSchema({
   donors: defineTable({
     organizationId: v.id("organizations"),
     name: v.string(),
-    email: v.string(),
+    notes: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    email: v.optional(v.string()),
+    address: v.optional(v.string()),
     createdBy: v.id("users"),
     createdAt: v.number(),
     usageCount: v.optional(v.number()),
@@ -1219,6 +1222,8 @@ export default defineSchema({
     organizationId: v.id("organizations"),
     siteId: v.optional(v.id("sites")),
     name: v.string(),
+    locationCode: v.optional(v.string()),
+    locationCodeNormalized: v.optional(v.string()),
     type: v.string(), // Flexible per org (building/floor/room/cabinet/shelf/box)
     parentLocationId: v.optional(v.id("locations")),
     sortOrder: v.number(), // Order within parent (for drag-and-drop reordering)
@@ -1258,6 +1263,11 @@ export default defineSchema({
     .index("by_organization", ["organizationId"])
     .index("by_organization_and_site", ["organizationId", "siteId"])
     .index("by_parentLocation", ["parentLocationId"])
+    .index("by_organization_and_parent_and_locationCodeNormalized", [
+      "organizationId",
+      "parentLocationId",
+      "locationCodeNormalized",
+    ])
     .index("by_organization_and_type", ["organizationId", "type"])
     .searchIndex("search_locations", {
       searchField: "name",

@@ -2,10 +2,12 @@
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Lock, Thermometer } from "lucide-react";
+import { formatLocationLabel } from "../location-label";
 
 interface SidebarLocation {
   _id: Id<"locations">;
   name: string;
+  locationCode: string;
   type: string;
   isActive: boolean;
   parentLocationId?: Id<"locations">;
@@ -175,7 +177,9 @@ function LocationNavItem({
       }`}
       style={{ paddingLeft: `${depth * 14 + 12}px` }}
     >
-      <span className="truncate">{location.name}</span>
+      <span className="truncate">
+        {formatLocationLabel(location.locationCode, location.name)}
+      </span>
       {isColdStorage ? (
         <span className="flex items-center gap-0.5 rounded border border-blue-500/20 bg-blue-500/10 px-1 text-[9px] text-blue-400">
           <Thermometer className="h-2.5 w-2.5" />

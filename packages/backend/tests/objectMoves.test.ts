@@ -132,6 +132,8 @@ async function createLocation(
     return await ctx.db.insert("locations", {
       organizationId,
       name: "Storage A",
+      locationCode: "ST-001",
+      locationCodeNormalized: "st-001",
       type: "room",
       sortOrder: 0,
       isActive: true,

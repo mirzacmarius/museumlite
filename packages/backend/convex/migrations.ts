@@ -2,6 +2,27 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation } from "./_generated/server";
 
+function getLocationCodePrefix(type: string) {
+  switch (type.trim().toLowerCase()) {
+    case "building":
+      return "B";
+    case "room":
+      return "R";
+    case "gallery":
+      return "G";
+    case "storage":
+      return "ST";
+    case "cabinet":
+      return "C";
+    case "shelf":
+      return "SH";
+    case "vault":
+      return "V";
+    default:
+      return "L";
+  }
+}
+
 /**
  * Migration: Backfill sortOrder field for existing locations
  *
@@ -116,6 +137,89 @@ export const backfillAccountType = internalMutation({
         withoutType: accountsWithoutType.length,
         updated: updatedCount,
         errors: errorCount,
+      },
+    };
+
+    console.log(result.message);
+    return result;
+  },
+});
+
+export const backfillLocationCodes = internalMutation({
+  args: {},
+  returns: v.object({
+    success: v.boolean(),
+    message: v.string(),
+    stats: v.object({
+      totalLocations: v.number(),
+      updated: v.number(),
+      errors: v.number(),
+      groups: v.number(),
+    }),
+  }),
+  handler: async (ctx) => {
+    console.log("Starting migration: Backfill locationCode for locations");
+
+    const allLocations = await ctx.db.query("locations").collect();
+    console.log(`Found ${allLocations.length} locations`);
+
+    const locationsByParent = new Map<string, typeof allLocations>();
+
+    for (const location of allLocations) {
+      const key = `${location.organizationId}:${location.parentLocationId ?? "root"}`;
+      const existingLocations = locationsByParent.get(key);
+      if (existingLocations) {
+        existingLocations.push(location);
+      } else {
+        locationsByParent.set(key, [location]);
+      }
+    }
+
+    let updatedCount = 0;
+    let errorCount = 0;
+
+    for (const [key, locations] of locationsByParent) {
+      try {
+        const sortedLocations = [...locations].sort((left, right) => {
+          if (left.sortOrder !== right.sortOrder) {
+            return left.sortOrder - right.sortOrder;
+          }
+
+          return left._creationTime - right._creationTime;
+        });
+
+        for (let i = 0; i < sortedLocations.length; i++) {
+          const location = sortedLocations[i];
+          if (!location || location.locationCode) {
+            continue;
+          }
+
+          const prefix = getLocationCodePrefix(location.type);
+          const sequence = String(i + 1).padStart(3, "0");
+          const locationCode = `${prefix}-${sequence}`;
+
+          await ctx.db.patch(location._id, {
+            locationCode,
+            locationCodeNormalized: locationCode.toLowerCase(),
+          });
+          updatedCount++;
+        }
+
+        console.log(`✓ Updated ${locations.length} locations in group ${key}`);
+      } catch (error) {
+        console.error(`Error processing group ${key}:`, error);
+        errorCount++;
+      }
+    }
+
+    const result = {
+      success: true,
+      message: `Migration complete: ${updatedCount} locations updated, ${errorCount} errors`,
+      stats: {
+        totalLocations: allLocations.length,
+        updated: updatedCount,
+        errors: errorCount,
+        groups: locationsByParent.size,
       },
     };
 

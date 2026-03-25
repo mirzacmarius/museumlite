@@ -3,6 +3,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 export interface SidebarLocation {
   _id: Id<"locations">;
   name: string;
+  locationCode: string;
   type: string;
   isActive: boolean;
   parentLocationId?: Id<"locations">;

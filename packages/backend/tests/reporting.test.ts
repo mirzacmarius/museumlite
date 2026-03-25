@@ -1191,7 +1191,9 @@ describe("report date ranges", () => {
     });
 
     expect(report?.reportConfig?.includeComparison).toBe(true);
-    expect(report?.reportConfig?.comparisonPeriod).toBe("same_period_last_year");
+    expect(report?.reportConfig?.comparisonPeriod).toBe(
+      "same_period_last_year",
+    );
   });
 
   test("should update report date range configuration", async () => {
@@ -1246,7 +1248,9 @@ describe("report date ranges", () => {
 
     expect(updatedReport?.reportConfig?.dateRange).toBe("last_90_days");
     expect(updatedReport?.reportConfig?.includeComparison).toBe(true);
-    expect(updatedReport?.reportConfig?.comparisonPeriod).toBe("previous_period");
+    expect(updatedReport?.reportConfig?.comparisonPeriod).toBe(
+      "previous_period",
+    );
   });
 });
 
@@ -1275,6 +1279,8 @@ describe("report filters", () => {
       return await ctx.db.insert("locations", {
         organizationId: orgId,
         name: "Gallery 1",
+        locationCode: "G-001",
+        locationCodeNormalized: "g-001",
         type: "gallery",
         sortOrder: 1,
         isActive: true,
@@ -1285,6 +1291,8 @@ describe("report filters", () => {
       return await ctx.db.insert("locations", {
         organizationId: orgId,
         name: "Storage Room A",
+        locationCode: "ST-001",
+        locationCodeNormalized: "st-001",
         type: "storage",
         sortOrder: 2,
         isActive: true,
@@ -1460,6 +1468,8 @@ describe("report filters", () => {
       return await ctx.db.insert("locations", {
         organizationId: orgId,
         name: "Main Gallery",
+        locationCode: "G-010",
+        locationCodeNormalized: "g-010",
         type: "gallery",
         sortOrder: 1,
         isActive: true,
@@ -1504,7 +1514,9 @@ describe("report filters", () => {
     expect(report?.reportConfig?.filters?.locationIds).toHaveLength(1);
     expect(report?.reportConfig?.filters?.locationIds).toContain(locationId);
     expect(report?.reportConfig?.filters?.collectionGroupIds).toHaveLength(1);
-    expect(report?.reportConfig?.filters?.collectionGroupIds).toContain(groupId);
+    expect(report?.reportConfig?.filters?.collectionGroupIds).toContain(
+      groupId,
+    );
     expect(report?.reportConfig?.filters?.objectTypes).toHaveLength(2);
     expect(report?.reportConfig?.filters?.objectTypes).toEqual([
       "painting",
@@ -1606,6 +1618,8 @@ describe("report filters", () => {
       return await ctx.db.insert("locations", {
         organizationId: orgId,
         name: "Test Gallery",
+        locationCode: "G-020",
+        locationCodeNormalized: "g-020",
         type: "gallery",
         sortOrder: 1,
         isActive: true,
@@ -1972,7 +1986,11 @@ describe("email recipient management", () => {
     // Replace all recipients
     await t.run(async (ctx) => {
       await ctx.db.patch(reportId, {
-        emailRecipients: ["new1@museum.com", "new2@museum.com", "new3@museum.com"],
+        emailRecipients: [
+          "new1@museum.com",
+          "new2@museum.com",
+          "new3@museum.com",
+        ],
         updatedAt: Date.now(),
       });
     });
@@ -2077,7 +2095,9 @@ describe("email recipient management", () => {
     });
 
     expect(report?.emailRecipients).toEqual(["curator@museum.com"]);
-    expect(report?.emailSubject).toBe("Monthly Collection Health Report - {{date}}");
+    expect(report?.emailSubject).toBe(
+      "Monthly Collection Health Report - {{date}}",
+    );
     expect(report?.includeAttachment).toBe(true);
     expect(report?.attachmentFormat).toBe("pdf");
   });

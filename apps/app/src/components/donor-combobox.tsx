@@ -4,15 +4,13 @@ import { useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@v1/ui/alert-dialog";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@v1/ui/dialog";
 import { Button } from "@v1/ui/button";
 import {
   Command,
@@ -24,9 +22,10 @@ import {
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
+import { Textarea } from "@v1/ui/textarea";
 import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
-import { Check, ChevronsUpDown, Mail, X } from "lucide-react";
+import { Check, ChevronsUpDown, X } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
@@ -39,9 +38,24 @@ interface DonorComboboxProps {
   disabled?: boolean;
 }
 
+interface NewDonorForm {
+  name: string;
+  notes: string;
+  phone: string;
+  email: string;
+  address: string;
+}
+
+const initialDonorForm: NewDonorForm = {
+  name: "",
+  notes: "",
+  phone: "",
+  email: "",
+  address: "",
+};
+
 export function DonorCombobox({
   organizationId,
-  collectionId,
   value = [],
   onValueChange,
   placeholder = "Select or add donors...",
@@ -51,10 +65,10 @@ export function DonorCombobox({
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
   const [newDonorDialogOpen, setNewDonorDialogOpen] = React.useState(false);
-  const [newDonorName, setNewDonorName] = React.useState("");
-  const [newDonorEmail, setNewDonorEmail] = React.useState("");
+  const [newDonorForm, setNewDonorForm] =
+    React.useState<NewDonorForm>(initialDonorForm);
   const [emailError, setEmailError] = React.useState<string | null>(null);
-  const isSubmittingRef = React.useRef(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   // Ensure value is always an array
   const selectedValues = React.useMemo(() => {
@@ -78,7 +92,9 @@ export function DonorCombobox({
       value: donor.name,
       label: donor.name,
       email: donor.email,
-      id: donor._id,
+      contactSummary: [donor.email, donor.phone, donor.address]
+        .filter((value): value is string => Boolean(value))
+        .join(" • "),
     }));
   }, [donors]);
 
@@ -123,27 +139,30 @@ export function DonorCombobox({
     return emailRegex.test(email);
   };
 
+  const resetNewDonorForm = React.useCallback((name = "") => {
+    setNewDonorForm({ ...initialDonorForm, name });
+    setEmailError(null);
+    setIsSubmitting(false);
+  }, []);
+
   // Handle creating new donor - show dialog first
   const handleCreateDonorClick = () => {
     if (!inputValue.trim()) return;
-    setNewDonorName(formatDonorName(inputValue));
-    setNewDonorEmail("");
+    resetNewDonorForm(formatDonorName(inputValue));
+    setOpen(false);
     setNewDonorDialogOpen(true);
   };
 
   // Handle confirming new donor creation
   const handleConfirmCreateDonor = async (): Promise<boolean> => {
-    if (!organizationId || !newDonorName.trim()) {
+    if (!organizationId || !newDonorForm.name.trim() || isSubmitting) {
       return false;
     }
 
-    // Validate email is provided and has valid format
-    if (!newDonorEmail.trim()) {
-      setEmailError("Email address is required");
-      return false;
-    }
+    const formattedName = formatDonorName(newDonorForm.name);
+    const trimmedEmail = newDonorForm.email.trim();
 
-    if (!validateEmail(newDonorEmail.trim())) {
+    if (!validateEmail(trimmedEmail)) {
       setEmailError("Please enter a valid email address");
       return false;
     }
@@ -151,7 +170,6 @@ export function DonorCombobox({
     setEmailError(null);
 
     // Check if donor already exists (case-insensitive) before creating
-    const formattedName = formatDonorName(newDonorName);
     const existingDonor = donorOptions.find(
       (d) => d.label.toLowerCase() === formattedName.toLowerCase(),
     );
@@ -163,32 +181,33 @@ export function DonorCombobox({
       }
       setInputValue("");
       setNewDonorDialogOpen(false);
-      setNewDonorName("");
-      setNewDonorEmail("");
-      setEmailError(null);
+      resetNewDonorForm();
       return true;
     }
 
-    // Check for email match
-    const existingByEmail = donorOptions.find(
-      (d) =>
-        d.email && d.email.toLowerCase() === newDonorEmail.trim().toLowerCase(),
-    );
-
-    if (existingByEmail) {
-      // Donor with this email exists, show error toast
-      toast.error(
-        `A donor with this email already exists: ${existingByEmail.label}`,
+    if (trimmedEmail) {
+      const existingByEmail = donorOptions.find(
+        (d) => d.email && d.email.toLowerCase() === trimmedEmail.toLowerCase(),
       );
-      // Keep dialog open so user can fix the email
-      return false;
+
+      if (existingByEmail) {
+        toast.error(
+          `A donor with this email already exists: ${existingByEmail.label}`,
+        );
+        return false;
+      }
     }
+
+    setIsSubmitting(true);
 
     try {
       await createDonor({
         organizationId: organizationId as Id<"organizations">,
         name: formattedName,
-        email: newDonorEmail.trim(),
+        notes: newDonorForm.notes.trim() || undefined,
+        phone: newDonorForm.phone.trim() || undefined,
+        email: trimmedEmail || undefined,
+        address: newDonorForm.address.trim() || undefined,
       });
 
       // Add the newly created donor to selection
@@ -199,8 +218,7 @@ export function DonorCombobox({
       // Clear input and close dialog
       setInputValue("");
       setNewDonorDialogOpen(false);
-      setNewDonorName("");
-      setNewDonorEmail("");
+      resetNewDonorForm();
       return true;
     } catch (err) {
       // If donor already exists (backend check), show error toast
@@ -221,9 +239,9 @@ export function DonorCombobox({
           if (errorMessage.includes("email")) {
             const existingDonor = donorOptions.find(
               (d) =>
-                newDonorEmail.trim() &&
+                trimmedEmail &&
                 d.email &&
-                d.email.toLowerCase() === newDonorEmail.trim().toLowerCase(),
+                d.email.toLowerCase() === trimmedEmail.toLowerCase(),
             );
             if (existingDonor) {
               toastMessage = `A donor with this email already exists: ${existingDonor.label}`;
@@ -247,7 +265,7 @@ export function DonorCombobox({
       toast.error(t("common.toast.createFailed"));
       return false;
     } finally {
-      isSubmittingRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
@@ -414,10 +432,12 @@ export function DonorCombobox({
                         />
                         <div className="flex-1 flex flex-col gap-0.5">
                           <span className="text-sm">{donor.label}</span>
-                          {donor.email && (
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
-                              {donor.email}
+                          {donor.contactSummary && (
+                            <span
+                              className="truncate text-xs text-muted-foreground"
+                              title={donor.contactSummary}
+                            >
+                              {donor.contactSummary}
                             </span>
                           )}
                         </div>
@@ -432,114 +452,143 @@ export function DonorCombobox({
       </Popover>
 
       {/* New Donor Dialog */}
-      <AlertDialog
+      <Dialog
         open={newDonorDialogOpen}
         onOpenChange={(open) => {
-          // Prevent closing if we're submitting and there's a validation error
-          if (!open && isSubmittingRef.current && emailError) {
-            return;
-          }
-          // Allow closing (user clicked Cancel or outside)
           if (!open) {
-            // Clear errors when closing normally
-            setEmailError(null);
+            resetNewDonorForm();
           }
           setNewDonorDialogOpen(open);
         }}
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Add New Donor</AlertDialogTitle>
-            <AlertDialogDescription>
-              Create a new donor profile for your organization.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Donor</DialogTitle>
+            <DialogDescription>
+              Create a donor profile with notes and optional contact details.
+            </DialogDescription>
+          </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
               <Label htmlFor="donor-name">Donor Name *</Label>
               <Input
                 id="donor-name"
-                value={newDonorName}
-                onChange={(e) => setNewDonorName(e.target.value)}
+                value={newDonorForm.name}
+                onChange={(e) =>
+                  setNewDonorForm((current) => ({
+                    ...current,
+                    name: e.target.value,
+                  }))
+                }
                 placeholder="Enter donor name"
                 autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && newDonorName.trim()) {
-                    e.preventDefault();
-                    handleConfirmCreateDonor();
-                  }
-                }}
               />
             </div>
             <div>
-              <Label htmlFor="donor-email">Email Address *</Label>
-              <Input
-                id="donor-email"
-                type="email"
-                value={newDonorEmail}
-                required
+              <Label htmlFor="donor-notes">Information / Notice</Label>
+              <Textarea
+                id="donor-notes"
+                value={newDonorForm.notes}
                 onChange={(e) => {
-                  setNewDonorEmail(e.target.value);
-                  // Clear error when user starts typing
-                  if (emailError) {
-                    setEmailError(null);
-                  }
+                  setNewDonorForm((current) => ({
+                    ...current,
+                    notes: e.target.value,
+                  }));
                 }}
-                onBlur={() => {
-                  // Validate on blur
-                  if (!newDonorEmail.trim()) {
-                    setEmailError("Email address is required");
-                  } else if (!validateEmail(newDonorEmail.trim())) {
-                    setEmailError("Please enter a valid email address");
-                  } else {
-                    setEmailError(null);
-                  }
-                }}
-                placeholder="donor@example.com"
-                className={emailError ? "border-destructive" : ""}
-                onKeyDown={(e) => {
-                  if (
-                    e.key === "Enter" &&
-                    newDonorName.trim() &&
-                    newDonorEmail.trim()
-                  ) {
-                    e.preventDefault();
-                    handleConfirmCreateDonor();
-                  }
-                }}
+                placeholder="Add provenance context, donor notes, or handling instructions"
+                rows={4}
+                autoResize
               />
-              {emailError && (
-                <p className="text-sm text-destructive mt-1">{emailError}</p>
-              )}
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="donor-phone">Phone</Label>
+                <Input
+                  id="donor-phone"
+                  value={newDonorForm.phone}
+                  onChange={(e) =>
+                    setNewDonorForm((current) => ({
+                      ...current,
+                      phone: e.target.value,
+                    }))
+                  }
+                  placeholder="+1 555 123 4567"
+                />
+              </div>
+              <div>
+                <Label htmlFor="donor-email">Contact Email</Label>
+                <Input
+                  id="donor-email"
+                  type="email"
+                  value={newDonorForm.email}
+                  onChange={(e) => {
+                    setNewDonorForm((current) => ({
+                      ...current,
+                      email: e.target.value,
+                    }));
+                    if (emailError) {
+                      setEmailError(null);
+                    }
+                  }}
+                  onBlur={() => {
+                    if (!validateEmail(newDonorForm.email.trim())) {
+                      setEmailError("Please enter a valid email address");
+                    } else {
+                      setEmailError(null);
+                    }
+                  }}
+                  placeholder="donor@example.com"
+                  className={emailError ? "border-destructive" : ""}
+                />
+                {emailError && (
+                  <p className="mt-1 text-sm text-destructive">{emailError}</p>
+                )}
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="donor-address">Address</Label>
+              <Textarea
+                id="donor-address"
+                value={newDonorForm.address}
+                onChange={(e) =>
+                  setNewDonorForm((current) => ({
+                    ...current,
+                    address: e.target.value,
+                  }))
+                }
+                placeholder="Postal or institutional address"
+                rows={3}
+                autoResize
+              />
             </div>
           </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => {
                 setNewDonorDialogOpen(false);
-                setNewDonorName("");
-                setNewDonorEmail("");
-                setEmailError(null);
+                resetNewDonorForm();
               }}
             >
               Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
+            </Button>
+            <Button
+              type="button"
               onClick={async (e) => {
                 e.preventDefault();
                 const success = await handleConfirmCreateDonor();
-                // Only close if successful
                 if (success) {
                   setNewDonorDialogOpen(false);
                 }
               }}
-              disabled={!newDonorName.trim() || !newDonorEmail.trim()}
+              disabled={!newDonorForm.name.trim() || isSubmitting}
             >
-              Add Donor
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              {isSubmitting ? "Adding..." : "Add Donor"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

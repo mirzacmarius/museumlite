@@ -38,6 +38,8 @@ const VALID_METHODS: AccessionMethod[] = [
   "bequest",
 ];
 
+const MAX_LOCATION_CODE_LENGTH = 50;
+
 function parseMethod(value: string): AccessionMethod {
   const normalized = value.toLowerCase().trim();
   if (VALID_METHODS.includes(normalized as AccessionMethod)) {
@@ -59,6 +61,35 @@ function parseCost(value: string): number | undefined {
   const cleaned = value.replace(/[^0-9.-]/g, "");
   const num = Number.parseFloat(cleaned);
   return Number.isNaN(num) ? undefined : num;
+}
+
+function normalizeLocationCode(locationCode: string) {
+  return locationCode.trim().toLowerCase();
+}
+
+function validateLocationCode(locationCode: string) {
+  const trimmedLocationCode = locationCode.trim();
+  if (!trimmedLocationCode) {
+    throw new Error("Please enter a location ID");
+  }
+  if (trimmedLocationCode.length > MAX_LOCATION_CODE_LENGTH) {
+    throw new Error("Location ID must be 50 characters or fewer");
+  }
+  return {
+    locationCode: trimmedLocationCode,
+    locationCodeNormalized: normalizeLocationCode(trimmedLocationCode),
+  };
+}
+
+function getFallbackLocationCode(locationId: Id<"locations">) {
+  return `LEGACY-${locationId.slice(-6).toUpperCase()}`;
+}
+
+function getExportLocationCode(location: {
+  _id: Id<"locations">;
+  locationCode?: string;
+}) {
+  return location.locationCode ?? getFallbackLocationCode(location._id);
 }
 
 export const createImportJob = mutation({
@@ -393,6 +424,7 @@ export const exportLocations = mutation({
   returns: v.array(
     v.object({
       name: v.string(),
+      locationCode: v.string(),
       type: v.string(),
       parentLocation: v.optional(v.string()),
       address: v.optional(v.string()),
@@ -422,6 +454,7 @@ export const exportLocations = mutation({
 
     const exportRows = locations.map((l) => ({
       name: l.name,
+      locationCode: getExportLocationCode(l),
       type: l.type,
       parentLocation: l.parentLocationId
         ? locationMap.get(l.parentLocationId)
@@ -644,6 +677,7 @@ export const importLocationsBatch = mutation({
     rows: v.array(
       v.object({
         name: v.string(),
+        locationCode: v.string(),
         type: v.string(),
         parentLocation: v.optional(v.string()),
         address: v.optional(v.string()),
@@ -682,6 +716,12 @@ export const importLocationsBatch = mutation({
     const locationNameMap = new Map(
       existingLocations.map((l) => [l.name.toLowerCase(), l._id]),
     );
+    const siblingLocationCodeMap = new Set(
+      existingLocations.map(
+        (location) =>
+          `${location.parentLocationId ?? "root"}:${location.locationCodeNormalized}`,
+      ),
+    );
 
     const errors: string[] = [];
     let processed = 0;
@@ -703,6 +743,19 @@ export const importLocationsBatch = mutation({
           continue;
         }
 
+        let locationCode: string;
+        let locationCodeNormalized: string;
+        try {
+          const validatedLocationCode = validateLocationCode(row.locationCode);
+          locationCode = validatedLocationCode.locationCode;
+          locationCodeNormalized = validatedLocationCode.locationCodeNormalized;
+        } catch (error) {
+          errors.push(
+            `Row ${rowNum}: ${error instanceof Error ? error.message : "Invalid location ID"}`,
+          );
+          continue;
+        }
+
         let parentLocationId: Id<"locations"> | undefined;
         if (row.parentLocation) {
           const parentId = locationNameMap.get(
@@ -717,6 +770,14 @@ export const importLocationsBatch = mutation({
           parentLocationId = parentId;
         }
 
+        const siblingCodeKey = `${parentLocationId ?? "root"}:${locationCodeNormalized}`;
+        if (siblingLocationCodeMap.has(siblingCodeKey)) {
+          errors.push(
+            `Row ${rowNum}: Location ID already exists in this parent location`,
+          );
+          continue;
+        }
+
         const capacity = row.capacity
           ? Number.parseInt(row.capacity, 10)
           : undefined;
@@ -724,6 +785,8 @@ export const importLocationsBatch = mutation({
         const newLocId = await ctx.db.insert("locations", {
           organizationId: args.organizationId,
           name: row.name.trim(),
+          locationCode,
+          locationCodeNormalized,
           type: row.type.trim(),
           parentLocationId,
           address: row.address?.trim(),
@@ -734,6 +797,7 @@ export const importLocationsBatch = mutation({
         });
 
         locationNameMap.set(row.name.toLowerCase(), newLocId);
+        siblingLocationCodeMap.add(siblingCodeKey);
         processed++;
       } catch (err) {
         errors.push(
@@ -1534,6 +1598,7 @@ export const exportLocationsWithFormat = mutation({
 
     const exportRows = locations.map((l) => ({
       name: l.name,
+      locationCode: getExportLocationCode(l),
       type: l.type,
       parentLocation: l.parentLocationId
         ? locationMap.get(l.parentLocationId)
@@ -1562,6 +1627,7 @@ export const exportLocationsWithFormat = mutation({
     // Default: CSV format
     const headers = [
       "name",
+      "locationCode",
       "type",
       "parentLocation",
       "address",
@@ -1573,6 +1639,7 @@ export const exportLocationsWithFormat = mutation({
     for (const row of exportRows) {
       const values = [
         row.name,
+        row.locationCode,
         row.type,
         row.parentLocation || "",
         row.address || "",
@@ -1580,7 +1647,9 @@ export const exportLocationsWithFormat = mutation({
         row.isActive.toString(),
         row.notes || "",
       ];
-      csvRows.push(values.map((v) => `"${v.replace(/"/g, '""')}"`).join(","));
+      csvRows.push(
+        values.map((value = "") => `"${value.replace(/"/g, '""')}"`).join(","),
+      );
     }
     return csvRows.join("\n");
   },
@@ -1916,6 +1985,7 @@ export const getImportTemplateByType = query({
       locations: {
         headers: [
           "name",
+          "locationCode",
           "type",
           "parentLocation",
           "address",
@@ -1924,13 +1994,14 @@ export const getImportTemplateByType = query({
         ],
         exampleRow: [
           "Gallery A",
+          "G-001",
           "Gallery",
           "Main Building",
           "123 Museum St",
           "50",
           "Main exhibition gallery",
         ],
-        requiredFields: ["name", "type"],
+        requiredFields: ["name", "locationCode", "type"],
         description:
           "Import locations. Parent location must match an existing location name.",
       },

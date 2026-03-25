@@ -352,6 +352,8 @@ export const createLocation = internalMutation({
     return await ctx.db.insert("locations", {
       organizationId: args.organizationId,
       name: args.name,
+      locationCode: `LOC-${args.sortOrder + 1}`,
+      locationCodeNormalized: `loc-${args.sortOrder + 1}`,
       type: args.type,
       parentLocationId: args.parentLocationId,
       sortOrder: args.sortOrder,
@@ -4976,10 +4978,7 @@ export const getUserOrganizationsByEmail = internalQuery({
       organizationIds: v.array(v.id("organizations")),
     }),
   ),
-  handler: async (
-    ctx,
-    args,
-  ): Promise<UserOrganizationContext | null> => {
+  handler: async (ctx, args): Promise<UserOrganizationContext | null> => {
     const user = await ctx.db
       .query("users")
       .withIndex("email", (q) => q.eq("email", args.email))
@@ -4997,7 +4996,9 @@ export const getUserOrganizationsByEmail = internalQuery({
 
     return {
       userId,
-      organizationIds: memberships.map((membership) => membership.organizationId),
+      organizationIds: memberships.map(
+        (membership) => membership.organizationId,
+      ),
     };
   },
 });
@@ -5087,7 +5088,9 @@ export const getMovableCollectionsForOrganization = internalQuery({
       .collect();
 
     return collections
-      .filter((collection) => !EXCLUDED_COLLECTION_STATUSES.has(collection.status))
+      .filter(
+        (collection) => !EXCLUDED_COLLECTION_STATUSES.has(collection.status),
+      )
       .sort(compareMovableCollections)
       .map((collection) => ({
         _id: collection._id,
@@ -5105,10 +5108,7 @@ export const reassignObjectsToDeepLocationsForUser = internalMutation({
     organizationIds: v.array(v.id("organizations")),
   },
   returns: deepLocationReassignmentSummaryValidator,
-  handler: async (
-    ctx,
-    args,
-  ): Promise<DeepLocationReassignmentSummary> => {
+  handler: async (ctx, args): Promise<DeepLocationReassignmentSummary> => {
     const summary: DeepLocationReassignmentSummary = {
       userId: args.userId,
       organizationCount: args.organizationIds.length,
@@ -5157,7 +5157,8 @@ export const reassignObjectsToDeepLocationsForUser = internalMutation({
       };
 
       if (targetLocations.length === 0) {
-        organizationSummary.skippedNoEligibleLocation = movableCollections.length;
+        organizationSummary.skippedNoEligibleLocation =
+          movableCollections.length;
         summary.objectsSkippedNoEligibleLocation += movableCollections.length;
         summary.organizationsSkippedNoLocations += 1;
         summary.organizations.push(organizationSummary);
@@ -5166,7 +5167,9 @@ export const reassignObjectsToDeepLocationsForUser = internalMutation({
 
       const allCollections = await ctx.db
         .query("collections")
-        .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", organizationId),
+        )
         .collect();
 
       const targetLocationIds = new Set(
@@ -5195,14 +5198,20 @@ export const reassignObjectsToDeepLocationsForUser = internalMutation({
 
         for (let offset = 0; offset < targetLocations.length; offset += 1) {
           const candidate =
-            targetLocations[(roundRobinIndex + offset) % targetLocations.length]!;
+            targetLocations[
+              (roundRobinIndex + offset) % targetLocations.length
+            ]!;
           const currentOccupancy =
             (occupancyByLocationId.get(candidate._id) ?? 0) -
             (collection.currentLocationId === candidate._id ? 1 : 0);
 
-          if (candidate.capacity === undefined || currentOccupancy < candidate.capacity) {
+          if (
+            candidate.capacity === undefined ||
+            currentOccupancy < candidate.capacity
+          ) {
             selectedTarget = candidate;
-            roundRobinIndex = (roundRobinIndex + offset) % targetLocations.length;
+            roundRobinIndex =
+              (roundRobinIndex + offset) % targetLocations.length;
             break;
           }
         }
@@ -5228,7 +5237,8 @@ export const reassignObjectsToDeepLocationsForUser = internalMutation({
             collection.currentLocationId,
             Math.max(
               0,
-              (occupancyByLocationId.get(collection.currentLocationId) ?? 0) - 1,
+              (occupancyByLocationId.get(collection.currentLocationId) ?? 0) -
+                1,
             ),
           );
         }

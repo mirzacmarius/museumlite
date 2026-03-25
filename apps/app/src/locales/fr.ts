@@ -1834,7 +1834,7 @@ export default {
     objectCount: "Objets à cet Emplacement",
     importTitle: "Importer des Emplacements depuis CSV",
     importDescription:
-      "Téléchargez un fichier CSV avec vos données d'emplacement. Colonnes requises : nom, type.",
+      "Téléchargez un fichier CSV avec vos données d'emplacement. Colonnes requises : nom, locationCode, type.",
     downloadTemplate: "Télécharger le Modèle",
     dropCSVHere: "Déposez le fichier CSV ici ou cliquez pour télécharger",
     maxRows: "Maximum 1000 lignes par importation",
@@ -1869,12 +1869,14 @@ export default {
         "Le CSV doit avoir une ligne d'en-tête et au moins une ligne de données",
       missingRequiredColumns: "Colonnes requises manquantes : {columns}",
       nameRequired: "Le nom est requis",
+      locationCodeRequired: "L'identifiant d'emplacement est requis",
       typeRequired: "Le type est requis",
       andMore: "... et {count} de plus",
       showingRows: "Affichage de {shown} sur {total} lignes",
     },
     tableHeaders: {
       name: "Nom",
+      locationCode: "ID d'Emplacement",
       type: "Type",
       parentLocation: "Emplacement Parent",
       address: "Adresse",
@@ -1891,6 +1893,8 @@ export default {
       nameLabel: "Nom *",
       namePlaceholder: "ex., Aile Est, Tiroir 3",
       nameEnterPlaceholder: "Entrez le nom de l'emplacement",
+      locationIdLabel: "ID d'Emplacement *",
+      locationIdPlaceholder: "ex., A-12-3",
       typeLabel: "Type *",
       typePlaceholder: "Sélectionnez un type",
       locationTypes: {
@@ -1929,6 +1933,11 @@ export default {
       saveChanges: "Enregistrer les Modifications",
       errors: {
         nameRequired: "Veuillez entrer un nom d'emplacement",
+        locationIdRequired: "Veuillez entrer un ID d'emplacement",
+        locationIdTooLong:
+          "L'ID d'emplacement doit contenir 50 caractères ou moins",
+        locationIdDuplicate:
+          "L'ID d'emplacement existe déjà dans cet emplacement parent",
         typeRequired: "Veuillez sélectionner un type d'emplacement",
         createFailed: "Échec de la création de l'emplacement",
       },

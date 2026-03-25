@@ -6,6 +6,13 @@ import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { modules } from "../tests/testSetup";
 
+function buildLocationCode(locationCode: string) {
+  return {
+    locationCode,
+    locationCodeNormalized: locationCode.toLowerCase(),
+  };
+}
+
 async function createOrganizationMembership(
   t: ReturnType<typeof convexTest<typeof schema, typeof modules>>,
   userId: Id<"users">,
@@ -88,6 +95,7 @@ test("seedMet.getEligibleDeepLocations prefers shelf and vitrine leaves", async 
     const roomId = await ctx.db.insert("locations", {
       organizationId,
       name: "Gallery Room",
+      ...buildLocationCode("R-001"),
       type: "room",
       sortOrder: 0,
       isActive: true,
@@ -95,6 +103,7 @@ test("seedMet.getEligibleDeepLocations prefers shelf and vitrine leaves", async 
     await ctx.db.insert("locations", {
       organizationId,
       name: "Shelf A",
+      ...buildLocationCode("SH-001"),
       type: "shelf",
       parentLocationId: roomId,
       sortOrder: 0,
@@ -104,6 +113,7 @@ test("seedMet.getEligibleDeepLocations prefers shelf and vitrine leaves", async 
     await ctx.db.insert("locations", {
       organizationId,
       name: "Vitrine 1",
+      ...buildLocationCode("V-001"),
       type: "vitrine",
       parentLocationId: roomId,
       sortOrder: 1,
@@ -113,6 +123,7 @@ test("seedMet.getEligibleDeepLocations prefers shelf and vitrine leaves", async 
     await ctx.db.insert("locations", {
       organizationId,
       name: "Cabinet Fallback",
+      ...buildLocationCode("C-001"),
       type: "cabinet",
       parentLocationId: roomId,
       sortOrder: 2,
@@ -122,6 +133,7 @@ test("seedMet.getEligibleDeepLocations prefers shelf and vitrine leaves", async 
     const parentShelfId = await ctx.db.insert("locations", {
       organizationId,
       name: "Parent Shelf",
+      ...buildLocationCode("SH-002"),
       type: "shelf",
       parentLocationId: roomId,
       sortOrder: 3,
@@ -131,6 +143,7 @@ test("seedMet.getEligibleDeepLocations prefers shelf and vitrine leaves", async 
     await ctx.db.insert("locations", {
       organizationId,
       name: "Inner Box",
+      ...buildLocationCode("B-001"),
       type: "box",
       parentLocationId: parentShelfId,
       sortOrder: 0,
@@ -140,6 +153,7 @@ test("seedMet.getEligibleDeepLocations prefers shelf and vitrine leaves", async 
     await ctx.db.insert("locations", {
       organizationId,
       name: "Restricted Shelf",
+      ...buildLocationCode("SH-003"),
       type: "shelf",
       parentLocationId: roomId,
       sortOrder: 4,
@@ -228,9 +242,12 @@ test("seedMet.getMovableCollectionsForOrganization excludes loaned and deaccessi
   });
 
   const result = await t.run(async (ctx) => {
-    return await ctx.runQuery(internal.seedMet.getMovableCollectionsForOrganization, {
-      organizationId,
-    });
+    return await ctx.runQuery(
+      internal.seedMet.getMovableCollectionsForOrganization,
+      {
+        organizationId,
+      },
+    );
   });
 
   expect(result.map((collection) => collection.accessionNumber)).toEqual([
@@ -274,6 +291,7 @@ test("seedMet.reassignObjectsToDeepLocationsForUser reassigns deterministically 
     const roomId = await ctx.db.insert("locations", {
       organizationId: preferredOrganizationId,
       name: "Main Room",
+      ...buildLocationCode("R-010"),
       type: "room",
       sortOrder: 0,
       isActive: true,
@@ -281,6 +299,7 @@ test("seedMet.reassignObjectsToDeepLocationsForUser reassigns deterministically 
     const shelfId = await ctx.db.insert("locations", {
       organizationId: preferredOrganizationId,
       name: "Shelf A",
+      ...buildLocationCode("SH-010"),
       type: "shelf",
       parentLocationId: roomId,
       sortOrder: 0,
@@ -290,6 +309,7 @@ test("seedMet.reassignObjectsToDeepLocationsForUser reassigns deterministically 
     const vitrineId = await ctx.db.insert("locations", {
       organizationId: preferredOrganizationId,
       name: "Vitrine 1",
+      ...buildLocationCode("V-010"),
       type: "vitrine",
       parentLocationId: roomId,
       sortOrder: 1,
@@ -299,6 +319,7 @@ test("seedMet.reassignObjectsToDeepLocationsForUser reassigns deterministically 
     const cabinetId = await ctx.db.insert("locations", {
       organizationId: preferredOrganizationId,
       name: "Cabinet Fallback",
+      ...buildLocationCode("C-010"),
       type: "cabinet",
       parentLocationId: roomId,
       sortOrder: 2,
@@ -443,7 +464,9 @@ test("seedMet.reassignObjectsToDeepLocationsForUser reassigns deterministically 
     );
     const historyEntries = await ctx.db
       .query("locationHistory")
-      .withIndex("by_collection", (q) => q.eq("collectionId", setup.movedCollectionId))
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", setup.movedCollectionId),
+      )
       .collect();
 
     return {
@@ -456,17 +479,24 @@ test("seedMet.reassignObjectsToDeepLocationsForUser reassigns deterministically 
     };
   });
 
-  expect(verification.unchangedCollection?.currentLocationId).toBe(setup.shelfId);
+  expect(verification.unchangedCollection?.currentLocationId).toBe(
+    setup.shelfId,
+  );
   expect(verification.movedCollection?.currentLocationId).toBe(setup.vitrineId);
-  expect(verification.skippedCollection?.currentLocationId).toBe(setup.cabinetId);
+  expect(verification.skippedCollection?.currentLocationId).toBe(
+    setup.cabinetId,
+  );
   expect(verification.loanedCollection?.currentLocationId).toBe(setup.roomId);
-  expect(verification.skippedNoLocationCollection?.currentLocationId).toBeUndefined();
+  expect(
+    verification.skippedNoLocationCollection?.currentLocationId,
+  ).toBeUndefined();
   expect(verification.historyEntries).toHaveLength(1);
   expect(verification.historyEntries[0]).toMatchObject({
     fromLocationId: setup.roomId,
     toLocationId: setup.vitrineId,
     movedBy: setup.userId,
     reason: "Deep location reassignment (maintenance)",
-    notes: "Assigned to deepest eligible leaf location for seeded maintenance user",
+    notes:
+      "Assigned to deepest eligible leaf location for seeded maintenance user",
   });
 });

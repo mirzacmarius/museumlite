@@ -65,6 +65,7 @@ export function AddChildLocationDialog({
   const t = useScopedI18n("locations.form");
   const tCommon = useScopedI18n("common");
   const [name, setName] = useState("");
+  const [locationCode, setLocationCode] = useState("");
   const [type, setType] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
@@ -106,6 +107,16 @@ export function AddChildLocationDialog({
       return;
     }
 
+    if (!locationCode.trim()) {
+      setError(t("errors.locationIdRequired"));
+      return;
+    }
+
+    if (locationCode.trim().length > 50) {
+      setError(t("errors.locationIdTooLong"));
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const customFields: Record<
@@ -121,6 +132,7 @@ export function AddChildLocationDialog({
       await createLocation({
         organizationId: organizationId as Id<"organizations">,
         name: name.trim(),
+        locationCode: locationCode.trim(),
         type,
         parentLocationId: parentLocationId
           ? (parentLocationId as Id<"locations">)
@@ -134,6 +146,7 @@ export function AddChildLocationDialog({
       });
 
       setName("");
+      setLocationCode("");
       setType("");
       setAddress("");
       setNotes("");
@@ -184,6 +197,17 @@ export function AddChildLocationDialog({
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t("namePlaceholder")}
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="locationCode">{t("locationIdLabel")}</Label>
+              <Input
+                id="locationCode"
+                value={locationCode}
+                onChange={(e) => setLocationCode(e.target.value)}
+                placeholder={t("locationIdPlaceholder")}
+                required
+                maxLength={50}
               />
             </div>
             <div className="space-y-2">

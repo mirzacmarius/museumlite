@@ -1749,7 +1749,7 @@ export default {
     objectCount: "Objetos en esta Ubicación",
     importTitle: "Importar Ubicaciones desde CSV",
     importDescription:
-      "Suba un archivo CSV con sus datos de ubicación. Columnas requeridas: nombre, tipo.",
+      "Suba un archivo CSV con sus datos de ubicación. Columnas requeridas: name, locationCode, type.",
     downloadTemplate: "Descargar Plantilla",
     dropCSVHere: "Suelte el archivo CSV aquí o haga clic para cargar",
     maxRows: "Máximo 1000 filas por importación",
@@ -1784,12 +1784,14 @@ export default {
         "El CSV debe tener una fila de encabezado y al menos una fila de datos",
       missingRequiredColumns: "Faltan columnas requeridas: {columns}",
       nameRequired: "El nombre es requerido",
+      locationCodeRequired: "El ID de ubicación es requerido",
       typeRequired: "El tipo es requerido",
       andMore: "... y {count} más",
       showingRows: "Mostrando {shown} de {total} filas",
     },
     tableHeaders: {
       name: "Nombre",
+      locationCode: "ID de Ubicación",
       type: "Tipo",
       parentLocation: "Ubicación Padre",
       address: "Dirección",
@@ -1806,6 +1808,8 @@ export default {
       nameLabel: "Nombre *",
       namePlaceholder: "ej., Ala Este, Cajón 3",
       nameEnterPlaceholder: "Ingrese el nombre de la ubicación",
+      locationIdLabel: "ID de Ubicación *",
+      locationIdPlaceholder: "ej., A-12-3",
       typeLabel: "Tipo *",
       typePlaceholder: "Seleccione un tipo",
       locationTypes: {
@@ -1844,6 +1848,11 @@ export default {
       saveChanges: "Guardar Cambios",
       errors: {
         nameRequired: "Por favor ingrese un nombre de ubicación",
+        locationIdRequired: "Por favor ingrese un ID de ubicación",
+        locationIdTooLong:
+          "El ID de ubicación debe tener 50 caracteres o menos",
+        locationIdDuplicate:
+          "El ID de ubicación ya existe en esta ubicación padre",
         typeRequired: "Por favor seleccione un tipo de ubicación",
         createFailed: "Error al crear la ubicación",
       },

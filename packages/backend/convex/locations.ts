@@ -7,6 +7,83 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import { customFieldValue } from "./schema";
 import { requirePermission } from "./utils/permissions";
 
+const MAX_LOCATION_CODE_LENGTH = 50;
+
+function normalizeLocationCode(locationCode: string) {
+  return locationCode.trim().toLowerCase();
+}
+
+function validateLocationCode(locationCode: string) {
+  const trimmedLocationCode = locationCode.trim();
+  if (!trimmedLocationCode) {
+    throw new Error("Please enter a location ID");
+  }
+  if (trimmedLocationCode.length > MAX_LOCATION_CODE_LENGTH) {
+    throw new Error("Location ID must be 50 characters or fewer");
+  }
+
+  return {
+    locationCode: trimmedLocationCode,
+    locationCodeNormalized: normalizeLocationCode(trimmedLocationCode),
+  };
+}
+
+function getFallbackLocationCode(locationId: Id<"locations">) {
+  return `LEGACY-${locationId.slice(-6).toUpperCase()}`;
+}
+
+function getLocationCodeValue(location: {
+  _id: Id<"locations">;
+  locationCode?: string;
+}) {
+  return location.locationCode ?? getFallbackLocationCode(location._id);
+}
+
+function getLocationCodeNormalizedValue(location: {
+  _id: Id<"locations">;
+  locationCode?: string;
+  locationCodeNormalized?: string;
+}) {
+  if (location.locationCodeNormalized) {
+    return location.locationCodeNormalized;
+  }
+
+  return normalizeLocationCode(getLocationCodeValue(location));
+}
+
+async function ensureUniqueSiblingLocationCode(
+  ctx: MutationCtx | QueryCtx,
+  {
+    organizationId,
+    parentLocationId,
+    locationCodeNormalized,
+    excludeLocationId,
+  }: {
+    organizationId: Id<"organizations">;
+    parentLocationId?: Id<"locations">;
+    locationCodeNormalized: string;
+    excludeLocationId?: Id<"locations">;
+  },
+) {
+  const existingLocations = await ctx.db
+    .query("locations")
+    .withIndex("by_organization_and_parent_and_locationCodeNormalized", (q) =>
+      q
+        .eq("organizationId", organizationId)
+        .eq("parentLocationId", parentLocationId)
+        .eq("locationCodeNormalized", locationCodeNormalized),
+    )
+    .collect();
+
+  const duplicateLocation = existingLocations.find(
+    (location) => location._id !== excludeLocationId,
+  );
+
+  if (duplicateLocation) {
+    throw new Error("Location ID already exists in this parent location");
+  }
+}
+
 async function validateSite(
   ctx: MutationCtx | QueryCtx,
   organizationId: Id<"organizations">,
@@ -30,6 +107,7 @@ export const create = mutation({
     organizationId: v.id("organizations"),
     siteId: v.optional(v.id("sites")),
     name: v.string(),
+    locationCode: v.string(),
     type: v.string(),
     parentLocationId: v.optional(v.id("locations")),
     address: v.optional(v.string()),
@@ -68,6 +146,16 @@ export const create = mutation({
       }
     }
 
+    const { locationCode, locationCodeNormalized } = validateLocationCode(
+      args.locationCode,
+    );
+
+    await ensureUniqueSiblingLocationCode(ctx, {
+      organizationId: args.organizationId,
+      parentLocationId: args.parentLocationId,
+      locationCodeNormalized,
+    });
+
     // Calculate sortOrder - get max sortOrder for siblings and add 1
     const siblings = await ctx.db
       .query("locations")
@@ -91,6 +179,8 @@ export const create = mutation({
       organizationId: args.organizationId,
       siteId: args.siteId,
       name: args.name,
+      locationCode,
+      locationCodeNormalized,
       type: args.type,
       parentLocationId: args.parentLocationId,
       sortOrder: maxSortOrder + 1,
@@ -118,6 +208,7 @@ export const listAll = query({
     v.object({
       _id: v.id("locations"),
       name: v.string(),
+      locationCode: v.string(),
       type: v.string(),
       parentLocationId: v.optional(v.id("locations")),
       sortOrder: v.number(),
@@ -157,6 +248,7 @@ export const listAll = query({
     return sortedLocations.map((loc) => ({
       _id: loc._id,
       name: loc.name,
+      locationCode: getLocationCodeValue(loc),
       type: loc.type,
       parentLocationId: loc.parentLocationId,
       sortOrder: loc.sortOrder,
@@ -179,6 +271,7 @@ export const listBySite = query({
     v.object({
       _id: v.id("locations"),
       name: v.string(),
+      locationCode: v.string(),
       type: v.string(),
       parentLocationId: v.optional(v.id("locations")),
       sortOrder: v.number(),
@@ -204,6 +297,7 @@ export const listBySite = query({
     return sortedLocations.map((loc) => ({
       _id: loc._id,
       name: loc.name,
+      locationCode: getLocationCodeValue(loc),
       type: loc.type,
       parentLocationId: loc.parentLocationId,
       sortOrder: loc.sortOrder,
@@ -226,6 +320,7 @@ export const list = query({
     v.object({
       _id: v.id("locations"),
       name: v.string(),
+      locationCode: v.string(),
       type: v.string(),
       parentLocationId: v.optional(v.id("locations")),
       address: v.optional(v.string()),
@@ -242,6 +337,7 @@ export const list = query({
           v.object({
             _id: v.id("locations"),
             name: v.string(),
+            locationCode: v.string(),
             type: v.string(),
             isActive: v.boolean(),
           }),
@@ -298,6 +394,7 @@ export const list = query({
         return {
           _id: location._id,
           name: location.name,
+          locationCode: getLocationCodeValue(location),
           type: location.type,
           parentLocationId: location.parentLocationId,
           address: location.address,
@@ -307,6 +404,7 @@ export const list = query({
           children: children.map((child) => ({
             _id: child._id,
             name: child.name,
+            locationCode: getLocationCodeValue(child),
             type: child.type,
             isActive: child.isActive,
           })),
@@ -330,6 +428,7 @@ export const get = query({
       _id: v.id("locations"),
       organizationId: v.id("organizations"),
       name: v.string(),
+      locationCode: v.string(),
       type: v.string(),
       parentLocationId: v.optional(v.id("locations")),
       address: v.optional(v.string()),
@@ -347,6 +446,7 @@ export const get = query({
         v.object({
           _id: v.id("locations"),
           name: v.string(),
+          locationCode: v.string(),
           type: v.string(),
           isActive: v.boolean(),
         }),
@@ -384,6 +484,7 @@ export const get = query({
       _id: location._id,
       organizationId: location.organizationId,
       name: location.name,
+      locationCode: getLocationCodeValue(location),
       type: location.type,
       parentLocationId: location.parentLocationId,
       address: location.address,
@@ -395,6 +496,7 @@ export const get = query({
       children: children.map((child) => ({
         _id: child._id,
         name: child.name,
+        locationCode: getLocationCodeValue(child),
         type: child.type,
         isActive: child.isActive,
       })),
@@ -408,6 +510,7 @@ export const update = mutation({
     locationId: v.id("locations"),
     siteId: v.optional(v.id("sites")),
     name: v.optional(v.string()),
+    locationCode: v.optional(v.string()),
     type: v.optional(v.string()),
     parentLocationId: v.optional(v.id("locations")),
     address: v.optional(v.string()),
@@ -474,9 +577,29 @@ export const update = mutation({
       }
     }
 
+    const nextParentLocationId =
+      args.parentLocationId !== undefined
+        ? args.parentLocationId
+        : location.parentLocationId;
+
+    if (
+      args.parentLocationId !== undefined &&
+      args.parentLocationId !== location.parentLocationId &&
+      args.locationCode === undefined
+    ) {
+      await ensureUniqueSiblingLocationCode(ctx, {
+        organizationId: location.organizationId,
+        parentLocationId: nextParentLocationId,
+        locationCodeNormalized: getLocationCodeNormalizedValue(location),
+        excludeLocationId: args.locationId,
+      });
+    }
+
     const updates: {
       siteId?: Id<"sites">;
       name?: string;
+      locationCode?: string;
+      locationCodeNormalized?: string;
       type?: string;
       parentLocationId?: Id<"locations">;
       address?: string;
@@ -488,6 +611,19 @@ export const update = mutation({
 
     if (args.siteId !== undefined) updates.siteId = args.siteId;
     if (args.name !== undefined) updates.name = args.name;
+    if (args.locationCode !== undefined) {
+      const { locationCode, locationCodeNormalized } = validateLocationCode(
+        args.locationCode,
+      );
+      await ensureUniqueSiblingLocationCode(ctx, {
+        organizationId: location.organizationId,
+        parentLocationId: nextParentLocationId,
+        locationCodeNormalized,
+        excludeLocationId: args.locationId,
+      });
+      updates.locationCode = locationCode;
+      updates.locationCodeNormalized = locationCodeNormalized;
+    }
     if (args.type !== undefined) updates.type = args.type;
     if (args.parentLocationId !== undefined)
       updates.parentLocationId = args.parentLocationId;
@@ -1444,6 +1580,7 @@ export const getLocationPath = query({
     v.object({
       _id: v.id("locations"),
       name: v.string(),
+      locationCode: v.string(),
       type: v.string(),
     }),
   ),
@@ -1451,6 +1588,7 @@ export const getLocationPath = query({
     const path: Array<{
       _id: Id<"locations">;
       name: string;
+      locationCode: string;
       type: string;
     }> = [];
 
@@ -1460,6 +1598,7 @@ export const getLocationPath = query({
       const location: {
         _id: Id<"locations">;
         name: string;
+        locationCode?: string;
         type: string;
         parentLocationId?: Id<"locations">;
       } | null = await ctx.db.get(currentLocationId);
@@ -1468,6 +1607,7 @@ export const getLocationPath = query({
       path.unshift({
         _id: location._id,
         name: location.name,
+        locationCode: getLocationCodeValue(location),
         type: location.type,
       });
 
@@ -1732,11 +1872,13 @@ export const listAllWithPaths = query({
     v.object({
       _id: v.id("locations"),
       name: v.string(),
+      locationCode: v.string(),
       type: v.string(),
       path: v.array(
         v.object({
           _id: v.id("locations"),
           name: v.string(),
+          locationCode: v.string(),
           type: v.string(),
         }),
       ),
@@ -1761,11 +1903,13 @@ export const listAllWithPaths = query({
     function buildPath(locationId: Id<"locations">): Array<{
       _id: Id<"locations">;
       name: string;
+      locationCode: string;
       type: string;
     }> {
       const path: Array<{
         _id: Id<"locations">;
         name: string;
+        locationCode: string;
         type: string;
       }> = [];
       let currentId: Id<"locations"> | undefined = locationId;
@@ -1777,6 +1921,7 @@ export const listAllWithPaths = query({
         path.unshift({
           _id: location._id,
           name: location.name,
+          locationCode: getLocationCodeValue(location),
           type: location.type,
         });
 
@@ -1790,6 +1935,7 @@ export const listAllWithPaths = query({
     return allLocations.map((location) => ({
       _id: location._id,
       name: location.name,
+      locationCode: getLocationCodeValue(location),
       type: location.type,
       path: buildPath(location._id),
     }));
@@ -2298,11 +2444,15 @@ async function buildLocationHierarchy(
   locations: (typeof LOCATIONS_DATA)[string],
 ) {
   const nameToId: Record<string, Id<"locations">> = {};
+  let locationIndex = 1;
 
   for (const loc of locations) {
+    const locationCode = `LOC-${String(locationIndex).padStart(3, "0")}`;
     const locationId = await ctx.db.insert("locations", {
       organizationId: orgId,
       name: loc.name,
+      locationCode,
+      locationCodeNormalized: locationCode.toLowerCase(),
       type: loc.type,
       sortOrder: 0,
       isActive: true,
@@ -2314,6 +2464,7 @@ async function buildLocationHierarchy(
       },
     });
     nameToId[loc.name] = locationId;
+    locationIndex++;
   }
 
   for (const loc of locations) {

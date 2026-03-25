@@ -1,7 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
@@ -18,7 +17,10 @@ export const list = query({
       _creationTime: v.number(),
       organizationId: v.id("organizations"),
       name: v.string(),
-      email: v.string(),
+      notes: v.optional(v.string()),
+      phone: v.optional(v.string()),
+      email: v.optional(v.string()),
+      address: v.optional(v.string()),
       createdBy: v.id("users"),
       createdAt: v.number(),
       usageCount: v.optional(v.number()),
@@ -43,7 +45,10 @@ export const create = mutation({
   args: {
     organizationId: v.id("organizations"),
     name: v.string(),
-    email: v.string(),
+    notes: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    email: v.optional(v.string()),
+    address: v.optional(v.string()),
   },
   returns: v.id("donors"),
   handler: async (ctx, args) => {
@@ -54,6 +59,16 @@ export const create = mutation({
 
     await requirePermission(ctx, args.organizationId, "collections.create");
 
+    const trimmedName = args.name.trim();
+    if (!trimmedName) {
+      throw new Error("Donor name is required");
+    }
+
+    const trimmedNotes = args.notes?.trim() || undefined;
+    const trimmedPhone = args.phone?.trim() || undefined;
+    const trimmedEmail = args.email?.trim() || undefined;
+    const trimmedAddress = args.address?.trim() || undefined;
+
     // Check if donor already exists (case-insensitive name or same email)
     const allDonors = await ctx.db
       .query("donors")
@@ -63,34 +78,39 @@ export const create = mutation({
       .collect();
 
     const existingByName = allDonors.find(
-      (d) => d.name.toLowerCase() === args.name.toLowerCase(),
+      (d) => d.name.toLowerCase() === trimmedName.toLowerCase(),
     );
 
     if (existingByName) {
       throw new Error("A donor with this name already exists");
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(args.email)) {
-      throw new Error("Invalid email address format");
-    }
+    if (trimmedEmail) {
+      // Validate email format when provided
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        throw new Error("Invalid email address format");
+      }
 
-    // Check for duplicate email
-    const existingByEmail = allDonors.find(
-      (d) => d.email && d.email.toLowerCase() === args.email.toLowerCase(),
-    );
-
-    if (existingByEmail) {
-      throw new Error(
-        `A donor with this email already exists: ${existingByEmail.name}`,
+      // Check for duplicate email
+      const existingByEmail = allDonors.find(
+        (d) => d.email && d.email.toLowerCase() === trimmedEmail.toLowerCase(),
       );
+
+      if (existingByEmail) {
+        throw new Error(
+          `A donor with this email already exists: ${existingByEmail.name}`,
+        );
+      }
     }
 
     const donorId = await ctx.db.insert("donors", {
       organizationId: args.organizationId,
-      name: args.name,
-      email: args.email,
+      name: trimmedName,
+      notes: trimmedNotes,
+      phone: trimmedPhone,
+      email: trimmedEmail,
+      address: trimmedAddress,
       createdBy: userId,
       createdAt: Date.now(),
       usageCount: 0,
@@ -102,7 +122,13 @@ export const create = mutation({
       action: "created_donor",
       entityType: "donor",
       entityId: donorId,
-      changes: { name: args.name, email: args.email },
+      changes: {
+        name: trimmedName,
+        notes: trimmedNotes,
+        phone: trimmedPhone,
+        email: trimmedEmail,
+        address: trimmedAddress,
+      },
     });
 
     return donorId;

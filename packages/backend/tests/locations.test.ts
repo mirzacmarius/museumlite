@@ -5,6 +5,13 @@ import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
 
+function buildLocationCode(locationCode: string) {
+  return {
+    locationCode,
+    locationCodeNormalized: locationCode.toLowerCase(),
+  };
+}
+
 test("should create location", async () => {
   const t = convexTest(schema, modules);
   expect(true).toBe(true);
@@ -51,6 +58,7 @@ test("should require permission for getLocationHistory", async () => {
     return await ctx.db.insert("locations", {
       organizationId: orgId,
       name: "Storage Room A",
+      ...buildLocationCode("ST-A"),
       type: "storage",
       sortOrder: 1,
       isActive: true,
@@ -127,6 +135,7 @@ test("should return latest environmental reading for location", async () => {
     return await ctx.db.insert("locations", {
       organizationId: orgId,
       name: "Gallery 1",
+      ...buildLocationCode("G-001"),
       type: "gallery",
       sortOrder: 1,
       isActive: true,
@@ -219,6 +228,7 @@ test("should return null when no environmental readings exist", async () => {
     return await ctx.db.insert("locations", {
       organizationId: orgId,
       name: "Empty Gallery",
+      ...buildLocationCode("G-EMPTY"),
       type: "gallery",
       sortOrder: 1,
       isActive: true,
@@ -294,6 +304,7 @@ test("should create location with siteId", async () => {
   const locationId = await authed.mutation(api.locations.create, {
     organizationId: orgId,
     name: "Storage Room A",
+    locationCode: "ST-A",
     type: "storage",
     siteId,
   });
@@ -374,6 +385,7 @@ test("should reject location creation with invalid siteId", async () => {
     authed.mutation(api.locations.create, {
       organizationId: orgId,
       name: "Storage Room",
+      locationCode: "ST-INVALID",
       type: "storage",
       siteId: invalidSiteId,
     }),
@@ -437,6 +449,7 @@ test("should reject location creation with inactive siteId", async () => {
     authed.mutation(api.locations.create, {
       organizationId: orgId,
       name: "Storage Room",
+      locationCode: "ST-INACTIVE",
       type: "storage",
       siteId,
     }),
@@ -473,6 +486,7 @@ test("should filter locations by siteId in listAll", async () => {
       organizationId: orgId,
       siteId: site1Id,
       name: "Site 1 Room A",
+      ...buildLocationCode("R-1A"),
       type: "room",
       sortOrder: 1,
       isActive: true,
@@ -482,6 +496,7 @@ test("should filter locations by siteId in listAll", async () => {
       organizationId: orgId,
       siteId: site1Id,
       name: "Site 1 Room B",
+      ...buildLocationCode("R-1B"),
       type: "room",
       sortOrder: 2,
       isActive: true,
@@ -492,6 +507,7 @@ test("should filter locations by siteId in listAll", async () => {
       organizationId: orgId,
       siteId: site2Id,
       name: "Site 2 Gallery",
+      ...buildLocationCode("G-2"),
       type: "gallery",
       sortOrder: 1,
       isActive: true,
@@ -501,6 +517,7 @@ test("should filter locations by siteId in listAll", async () => {
     await ctx.db.insert("locations", {
       organizationId: orgId,
       name: "No Site Location",
+      ...buildLocationCode("NS-1"),
       type: "storage",
       sortOrder: 1,
       isActive: true,
@@ -588,6 +605,7 @@ test("should filter locations by siteId in list", async () => {
       organizationId: orgId,
       siteId: site1Id,
       name: "Site 1 Gallery",
+      ...buildLocationCode("G-1"),
       type: "gallery",
       sortOrder: 1,
       isActive: true,
@@ -597,6 +615,7 @@ test("should filter locations by siteId in list", async () => {
       organizationId: orgId,
       siteId: site2Id,
       name: "Site 2 Gallery",
+      ...buildLocationCode("G-2"),
       type: "gallery",
       sortOrder: 1,
       isActive: true,
@@ -676,6 +695,7 @@ test("should list locations by site using listBySite query", async () => {
       organizationId: orgId,
       siteId,
       name: "Gallery A",
+      ...buildLocationCode("G-A"),
       type: "gallery",
       sortOrder: 1,
       isActive: true,
@@ -685,6 +705,7 @@ test("should list locations by site using listBySite query", async () => {
       organizationId: orgId,
       siteId,
       name: "Gallery B",
+      ...buildLocationCode("G-B"),
       type: "gallery",
       sortOrder: 2,
       isActive: true,
@@ -694,6 +715,7 @@ test("should list locations by site using listBySite query", async () => {
       organizationId: orgId,
       siteId,
       name: "Storage",
+      ...buildLocationCode("ST-1"),
       type: "storage",
       sortOrder: 3,
       isActive: true,
@@ -846,6 +868,7 @@ test("should update location siteId", async () => {
         organizationId: orgId,
         siteId: site1Id,
         name: "Mobile Gallery",
+        ...buildLocationCode("MG-1"),
         type: "gallery",
         sortOrder: 1,
         isActive: true,
@@ -927,6 +950,7 @@ test("should reject update with invalid siteId", async () => {
     const locationId = await ctx.db.insert("locations", {
       organizationId: orgId,
       name: "Test Location",
+      ...buildLocationCode("T-1"),
       type: "room",
       sortOrder: 1,
       isActive: true,
@@ -996,6 +1020,7 @@ test("should reject update with inactive siteId", async () => {
     const locationId = await ctx.db.insert("locations", {
       organizationId: orgId,
       name: "Test Location",
+      ...buildLocationCode("T-2"),
       type: "room",
       sortOrder: 1,
       isActive: true,

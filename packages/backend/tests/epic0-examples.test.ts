@@ -80,6 +80,8 @@ describe("Epic 0 examples", () => {
       await ctx.db.insert("locations", {
         organizationId,
         name: "Storage A",
+        locationCode: "ST-001",
+        locationCodeNormalized: "st-001",
         type: "room",
         parentLocationId: undefined,
         sortOrder: 1,
@@ -109,6 +111,8 @@ describe("Epic 0 examples", () => {
       return await ctx.db.insert("locations", {
         organizationId,
         name: "Vault",
+        locationCode: "V-001",
+        locationCodeNormalized: "v-001",
         type: "room",
         parentLocationId: undefined,
         sortOrder: 1,
@@ -120,6 +124,8 @@ describe("Epic 0 examples", () => {
       return await ctx.db.insert("locations", {
         organizationId,
         name: "Gallery",
+        locationCode: "G-001",
+        locationCodeNormalized: "g-001",
         type: "room",
         parentLocationId: undefined,
         sortOrder: 2,

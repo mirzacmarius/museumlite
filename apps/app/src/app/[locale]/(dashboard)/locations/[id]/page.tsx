@@ -24,6 +24,7 @@ import { Archive, ArrowLeft, Clock, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
+import { formatLocationLabel } from "../location-label";
 import { LocationTimeline } from "./_components/location-timeline";
 import { ObjectsAtLocation } from "./_components/objects-at-location";
 
@@ -136,6 +137,12 @@ export default function LocationDetailPage() {
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
+                  {t("form.locationIdLabel")}
+                </label>
+                <p className="mt-1 font-medium">{location.locationCode}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">
                   {t("type")}
                 </label>
                 <p className="mt-1 capitalize">{location.type}</p>
@@ -179,7 +186,8 @@ export default function LocationDetailPage() {
                         href={`/locations/${child._id}`}
                         className="block text-sm text-primary hover:underline"
                       >
-                        {child.name} ({child.type})
+                        {formatLocationLabel(child.locationCode, child.name)} (
+                        {child.type})
                       </Link>
                     ))}
                   </div>
