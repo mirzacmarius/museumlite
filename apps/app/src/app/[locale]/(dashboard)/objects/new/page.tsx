@@ -5,13 +5,6 @@ import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
-import {
-  TagsInput,
-  TagsInputInput,
-  TagsInputItem,
-  TagsInputLabel,
-  TagsInputList,
-} from "@v1/ui/tags-input";
 import { Textarea } from "@v1/ui/textarea";
 
 import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
@@ -502,30 +495,15 @@ export default function CollectionFormPage() {
                     </div>
 
                     <div>
-                      <TagsInput
+                      <RepeatableTextField
+                        label="Alternate Accession Numbers"
                         value={formData.alternateAccessionNumbers || []}
-                        onValueChange={(values) =>
+                        onChange={(values) =>
                           updateField("alternateAccessionNumbers", values)
                         }
-                        editable
-                        addOnPaste
-                      >
-                        <TagsInputLabel>
-                          Alternate Accession Numbers
-                        </TagsInputLabel>
-                        <TagsInputList>
-                          {(formData.alternateAccessionNumbers || []).map(
-                            (number) => (
-                              <TagsInputItem key={number} value={number}>
-                                {number}
-                              </TagsInputItem>
-                            ),
-                          )}
-                          <TagsInputInput
-                            placeholder={placeholders("alternateId")}
-                          />
-                        </TagsInputList>
-                      </TagsInput>
+                        placeholder={placeholders("alternateId")}
+                        id="alternateAccessionNumbers"
+                      />
                       <p className="mt-1 text-xs text-muted-foreground">
                         Historical accession numbers previously assigned to this
                         object
