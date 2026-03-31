@@ -50,7 +50,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   ];
 
   return (
-    <div className="flex h-full w-full flex-col px-4 sm:px-6 py-4 sm:py-8">
+    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden px-4 py-4 sm:px-6 sm:py-8">
       <div className="lg:hidden mb-4 -mx-4 px-4 overflow-x-auto scrollbar-none">
         <div className="flex gap-1 min-w-max pb-2">
           {navItems.map((item) => (
@@ -70,8 +70,8 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
         </div>
       </div>
 
-      <div className="mx-auto flex h-full w-full max-w-screen-xl gap-12">
-        <div className="hidden w-full max-w-64 flex-col gap-0.5 lg:flex">
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-screen-xl gap-12 overflow-hidden">
+        <div className="hidden w-full max-w-64 shrink-0 flex-col gap-0.5 lg:flex">
           <Link
             href="/settings"
             className={cn(
@@ -228,7 +228,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
             </span>
           </Link>
         </div>
-        {children}
+        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
       </div>
     </div>
   );

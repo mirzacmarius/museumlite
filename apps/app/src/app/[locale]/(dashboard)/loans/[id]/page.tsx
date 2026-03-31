@@ -108,9 +108,9 @@ export default function LoanDetailPage() {
     <>
       <SidebarProvider
         style={{ "--sidebar-width": "20rem" } as React.CSSProperties}
-        className="flex min-h-screen w-full print:hidden"
+        className="flex h-full min-h-0 w-full print:hidden"
       >
-        <main className="z-10 flex min-w-0 flex-1 flex-col bg-background">
+        <main className="z-10 flex min-h-0 min-w-0 flex-1 flex-col bg-background">
           {/* Navbar */}
           <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
             <div className="flex items-center gap-2 text-xs">

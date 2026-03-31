@@ -253,7 +253,7 @@ export default function ExhibitionDetailPage() {
   const duration = calculateDuration();
 
   return (
-    <div className="min-h-screen w-full bg-background pb-20">
+    <div className="flex h-full min-h-0 w-full flex-col bg-background">
       <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-xl">
         <div className="flex items-center gap-2 text-xs">
           <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
@@ -327,374 +327,376 @@ export default function ExhibitionDetailPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-4xl px-6 py-8">
-        <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider ${timeStatusColor}`}
-              >
-                {timeStatusText}
-              </span>
-              {exhibition.status && exhibition.status !== "active" && (
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-4xl px-6 py-8 pb-20">
+          <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
                 <span
-                  className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider ${workflowInfo.color}`}
+                  className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider ${timeStatusColor}`}
                 >
-                  <WorkflowIcon className="h-3 w-3" />
-                  {workflowInfo.text}
+                  {timeStatusText}
                 </span>
-              )}
-              {exhibition.isLoan && (
-                <span className="text-[10px] font-medium text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
-                  {t("status.loan")}
-                </span>
-              )}
+                {exhibition.status && exhibition.status !== "active" && (
+                  <span
+                    className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider ${workflowInfo.color}`}
+                  >
+                    <WorkflowIcon className="h-3 w-3" />
+                    {workflowInfo.text}
+                  </span>
+                )}
+                {exhibition.isLoan && (
+                  <span className="text-[10px] font-medium text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+                    {t("status.loan")}
+                  </span>
+                )}
+              </div>
+              <h1 className="text-3xl font-bold text-foreground">
+                {exhibition.title}
+              </h1>
             </div>
-            <h1 className="text-3xl font-bold text-foreground">
-              {exhibition.title}
-            </h1>
-          </div>
-        </div>
-
-        <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <div className="rounded-lg border border-border bg-muted/20 p-4">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span className="text-xs font-medium uppercase tracking-wider">
-                {duration.label}
-              </span>
-            </div>
-            <p className="mt-2 text-2xl font-bold text-foreground">
-              {duration.value}
-            </p>
           </div>
 
-          <div className="rounded-lg border border-border bg-muted/20 p-4">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <AlertCircle className="h-4 w-4" />
-              <span className="text-xs font-medium uppercase tracking-wider">
-                {t("detail.status")}
-              </span>
-            </div>
-            <p className="mt-2 text-lg font-semibold text-foreground capitalize">
-              {exhibition.status ?? t("status.active")}
-            </p>
-            {exhibition.workflowStep && exhibition.totalWorkflowSteps && (
-              <p className="text-xs text-muted-foreground">
-                {t("detail.step", {
-                  step: exhibition.workflowStep.toString(),
-                  total: exhibition.totalWorkflowSteps.toString(),
-                })}
+          <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div className="rounded-lg border border-border bg-muted/20 p-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span className="text-xs font-medium uppercase tracking-wider">
+                  {duration.label}
+                </span>
+              </div>
+              <p className="mt-2 text-2xl font-bold text-foreground">
+                {duration.value}
               </p>
+            </div>
+
+            <div className="rounded-lg border border-border bg-muted/20 p-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <AlertCircle className="h-4 w-4" />
+                <span className="text-xs font-medium uppercase tracking-wider">
+                  {t("detail.status")}
+                </span>
+              </div>
+              <p className="mt-2 text-lg font-semibold text-foreground capitalize">
+                {exhibition.status ?? t("status.active")}
+              </p>
+              {exhibition.workflowStep && exhibition.totalWorkflowSteps && (
+                <p className="text-xs text-muted-foreground">
+                  {t("detail.step", {
+                    step: exhibition.workflowStep.toString(),
+                    total: exhibition.totalWorkflowSteps.toString(),
+                  })}
+                </p>
+              )}
+            </div>
+
+            {exhibition.creatorName && (
+              <div className="rounded-lg border border-border bg-muted/20 p-4">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <User className="h-4 w-4" />
+                  <span className="text-xs font-medium uppercase tracking-wider">
+                    {t("detail.createdBy")}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm font-medium text-foreground truncate">
+                  {exhibition.creatorName}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {formatDate(new Date(exhibition._creationTime), locale)}
+                </p>
+              </div>
+            )}
+
+            {exhibition.approverName && exhibition.approvedAt && (
+              <div className="rounded-lg border border-border bg-muted/20 p-4">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="text-xs font-medium uppercase tracking-wider">
+                    {t("detail.approvedBy")}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm font-medium text-foreground truncate">
+                  {exhibition.approverName}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {formatDate(new Date(exhibition.approvedAt), locale)}
+                </p>
+              </div>
             )}
           </div>
 
-          {exhibition.creatorName && (
-            <div className="rounded-lg border border-border bg-muted/20 p-4">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <User className="h-4 w-4" />
-                <span className="text-xs font-medium uppercase tracking-wider">
-                  {t("detail.createdBy")}
-                </span>
-              </div>
-              <p className="mt-2 text-sm font-medium text-foreground truncate">
-                {exhibition.creatorName}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {formatDate(new Date(exhibition._creationTime), locale)}
-              </p>
-            </div>
-          )}
+          <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="md:col-span-2 space-y-6">
+              <div className="rounded-xl border border-border bg-muted/20 p-6">
+                <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
+                  <GalleryVerticalEnd className="h-4 w-4" />
+                  {t("detail.overview")}
+                </h2>
 
-          {exhibition.approverName && exhibition.approvedAt && (
-            <div className="rounded-lg border border-border bg-muted/20 p-4">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <CheckCircle2 className="h-4 w-4" />
-                <span className="text-xs font-medium uppercase tracking-wider">
-                  {t("detail.approvedBy")}
-                </span>
-              </div>
-              <p className="mt-2 text-sm font-medium text-foreground truncate">
-                {exhibition.approverName}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {formatDate(new Date(exhibition.approvedAt), locale)}
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-          <div className="md:col-span-2 space-y-6">
-            <div className="rounded-xl border border-border bg-muted/20 p-6">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                <GalleryVerticalEnd className="h-4 w-4" />
-                {t("detail.overview")}
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
-                <div>
-                  <label className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
-                    {t("detail.location")}
-                  </label>
-                  <p className="text-sm text-foreground mt-1 flex items-center gap-2">
-                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                    {exhibition.location || "—"}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
-                    {t("detail.dateRange")}
-                  </label>
-                  <p className="text-sm text-foreground mt-1 flex items-center gap-2">
-                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                    {formatDate(new Date(exhibition.startDate), locale)}
-                    {exhibition.endDate
-                      ? ` — ${formatDate(new Date(exhibition.endDate), locale)}`
-                      : ` ${t("card.ongoing")}`}
-                  </p>
-                </div>
-
-                {exhibition.isLoan && (
-                  <div className="md:col-span-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
+                  <div>
                     <label className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
-                      {t("detail.loanVenue")}
+                      {t("detail.location")}
                     </label>
-                    <p className="text-sm text-foreground mt-1">
-                      {exhibition.loanVenue || "—"}
+                    <p className="text-sm text-foreground mt-1 flex items-center gap-2">
+                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                      {exhibition.location || "—"}
                     </p>
                   </div>
+                  <div>
+                    <label className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
+                      {t("detail.dateRange")}
+                    </label>
+                    <p className="text-sm text-foreground mt-1 flex items-center gap-2">
+                      <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                      {formatDate(new Date(exhibition.startDate), locale)}
+                      {exhibition.endDate
+                        ? ` — ${formatDate(new Date(exhibition.endDate), locale)}`
+                        : ` ${t("card.ongoing")}`}
+                    </p>
+                  </div>
+
+                  {exhibition.isLoan && (
+                    <div className="md:col-span-2">
+                      <label className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
+                        {t("detail.loanVenue")}
+                      </label>
+                      <p className="text-sm text-foreground mt-1">
+                        {exhibition.loanVenue || "—"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-border bg-muted/20 p-6">
+                <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
+                  <Info className="h-4 w-4" />
+                  {t("detail.notes")}
+                </h2>
+                <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                  {exhibition.notes || t("detail.noNotes")}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-border bg-muted/20 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    {t("detail.documents")}
+                  </h2>
+                  <PermissionGate permission="collections.update">
+                    <Dialog
+                      open={isUploadDialogOpen}
+                      onOpenChange={setIsUploadDialogOpen}
+                    >
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Plus className="mr-1 h-3.5 w-3.5" />
+                          {t("detail.add")}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-background border-border">
+                        <DialogHeader>
+                          <DialogTitle className="text-foreground">
+                            {t("actions.uploadDocument")}
+                          </DialogTitle>
+                          <DialogDescription className="text-muted-foreground">
+                            {t("detail.uploadDescription")}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="space-y-2">
+                            <Label className="text-muted-foreground">
+                              {t("documentUpload.typeLabel")}
+                            </Label>
+                            <Select
+                              value={uploadDocType}
+                              onValueChange={setUploadDocType}
+                            >
+                              <SelectTrigger className="bg-muted/50 border-border">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="floor_plan">
+                                  {t("documentUpload.floorPlan")}
+                                </SelectItem>
+                                <SelectItem value="label">
+                                  {t("documentUpload.label")}
+                                </SelectItem>
+                                <SelectItem value="press_release">
+                                  {t("documentUpload.pressRelease")}
+                                </SelectItem>
+                                <SelectItem value="checklist">
+                                  {t("documentUpload.checklist")}
+                                </SelectItem>
+                                <SelectItem value="other">
+                                  {t("documentUpload.other")}
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-muted-foreground">
+                              {t("detail.file")}
+                            </Label>
+                            <Input
+                              type="file"
+                              onChange={(e) =>
+                                setSelectedFile(e.target.files?.[0] ?? null)
+                              }
+                              className="bg-muted/50 border-border"
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            variant="outline"
+                            onClick={() => setIsUploadDialogOpen(false)}
+                            className="border-border"
+                          >
+                            {t("actions.cancel")}
+                          </Button>
+                          <Button
+                            onClick={handleFileUpload}
+                            disabled={!selectedFile || isUploading}
+                            className="bg-primary text-primary-foreground hover:bg-primary/90"
+                          >
+                            <Upload className="mr-2 h-4 w-4" />
+                            {isUploading
+                              ? t("actions.uploading")
+                              : t("documentUpload.uploadButton")}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </PermissionGate>
+                </div>
+
+                {documents && documents.length > 0 ? (
+                  <div className="space-y-3">
+                    {documents.map((doc) => (
+                      <div
+                        key={doc._id}
+                        className="flex items-center justify-between rounded-lg border border-border bg-background/50 p-3"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {doc.fileName}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {doc.documentType.replace("_", " ")} •{" "}
+                              {formatDate(new Date(doc.uploadedAt), locale)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {doc.url && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              asChild
+                            >
+                              <a
+                                href={doc.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download={doc.fileName}
+                              >
+                                <Download className="h-4 w-4" />
+                              </a>
+                            </Button>
+                          )}
+                          <PermissionGate permission="collections.delete">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-950/50"
+                              onClick={() => handleDeleteDocument(doc._id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </PermissionGate>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    {t("detail.noDocuments")}
+                  </p>
                 )}
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-muted/20 p-6">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                <Info className="h-4 w-4" />
-                {t("detail.notes")}
-              </h2>
-              <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
-                {exhibition.notes || t("detail.noNotes")}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-border bg-muted/20 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  {t("detail.documents")}
+            <div className="space-y-6">
+              <div className="rounded-xl border border-border bg-muted/20 p-6">
+                <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
+                  <Box className="h-4 w-4" />
+                  {t("detail.relatedObject")}
                 </h2>
-                <PermissionGate permission="collections.update">
-                  <Dialog
-                    open={isUploadDialogOpen}
-                    onOpenChange={setIsUploadDialogOpen}
-                  >
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Plus className="mr-1 h-3.5 w-3.5" />
-                        {t("detail.add")}
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="bg-background border-border">
-                      <DialogHeader>
-                        <DialogTitle className="text-foreground">
-                          {t("actions.uploadDocument")}
-                        </DialogTitle>
-                        <DialogDescription className="text-muted-foreground">
-                          {t("detail.uploadDescription")}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                          <Label className="text-muted-foreground">
-                            {t("documentUpload.typeLabel")}
-                          </Label>
-                          <Select
-                            value={uploadDocType}
-                            onValueChange={setUploadDocType}
-                          >
-                            <SelectTrigger className="bg-muted/50 border-border">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="floor_plan">
-                                {t("documentUpload.floorPlan")}
-                              </SelectItem>
-                              <SelectItem value="label">
-                                {t("documentUpload.label")}
-                              </SelectItem>
-                              <SelectItem value="press_release">
-                                {t("documentUpload.pressRelease")}
-                              </SelectItem>
-                              <SelectItem value="checklist">
-                                {t("documentUpload.checklist")}
-                              </SelectItem>
-                              <SelectItem value="other">
-                                {t("documentUpload.other")}
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-muted-foreground">
-                            {t("detail.file")}
-                          </Label>
-                          <Input
-                            type="file"
-                            onChange={(e) =>
-                              setSelectedFile(e.target.files?.[0] ?? null)
-                            }
-                            className="bg-muted/50 border-border"
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button
-                          variant="outline"
-                          onClick={() => setIsUploadDialogOpen(false)}
-                          className="border-border"
-                        >
-                          {t("actions.cancel")}
-                        </Button>
-                        <Button
-                          onClick={handleFileUpload}
-                          disabled={!selectedFile || isUploading}
-                          className="bg-primary text-primary-foreground hover:bg-primary/90"
-                        >
-                          <Upload className="mr-2 h-4 w-4" />
-                          {isUploading
-                            ? t("actions.uploading")
-                            : t("documentUpload.uploadButton")}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </PermissionGate>
+
+                {exhibition.collectionId && (
+                  <div className="group relative rounded-lg border border-border bg-background/50 p-4 transition-all hover:border-border hover:bg-muted/50">
+                    <Link
+                      href={`/collections/${exhibition.collectionId}`}
+                      className="absolute inset-0 z-10"
+                    />
+                    <h3 className="font-medium text-foreground group-hover:text-white truncate">
+                      {exhibition.collectionTitle || t("detail.unknownObject")}
+                    </h3>
+                    <div className="mt-2 flex items-center text-xs text-muted-foreground group-hover:text-muted-foreground">
+                      {t("detail.viewObjectDetails")}{" "}
+                      <ArrowLeft className="ml-1 h-3 w-3 rotate-180" />
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {documents && documents.length > 0 ? (
-                <div className="space-y-3">
-                  {documents.map((doc) => (
-                    <div
-                      key={doc._id}
-                      className="flex items-center justify-between rounded-lg border border-border bg-background/50 p-3"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">
-                            {doc.fileName}
+              {workflowHistory && workflowHistory.length > 0 && (
+                <div className="rounded-xl border border-border bg-muted/20 p-6">
+                  <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    {t("detail.approvalHistory")}
+                  </h2>
+
+                  <div className="space-y-4">
+                    {workflowHistory.map((item, index) => (
+                      <div
+                        key={`${item.step}-${item.approvedAt}`}
+                        className="relative pl-4 border-l-2 border-border"
+                      >
+                        <div className="absolute -left-1.5 top-0.5 h-2.5 w-2.5 rounded-full bg-primary" />
+                        <div className="text-sm">
+                          <p className="font-medium text-foreground">
+                            {item.step === 0
+                              ? t("detail.created")
+                              : item.comment?.startsWith("Rejected")
+                                ? t("status.rejected")
+                                : t("detail.stepApproved", {
+                                    step: item.step.toString(),
+                                  })}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {doc.documentType.replace("_", " ")} •{" "}
-                            {formatDate(new Date(doc.uploadedAt), locale)}
+                            {item.approverName ?? t("detail.unknownUser")} •{" "}
+                            {formatDate(new Date(item.approvedAt), locale)}
                           </p>
+                          {item.comment &&
+                            !item.comment.startsWith("Rejected") && (
+                              <p className="mt-1 text-xs text-muted-foreground italic">
+                                "{item.comment}"
+                              </p>
+                            )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {doc.url && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            asChild
-                          >
-                            <a
-                              href={doc.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              download={doc.fileName}
-                            >
-                              <Download className="h-4 w-4" />
-                            </a>
-                          </Button>
-                        )}
-                        <PermissionGate permission="collections.delete">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-950/50"
-                            onClick={() => handleDeleteDocument(doc._id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </PermissionGate>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  {t("detail.noDocuments")}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="rounded-xl border border-border bg-muted/20 p-6">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                <Box className="h-4 w-4" />
-                {t("detail.relatedObject")}
-              </h2>
-
-              {exhibition.collectionId && (
-                <div className="group relative rounded-lg border border-border bg-background/50 p-4 transition-all hover:border-border hover:bg-muted/50">
-                  <Link
-                    href={`/collections/${exhibition.collectionId}`}
-                    className="absolute inset-0 z-10"
-                  />
-                  <h3 className="font-medium text-foreground group-hover:text-white truncate">
-                    {exhibition.collectionTitle || t("detail.unknownObject")}
-                  </h3>
-                  <div className="mt-2 flex items-center text-xs text-muted-foreground group-hover:text-muted-foreground">
-                    {t("detail.viewObjectDetails")}{" "}
-                    <ArrowLeft className="ml-1 h-3 w-3 rotate-180" />
+                    ))}
                   </div>
                 </div>
               )}
             </div>
-
-            {workflowHistory && workflowHistory.length > 0 && (
-              <div className="rounded-xl border border-border bg-muted/20 p-6">
-                <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  {t("detail.approvalHistory")}
-                </h2>
-
-                <div className="space-y-4">
-                  {workflowHistory.map((item, index) => (
-                    <div
-                      key={`${item.step}-${item.approvedAt}`}
-                      className="relative pl-4 border-l-2 border-border"
-                    >
-                      <div className="absolute -left-1.5 top-0.5 h-2.5 w-2.5 rounded-full bg-primary" />
-                      <div className="text-sm">
-                        <p className="font-medium text-foreground">
-                          {item.step === 0
-                            ? t("detail.created")
-                            : item.comment?.startsWith("Rejected")
-                              ? t("status.rejected")
-                              : t("detail.stepApproved", {
-                                  step: item.step.toString(),
-                                })}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.approverName ?? t("detail.unknownUser")} •{" "}
-                          {formatDate(new Date(item.approvedAt), locale)}
-                        </p>
-                        {item.comment &&
-                          !item.comment.startsWith("Rejected") && (
-                            <p className="mt-1 text-xs text-muted-foreground italic">
-                              "{item.comment}"
-                            </p>
-                          )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

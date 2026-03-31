@@ -308,7 +308,7 @@ export default function NewLoanPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-background pb-20">
+    <div className="flex h-full min-h-0 w-full flex-col bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
         <div className="flex items-center gap-2 text-xs">
@@ -323,479 +323,485 @@ export default function NewLoanPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-5xl px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Create New Loan
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Register a new incoming or outgoing loan record.
-          </p>
-        </div>
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-5xl px-6 py-8 pb-20">
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              Create New Loan
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Register a new incoming or outgoing loan record.
+            </p>
+          </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 lg:grid-cols-3 gap-8"
-        >
-          {/* Main Form Column */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* 1. Basic Information */}
-            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] text-foreground">
-                  1
-                </span>
-                Basic Information
-              </h2>
+          <form
+            onSubmit={handleSubmit}
+            className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+          >
+            {/* Main Form Column */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* 1. Basic Information */}
+              <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] text-foreground">
+                    1
+                  </span>
+                  Basic Information
+                </h2>
 
-              <div className="grid gap-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="type">Loan Type</Label>
-                    <Select
-                      value={formData.type}
-                      onValueChange={(value: "incoming" | "outgoing") =>
-                        setFormData({ ...formData, type: value })
-                      }
-                    >
-                      <SelectTrigger id="type" className="bg-background">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="incoming">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-purple-500" />
-                            {tActions("incomingLoan")}
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="outgoing">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-cyan-500" />
-                            {tActions("outgoingLoan")}
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="loanNumber">
-                      {tActions("loanNumberLabel")}{" "}
-                      <span className="text-muted-foreground font-normal text-xs">
-                        {tActions("optional")}
-                      </span>
-                    </Label>
-                    <Input
-                      id="loanNumber"
-                      value={formData.loanNumber}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          loanNumber: e.target.value,
-                        })
-                      }
-                      placeholder={t("placeholders.loanNumber")}
-                      className="bg-background font-mono placeholder:text-muted-foreground/50"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4 rounded-lg bg-secondary/30 border border-border/50 p-4">
-                  <div>
-                    <Label className="mb-2 block">
-                      {formData.type === "incoming"
-                        ? tActions("lenderName")
-                        : tActions("borrowerName")}
-                    </Label>
-                    <AccountCombobox
-                      organizationId={currentOrganizationId}
-                      value={formData.accountId}
-                      onValueChange={(accountId) =>
-                        setFormData({ ...formData, accountId })
-                      }
-                      onAccountSelect={(account) => {
-                        if (account) {
-                          setFormData({
-                            ...formData,
-                            accountId: account._id,
-                            lenderBorrowerName: account.businessName ?? "",
-                            lenderBorrowerContact: [
-                              account.contactPerson,
-                              account.email,
-                              account.phone,
-                            ]
-                              .filter(Boolean)
-                              .join(", "),
-                          });
-                        }
-                      }}
-                      placeholder={t("placeholders.lenderBorrower")}
-                    />
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-6">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="lenderBorrowerName" className="text-xs">
-                        {tActions("nameInstitution")}{" "}
-                        <span className="text-destructive">
-                          {tActions("required")}
+                      <Label htmlFor="type">Loan Type</Label>
+                      <Select
+                        value={formData.type}
+                        onValueChange={(value: "incoming" | "outgoing") =>
+                          setFormData({ ...formData, type: value })
+                        }
+                      >
+                        <SelectTrigger id="type" className="bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="incoming">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-purple-500" />
+                              {tActions("incomingLoan")}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="outgoing">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-cyan-500" />
+                              {tActions("outgoingLoan")}
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="loanNumber">
+                        {tActions("loanNumberLabel")}{" "}
+                        <span className="text-muted-foreground font-normal text-xs">
+                          {tActions("optional")}
                         </span>
                       </Label>
                       <Input
-                        id="lenderBorrowerName"
-                        value={formData.lenderBorrowerName}
+                        id="loanNumber"
+                        value={formData.loanNumber}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            lenderBorrowerName: e.target.value,
+                            loanNumber: e.target.value,
                           })
                         }
-                        placeholder={t("placeholders.institutionName")}
-                        required
-                        className="bg-background"
+                        placeholder={t("placeholders.loanNumber")}
+                        className="bg-background font-mono placeholder:text-muted-foreground/50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 rounded-lg bg-secondary/30 border border-border/50 p-4">
+                    <div>
+                      <Label className="mb-2 block">
+                        {formData.type === "incoming"
+                          ? tActions("lenderName")
+                          : tActions("borrowerName")}
+                      </Label>
+                      <AccountCombobox
+                        organizationId={currentOrganizationId}
+                        value={formData.accountId}
+                        onValueChange={(accountId) =>
+                          setFormData({ ...formData, accountId })
+                        }
+                        onAccountSelect={(account) => {
+                          if (account) {
+                            setFormData({
+                              ...formData,
+                              accountId: account._id,
+                              lenderBorrowerName: account.businessName ?? "",
+                              lenderBorrowerContact: [
+                                account.contactPerson,
+                                account.email,
+                                account.phone,
+                              ]
+                                .filter(Boolean)
+                                .join(", "),
+                            });
+                          }
+                        }}
+                        placeholder={t("placeholders.lenderBorrower")}
+                      />
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="lenderBorrowerName" className="text-xs">
+                          {tActions("nameInstitution")}{" "}
+                          <span className="text-destructive">
+                            {tActions("required")}
+                          </span>
+                        </Label>
+                        <Input
+                          id="lenderBorrowerName"
+                          value={formData.lenderBorrowerName}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              lenderBorrowerName: e.target.value,
+                            })
+                          }
+                          placeholder={t("placeholders.institutionName")}
+                          required
+                          className="bg-background"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="lenderBorrowerContact"
+                          className="text-xs"
+                        >
+                          {tActions("contactInformation")}
+                        </Label>
+                        <Input
+                          id="lenderBorrowerContact"
+                          value={formData.lenderBorrowerContact}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              lenderBorrowerContact: e.target.value,
+                            })
+                          }
+                          placeholder={t("placeholders.contactDetails")}
+                          className="bg-background"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Schedule & Terms */}
+              <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] text-foreground">
+                    2
+                  </span>
+                  Schedule & Terms
+                </h2>
+
+                <div className="grid gap-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="startDate">
+                        Start Date <span className="text-destructive">*</span>
+                      </Label>
+                      <DatePicker
+                        id="startDate"
+                        date={formData.startDate}
+                        onSelect={(date: Date | undefined) =>
+                          setFormData({
+                            ...formData,
+                            startDate: date || new Date(),
+                          })
+                        }
+                        placeholder={t("placeholders.selectDate")}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label
-                        htmlFor="lenderBorrowerContact"
-                        className="text-xs"
-                      >
-                        {tActions("contactInformation")}
-                      </Label>
-                      <Input
-                        id="lenderBorrowerContact"
-                        value={formData.lenderBorrowerContact}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            lenderBorrowerContact: e.target.value,
-                          })
+                      <Label htmlFor="endDate">End Date</Label>
+                      <DatePicker
+                        id="endDate"
+                        date={formData.endDate}
+                        onSelect={(date: Date | undefined) =>
+                          setFormData({ ...formData, endDate: date })
                         }
-                        placeholder={t("placeholders.contactDetails")}
-                        className="bg-background"
+                        placeholder={t("placeholders.selectDate")}
                       />
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
 
-            {/* 2. Schedule & Terms */}
-            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] text-foreground">
-                  2
-                </span>
-                Schedule & Terms
-              </h2>
-
-              <div className="grid gap-6">
-                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="startDate">
-                      Start Date <span className="text-destructive">*</span>
+                    <Label htmlFor="insuranceValue">
+                      Total Insurance Value
                     </Label>
-                    <DatePicker
-                      id="startDate"
-                      date={formData.startDate}
-                      onSelect={(date: Date | undefined) =>
+                    <Input
+                      id="insuranceValue"
+                      type="number"
+                      step="0.01"
+                      value={formData.insuranceValue}
+                      onChange={(e) =>
                         setFormData({
                           ...formData,
-                          startDate: date || new Date(),
+                          insuranceValue: e.target.value,
                         })
                       }
-                      placeholder={t("placeholders.selectDate")}
+                      placeholder={t("placeholders.insuranceValue")}
+                      className="bg-background"
                     />
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="endDate">End Date</Label>
-                    <DatePicker
-                      id="endDate"
-                      date={formData.endDate}
-                      onSelect={(date: Date | undefined) =>
-                        setFormData({ ...formData, endDate: date })
+                    <Label htmlFor="terms">Terms & Conditions</Label>
+                    <Textarea
+                      id="terms"
+                      value={formData.terms}
+                      onChange={(e) =>
+                        setFormData({ ...formData, terms: e.target.value })
                       }
-                      placeholder={t("placeholders.selectDate")}
+                      placeholder={t("placeholders.terms")}
+                      rows={3}
+                      className="bg-background resize-none"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Internal Notes</Label>
+                    <Textarea
+                      id="notes"
+                      value={formData.notes}
+                      onChange={(e) =>
+                        setFormData({ ...formData, notes: e.target.value })
+                      }
+                      placeholder={t("placeholders.notes")}
+                      rows={2}
+                      className="bg-background resize-none"
                     />
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="insuranceValue">Total Insurance Value</Label>
-                  <Input
-                    id="insuranceValue"
-                    type="number"
-                    step="0.01"
-                    value={formData.insuranceValue}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        insuranceValue: e.target.value,
-                      })
-                    }
-                    placeholder={t("placeholders.insuranceValue")}
-                    className="bg-background"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="terms">Terms & Conditions</Label>
-                  <Textarea
-                    id="terms"
-                    value={formData.terms}
-                    onChange={(e) =>
-                      setFormData({ ...formData, terms: e.target.value })
-                    }
-                    placeholder={t("placeholders.terms")}
-                    rows={3}
-                    className="bg-background resize-none"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Internal Notes</Label>
-                  <Textarea
-                    id="notes"
-                    value={formData.notes}
-                    onChange={(e) =>
-                      setFormData({ ...formData, notes: e.target.value })
-                    }
-                    placeholder={t("placeholders.notes")}
-                    rows={2}
-                    className="bg-background resize-none"
-                  />
-                </div>
               </div>
-            </div>
 
-            {/* 3. Items Selection */}
-            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] text-foreground">
-                  3
-                </span>
-                Loan Items
-              </h2>
-
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label>Select Collections</Label>
-                  <CollectionMultiSelectCombobox
-                    organizationId={
-                      currentOrganizationId as Id<"organizations">
-                    }
-                    selectedIds={selectedCollectionIds}
-                    onSelectionChange={(ids) => {
-                      setSelectedCollectionIds(ids);
-                      // Remove conditions for deselected items
-                      setItemConditions((prev) => {
-                        const updated = { ...prev };
-                        Object.keys(updated).forEach((id) => {
-                          if (!ids.includes(id)) {
-                            delete updated[id];
-                          }
-                        });
-                        return updated;
-                      });
-                    }}
-                    placeholder={t("placeholders.collections")}
-                  />
-                </div>
-
-                {/* Selected Items List */}
-                {selectedCollectionIds.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
-                        Selected ({selectedCollectionIds.length})
-                      </Label>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-auto p-0 text-xs text-muted-foreground hover:text-destructive"
-                        onClick={() => {
-                          setSelectedCollectionIds([]);
-                          setItemConditions({});
-                        }}
-                      >
-                        Clear all
-                      </Button>
-                    </div>
-
-                    <div className="space-y-3">
-                      {selectedCollectionsList.map((collection) => {
-                        const hasIssue = problematicCollectionIds.has(
-                          collection._id,
-                        );
-                        const issueInfo = collectionsInActiveLoans?.find(
-                          (item) => item.collectionId === collection._id,
-                        );
-                        const issueMessage = issueInfo
-                          ? `Already in ${issueInfo.status} loan ${issueInfo.loanNumber}`
-                          : undefined;
-
-                        return (
-                          <SelectedCollectionItem
-                            key={collection._id}
-                            collection={collection}
-                            condition={itemConditions[collection._id] || ""}
-                            onConditionChange={(value) =>
-                              setItemConditions((prev) => ({
-                                ...prev,
-                                [collection._id]: value,
-                              }))
-                            }
-                            onRemove={() => {
-                              setSelectedCollectionIds((prev) =>
-                                prev.filter((id) => id !== collection._id),
-                              );
-                              setItemConditions((prev) => {
-                                const updated = { ...prev };
-                                delete updated[collection._id];
-                                return updated;
-                              });
-                              // Remove from problematic set
-                              setProblematicCollectionIds((prev) => {
-                                const updated = new Set(prev);
-                                updated.delete(collection._id);
-                                return updated;
-                              });
-                            }}
-                            hasIssue={hasIssue}
-                            issueMessage={issueMessage}
-                            conditionPlaceholder={t("placeholders.condition")}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Error & Actions */}
-            {error && (
-              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive flex items-center gap-2">
-                <Info className="h-4 w-4" />
-                {error}
-              </div>
-            )}
-
-            <div className="flex justify-end gap-4 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-                className="w-24"
-              >
-                Cancel
-              </Button>
-              <PermissionGate permission="loans.create">
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="min-w-[140px]"
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  {isSubmitting
-                    ? tActions("saving")
-                    : tActions("createNewLoan")}
-                </Button>
-              </PermissionGate>
-            </div>
-          </div>
-
-          {/* Sidebar Preview */}
-          <div className="hidden lg:block space-y-6">
-            <div className="sticky top-24">
+              {/* 3. Items Selection */}
               <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">
-                  Summary
-                </h3>
+                <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] text-foreground">
+                    3
+                  </span>
+                  Loan Items
+                </h2>
 
-                <div className="space-y-4">
-                  <div className="flex justify-between items-start border-b border-border/50 pb-4">
-                    <span className="text-sm text-muted-foreground">Type</span>
-                    <span
-                      className={cn(
-                        "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset",
-                        formData.type === "incoming"
-                          ? "bg-purple-50 text-purple-700 ring-purple-600/20 dark:bg-purple-900/20 dark:text-purple-400"
-                          : "bg-cyan-50 text-cyan-700 ring-cyan-600/20 dark:bg-cyan-900/20 dark:text-cyan-400",
-                      )}
-                    >
-                      {formData.type === "incoming"
-                        ? t("filters.incoming")
-                        : t("filters.outgoing")}
-                    </span>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label>Select Collections</Label>
+                    <CollectionMultiSelectCombobox
+                      organizationId={
+                        currentOrganizationId as Id<"organizations">
+                      }
+                      selectedIds={selectedCollectionIds}
+                      onSelectionChange={(ids) => {
+                        setSelectedCollectionIds(ids);
+                        // Remove conditions for deselected items
+                        setItemConditions((prev) => {
+                          const updated = { ...prev };
+                          Object.keys(updated).forEach((id) => {
+                            if (!ids.includes(id)) {
+                              delete updated[id];
+                            }
+                          });
+                          return updated;
+                        });
+                      }}
+                      placeholder={t("placeholders.collections")}
+                    />
                   </div>
 
-                  <div className="pb-4 border-b border-border/50">
-                    <span className="text-xs text-muted-foreground uppercase tracking-wide block mb-1">
-                      {formData.type === "incoming"
-                        ? tActions("lender")
-                        : tActions("borrower")}
-                    </span>
-                    <p className="text-sm font-medium text-foreground">
-                      {formData.lenderBorrowerName || "—"}
-                    </p>
-                    {formData.lenderBorrowerContact && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {formData.lenderBorrowerContact}
-                      </p>
-                    )}
-                  </div>
+                  {/* Selected Items List */}
+                  {selectedCollectionIds.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
+                          Selected ({selectedCollectionIds.length})
+                        </Label>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-0 text-xs text-muted-foreground hover:text-destructive"
+                          onClick={() => {
+                            setSelectedCollectionIds([]);
+                            setItemConditions({});
+                          }}
+                        >
+                          Clear all
+                        </Button>
+                      </div>
 
-                  <div className="pb-4 border-b border-border/50">
-                    <span className="text-xs text-muted-foreground uppercase tracking-wide block mb-1">
-                      Dates
-                    </span>
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-foreground">
-                        {formatDate(formData.startDate, locale)}
+                      <div className="space-y-3">
+                        {selectedCollectionsList.map((collection) => {
+                          const hasIssue = problematicCollectionIds.has(
+                            collection._id,
+                          );
+                          const issueInfo = collectionsInActiveLoans?.find(
+                            (item) => item.collectionId === collection._id,
+                          );
+                          const issueMessage = issueInfo
+                            ? `Already in ${issueInfo.status} loan ${issueInfo.loanNumber}`
+                            : undefined;
+
+                          return (
+                            <SelectedCollectionItem
+                              key={collection._id}
+                              collection={collection}
+                              condition={itemConditions[collection._id] || ""}
+                              onConditionChange={(value) =>
+                                setItemConditions((prev) => ({
+                                  ...prev,
+                                  [collection._id]: value,
+                                }))
+                              }
+                              onRemove={() => {
+                                setSelectedCollectionIds((prev) =>
+                                  prev.filter((id) => id !== collection._id),
+                                );
+                                setItemConditions((prev) => {
+                                  const updated = { ...prev };
+                                  delete updated[collection._id];
+                                  return updated;
+                                });
+                                // Remove from problematic set
+                                setProblematicCollectionIds((prev) => {
+                                  const updated = new Set(prev);
+                                  updated.delete(collection._id);
+                                  return updated;
+                                });
+                              }}
+                              hasIssue={hasIssue}
+                              issueMessage={issueMessage}
+                              conditionPlaceholder={t("placeholders.condition")}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Error & Actions */}
+              {error && (
+                <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive flex items-center gap-2">
+                  <Info className="h-4 w-4" />
+                  {error}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-4 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.back()}
+                  className="w-24"
+                >
+                  Cancel
+                </Button>
+                <PermissionGate permission="loans.create">
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="min-w-[140px]"
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    {isSubmitting
+                      ? tActions("saving")
+                      : tActions("createNewLoan")}
+                  </Button>
+                </PermissionGate>
+              </div>
+            </div>
+
+            {/* Sidebar Preview */}
+            <div className="hidden lg:block space-y-6">
+              <div className="sticky top-24">
+                <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                  <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">
+                    Summary
+                  </h3>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-start border-b border-border/50 pb-4">
+                      <span className="text-sm text-muted-foreground">
+                        Type
                       </span>
-                      <span className="text-muted-foreground">→</span>
-                      <span className="text-foreground">
-                        {formData.endDate
-                          ? formatDate(formData.endDate, locale)
-                          : tActions("indefinite")}
+                      <span
+                        className={cn(
+                          "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset",
+                          formData.type === "incoming"
+                            ? "bg-purple-50 text-purple-700 ring-purple-600/20 dark:bg-purple-900/20 dark:text-purple-400"
+                            : "bg-cyan-50 text-cyan-700 ring-cyan-600/20 dark:bg-cyan-900/20 dark:text-cyan-400",
+                        )}
+                      >
+                        {formData.type === "incoming"
+                          ? t("filters.incoming")
+                          : t("filters.outgoing")}
                       </span>
                     </div>
-                  </div>
 
-                  <div>
-                    <span className="text-xs text-muted-foreground uppercase tracking-wide block mb-2">
-                      Objects ({selectedCollectionIds.length})
-                    </span>
-                    {selectedCollectionsList.length > 0 ? (
-                      <div className="flex -space-x-2 overflow-hidden">
-                        {selectedCollectionsList.slice(0, 5).map((c) => (
-                          <Avatar
-                            key={c._id}
-                            className="inline-block h-8 w-8 rounded-full ring-2 ring-background"
-                          >
-                            <AvatarFallback className="bg-secondary text-[8px]">
-                              {c.accessionNumber.slice(0, 2)}
-                            </AvatarFallback>
-                          </Avatar>
-                        ))}
-                        {selectedCollectionsList.length > 5 && (
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary ring-2 ring-background text-[10px] font-medium text-muted-foreground">
-                            +{selectedCollectionsList.length - 5}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground italic">
-                        No objects selected
+                    <div className="pb-4 border-b border-border/50">
+                      <span className="text-xs text-muted-foreground uppercase tracking-wide block mb-1">
+                        {formData.type === "incoming"
+                          ? tActions("lender")
+                          : tActions("borrower")}
+                      </span>
+                      <p className="text-sm font-medium text-foreground">
+                        {formData.lenderBorrowerName || "—"}
                       </p>
-                    )}
+                      {formData.lenderBorrowerContact && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {formData.lenderBorrowerContact}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pb-4 border-b border-border/50">
+                      <span className="text-xs text-muted-foreground uppercase tracking-wide block mb-1">
+                        Dates
+                      </span>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-foreground">
+                          {formatDate(formData.startDate, locale)}
+                        </span>
+                        <span className="text-muted-foreground">→</span>
+                        <span className="text-foreground">
+                          {formData.endDate
+                            ? formatDate(formData.endDate, locale)
+                            : tActions("indefinite")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-xs text-muted-foreground uppercase tracking-wide block mb-2">
+                        Objects ({selectedCollectionIds.length})
+                      </span>
+                      {selectedCollectionsList.length > 0 ? (
+                        <div className="flex -space-x-2 overflow-hidden">
+                          {selectedCollectionsList.slice(0, 5).map((c) => (
+                            <Avatar
+                              key={c._id}
+                              className="inline-block h-8 w-8 rounded-full ring-2 ring-background"
+                            >
+                              <AvatarFallback className="bg-secondary text-[8px]">
+                                {c.accessionNumber.slice(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                          ))}
+                          {selectedCollectionsList.length > 5 && (
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary ring-2 ring-background text-[10px] font-medium text-muted-foreground">
+                              +{selectedCollectionsList.length - 5}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic">
+                          No objects selected
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );
