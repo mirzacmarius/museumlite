@@ -3,14 +3,6 @@
 import { useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@v1/ui/dialog";
 import { Button } from "@v1/ui/button";
 import {
   Command,
@@ -19,6 +11,14 @@ import {
   CommandItem,
   CommandList,
 } from "@v1/ui/command";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@v1/ui/dialog";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
@@ -36,6 +36,7 @@ interface DonorComboboxProps {
   onValueChange?: (value: string[]) => void;
   placeholder?: string;
   disabled?: boolean;
+  includeUnknownOption?: boolean;
 }
 
 interface NewDonorForm {
@@ -54,12 +55,15 @@ const initialDonorForm: NewDonorForm = {
   address: "",
 };
 
+export const UNKNOWN_DONORS_VALUE = "Unknown donors";
+
 export function DonorCombobox({
   organizationId,
   value = [],
   onValueChange,
   placeholder = "Select or add donors...",
   disabled = false,
+  includeUnknownOption = false,
 }: DonorComboboxProps) {
   const t = useI18n();
   const [open, setOpen] = React.useState(false);
@@ -88,7 +92,7 @@ export function DonorCombobox({
 
   // Convert donors to options format
   const donorOptions = React.useMemo(() => {
-    return (donors || []).map((donor) => ({
+    const organizationDonors = (donors || []).map((donor) => ({
       value: donor.name,
       label: donor.name,
       email: donor.email,
@@ -96,7 +100,24 @@ export function DonorCombobox({
         .filter((value): value is string => Boolean(value))
         .join(" • "),
     }));
-  }, [donors]);
+
+    if (
+      includeUnknownOption &&
+      !organizationDonors.some(
+        (donor) =>
+          donor.value.toLowerCase() === UNKNOWN_DONORS_VALUE.toLowerCase(),
+      )
+    ) {
+      organizationDonors.unshift({
+        value: UNKNOWN_DONORS_VALUE,
+        label: UNKNOWN_DONORS_VALUE,
+        email: undefined,
+        contactSummary: "Use when the object was donated by an unnamed donor",
+      });
+    }
+
+    return organizationDonors;
+  }, [donors, includeUnknownOption]);
 
   const handleSelect = (selectedValue: string) => {
     const isSelected = selectedValues.some(
@@ -124,6 +145,12 @@ export function DonorCombobox({
   // Filter options based on search
   const filteredDonors = donorOptions.filter((donor) =>
     donor.label.toLowerCase().includes(inputValue.toLowerCase()),
+  );
+  const specialDonorOptions = filteredDonors.filter(
+    (donor) => donor.value === UNKNOWN_DONORS_VALUE,
+  );
+  const organizationDonorOptions = filteredDonors.filter(
+    (donor) => donor.value !== UNKNOWN_DONORS_VALUE,
   );
 
   // Format donor name with first letter uppercase
@@ -409,9 +436,47 @@ export function DonorCombobox({
                 )}
               </CommandEmpty>
 
-              {filteredDonors.length > 0 && (
+              {specialDonorOptions.length > 0 && (
+                <CommandGroup heading="Special options">
+                  {specialDonorOptions.map((donor) => (
+                    <CommandItem
+                      key={donor.value}
+                      value={donor.value}
+                      onSelect={() => handleSelect(donor.value)}
+                      className="px-2 py-1.5"
+                    >
+                      <div className="flex w-full items-center gap-2">
+                        <Check
+                          className={cn(
+                            "h-4 w-4 shrink-0",
+                            selectedValues.some(
+                              (v) =>
+                                v.toLowerCase() === donor.value.toLowerCase(),
+                            )
+                              ? "opacity-100"
+                              : "opacity-0",
+                          )}
+                        />
+                        <div className="flex-1 flex flex-col gap-0.5">
+                          <span className="text-sm">{donor.label}</span>
+                          {donor.contactSummary && (
+                            <span
+                              className="truncate text-xs text-muted-foreground"
+                              title={donor.contactSummary}
+                            >
+                              {donor.contactSummary}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {organizationDonorOptions.length > 0 && (
                 <CommandGroup heading="Organization Donors">
-                  {filteredDonors.map((donor) => (
+                  {organizationDonorOptions.map((donor) => (
                     <CommandItem
                       key={donor.value}
                       value={donor.value}

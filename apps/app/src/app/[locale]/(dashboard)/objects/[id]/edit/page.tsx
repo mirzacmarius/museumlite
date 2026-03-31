@@ -3,7 +3,7 @@
 import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
 import { ConditionCombobox } from "@/components/condition-combobox";
 import { DeaccessionDialog } from "@/components/deaccession-dialog";
-import { DonorCombobox } from "@/components/donor-combobox";
+import { DonationDetailsField } from "@/components/donation-details-field";
 import { LocationSelector } from "@/components/location-selector";
 import { MaterialsCombobox } from "@/components/materials-combobox";
 import { ObjectCombobox } from "@/components/object-combobox";
@@ -20,10 +20,8 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
-import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
-import { NaturalLanguageDatePicker } from "@v1/ui/natural-language-date-picker";
 import { Switch } from "@v1/ui/switch";
 import { Textarea } from "@v1/ui/textarea";
 import { useUploadFiles } from "@xixixao/uploadstuff/react";
@@ -918,61 +916,26 @@ export default function CollectionEditPage() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="donated_by">Donated by</Label>
-                        <DonorCombobox
-                          organizationId={currentOrganizationId}
-                          collectionId={collectionId}
-                          value={formData.donated_by || []}
-                          onValueChange={(value) => {
-                            updateField("donated_by", value);
-                            // Auto-set date to today if donor is selected and no date exists
-                            if (value.length > 0 && !formData.donated_date) {
-                              const today = new Date();
-                              updateField(
-                                "donated_date",
-                                today.toISOString().split("T")[0] ?? "",
-                              );
-                            }
-                          }}
-                          placeholder={placeholders("selectDonors")}
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="donated_date">
-                          Donated Date
-                          {(formData.donated_by || []).length > 0 && (
-                            <span className="text-red-500">*</span>
-                          )}
-                        </Label>
-                        <NaturalLanguageDatePicker
-                          id="donated_date"
-                          value={formData.donated_date}
-                          onChange={(value: string) =>
-                            updateField("donated_date", value)
-                          }
-                          placeholder="today"
-                          defaultDate={new Date()}
-                          required={(formData.donated_by || []).length > 0}
-                        />
-                      </div>
-                    </div>
-
                     <div>
-                      <Label htmlFor="donation_info">
-                        Info about the Donation
-                      </Label>
-                      <Textarea
-                        autoResize
-                        id="donation_info"
-                        value={formData.donation_info || ""}
-                        onChange={(e) =>
-                          updateField("donation_info", e.target.value)
+                      <DonationDetailsField
+                        organizationId={currentOrganizationId}
+                        collectionId={collectionId}
+                        donatedBy={formData.donated_by || []}
+                        donatedDate={formData.donated_date}
+                        donationInfo={formData.donation_info}
+                        donorPlaceholder={placeholders("selectDonors")}
+                        donationInfoPlaceholder={placeholders(
+                          "donationInfoLong",
+                        )}
+                        onDonatedByChange={(value) =>
+                          updateField("donated_by", value)
                         }
-                        rows={3}
-                        placeholder={placeholders("donationInfoLong")}
+                        onDonatedDateChange={(value) =>
+                          updateField("donated_date", value)
+                        }
+                        onDonationInfoChange={(value) =>
+                          updateField("donation_info", value)
+                        }
                       />
                     </div>
 
