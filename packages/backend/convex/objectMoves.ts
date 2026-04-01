@@ -35,6 +35,27 @@ const blockerValidator = v.object({
   message: v.string(),
 });
 
+const organizationMoveRequestSummaryValidator = v.object({
+  _id: v.id("organizationMoveRequests"),
+  collectionId: v.id("collections"),
+  collectionTitle: v.string(),
+  sourceAccessionNumber: v.string(),
+  finalAccessionNumber: v.optional(v.string()),
+  requestedAccessionNumber: v.optional(v.string()),
+  accessionMode: accessionModeValidator,
+  targetOrganizationId: v.id("organizations"),
+  targetOrganizationName: v.string(),
+  reason: v.string(),
+  notes: v.optional(v.string()),
+  status: requestStatusValidator,
+  requestedBy: v.id("users"),
+  requestedByName: v.string(),
+  requestedAt: v.number(),
+  reviewedByName: v.optional(v.string()),
+  reviewedAt: v.optional(v.number()),
+  reviewNotes: v.optional(v.string()),
+});
+
 const ACTIVE_LOAN_STATUSES = new Set(["active", "dispatched"]);
 const ACTIVE_TRANSIT_STATUSES = new Set([
   "draft",
@@ -1019,8 +1040,9 @@ export const listForOrganization = query({
   args: {
     organizationId: v.id("organizations"),
     status: v.optional(requestStatusValidator),
+    search: v.optional(v.string()),
   },
-  returns: v.array(v.any()),
+  returns: v.array(organizationMoveRequestSummaryValidator),
   handler: async (ctx, args) => {
     await requirePermission(
       ctx,
@@ -1044,7 +1066,7 @@ export const listForOrganization = query({
 
     const requests = await queryRef.collect();
 
-    const enrichedRequests = await Promise.all(
+    let enrichedRequests = await Promise.all(
       requests.map(async (request) => {
         const collection = await ctx.db.get(request.collectionId);
         const targetOrganization = await ctx.db.get(
@@ -1060,8 +1082,8 @@ export const listForOrganization = query({
           collectionId: request.collectionId,
           collectionTitle: collection?.title ?? "Unknown object",
           sourceAccessionNumber: request.sourceAccessionNumber,
-          finalAccessionNumber:
-            request.finalAccessionNumber ?? collection?.accessionNumber,
+          finalAccessionNumber: request.finalAccessionNumber,
+          requestedAccessionNumber: request.requestedAccessionNumber,
           accessionMode: request.accessionMode,
           targetOrganizationId: request.targetOrganizationId,
           targetOrganizationName:
@@ -1070,7 +1092,10 @@ export const listForOrganization = query({
           notes: request.notes,
           status: request.status,
           requestedBy: request.requestedBy,
-          requestedByName: requestedByUser?.name ?? requestedByUser?.username,
+          requestedByName:
+            requestedByUser?.name ??
+            requestedByUser?.username ??
+            "Unknown user",
           requestedAt: request.requestedAt,
           reviewedByName: reviewedByUser?.name ?? reviewedByUser?.username,
           reviewedAt: request.reviewedAt,
@@ -1078,6 +1103,23 @@ export const listForOrganization = query({
         };
       }),
     );
+
+    const search = args.search?.trim().toLowerCase();
+    if (search) {
+      enrichedRequests = enrichedRequests.filter((request) => {
+        return (
+          request.collectionTitle.toLowerCase().includes(search) ||
+          request.sourceAccessionNumber.toLowerCase().includes(search) ||
+          request.targetOrganizationName.toLowerCase().includes(search) ||
+          request.reason.toLowerCase().includes(search) ||
+          request.notes?.toLowerCase().includes(search) ||
+          request.requestedByName.toLowerCase().includes(search) ||
+          request.requestedAccessionNumber?.toLowerCase().includes(search) ||
+          request.finalAccessionNumber?.toLowerCase().includes(search) ||
+          false
+        );
+      });
+    }
 
     return enrichedRequests.sort(
       (left, right) => right.requestedAt - left.requestedAt,

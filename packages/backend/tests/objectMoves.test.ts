@@ -461,6 +461,102 @@ describe("objectMoves", () => {
     ).rejects.toThrow("currently on loan");
   });
 
+  test("listForOrganization returns typed summaries and supports search", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    await fixture.requester.mutation(api.objectMoves.createRequest, {
+      collectionId: fixture.collectionId,
+      targetOrganizationId: fixture.targetOrganizationId,
+      accessionMode: "manual",
+      requestedAccessionNumber: "TGT-SEARCH-001",
+      reason: "Curatorial transfer for gallery rotation",
+      notes: "Handle with registrar review",
+    });
+
+    const requests = await fixture.admin.query(api.objectMoves.listForOrganization, {
+      organizationId: fixture.sourceOrganizationId,
+    });
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({
+      collectionId: fixture.collectionId,
+      collectionTitle: "Move Test Object",
+      sourceAccessionNumber: "SRC-001",
+      requestedAccessionNumber: "TGT-SEARCH-001",
+      accessionMode: "manual",
+      targetOrganizationId: fixture.targetOrganizationId,
+      targetOrganizationName: "Target Museum",
+      reason: "Curatorial transfer for gallery rotation",
+      notes: "Handle with registrar review",
+      status: "pending",
+      requestedBy: fixture.requesterId,
+      requestedByName: "Requester",
+    });
+
+    const matchingSearches = [
+      "move test object",
+      "src-001",
+      "target museum",
+      "requester",
+      "gallery rotation",
+      "registrar review",
+      "tgt-search-001",
+    ];
+
+    for (const search of matchingSearches) {
+      const result = await fixture.admin.query(
+        api.objectMoves.listForOrganization,
+        {
+          organizationId: fixture.sourceOrganizationId,
+          search,
+        },
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0]?._id).toBe(requests[0]?._id);
+    }
+  });
+
+  test("listForOrganization is source-organization scoped", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    await fixture.requester.mutation(api.objectMoves.createRequest, {
+      collectionId: fixture.collectionId,
+      targetOrganizationId: fixture.targetOrganizationId,
+      accessionMode: "keep",
+      reason: "Source-scoped listing check",
+    });
+
+    const targetAdminId = await createUser(
+      t,
+      "Target Admin",
+      `target-admin-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+    );
+    const targetAdminRoleId = await createRoleWithPermissions(
+      t,
+      fixture.targetOrganizationId,
+      ["organization.manage_settings", "collections.read"],
+      "Target Admin Role",
+    );
+    await addMembership(
+      t,
+      targetAdminId,
+      fixture.targetOrganizationId,
+      targetAdminRoleId,
+    );
+
+    const targetAdmin = authedForUser(t, targetAdminId);
+    const targetScopedRequests = await targetAdmin.query(
+      api.objectMoves.listForOrganization,
+      {
+        organizationId: fixture.targetOrganizationId,
+      },
+    );
+
+    expect(targetScopedRequests).toHaveLength(0);
+  });
+
   test("approving a keep request moves the object, clears source-only links, and updates related records", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
@@ -632,6 +728,48 @@ describe("objectMoves", () => {
     expect(collection?.alternateAccessionNumbers).toContain("SRC-001");
   });
 
+  test("approving a request moves it from pending to executed in listForOrganization", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Lifecycle approval test",
+      },
+    );
+
+    const pendingRequests = await fixture.admin.query(
+      api.objectMoves.listForOrganization,
+      {
+        organizationId: fixture.sourceOrganizationId,
+        status: "pending",
+      },
+    );
+    expect(pendingRequests.some((request) => request._id === requestId)).toBe(
+      true,
+    );
+
+    await fixture.admin.mutation(api.objectMoves.approve, {
+      requestId,
+      reviewNotes: "Approved during lifecycle test",
+    });
+
+    const executedRequests = await fixture.admin.query(
+      api.objectMoves.listForOrganization,
+      {
+        organizationId: fixture.sourceOrganizationId,
+        status: "executed",
+      },
+    );
+    expect(executedRequests.some((request) => request._id === requestId)).toBe(
+      true,
+    );
+  });
+
   test("rejecting a request leaves the object unchanged and notifies the requester", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
@@ -676,6 +814,37 @@ describe("objectMoves", () => {
     ).toBe(true);
   });
 
+  test("rejecting a request moves it to rejected in listForOrganization", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Lifecycle rejection test",
+      },
+    );
+
+    await fixture.admin.mutation(api.objectMoves.reject, {
+      requestId,
+      reviewNotes: "Rejected during lifecycle test",
+    });
+
+    const rejectedRequests = await fixture.admin.query(
+      api.objectMoves.listForOrganization,
+      {
+        organizationId: fixture.sourceOrganizationId,
+        status: "rejected",
+      },
+    );
+    expect(rejectedRequests.some((request) => request._id === requestId)).toBe(
+      true,
+    );
+  });
+
   test("cancelling a pending request leaves the object unchanged", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
@@ -703,5 +872,33 @@ describe("objectMoves", () => {
     expect(collection?.organizationId).toBe(fixture.sourceOrganizationId);
     expect(collection?.collectionGroupId).toBe(fixture.collectionGroupId);
     expect(collection?.currentLocationId).toBe(fixture.locationId);
+  });
+
+  test("cancelling a request moves it to cancelled in listForOrganization", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Lifecycle cancellation test",
+      },
+    );
+
+    await fixture.requester.mutation(api.objectMoves.cancel, { requestId });
+
+    const cancelledRequests = await fixture.admin.query(
+      api.objectMoves.listForOrganization,
+      {
+        organizationId: fixture.sourceOrganizationId,
+        status: "cancelled",
+      },
+    );
+    expect(
+      cancelledRequests.some((request) => request._id === requestId),
+    ).toBe(true);
   });
 });

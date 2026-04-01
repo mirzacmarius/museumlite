@@ -475,7 +475,7 @@ export function ObjectDetailClient({
                           <Link
                             href={`/objects/move-requests/${pendingMoveRequest._id}`}
                           >
-                            View request
+                            Open transfer request
                           </Link>
                         </Button>
                       </div>

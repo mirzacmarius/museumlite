@@ -264,6 +264,17 @@ export default function DashboardPage() {
             Workflow queues
           </h3>
           <div className="mt-4 space-y-3 text-sm">
+            <Link
+              href="/transfers"
+              className="flex items-center justify-between border-b border-white/10 pb-2 transition-colors hover:text-foreground"
+            >
+              <span className="text-muted-foreground">
+                Pending transfer approvals
+              </span>
+              <span className="font-medium text-foreground">
+                {formatNumber(analytics.transfers.pending, locale)}
+              </span>
+            </Link>
             <div className="flex items-center justify-between border-b border-white/10 pb-2">
               <span className="text-muted-foreground">Pending accessions</span>
               <span className="font-medium text-foreground">

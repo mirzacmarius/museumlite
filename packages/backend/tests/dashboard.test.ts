@@ -102,6 +102,10 @@ describe("Dashboard: getAnalytics", () => {
     expect(analytics.loans.total).toBe(0);
     expect(analytics.accessions.pending).toBe(0);
     expect(analytics.deaccessions.pending).toBe(0);
+    expect(analytics.transfers.pending).toBe(0);
+    expect(analytics.transfers.executed).toBe(0);
+    expect(analytics.transfers.rejected).toBe(0);
+    expect(analytics.transfers.cancelled).toBe(0);
     expect(analytics.locations.total).toBe(0);
   });
 
@@ -253,6 +257,125 @@ describe("Dashboard: getAnalytics", () => {
     expect(analytics.accessions.pending).toBe(1);
     expect(analytics.accessions.approved).toBe(1);
     expect(analytics.accessions.rejected).toBe(0);
+  });
+
+  test("counts transfer requests by status for the source organization only", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestOrg(t);
+
+    const targetOrganizationId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Transfer Target Org",
+        slug: `transfer-target-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      });
+    });
+
+    const otherSourceOrganizationId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Other Source Org",
+        slug: `transfer-source-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      });
+    });
+
+    const collectionId = await t.run(async (ctx) => {
+      return await ctx.db.insert(
+        "collections",
+        createCollection(
+          organizationId,
+          userId,
+          "Transfer Source Object",
+          "TR-001",
+          "active",
+        ),
+      );
+    });
+
+    const otherCollectionId = await t.run(async (ctx) => {
+      return await ctx.db.insert(
+        "collections",
+        createCollection(
+          otherSourceOrganizationId,
+          userId,
+          "External Transfer Object",
+          "TR-999",
+          "active",
+        ),
+      );
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("organizationMoveRequests", {
+        collectionId,
+        sourceOrganizationId: organizationId,
+        targetOrganizationId,
+        sourceAccessionNumber: "TR-001",
+        accessionMode: "keep",
+        reason: "Pending transfer",
+        status: "pending",
+        requestedBy: userId,
+        requestedAt: Date.now(),
+      });
+      await ctx.db.insert("organizationMoveRequests", {
+        collectionId,
+        sourceOrganizationId: organizationId,
+        targetOrganizationId,
+        sourceAccessionNumber: "TR-001",
+        accessionMode: "keep",
+        reason: "Executed transfer",
+        status: "executed",
+        requestedBy: userId,
+        requestedAt: Date.now() + 1,
+      });
+      await ctx.db.insert("organizationMoveRequests", {
+        collectionId,
+        sourceOrganizationId: organizationId,
+        targetOrganizationId,
+        sourceAccessionNumber: "TR-001",
+        accessionMode: "keep",
+        reason: "Rejected transfer",
+        status: "rejected",
+        requestedBy: userId,
+        requestedAt: Date.now() + 2,
+      });
+      await ctx.db.insert("organizationMoveRequests", {
+        collectionId,
+        sourceOrganizationId: organizationId,
+        targetOrganizationId,
+        sourceAccessionNumber: "TR-001",
+        accessionMode: "keep",
+        reason: "Cancelled transfer",
+        status: "cancelled",
+        requestedBy: userId,
+        requestedAt: Date.now() + 3,
+      });
+      await ctx.db.insert("organizationMoveRequests", {
+        collectionId: otherCollectionId,
+        sourceOrganizationId: otherSourceOrganizationId,
+        targetOrganizationId: organizationId,
+        sourceAccessionNumber: "TR-999",
+        accessionMode: "keep",
+        reason: "Incoming transfer should not count",
+        status: "pending",
+        requestedBy: userId,
+        requestedAt: Date.now() + 4,
+      });
+    });
+
+    const authed = t.withIdentity({
+      subject: `${userId}|session-transfers`,
+      issuer: "https://example.test",
+    });
+
+    const analytics = await authed.query(api.dashboard.getAnalytics, {
+      organizationId,
+    });
+
+    expect(analytics.transfers.pending).toBe(1);
+    expect(analytics.transfers.executed).toBe(1);
+    expect(analytics.transfers.rejected).toBe(1);
+    expect(analytics.transfers.cancelled).toBe(1);
   });
 
   test("enforces organization isolation", async () => {

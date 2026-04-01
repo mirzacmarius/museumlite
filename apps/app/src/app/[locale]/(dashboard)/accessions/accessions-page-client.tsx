@@ -3,7 +3,7 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { type Preloaded, useMutation } from "convex/react";
-import { useCallback, useState } from "react";
+import { useCallback, useDeferredValue, useState } from "react";
 
 import {
   ExportButtonWithFormat,
@@ -32,6 +32,7 @@ export function AccessionsPageClient({
 }: AccessionsPageClientProps) {
   const t = useScopedI18n("accessions");
   const [searchQuery, setSearchQuery] = useState("");
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const exportAccessionsWithFormat = useMutation(
     api.imports.exportAccessionsWithFormat,
@@ -95,7 +96,7 @@ export function AccessionsPageClient({
 
       <AccessionKanban
         organizationId={organizationId}
-        searchQuery={searchQuery}
+        searchQuery={deferredSearchQuery}
         preloadedAccessions={preloadedAccessions}
       />
     </div>

@@ -50,6 +50,12 @@ export const getAnalytics = query({
       approved: v.number(),
       rejected: v.number(),
     }),
+    transfers: v.object({
+      pending: v.number(),
+      executed: v.number(),
+      rejected: v.number(),
+      cancelled: v.number(),
+    }),
     locations: v.object({
       total: v.number(),
     }),
@@ -160,6 +166,13 @@ export const getAnalytics = query({
       .query("deaccessions")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    const transfers = await ctx.db
+      .query("organizationMoveRequests")
+      .withIndex("by_source_organization", (q) =>
+        q.eq("sourceOrganizationId", args.organizationId),
       )
       .collect();
 
@@ -470,6 +483,17 @@ export const getAnalytics = query({
         pending: deaccessions.filter((d) => d.status === "pending").length,
         approved: deaccessions.filter((d) => d.status === "approved").length,
         rejected: deaccessions.filter((d) => d.status === "rejected").length,
+      },
+      transfers: {
+        pending: transfers.filter((transfer) => transfer.status === "pending")
+          .length,
+        executed: transfers.filter((transfer) => transfer.status === "executed")
+          .length,
+        rejected: transfers.filter((transfer) => transfer.status === "rejected")
+          .length,
+        cancelled: transfers.filter(
+          (transfer) => transfer.status === "cancelled",
+        ).length,
       },
       locations: {
         total: locations.length,

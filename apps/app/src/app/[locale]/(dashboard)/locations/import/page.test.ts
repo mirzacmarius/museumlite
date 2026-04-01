@@ -4,7 +4,7 @@ import { parseCSV } from "./import-csv";
 
 describe("locations import CSV parsing", () => {
   test("requires locationCode values", () => {
-    const result = parseCSV(`name,locationCode,type\nGallery A,,gallery`);
+    const result = parseCSV("name,locationCode,type\nGallery A,,gallery");
 
     expect(result.rows).toEqual([]);
     expect(result.errors).toEqual([
@@ -17,7 +17,7 @@ describe("locations import CSV parsing", () => {
 
   test("parses locationCode values into preview rows", () => {
     const result = parseCSV(
-      `name,locationCode,type,parentLocation\nShelf A,SH-001,shelf,Storage A`,
+      "name,locationCode,type,parentLocation\nShelf A,SH-001,shelf,Storage A",
     );
 
     expect(result.errors).toEqual([]);

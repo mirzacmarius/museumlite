@@ -3,7 +3,6 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
-import { Loader2 } from "lucide-react";
 import { Suspense } from "react";
 import { KanbanColumn } from "./kanban-column";
 import { KanbanColumnSkeleton } from "./kanban-column-skeleton";
