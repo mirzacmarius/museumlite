@@ -15,7 +15,6 @@ import {
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
 import { ImageLightbox, type LightboxImage } from "@v1/ui/image-lightbox";
-import { SidebarProvider } from "@v1/ui/sidebar";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
@@ -39,6 +38,10 @@ import {
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import {
+  getObjectViewTabs,
+  type ObjectTabId as TabId,
+} from "./_components/object-tab-config";
 
 const LoadingPanel = () => (
   <div className="h-32 w-full animate-pulse rounded-xl bg-card/40" />
@@ -121,13 +124,6 @@ const QRLabelModal = dynamic(
   () => import("./_components/qr-label-modal").then((mod) => mod.QRLabelModal),
   { loading: LoadingPanel },
 );
-const RecordContextSidebar = dynamic(
-  () =>
-    import("./_components/record-context-sidebar").then(
-      (mod) => mod.RecordContextSidebar,
-    ),
-  { loading: LoadingPanel },
-);
 const VehicleDetailsTab = dynamic(
   () =>
     import("./_components/vehicle-details-tab").then(
@@ -140,44 +136,6 @@ const WineDetailsTab = dynamic(
     import("./_components/wine-details-tab").then((mod) => mod.WineDetailsTab),
   { loading: LoadingPanel },
 );
-
-type TabId =
-  | "general"
-  | "physical"
-  | "media"
-  | "digital"
-  | "provenance"
-  | "conservation"
-  | "exhibitions"
-  | "loans"
-  | "logs"
-  | "comments"
-  | "fine_art"
-  | "wine"
-  | "automotive"
-  | "natural_history"
-  | "archive";
-
-const baseTabs: { id: TabId; label: string }[] = [
-  { id: "general", label: "General" },
-  { id: "provenance", label: "Provenance" },
-  { id: "physical", label: "Physical Description" },
-  { id: "media", label: "Media" },
-  { id: "digital", label: "Digital Assets" },
-  { id: "conservation", label: "Conservation" },
-  { id: "exhibitions", label: "Exhibitions" },
-  { id: "loans", label: "Loans" },
-  { id: "comments", label: "Comments" },
-  { id: "logs", label: "Logs" },
-];
-
-const moduleTabMap: Record<string, { id: TabId; label: string }> = {
-  fine_art: { id: "fine_art", label: "Fine Art Details" },
-  wine: { id: "wine", label: "Wine & Spirits" },
-  automotive: { id: "automotive", label: "Vehicle Details" },
-  natural_history: { id: "natural_history", label: "Natural History" },
-  archive: { id: "archive", label: "Archive Details" },
-};
 
 type ObjectDetailClientProps = {
   collectionId: Id<"collections">;
@@ -216,29 +174,13 @@ export function ObjectDetailClient({
   });
 
   const tabs = useMemo(() => {
-    const allTabs = (() => {
-      const collectionType = collection?.collectionType;
-      if (!collectionType || collectionType === "general") {
-        return baseTabs;
-      }
-      const moduleTab = moduleTabMap[collectionType];
-      if (!moduleTab) {
-        return baseTabs;
-      }
-      return [...baseTabs.slice(0, 1), moduleTab, ...baseTabs.slice(1)];
-    })();
-
-    return allTabs.filter((tab) => {
-      if (tab.id === "conservation") {
-        return hasConservationFeature;
-      }
-      if (tab.id === "exhibitions") {
-        return hasExhibitionsFeature;
-      }
-      if (tab.id === "loans") {
-        return hasLoansFeature;
-      }
-      return true;
+    return getObjectViewTabs({
+      collectionType: collection?.collectionType,
+      features: {
+        conservation: hasConservationFeature,
+        exhibitions: hasExhibitionsFeature,
+        loans: hasLoansFeature,
+      },
     });
   }, [
     collection?.collectionType,
@@ -325,14 +267,9 @@ export function ObjectDetailClient({
 
   return (
     <>
-      <SidebarProvider
-        style={{ "--sidebar-width": "20rem" } as React.CSSProperties}
-        className="flex h-full min-h-0 w-full print:hidden"
-      >
-        {/* Main Content */}
-        <main className="z-10 flex min-h-0 min-w-0 flex-1 flex-col bg-background">
-          {/* Navbar */}
-          <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
+      <main className="z-10 flex h-full min-h-0 min-w-0 w-full flex-1 flex-col bg-background print:hidden">
+        {/* Navbar */}
+        <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
             <div className="flex items-center gap-2 text-xs">
               <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
                 <Link href="/objects">
@@ -418,9 +355,9 @@ export function ObjectDetailClient({
                 </Button>
               </PermissionGate>
             </div>
-          </header>
+        </header>
 
-          {/* Scrollable Content */}
+        {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto">
             {/* Hero Section */}
             <div className="border-b border-border/60 bg-secondary/10 px-8 py-8">
@@ -535,7 +472,7 @@ export function ObjectDetailClient({
             </div>
 
             {/* Tabs + Content */}
-            <div className="mx-auto flex max-w-6xl gap-6 px-6 py-8">
+            <div className="mx-auto w-full max-w-6xl px-6 py-8">
               <div className="w-full">
                 <div className="mb-6 flex flex-wrap items-center gap-2">
                   {tabs.map((tab) => (
@@ -636,24 +573,9 @@ export function ObjectDetailClient({
                   />
                 )}
               </div>
-
-              <aside className="hidden w-80 flex-shrink-0 xl:block">
-                <RecordContextSidebar
-                  collectionId={collectionId}
-                  organizationId={organizationId}
-                  tags={collection.tags}
-                  heroImageUrl={heroImage?.url}
-                  condition={collection.condition}
-                  provenance={collection.provenance}
-                  ownershipHistory={collection.ownershipHistory}
-                  verified={collection.verified}
-                  verifiedByName={collection.verifiedByName}
-                />
-              </aside>
             </div>
           </div>
-        </main>
-      </SidebarProvider>
+      </main>
 
       <PrintPreviewModal
         collection={collection}

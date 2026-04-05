@@ -1,6 +1,10 @@
 import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import {
+  accessionDraftMediaValidator,
+  objectDraftDataValidator,
+} from "./utils/objectDraftData";
 
 // Type-safe validators for flexible data structures
 
@@ -1086,6 +1090,8 @@ export default defineSchema({
       v.literal("rejected"),
     ),
     notes: v.optional(v.string()),
+    draftObjectData: v.optional(objectDraftDataValidator),
+    draftMedia: v.optional(v.array(accessionDraftMediaValidator)),
     assignedTo: v.optional(v.id("users")),
     workflowStep: v.optional(v.number()),
     workflowHistory: v.optional(
