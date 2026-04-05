@@ -4,14 +4,12 @@ import { DeaccessionDialog } from "@/components/deaccession-dialog";
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useCursorStackPagination } from "@/hooks/use-cursor-stack-pagination";
 import { useObjectFilters } from "@/hooks/use-url-filters";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
-import { CursorPagination } from "@v1/ui/cursor-pagination";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,14 +17,13 @@ import {
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
 import { EmptyState } from "@v1/ui/empty-state";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
   Archive,
   Building2,
   LayoutGrid,
   List,
-  MapPin,
   MoreVertical,
   Package,
   Plus,
@@ -34,7 +31,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { BulkActionsBar } from "./_components/bulk-actions-bar";
 import { BulkAddToGroupDialog } from "./_components/bulk-add-to-group-dialog";
@@ -49,7 +46,7 @@ import {
 import { ObjectAppliedFilters } from "./_components/object-applied-filters";
 import { ObjectFiltersDropdown } from "./_components/object-filters-dropdown";
 import { ObjectGridView } from "./_components/object-grid-view";
-import { type ViewMode, ViewToggle } from "./_components/view-toggle";
+import { type ViewMode } from "./_components/view-toggle";
 
 export default function CollectionsPage() {
   const t = useScopedI18n("objects");
@@ -130,12 +127,6 @@ function CollectionFiltersAndList({
 }) {
   const t = useScopedI18n("objects");
   const { filters, setFilters, resetFilters } = useObjectFilters();
-
-  const resetKey = useMemo(
-    () => JSON.stringify({ organizationId, filters }),
-    [filters, organizationId],
-  );
-  const { cursor, goNext, reset } = useCursorStackPagination({ resetKey });
 
   const [selectedIds, setSelectedIds] = useState<Set<Id<"collections">>>(
     new Set(),
@@ -236,12 +227,15 @@ function CollectionFiltersAndList({
       ? filters.status
       : undefined;
 
-  const collections = useQuery(
+  const {
+    results: collections,
+    status: collectionsStatus,
+    loadMore,
+  } = usePaginatedQuery(
     api.collections.list,
     organizationId
       ? {
           organizationId,
-          paginationOpts: { numItems: 50, cursor },
           search: filters.search || undefined,
           status: statusFilter,
           objectType: filters.objectType || undefined,
@@ -262,6 +256,7 @@ function CollectionFiltersAndList({
             : undefined,
         }
       : "skip",
+    { initialNumItems: 20 },
   );
 
   const objectTypeOptions = useMemo(() => {
@@ -269,7 +264,7 @@ function CollectionFiltersAndList({
     typeOptions?.forEach((option) => {
       if (option.name) types.add(option.name);
     });
-    collections?.page?.forEach((item) => {
+    collections.forEach((item) => {
       if (item.objectType) types.add(item.objectType);
     });
     return Array.from(types)
@@ -290,8 +285,8 @@ function CollectionFiltersAndList({
   };
 
   const handleSelectAll = (selected: boolean) => {
-    if (selected && collections?.page) {
-      setSelectedIds(new Set(collections.page.map((item) => item._id)));
+    if (selected && collections.length > 0) {
+      setSelectedIds(new Set(collections.map((item) => item._id)));
     } else {
       setSelectedIds(new Set());
     }
@@ -493,17 +488,13 @@ function CollectionFiltersAndList({
         <CollectionList
           organizationId={organizationId}
           collections={collections}
+          collectionsStatus={collectionsStatus}
           viewMode={viewMode}
           columns={columns ?? defaultColumns}
           selectedIds={selectedIds}
           onSelectItem={handleSelectItem}
           onSelectAll={handleSelectAll}
-          onLoadMore={() => {
-            if (collections && !collections.isDone) {
-              goNext(collections.continueCursor);
-            }
-          }}
-          onReset={reset}
+          onLoadMore={() => loadMore(20)}
         />
       </div>
 
@@ -553,42 +544,82 @@ function CollectionFiltersAndList({
 function CollectionList({
   organizationId,
   collections,
+  collectionsStatus,
   viewMode,
   columns,
   selectedIds,
   onSelectItem,
   onSelectAll,
   onLoadMore,
-  onReset,
 }: {
   organizationId: Id<"organizations">;
-  collections:
-    | {
-        page: Array<{
-          _id: string;
-          accessionNumber: string;
-          title: string;
-          objectType?: string;
-          currentLocationId?: Id<"locations">;
-          status: string;
-          _creationTime: number;
-        }>;
-        isDone: boolean;
-        continueCursor: string;
-      }
-    | undefined;
+  collections: Array<{
+    _id: string;
+    accessionNumber: string;
+    title: string;
+    objectType?: string;
+    primaryImageUrl?: string;
+    locationPath?: string;
+    currentLocationId?: Id<"locations">;
+    status: string;
+    _creationTime: number;
+  }>;
+  collectionsStatus:
+    | "LoadingFirstPage"
+    | "CanLoadMore"
+    | "LoadingMore"
+    | "Exhausted";
   viewMode: ViewMode;
   columns: ColumnConfig[];
   selectedIds: Set<Id<"collections">>;
   onSelectItem: (id: Id<"collections">, selected: boolean) => void;
   onSelectAll: (selected: boolean) => void;
   onLoadMore: () => void;
-  onReset: () => void;
 }) {
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const isAutoLoadingRef = useRef(false);
 
-  if (collections === undefined) {
+  useEffect(() => {
+    if (collectionsStatus !== "LoadingMore") {
+      isAutoLoadingRef.current = false;
+    }
+  }, [collectionsStatus]);
+
+  useEffect(() => {
+    const root = scrollContainerRef.current;
+    const target = loadMoreRef.current;
+
+    if (!root || !target || collectionsStatus !== "CanLoadMore") {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (
+          entry?.isIntersecting &&
+          !isAutoLoadingRef.current &&
+          collectionsStatus === "CanLoadMore"
+        ) {
+          isAutoLoadingRef.current = true;
+          onLoadMore();
+        }
+      },
+      {
+        root,
+        rootMargin: "240px 0px",
+      },
+    );
+
+    observer.observe(target);
+
+    return () => observer.disconnect();
+  }, [collectionsStatus, onLoadMore]);
+
+  if (collectionsStatus === "LoadingFirstPage" && collections.length === 0) {
     return (
       <div className="flex h-64 items-center justify-center">
         <p className="text-muted-foreground">{common("loading")}</p>
@@ -596,7 +627,7 @@ function CollectionList({
     );
   }
 
-  if (collections.page.length === 0) {
+  if (collections.length === 0) {
     return (
       <div className="flex h-64 flex-col items-center justify-center">
         <EmptyState
@@ -617,52 +648,55 @@ function CollectionList({
   }
 
   const allSelected =
-    collections.page.length > 0 &&
-    collections.page.every((item) =>
+    collections.length > 0 &&
+    collections.every((item) =>
       selectedIds.has(item._id as Id<"collections">),
     );
   const someSelected =
-    collections.page.some((item) =>
-      selectedIds.has(item._id as Id<"collections">),
-    ) && !allSelected;
+    collections.some((item) => selectedIds.has(item._id as Id<"collections">)) &&
+    !allSelected;
 
   return (
     <div className="h-full flex flex-col">
-      {viewMode === "grid" ? (
-        <div className="p-4 sm:p-6 overflow-y-auto">
-          {collections.page.length > 0 && (
-            <div className="mb-4 flex items-center gap-2">
-              <Checkbox
-                checked={
-                  allSelected || (someSelected ? "indeterminate" : false)
-                }
-                onCheckedChange={(checked) => onSelectAll(checked === true)}
-                aria-label={common("selectAllItems")}
-              />
-              <span className="text-sm text-muted-foreground">
-                {allSelected
-                  ? common("allSelected")
-                  : someSelected
-                    ? common("selectedCount", { count: selectedIds.size })
-                    : common("selectAll")}
-              </span>
-            </div>
-          )}
-          <ObjectGridView
-            items={collections.page.map((item) => ({
-              _id: item._id as Id<"collections">,
-              accessionNumber: item.accessionNumber,
-              title: item.title,
-              objectType: item.objectType,
-              status: item.status,
-            }))}
-            organizationId={organizationId}
-            selectedIds={selectedIds}
-            onSelectItem={onSelectItem}
-          />
-        </div>
-      ) : (
-        <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto custom-scrollbar relative"
+      >
+        {viewMode === "grid" ? (
+          <div className="p-4 sm:p-6">
+            {collections.length > 0 && (
+              <div className="mb-4 flex items-center gap-2">
+                <Checkbox
+                  checked={
+                    allSelected || (someSelected ? "indeterminate" : false)
+                  }
+                  onCheckedChange={(checked) => onSelectAll(checked === true)}
+                  aria-label={common("selectAllItems")}
+                />
+                <span className="text-sm text-muted-foreground">
+                  {allSelected
+                    ? common("allSelected")
+                    : someSelected
+                      ? common("selectedCount", { count: selectedIds.size })
+                      : common("selectAll")}
+                </span>
+              </div>
+            )}
+            <ObjectGridView
+              items={collections.map((item) => ({
+                _id: item._id as Id<"collections">,
+                accessionNumber: item.accessionNumber,
+                title: item.title,
+                objectType: item.objectType,
+                primaryImageUrl: item.primaryImageUrl,
+                status: item.status,
+              }))}
+              organizationId={organizationId}
+              selectedIds={selectedIds}
+              onSelectItem={onSelectItem}
+            />
+          </div>
+        ) : (
           <table className="w-full text-left text-xs border-separate border-spacing-0">
             <thead className="sticky top-0 z-10 bg-zinc-950/95 backdrop-blur-md shadow-sm">
               <tr>
@@ -697,13 +731,14 @@ function CollectionList({
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/40">
-              {collections.page.map((item) => (
+              {collections.map((item) => (
                 <CollectionTableRow
                   key={item._id}
                   item={item as CollectionListItem}
                   organizationId={organizationId}
                   columns={columns}
                   isSelected={selectedIds.has(item._id as Id<"collections">)}
+                  shouldEagerLoad={collections[0]?._id === item._id}
                   onSelect={(selected: boolean) =>
                     onSelectItem(item._id as Id<"collections">, selected)
                   }
@@ -711,23 +746,22 @@ function CollectionList({
               ))}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
 
-      <CursorPagination
-        variant="loadMore"
-        isDone={collections.isDone}
-        onLoadMore={onLoadMore}
-        loadMoreLabel={t("pagination.loadMore")}
-        countLabel={
+        <div ref={loadMoreRef} className="h-6 w-full" />
+      </div>
+
+      <div className="shrink-0 border-t border-zinc-800/60 bg-zinc-950 px-6 py-3 text-xs text-zinc-500">
+        {collectionsStatus === "LoadingMore" ? (
+          <span>{common("loading")}</span>
+        ) : (
           <>
             {t("pagination.showing")}{" "}
-            <span className="text-zinc-300">{collections.page.length}</span>{" "}
+            <span className="text-zinc-300">{collections.length}</span>{" "}
             {t("pagination.items")}
           </>
-        }
-        className="shrink-0 border-t border-zinc-800/60 bg-zinc-950"
-      />
+        )}
+      </div>
     </div>
   );
 }
@@ -742,12 +776,14 @@ function CollectionTableRow({
   columns,
   isSelected,
   onSelect,
+  shouldEagerLoad = false,
 }: {
   item: CollectionListItem;
   organizationId: Id<"organizations">;
   columns: ColumnConfig[];
   isSelected: boolean;
   onSelect: (selected: boolean) => void;
+  shouldEagerLoad?: boolean;
 }) {
   const isColumnVisible = (columnId: string) =>
     columns.find((c) => c.id === columnId)?.visible ?? true;
@@ -806,6 +842,7 @@ function CollectionTableRow({
                 alt={item.title}
                 fill
                 sizes="40px"
+                loading={shouldEagerLoad ? "eager" : "lazy"}
                 className="object-cover"
               />
             ) : (

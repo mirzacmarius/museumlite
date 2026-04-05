@@ -28,6 +28,7 @@ interface ObjectGridItemProps {
   organizationId: Id<"organizations">;
   isSelected?: boolean;
   onSelect?: (selected: boolean) => void;
+  shouldEagerLoad?: boolean;
 }
 
 function ObjectGridItem({
@@ -35,6 +36,7 @@ function ObjectGridItem({
   organizationId,
   isSelected = false,
   onSelect,
+  shouldEagerLoad = false,
 }: ObjectGridItemProps) {
   const [isDeaccessionDialogOpen, setIsDeaccessionDialogOpen] = useState(false);
   const canDeaccession = item.status !== "deaccessioned";
@@ -98,6 +100,7 @@ function ObjectGridItem({
                 alt={item.title}
                 fill
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                loading={shouldEagerLoad ? "eager" : "lazy"}
                 className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
               />
             ) : (
@@ -239,6 +242,7 @@ export function ObjectGridView({
                 ? (selected) => onSelectItem(item._id, selected)
                 : undefined
             }
+            shouldEagerLoad={index < 4}
           />
         </div>
       ))}
