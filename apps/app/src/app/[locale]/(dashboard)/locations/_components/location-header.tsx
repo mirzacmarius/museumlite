@@ -72,17 +72,17 @@ export function LocationHeader({
   };
 
   return (
-    <div className="flex items-end justify-between mb-8">
+    <div className="mb-8 flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
       <div>
-        <div className="flex items-center gap-2 text-xs text-zinc-500 mb-1">
+        <div className="mb-1 flex items-center gap-2 text-xs text-zinc-500">
           <span>Locations</span>
-          <ChevronRight className="w-3 h-3" />
+          <ChevronRight className="h-3 w-3" />
           <span>{getBreadcrumbCategory()}</span>
         </div>
-        <h2 className="text-2xl font-bold text-zinc-100 tracking-tight flex items-center gap-3">
+        <h2 className="flex items-center gap-3 text-2xl font-bold tracking-tight text-zinc-100">
           <span>{location.name}</span>
           <span
-            className={`text-xs font-normal px-2 py-0.5 rounded-full border ${statusBadge.className}`}
+            className={`rounded-full border px-2 py-0.5 text-xs font-normal ${statusBadge.className}`}
           >
             {statusBadge.text}
           </span>
@@ -96,13 +96,13 @@ export function LocationHeader({
         </div>
       </div>
 
-      <div className="flex gap-4">
-        <div className="px-3 py-2 bg-zinc-900/50 border border-zinc-800 rounded-lg flex items-center gap-3">
-          <div className="p-1.5 rounded bg-blue-500/10 text-blue-400">
-            <Thermometer className="w-4 h-4" />
+      <div className="flex flex-wrap gap-4 xl:justify-end">
+        <div className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2">
+          <div className="rounded bg-blue-500/10 p-1.5 text-blue-400">
+            <Thermometer className="h-4 w-4" />
           </div>
           <div>
-            <div className="text-[10px] text-zinc-500 uppercase tracking-wide">
+            <div className="text-[10px] uppercase tracking-wide text-zinc-500">
               Temperature
             </div>
             <div className="text-sm font-semibold text-zinc-200">
@@ -113,12 +113,12 @@ export function LocationHeader({
           </div>
         </div>
 
-        <div className="px-3 py-2 bg-zinc-900/50 border border-zinc-800 rounded-lg flex items-center gap-3">
-          <div className="p-1.5 rounded bg-cyan-500/10 text-cyan-400">
-            <Droplets className="w-4 h-4" />
+        <div className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2">
+          <div className="rounded bg-cyan-500/10 p-1.5 text-cyan-400">
+            <Droplets className="h-4 w-4" />
           </div>
           <div>
-            <div className="text-[10px] text-zinc-500 uppercase tracking-wide">
+            <div className="text-[10px] uppercase tracking-wide text-zinc-500">
               Humidity
             </div>
             <div className="text-sm font-semibold text-zinc-200">

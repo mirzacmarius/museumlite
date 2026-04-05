@@ -225,7 +225,7 @@ function LocationLayout({
         }}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-br from-zinc-950 to-zinc-900/50 p-6 custom-scrollbar">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-br from-zinc-950 to-zinc-900/50 px-6 pb-6 pt-0 custom-scrollbar">
         {allLocations === undefined && !selectedLocationId && (
           <div className="flex h-full items-center justify-center">
             <p className="text-sm text-muted-foreground">
@@ -260,40 +260,50 @@ function LocationLayout({
 
         {selectedLocationId && selectedLocation && (
           <>
+            <header className="-mx-6 sticky top-0 z-20 mb-8 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground">Locations</span>
+                <span className="text-muted-foreground/50">/</span>
+                <span className="font-medium text-foreground">
+                  {selectedLocation.name}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <PermissionGate permission="locations.delete">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={() => setDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </PermissionGate>
+                <div className="h-4 w-px bg-border" />
+                <PermissionGate permission="locations.create">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAddDialogOpen(true)}
+                  >
+                    <Plus className="mr-2 h-3.5 w-3.5" />
+                    Add Location
+                  </Button>
+                </PermissionGate>
+                <PermissionGate permission="locations.update">
+                  <Button size="sm" onClick={() => setEditDialogOpen(true)}>
+                    <Pencil className="mr-2 h-3.5 w-3.5" />
+                    Edit Location
+                  </Button>
+                </PermissionGate>
+              </div>
+            </header>
+
             <LocationHeader
               location={selectedLocation}
               environmentalData={environmentalData ?? null}
             />
-            <div className="mb-6 flex gap-2">
-              <PermissionGate permission="locations.update">
-                <Button
-                  variant="outline"
-                  onClick={() => setEditDialogOpen(true)}
-                >
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Edit Location
-                </Button>
-              </PermissionGate>
-              <PermissionGate permission="locations.create">
-                <Button
-                  variant="outline"
-                  onClick={() => setAddDialogOpen(true)}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Location
-                </Button>
-              </PermissionGate>
-              <PermissionGate permission="locations.delete">
-                <Button
-                  variant="outline"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => setDeleteDialogOpen(true)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Location
-                </Button>
-              </PermissionGate>
-            </div>
 
             {!isStorageView && (
               <GalleryView
