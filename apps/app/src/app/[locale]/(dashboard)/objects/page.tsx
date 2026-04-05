@@ -189,7 +189,10 @@ function CollectionFiltersAndList({
   }, [savedColumns, defaultColumns]);
 
   useEffect(() => {
-    if (filters.status === "deaccessioned") {
+    if (
+      filters.status === "deaccessioned" ||
+      filters.status === "deleted"
+    ) {
       setFilters({ status: "any" });
     }
   }, [filters.status, setFilters]);
@@ -223,7 +226,8 @@ function CollectionFiltersAndList({
   const statusFilter =
     filters.status !== "any" &&
     filters.status !== "all" &&
-    filters.status !== "deaccessioned"
+    filters.status !== "deaccessioned" &&
+    filters.status !== "deleted"
       ? filters.status
       : undefined;
 

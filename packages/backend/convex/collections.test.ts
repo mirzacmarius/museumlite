@@ -5,7 +5,7 @@ import { modules } from "../tests/testSetup";
 import { api } from "./_generated/api";
 import schema from "./schema";
 
-test("collections.list includeDeaccessioned behavior", async () => {
+test("collections.list hides deleted and deaccession workflow objects by default", async () => {
   const t = convexTest(schema, modules);
 
   const { organizationId, userId } = await t.run(async (ctx) => {
@@ -46,6 +46,16 @@ test("collections.list includeDeaccessioned behavior", async () => {
       catalogedBy: userId,
       catalogedAt: Date.now(),
     });
+
+    const pendingDeaccessionCollectionId = await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "A-0002",
+      title: "Pending deaccession item",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    });
+
     await ctx.db.insert("collections", {
       organizationId,
       accessionNumber: "D-0001",
@@ -53,6 +63,27 @@ test("collections.list includeDeaccessioned behavior", async () => {
       status: "deaccessioned",
       catalogedBy: userId,
       catalogedAt: Date.now(),
+    });
+
+    await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "X-0001",
+      title: "Deleted item",
+      status: "deleted",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    });
+
+    await ctx.db.insert("deaccessions", {
+      organizationId,
+      collectionId: pendingDeaccessionCollectionId,
+      deaccessionNumber: "DA-TES-2026-001",
+      dateDeaccessioned: Date.now(),
+      reason: "Duplicate entry",
+      method: "destruction",
+      status: "pending",
+      workflowStep: 1,
+      workflowHistory: [],
     });
 
     return { organizationId, userId };
@@ -64,15 +95,15 @@ test("collections.list includeDeaccessioned behavior", async () => {
     organizationId,
     paginationOpts: { numItems: 50, cursor: null },
   });
-  expect(defaultList.page.map((c) => c.status)).toEqual(["active"]);
+  expect(defaultList.page.map((c) => c.title)).toEqual(["Active item"]);
 
   const includeAll = await asUser.query(api.collections.list, {
     organizationId,
     includeDeaccessioned: true,
     paginationOpts: { numItems: 50, cursor: null },
   });
-  expect(new Set(includeAll.page.map((c) => c.status))).toEqual(
-    new Set(["active", "deaccessioned"]),
+  expect(new Set(includeAll.page.map((c) => c.title))).toEqual(
+    new Set(["Active item", "Deaccessioned item"]),
   );
 
   const onlyDeaccessioned = await asUser.query(api.collections.list, {
@@ -83,6 +114,20 @@ test("collections.list includeDeaccessioned behavior", async () => {
   expect(onlyDeaccessioned.page.map((c) => c.status)).toEqual([
     "deaccessioned",
   ]);
+
+  const onlyDeleted = await asUser.query(api.collections.list, {
+    organizationId,
+    status: "deleted",
+    paginationOpts: { numItems: 50, cursor: null },
+  });
+  expect(onlyDeleted.page.map((c) => c.status)).toEqual(["deleted"]);
+
+  const onlyActive = await asUser.query(api.collections.list, {
+    organizationId,
+    status: "active",
+    paginationOpts: { numItems: 50, cursor: null },
+  });
+  expect(onlyActive.page.map((c) => c.title)).toEqual(["Active item"]);
 });
 
 test("collections.create allows module collection types when module is disabled", async () => {

@@ -87,7 +87,6 @@ export function ObjectFiltersDropdown({
       { value: "active", label: statusLabel(t, "active") },
       { value: "loaned", label: statusLabel(t, "loaned") },
       { value: "archived", label: statusLabel(t, "archived") },
-      { value: "deleted", label: statusLabel(t, "deleted") },
     ],
     [t],
   );

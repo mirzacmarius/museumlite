@@ -134,6 +134,32 @@ async function getLocationPathString(
   return pathSegments.length > 0 ? pathSegments.join(" > ") : undefined;
 }
 
+async function getCollectionsWithOpenDeaccessions(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+) {
+  const [pendingDeaccessions, approvedDeaccessions] = await Promise.all([
+    ctx.db
+      .query("deaccessions")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", organizationId).eq("status", "pending"),
+      )
+      .collect(),
+    ctx.db
+      .query("deaccessions")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", organizationId).eq("status", "approved"),
+      )
+      .collect(),
+  ]);
+
+  return new Set(
+    [...pendingDeaccessions, ...approvedDeaccessions].map(
+      (deaccession) => deaccession.collectionId,
+    ),
+  );
+}
+
 /**
  * Create new collection object
  */
@@ -893,6 +919,13 @@ export const list = query({
     // Check permission
     await requirePermission(ctx, args.organizationId, "collections.read");
 
+    const shouldHideObjectsWithDeaccessionRecords =
+      args.status !== "deaccessioned" && args.status !== "deleted";
+    const collectionIdsWithOpenDeaccessions =
+      shouldHideObjectsWithDeaccessionRecords
+        ? await getCollectionsWithOpenDeaccessions(ctx, args.organizationId)
+        : null;
+
     // If filtering by collectionGroupId, get all collection IDs from the many-to-many table
     let collectionGroupCollectionIds: Set<string> | null = null;
     if (args.collectionGroupId) {
@@ -944,13 +977,6 @@ export const list = query({
 
       let searchResults = await searchQuery.collect();
 
-      // Filter out deaccessioned items if no status filter is provided
-      if (!args.status && !args.includeDeaccessioned) {
-        searchResults = searchResults.filter(
-          (c) => c.status !== "deaccessioned",
-        );
-      }
-
       // Also search other fields that aren't in the searchIndex
       const regularQuery = ctx.db
         .query("collections")
@@ -973,15 +999,6 @@ export const list = query({
       const additionalResults = allCollections.filter((c) => {
         if (searchResultIds.has(c._id)) return false;
 
-        // Filter out deaccessioned items if no status filter is provided
-        if (
-          !args.status &&
-          !args.includeDeaccessioned &&
-          c.status === "deaccessioned"
-        ) {
-          return false;
-        }
-
         return (
           c.accessionNumber?.toLowerCase().includes(searchLower) ||
           c.description?.toLowerCase().includes(searchLower) ||
@@ -997,11 +1014,6 @@ export const list = query({
 
       // Combine and deduplicate
       allResults = [...searchResults, ...additionalResults];
-
-      // Apply deaccession filter if no status specified (safety net for search results)
-      if (!args.status && !args.includeDeaccessioned) {
-        allResults = allResults.filter((c) => c.status !== "deaccessioned");
-      }
     } else {
       // No search term - use regular index
       let query = ctx.db
@@ -1013,9 +1025,6 @@ export const list = query({
       // Apply database-level filters
       if (args.status) {
         query = query.filter((q) => q.eq(q.field("status"), args.status));
-      } else if (!args.includeDeaccessioned) {
-        // When no status filter is provided, exclude deaccessioned items
-        query = query.filter((q) => q.neq(q.field("status"), "deaccessioned"));
       }
 
       if (args.locationId) {
@@ -1048,12 +1057,30 @@ export const list = query({
       }
 
       allResults = await query.collect();
-
-      // Apply deaccession filter if no status specified (safety net for non-search results)
-      if (!args.status && !args.includeDeaccessioned) {
-        allResults = allResults.filter((c) => c.status !== "deaccessioned");
-      }
     }
+
+    allResults = allResults.filter((collection) => {
+      if (collection.status === "deleted" && args.status !== "deleted") {
+        return false;
+      }
+
+      if (
+        collection.status === "deaccessioned" &&
+        args.status !== "deaccessioned" &&
+        !args.includeDeaccessioned
+      ) {
+        return false;
+      }
+
+      if (
+        collectionIdsWithOpenDeaccessions?.has(collection._id) &&
+        collection.status !== "deaccessioned"
+      ) {
+        return false;
+      }
+
+      return true;
+    });
 
     // Apply JavaScript-level filters (partial matching for text fields)
     if (args.culture) {
@@ -1191,6 +1218,12 @@ export const search = query({
     await requirePermission(ctx, args.organizationId, "collections.read");
 
     const limit = args.limit ?? 50;
+    const shouldHideObjectsWithDeaccessionRecords =
+      args.status !== "deaccessioned" && args.status !== "deleted";
+    const collectionIdsWithOpenDeaccessions =
+      shouldHideObjectsWithDeaccessionRecords
+        ? await getCollectionsWithOpenDeaccessions(ctx, args.organizationId)
+        : null;
 
     // Use searchIndex for efficient full-text search on title
     const searchQuery = ctx.db
@@ -1208,11 +1241,6 @@ export const search = query({
       });
 
     let results = await searchQuery.take(limit);
-
-    // Filter out deaccessioned items if no status filter is provided
-    if (!args.status) {
-      results = results.filter((c) => c.status !== "deaccessioned");
-    }
 
     // Also search other fields that aren't in the searchIndex
     // This extends the search to accession numbers and other fields
@@ -1241,9 +1269,6 @@ export const search = query({
           // Skip if already in results
           if (resultIds.has(c._id)) return false;
 
-          // Filter out deaccessioned items if no status filter is provided
-          if (!args.status && c.status === "deaccessioned") return false;
-
           // Search in accession number and other fields
           return (
             c.accessionNumber?.toLowerCase().includes(searchLower) ||
@@ -1264,11 +1289,33 @@ export const search = query({
       new Map(combined.map((item) => [item._id, item])).values(),
     );
 
+    const visibleResults = uniqueResults.filter((collection) => {
+      if (collection.status === "deleted" && args.status !== "deleted") {
+        return false;
+      }
+
+      if (
+        collection.status === "deaccessioned" &&
+        args.status !== "deaccessioned"
+      ) {
+        return false;
+      }
+
+      if (
+        collectionIdsWithOpenDeaccessions?.has(collection._id) &&
+        collection.status !== "deaccessioned"
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
     // Sort by creation time (newest first)
-    uniqueResults.sort((a, b) => b._creationTime - a._creationTime);
+    visibleResults.sort((a, b) => b._creationTime - a._creationTime);
 
     return {
-      results: uniqueResults.slice(0, limit).map((item) => ({
+      results: visibleResults.slice(0, limit).map((item) => ({
         _id: item._id,
         accessionNumber: item.accessionNumber,
         title: item.title,

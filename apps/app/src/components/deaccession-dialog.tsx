@@ -297,8 +297,8 @@ export function DeaccessionDialog({
               <div className="flex-1">
                 <h3 className="font-semibold">Delete Object</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Move to trash. Use this if the object was added incorrectly or
-                  is a duplicate. It can be restored later.
+                  Hide this object from the main catalog. Use this if it was
+                  added incorrectly or is a duplicate.
                 </p>
               </div>
             </button>
@@ -650,9 +650,9 @@ export function DeaccessionDialog({
                     Deleting Object
                   </p>
                   <p className="mt-1 text-red-700 dark:text-red-300">
-                    This object will be moved to trash. Use this if the object
-                    was added incorrectly or is a duplicate. You can restore it
-                    later or permanently delete it from trash.
+                    This object will be marked as deleted and hidden from the
+                    Objects catalog. Use this if the object was added
+                    incorrectly or is a duplicate.
                   </p>
                 </div>
               </div>
