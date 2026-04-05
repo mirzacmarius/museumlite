@@ -324,6 +324,8 @@ export const list = query({
         _id: v.id("deaccessions"),
         deaccessionNumber: v.string(),
         collectionId: v.id("collections"),
+        collectionTitle: v.string(),
+        accessionNumber: v.optional(v.string()),
         dateDeaccessioned: v.number(),
         reason: v.string(),
         method: v.union(
@@ -346,55 +348,54 @@ export const list = query({
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "collections.read");
 
-    let query = ctx.db
-      .query("deaccessions")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      );
+    let allResults: Doc<"deaccessions">[];
 
     if (args.status) {
-      query = query.filter((q) => q.eq(q.field("status"), args.status));
+      allResults = await ctx.db
+        .query("deaccessions")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", args.organizationId).eq("status", args.status),
+        )
+        .collect();
+    } else {
+      allResults = await ctx.db
+        .query("deaccessions")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect();
     }
 
-    // Collect all results for search filtering
-    let allResults = await query.collect();
+    const deaccessionsWithCollectionInfo = await Promise.all(
+      allResults.map(async (deaccession) => {
+        const collection = await ctx.db.get(deaccession.collectionId);
+        return {
+          ...deaccession,
+          collectionTitle: collection?.title || "",
+          accessionNumber: collection?.accessionNumber,
+        };
+      }),
+    );
 
     // Apply search filter if provided
-    if (args.search && args.search.trim().length > 0) {
-      const searchLower = args.search.toLowerCase();
-      // Get collection titles for deaccessions to include in search
-      const deaccessionsWithCollectionInfo = await Promise.all(
-        allResults.map(async (deaccession) => {
-          const collection = await ctx.db.get(deaccession.collectionId);
-          const collectionTitle = collection?.title || "";
-          const accessionNumber = collection?.accessionNumber || "";
-
-          return { ...deaccession, collectionTitle, accessionNumber };
-        }),
-      );
-
-      allResults = deaccessionsWithCollectionInfo
-        .filter((deaccession) => {
+    const searchLower = args.search?.trim().toLowerCase();
+    const filteredResults = searchLower
+      ? deaccessionsWithCollectionInfo.filter((deaccession) => {
           return (
-            deaccession.deaccessionNumber
-              ?.toLowerCase()
-              .includes(searchLower) ||
-            deaccession.reason?.toLowerCase().includes(searchLower) ||
+            deaccession.deaccessionNumber.toLowerCase().includes(searchLower) ||
+            deaccession.reason.toLowerCase().includes(searchLower) ||
             deaccession.disposition?.toLowerCase().includes(searchLower) ||
             deaccession.notes?.toLowerCase().includes(searchLower) ||
-            deaccession.collectionTitle?.toLowerCase().includes(searchLower) ||
+            deaccession.collectionTitle.toLowerCase().includes(searchLower) ||
             deaccession.accessionNumber?.toLowerCase().includes(searchLower) ||
-            deaccession.method?.toLowerCase().includes(searchLower) ||
+            deaccession.method.toLowerCase().includes(searchLower) ||
             false
           );
         })
-        .map(
-          ({ collectionTitle, accessionNumber, ...deaccession }) => deaccession,
-        ); // Remove temporary fields
-    }
+      : deaccessionsWithCollectionInfo;
 
     // Sort by date deaccessioned (newest first)
-    allResults.sort((a, b) => b.dateDeaccessioned - a.dateDeaccessioned);
+    filteredResults.sort((a, b) => b.dateDeaccessioned - a.dateDeaccessioned);
 
     // Handle pagination manually
     const cursor = args.paginationOpts.cursor
@@ -403,23 +404,90 @@ export const list = query({
     const startIndex = cursor;
     const endIndex = Math.min(
       startIndex + args.paginationOpts.numItems,
-      allResults.length,
+      filteredResults.length,
     );
-    const page = allResults.slice(startIndex, endIndex);
+    const page = filteredResults.slice(startIndex, endIndex);
 
     return {
       page: page.map((item) => ({
         _id: item._id,
         deaccessionNumber: item.deaccessionNumber,
         collectionId: item.collectionId,
+        collectionTitle: item.collectionTitle || "Unknown object",
+        accessionNumber: item.accessionNumber,
         dateDeaccessioned: item.dateDeaccessioned,
         reason: item.reason,
         method: item.method,
         status: item.status,
         workflowStep: item.workflowStep,
       })),
-      isDone: endIndex >= allResults.length,
+      isDone: endIndex >= filteredResults.length,
       continueCursor: endIndex.toString(),
+    };
+  },
+});
+
+export const getWorkflowSteps = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    hasWorkflow: v.boolean(),
+    steps: v.array(
+      v.object({
+        stepNumber: v.number(),
+        name: v.string(),
+        roleName: v.optional(v.string()),
+      }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
+    const workflowConfig = await ctx.db
+      .query("workflowConfigs")
+      .withIndex("by_organization_and_workflowType", (q) =>
+        q
+          .eq("organizationId", args.organizationId)
+          .eq("workflowType", "deaccession"),
+      )
+      .first();
+
+    if (!workflowConfig) {
+      return {
+        hasWorkflow: false,
+        steps: [
+          { stepNumber: 1, name: "Pending Review" },
+          { stepNumber: -1, name: "Approved" },
+          { stepNumber: -2, name: "Rejected" },
+        ],
+      };
+    }
+
+    const stepsWithRoles = await Promise.all(
+      workflowConfig.steps.map(async (step) => {
+        const role = await ctx.db.get(step.roleId);
+        return {
+          stepNumber: step.stepNumber,
+          name: step.name,
+          roleName: role?.name,
+        };
+      }),
+    );
+
+    const normalizedSteps = [
+      ...stepsWithRoles,
+      { stepNumber: -1, name: "Approved" },
+      { stepNumber: -2, name: "Rejected" },
+    ].filter(
+      (step, index, steps) =>
+        steps.findIndex((candidate) => candidate.stepNumber === step.stepNumber) ===
+        index,
+    );
+
+    return {
+      hasWorkflow: true,
+      steps: normalizedSteps,
     };
   },
 });

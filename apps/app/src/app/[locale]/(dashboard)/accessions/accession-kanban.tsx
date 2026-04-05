@@ -45,7 +45,10 @@ export function AccessionKanban({
     <div className="flex-1 overflow-x-auto custom-scrollbar">
       <div className="flex h-full min-w-max gap-6 pb-4">
         {workflowSteps.steps.map((step: WorkflowStep) => (
-          <Suspense key={step.stepNumber} fallback={<KanbanColumnSkeleton />}>
+          <Suspense
+            key={`${step.stepNumber}-${step.name}`}
+            fallback={<KanbanColumnSkeleton />}
+          >
             <KanbanColumn
               stepNumber={step.stepNumber}
               stepName={step.name}

@@ -1685,10 +1685,11 @@ export const getWorkflowSteps = query({
 
     const workflowConfig = await ctx.db
       .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
+      .withIndex("by_organization_and_workflowType", (q) =>
+        q
+          .eq("organizationId", args.organizationId)
+          .eq("workflowType", "accession"),
       )
-      .filter((q) => q.eq(q.field("workflowType"), "accession"))
       .first();
 
     if (!workflowConfig) {
@@ -1712,13 +1713,19 @@ export const getWorkflowSteps = query({
       }),
     );
 
+    const normalizedSteps = [
+      { stepNumber: 0, name: "Draft" },
+      ...stepsWithRoles,
+      { stepNumber: -1, name: "Approved" },
+    ].filter(
+      (step, index, steps) =>
+        steps.findIndex((candidate) => candidate.stepNumber === step.stepNumber) ===
+        index,
+    );
+
     return {
       hasWorkflow: true,
-      steps: [
-        { stepNumber: 0, name: "Draft" },
-        ...stepsWithRoles,
-        { stepNumber: -1, name: "Approved" },
-      ],
+      steps: normalizedSteps,
     };
   },
 });
