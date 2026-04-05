@@ -753,17 +753,6 @@ function CollectionTableRow({
     columns.find((c) => c.id === columnId)?.visible ?? true;
   const [isDeaccessionDialogOpen, setIsDeaccessionDialogOpen] = useState(false);
 
-  const locationPath = useQuery(
-    api.locations.getLocationPath,
-    item.currentLocationId && organizationId
-      ? { locationId: item.currentLocationId }
-      : "skip",
-  );
-
-  const primaryImageUrl = useQuery(api.media.getPrimaryImageUrl, {
-    collectionId: item._id,
-  });
-
   const canDeaccession = item.status !== "deaccessioned";
 
   const getStatusBadge = (status: string) => {
@@ -811,9 +800,9 @@ function CollectionTableRow({
         </td>
         <td className="px-4 py-3">
           <div className="w-10 h-10 rounded-lg bg-zinc-800 border border-zinc-700 overflow-hidden relative">
-            {primaryImageUrl ? (
+            {item.primaryImageUrl ? (
               <Image
-                src={primaryImageUrl}
+                src={item.primaryImageUrl}
                 alt={item.title}
                 fill
                 sizes="40px"
@@ -853,10 +842,8 @@ function CollectionTableRow({
           </span>
         </td>
         <td className="px-4 py-3 text-zinc-400 truncate max-w-[150px]">
-          {locationPath && locationPath.length > 0 ? (
-            <span className="flex items-center gap-1">
-              {locationPath[locationPath.length - 1]?.name}
-            </span>
+          {item.locationPath ? (
+            <span className="flex items-center gap-1">{item.locationPath}</span>
           ) : (
             <span className="text-zinc-600">-</span>
           )}

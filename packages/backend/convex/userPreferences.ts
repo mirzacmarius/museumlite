@@ -52,6 +52,10 @@ export const set = mutation({
       .unique();
 
     if (existing) {
+      if (existing.value === args.value) {
+        return null;
+      }
+
       await ctx.db.patch(existing._id, {
         value: args.value,
         updatedAt: Date.now(),

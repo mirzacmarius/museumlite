@@ -194,6 +194,22 @@ export default defineSchema({
     ),
   }).index("by_slug", ["slug"]),
 
+  organizationUsageCounters: defineTable({
+    organizationId: v.id("organizations"),
+    objectCount: v.number(),
+    mediaFileCount: v.number(),
+    mediaVersionCount: v.number(),
+    storageBytes: v.number(),
+    mediaByType: v.record(
+      v.string(),
+      v.object({
+        count: v.number(),
+        bytes: v.number(),
+      }),
+    ),
+    lastUpdatedAt: v.number(),
+  }).index("by_organization", ["organizationId"]),
+
   // User-organization relationships with roles
   userOrganizations: defineTable({
     userId: v.id("users"),
@@ -2153,7 +2169,17 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_organization", ["organizationId"])
     .index("by_user_and_read", ["userId", "read"])
-    .index("by_user_and_organization", ["userId", "organizationId"]),
+    .index("by_user_and_organization", ["userId", "organizationId"])
+    .index("by_user_and_organization_and_createdAt", [
+      "userId",
+      "organizationId",
+      "createdAt",
+    ])
+    .index("by_user_and_organization_and_read", [
+      "userId",
+      "organizationId",
+      "read",
+    ]),
 
   // User notification preferences
   notificationPreferences: defineTable({

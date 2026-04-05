@@ -3,7 +3,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, type QueryCtx } from "./_generated/server";
 // Note: customFieldValue, provenanceChainEntry, shippingLogEntry are defined in schema
 // but return validators use v.any() to allow for existing data that may not match strict types
 import { getNextCounterValue } from "./utils/accessionCounter";
@@ -13,6 +13,7 @@ import {
   hasFeatureAccess,
   hasModuleEnabled,
 } from "./utils/featureGates";
+import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -69,6 +70,51 @@ async function generateAccessionNumber(
   });
 
   return accessionNumber;
+}
+
+async function getCollectionPrimaryImageUrl(
+  ctx: QueryCtx,
+  collectionId: Id<"collections">,
+) {
+  const primaryMedia = await ctx.db
+    .query("mediaFiles")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .filter((q) => q.eq(q.field("isPrimary"), true))
+    .first();
+
+  if (!primaryMedia) {
+    return undefined;
+  }
+
+  if (primaryMedia.thumbnailStorageId) {
+    return (await ctx.storage.getUrl(primaryMedia.thumbnailStorageId)) ?? undefined;
+  }
+
+  if (primaryMedia.fileType === "image") {
+    return (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined;
+  }
+
+  return undefined;
+}
+
+async function getLocationPathString(
+  ctx: QueryCtx,
+  locationId: Id<"locations">,
+) {
+  const pathSegments: string[] = [];
+  let currentId: Id<"locations"> | undefined = locationId;
+
+  while (currentId) {
+    const location = await ctx.db.get(currentId);
+    if (!location) {
+      break;
+    }
+
+    pathSegments.unshift(location.name);
+    currentId = location.parentLocationId;
+  }
+
+  return pathSegments.length > 0 ? pathSegments.join(" > ") : undefined;
 }
 
 /**
@@ -242,6 +288,10 @@ export const create = mutation({
       status: "active",
       catalogedBy: userId,
       catalogedAt: Date.now(),
+    });
+
+    await applyUsageCounterDelta(ctx, args.organizationId, {
+      objectCount: 1,
     });
 
     if (args.collectionGroupId) {
@@ -807,6 +857,8 @@ export const list = query({
         collectionGroupId: v.optional(v.id("collectionGroups")),
         objectType: v.optional(v.string()),
         currentLocationId: v.optional(v.id("locations")),
+        locationPath: v.optional(v.string()),
+        primaryImageUrl: v.optional(v.string()),
         status: v.union(
           v.literal("active"),
           v.literal("loaned"),
@@ -1054,17 +1106,25 @@ export const list = query({
       allResults.length,
     );
     const page = allResults.slice(startIndex, endIndex);
-
-    return {
-      page: page.map((item) => ({
+    const enrichedPage = await Promise.all(
+      page.map(async (item) => ({
         _id: item._id,
         accessionNumber: item.accessionNumber,
         title: item.title,
+        collectionGroupId: item.collectionGroupId,
         objectType: item.objectType,
         currentLocationId: item.currentLocationId,
+        locationPath: item.currentLocationId
+          ? await getLocationPathString(ctx, item.currentLocationId)
+          : undefined,
+        primaryImageUrl: await getCollectionPrimaryImageUrl(ctx, item._id),
         status: item.status,
         _creationTime: item._creationTime,
       })),
+    );
+
+    return {
+      page: enrichedPage,
       isDone: endIndex >= allResults.length,
       continueCursor: endIndex.toString(),
     };

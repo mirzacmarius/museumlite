@@ -47,6 +47,53 @@ test("should transfer organization ownership", async () => {
 });
 
 describe("getUsageStats", () => {
+  test("should read object and storage usage from organization counters", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      const orgId = await ctx.db.insert("organizations", {
+        name: "Counter Org",
+        slug: "counter-org",
+        type: "museum",
+      });
+
+      await ctx.db.insert("organizationUsageCounters", {
+        organizationId: orgId,
+        objectCount: 17,
+        mediaFileCount: 4,
+        mediaVersionCount: 2,
+        storageBytes: 8192,
+        mediaByType: {
+          image: {
+            count: 4,
+            bytes: 8192,
+          },
+        },
+        lastUpdatedAt: Date.now(),
+      });
+
+      await ctx.db.insert("exportUsage", {
+        organizationId: orgId,
+        periodStart: Date.UTC(
+          new Date().getUTCFullYear(),
+          new Date().getUTCMonth(),
+          1,
+        ),
+        count: 3,
+      });
+
+      return orgId;
+    });
+
+    const stats = await t.query(api.organizations.getUsageStats, {
+      organizationId: orgId,
+    });
+
+    expect(stats.objects.used).toBe(17);
+    expect(stats.storage.used).toBe(8192);
+    expect(stats.exports.used).toBe(3);
+  });
+
   test("should return correct structure for free tier", async () => {
     const t = convexTest(schema, modules);
 

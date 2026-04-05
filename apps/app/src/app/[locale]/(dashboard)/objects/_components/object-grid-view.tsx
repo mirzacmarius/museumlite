@@ -2,7 +2,6 @@
 
 import { DeaccessionDialog } from "@/components/deaccession-dialog";
 import { PermissionGate } from "@/components/permission-gate";
-import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
@@ -12,7 +11,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
-import { useQuery } from "convex/react";
 import { Archive, Building2, MoreVertical } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -24,6 +22,7 @@ interface ObjectGridItemProps {
     accessionNumber: string;
     title: string;
     objectType?: string;
+    primaryImageUrl?: string;
     status: string;
   };
   organizationId: Id<"organizations">;
@@ -39,10 +38,6 @@ function ObjectGridItem({
 }: ObjectGridItemProps) {
   const [isDeaccessionDialogOpen, setIsDeaccessionDialogOpen] = useState(false);
   const canDeaccession = item.status !== "deaccessioned";
-
-  const primaryImageUrl = useQuery(api.media.getPrimaryImageUrl, {
-    collectionId: item._id as Id<"collections">,
-  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -97,9 +92,9 @@ function ObjectGridItem({
         )}
         <Link href={`/objects/${item._id}`} className="block">
           <div className="relative aspect-square bg-zinc-950 overflow-hidden">
-            {primaryImageUrl ? (
+            {item.primaryImageUrl ? (
               <Image
-                src={primaryImageUrl}
+                src={item.primaryImageUrl}
                 alt={item.title}
                 fill
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
@@ -213,6 +208,7 @@ export interface ObjectGridViewProps {
     accessionNumber: string;
     title: string;
     objectType?: string;
+    primaryImageUrl?: string;
     status: string;
   }>;
   organizationId: Id<"organizations">;

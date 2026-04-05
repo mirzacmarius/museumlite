@@ -38,7 +38,12 @@ function SelectedCollectionItem({
   issueMessage,
   conditionPlaceholder,
 }: {
-  collection: Pick<Doc<"collections">, "_id" | "accessionNumber" | "title">;
+  collection: Pick<
+    Doc<"collections">,
+    "_id" | "accessionNumber" | "title"
+  > & {
+    primaryImageUrl?: string;
+  };
   condition: string;
   onConditionChange: (value: string) => void;
   onRemove: () => void;
@@ -46,10 +51,6 @@ function SelectedCollectionItem({
   issueMessage?: string;
   conditionPlaceholder: string;
 }) {
-  const primaryImageUrl = useQuery(api.media.getPrimaryImageUrl, {
-    collectionId: collection._id,
-  });
-
   return (
     <div
       className={cn(
@@ -61,9 +62,9 @@ function SelectedCollectionItem({
     >
       <div className="flex items-center gap-3">
         <div className="h-10 w-10 rounded bg-secondary ring-1 ring-border flex-shrink-0 overflow-hidden">
-          {primaryImageUrl ? (
+          {collection.primaryImageUrl ? (
             <Image
-              src={primaryImageUrl}
+              src={collection.primaryImageUrl}
               alt={collection.title}
               width={40}
               height={40}

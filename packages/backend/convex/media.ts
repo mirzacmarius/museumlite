@@ -5,8 +5,14 @@ import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { enforceMediaQuota } from "./utils/featureGates";
+import {
+  applyUsageCounterDelta,
+  createEmptyUsageCounter,
+  getMediaStorageBytes,
+  getStorageBytes,
+  getUsageCounter,
+} from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
-import { getStorageUsageFromMedia } from "./utils/storageUsage";
 
 const MAX_SMALL_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
@@ -194,6 +200,19 @@ export const create = mutation({
       uploadedBy: userId,
       uploadedAt: Date.now(),
       uploadStatus: "completed",
+    });
+
+    const storageBytes = await getStorageBytes(ctx, args.storageId);
+    await applyUsageCounterDelta(ctx, args.organizationId, {
+      mediaFileCount: 1,
+      mediaTypeDeltas: [
+        {
+          type: fileCategory,
+          countDelta: 1,
+          bytesDelta: storageBytes,
+        },
+      ],
+      storageBytes,
     });
 
     // If it's a primary image and <50MB, schedule thumbnail generation
@@ -407,6 +426,8 @@ export const deleteMedia = mutation({
     // Check permission
     await requirePermission(ctx, media.organizationId, "media.delete");
 
+    const storageBytes = await getMediaStorageBytes(ctx, media);
+
     // Delete from storage
     await ctx.storage.delete(media.storageId);
     if (media.thumbnailStorageId) {
@@ -415,6 +436,18 @@ export const deleteMedia = mutation({
 
     // Delete record
     await ctx.db.delete(args.mediaId);
+
+    await applyUsageCounterDelta(ctx, media.organizationId, {
+      mediaFileCount: -1,
+      mediaTypeDeltas: [
+        {
+          type: media.fileType,
+          countDelta: -1,
+          bytesDelta: -storageBytes,
+        },
+      ],
+      storageBytes: -storageBytes,
+    });
 
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: media.organizationId,
@@ -847,47 +880,32 @@ export const getStorageStats = query({
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "media.read");
 
-    const allMedia = await ctx.db
-      .query("mediaFiles")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-    const mediaVersions = await ctx.db
-      .query("mediaVersions")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const [usageCounter, recentUploads] = await Promise.all([
+      getUsageCounter(ctx, args.organizationId),
+      ctx.db
+        .query("mediaFiles")
+        .withIndex("by_organization_and_uploadedAt", (q) =>
+          q
+            .eq("organizationId", args.organizationId)
+            .gte("uploadedAt", sevenDaysAgo),
+        )
+        .collect(),
+    ]);
 
-    const totalFiles = allMedia.length;
-    const { totalSize } = await getStorageUsageFromMedia(
-      ctx,
-      allMedia,
-      mediaVersions,
-    );
-
-    const typeMap = new Map<string, { count: number; size: number }>();
-    for (const m of allMedia) {
-      const existing = typeMap.get(m.fileType) || { count: 0, size: 0 };
-      typeMap.set(m.fileType, {
-        count: existing.count + 1,
-        size: existing.size + m.fileSize,
-      });
-    }
-
-    const byType = Array.from(typeMap.entries()).map(([type, stats]) => ({
+    const counter = usageCounter ?? createEmptyUsageCounter(args.organizationId);
+    const byType = Object.entries(counter.mediaByType).map(([type, usage]) => ({
       type,
-      count: stats.count,
-      size: stats.size,
+      count: usage.count,
+      size: usage.bytes,
     }));
 
-    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const recentUploads = allMedia.filter(
-      (m) => m.uploadedAt >= sevenDaysAgo,
-    ).length;
-
-    return { totalFiles, totalSize, byType, recentUploads };
+    return {
+      totalFiles: counter.mediaFileCount,
+      totalSize: counter.storageBytes,
+      byType,
+      recentUploads: recentUploads.length,
+    };
   },
 });
 
