@@ -16,6 +16,18 @@ import {
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
 
+function isImageMedia(media: {
+  fileType?: string;
+  mediaCategory?: "image" | "document";
+  mimeType?: string;
+}) {
+  return (
+    media.fileType === "image" ||
+    media.mediaCategory === "image" ||
+    media.mimeType?.startsWith("image/") === true
+  );
+}
+
 /**
  * Generate accession number based on organization format template
  */
@@ -76,22 +88,27 @@ async function getCollectionPrimaryImageUrl(
   ctx: QueryCtx,
   collectionId: Id<"collections">,
 ) {
-  const primaryMedia = await ctx.db
+  const mediaFiles = await ctx.db
     .query("mediaFiles")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-    .filter((q) => q.eq(q.field("isPrimary"), true))
-    .first();
+    .collect();
 
-  if (!primaryMedia) {
+  const imageMedia = mediaFiles.filter((media) => isImageMedia(media));
+  const preferredMedia =
+    imageMedia.find((media) => media.isPrimary) ?? imageMedia[0];
+
+  if (!preferredMedia) {
     return undefined;
   }
 
-  if (primaryMedia.thumbnailStorageId) {
-    return (await ctx.storage.getUrl(primaryMedia.thumbnailStorageId)) ?? undefined;
+  if (preferredMedia.thumbnailStorageId) {
+    return (
+      (await ctx.storage.getUrl(preferredMedia.thumbnailStorageId)) ?? undefined
+    );
   }
 
-  if (primaryMedia.fileType === "image") {
-    return (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined;
+  if (isImageMedia(preferredMedia)) {
+    return (await ctx.storage.getUrl(preferredMedia.storageId)) ?? undefined;
   }
 
   return undefined;

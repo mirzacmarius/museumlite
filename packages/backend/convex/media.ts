@@ -2,7 +2,12 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { internalMutation, mutation, query } from "./_generated/server";
+import {
+  internalMutation,
+  mutation,
+  query,
+  type QueryCtx,
+} from "./_generated/server";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { enforceMediaQuota } from "./utils/featureGates";
 import {
@@ -53,6 +58,31 @@ function getFileCategory(mimeType: string): string {
   if (FILE_TYPES.videos.includes(mimeType as any)) return "video";
   if (FILE_TYPES["3d"].includes(mimeType as any)) return "3d";
   return "other";
+}
+
+function isImageMedia(media: {
+  fileType?: string;
+  mediaCategory?: "image" | "document";
+  mimeType?: string;
+}) {
+  return (
+    media.fileType === "image" ||
+    media.mediaCategory === "image" ||
+    media.mimeType?.startsWith("image/") === true
+  );
+}
+
+async function getPreferredImageMedia(
+  ctx: QueryCtx,
+  collectionId: Id<"collections">,
+) {
+  const mediaFiles = await ctx.db
+    .query("mediaFiles")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+
+  const imageMedia = mediaFiles.filter((media) => isImageMedia(media));
+  return imageMedia.find((media) => media.isPrimary) ?? imageMedia[0] ?? null;
 }
 
 /**
@@ -558,14 +588,7 @@ export const getPrimaryImageUrl = query({
 
     await requirePermission(ctx, collection.organizationId, "media.read");
 
-    // Find primary image for this collection
-    const primaryMedia = await ctx.db
-      .query("mediaFiles")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .filter((q) => q.eq(q.field("isPrimary"), true))
-      .first();
+    const primaryMedia = await getPreferredImageMedia(ctx, args.collectionId);
 
     if (!primaryMedia) {
       return null;
@@ -577,7 +600,7 @@ export const getPrimaryImageUrl = query({
     }
 
     // Only return original URL if it's an image type
-    if (primaryMedia.fileType === "image") {
+    if (isImageMedia(primaryMedia)) {
       return await ctx.storage.getUrl(primaryMedia.storageId);
     }
 
@@ -630,13 +653,7 @@ export const getBatchPrimaryImageUrls = query({
           return { collectionId, media: null };
         }
 
-        const primaryMedia = await ctx.db
-          .query("mediaFiles")
-          .withIndex("by_collection", (q) =>
-            q.eq("collectionId", collectionId),
-          )
-          .filter((q) => q.eq(q.field("isPrimary"), true))
-          .first();
+        const primaryMedia = await getPreferredImageMedia(ctx, collectionId);
 
         return { collectionId, media: primaryMedia };
       }),
@@ -655,7 +672,7 @@ export const getBatchPrimaryImageUrls = query({
             collectionId: result.collectionId,
             storageId: result.media.thumbnailStorageId,
           });
-        } else if (result.media.fileType === "image") {
+        } else if (isImageMedia(result.media)) {
           storageIdsToFetch.push({
             collectionId: result.collectionId,
             storageId: result.media.storageId,
