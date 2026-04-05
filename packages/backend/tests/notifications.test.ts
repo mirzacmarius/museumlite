@@ -2,9 +2,20 @@ import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import { internal } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
+
+function authedForUser(
+  t: ReturnType<typeof convexTest>,
+  userId: Id<"users">,
+) {
+  return t.withIdentity({
+    subject: `${userId}|session-1`,
+    issuer: "https://example.test",
+  });
+}
 
 /**
  * NOTE: The notifications module uses @convex-dev/auth's getAuthUserId() for authentication.
@@ -121,6 +132,85 @@ describe("notification center data structure", () => {
 });
 
 describe("notification queries with indexes", () => {
+  test("getUnreadCount and markAllRead stay scoped to one organization", async () => {
+    const t = convexTest(schema, modules);
+
+    const { organizationAId, organizationBId, userId } = await t.run(async (ctx) => {
+      const organizationAId = await ctx.db.insert("organizations", {
+        name: "Org A",
+        slug: "org-a",
+        type: "museum",
+      });
+      const organizationBId = await ctx.db.insert("organizations", {
+        name: "Org B",
+        slug: "org-b",
+        type: "museum",
+      });
+      const userId = await ctx.db.insert("users", {
+        name: "Unread Counter User",
+        email: "unread-counter@example.com",
+      });
+
+      await ctx.db.insert("notifications", {
+        organizationId: organizationAId,
+        userId,
+        type: "loan_pending_approval",
+        title: "Unread A1",
+        message: "Unread in org A",
+        read: false,
+        createdAt: Date.now(),
+      });
+      await ctx.db.insert("notifications", {
+        organizationId: organizationAId,
+        userId,
+        type: "task_assigned",
+        title: "Unread A2",
+        message: "Also unread in org A",
+        read: false,
+        createdAt: Date.now() + 1,
+      });
+      await ctx.db.insert("notifications", {
+        organizationId: organizationBId,
+        userId,
+        type: "loan_due_soon",
+        title: "Unread B1",
+        message: "Unread in org B",
+        read: false,
+        createdAt: Date.now() + 2,
+      });
+
+      return { organizationAId, organizationBId, userId };
+    });
+
+    const authed = authedForUser(t, userId);
+
+    expect(
+      await authed.query(api.notifications.getUnreadCount, {
+        organizationId: organizationAId,
+      }),
+    ).toBe(2);
+    expect(
+      await authed.query(api.notifications.getUnreadCount, {
+        organizationId: organizationBId,
+      }),
+    ).toBe(1);
+
+    await authed.mutation(api.notifications.markAllRead, {
+      organizationId: organizationAId,
+    });
+
+    expect(
+      await authed.query(api.notifications.getUnreadCount, {
+        organizationId: organizationAId,
+      }),
+    ).toBe(0);
+    expect(
+      await authed.query(api.notifications.getUnreadCount, {
+        organizationId: organizationBId,
+      }),
+    ).toBe(1);
+  });
+
   test("should query notifications by user", async () => {
     const t = convexTest(schema, modules);
 

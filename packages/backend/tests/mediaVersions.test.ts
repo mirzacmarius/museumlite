@@ -187,6 +187,30 @@ describe("mediaVersions", () => {
     expect(version2?.versionNumber).toBe(2);
   });
 
+  test("should increment usage counters when creating a version", async () => {
+    const t = convexTest(schema, modules);
+    const setup = await createTestSetup(t);
+    const authed = authedForUser(t, setup.userId);
+
+    await authed.mutation(api.mediaVersions.createVersion, {
+      mediaId: setup.mediaFileId,
+      storageId: setup.storageId,
+      editType: "adjust",
+    });
+
+    const usageCounter = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("organizationUsageCounters")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", setup.organizationId),
+        )
+        .unique();
+    });
+
+    expect(usageCounter?.mediaVersionCount).toBe(1);
+    expect(usageCounter?.storageBytes).toBeGreaterThan(0);
+  });
+
   test("should list versions sorted by version number", async () => {
     const t = convexTest(schema, modules);
     const setup = await createTestSetup(t);

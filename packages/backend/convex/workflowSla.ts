@@ -235,10 +235,28 @@ export const getOrganizationsWithSlaConfigs = internalQuery({
   returns: v.array(v.id("organizations")),
   handler: async (ctx) => {
     const configs = await ctx.db.query("workflowSlaConfigs").collect();
-    const orgIds = new Set(configs.map((c) => c.organizationId));
-    return Array.from(orgIds);
+    const activeOrganizationIds = uniqueIds(
+      configs
+        .filter((config) => config.isActive !== false)
+        .map((config) => config.organizationId),
+    );
+
+    const organizations = await Promise.all(
+      activeOrganizationIds.map((organizationId) => ctx.db.get(organizationId)),
+    );
+
+    return organizations
+      .filter(
+        (organization): organization is NonNullable<typeof organization> =>
+          organization !== null,
+      )
+      .map((organization) => organization._id);
   },
 });
+
+function uniqueIds(ids: Array<Id<"organizations">>) {
+  return Array.from(new Set(ids)) as Array<Id<"organizations">>;
+}
 
 export const checkAllOrganizationsSla = internalMutation({
   args: {},

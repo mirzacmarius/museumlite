@@ -2,6 +2,10 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
+import {
+  applyUsageCounterDelta,
+  getMediaVersionStorageBytes,
+} from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -56,6 +60,14 @@ export const createVersion = mutation({
     await ctx.db.patch(args.mediaId, {
       currentVersionId: versionId,
       versionCount: newVersionNumber,
+    });
+
+    const versionStorageBytes = await getMediaVersionStorageBytes(ctx, {
+      storageId: args.storageId,
+    });
+    await applyUsageCounterDelta(ctx, media.organizationId, {
+      mediaVersionCount: 1,
+      storageBytes: versionStorageBytes,
     });
 
     return versionId;

@@ -2,6 +2,11 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery } from "./_generated/server";
+import {
+  applyUsageCounterDelta,
+  createEmptyUsageCounter,
+  getStorageBytes,
+} from "./utils/organizationUsageCounters";
 
 // Tables to clear - hardcoded list (NOT using TableNames to avoid as any)
 // These are verified to exist in schema.ts
@@ -156,6 +161,11 @@ export const createOrganization = internalMutation({
       },
     });
 
+    await ctx.db.insert(
+      "organizationUsageCounters",
+      createEmptyUsageCounter(orgId),
+    );
+
     // Create default roles using the existing helper
     await ctx.runMutation(internal.organizations.createDefaultRoles, {
       organizationId: orgId,
@@ -244,7 +254,7 @@ export const createCollection = internalMutation({
   },
   returns: v.id("collections"),
   handler: async (ctx, args) => {
-    return await ctx.db.insert("collections", {
+    const collectionId = await ctx.db.insert("collections", {
       organizationId: args.organizationId,
       accessionNumber: args.accessionNumber,
       title: args.title,
@@ -274,6 +284,12 @@ export const createCollection = internalMutation({
       catalogedBy: args.userId,
       catalogedAt: Date.now(),
     });
+
+    await applyUsageCounterDelta(ctx, args.organizationId, {
+      objectCount: 1,
+    });
+
+    return collectionId;
   },
 });
 
@@ -292,7 +308,7 @@ export const createMediaFile = internalMutation({
   },
   returns: v.id("mediaFiles"),
   handler: async (ctx, args) => {
-    return await ctx.db.insert("mediaFiles", {
+    const mediaId = await ctx.db.insert("mediaFiles", {
       collectionId: args.collectionId,
       organizationId: args.organizationId,
       storageId: args.storageId,
@@ -310,6 +326,21 @@ export const createMediaFile = internalMutation({
       uploadedAt: Date.now(),
       uploadStatus: "completed",
     });
+
+    const storageBytes = await getStorageBytes(ctx, args.storageId);
+    await applyUsageCounterDelta(ctx, args.organizationId, {
+      mediaFileCount: 1,
+      mediaTypeDeltas: [
+        {
+          type: "image",
+          countDelta: 1,
+          bytesDelta: storageBytes,
+        },
+      ],
+      storageBytes,
+    });
+
+    return mediaId;
   },
 });
 

@@ -300,6 +300,25 @@ function CollectionObjectsList({
 
   // Get items in this collection group (using many-to-many relationship)
   const groupItems = useQuery(api.collectionGroups.listItems, { groupId });
+  const groupItemCollectionIds = useMemo(
+    () => groupItems?.map((item) => item.collectionId) ?? [],
+    [groupItems],
+  );
+  const groupItemImageUrls = useQuery(
+    api.media.getBatchPrimaryImageUrls,
+    groupItemCollectionIds.length > 0
+      ? { collectionIds: groupItemCollectionIds }
+      : "skip",
+  );
+  const groupItemImageUrlMap = useMemo(() => {
+    if (!groupItemImageUrls) {
+      return new Map<Id<"collections">, string | null>();
+    }
+
+    return new Map(
+      groupItemImageUrls.map((item) => [item.collectionId, item.url]),
+    );
+  }, [groupItemImageUrls]);
 
   // Get all collections for the "add existing" dialog
   const collections = useQuery(
@@ -540,6 +559,7 @@ function CollectionObjectsList({
             <CollectionListItem
               key={item._id}
               item={item}
+              imageUrl={groupItemImageUrlMap.get(item.collectionId)}
               organizationId={organizationId}
               onRemove={() => handleRemoveItem(item.collectionId)}
             />
@@ -556,17 +576,16 @@ type CollectionGroupItem = FunctionReturnType<
 
 function CollectionListItem({
   item,
+  imageUrl,
   onRemove,
 }: {
   item: CollectionGroupItem;
+  imageUrl?: string | null;
   organizationId: Id<"organizations">;
   onRemove?: () => void;
 }) {
   const t = useScopedI18n("collections");
   const common = useScopedI18n("common");
-  const primaryImageUrl = useQuery(api.media.getPrimaryImageUrl, {
-    collectionId: item.collectionId,
-  });
 
   return (
     <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card p-4 transition-colors hover:bg-accent">
@@ -575,9 +594,9 @@ function CollectionListItem({
         className="flex flex-1 items-center gap-4"
       >
         <div className="flex h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-          {primaryImageUrl ? (
+          {imageUrl ? (
             <img
-              src={primaryImageUrl}
+              src={imageUrl}
               alt={item.title}
               className="h-full w-full object-cover"
               loading="lazy"

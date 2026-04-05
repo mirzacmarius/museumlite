@@ -110,7 +110,6 @@ export default function NotificationsPage() {
   const [filter, setFilter] = useState<FilterType>("all");
   const [category, setCategory] = useState<CategoryType>("all");
 
-  // Use enhanced notification center API
   const notificationCenter = useQuery(
     api.notifications.getNotificationCenter,
     currentOrganizationId
@@ -118,20 +117,8 @@ export default function NotificationsPage() {
       : "skip",
   );
 
-  // Fallback to audit API if enhanced not available
-  const notificationsData = useQuery(
-    api.audit.listNotifications,
-    currentOrganizationId && !notificationCenter
-      ? {
-          organizationId: currentOrganizationId as Id<"organizations">,
-          unreadOnly: filter === "unread",
-          limit: 100,
-        }
-      : "skip",
-  );
-
-  const markRead = useMutation(api.audit.markRead);
-  const markAllRead = useMutation(api.audit.markAllRead);
+  const markRead = useMutation(api.notifications.markRead);
+  const markAllRead = useMutation(api.notifications.markAllRead);
 
   const handleMarkRead = async (notificationId: string) => {
     await markRead({ notificationId: notificationId as Id<"notifications"> });
@@ -171,11 +158,8 @@ export default function NotificationsPage() {
     );
   }
 
-  // Get notifications from enhanced API or fallback
-  const allNotifications =
-    notificationCenter?.notifications ?? notificationsData?.notifications ?? [];
-  const unreadCount =
-    notificationCenter?.unreadCount ?? notificationsData?.unreadCount ?? 0;
+  const allNotifications = notificationCenter?.notifications ?? [];
+  const unreadCount = notificationCenter?.unreadCount ?? 0;
   const unreadByCategory = notificationCenter?.unreadByCategory ?? {
     approvals: 0,
     reminders: 0,

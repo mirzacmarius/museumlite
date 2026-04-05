@@ -82,6 +82,24 @@ export function CollectionMultiSelectCombobox({
     }
   }, [collectionsResult, cursor]);
 
+  const collectionIds = React.useMemo(
+    () => allCollections.map((collection) => collection._id),
+    [allCollections],
+  );
+
+  const batchImageUrls = useQuery(
+    api.media.getBatchPrimaryImageUrls,
+    collectionIds.length > 0 ? { collectionIds } : "skip",
+  );
+
+  const imageUrlMap = React.useMemo(() => {
+    if (!batchImageUrls) {
+      return new Map<Id<"collections">, string | null>();
+    }
+
+    return new Map(batchImageUrls.map((item) => [item.collectionId, item.url]));
+  }, [batchImageUrls]);
+
   // Handle scroll to load more
   const handleScroll = React.useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
@@ -161,6 +179,7 @@ export function CollectionMultiSelectCombobox({
                     <CollectionItem
                       key={collection._id}
                       collection={collection}
+                      imageUrl={imageUrlMap.get(collection._id)}
                       isSelected={isSelected}
                       onToggle={() => handleToggle(collection._id)}
                     />
@@ -184,6 +203,7 @@ export function CollectionMultiSelectCombobox({
 // Component for individual collection item with thumbnail
 function CollectionItem({
   collection,
+  imageUrl,
   isSelected,
   onToggle,
 }: {
@@ -192,13 +212,10 @@ function CollectionItem({
     title: string;
     accessionNumber: string;
   };
+  imageUrl?: string | null;
   isSelected: boolean;
   onToggle: () => void;
 }) {
-  const primaryImageUrl = useQuery(api.media.getPrimaryImageUrl, {
-    collectionId: collection._id,
-  });
-
   return (
     <CommandItem
       value={collection._id}
@@ -213,9 +230,9 @@ function CollectionItem({
           )}
         />
         <div className="h-10 w-10 rounded bg-secondary flex items-center justify-center flex-shrink-0 overflow-hidden">
-          {primaryImageUrl ? (
+          {imageUrl ? (
             <Image
-              src={primaryImageUrl}
+              src={imageUrl}
               alt={collection.title}
               width={40}
               height={40}

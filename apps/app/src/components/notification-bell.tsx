@@ -8,6 +8,7 @@ import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
 import { ArrowRightLeft, Bell, Check, CheckCheck } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import { useOrganization } from "./organization-provider";
 
 function formatRelativeTime(timestamp: number): string {
@@ -32,10 +33,19 @@ function formatRelativeTime(timestamp: number): string {
 
 export function NotificationBell() {
   const { currentOrganizationId } = useOrganization();
+  const [isOpen, setIsOpen] = useState(false);
 
-  const notificationsData = useQuery(
-    api.audit.listNotifications,
+  const unreadCount = useQuery(
+    api.notifications.getUnreadCount,
     currentOrganizationId
+      ? {
+          organizationId: currentOrganizationId as Id<"organizations">,
+        }
+      : "skip",
+  );
+  const notificationCenter = useQuery(
+    api.notifications.getNotificationCenter,
+    currentOrganizationId && isOpen
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
           limit: 20,
@@ -43,15 +53,15 @@ export function NotificationBell() {
       : "skip",
   );
 
-  const markRead = useMutation(api.audit.markRead);
-  const markAllRead = useMutation(api.audit.markAllRead);
+  const markRead = useMutation(api.notifications.markRead);
+  const markAllRead = useMutation(api.notifications.markAllRead);
 
   if (!currentOrganizationId) {
     return null;
   }
 
-  const notifications = notificationsData?.notifications ?? [];
-  const unreadCount = notificationsData?.unreadCount ?? 0;
+  const notifications = notificationCenter?.notifications ?? [];
+  const unreadCountValue = unreadCount ?? notificationCenter?.unreadCount ?? 0;
 
   const handleMarkRead = async (notificationId: string) => {
     await markRead({ notificationId: notificationId as Id<"notifications"> });
@@ -91,13 +101,13 @@ export function NotificationBell() {
   };
 
   return (
-    <Popover>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
           <Bell className="h-4 w-4" />
-          {unreadCount > 0 && (
+          {unreadCountValue > 0 && (
             <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-              {unreadCount > 9 ? "9+" : unreadCount}
+              {unreadCountValue > 9 ? "9+" : unreadCountValue}
             </span>
           )}
         </Button>
@@ -107,7 +117,7 @@ export function NotificationBell() {
           {/* Header */}
           <div className="flex items-center justify-between border-b px-4 py-3">
             <h3 className="text-sm font-semibold">Notifications</h3>
-            {unreadCount > 0 && (
+            {unreadCountValue > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -131,7 +141,11 @@ export function NotificationBell() {
 
           {/* Notifications List */}
           <div className="max-h-96 overflow-y-auto">
-            {notifications.length === 0 ? (
+            {isOpen && notificationCenter === undefined ? (
+              <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
+                <p className="text-sm text-muted-foreground">Loading...</p>
+              </div>
+            ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
                 <Bell className="mb-2 h-8 w-8 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">

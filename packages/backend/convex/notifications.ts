@@ -86,6 +86,7 @@ export const NOTIFICATION_CATEGORIES = {
 export const getNotificationCenter = query({
   args: {
     organizationId: v.id("organizations"),
+    limit: v.optional(v.number()),
   },
   returns: v.object({
     notifications: v.array(
@@ -116,12 +117,14 @@ export const getNotificationCenter = query({
       throw new Error("Not authenticated");
     }
 
+    const limit = args.limit ?? 100;
     const notifications = await ctx.db
       .query("notifications")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("organizationId"), args.organizationId))
+      .withIndex("by_user_and_organization_and_createdAt", (q) =>
+        q.eq("userId", userId).eq("organizationId", args.organizationId),
+      )
       .order("desc")
-      .take(100);
+      .take(limit);
 
     const categorizedNotifications = notifications.map((n) => ({
       _id: n._id,
@@ -135,7 +138,15 @@ export const getNotificationCenter = query({
       category: getCategoryForType(n.type),
     }));
 
-    const unreadNotifications = notifications.filter((n) => !n.read);
+    const unreadNotifications = await ctx.db
+      .query("notifications")
+      .withIndex("by_user_and_organization_and_read", (q) =>
+        q
+          .eq("userId", userId)
+          .eq("organizationId", args.organizationId)
+          .eq("read", false),
+      )
+      .collect();
 
     const unreadByCategory = {
       approvals: 0,
@@ -176,10 +187,12 @@ export const getUnreadCount = query({
 
     const unreadNotifications = await ctx.db
       .query("notifications")
-      .withIndex("by_user_and_read", (q) =>
-        q.eq("userId", userId).eq("read", false),
+      .withIndex("by_user_and_organization_and_read", (q) =>
+        q
+          .eq("userId", userId)
+          .eq("organizationId", args.organizationId)
+          .eq("read", false),
       )
-      .filter((q) => q.eq(q.field("organizationId"), args.organizationId))
       .collect();
 
     return unreadNotifications.length;
@@ -223,16 +236,19 @@ export const getNotificationsByCategory = query({
     const categoryTypes = NOTIFICATION_CATEGORIES[args.category] ?? [];
     const limit = args.limit ?? 50;
 
-    let query = ctx.db
+    let notificationsQuery = ctx.db
       .query("notifications")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("organizationId"), args.organizationId));
+      .withIndex("by_user_and_organization_and_createdAt", (q) =>
+        q.eq("userId", userId).eq("organizationId", args.organizationId),
+      );
 
     if (args.unreadOnly) {
-      query = query.filter((q) => q.eq(q.field("read"), false));
+      notificationsQuery = notificationsQuery.filter((q) =>
+        q.eq(q.field("read"), false),
+      );
     }
 
-    const notifications = await query.order("desc").take(limit * 2);
+    const notifications = await notificationsQuery.order("desc").take(limit * 2);
 
     // Filter by category types
     const filtered = notifications
@@ -259,6 +275,67 @@ export const getNotificationsByCategory = query({
 /**
  * Mark notification as unread
  */
+export const markRead = mutation({
+  args: {
+    notificationId: v.id("notifications"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const notification = await ctx.db.get(args.notificationId);
+    if (!notification) {
+      throw new Error("Notification not found");
+    }
+
+    if (notification.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
+
+    if (notification.read) {
+      return null;
+    }
+
+    await ctx.db.patch(args.notificationId, { read: true });
+
+    return null;
+  },
+});
+
+export const markAllRead = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const unreadNotifications = await ctx.db
+      .query("notifications")
+      .withIndex("by_user_and_organization_and_read", (q) =>
+        q
+          .eq("userId", userId)
+          .eq("organizationId", args.organizationId)
+          .eq("read", false),
+      )
+      .collect();
+
+    await Promise.all(
+      unreadNotifications.map((notification) =>
+        ctx.db.patch(notification._id, { read: true }),
+      ),
+    );
+
+    return null;
+  },
+});
+
 export const markUnread = mutation({
   args: {
     notificationId: v.id("notifications"),
@@ -388,15 +465,13 @@ export const cleanupOldNotifications = mutation({
 
     const oldNotifications = await ctx.db
       .query("notifications")
-      .withIndex("by_user_and_read", (q) =>
-        q.eq("userId", userId).eq("read", true),
+      .withIndex("by_user_and_organization_and_read", (q) =>
+        q
+          .eq("userId", userId)
+          .eq("organizationId", args.organizationId)
+          .eq("read", true),
       )
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("organizationId"), args.organizationId),
-          q.lt(q.field("createdAt"), cutoff),
-        ),
-      )
+      .filter((q) => q.lt(q.field("createdAt"), cutoff))
       .collect();
 
     for (const notification of oldNotifications) {

@@ -5,10 +5,12 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import {
   type ReactNode,
+  useCallback,
   createContext,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -82,6 +84,30 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const removePreference = useMutation(api.userPreferences.remove);
   const [currentOrganizationId, setCurrentOrganizationId] =
     useState<Id<"organizations"> | null>(null);
+  const hasBootstrappedPreference = useRef(false);
+
+  const persistOrganizationSelection = useCallback(
+    (organizationId: Id<"organizations"> | null) => {
+      if (organizationId) {
+        void setPreference({
+          key: "organization.activeOrgId",
+          value: organizationId,
+        });
+        return;
+      }
+
+      void removePreference({ key: "organization.activeOrgId" });
+    },
+    [removePreference, setPreference],
+  );
+
+  const handleSetCurrentOrganizationId = useCallback(
+    (organizationId: Id<"organizations"> | null) => {
+      setCurrentOrganizationId(organizationId);
+      persistOrganizationSelection(organizationId);
+    },
+    [persistOrganizationSelection],
+  );
 
   useEffect(() => {
     if (organizations === undefined || activeOrgPreference === undefined) {
@@ -92,8 +118,9 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       if (currentOrganizationId !== null) {
         setCurrentOrganizationId(null);
       }
-      if (activeOrgPreference) {
-        removePreference({ key: "organization.activeOrgId" });
+      if (activeOrgPreference && !hasBootstrappedPreference.current) {
+        hasBootstrappedPreference.current = true;
+        persistOrganizationSelection(null);
       }
       return;
     }
@@ -116,36 +143,20 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       setCurrentOrganizationId(desiredId);
     }
 
-    if (activeOrgPreference && !preferredIsValid && fallbackId) {
-      setPreference({
-        key: "organization.activeOrgId",
-        value: fallbackId,
-      });
+    if (
+      fallbackId &&
+      !hasBootstrappedPreference.current &&
+      (!activeOrgPreference || !preferredIsValid)
+    ) {
+      hasBootstrappedPreference.current = true;
+      persistOrganizationSelection(fallbackId);
     }
   }, [
-    organizations,
     activeOrgPreference,
+    organizations,
     currentOrganizationId,
-    setPreference,
-    removePreference,
+    persistOrganizationSelection,
   ]);
-
-  useEffect(() => {
-    if (organizations === undefined || activeOrgPreference === undefined) {
-      return;
-    }
-
-    if (!currentOrganizationId) {
-      return;
-    }
-
-    if (activeOrgPreference !== currentOrganizationId) {
-      setPreference({
-        key: "organization.activeOrgId",
-        value: currentOrganizationId,
-      });
-    }
-  }, [organizations, activeOrgPreference, currentOrganizationId, setPreference]);
 
   const currentOrganization = useMemo(() => {
     if (!currentOrganizationId || !organizations) return null;
@@ -157,12 +168,17 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       currentOrganizationId,
-      setCurrentOrganizationId,
+      setCurrentOrganizationId: handleSetCurrentOrganizationId,
       organizations: organizations ?? [],
       currentOrganization,
       isLoading: organizations === undefined,
     }),
-    [currentOrganizationId, organizations, currentOrganization],
+    [
+      currentOrganizationId,
+      handleSetCurrentOrganizationId,
+      organizations,
+      currentOrganization,
+    ],
   );
 
   return (

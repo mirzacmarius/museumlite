@@ -20,7 +20,10 @@ import {
   requireFeatureAccess,
 } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
-import { getStorageUsageFromMedia } from "./utils/storageUsage";
+import {
+  createEmptyUsageCounter,
+  getUsageCounter,
+} from "./utils/organizationUsageCounters";
 
 type EnabledModule =
   | "library"
@@ -126,6 +129,11 @@ export const create = mutation({
       settings: mergedSettings,
       subscriptionTier: "free",
     });
+
+    await ctx.db.insert(
+      "organizationUsageCounters",
+      createEmptyUsageCounter(organizationId),
+    );
 
     // Create default roles for the organization
     await ctx.runMutation(internal.organizations.createDefaultRoles, {
@@ -610,34 +618,9 @@ export const getUsageStats = query({
 
     const tier: SubscriptionTier = org.subscriptionTier ?? "free";
     const limits = getTierLimits(tier);
-
-    // Get object count
-    const collections = await ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-    const objectCount = collections.length;
-
-    // Get storage used
-    const mediaFiles = await ctx.db
-      .query("mediaFiles")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-    const mediaVersions = await ctx.db
-      .query("mediaVersions")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-    const { totalSize: storageUsed } = await getStorageUsageFromMedia(
-      ctx,
-      mediaFiles,
-      mediaVersions,
-    );
+    const usageCounter =
+      (await getUsageCounter(ctx, args.organizationId)) ??
+      createEmptyUsageCounter(args.organizationId);
 
     // Get export count for current month
     function getMonthStart(timestamp: number) {
@@ -658,11 +641,11 @@ export const getUsageStats = query({
     return {
       tier,
       storage: {
-        used: storageUsed,
+        used: usageCounter.storageBytes,
         limit: limits.mediaBytes,
       },
       objects: {
-        used: objectCount,
+        used: usageCounter.objectCount,
         limit: limits.objects,
       },
       exports: {

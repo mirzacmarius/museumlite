@@ -263,10 +263,12 @@ export const markAllRead = mutation({
     // Get all unread notifications for this user in this organization
     const notifications = await ctx.db
       .query("notifications")
-      .withIndex("by_user_and_read", (q) =>
-        q.eq("userId", userId).eq("read", false),
+      .withIndex("by_user_and_organization_and_read", (q) =>
+        q
+          .eq("userId", userId)
+          .eq("organizationId", args.organizationId)
+          .eq("read", false),
       )
-      .filter((q) => q.eq(q.field("organizationId"), args.organizationId))
       .collect();
 
     // Mark all as read
@@ -318,12 +320,9 @@ export const listNotifications = query({
     // Build query based on read status
     let notificationQuery = ctx.db
       .query("notifications")
-      .withIndex("by_user", (q) => q.eq("userId", userId));
-
-    // Filter by organization
-    notificationQuery = notificationQuery.filter((q) =>
-      q.eq(q.field("organizationId"), args.organizationId),
-    );
+      .withIndex("by_user_and_organization_and_createdAt", (q) =>
+        q.eq("userId", userId).eq("organizationId", args.organizationId),
+      );
 
     // Filter by read status if specified
     if (args.unreadOnly === true) {
@@ -338,10 +337,12 @@ export const listNotifications = query({
     // Get unread count
     const unreadNotifications = await ctx.db
       .query("notifications")
-      .withIndex("by_user_and_read", (q) =>
-        q.eq("userId", userId).eq("read", false),
+      .withIndex("by_user_and_organization_and_read", (q) =>
+        q
+          .eq("userId", userId)
+          .eq("organizationId", args.organizationId)
+          .eq("read", false),
       )
-      .filter((q) => q.eq(q.field("organizationId"), args.organizationId))
       .collect();
 
     return {
