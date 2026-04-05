@@ -1520,6 +1520,8 @@ export default {
       vitrineCountPlaceholder: "e.g., 4",
       wallCountLabel: "Walls",
       wallCountPlaceholder: "e.g., 6",
+      wallItemsPerWallLabel: "Items per Wall",
+      wallItemsPerWallPlaceholder: "e.g., 3",
       cabinetCountLabel: "Cabinets",
       cabinetCountPlaceholder: "e.g., 12",
       shelfCountLabel: "Shelves",

@@ -27,8 +27,8 @@ import { useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
-  getNumericCustomFieldValue,
   LOCATION_UNIT_COUNT_FIELDS,
+  getNumericCustomFieldValue,
   setOptionalNumberCustomField,
 } from "../location-custom-fields";
 import { getAvailableParentLocationOptions } from "../location-parent-options";
@@ -71,6 +71,7 @@ export function EditLocationDialog({
   const [humidity, setHumidity] = useState<string>("");
   const [vitrineCount, setVitrineCount] = useState("");
   const [wallCount, setWallCount] = useState("");
+  const [wallItemsPerWall, setWallItemsPerWall] = useState("");
   const [cabinetCount, setCabinetCount] = useState("");
   const [shelfCount, setShelfCount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -110,6 +111,9 @@ export function EditLocationDialog({
       );
       setWallCount(
         getNumericCustomFieldValue(location.customFields, "wallCount"),
+      );
+      setWallItemsPerWall(
+        getNumericCustomFieldValue(location.customFields, "wallItemsPerWall"),
       );
       setCabinetCount(
         getNumericCustomFieldValue(location.customFields, "cabinetCount"),
@@ -166,6 +170,11 @@ export function EditLocationDialog({
       );
       setOptionalNumberCustomField(customFields, "vitrineCount", vitrineCount);
       setOptionalNumberCustomField(customFields, "wallCount", wallCount);
+      setOptionalNumberCustomField(
+        customFields,
+        "wallItemsPerWall",
+        wallItemsPerWall,
+      );
       setOptionalNumberCustomField(customFields, "cabinetCount", cabinetCount);
       setOptionalNumberCustomField(customFields, "shelfCount", shelfCount);
 
@@ -322,12 +331,14 @@ export function EditLocationDialog({
                     const valueByKey = {
                       vitrineCount,
                       wallCount,
+                      wallItemsPerWall,
                       cabinetCount,
                       shelfCount,
                     };
                     const setterByKey = {
                       vitrineCount: setVitrineCount,
                       wallCount: setWallCount,
+                      wallItemsPerWall: setWallItemsPerWall,
                       cabinetCount: setCabinetCount,
                       shelfCount: setShelfCount,
                     };
@@ -348,6 +359,19 @@ export function EditLocationDialog({
                       </div>
                     );
                   })}
+                  <div className="grid gap-2">
+                    <Label htmlFor="wallItemsPerWall">
+                      {t("wallItemsPerWallLabel")}
+                    </Label>
+                    <Input
+                      id="wallItemsPerWall"
+                      type="number"
+                      min="1"
+                      value={wallItemsPerWall}
+                      onChange={(e) => setWallItemsPerWall(e.target.value)}
+                      placeholder={t("wallItemsPerWallPlaceholder")}
+                    />
+                  </div>
                 </div>
               </div>
 

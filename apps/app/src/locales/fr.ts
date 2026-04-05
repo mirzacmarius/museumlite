@@ -1937,6 +1937,8 @@ export default {
       vitrineCountPlaceholder: "ex., 4",
       wallCountLabel: "Murs",
       wallCountPlaceholder: "ex., 6",
+      wallItemsPerWallLabel: "Objets par mur",
+      wallItemsPerWallPlaceholder: "ex., 3",
       cabinetCountLabel: "Armoires",
       cabinetCountPlaceholder: "ex., 12",
       shelfCountLabel: "Étagères",

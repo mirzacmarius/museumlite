@@ -127,9 +127,15 @@ function LocationLayout({
   const selectedLocationType =
     selectedLocation?.type ??
     allLocations?.find((location) => location._id === selectedLocationId)?.type;
+  const hasChildLocations =
+    !!selectedLocationId &&
+    (allLocations?.some(
+      (location) => location.parentLocationId === selectedLocationId,
+    ) ??
+      false);
   const includesDescendants = selectedLocationType
-    ? isStorageLocation(selectedLocationType)
-    : false;
+    ? isStorageLocation(selectedLocationType) || hasChildLocations
+    : hasChildLocations;
 
   const objectsAtLocation = useQuery(
     api.locations.getObjectsAtLocation,
@@ -296,6 +302,8 @@ function LocationLayout({
                     _id: obj._id,
                     title: obj.title,
                     accessionNumber: obj.accessionNumber,
+                    status: obj.status,
+                    thumbnailUrl: obj.thumbnailUrl,
                   })) ?? []
                 }
                 vitrineCount={
@@ -308,6 +316,12 @@ function LocationLayout({
                   getNumericCustomFieldNumber(
                     selectedLocation.customFields,
                     "wallCount",
+                  ) ?? undefined
+                }
+                wallItemsPerWall={
+                  getNumericCustomFieldNumber(
+                    selectedLocation.customFields,
+                    "wallItemsPerWall",
                   ) ?? undefined
                 }
                 cabinetCount={
@@ -339,9 +353,11 @@ function LocationLayout({
                 objects={
                   objectsAtLocation?.map((object) => ({
                     _id: object._id,
+                    currentLocationId: object.currentLocationId,
                     accessionNumber: object.accessionNumber,
                     title: object.title,
                     status: object.status,
+                    thumbnailUrl: object.thumbnailUrl,
                   })) ?? []
                 }
                 includesDescendants={includesDescendants}

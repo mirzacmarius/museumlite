@@ -1853,6 +1853,8 @@ export default {
       vitrineCountPlaceholder: "f.eks., 4",
       wallCountLabel: "Vegger",
       wallCountPlaceholder: "f.eks., 6",
+      wallItemsPerWallLabel: "Objekter per vegg",
+      wallItemsPerWallPlaceholder: "f.eks., 3",
       cabinetCountLabel: "Skap",
       cabinetCountPlaceholder: "f.eks., 12",
       shelfCountLabel: "Hyller",

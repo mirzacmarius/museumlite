@@ -25,8 +25,8 @@ import { Textarea } from "@v1/ui/textarea";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import {
-  hasCustomFieldValues,
   LOCATION_UNIT_COUNT_FIELDS,
+  hasCustomFieldValues,
   setOptionalNumberCustomField,
 } from "../location-custom-fields";
 
@@ -72,6 +72,7 @@ export function AddChildLocationDialog({
   const [capacity, setCapacity] = useState<string>("");
   const [vitrineCount, setVitrineCount] = useState("");
   const [wallCount, setWallCount] = useState("");
+  const [wallItemsPerWall, setWallItemsPerWall] = useState("");
   const [cabinetCount, setCabinetCount] = useState("");
   const [shelfCount, setShelfCount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -126,6 +127,11 @@ export function AddChildLocationDialog({
 
       setOptionalNumberCustomField(customFields, "vitrineCount", vitrineCount);
       setOptionalNumberCustomField(customFields, "wallCount", wallCount);
+      setOptionalNumberCustomField(
+        customFields,
+        "wallItemsPerWall",
+        wallItemsPerWall,
+      );
       setOptionalNumberCustomField(customFields, "cabinetCount", cabinetCount);
       setOptionalNumberCustomField(customFields, "shelfCount", shelfCount);
 
@@ -153,6 +159,7 @@ export function AddChildLocationDialog({
       setCapacity("");
       setVitrineCount("");
       setWallCount("");
+      setWallItemsPerWall("");
       setCabinetCount("");
       setShelfCount("");
       onOpenChange(false);
@@ -282,6 +289,19 @@ export function AddChildLocationDialog({
                     </div>
                   );
                 })}
+                <div className="space-y-2">
+                  <Label htmlFor="wallItemsPerWall">
+                    {t("wallItemsPerWallLabel")}
+                  </Label>
+                  <Input
+                    id="wallItemsPerWall"
+                    type="number"
+                    min="1"
+                    value={wallItemsPerWall}
+                    onChange={(e) => setWallItemsPerWall(e.target.value)}
+                    placeholder={t("wallItemsPerWallPlaceholder")}
+                  />
+                </div>
               </div>
             </div>
             <div className="space-y-2">

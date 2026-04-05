@@ -975,6 +975,8 @@ export default {
       vitrineCountPlaceholder: "ex., 4",
       wallCountLabel: "Pereți",
       wallCountPlaceholder: "ex., 6",
+      wallItemsPerWallLabel: "Obiecte per perete",
+      wallItemsPerWallPlaceholder: "ex., 3",
       cabinetCountLabel: "Dulapuri",
       cabinetCountPlaceholder: "ex., 12",
       shelfCountLabel: "Rafturi",

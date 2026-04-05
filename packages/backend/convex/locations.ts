@@ -5,7 +5,7 @@ import type { Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { customFieldValue } from "./schema";
-import { requirePermission } from "./utils/permissions";
+import { hasPermission, requirePermission } from "./utils/permissions";
 
 const MAX_LOCATION_CODE_LENGTH = 50;
 type LocationCustomFields = Record<
@@ -1818,6 +1818,7 @@ export const getObjectsAtLocation = query({
   returns: v.array(
     v.object({
       _id: v.id("collections"),
+      currentLocationId: v.id("locations"),
       accessionNumber: v.string(),
       title: v.string(),
       status: v.union(
@@ -1827,6 +1828,7 @@ export const getObjectsAtLocation = query({
         v.literal("archived"),
         v.literal("deleted"),
       ),
+      thumbnailUrl: v.union(v.string(), v.null()),
     }),
   ),
   handler: async (ctx, args) => {
@@ -1876,6 +1878,7 @@ export const getObjectsAtLocation = query({
       Id<"collections">,
       {
         _id: Id<"collections">;
+        currentLocationId: Id<"locations">;
         accessionNumber: string;
         title: string;
         status: "active" | "loaned" | "deaccessioned" | "archived" | "deleted";
@@ -1893,6 +1896,7 @@ export const getObjectsAtLocation = query({
       for (const object of objects) {
         objectsById.set(object._id, {
           _id: object._id,
+          currentLocationId: locationId,
           accessionNumber: object.accessionNumber,
           title: object.title,
           status: object.status,
@@ -1900,25 +1904,69 @@ export const getObjectsAtLocation = query({
       }
     }
 
-    return Array.from(objectsById.values()).sort((left, right) => {
-      const accessionComparison = left.accessionNumber.localeCompare(
-        right.accessionNumber,
-        undefined,
-        { numeric: true, sensitivity: "base" },
-      );
-      if (accessionComparison !== 0) {
-        return accessionComparison;
-      }
+    const sortedObjects = Array.from(objectsById.values()).sort(
+      (left, right) => {
+        const accessionComparison = left.accessionNumber.localeCompare(
+          right.accessionNumber,
+          undefined,
+          { numeric: true, sensitivity: "base" },
+        );
+        if (accessionComparison !== 0) {
+          return accessionComparison;
+        }
 
-      const titleComparison = left.title.localeCompare(right.title, undefined, {
-        sensitivity: "base",
-      });
-      if (titleComparison !== 0) {
-        return titleComparison;
-      }
+        const titleComparison = left.title.localeCompare(
+          right.title,
+          undefined,
+          {
+            sensitivity: "base",
+          },
+        );
+        if (titleComparison !== 0) {
+          return titleComparison;
+        }
 
-      return left._id.localeCompare(right._id);
-    });
+        return left._id.localeCompare(right._id);
+      },
+    );
+
+    const canReadMedia = await hasPermission(
+      ctx,
+      location.organizationId,
+      "media.read",
+    );
+
+    if (!canReadMedia) {
+      return sortedObjects.map((object) => ({
+        ...object,
+        thumbnailUrl: null,
+      }));
+    }
+
+    return await Promise.all(
+      sortedObjects.map(async (object) => {
+        const primaryMedia = await ctx.db
+          .query("mediaFiles")
+          .withIndex("by_collection", (q) => q.eq("collectionId", object._id))
+          .filter((q) => q.eq(q.field("isPrimary"), true))
+          .first();
+
+        let thumbnailUrl: string | null = null;
+
+        if (primaryMedia?.thumbnailStorageId) {
+          thumbnailUrl =
+            (await ctx.storage.getUrl(primaryMedia.thumbnailStorageId)) ?? null;
+        } else if (primaryMedia?.fileType === "image") {
+          thumbnailUrl =
+            (await ctx.storage.getUrl(primaryMedia.storageId)) ?? null;
+        }
+
+        return {
+          ...object,
+          thumbnailUrl,
+        };
+      }),
+    );
   },
 });
 

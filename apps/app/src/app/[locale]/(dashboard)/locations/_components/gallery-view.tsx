@@ -1,41 +1,49 @@
 "use client";
 
+import { cn } from "@v1/ui/utils";
 import { Package } from "lucide-react";
+import { LocationObjectThumbnail } from "./location-object-thumbnail";
 
 interface GalleryObject {
   _id: string;
   title: string;
   accessionNumber?: string;
+  status?: string;
+  thumbnailUrl?: string | null;
 }
 
 interface GalleryViewProps {
   objects: GalleryObject[];
   vitrineCount?: number;
   wallCount?: number;
+  wallItemsPerWall?: number;
   cabinetCount?: number;
   shelfCount?: number;
 }
 
-const DEFAULT_VITRINE_COUNT = 4;
-const DEFAULT_WALL_COUNT = 6;
-const DEFAULT_CABINET_COUNT = 4;
-const DEFAULT_SHELF_COUNT = 4;
+const DEFAULT_VITRINE_COUNT = 0;
+const DEFAULT_WALL_COUNT = 0;
+const DEFAULT_WALL_ITEMS_PER_WALL = 3;
+const DEFAULT_CABINET_COUNT = 0;
+const DEFAULT_SHELF_COUNT = 0;
 const VITRINE_TYPES = ["Roman", "Greek", "Busts", "Tools", "Ceramics", "Coins"];
 
 export function GalleryView({
   objects,
   vitrineCount = DEFAULT_VITRINE_COUNT,
   wallCount = DEFAULT_WALL_COUNT,
+  wallItemsPerWall = DEFAULT_WALL_ITEMS_PER_WALL,
   cabinetCount = DEFAULT_CABINET_COUNT,
   shelfCount = DEFAULT_SHELF_COUNT,
 }: GalleryViewProps) {
   const normalizedVitrineCount = Math.max(0, vitrineCount);
   const normalizedWallCount = Math.max(0, wallCount);
+  const normalizedWallItemsPerWall = Math.max(1, wallItemsPerWall);
   const normalizedCabinetCount = Math.max(0, cabinetCount);
   const normalizedShelfCount = Math.max(0, shelfCount);
 
   const vitrineCapacity = normalizedVitrineCount * 2;
-  const wallCapacity = normalizedWallCount;
+  const wallCapacity = normalizedWallCount * normalizedWallItemsPerWall;
   const cabinetCapacity = normalizedCabinetCount * 2;
   const shelfCapacity = normalizedShelfCount * 2;
 
@@ -62,9 +70,12 @@ export function GalleryView({
     }),
   );
 
-  const wallSlots = Array.from({ length: normalizedWallCount }, (_, i) => ({
-    id: `W${i + 1}`,
-    object: wallObjects[i],
+  const wallSlots = Array.from({ length: normalizedWallCount }, (_, index) => ({
+    id: `W${index + 1}`,
+    objects: wallObjects.slice(
+      index * normalizedWallItemsPerWall,
+      index * normalizedWallItemsPerWall + normalizedWallItemsPerWall,
+    ),
   }));
 
   const cabinets = Array.from(
@@ -83,92 +94,125 @@ export function GalleryView({
   const occupiedVitrines = vitrines.filter(
     (vitrine) => vitrine.objects.length > 0,
   );
-  const occupiedWalls = wallSlots.filter((slot) => slot.object);
+  const occupiedWalls = wallSlots.filter((slot) => slot.objects.length > 0);
   const occupiedCabinets = cabinets.filter(
     (cabinet) => cabinet.objects.length > 0,
   );
   const occupiedShelves = shelves.filter((shelf) => shelf.objects.length > 0);
+  const hasVitrines = normalizedVitrineCount > 0;
+  const hasWalls = normalizedWallCount > 0;
+  const hasCabinets = normalizedCabinetCount > 0;
+  const hasShelves = normalizedShelfCount > 0;
+  const hasConfiguredUnits =
+    hasVitrines || hasWalls || hasCabinets || hasShelves;
 
   return (
     <div className="space-y-8">
-      <div>
-        <div className="flex justify-between items-end mb-4">
-          <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide">
-            Freestanding Vitrines
-          </h3>
-          <div className="text-xs text-zinc-500">
-            In use:{" "}
-            <span className="text-zinc-300">
-              {occupiedVitrines.length}/{normalizedVitrineCount} Vitrines
-            </span>
+      {!hasConfiguredUnits ? (
+        <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-900/20 px-4 py-10 text-center">
+          <div className="text-sm font-medium text-zinc-300">
+            No display units configured
           </div>
+          <p className="mt-2 text-xs text-zinc-500">
+            Add vitrines, walls, cabinets, or shelves in the location settings
+            to visualize object placement here.
+          </p>
         </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-          {vitrines.map((vitrine) => (
-            <VitrineCard key={vitrine.id} vitrine={vitrine} />
-          ))}
-        </div>
-      </div>
+      ) : null}
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+      {hasVitrines ? (
         <div>
-          <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide mb-4">
-            Wall Mounted Display
-          </h3>
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
-            <div
-              className="relative z-10 grid gap-2"
-              style={{
-                gridTemplateColumns: `repeat(${Math.max(
-                  1,
-                  Math.min(normalizedWallCount, 6),
-                )}, minmax(0, 1fr))`,
-              }}
-            >
-              {wallSlots.map((slot) => (
-                <WallSlot key={slot.id} slot={slot} />
-              ))}
-            </div>
-            <div className="mt-4 flex justify-between items-center text-xs text-zinc-500">
-              <span>{normalizedWallCount} walls configured</span>
-              <span>{occupiedWalls.length} in use</span>
+          <div className="mb-4 flex items-end justify-between">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-300">
+              Freestanding Vitrines
+            </h3>
+            <div className="text-xs text-zinc-500">
+              In use:{" "}
+              <span className="text-zinc-300">
+                {occupiedVitrines.length}/{normalizedVitrineCount} Vitrines
+              </span>
             </div>
           </div>
-        </div>
-
-        <div>
-          <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide mb-4">
-            Cabinets
-          </h3>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {cabinets.map((cabinet) => (
-              <UnitStackCard key={cabinet.id} unit={cabinet} />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {vitrines.map((vitrine) => (
+              <VitrineCard key={vitrine.id} vitrine={vitrine} />
             ))}
           </div>
-          <div className="mt-3 text-right text-xs text-zinc-500">
-            {occupiedCabinets.length}/{normalizedCabinetCount} cabinets in use
-          </div>
         </div>
-      </div>
+      ) : null}
 
-      <div>
-        <div className="mb-4 flex items-end justify-between">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-300">
-            Shelves
-          </h3>
-          <div className="text-xs text-zinc-500">
-            <span className="text-zinc-300">
-              {occupiedShelves.length}/{normalizedShelfCount} shelves in use
-            </span>
+      {hasWalls || hasCabinets ? (
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          {hasWalls ? (
+            <div>
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-300">
+                Wall Mounted Display
+              </h3>
+              <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
+                <div
+                  className="relative z-10 grid gap-2"
+                  style={{
+                    gridTemplateColumns: `repeat(${Math.max(
+                      1,
+                      Math.min(normalizedWallCount, 6),
+                    )}, minmax(0, 1fr))`,
+                  }}
+                >
+                  {wallSlots.map((slot) => (
+                    <WallSlot key={slot.id} slot={slot} />
+                  ))}
+                </div>
+                <div className="mt-4 flex items-center justify-between text-xs text-zinc-500">
+                  <span>
+                    {normalizedWallCount} walls configured ·{" "}
+                    {normalizedWallItemsPerWall} item
+                    {normalizedWallItemsPerWall === 1 ? "" : "s"} per wall
+                  </span>
+                  <span>{occupiedWalls.length} in use</span>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {hasCabinets ? (
+            <div>
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-300">
+                Cabinets
+              </h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {cabinets.map((cabinet) => (
+                  <UnitStackCard key={cabinet.id} unit={cabinet} />
+                ))}
+              </div>
+              <div className="mt-3 text-right text-xs text-zinc-500">
+                {occupiedCabinets.length}/{normalizedCabinetCount} cabinets in
+                use
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {hasShelves ? (
+        <div>
+          <div className="mb-4 flex items-end justify-between">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-300">
+              Shelves
+            </h3>
+            <div className="text-xs text-zinc-500">
+              <span className="text-zinc-300">
+                {occupiedShelves.length}/{normalizedShelfCount} shelves in use
+              </span>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {shelves.map((shelf) => (
+              <UnitStackCard key={shelf.id} unit={shelf} />
+            ))}
           </div>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {shelves.map((shelf) => (
-            <UnitStackCard key={shelf.id} unit={shelf} />
-          ))}
-        </div>
-      </div>
+      ) : null}
     </div>
   );
 }
@@ -217,14 +261,14 @@ function VitrineCard({ vitrine }: VitrineCardProps) {
             key={obj._id}
             className={`flex-1 ${idx === 0 ? "border-b border-white/5" : ""} flex items-end justify-center pb-2 relative`}
           >
-            <div className="w-16 h-16 relative group/item cursor-pointer">
-              <div className="absolute inset-0 bg-amber-500/20 blur-xl opacity-0 group-hover/item:opacity-50 transition-opacity" />
-              <Package className="w-full h-full text-zinc-300 drop-shadow-xl relative z-10" />
-              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-black/80 px-2 py-0.5 rounded text-[8px] text-white opacity-0 group-hover/item:opacity-100 transition-opacity whitespace-nowrap border border-white/10">
-                {obj.title.slice(0, 20)}
-                {obj.title.length > 20 ? "..." : ""}
-              </div>
-            </div>
+            <LocationObjectThumbnail
+              object={obj}
+              metadataLabel="Placement"
+              metadataValue={`${vitrine.id} · ${vitrine.type}`}
+              className="h-24 w-24 rounded-2xl border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
+              imageClassName="aspect-square"
+              titleClassName="text-xs"
+            />
           </div>
         ))}
       </div>
@@ -235,12 +279,12 @@ function VitrineCard({ vitrine }: VitrineCardProps) {
 interface WallSlotProps {
   slot: {
     id: string;
-    object?: GalleryObject;
+    objects: GalleryObject[];
   };
 }
 
 function WallSlot({ slot }: WallSlotProps) {
-  if (!slot.object) {
+  if (slot.objects.length === 0) {
     return (
       <div className="aspect-[3/4] bg-black/40 border border-zinc-800 rounded flex items-center justify-center">
         <span className="text-[9px] text-zinc-700">Empty</span>
@@ -249,8 +293,29 @@ function WallSlot({ slot }: WallSlotProps) {
   }
 
   return (
-    <div className="aspect-[3/4] bg-black/40 border border-white/10 rounded flex items-center justify-center hover:bg-white/5 transition-colors cursor-pointer group">
-      <Package className="w-6 h-6 text-amber-200/80 group-hover:scale-110 transition-transform" />
+    <div className="aspect-[3/4] rounded-2xl border border-white/10 bg-black/30 p-2 shadow-[0_24px_80px_rgba(0,0,0,0.3)]">
+      <div
+        className={cn(
+          "grid h-full gap-2",
+          slot.objects.length === 1
+            ? "grid-cols-1"
+            : slot.objects.length === 2
+              ? "grid-cols-1 grid-rows-2"
+              : "grid-cols-1 grid-rows-3",
+        )}
+      >
+        {slot.objects.map((object) => (
+          <LocationObjectThumbnail
+            key={object._id}
+            object={object}
+            metadataLabel="Placement"
+            metadataValue={`Wall ${slot.id}`}
+            className="h-full rounded-xl border-white/10"
+            imageClassName="aspect-auto h-full"
+            titleClassName="text-[11px]"
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -294,19 +359,24 @@ function UnitStackCard({ unit }: UnitStackCardProps) {
             Empty
           </div>
         ) : (
-          unit.objects.map((object) => (
-            <div
-              key={object._id}
-              className="rounded border border-white/5 bg-black/20 px-2 py-2"
-            >
-              <div className="font-mono text-[10px] text-zinc-500">
-                {object.accessionNumber ?? "—"}
-              </div>
-              <div className="truncate text-xs text-zinc-200">
-                {object.title}
-              </div>
-            </div>
-          ))
+          <div
+            className={cn(
+              "grid gap-2",
+              unit.objects.length === 1 ? "grid-cols-1" : "grid-cols-2",
+            )}
+          >
+            {unit.objects.map((object) => (
+              <LocationObjectThumbnail
+                key={object._id}
+                object={object}
+                metadataLabel="Placement"
+                metadataValue={unit.id}
+                className="rounded-xl border-white/10"
+                imageClassName="aspect-square"
+                titleClassName="text-[11px]"
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>
