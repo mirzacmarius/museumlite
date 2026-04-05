@@ -1769,54 +1769,8 @@ export const getBatch = query({
     v.object({
       _id: v.id("collections"),
       _creationTime: v.number(),
-      organizationId: v.id("organizations"),
       accessionNumber: v.string(),
       title: v.string(),
-      alternativeTitle: v.optional(v.string()),
-      creator: v.optional(v.string()),
-      objectType: v.optional(v.string()),
-      objectName: v.optional(v.string()),
-      culture: v.optional(v.string()),
-      period: v.optional(v.string()),
-      dateCreated: v.optional(v.string()),
-      materials: v.optional(v.string()),
-      technique: v.optional(v.string()),
-      dimensions: v.optional(v.string()),
-      dimensionHeight: v.optional(v.number()),
-      dimensionWidth: v.optional(v.number()),
-      dimensionDepth: v.optional(v.number()),
-      dimensionWeight: v.optional(v.number()),
-      dimensionUnit: v.optional(v.string()),
-      weightUnit: v.optional(v.string()),
-      description: v.optional(v.string()),
-      condition: v.optional(v.string()),
-      inscriptions: v.optional(v.string()),
-      tags: v.optional(v.array(v.string())),
-      provenance: v.optional(v.string()),
-      exhibitionHistory: v.optional(v.string()),
-      creditLine: v.optional(v.string()),
-      parentObjectId: v.optional(v.id("collections")),
-      currentLocationId: v.optional(v.id("locations")),
-      alternateAccessionNumbers: v.optional(v.array(v.string())),
-      acquisitionMethod: v.optional(v.string()),
-      legalRestrictions: v.optional(v.boolean()),
-      isPubliclyVisible: v.optional(v.boolean()),
-      isHighResDownloadable: v.optional(v.boolean()),
-      isSearchable: v.optional(v.boolean()),
-      isValuationVisible: v.optional(v.boolean()),
-      publicSlug: v.optional(v.string()),
-      displayStatus: v.optional(v.string()),
-      status: v.union(
-        v.literal("active"),
-        v.literal("loaned"),
-        v.literal("deaccessioned"),
-        v.literal("archived"),
-        v.literal("deleted"),
-      ),
-      catalogedBy: v.id("users"),
-      catalogedAt: v.number(),
-      lastModifiedBy: v.optional(v.id("users")),
-      lastModifiedAt: v.optional(v.number()),
     }),
   ),
   handler: async (ctx, args) => {
@@ -1834,10 +1788,18 @@ export const getBatch = query({
     );
 
     // Filter out nulls and verify organization ownership
-    return collections.filter(
-      (c): c is NonNullable<typeof c> =>
-        c !== null && c.organizationId === args.organizationId,
-    );
+    return collections
+      .filter(
+        (collection): collection is NonNullable<typeof collection> =>
+          collection !== null &&
+          collection.organizationId === args.organizationId,
+      )
+      .map((collection) => ({
+        _id: collection._id,
+        _creationTime: collection._creationTime,
+        accessionNumber: collection.accessionNumber,
+        title: collection.title,
+      }));
   },
 });
 
