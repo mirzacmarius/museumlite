@@ -1737,6 +1737,10 @@ export default {
       "¿Está seguro de que desea eliminar esta ubicación? Esta acción no se puede deshacer.",
     deleteConfirmWithName:
       "¿Está seguro de que desea eliminar {name}? Esta acción no se puede deshacer. Asegúrese de que esta ubicación no tenga hijos ni objetos.",
+    deleteBlockedByChildren:
+      "Esta ubicación todavía tiene sububicaciones activas. Mueva o elimine primero esas sububicaciones.",
+    deleteRequiresDeaccession:
+      "{count} objeto(s) de esta ubicación se enviarán al flujo de desincorporaciones antes de eliminar la ubicación.",
     cancel: "Cancelar",
     locationName: "Nombre de Ubicación",
     type: "Tipo",
@@ -1777,6 +1781,22 @@ export default {
     selectOrganizationToView:
       "Por favor seleccione una organización para ver ubicaciones.",
     deleteFailed: "Error al eliminar la ubicación",
+    deleteDialog: {
+      methodLabel: "Método de desincorporación",
+      reasonLabel: "Motivo de la desincorporación",
+      reasonPlaceholder:
+        "Explique por qué los objetos de esta ubicación deben enviarse al flujo de desincorporación.",
+      notesLabel: "Notas",
+      notesPlaceholder:
+        "Agregue el contexto que debe aparecer en los registros de desincorporación.",
+      submitWithDeaccessions: "Enviar a Desincorporaciones y Eliminar",
+      methods: {
+        sale: "Venta",
+        donation: "Donación",
+        destruction: "Destrucción",
+        transfer: "Transferencia",
+      },
+    },
     importFailed: "Error en la importación",
     importErrors: {
       missingHeaderRow: "Falta la fila de encabezado",

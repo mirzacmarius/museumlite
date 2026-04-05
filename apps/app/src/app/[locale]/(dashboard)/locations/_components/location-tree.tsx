@@ -11,16 +11,6 @@ import {
 import { useTree } from "@headless-tree/react";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
 import {
   DropdownMenu,
@@ -46,6 +36,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AddChildLocationDialog } from "./add-child-location-dialog";
+import { DeleteLocationDialog } from "./delete-location-dialog";
 import { EditLocationDialog } from "./edit-location-dialog";
 import { MoveLocationDialog } from "./move-location-dialog";
 
@@ -491,6 +482,7 @@ function LocationTreeInner({
 
 // Outer component that manages dialogs and state
 export function LocationTree({ organizationId }: LocationTreeProps) {
+  const router = useRouter();
   const t = useScopedI18n("locations");
   const tCommon = useScopedI18n("common");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -506,8 +498,6 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
   } | null>(null);
   const [treeVersion, setTreeVersion] = useState(0);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-
-  const deleteLocation = useMutation(api.locations.deleteLocation);
 
   // Fetch all locations to detect changes
   const allLocations = useQuery(
@@ -538,19 +528,6 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
 
     return hash;
   }, [allLocations]);
-
-  const handleDelete = async () => {
-    if (!selectedLocation) return;
-    try {
-      await deleteLocation({
-        locationId: selectedLocation.id as Id<"locations">,
-      });
-      setDeleteDialogOpen(false);
-      setSelectedLocation(null);
-    } catch (error) {
-      console.error("Failed to delete location:", error);
-    }
-  };
 
   return (
     <>
@@ -620,30 +597,24 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
         onOpenChange={setMoveDialogOpen}
       />
 
-      <AlertDialog
+      <DeleteLocationDialog
+        locationId={selectedLocation?.id || ""}
+        locationName={selectedLocation?.name || ""}
         open={deleteDialogOpen && !!selectedLocation}
-        onOpenChange={setDeleteDialogOpen}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("deleteLocation")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("deleteConfirmWithName", {
-                name: selectedLocation?.name ?? "",
-              })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {tCommon("delete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) {
+            setSelectedLocation(null);
+          }
+        }}
+        onDeleted={({ sentToDeaccessions }) => {
+          setDeleteDialogOpen(false);
+          setSelectedLocation(null);
+          if (sentToDeaccessions) {
+            router.push("/deaccessions");
+          }
+        }}
+      />
     </>
   );
 }

@@ -6,9 +6,11 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
-import { Building2, MapPin, Pencil, Plus } from "lucide-react";
+import { Building2, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AddChildLocationDialog } from "./_components/add-child-location-dialog";
+import { DeleteLocationDialog } from "./_components/delete-location-dialog";
 import { EditLocationDialog } from "./_components/edit-location-dialog";
 import { GalleryView } from "./_components/gallery-view";
 import { LocationHeader } from "./_components/location-header";
@@ -83,10 +85,12 @@ function LocationLayout({
 }: {
   organizationId: Id<"organizations">;
 }) {
+  const router = useRouter();
   const [selectedLocationId, setSelectedLocationId] =
     useState<Id<"locations"> | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const allLocations = useQuery(api.locations.listAll, {
     organizationId,
@@ -200,6 +204,20 @@ function LocationLayout({
         open={editDialogOpen && !!selectedLocationId}
         onOpenChange={setEditDialogOpen}
       />
+      <DeleteLocationDialog
+        locationId={selectedLocationId ?? ""}
+        locationName={selectedLocation?.name ?? ""}
+        open={deleteDialogOpen && !!selectedLocationId && !!selectedLocation}
+        onOpenChange={setDeleteDialogOpen}
+        onDeleted={({ sentToDeaccessions }) => {
+          setDeleteDialogOpen(false);
+          if (sentToDeaccessions) {
+            router.push("/deaccessions");
+          } else {
+            setSelectedLocationId(null);
+          }
+        }}
+      />
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-br from-zinc-950 to-zinc-900/50 p-6 custom-scrollbar">
         {allLocations === undefined && !selectedLocationId && (
@@ -257,6 +275,16 @@ function LocationLayout({
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Location
+                </Button>
+              </PermissionGate>
+              <PermissionGate permission="locations.delete">
+                <Button
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Location
                 </Button>
               </PermissionGate>
             </div>

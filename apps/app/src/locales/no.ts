@@ -1739,6 +1739,10 @@ export default {
       "Er du sikker på at du vil slette denne plasseringen? Denne handlingen kan ikke angres.",
     deleteConfirmWithName:
       "Er du sikker på at du vil slette {name}? Denne handlingen kan ikke angres. Kontroller at denne plasseringen ikke har underplasseringer eller objekter.",
+    deleteBlockedByChildren:
+      "Denne plasseringen har fortsatt aktive underplasseringer. Flytt eller slett disse først.",
+    deleteRequiresDeaccession:
+      "{count} objekt(er) på denne plasseringen blir sendt inn i deaksesjonsflyten før plasseringen slettes.",
     cancel: "Avbryt",
     locationName: "Plasseringsnavn",
     type: "Type",
@@ -1779,6 +1783,22 @@ export default {
     selectOrganizationToView:
       "Vennligst velg en organisasjon for å se plasseringer.",
     deleteFailed: "Kunne ikke slette plassering",
+    deleteDialog: {
+      methodLabel: "Deaksesjonsmetode",
+      reasonLabel: "Årsak til deaksesjon",
+      reasonPlaceholder:
+        "Forklar hvorfor objektene på denne plasseringen skal sendes til deaksesjonsflyten.",
+      notesLabel: "Notater",
+      notesPlaceholder:
+        "Legg til kontekst som skal vises på deaksesjonspostene.",
+      submitWithDeaccessions: "Send til Deaksesjoner og Slett",
+      methods: {
+        sale: "Salg",
+        donation: "Donasjon",
+        destruction: "Destruksjon",
+        transfer: "Overføring",
+      },
+    },
     importFailed: "Import mislyktes",
     importErrors: {
       missingHeaderRow: "Mangler overskriftsrad",

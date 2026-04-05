@@ -8,6 +8,10 @@ import { customFieldValue } from "./schema";
 import { requirePermission } from "./utils/permissions";
 
 const MAX_LOCATION_CODE_LENGTH = 50;
+type LocationCustomFields = Record<
+  string,
+  string | number | boolean | string[] | null
+>;
 
 function normalizeLocationCode(locationCode: string) {
   return locationCode.trim().toLowerCase();
@@ -606,7 +610,7 @@ export const update = mutation({
       coordinates?: { latitude: number; longitude: number };
       notes?: string;
       capacity?: number;
-      customFields?: Record<string, any>;
+      customFields?: LocationCustomFields;
     } = {};
 
     if (args.siteId !== undefined) updates.siteId = args.siteId;
@@ -777,6 +781,17 @@ export const getEnvironmentalReadings = query({
 export const deleteLocation = mutation({
   args: {
     locationId: v.id("locations"),
+    deaccessionReason: v.optional(v.string()),
+    deaccessionMethod: v.optional(
+      v.union(
+        v.literal("sale"),
+        v.literal("donation"),
+        v.literal("destruction"),
+        v.literal("transfer"),
+      ),
+    ),
+    deaccessionNotes: v.optional(v.string()),
+    dateDeaccessioned: v.optional(v.number()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -806,16 +821,62 @@ export const deleteLocation = mutation({
       throw new Error("Cannot delete location with active children");
     }
 
-    // Check if location has objects
     const objects = await ctx.db
       .query("collections")
       .withIndex("by_currentLocation", (q) =>
         q.eq("currentLocationId", args.locationId),
       )
-      .first();
+      .collect();
 
-    if (objects) {
-      throw new Error("Cannot delete location with objects");
+    const objectsRequiringDeaccession: typeof objects = [];
+
+    for (const object of objects) {
+      if (
+        object.status === "deaccessioned" ||
+        object.status === "archived" ||
+        object.status === "deleted"
+      ) {
+        continue;
+      }
+
+      const existingDeaccessions = await ctx.db
+        .query("deaccessions")
+        .withIndex("by_collection", (q) => q.eq("collectionId", object._id))
+        .collect();
+
+      const alreadyInFlow = existingDeaccessions.some(
+        (deaccession) => deaccession.status !== "rejected",
+      );
+
+      if (!alreadyInFlow) {
+        objectsRequiringDeaccession.push(object);
+      }
+    }
+
+    if (objectsRequiringDeaccession.length > 0) {
+      if (!args.deaccessionReason?.trim()) {
+        throw new Error(
+          "Provide a deaccession reason to send this location's objects into the deaccessions flow before deleting it",
+        );
+      }
+
+      if (!args.deaccessionMethod) {
+        throw new Error("Select a deaccession method before deleting");
+      }
+
+      const dateDeaccessioned = args.dateDeaccessioned ?? Date.now();
+
+      for (const object of objectsRequiringDeaccession) {
+        await ctx.runMutation(internal.deaccessions.createInternal, {
+          organizationId: location.organizationId,
+          collectionId: object._id,
+          createdByUserId: userId,
+          dateDeaccessioned,
+          reason: args.deaccessionReason.trim(),
+          method: args.deaccessionMethod,
+          notes: args.deaccessionNotes?.trim() || undefined,
+        });
+      }
     }
 
     // Soft delete
@@ -2117,7 +2178,7 @@ const LOCATIONS_DATA: Record<
     type: string;
     parentLocationId?: string;
     notes?: string;
-    customFields?: Record<string, any>;
+    customFields?: LocationCustomFields;
     isSecure?: boolean;
     temperature?: number;
     humidity?: number;
@@ -2439,7 +2500,7 @@ const LOCATIONS_DATA: Record<
 
 // Helper to build location hierarchy for seed
 async function buildLocationHierarchy(
-  ctx: any,
+  ctx: MutationCtx,
   orgId: Id<"organizations">,
   locations: (typeof LOCATIONS_DATA)[string],
 ) {

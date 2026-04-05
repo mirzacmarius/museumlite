@@ -1,25 +1,24 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
+import type { Doc, Id } from "./_generated/dataModel";
 import {
   type MutationCtx,
   internalMutation,
   mutation,
   query,
 } from "./_generated/server";
-import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
-import {
-  requirePermission,
-  canInitiateWorkflow,
-  canApproveAtStep,
-  getUsersToNotifyForWorkflowStep,
-} from "./utils/permissions";
 import {
   getCurrentYear,
   getNextYearBasedValue,
   padNumber,
 } from "./utils/numberGenerator";
+import {
+  canApproveAtStep,
+  getUsersToNotifyForWorkflowStep,
+  requirePermission,
+} from "./utils/permissions";
 
 /**
  * Generate deaccession number
@@ -53,6 +52,175 @@ async function generateDeaccessionNumber(
   return `DA-${orgSlug}-${year}-${padNumber(nextValue, 3)}`;
 }
 
+async function canInitiateDeaccessionWorkflowForUser(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  userId: Id<"users">,
+) {
+  const userOrganization = await ctx.db
+    .query("userOrganizations")
+    .withIndex("by_user_and_organization", (q) =>
+      q.eq("userId", userId).eq("organizationId", organizationId),
+    )
+    .first();
+
+  if (!userOrganization) {
+    return false;
+  }
+
+  const workflowConfig = await ctx.db
+    .query("workflowConfigs")
+    .withIndex("by_organization_and_workflowType", (q) =>
+      q.eq("organizationId", organizationId).eq("workflowType", "deaccession"),
+    )
+    .first();
+
+  if (workflowConfig) {
+    return workflowConfig.canInitiateRoles.includes(userOrganization.roleId);
+  }
+
+  const rolePermissions = await ctx.db
+    .query("rolePermissions")
+    .withIndex("by_role", (q) => q.eq("roleId", userOrganization.roleId))
+    .collect();
+
+  const permissions = await Promise.all(
+    rolePermissions.map((rolePermission) =>
+      ctx.db.get(rolePermission.permissionId),
+    ),
+  );
+
+  return permissions.some(
+    (permission) => permission?.name === "collections.create",
+  );
+}
+
+async function createDeaccessionRecord(
+  ctx: MutationCtx,
+  args: {
+    organizationId: Id<"organizations">;
+    collectionId: Id<"collections">;
+    deaccessionNumber?: string;
+    dateDeaccessioned: number;
+    reason: string;
+    method: "sale" | "donation" | "destruction" | "transfer";
+    disposition?: string;
+    notes?: string;
+    proceedsAmount?: number;
+    proceedsCurrency?: string;
+    proceedsRecipient?: string;
+    proceedsDate?: number;
+    proceedsNotes?: string;
+  },
+  userId: Id<"users">,
+) {
+  const collection = await ctx.db.get(args.collectionId);
+  if (!collection) {
+    throw new Error("Collection not found");
+  }
+
+  if (collection.organizationId !== args.organizationId) {
+    throw new Error("Collection does not belong to organization");
+  }
+
+  const canInitiate = await canInitiateDeaccessionWorkflowForUser(
+    ctx,
+    args.organizationId,
+    userId,
+  );
+
+  if (!canInitiate) {
+    throw new Error("Permission denied: cannot initiate deaccession workflow");
+  }
+
+  const deaccessionNumber = args.deaccessionNumber
+    ? args.deaccessionNumber
+    : await generateDeaccessionNumber(ctx, args.organizationId);
+
+  const workflowConfig = await ctx.db
+    .query("workflowConfigs")
+    .withIndex("by_organization", (q) =>
+      q.eq("organizationId", args.organizationId),
+    )
+    .filter((q) => q.eq(q.field("workflowType"), "deaccession"))
+    .first();
+
+  const workflowHistory = workflowConfig
+    ? [
+        {
+          step: 0,
+          approvedBy: userId,
+          approvedAt: Date.now(),
+          comment: "Created",
+        },
+      ]
+    : [];
+
+  const deaccessionId = await ctx.db.insert("deaccessions", {
+    organizationId: args.organizationId,
+    collectionId: args.collectionId,
+    deaccessionNumber,
+    dateDeaccessioned: args.dateDeaccessioned,
+    reason: args.reason,
+    method: args.method,
+    disposition: args.disposition,
+    notes: args.notes,
+    status: workflowConfig ? "pending" : "approved",
+    workflowStep: workflowConfig ? 1 : undefined,
+    workflowHistory,
+    proceedsAmount: args.proceedsAmount,
+    proceedsCurrency: args.proceedsCurrency,
+    proceedsRecipient: args.proceedsRecipient,
+    proceedsDate: args.proceedsDate,
+    proceedsNotes: args.proceedsNotes,
+  });
+
+  await ctx.runMutation(internal.audit.logAction, {
+    organizationId: args.organizationId,
+    userId,
+    action: "created",
+    entityType: "deaccession",
+    entityId: deaccessionId,
+    changes: {
+      deaccessionNumber,
+      status: workflowConfig ? "pending" : "approved",
+    },
+  });
+
+  if (workflowConfig) {
+    const usersToNotify = await getUsersToNotifyForWorkflowStep(
+      ctx,
+      args.organizationId,
+      "deaccession",
+      1,
+    );
+
+    for (const approverId of usersToNotify) {
+      if (approverId !== userId) {
+        await ctx.runMutation(internal.audit.createNotificationInternal, {
+          organizationId: args.organizationId,
+          userId: approverId,
+          type: "workflow_pending",
+          title: "New Deaccession Requires Approval",
+          message: `Deaccession ${deaccessionNumber} is pending your approval at step 1.`,
+          relatedEntityType: "deaccession",
+          relatedEntityId: deaccessionId,
+        });
+      }
+    }
+  }
+
+  if (!workflowConfig) {
+    await ctx.db.patch(args.collectionId, {
+      status: "deaccessioned",
+      lastModifiedBy: userId,
+      lastModifiedAt: Date.now(),
+    });
+  }
+
+  return deaccessionId;
+}
+
 /**
  * Create deaccession record
  */
@@ -84,129 +252,53 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Verify collection exists and belongs to organization
-    const collection = await ctx.db.get(args.collectionId);
-    if (!collection) {
-      throw new Error("Collection not found");
-    }
+    return await createDeaccessionRecord(ctx, args, userId);
+  },
+});
 
-    if (collection.organizationId !== args.organizationId) {
-      throw new Error("Collection does not belong to organization");
-    }
-
-    // Check if user can initiate workflow
-    const canInitiate = await canInitiateWorkflow(
+export const createInternal = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    collectionId: v.id("collections"),
+    createdByUserId: v.id("users"),
+    deaccessionNumber: v.optional(v.string()),
+    dateDeaccessioned: v.number(),
+    reason: v.string(),
+    method: v.union(
+      v.literal("sale"),
+      v.literal("donation"),
+      v.literal("destruction"),
+      v.literal("transfer"),
+    ),
+    disposition: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    proceedsAmount: v.optional(v.number()),
+    proceedsCurrency: v.optional(v.string()),
+    proceedsRecipient: v.optional(v.string()),
+    proceedsDate: v.optional(v.number()),
+    proceedsNotes: v.optional(v.string()),
+  },
+  returns: v.id("deaccessions"),
+  handler: async (ctx, args) => {
+    return await createDeaccessionRecord(
       ctx,
-      args.organizationId,
-      "deaccession",
-    );
-
-    if (!canInitiate) {
-      throw new Error(
-        "Permission denied: cannot initiate deaccession workflow",
-      );
-    }
-
-    // Generate or use provided deaccession number
-    let deaccessionNumber: string;
-    if (args.deaccessionNumber) {
-      deaccessionNumber = args.deaccessionNumber;
-    } else {
-      deaccessionNumber = await generateDeaccessionNumber(
-        ctx,
-        args.organizationId,
-      );
-    }
-
-    // Get workflow config
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "deaccession"))
-      .first();
-
-    // Store creator in workflow history for notification purposes
-    const workflowHistory = workflowConfig
-      ? [
-          {
-            step: 0,
-            approvedBy: userId,
-            approvedAt: Date.now(),
-            comment: "Created",
-          },
-        ]
-      : [];
-
-    const deaccessionId = await ctx.db.insert("deaccessions", {
-      organizationId: args.organizationId,
-      collectionId: args.collectionId,
-      deaccessionNumber,
-      dateDeaccessioned: args.dateDeaccessioned,
-      reason: args.reason,
-      method: args.method,
-      disposition: args.disposition,
-      notes: args.notes,
-      status: workflowConfig ? "pending" : "approved",
-      workflowStep: workflowConfig ? 1 : undefined,
-      workflowHistory,
-      proceedsAmount: args.proceedsAmount,
-      proceedsCurrency: args.proceedsCurrency,
-      proceedsRecipient: args.proceedsRecipient,
-      proceedsDate: args.proceedsDate,
-      proceedsNotes: args.proceedsNotes,
-    });
-
-    // Log audit action
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: args.organizationId,
-      userId,
-      action: "created",
-      entityType: "deaccession",
-      entityId: deaccessionId,
-      changes: {
-        deaccessionNumber,
-        status: workflowConfig ? "pending" : "approved",
+      {
+        organizationId: args.organizationId,
+        collectionId: args.collectionId,
+        deaccessionNumber: args.deaccessionNumber,
+        dateDeaccessioned: args.dateDeaccessioned,
+        reason: args.reason,
+        method: args.method,
+        disposition: args.disposition,
+        notes: args.notes,
+        proceedsAmount: args.proceedsAmount,
+        proceedsCurrency: args.proceedsCurrency,
+        proceedsRecipient: args.proceedsRecipient,
+        proceedsDate: args.proceedsDate,
+        proceedsNotes: args.proceedsNotes,
       },
-    });
-
-    // If workflow exists, notify users who can approve step 1
-    if (workflowConfig) {
-      const usersToNotify = await getUsersToNotifyForWorkflowStep(
-        ctx,
-        args.organizationId,
-        "deaccession",
-        1,
-      );
-
-      // Create notifications for approvers
-      for (const approverId of usersToNotify) {
-        if (approverId !== userId) {
-          // Don't notify the creator
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: args.organizationId,
-            userId: approverId,
-            type: "workflow_pending",
-            title: "New Deaccession Requires Approval",
-            message: `Deaccession ${deaccessionNumber} is pending your approval at step 1.`,
-            relatedEntityType: "deaccession",
-            relatedEntityId: deaccessionId,
-          });
-        }
-      }
-    }
-
-    // If no workflow config, auto-mark collection as deaccessioned
-    if (!workflowConfig) {
-      await ctx.db.patch(args.collectionId, {
-        status: "deaccessioned",
-        lastModifiedBy: userId,
-        lastModifiedAt: Date.now(),
-      });
-    }
-
-    return deaccessionId;
+      args.createdByUserId,
+    );
   },
 });
 
@@ -306,7 +398,7 @@ export const list = query({
 
     // Handle pagination manually
     const cursor = args.paginationOpts.cursor
-      ? parseInt(args.paginationOpts.cursor, 10)
+      ? Number.parseInt(args.paginationOpts.cursor, 10)
       : 0;
     const startIndex = cursor;
     const endIndex = Math.min(
@@ -1302,7 +1394,7 @@ export const recordRegulatoryApproval = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    let deaccession;
+    let deaccession: Doc<"deaccessions"> | null = null;
 
     if (args.deaccessionId) {
       deaccession = await ctx.db.get(args.deaccessionId);

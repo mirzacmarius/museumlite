@@ -860,6 +860,10 @@ export default {
     newLocation: "Locație Nouă",
     editLocation: "Editează Locație",
     deleteLocation: "Șterge Locație",
+    deleteBlockedByChildren:
+      "Această locație are încă sub-locații active. Mută sau șterge mai întâi sub-locațiile.",
+    deleteRequiresDeaccession:
+      "{count} obiect(e) din această locație vor fi trimise în fluxul de dezaccesionare înainte ca locația să fie ștearsă.",
     locationDetails: "Detalii Locație",
     locationName: "Nume locație",
     type: "Tip",
@@ -900,6 +904,22 @@ export default {
     selectOrganizationToView:
       "Selectează o organizație pentru a vedea locațiile.",
     deleteFailed: "Ștergerea locației a eșuat",
+    deleteDialog: {
+      methodLabel: "Metodă de dezaccesionare",
+      reasonLabel: "Motivul dezaccesionării",
+      reasonPlaceholder:
+        "Explică de ce obiectele din această locație sunt trimise în dezaccesionare.",
+      notesLabel: "Note",
+      notesPlaceholder:
+        "Adaugă contextul care ar trebui inclus în înregistrările de dezaccesionare.",
+      submitWithDeaccessions: "Trimite în Dezaccesionări și Șterge",
+      methods: {
+        sale: "Vânzare",
+        donation: "Donație",
+        destruction: "Distrugere",
+        transfer: "Transfer",
+      },
+    },
     importFailed: "Importul a eșuat",
     importErrors: {
       missingHeaderRow: "Lipsește rândul de antet",

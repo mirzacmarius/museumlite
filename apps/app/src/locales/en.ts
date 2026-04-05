@@ -1406,6 +1406,10 @@ export default {
       "Are you sure you want to delete this location? This action cannot be undone.",
     deleteConfirmWithName:
       "Are you sure you want to delete {name}? This action cannot be undone. Make sure this location has no children or objects.",
+    deleteBlockedByChildren:
+      "This location still has active child locations. Move or delete those child locations first.",
+    deleteRequiresDeaccession:
+      "{count} object(s) at this location will be sent into the deaccessions workflow before the location is deleted.",
     cancel: "Cancel",
     locationName: "Location Name",
     type: "Type",
@@ -1446,6 +1450,22 @@ export default {
     selectOrganizationToView:
       "Please select an organization to view locations.",
     deleteFailed: "Failed to delete location",
+    deleteDialog: {
+      methodLabel: "Deaccession Method",
+      reasonLabel: "Reason for Deaccession",
+      reasonPlaceholder:
+        "Explain why the objects in this location are being deaccessioned.",
+      notesLabel: "Notes",
+      notesPlaceholder:
+        "Add any context that should appear on the deaccession records.",
+      submitWithDeaccessions: "Send to Deaccessions and Delete",
+      methods: {
+        sale: "Sale",
+        donation: "Donation",
+        destruction: "Destruction",
+        transfer: "Transfer",
+      },
+    },
     importFailed: "Import failed",
     importErrors: {
       missingHeaderRow: "Missing header row",

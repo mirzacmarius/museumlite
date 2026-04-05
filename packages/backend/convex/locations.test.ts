@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 
 import { modules } from "../tests/testSetup";
 import { api, internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 
 function buildLocation({
@@ -117,6 +118,63 @@ async function createOrgUserWithLocationPermissions() {
       createPermissionId,
       updatePermissionId,
     ]) {
+      await ctx.db.insert("rolePermissions", {
+        roleId,
+        permissionId,
+      });
+    }
+
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+
+    return { organizationId, userId };
+  });
+
+  return {
+    t,
+    asUser: t.withIdentity({ subject: context.userId }),
+    ...context,
+  };
+}
+
+async function createOrgUserWithLocationDeleteAndDeaccessionPermissions() {
+  const t = convexTest(schema, modules);
+
+  const context = await t.run(async (ctx) => {
+    const userId = await ctx.db.insert("users", { name: "Location Deleter" });
+    const organizationId = await ctx.db.insert("organizations", {
+      name: "Location Delete Org",
+      slug: `location-delete-org-${Math.random().toString(36).slice(2, 8)}`,
+      type: "museum",
+    });
+
+    const permissionIds = await Promise.all(
+      [
+        { name: "locations.delete", category: "locations" as const },
+        { name: "collections.create", category: "collections" as const },
+        { name: "collections.delete", category: "collections" as const },
+        { name: "locations.read", category: "locations" as const },
+      ].map(({ name, category }) =>
+        ctx.db.insert("permissions", {
+          name,
+          category,
+          description: name,
+        }),
+      ),
+    );
+
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "Location Deleter",
+      description: "Deletes locations and initiates deaccessions",
+      isSystemRole: false,
+    });
+
+    for (const permissionId of permissionIds) {
       await ctx.db.insert("rolePermissions", {
         roleId,
         permissionId,
@@ -719,4 +777,93 @@ test("backfillLocationCodes assigns sibling-unique placeholder location IDs", as
   expect(result[1]?.locationCode).toBe("C-001");
   expect(result[2]?.locationCode).toBe("SH-002");
   expect(result[1]?.locationCodeNormalized).toBe("c-001");
+});
+
+test("locations.deleteLocation creates deaccessions for active objects before deactivating the location", async () => {
+  const { t, asUser, organizationId, userId } =
+    await createOrgUserWithLocationDeleteAndDeaccessionPermissions();
+
+  const { locationId, collectionId } = await t.run(async (ctx) => {
+    const locationId = await ctx.db.insert("locations", {
+      ...buildLocation({
+        organizationId,
+        name: "Retired Storage",
+        locationCode: "RST-001",
+        type: "storage",
+        sortOrder: 0,
+      }),
+    });
+
+    const collectionId = await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "OBJ-001",
+      title: "Retired Object",
+      currentLocationId: locationId,
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    });
+
+    return { locationId, collectionId };
+  });
+
+  await asUser.mutation(api.locations.deleteLocation, {
+    locationId,
+    deaccessionReason: "Location retired",
+    deaccessionMethod: "destruction",
+    deaccessionNotes: "Triggered from location deletion",
+    dateDeaccessioned: 1_717_171_717_000,
+  });
+
+  const [location, collection, deaccessions] = await t.run(async (ctx) =>
+    Promise.all([
+      ctx.db.get(locationId),
+      ctx.db.get(collectionId),
+      ctx.db
+        .query("deaccessions")
+        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+        .collect(),
+    ]),
+  );
+
+  expect(location?.isActive).toBe(false);
+  expect(collection?.status).toBe("deaccessioned");
+  expect(deaccessions).toHaveLength(1);
+  expect(deaccessions[0]?.reason).toBe("Location retired");
+  expect(deaccessions[0]?.method).toBe("destruction");
+});
+
+test("locations.deleteLocation allows deleting a location with already deaccessioned objects", async () => {
+  const { t, asUser, organizationId, userId } =
+    await createOrgUserWithLocationDeleteAndDeaccessionPermissions();
+
+  const locationId = await t.run(async (ctx) => {
+    const locationId = await ctx.db.insert("locations", {
+      ...buildLocation({
+        organizationId,
+        name: "Legacy Storage",
+        locationCode: "LEG-001",
+        type: "storage",
+        sortOrder: 0,
+      }),
+    });
+
+    await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "OBJ-002",
+      title: "Already Retired Object",
+      currentLocationId: locationId,
+      status: "deaccessioned",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    });
+
+    return locationId;
+  });
+
+  await asUser.mutation(api.locations.deleteLocation, { locationId });
+
+  const location = await t.run(async (ctx) => ctx.db.get(locationId));
+
+  expect(location?.isActive).toBe(false);
 });

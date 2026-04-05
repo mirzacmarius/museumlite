@@ -1822,6 +1822,10 @@ export default {
       "Êtes-vous sûr de vouloir supprimer cet emplacement ? Cette action ne peut pas être annulée.",
     deleteConfirmWithName:
       "Êtes-vous sûr de vouloir supprimer {name} ? Cette action ne peut pas être annulée. Assurez-vous que cet emplacement n'a pas d'enfants ou d'objets.",
+    deleteBlockedByChildren:
+      "Cet emplacement a encore des sous-emplacements actifs. Déplacez ou supprimez d'abord ces sous-emplacements.",
+    deleteRequiresDeaccession:
+      "{count} objet(s) de cet emplacement seront envoyés dans le flux de désaccession avant la suppression de l'emplacement.",
     cancel: "Annuler",
     locationName: "Nom de l'Emplacement",
     type: "Type",
@@ -1862,6 +1866,22 @@ export default {
     selectOrganizationToView:
       "Veuillez sélectionner une organisation pour afficher les emplacements.",
     deleteFailed: "Échec de la suppression de l'emplacement",
+    deleteDialog: {
+      methodLabel: "Méthode de désaccession",
+      reasonLabel: "Raison de la désaccession",
+      reasonPlaceholder:
+        "Expliquez pourquoi les objets de cet emplacement doivent entrer dans le flux de désaccession.",
+      notesLabel: "Notes",
+      notesPlaceholder:
+        "Ajoutez le contexte qui doit apparaître dans les dossiers de désaccession.",
+      submitWithDeaccessions: "Envoyer en Désaccessions et Supprimer",
+      methods: {
+        sale: "Vente",
+        donation: "Don",
+        destruction: "Destruction",
+        transfer: "Transfert",
+      },
+    },
     importFailed: "Échec de l'importation",
     importErrors: {
       missingHeaderRow: "Ligne d'en-tête manquante",

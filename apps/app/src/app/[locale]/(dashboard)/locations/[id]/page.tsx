@@ -5,25 +5,15 @@ import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
 import { GlassPanel } from "@v1/ui/glass-panel";
 import { Skeleton } from "@v1/ui/skeleton";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { Archive, ArrowLeft, Clock, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
+import { DeleteLocationDialog } from "../_components/delete-location-dialog";
 import { formatLocationLabel } from "../location-label";
 import { LocationTimeline } from "./_components/location-timeline";
 import { ObjectsAtLocation } from "./_components/objects-at-location";
@@ -34,14 +24,12 @@ export default function LocationDetailPage() {
   const router = useRouter();
   const locationId = params.id as string;
   const { currentOrganizationId } = useOrganization();
-  const [error, setError] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const location = useQuery(
     api.locations.get,
     locationId ? { locationId: locationId as Id<"locations"> } : "skip",
   );
-
-  const deleteLocation = useMutation(api.locations.deleteLocation);
 
   if (!currentOrganizationId) {
     return (
@@ -67,16 +55,6 @@ export default function LocationDetailPage() {
     );
   }
 
-  const handleDelete = async () => {
-    setError(null);
-    try {
-      await deleteLocation({ locationId: locationId as Id<"locations"> });
-      router.push("/locations");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("deleteFailed"));
-    }
-  };
-
   return (
     <div className="flex h-full w-full bg-background px-6 py-8">
       <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-6 flex-col">
@@ -89,41 +67,17 @@ export default function LocationDetailPage() {
             </Link>
           </Button>
           <PermissionGate permission="locations.delete">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  {t("delete")}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>{t("deleteLocation")}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {t("deleteConfirm")}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete}>
-                    {t("deleteLocation")}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {t("delete")}
+            </Button>
           </PermissionGate>
         </div>
-
-        {/* Error Display */}
-        {error && (
-          <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
-          </div>
-        )}
 
         {/* Location Details */}
         <GlassPanel padding="lg">
@@ -225,6 +179,16 @@ export default function LocationDetailPage() {
           </Suspense>
         </GlassPanel>
       </div>
+
+      <DeleteLocationDialog
+        locationId={locationId}
+        locationName={location.name}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onDeleted={({ sentToDeaccessions }) => {
+          router.push(sentToDeaccessions ? "/deaccessions" : "/locations");
+        }}
+      />
     </div>
   );
 }
