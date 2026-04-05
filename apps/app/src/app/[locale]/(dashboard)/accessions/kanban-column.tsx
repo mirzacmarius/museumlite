@@ -16,6 +16,7 @@ type AccessionItem = {
   _id: Id<"accessions">;
   accessionNumber: string;
   source: string;
+  draftTitle?: string;
   method: string;
   status: "pending" | "approved" | "rejected";
   workflowStep?: number;
@@ -139,10 +140,10 @@ export function KanbanColumn({
                       <div className={`w-1.5 h-1.5 rounded-full ${dotStyle}`} />
                     </div>
                     <p className="text-sm text-zinc-200 font-medium mb-1 group-hover:text-indigo-400 transition-colors line-clamp-2">
-                      {accession.source || t("kanban.unknownSource")}
+                      {accession.draftTitle || accession.source || t("kanban.unknownSource")}
                     </p>
-                    <p className="text-xs text-zinc-500 mb-3">
-                      {accession.method}
+                    <p className="text-xs text-zinc-500 mb-3 line-clamp-2">
+                      {accession.draftTitle ? accession.source : accession.method}
                     </p>
                     {accession.assigneeName && (
                       <div className="flex items-center gap-2">

@@ -38,6 +38,10 @@ import {
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import {
+  getObjectViewTabs,
+  type ObjectTabId as TabId,
+} from "./_components/object-tab-config";
 
 const LoadingPanel = () => (
   <div className="h-32 w-full animate-pulse rounded-xl bg-card/40" />
@@ -133,44 +137,6 @@ const WineDetailsTab = dynamic(
   { loading: LoadingPanel },
 );
 
-type TabId =
-  | "general"
-  | "physical"
-  | "media"
-  | "digital"
-  | "provenance"
-  | "conservation"
-  | "exhibitions"
-  | "loans"
-  | "logs"
-  | "comments"
-  | "fine_art"
-  | "wine"
-  | "automotive"
-  | "natural_history"
-  | "archive";
-
-const baseTabs: { id: TabId; label: string }[] = [
-  { id: "general", label: "General" },
-  { id: "provenance", label: "Provenance" },
-  { id: "physical", label: "Physical Description" },
-  { id: "media", label: "Media" },
-  { id: "digital", label: "Digital Assets" },
-  { id: "conservation", label: "Conservation" },
-  { id: "exhibitions", label: "Exhibitions" },
-  { id: "loans", label: "Loans" },
-  { id: "comments", label: "Comments" },
-  { id: "logs", label: "Logs" },
-];
-
-const moduleTabMap: Record<string, { id: TabId; label: string }> = {
-  fine_art: { id: "fine_art", label: "Fine Art Details" },
-  wine: { id: "wine", label: "Wine & Spirits" },
-  automotive: { id: "automotive", label: "Vehicle Details" },
-  natural_history: { id: "natural_history", label: "Natural History" },
-  archive: { id: "archive", label: "Archive Details" },
-};
-
 type ObjectDetailClientProps = {
   collectionId: Id<"collections">;
   collection: FunctionReturnType<typeof api.collections.get> | null;
@@ -208,29 +174,13 @@ export function ObjectDetailClient({
   });
 
   const tabs = useMemo(() => {
-    const allTabs = (() => {
-      const collectionType = collection?.collectionType;
-      if (!collectionType || collectionType === "general") {
-        return baseTabs;
-      }
-      const moduleTab = moduleTabMap[collectionType];
-      if (!moduleTab) {
-        return baseTabs;
-      }
-      return [...baseTabs.slice(0, 1), moduleTab, ...baseTabs.slice(1)];
-    })();
-
-    return allTabs.filter((tab) => {
-      if (tab.id === "conservation") {
-        return hasConservationFeature;
-      }
-      if (tab.id === "exhibitions") {
-        return hasExhibitionsFeature;
-      }
-      if (tab.id === "loans") {
-        return hasLoansFeature;
-      }
-      return true;
+    return getObjectViewTabs({
+      collectionType: collection?.collectionType,
+      features: {
+        conservation: hasConservationFeature,
+        exhibitions: hasExhibitionsFeature,
+        loans: hasLoansFeature,
+      },
     });
   }, [
     collection?.collectionType,

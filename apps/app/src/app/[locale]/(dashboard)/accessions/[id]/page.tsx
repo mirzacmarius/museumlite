@@ -110,7 +110,7 @@ export default function AccessionDetailPage() {
                   {accession.status.charAt(0).toUpperCase() +
                     accession.status.slice(1)}
                 </span>
-                {accession.workflowStep && (
+                {accession.workflowStep !== undefined && (
                   <span className="text-sm text-muted-foreground">
                     Step {accession.workflowStep}
                   </span>
@@ -141,6 +141,62 @@ export default function AccessionDetailPage() {
 
           {/* Content */}
           <div className="p-6">
+            {accession.draftObjectData ? (
+              <div className="mb-6 rounded-xl border border-border/60 bg-secondary/20 p-5">
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    Proposed Object
+                  </p>
+                  <h2 className="text-xl font-semibold text-foreground">
+                    {accession.draftObjectData.title}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {accession.draftObjectData.creator || "Unknown creator"}
+                  </p>
+                </div>
+
+                <div className="mt-4 grid gap-4 text-sm md:grid-cols-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                      Object Type
+                    </p>
+                    <p className="mt-1 text-foreground">
+                      {accession.draftObjectData.objectName ||
+                        accession.draftObjectData.objectType?.join(", ") ||
+                        "Not set"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                      Date Created
+                    </p>
+                    <p className="mt-1 text-foreground">
+                      {accession.draftObjectData.dateCreated || "Unknown"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                      Collection
+                    </p>
+                    <p className="mt-1 text-foreground">
+                      {accession.draftObjectData.collectionType || "general"}
+                    </p>
+                  </div>
+                </div>
+
+                {accession.draftObjectData.description ? (
+                  <div className="mt-4">
+                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                      Description
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">
+                      {accession.draftObjectData.description}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
             <div className="grid gap-6 md:grid-cols-2">
               {/* Accession Details */}
               <div className="space-y-4">

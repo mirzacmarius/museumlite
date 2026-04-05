@@ -99,6 +99,7 @@ import type * as utils_featureGates from "../utils/featureGates.js";
 import type * as utils_formatConverters from "../utils/formatConverters.js";
 import type * as utils_legacyTemplates from "../utils/legacyTemplates.js";
 import type * as utils_numberGenerator from "../utils/numberGenerator.js";
+import type * as utils_objectDraftData from "../utils/objectDraftData.js";
 import type * as utils_organizationUsageCounters from "../utils/organizationUsageCounters.js";
 import type * as utils_permissions from "../utils/permissions.js";
 import type * as utils_spectrum from "../utils/spectrum.js";
@@ -210,6 +211,7 @@ declare const fullApi: ApiFromModules<{
   "utils/formatConverters": typeof utils_formatConverters;
   "utils/legacyTemplates": typeof utils_legacyTemplates;
   "utils/numberGenerator": typeof utils_numberGenerator;
+  "utils/objectDraftData": typeof utils_objectDraftData;
   "utils/organizationUsageCounters": typeof utils_organizationUsageCounters;
   "utils/permissions": typeof utils_permissions;
   "utils/spectrum": typeof utils_spectrum;

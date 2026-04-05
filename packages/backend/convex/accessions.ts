@@ -2,18 +2,172 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Doc, Id } from "./_generated/dataModel";
-import { internalMutation, mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import {
+  internalMutation,
+  mutation,
+  query,
+  type MutationCtx,
+} from "./_generated/server";
 import { env } from "./env";
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
 import { batchLookup } from "./utils/batchLookup";
+import { enforceMediaQuota } from "./utils/featureGates";
+import {
+  accessionDraftMediaValidator,
+  objectDraftDataValidator,
+} from "./utils/objectDraftData";
+import {
+  applyUsageCounterDelta,
+  getStorageBytes,
+} from "./utils/organizationUsageCounters";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
   getUsersToNotifyForWorkflowStep,
   requirePermission,
 } from "./utils/permissions";
+
+const MAX_SMALL_IMAGE_SIZE = 50 * 1024 * 1024;
+
+function serializeStringList(values?: string[]) {
+  return values && values.length > 0 ? JSON.stringify(values) : undefined;
+}
+
+function getDraftDisplaySource(
+  objectData:
+    | {
+        creator?: string;
+        title: string;
+      }
+    | null
+    | undefined,
+) {
+  return (
+    objectData?.creator?.trim() ||
+    objectData?.title?.trim() ||
+    "Object intake"
+  );
+}
+
+function getFileCategory(
+  mimeType: string,
+  mediaCategory?: "image" | "document",
+) {
+  if (mediaCategory) {
+    return mediaCategory;
+  }
+  return mimeType.startsWith("image/") ? "image" : "document";
+}
+
+async function ensureAccessionNumberAvailable(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  accessionNumber: string,
+  existingAccessionId?: Id<"accessions">,
+) {
+  const existingAccession = await ctx.db
+    .query("accessions")
+    .withIndex("by_organization", (q) =>
+      q.eq("organizationId", organizationId),
+    )
+    .filter((q) => q.eq(q.field("accessionNumber"), accessionNumber))
+    .first();
+
+  if (existingAccession && existingAccession._id !== existingAccessionId) {
+    throw new Error("Accession number already exists");
+  }
+
+  const existingCollection = await ctx.db
+    .query("collections")
+    .withIndex("by_organization_and_accessionNumber", (q) =>
+      q
+        .eq("organizationId", organizationId)
+        .eq("accessionNumber", accessionNumber),
+    )
+    .first();
+
+  if (existingCollection) {
+    throw new Error("Accession number already exists");
+  }
+}
+
+async function generateUniqueAccessionNumber(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+) {
+  let lastGeneratedAccessionNumber: string | null = null;
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const nextAccessionNumber = await generateAccessionNumber(ctx, organizationId);
+    lastGeneratedAccessionNumber = nextAccessionNumber;
+    try {
+      await ensureAccessionNumberAvailable(
+        ctx,
+        organizationId,
+        nextAccessionNumber,
+      );
+      return nextAccessionNumber;
+    } catch (error) {
+      if (
+        !(error instanceof Error) ||
+        error.message !== "Accession number already exists"
+      ) {
+        throw error;
+      }
+    }
+  }
+
+  const fallbackBase =
+    lastGeneratedAccessionNumber || `ACC-${new Date().getFullYear()}`;
+
+  for (let suffixAttempt = 1; suffixAttempt <= 20; suffixAttempt += 1) {
+    const fallbackAccessionNumber = `${fallbackBase}-${suffixAttempt}`;
+    try {
+      await ensureAccessionNumberAvailable(
+        ctx,
+        organizationId,
+        fallbackAccessionNumber,
+      );
+      return fallbackAccessionNumber;
+    } catch (error) {
+      if (
+        !(error instanceof Error) ||
+        error.message !== "Accession number already exists"
+      ) {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error("Could not generate a unique accession number");
+}
+
+async function findReusablePendingDraftAccession(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  accessionNumber: string,
+) {
+  const candidate = await ctx.db
+    .query("accessions")
+    .withIndex("by_organization", (q) =>
+      q.eq("organizationId", organizationId),
+    )
+    .filter((q) =>
+      q.and(
+        q.eq(q.field("accessionNumber"), accessionNumber),
+        q.eq(q.field("status"), "pending"),
+      ),
+    )
+    .first();
+
+  if (!candidate || candidate.collectionId) {
+    return null;
+  }
+
+  return candidate;
+}
 
 /**
  * Generate accession number based on organization format template
@@ -198,6 +352,323 @@ export const create = mutation({
   },
 });
 
+export const generateDraftUploadUrl = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    fileName: v.string(),
+    fileSize: v.number(),
+    mimeType: v.string(),
+  },
+  returns: v.object({
+    uploadUrl: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(ctx, args.organizationId, "media.upload");
+    await enforceMediaQuota(ctx, args.organizationId, args.fileSize);
+
+    return {
+      uploadUrl: await ctx.storage.generateUploadUrl(),
+    };
+  },
+});
+
+export const upsertObjectDraft = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    accessionId: v.optional(v.id("accessions")),
+    saveMode: v.union(v.literal("draft"), v.literal("submit")),
+    objectData: objectDraftDataValidator,
+    draftMedia: v.optional(v.array(accessionDraftMediaValidator)),
+  },
+  returns: v.id("accessions"),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const canInitiate = await canInitiateWorkflow(
+      ctx,
+      args.organizationId,
+      "accession",
+    );
+
+    if (!canInitiate) {
+      throw new Error("Permission denied: cannot initiate accession workflow");
+    }
+
+    const workflowConfig = await ctx.db
+      .query("workflowConfigs")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => q.eq(q.field("workflowType"), "accession"))
+      .first();
+
+    const normalizedObjectData = {
+      ...args.objectData,
+      title: args.objectData.title.trim(),
+    };
+
+    if (normalizedObjectData.title.length === 0) {
+      throw new Error("Title is required");
+    }
+
+    const source = getDraftDisplaySource(normalizedObjectData);
+    const nextWorkflowStep =
+      args.saveMode === "submit" && workflowConfig ? 1 : 0;
+
+    if (args.accessionId) {
+      const existing = await ctx.db.get(args.accessionId);
+      if (!existing) {
+        throw new Error("Accession not found");
+      }
+      if (existing.organizationId !== args.organizationId) {
+        throw new Error("Accession does not belong to this organization");
+      }
+      if (existing.status !== "pending") {
+        throw new Error("Only pending accessions can be updated");
+      }
+
+      await requirePermission(ctx, args.organizationId, "collections.update");
+
+      const accessionNumber =
+        normalizedObjectData.accessionNumber?.trim() || existing.accessionNumber;
+
+      await ensureAccessionNumberAvailable(
+        ctx,
+        args.organizationId,
+        accessionNumber,
+        existing._id,
+      );
+
+      await ctx.db.patch(existing._id, {
+        accessionNumber,
+        source,
+        notes: normalizedObjectData.description?.trim() || existing.notes,
+        workflowStep: nextWorkflowStep,
+        draftObjectData: {
+          ...normalizedObjectData,
+          accessionNumber,
+        },
+        draftMedia: args.draftMedia ?? existing.draftMedia,
+      });
+
+      await ctx.runMutation(internal.audit.logAction, {
+        organizationId: args.organizationId,
+        userId,
+        action:
+          args.saveMode === "submit"
+            ? "submitted_object_accession"
+            : "saved_object_draft",
+        entityType: "accession",
+        entityId: existing._id,
+        changes: {
+          accessionNumber,
+          saveMode: args.saveMode,
+          workflowStep: nextWorkflowStep,
+          title: normalizedObjectData.title,
+        },
+      });
+
+      if (args.saveMode === "submit" && workflowConfig) {
+        const usersToNotify = await getUsersToNotifyForWorkflowStep(
+          ctx,
+          args.organizationId,
+          "accession",
+          nextWorkflowStep,
+        );
+
+        for (const approverId of usersToNotify) {
+          if (approverId !== userId) {
+            await ctx.runMutation(internal.audit.createNotificationInternal, {
+              organizationId: args.organizationId,
+              userId: approverId,
+              type: "workflow_pending",
+              title: "Object Request Requires Approval",
+              message: `Object request ${accessionNumber} is pending your approval.`,
+              relatedEntityType: "accession",
+              relatedEntityId: existing._id,
+            });
+          }
+        }
+      }
+
+      return existing._id;
+    }
+
+    await requirePermission(ctx, args.organizationId, "collections.create");
+
+    let accessionNumber = normalizedObjectData.accessionNumber?.trim();
+    if (!accessionNumber) {
+      accessionNumber = await generateUniqueAccessionNumber(
+        ctx,
+        args.organizationId,
+      );
+    }
+
+    const reusableDraft = await findReusablePendingDraftAccession(
+      ctx,
+      args.organizationId,
+      accessionNumber,
+    );
+
+    if (reusableDraft) {
+      await ctx.db.patch(reusableDraft._id, {
+        source,
+        notes: normalizedObjectData.description?.trim() || reusableDraft.notes,
+        workflowStep: nextWorkflowStep,
+        draftObjectData: {
+          ...normalizedObjectData,
+          accessionNumber,
+        },
+        draftMedia: args.draftMedia ?? reusableDraft.draftMedia,
+      });
+
+      await ctx.runMutation(internal.audit.logAction, {
+        organizationId: args.organizationId,
+        userId,
+        action:
+          args.saveMode === "submit"
+            ? "submitted_object_accession"
+            : "saved_object_draft",
+        entityType: "accession",
+        entityId: reusableDraft._id,
+        changes: {
+          accessionNumber,
+          saveMode: args.saveMode,
+          workflowStep: nextWorkflowStep,
+          title: normalizedObjectData.title,
+          recoveredDraft: true,
+        },
+      });
+
+      if (args.saveMode === "submit" && workflowConfig) {
+        const usersToNotify = await getUsersToNotifyForWorkflowStep(
+          ctx,
+          args.organizationId,
+          "accession",
+          nextWorkflowStep,
+        );
+
+        for (const approverId of usersToNotify) {
+          if (approverId !== userId) {
+            await ctx.runMutation(internal.audit.createNotificationInternal, {
+              organizationId: args.organizationId,
+              userId: approverId,
+              type: "workflow_pending",
+              title: "Object Request Requires Approval",
+              message: `Object request ${accessionNumber} is pending your approval.`,
+              relatedEntityType: "accession",
+              relatedEntityId: reusableDraft._id,
+            });
+          }
+        }
+      }
+
+      return reusableDraft._id;
+    }
+
+    try {
+      await ensureAccessionNumberAvailable(
+        ctx,
+        args.organizationId,
+        accessionNumber,
+      );
+    } catch (error) {
+      if (
+        normalizedObjectData.accessionNumber?.trim() &&
+        error instanceof Error &&
+        error.message === "Accession number already exists"
+      ) {
+        accessionNumber = await generateUniqueAccessionNumber(
+          ctx,
+          args.organizationId,
+        );
+      } else {
+        throw error;
+      }
+    }
+
+    const now = Date.now();
+    const workflowHistory = [
+      {
+        step: 0,
+        approvedBy: userId,
+        approvedAt: now,
+        comment:
+          args.saveMode === "submit"
+            ? "Submitted object request"
+            : "Saved object draft",
+      },
+    ];
+
+    const accessionId = await ctx.db.insert("accessions", {
+      organizationId: args.organizationId,
+      accessionNumber,
+      dateReceived: now,
+      source,
+      method: "other",
+      notes: normalizedObjectData.description?.trim() || undefined,
+      status: "pending",
+      workflowStep: nextWorkflowStep,
+      workflowHistory,
+      draftObjectData: {
+        ...normalizedObjectData,
+        accessionNumber,
+      },
+      draftMedia: args.draftMedia,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action:
+        args.saveMode === "submit"
+          ? "submitted_object_accession"
+          : "saved_object_draft",
+      entityType: "accession",
+      entityId: accessionId,
+      changes: {
+        accessionNumber,
+        saveMode: args.saveMode,
+        workflowStep: nextWorkflowStep,
+        title: normalizedObjectData.title,
+      },
+    });
+
+    if (args.saveMode === "submit" && workflowConfig) {
+      const usersToNotify = await getUsersToNotifyForWorkflowStep(
+        ctx,
+        args.organizationId,
+        "accession",
+        nextWorkflowStep,
+      );
+
+      for (const approverId of usersToNotify) {
+        if (approverId !== userId) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: args.organizationId,
+            userId: approverId,
+            type: "workflow_pending",
+            title: "Object Request Requires Approval",
+            message: `Object request ${accessionNumber} is pending your approval.`,
+            relatedEntityType: "accession",
+            relatedEntityId: accessionId,
+          });
+        }
+      }
+    }
+
+    return accessionId;
+  },
+});
+
 /**
  * List accessions with filters
  */
@@ -221,6 +692,7 @@ export const list = query({
         accessionNumber: v.string(),
         dateReceived: v.number(),
         source: v.string(),
+        draftTitle: v.optional(v.string()),
         method: v.union(
           v.literal("purchase"),
           v.literal("gift"),
@@ -284,6 +756,9 @@ export const list = query({
         .filter((accession) => {
           return (
             accession.accessionNumber?.toLowerCase().includes(searchLower) ||
+            accession.draftObjectData?.title
+              ?.toLowerCase()
+              .includes(searchLower) ||
             accession.source?.toLowerCase().includes(searchLower) ||
             accession.notes?.toLowerCase().includes(searchLower) ||
             accession.collectionTitle?.toLowerCase().includes(searchLower) ||
@@ -325,6 +800,7 @@ export const list = query({
         accessionNumber: item.accessionNumber,
         dateReceived: item.dateReceived,
         source: item.source,
+        draftTitle: item.draftObjectData?.title,
         method: item.method,
         status: item.status,
         workflowStep: item.workflowStep,
@@ -376,6 +852,7 @@ export const get = query({
       ),
       notes: v.optional(v.string()),
       workflowStep: v.optional(v.number()),
+      draftObjectData: v.optional(objectDraftDataValidator),
       workflowHistory: v.optional(
         v.array(
           v.object({
@@ -418,6 +895,7 @@ export const get = query({
       status: accession.status,
       notes: accession.notes,
       workflowStep: accession.workflowStep,
+      draftObjectData: accession.draftObjectData,
       workflowHistory,
     };
   },
@@ -1078,14 +1556,103 @@ export const createCollectionFromAccession = internalMutation({
     const firstUser = await ctx.db.query("users").first();
 
     // Create collection object
+    const draftObjectData = accession.draftObjectData;
+    const catalogedBy = accession.approvedBy ?? firstUser?._id!;
+    const catalogedAt = accession.approvedAt ?? Date.now();
     const collectionId = await ctx.db.insert("collections", {
       organizationId: accession.organizationId,
       accessionNumber: accession.accessionNumber,
-      title: `Accession ${accession.accessionNumber}`, // Default title
+      collectionGroupId: draftObjectData?.collectionGroupId,
+      title:
+        draftObjectData?.title?.trim() || `Accession ${accession.accessionNumber}`,
+      creator: draftObjectData?.creator,
+      objectType: serializeStringList(draftObjectData?.objectType),
+      objectName: draftObjectData?.objectName,
+      culture: draftObjectData?.culture,
+      period: draftObjectData?.period,
+      dateCreated: draftObjectData?.dateCreated,
+      materials: serializeStringList(draftObjectData?.materials),
+      dimensions: draftObjectData?.dimensions,
+      description: draftObjectData?.description,
+      condition: draftObjectData?.condition,
+      provenance: draftObjectData?.provenance,
+      exhibitionHistory: draftObjectData?.exhibitionHistory,
+      ownershipHistory: draftObjectData?.ownershipHistory,
+      donated_by: draftObjectData?.donated_by,
+      donated_date: draftObjectData?.donated_date,
+      donation_info: draftObjectData?.donation_info,
+      previous_owners: draftObjectData?.previous_owners,
+      links: draftObjectData?.links,
+      parentObjectId: draftObjectData?.parentObjectId,
+      currentLocationId: draftObjectData?.currentLocationId,
+      alternateAccessionNumbers: draftObjectData?.alternateAccessionNumbers,
+      isPubliclyVisible: draftObjectData?.isPubliclyVisible,
+      isHighResDownloadable: draftObjectData?.isHighResDownloadable,
+      isSearchable: draftObjectData?.isSearchable,
+      isValuationVisible: draftObjectData?.isValuationVisible,
+      publicSlug: draftObjectData?.publicSlug,
+      collectionType: draftObjectData?.collectionType,
       status: "active",
-      catalogedBy: accession.approvedBy ?? firstUser?._id!,
-      catalogedAt: accession.approvedAt ?? Date.now(),
+      catalogedBy,
+      catalogedAt,
     });
+
+    await applyUsageCounterDelta(ctx, accession.organizationId, {
+      objectCount: 1,
+    });
+
+    if (draftObjectData?.collectionGroupId) {
+      const group = await ctx.db.get(draftObjectData.collectionGroupId);
+      if (group) {
+        await ctx.db.patch(draftObjectData.collectionGroupId, {
+          itemsCount: (group.itemsCount || 0) + 1,
+        });
+      }
+    }
+
+    for (const draftMediaItem of accession.draftMedia || []) {
+      const fileType = getFileCategory(
+        draftMediaItem.mimeType,
+        draftMediaItem.mediaCategory,
+      );
+      const mediaId = await ctx.db.insert("mediaFiles", {
+        collectionId,
+        organizationId: accession.organizationId,
+        storageId: draftMediaItem.storageId,
+        fileName: draftMediaItem.fileName,
+        fileType,
+        fileSize: draftMediaItem.fileSize,
+        mimeType: draftMediaItem.mimeType,
+        mediaCategory: draftMediaItem.mediaCategory,
+        isPrimary: draftMediaItem.isPrimary,
+        uploadedBy: catalogedBy,
+        uploadedAt: catalogedAt,
+        uploadStatus: "completed",
+      });
+
+      const storageBytes = await getStorageBytes(ctx, draftMediaItem.storageId);
+      await applyUsageCounterDelta(ctx, accession.organizationId, {
+        mediaFileCount: 1,
+        mediaTypeDeltas: [
+          {
+            type: fileType,
+            countDelta: 1,
+            bytesDelta: storageBytes,
+          },
+        ],
+        storageBytes,
+      });
+
+      if (
+        draftMediaItem.isPrimary &&
+        fileType === "image" &&
+        draftMediaItem.fileSize < MAX_SMALL_IMAGE_SIZE
+      ) {
+        await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
+          mediaId,
+        });
+      }
+    }
 
     // Link accession to collection
     await ctx.db.patch(args.accessionId, {

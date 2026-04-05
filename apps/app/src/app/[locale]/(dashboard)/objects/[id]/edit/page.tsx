@@ -11,6 +11,8 @@ import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { TypeCombobox } from "@/components/type-combobox";
+import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
 import {
   parseStringListField,
   serializeStringListField,
@@ -24,14 +26,21 @@ import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Switch } from "@v1/ui/switch";
 import { Textarea } from "@v1/ui/textarea";
+import { cn } from "@v1/ui/utils";
 import { useUploadFiles } from "@xixixao/uploadstuff/react";
 import { useMutation, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import {
   AlertOctagon,
   Archive,
   ArrowLeft,
+  ArrowRightLeft,
+  Calendar,
   Camera,
   CheckCircle,
+  Image as ImageIcon,
+  Info,
+  MapPin,
   Plus,
   Save,
   Star,
@@ -43,7 +52,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  getObjectEditTabs,
+  type ObjectTabId,
+} from "../_components/object-tab-config";
 
 interface OwnershipEntry {
   owner: string;
@@ -85,6 +98,166 @@ interface CollectionFormData {
   publicSlug?: string;
 }
 
+type CollectionDoc = NonNullable<FunctionReturnType<typeof api.collections.get>>;
+type MediaItem = NonNullable<FunctionReturnType<typeof api.media.list>>[number];
+type EditTabId = Extract<
+  ObjectTabId,
+  "general" | "provenance" | "physical" | "media" | "digital"
+>;
+
+const EMPTY_FORM: CollectionFormData = {
+  title: "",
+  creator: "",
+  objectType: [],
+  objectName: "",
+  culture: "",
+  period: "",
+  dateCreated: "",
+  materials: [],
+  dimensions: "",
+  description: "",
+  condition: "",
+  provenance: "",
+  exhibitionHistory: "",
+  donated_by: [],
+  donated_date: "",
+  donation_info: "",
+  previous_owners: [],
+  links: [{ url: "", label: "" }],
+  parentObjectId: "",
+  currentLocationId: "__none__",
+  collectionGroupId: "",
+  alternateAccessionNumbers: [],
+  ownershipHistory: [],
+  isPubliclyVisible: false,
+  isHighResDownloadable: false,
+  isSearchable: true,
+  isValuationVisible: false,
+  publicSlug: "",
+};
+
+function createInitialFormData(collection: CollectionDoc): CollectionFormData {
+  let objectTypeArray: string[] = [];
+  if (collection.objectType) {
+    try {
+      const parsed = JSON.parse(collection.objectType);
+      objectTypeArray = Array.isArray(parsed)
+        ? parsed
+        : [collection.objectType];
+    } catch {
+      objectTypeArray = [collection.objectType];
+    }
+  }
+
+  return {
+    title: collection.title,
+    creator: collection.creator || "",
+    objectType: objectTypeArray,
+    objectName: collection.objectName || "",
+    culture: collection.culture || "",
+    period: collection.period || "",
+    dateCreated: collection.dateCreated || "",
+    materials: parseStringListField(collection.materials),
+    dimensions: collection.dimensions || "",
+    description: collection.description || "",
+    condition: collection.condition || "",
+    provenance: collection.provenance || "",
+    exhibitionHistory: collection.exhibitionHistory || "",
+    donated_by: collection.donated_by || [],
+    donated_date: collection.donated_date || "",
+    donation_info: collection.donation_info || "",
+    previous_owners: collection.previous_owners || [],
+    links:
+      collection.links && collection.links.length > 0
+        ? collection.links
+        : [{ url: "", label: "" }],
+    parentObjectId: (collection.parentObjectId as string) || "",
+    currentLocationId: (collection.currentLocationId as string) || "__none__",
+    collectionGroupId: (collection.collectionGroupId as string) || "",
+    alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
+    ownershipHistory: collection.ownershipHistory || [],
+    isPubliclyVisible: collection.isPubliclyVisible ?? false,
+    isHighResDownloadable: collection.isHighResDownloadable ?? false,
+    isSearchable: collection.isSearchable ?? true,
+    isValuationVisible: collection.isValuationVisible ?? false,
+    publicSlug: collection.publicSlug ?? "",
+  };
+}
+
+function getFormSignature(formData: CollectionFormData) {
+  return JSON.stringify({
+    ...formData,
+    objectType: Array.isArray(formData.objectType)
+      ? formData.objectType
+      : formData.objectType
+        ? [formData.objectType]
+        : [],
+    materials: Array.isArray(formData.materials)
+      ? formData.materials
+      : formData.materials
+        ? [formData.materials]
+        : [],
+    donated_by: formData.donated_by || [],
+    previous_owners: formData.previous_owners || [],
+    alternateAccessionNumbers: formData.alternateAccessionNumbers || [],
+    ownershipHistory: formData.ownershipHistory || [],
+    links: formData.links || [],
+  });
+}
+
+function getMediaSignature(media: MediaItem[]) {
+  return JSON.stringify(
+    media.map((item) => ({
+      id: item._id,
+      fileName: item.fileName,
+      fileType: item.fileType,
+      url: item.url,
+      thumbnailUrl: item.thumbnailUrl,
+      isPrimary: item.isPrimary,
+      mediaCategory: (item as { mediaCategory?: "image" | "document" })
+        .mediaCategory,
+    })),
+  );
+}
+
+function getStatusBadgeClass(status: CollectionDoc["status"]) {
+  switch (status) {
+    case "active":
+    case "verified":
+      return "bg-emerald-500/10 text-emerald-400";
+    case "loaned":
+      return "bg-blue-500/10 text-blue-400";
+    case "deaccessioned":
+      return "bg-red-500/10 text-red-400";
+    default:
+      return "bg-muted text-muted-foreground";
+  }
+}
+
+function EditSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-5 border-b border-border/60 pb-8 last:border-b-0 last:pb-0">
+      <div className="space-y-1">
+        <h2 className="text-base font-semibold text-foreground">{title}</h2>
+        {description ? (
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            {description}
+          </p>
+        ) : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
 export default function CollectionEditPage() {
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
@@ -92,6 +265,7 @@ export default function CollectionEditPage() {
   const params = useParams();
   const router = useRouter();
   const collectionId = params.id as string;
+  const typedCollectionId = collectionId as Id<"collections">;
   const { currentOrganizationId } = useOrganization();
   const updateCollection = useMutation(api.collections.update);
   const generateUploadUrl = useMutation(api.media.generateUploadUrl);
@@ -101,34 +275,23 @@ export default function CollectionEditPage() {
 
   const collection = useQuery(
     api.collections.get,
-    collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
+    collectionId ? { collectionId: typedCollectionId } : "skip",
   );
   const pendingMoveRequest = useQuery(
     api.objectMoves.getPendingForCollection,
-    collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
+    collectionId ? { collectionId: typedCollectionId } : "skip",
   );
-
   const media = useQuery(
     api.media.list,
-    collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
+    collectionId ? { collectionId: typedCollectionId } : "skip",
   );
 
-  // Separate images and documents
-  // Only show actual images (fileType === "image") in the image gallery
-  // Documents should only appear in the documents list
-  const images =
-    media?.filter((m) => {
-      const category = (m as { mediaCategory?: "image" | "document" })
-        .mediaCategory;
-      return (category === "image" || !category) && m.fileType === "image";
-    }) || [];
-  const documents =
-    media?.filter(
-      (m) =>
-        (m as { mediaCategory?: "image" | "document" }).mediaCategory ===
-        "document",
-    ) || [];
-
+  const [formData, setFormData] = useState<CollectionFormData>(EMPTY_FORM);
+  const [activeTab, setActiveTab] = useState<EditTabId>("general");
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isMediaBaselineReady, setIsMediaBaselineReady] = useState(false);
+  const initialFormSignatureRef = useRef("");
+  const initialMediaSignatureRef = useRef("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
@@ -137,30 +300,96 @@ export default function CollectionEditPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deaccessionDialogOpen, setDeaccessionDialogOpen] = useState(false);
-  const [formData, setFormData] = useState<CollectionFormData>({
-    title: "",
-    creator: "",
-    objectType: [], // Initialize as empty array
-    objectName: "",
-    culture: "",
-    period: "",
-    dateCreated: "",
-    materials: [], // Initialize as empty array
-    dimensions: "",
-    description: "",
-    condition: "",
-    provenance: "",
-    exhibitionHistory: "",
-    donated_by: [],
-    donated_date: "",
-    donation_info: "",
-    previous_owners: [],
-    links: [{ url: "", label: "" }],
-    currentLocationId: "",
-    alternateAccessionNumbers: [],
-  });
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(
+    null,
+  );
 
-  // Upload handling
+  const tabs = useMemo(
+    () => getObjectEditTabs().map((tab) => ({ ...tab, id: tab.id as EditTabId })),
+    [],
+  );
+
+  useEffect(() => {
+    if (!tabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab(tabs[0]?.id ?? "general");
+    }
+  }, [activeTab, tabs]);
+
+  useEffect(() => {
+    if (collection && !isInitialized) {
+      const nextFormData = createInitialFormData(collection);
+      setFormData(nextFormData);
+      initialFormSignatureRef.current = getFormSignature(nextFormData);
+      setIsInitialized(true);
+    }
+  }, [collection, isInitialized]);
+
+  useEffect(() => {
+    if (media !== undefined && !isMediaBaselineReady) {
+      initialMediaSignatureRef.current = getMediaSignature(media);
+      setIsMediaBaselineReady(true);
+    }
+  }, [isMediaBaselineReady, media]);
+
+  const images = useMemo(() => {
+    return (
+      media?.filter((item) => {
+        const category = (item as { mediaCategory?: "image" | "document" })
+          .mediaCategory;
+        return (category === "image" || !category) && item.fileType === "image";
+      }) || []
+    );
+  }, [media]);
+
+  const documents = useMemo(() => {
+    return (
+      media?.filter(
+        (item) =>
+          (item as { mediaCategory?: "image" | "document" }).mediaCategory ===
+          "document",
+      ) || []
+    );
+  }, [media]);
+
+  const heroImage = useMemo(() => {
+    return images.find((item) => item.isPrimary) ?? images[0] ?? null;
+  }, [images]);
+
+  const currentLocationPath = useQuery(
+    api.locations.getLocationPath,
+    formData.currentLocationId && formData.currentLocationId !== "__none__"
+      ? { locationId: formData.currentLocationId as Id<"locations"> }
+      : "skip",
+  );
+
+  const currentCollectionGroup = useQuery(
+    api.collectionGroups.get,
+    formData.collectionGroupId
+      ? { groupId: formData.collectionGroupId as Id<"collectionGroups"> }
+      : "skip",
+  );
+
+  const loans = useQuery(
+    api.loans.getLoansForCollection,
+    collection ? { collectionId: collection._id } : "skip",
+  );
+  const hasActiveLoan =
+    loans?.some((loan) => loan.status === "active") ?? false;
+
+  const currentMediaSignature = useMemo(
+    () => getMediaSignature(media ?? []),
+    [media],
+  );
+  const isFormDirty =
+    isInitialized &&
+    getFormSignature(formData) !== initialFormSignatureRef.current;
+  const hasMediaChanges =
+    isMediaBaselineReady &&
+    currentMediaSignature !== initialMediaSignatureRef.current;
+
+  useBeforeUnload(isFormDirty);
+
   const { startUpload } = useUploadFiles(
     async () => {
       if (!collection) {
@@ -174,7 +403,7 @@ export default function CollectionEditPage() {
 
       const result = await generateUploadUrl({
         organizationId: collection.organizationId,
-        collectionId: collectionId as Id<"collections">,
+        collectionId: typedCollectionId,
         fileName: file.name,
         fileSize: file.size,
         mimeType: file.type,
@@ -219,8 +448,8 @@ export default function CollectionEditPage() {
 
               await createMedia({
                 organizationId: collection.organizationId,
-                collectionId: collectionId as Id<"collections">,
-                storageId: storageId,
+                collectionId: typedCollectionId,
+                storageId,
                 fileName: file.name || "unknown",
                 fileSize: file.size || 0,
                 mimeType: file.type || "application/octet-stream",
@@ -237,142 +466,268 @@ export default function CollectionEditPage() {
           );
         }
       },
-      onUploadError: (error) => {
+      onUploadError: (uploadError) => {
         setError(
-          error && typeof error === "object" && "message" in error
-            ? String(error.message)
+          uploadError && typeof uploadError === "object" && "message" in uploadError
+            ? String(uploadError.message)
             : "Upload failed",
         );
       },
     },
   );
 
-  // Document upload handling - upload immediately when selected
-  const handleDocumentUpload = async (files: File[]) => {
-    if (!collection || !collectionId) {
-      setError("Missing collection data");
-      return;
-    }
+  const updateField = useCallback(
+    <K extends keyof CollectionFormData,>(
+      field: K,
+      value: CollectionFormData[K],
+    ) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    },
+    [],
+  );
 
-    setError(null);
+  const handleDocumentUpload = useCallback(
+    async (files: File[]) => {
+      if (!collection) {
+        setError("Missing collection data");
+        return;
+      }
 
-    for (const file of files) {
+      setError(null);
+
+      for (const file of files) {
+        try {
+          const uploadUrlResult = await generateUploadUrl({
+            organizationId: collection.organizationId,
+            collectionId: typedCollectionId,
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type,
+          });
+
+          if (!uploadUrlResult.uploadUrl) {
+            throw new Error(`Failed to generate upload URL for ${file.name}`);
+          }
+
+          const uploadResponse = await fetch(uploadUrlResult.uploadUrl, {
+            method: "POST",
+            body: file,
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error(`Failed to upload ${file.name}`);
+          }
+
+          const uploadResult = await uploadResponse.json();
+          const storageId = uploadResult.storageId as Id<"_storage"> | undefined;
+
+          if (!storageId) {
+            throw new Error(`No storage ID returned for ${file.name}`);
+          }
+
+          await createMedia({
+            organizationId: collection.organizationId,
+            collectionId: typedCollectionId,
+            storageId,
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type,
+            mediaCategory: "document",
+            isPrimary: false,
+          });
+        } catch (err) {
+          console.error(`Error uploading ${file.name}:`, err);
+          setError(
+            err instanceof Error
+              ? `Failed to upload ${file.name}: ${err.message}`
+              : `Failed to upload ${file.name}`,
+          );
+          break;
+        }
+      }
+    },
+    [collection, createMedia, generateUploadUrl, typedCollectionId],
+  );
+
+  const handleFileSelect = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setError(null);
       try {
-        // Generate upload URL
-        const uploadUrlResult = await generateUploadUrl({
-          organizationId: collection.organizationId,
-          collectionId: collectionId as Id<"collections">,
-          fileName: file.name,
-          fileSize: file.size,
-          mimeType: file.type,
-        });
-
-        if (!uploadUrlResult.uploadUrl) {
-          throw new Error(`Failed to generate upload URL for ${file.name}`);
+        const filesList = event.target.files;
+        if (!filesList || filesList.length === 0) {
+          return;
         }
 
-        // Upload file to storage
-        const uploadResponse = await fetch(uploadUrlResult.uploadUrl, {
-          method: "POST",
-          body: file,
-        });
+        const files = Array.from(filesList);
+        filesRef.current = [...files];
+        startUpload(files);
 
-        if (!uploadResponse.ok) {
-          throw new Error(`Failed to upload ${file.name}`);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
         }
-
-        const uploadResult = await uploadResponse.json();
-        const storageId = uploadResult.storageId;
-
-        if (!storageId) {
-          throw new Error(`No storage ID returned for ${file.name}`);
+        if (cameraInputRef.current) {
+          cameraInputRef.current.value = "";
         }
-
-        // Create media record for document
-        await createMedia({
-          organizationId: collection.organizationId,
-          collectionId: collectionId as Id<"collections">,
-          storageId: storageId,
-          fileName: file.name,
-          fileSize: file.size,
-          mimeType: file.type,
-          mediaCategory: "document",
-          isPrimary: false, // Documents are never primary
-        });
       } catch (err) {
-        console.error(`Error uploading ${file.name}:`, err);
         setError(
           err instanceof Error
-            ? `Failed to upload ${file.name}: ${err.message}`
-            : `Failed to upload ${file.name}`,
+            ? err.message
+            : t("form.errors.failedToProcessFile"),
         );
-        // Stop on first error
-        break;
       }
-    }
-  };
-
-  // Load existing data
-  useEffect(() => {
-    if (collection) {
-      const materialsArray = parseStringListField(collection.materials);
-
-      let objectTypeArray: string[] = [];
-      if (collection.objectType) {
-        try {
-          const parsed = JSON.parse(collection.objectType);
-          objectTypeArray = Array.isArray(parsed)
-            ? parsed
-            : [collection.objectType];
-        } catch {
-          objectTypeArray = [collection.objectType];
-        }
-      }
-
-      setFormData({
-        title: collection.title,
-        creator: collection.creator || "",
-        objectType: objectTypeArray, // Store as array in form state
-        objectName: collection.objectName || "",
-        culture: collection.culture || "",
-        period: collection.period || "",
-        dateCreated: collection.dateCreated || "",
-        materials: materialsArray, // Store as array in form state
-        dimensions: collection.dimensions || "",
-        description: collection.description || "",
-        condition: collection.condition || "",
-        provenance: collection.provenance || "",
-        exhibitionHistory: collection.exhibitionHistory || "",
-        donated_by: collection.donated_by || [],
-        donated_date: collection.donated_date || "",
-        donation_info: collection.donation_info || "",
-        previous_owners: collection.previous_owners || [],
-        links:
-          collection.links && collection.links.length > 0
-            ? collection.links
-            : [{ url: "", label: "" }],
-        parentObjectId: (collection.parentObjectId as string) || "",
-        currentLocationId:
-          (collection.currentLocationId as string) || "__none__",
-        collectionGroupId: (collection.collectionGroupId as string) || "",
-        alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
-        ownershipHistory: collection.ownershipHistory || [],
-        isPubliclyVisible: collection.isPubliclyVisible ?? false,
-        isHighResDownloadable: collection.isHighResDownloadable ?? false,
-        isSearchable: collection.isSearchable ?? true,
-        isValuationVisible: collection.isValuationVisible ?? false,
-        publicSlug: collection.publicSlug ?? "",
-      });
-    }
-  }, [collection]);
-
-  // Query loans to check if item is on active loan
-  const loans = useQuery(
-    api.loans.getLoansForCollection,
-    collection ? { collectionId: collection._id } : "skip",
+    },
+    [startUpload, t],
   );
-  const hasActiveLoan =
-    loans?.some((loan) => loan.status === "active") ?? false;
+
+  const handleDocumentSelect = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      setError(null);
+      try {
+        const filesList = event.target.files;
+        if (!filesList || filesList.length === 0) {
+          return;
+        }
+
+        const files = Array.from(filesList);
+        await handleDocumentUpload(files);
+
+        if (documentInputRef.current) {
+          documentInputRef.current.value = "";
+        }
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : t("form.errors.failedToProcessDocument"),
+        );
+      }
+    },
+    [handleDocumentUpload, t],
+  );
+
+  const handleSetPrimary = useCallback(
+    async (mediaId: string) => {
+      setError(null);
+      try {
+        await setPrimary({ mediaId: mediaId as Id<"mediaFiles"> });
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : t("form.errors.failedToSetPrimary"),
+        );
+      }
+    },
+    [setPrimary, t],
+  );
+
+  const handleDeleteMedia = useCallback(
+    async (mediaId: string) => {
+      setError(null);
+      try {
+        await deleteMedia({ mediaId: mediaId as Id<"mediaFiles"> });
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : t("form.errors.failedToDeleteMedia"),
+        );
+      }
+    },
+    [deleteMedia, t],
+  );
+
+  const saveRecord = useCallback(async () => {
+    if (!formData.title.trim()) {
+      setError(t("form.errors.titleRequired"));
+      return false;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const materialsString = serializeStringListField(formData.materials);
+      const objectTypeString = Array.isArray(formData.objectType)
+        ? JSON.stringify(formData.objectType)
+        : formData.objectType;
+
+      await updateCollection({
+        collectionId: typedCollectionId,
+        ...formData,
+        materials: materialsString,
+        objectType: objectTypeString,
+        links: formData.links?.filter((link) => link.url.trim() !== ""),
+        parentObjectId: formData.parentObjectId
+          ? (formData.parentObjectId as Id<"collections">)
+          : undefined,
+        currentLocationId:
+          formData.currentLocationId &&
+          formData.currentLocationId !== "__none__"
+            ? (formData.currentLocationId as Id<"locations">)
+            : undefined,
+        collectionGroupId: formData.collectionGroupId
+          ? (formData.collectionGroupId as Id<"collectionGroups">)
+          : undefined,
+        alternateAccessionNumbers: formData.alternateAccessionNumbers,
+      });
+
+      initialFormSignatureRef.current = getFormSignature(formData);
+      return true;
+    } catch (err) {
+      console.error("Error updating collection:", err);
+      setError(
+        err instanceof Error ? err.message : t("form.errors.updateFailed"),
+      );
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [formData, t, typedCollectionId, updateCollection]);
+
+  const handleSubmit = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      const didSave = await saveRecord();
+      if (didSave) {
+        router.push(`/objects/${collectionId}`);
+      }
+    },
+    [collectionId, router, saveRecord],
+  );
+
+  const handleNavigate = useCallback(
+    (href: string) => {
+      if (isFormDirty) {
+        setPendingNavigation(href);
+        setShowUnsavedDialog(true);
+        return;
+      }
+      router.push(href);
+    },
+    [isFormDirty, router],
+  );
+
+  const handleDiscardAndNavigate = useCallback(() => {
+    if (pendingNavigation) {
+      router.push(pendingNavigation);
+    }
+    setShowUnsavedDialog(false);
+    setPendingNavigation(null);
+  }, [pendingNavigation, router]);
+
+  const handleSaveAndNavigate = useCallback(async () => {
+    const didSave = await saveRecord();
+    if (!didSave) {
+      return false;
+    }
+
+    if (pendingNavigation) {
+      router.push(pendingNavigation);
+    }
+    setPendingNavigation(null);
+    return true;
+  }, [pendingNavigation, router, saveRecord]);
 
   if (!currentOrganizationId) {
     return (
@@ -400,533 +755,470 @@ export default function CollectionEditPage() {
     );
   }
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setError(null);
-    try {
-      const filesList = event.target?.files;
-      if (!filesList || filesList.length === 0) {
-        return;
-      }
-      const files = Array.from(filesList);
-      if (!files || files.length === 0) {
-        return;
-      }
-
-      filesRef.current = [...files];
-      startUpload(files);
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : t("form.errors.failedToProcessFile"),
-      );
-    }
-  };
-
-  const handleDocumentSelect = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    setError(null);
-    try {
-      const filesList = event.target?.files;
-      if (!filesList || filesList.length === 0) {
-        return;
-      }
-      const files = Array.from(filesList);
-      if (!files || files.length === 0) {
-        return;
-      }
-
-      // Upload documents immediately
-      await handleDocumentUpload(files);
-
-      // Clear the input
-      if (documentInputRef.current) {
-        documentInputRef.current.value = "";
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : t("form.errors.failedToProcessDocument"),
-      );
-    }
-  };
-
-  const handleSetPrimary = async (mediaId: string) => {
-    setError(null);
-    try {
-      await setPrimary({ mediaId: mediaId as Id<"mediaFiles"> });
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : t("form.errors.failedToSetPrimary"),
-      );
-    }
-  };
-
-  const handleDelete = async (mediaId: string) => {
-    setError(null);
-    try {
-      await deleteMedia({ mediaId: mediaId as Id<"mediaFiles"> });
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : t("form.errors.failedToDeleteMedia"),
-      );
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    if (!formData.title.trim()) {
-      setError(t("form.errors.titleRequired"));
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      // Convert materials array to JSON string for backend
-      const materialsString = serializeStringListField(formData.materials);
-
-      // Convert objectType array to JSON string for backend
-      const objectTypeString = Array.isArray(formData.objectType)
-        ? JSON.stringify(formData.objectType)
-        : formData.objectType;
-
-      await updateCollection({
-        collectionId: collectionId as Id<"collections">,
-        ...formData,
-        materials: materialsString,
-        objectType: objectTypeString,
-        links: formData.links?.filter((link) => link.url.trim() !== ""),
-        parentObjectId: formData.parentObjectId
-          ? (formData.parentObjectId as Id<"collections">)
-          : undefined,
-        currentLocationId:
-          formData.currentLocationId &&
-          formData.currentLocationId !== "__none__"
-            ? (formData.currentLocationId as Id<"locations">)
-            : undefined,
-        collectionGroupId: formData.collectionGroupId
-          ? (formData.collectionGroupId as Id<"collectionGroups">)
-          : undefined,
-        alternateAccessionNumbers: formData.alternateAccessionNumbers,
-      });
-      router.push(`/objects/${collectionId}`);
-    } catch (err) {
-      console.error("Error updating collection:", err);
-      setError(
-        err instanceof Error ? err.message : t("form.errors.updateFailed"),
-      );
-      setIsSubmitting(false);
-    }
-  };
-
-  const updateField = (
-    field: keyof CollectionFormData,
-    value:
-      | string
-      | string[]
-      | boolean
-      | Array<{ url: string; label?: string }>
-      | OwnershipEntry[]
-      | undefined,
-  ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
+  const locationSummary =
+    currentLocationPath?.map((location) => location.name).join(" / ") ||
+    "No location assigned";
+  const collectionSummary =
+    currentCollectionGroup?.name || "Not assigned to a collection";
 
   return (
-    <div className="flex h-full min-h-0 w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full min-h-0 w-full max-w-screen-xl gap-12">
-        <div className="flex h-full min-h-0 w-full flex-col rounded-lg border border-border bg-card">
-          <div className="flex w-full items-center justify-between gap-4 rounded-t-lg border-b border-border p-6">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href={`/objects/${collectionId}`}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
-                </Link>
-              </Button>
-              <h2 className="text-xl font-medium text-primary">Edit Object</h2>
-            </div>
+    <div className="flex h-full min-h-0 w-full flex-col bg-background">
+      <header className="z-20 flex h-14 shrink-0 items-center justify-between border-b border-border/60 bg-background/90 px-6 backdrop-blur-xl">
+        <div className="flex items-center gap-2 text-xs">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => handleNavigate(`/objects/${collectionId}`)}
+          >
+            <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+          </Button>
+          <span className="text-muted-foreground">{t("detail.collections")}</span>
+          <span className="text-muted-foreground/50">/</span>
+          <span className="font-medium text-foreground">Edit object</span>
+        </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-3">
-              <PermissionGate permission="collections.update">
-                {collection.status === "active" && !hasActiveLoan && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => setDeaccessionDialogOpen(true)}
-                  >
-                    <Archive className="mr-2 h-4 w-4" />
-                    Remove / Transfer Object
-                  </Button>
-                )}
-                {collection.status === "active" && hasActiveLoan && (
-                  <div
-                    className="flex items-center text-xs text-muted-foreground"
-                    title={common("cannotDeaccession")}
-                  >
-                    <AlertOctagon className="mr-2 h-4 w-4" />
-                    Cannot remove or transfer (On Loan)
+        <div className="flex items-center gap-3">
+          <PermissionGate permission="collections.update">
+            {collection.status === "active" && !hasActiveLoan ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => setDeaccessionDialogOpen(true)}
+              >
+                <Archive className="mr-2 h-4 w-4" />
+                Remove / Transfer
+              </Button>
+            ) : null}
+            {collection.status === "active" && hasActiveLoan ? (
+              <div
+                className="hidden items-center text-xs text-muted-foreground lg:flex"
+                title={common("cannotDeaccession")}
+              >
+                <AlertOctagon className="mr-2 h-4 w-4" />
+                Cannot remove while on loan
+              </div>
+            ) : null}
+          </PermissionGate>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => handleNavigate(`/objects/${collectionId}`)}
+          >
+            {common("cancel")}
+          </Button>
+          <Button
+            type="submit"
+            size="sm"
+            form="object-edit-form"
+            disabled={isSubmitting || !isFormDirty}
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {isSubmitting ? common("updating") : t("form.actions.updateObject")}
+          </Button>
+        </div>
+      </header>
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <form id="object-edit-form" onSubmit={handleSubmit}>
+          <div className="border-b border-border/60 bg-secondary/10 px-6 py-8 sm:px-8">
+            <div className="mx-auto flex max-w-5xl flex-col gap-8 lg:flex-row lg:items-start">
+              <button
+                type="button"
+                className="group relative shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-secondary transition-colors hover:border-primary/40"
+                onClick={() => setActiveTab("media")}
+              >
+                {heroImage?.url ? (
+                  <img
+                    src={heroImage.thumbnailUrl || heroImage.url}
+                    alt={collection.title}
+                    className="h-48 w-48 object-cover"
+                  />
+                ) : (
+                  <div className="flex h-48 w-48 items-center justify-center">
+                    <ImageIcon className="h-12 w-12 text-muted-foreground" />
                   </div>
                 )}
-              </PermissionGate>
+                <div className="absolute inset-x-0 bottom-0 bg-black/55 px-3 py-2 text-left text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  Open media tab
+                </div>
+              </button>
 
-              <Button type="button" variant="outline" asChild>
-                <Link href={`/objects/${collectionId}`}>
-                  {common("cancel")}
-                </Link>
-              </Button>
-              <Button
-                type="submit"
-                form="object-edit-form"
-                disabled={isSubmitting}
-              >
-                <Save className="mr-2 h-4 w-4" />
-                {isSubmitting
-                  ? common("updating")
-                  : t("form.actions.updateObject")}
-              </Button>
+              <div className="flex-1 space-y-6">
+                {pendingMoveRequest ? (
+                  <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-sm font-medium text-blue-100">
+                          <ArrowRightLeft className="h-4 w-4" />
+                          Pending organization transfer
+                        </div>
+                        <p className="text-sm text-blue-200/80">
+                          This object is awaiting approval to move to{" "}
+                          {pendingMoveRequest.targetOrganizationName}.
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/objects/move-requests/${pendingMoveRequest._id}`}>
+                          Open transfer request
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <div
+                    className={cn(
+                      "rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider",
+                      getStatusBadgeClass(collection.status),
+                    )}
+                  >
+                    {collection.status}
+                  </div>
+                  <div className="rounded bg-background/80 px-2 py-1 text-[10px] font-mono text-muted-foreground">
+                    {collection.accessionNumber}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label
+                    htmlFor="hero-title"
+                    className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground"
+                  >
+                    Object title
+                  </Label>
+                  <Input
+                    id="hero-title"
+                    value={formData.title}
+                    onChange={(event) => updateField("title", event.target.value)}
+                    placeholder={placeholders("title")}
+                    className="h-14 border-border/60 bg-background/90 text-xl font-semibold sm:text-2xl"
+                    required
+                  />
+                </div>
+
+                <div className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-2 xl:grid-cols-4">
+                  <button
+                    type="button"
+                    className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
+                    onClick={() => setActiveTab("general")}
+                  >
+                    <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                      <Info className="h-3.5 w-3.5" />
+                      Creator
+                    </div>
+                    <div className="truncate text-sm text-foreground">
+                      {formData.creator || "Not set"}
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
+                    onClick={() => setActiveTab("general")}
+                  >
+                    <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                      <Calendar className="h-3.5 w-3.5" />
+                      Date created
+                    </div>
+                    <div className="truncate text-sm text-foreground">
+                      {formData.dateCreated || common("unknown")}
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
+                    onClick={() => setActiveTab("general")}
+                  >
+                    <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5" />
+                      Location
+                    </div>
+                    <div className="truncate text-sm text-foreground">
+                      {locationSummary}
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
+                    onClick={() => setActiveTab("general")}
+                  >
+                    <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                      <Info className="h-3.5 w-3.5" />
+                      Collection
+                    </div>
+                    <div className="truncate text-sm text-foreground">
+                      {collectionSummary}
+                    </div>
+                  </button>
+                </div>
+
+                <p className="text-sm text-muted-foreground">
+                  Edit the record using the same structure as the object detail
+                  page. Field changes save together. Media uploads and primary
+                  image changes apply immediately.
+                </p>
+              </div>
             </div>
           </div>
 
-          <form
-            id="object-edit-form"
-            onSubmit={handleSubmit}
-            className="min-h-0 flex-1 overflow-y-auto p-4"
-          >
-            {pendingMoveRequest && (
-              <div className="mb-4 rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-blue-100">
-                      Pending move request
-                    </p>
-                    <p className="text-sm text-blue-200/80">
-                      This object is pending transfer to{" "}
-                      {pendingMoveRequest.targetOrganizationName}.
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link
-                      href={`/objects/move-requests/${pendingMoveRequest._id}`}
-                    >
-                      Open transfer request
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {error && (
-              <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+          <div className="mx-auto w-full max-w-6xl px-6 py-8">
+            {error ? (
+              <div className="mb-6 rounded-xl border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
                 {error}
               </div>
-            )}
+            ) : null}
 
-            <div className="flex min-h-0 gap-4">
-              {/* Left column - Form sections */}
-              <div className="min-w-0 flex-1 space-y-4">
-                {/* Basic Information Section */}
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <h3 className="mb-3 text-base font-semibold">
-                    Basic Information
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="title">
-                        Title <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="title"
-                        value={formData.title}
-                        onChange={(e) => updateField("title", e.target.value)}
-                        placeholder={placeholders("title")}
-                        required
-                      />
+            <div className="mb-8 flex flex-wrap gap-2">
+              {tabs.map((tab) => (
+                <Button
+                  key={tab.id}
+                  type="button"
+                  variant={activeTab === tab.id ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  {tab.label}
+                </Button>
+              ))}
+            </div>
+
+            <div className="rounded-2xl border border-border/60 bg-background/70 px-5 py-6 shadow-sm sm:px-8 sm:py-8">
+              {activeTab === "general" ? (
+                <div className="space-y-8">
+                  <EditSection
+                    title="Record identity"
+                    description="Core catalog information that identifies and classifies this object."
+                  >
+                    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="accessionNumber">Accession Number</Label>
+                        <Input
+                          id="accessionNumber"
+                          value={collection.accessionNumber}
+                          disabled
+                          className="bg-muted/60"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Accession number cannot be changed.
+                        </p>
+                      </div>
+
+                      <div className="space-y-2 xl:col-span-2">
+                        <RepeatableTextField
+                          label="Alternate Accession Numbers"
+                          value={formData.alternateAccessionNumbers || []}
+                          onChange={(values) =>
+                            updateField("alternateAccessionNumbers", values)
+                          }
+                          placeholder={placeholders("alternateId")}
+                          id="alternateAccessionNumbers"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="objectName">Object Name</Label>
+                        <Input
+                          id="objectName"
+                          value={formData.objectName || ""}
+                          onChange={(event) =>
+                            updateField("objectName", event.target.value)
+                          }
+                          placeholder={placeholders("objectName")}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="objectType">Object Type</Label>
+                        <TypeCombobox
+                          organizationId={collection.organizationId}
+                          collectionId={collectionId}
+                          value={
+                            Array.isArray(formData.objectType)
+                              ? formData.objectType
+                              : []
+                          }
+                          onValueChange={(value) =>
+                            updateField("objectType", value)
+                          }
+                          placeholder={placeholders("selectTypes")}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="creator">Creator</Label>
+                        <Input
+                          id="creator"
+                          value={formData.creator || ""}
+                          onChange={(event) =>
+                            updateField("creator", event.target.value)
+                          }
+                          placeholder={placeholders("creator")}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="culture">Culture</Label>
+                        <Input
+                          id="culture"
+                          value={formData.culture || ""}
+                          onChange={(event) =>
+                            updateField("culture", event.target.value)
+                          }
+                          placeholder={placeholders("culture")}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="period">Period</Label>
+                        <Input
+                          id="period"
+                          value={formData.period || ""}
+                          onChange={(event) =>
+                            updateField("period", event.target.value)
+                          }
+                          placeholder={placeholders("period")}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="dateCreated">Date Created</Label>
+                        <Input
+                          id="dateCreated"
+                          value={formData.dateCreated || ""}
+                          onChange={(event) =>
+                            updateField("dateCreated", event.target.value)
+                          }
+                          placeholder={placeholders("dateCreated")}
+                        />
+                      </div>
                     </div>
+                  </EditSection>
 
-                    <div>
-                      <Label htmlFor="accessionNumber">Accession Number</Label>
-                      <Input
-                        id="accessionNumber"
-                        value={collection.accessionNumber}
-                        disabled
-                        className="bg-muted"
-                      />
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Accession number cannot be changed
-                      </p>
+                  <EditSection
+                    title="Placement and relationships"
+                    description="Where the object lives in the system and how it relates to other records."
+                  >
+                    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                      <div className="space-y-2 xl:col-span-2">
+                        <Label htmlFor="currentLocationId">Current Location</Label>
+                        <LocationSelector
+                          organizationId={collection.organizationId}
+                          value={formData.currentLocationId || "__none__"}
+                          onValueChange={(value) =>
+                            updateField("currentLocationId", value)
+                          }
+                          placeholder={placeholders("location")}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="collectionGroupId">Collection</Label>
+                        <CollectionGroupCombobox
+                          organizationId={collection.organizationId}
+                          value={formData.collectionGroupId}
+                          onValueChange={(value) =>
+                            updateField("collectionGroupId", value)
+                          }
+                          placeholder={placeholders("collection")}
+                        />
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2 xl:col-span-3">
+                        <Label htmlFor="parentObjectId">Parent Object</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Link this object to a parent record when it belongs to
+                          a larger set or container.
+                        </p>
+                        <ObjectCombobox
+                          organizationId={collection.organizationId}
+                          collectionId={collectionId}
+                          value={formData.parentObjectId}
+                          onValueChange={(value) =>
+                            updateField("parentObjectId", value)
+                          }
+                          placeholder={placeholders("parentObject")}
+                        />
+                      </div>
                     </div>
+                  </EditSection>
 
-                    <div>
-                      <RepeatableTextField
-                        label="Alternate Accession Numbers"
-                        value={formData.alternateAccessionNumbers || []}
-                        onChange={(values) =>
-                          updateField("alternateAccessionNumbers", values)
-                        }
-                        placeholder={placeholders("alternateId")}
-                        id="alternateAccessionNumbers"
-                      />
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Historical accession numbers previously assigned to this
-                        object
-                      </p>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="objectName">Object Name</Label>
-                      <Input
-                        id="objectName"
-                        value={formData.objectName || ""}
-                        onChange={(e) =>
-                          updateField("objectName", e.target.value)
-                        }
-                        placeholder={placeholders("objectName")}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="objectType">Object Type</Label>
-                      <TypeCombobox
-                        organizationId={collection.organizationId}
-                        collectionId={collectionId}
-                        value={
-                          Array.isArray(formData.objectType)
-                            ? formData.objectType
-                            : []
-                        }
-                        onValueChange={(value) =>
-                          updateField("objectType", value)
-                        }
-                        placeholder={placeholders("selectTypes")}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="culture">Culture</Label>
-                      <Input
-                        id="culture"
-                        value={formData.culture || ""}
-                        onChange={(e) => updateField("culture", e.target.value)}
-                        placeholder={placeholders("culture")}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="period">Period</Label>
-                      <Input
-                        id="period"
-                        value={formData.period || ""}
-                        onChange={(e) => updateField("period", e.target.value)}
-                        placeholder={placeholders("period")}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="dateCreated">Date Created</Label>
-                      <Input
-                        id="dateCreated"
-                        value={formData.dateCreated || ""}
-                        onChange={(e) =>
-                          updateField("dateCreated", e.target.value)
-                        }
-                        placeholder={placeholders("dateCreated")}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="creator">Creator</Label>
-                      <Input
-                        id="creator"
-                        value={formData.creator || ""}
-                        onChange={(e) => updateField("creator", e.target.value)}
-                        placeholder={placeholders("creator")}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Physical Characteristics Section */}
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <h3 className="mb-3 text-base font-semibold">
-                    Physical Characteristics
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="materials">Materials</Label>
-                      <MaterialsCombobox
-                        organizationId={collection.organizationId}
-                        collectionId={collectionId}
-                        value={
-                          Array.isArray(formData.materials)
-                            ? formData.materials
-                            : []
-                        }
-                        onValueChange={(value) =>
-                          updateField("materials", value)
-                        }
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="dimensions">Dimensions</Label>
-                      <Input
-                        id="dimensions"
-                        value={formData.dimensions || ""}
-                        onChange={(e) =>
-                          updateField("dimensions", e.target.value)
-                        }
-                        placeholder={placeholders("dimensions")}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="condition">Condition</Label>
-                      <ConditionCombobox
-                        organizationId={collection.organizationId}
-                        value={formData.condition || ""}
-                        onValueChange={(value) =>
-                          updateField("condition", value)
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Location Information Section */}
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <h3 className="mb-3 text-base font-semibold">
-                    Location Information
-                  </h3>
-                  <div>
-                    <Label htmlFor="currentLocationId">Current Location</Label>
-                    <LocationSelector
-                      organizationId={collection.organizationId}
-                      value={
-                        formData.currentLocationId !== ""
-                          ? formData.currentLocationId
-                          : (collection.currentLocationId as string) ||
-                            "__none__"
-                      }
-                      onValueChange={(value) =>
-                        updateField("currentLocationId", value)
-                      }
-                      placeholder={placeholders("location")}
-                    />
-                  </div>
-                </div>
-
-                {/* Object Relationships Section */}
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <h3 className="mb-3 text-base font-semibold">
-                    Object Relationships
-                  </h3>
-                  <div>
-                    <Label htmlFor="parentObjectId">Parent Object</Label>
-                    <p className="mb-2 text-xs text-muted-foreground">
-                      Link this object to a parent object (e.g., a treasure
-                      chest containing this object)
-                    </p>
-                    <ObjectCombobox
-                      organizationId={collection.organizationId}
-                      collectionId={collectionId}
-                      value={formData.parentObjectId}
-                      onValueChange={(value) =>
-                        updateField("parentObjectId", value)
-                      }
-                      placeholder={placeholders("parentObject")}
-                    />
-                  </div>
-                  <div className="mt-4">
-                    <Label htmlFor="collectionGroupId">Collection</Label>
-                    <p className="mb-2 text-xs text-muted-foreground">
-                      Add this object to a collection group
-                    </p>
-                    <CollectionGroupCombobox
-                      organizationId={collection.organizationId}
-                      value={formData.collectionGroupId}
-                      onValueChange={(value) =>
-                        updateField("collectionGroupId", value)
-                      }
-                      placeholder={placeholders("collection")}
-                    />
-                  </div>
-                </div>
-
-                {/* Object Information Section */}
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <h3 className="mb-3 text-base font-semibold">
-                    Object Information
-                  </h3>
-                  <div className="space-y-4">
-                    <div>
+                  <EditSection
+                    title="Description"
+                    description="The primary description shown across the object record."
+                  >
+                    <div className="space-y-2">
                       <Label htmlFor="description">Description</Label>
                       <Textarea
                         autoResize
                         id="description"
                         value={formData.description || ""}
-                        onChange={(e) =>
-                          updateField("description", e.target.value)
+                        onChange={(event) =>
+                          updateField("description", event.target.value)
                         }
-                        rows={4}
+                        rows={5}
                         placeholder={placeholders("description")}
                       />
                     </div>
+                  </EditSection>
+                </div>
+              ) : null}
 
-                    <div>
-                      <Label htmlFor="provenance">Provenance</Label>
-                      <Textarea
-                        autoResize
-                        id="provenance"
-                        value={formData.provenance || ""}
-                        onChange={(e) =>
-                          updateField("provenance", e.target.value)
-                        }
-                        rows={3}
-                        placeholder={placeholders("provenance")}
-                      />
+              {activeTab === "provenance" ? (
+                <div className="space-y-8">
+                  <EditSection
+                    title="Provenance and history"
+                    description="Historical context and movement details that give the object its narrative."
+                  >
+                    <div className="grid gap-5 lg:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="provenance">Provenance</Label>
+                        <Textarea
+                          autoResize
+                          id="provenance"
+                          value={formData.provenance || ""}
+                          onChange={(event) =>
+                            updateField("provenance", event.target.value)
+                          }
+                          rows={5}
+                          placeholder={placeholders("provenance")}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="exhibitionHistory">Exhibition History</Label>
+                        <Textarea
+                          autoResize
+                          id="exhibitionHistory"
+                          value={formData.exhibitionHistory || ""}
+                          onChange={(event) =>
+                            updateField("exhibitionHistory", event.target.value)
+                          }
+                          rows={5}
+                          placeholder={placeholders("exhibitionHistory")}
+                        />
+                      </div>
                     </div>
+                  </EditSection>
 
-                    <div>
-                      <Label htmlFor="exhibitionHistory">
-                        Exhibition History
-                      </Label>
-                      <Textarea
-                        autoResize
-                        id="exhibitionHistory"
-                        value={formData.exhibitionHistory || ""}
-                        onChange={(e) =>
-                          updateField("exhibitionHistory", e.target.value)
-                        }
-                        rows={3}
-                        placeholder={placeholders("exhibitionHistory")}
-                      />
-                    </div>
-
-                    <div>
+                  <EditSection
+                    title="Donation and previous ownership"
+                    description="Record donor information and prior owners before the current institution."
+                  >
+                    <div className="space-y-6">
                       <DonationDetailsField
-                        organizationId={currentOrganizationId}
+                        organizationId={collection.organizationId}
                         collectionId={collectionId}
                         donatedBy={formData.donated_by || []}
                         donatedDate={formData.donated_date}
                         donationInfo={formData.donation_info}
                         donorPlaceholder={placeholders("selectDonors")}
-                        donationInfoPlaceholder={placeholders(
-                          "donationInfoLong",
-                        )}
+                        donationInfoPlaceholder={placeholders("donationInfoLong")}
                         onDonatedByChange={(value) =>
                           updateField("donated_by", value)
                         }
@@ -937,9 +1229,7 @@ export default function CollectionEditPage() {
                           updateField("donation_info", value)
                         }
                       />
-                    </div>
 
-                    <div>
                       <RepeatableTextField
                         label="Previous Owner(s)"
                         value={formData.previous_owners || []}
@@ -949,396 +1239,359 @@ export default function CollectionEditPage() {
                         placeholder="e.g., Estate of Jane Doe"
                       />
                     </div>
-                  </div>
-                </div>
+                  </EditSection>
 
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-base font-semibold">
-                      Ownership History
-                    </h3>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const newEntry: OwnershipEntry = {
-                          owner: "",
-                          startYear: "",
-                          endYear: "",
-                          description: "",
-                          verified: false,
-                          verificationSource: "",
-                        };
-                        updateField("ownershipHistory", [
-                          ...(formData.ownershipHistory || []),
-                          newEntry,
-                        ]);
-                      }}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Entry
-                    </Button>
-                  </div>
-                  <p className="mb-4 text-xs text-muted-foreground">
-                    Document the chain of ownership for this object
-                  </p>
-                  {(formData.ownershipHistory || []).length === 0 ? (
-                    <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-border">
-                      <p className="text-sm text-muted-foreground">
-                        No ownership history recorded
-                      </p>
-                    </div>
-                  ) : (
+                  <EditSection
+                    title="Ownership history"
+                    description="Document the chain of ownership entry by entry."
+                  >
                     <div className="space-y-4">
-                      {(formData.ownershipHistory || []).map((entry, index) => (
-                        <div
-                          key={`ownership-${entry.owner || ""}-${entry.startYear || ""}-${index}`}
-                          className="relative rounded-lg border border-border bg-secondary/20 p-4"
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm text-muted-foreground">
+                          Add dated entries with notes and verification details.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newEntry: OwnershipEntry = {
+                              owner: "",
+                              startYear: "",
+                              endYear: "",
+                              description: "",
+                              verified: false,
+                              verificationSource: "",
+                            };
+                            updateField("ownershipHistory", [
+                              ...(formData.ownershipHistory || []),
+                              newEntry,
+                            ]);
+                          }}
                         >
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-2 top-2 h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                            onClick={() => {
-                              const updated = [
-                                ...(formData.ownershipHistory || []),
-                              ];
-                              updated.splice(index, 1);
-                              updateField("ownershipHistory", updated);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <div className="grid gap-3">
-                            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                              <div className="md:col-span-1">
-                                <Label htmlFor={`owner-${index}`}>
-                                  Owner <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                  id={`owner-${index}`}
-                                  value={entry.owner}
-                                  onChange={(e) => {
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Entry
+                        </Button>
+                      </div>
+
+                      {(formData.ownershipHistory || []).length === 0 ? (
+                        <div className="flex h-28 items-center justify-center rounded-xl border border-dashed border-border/60">
+                          <p className="text-sm text-muted-foreground">
+                            No ownership history recorded.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {(formData.ownershipHistory || []).map((entry, index) => (
+                            <div
+                              key={`ownership-${entry.owner || ""}-${entry.startYear || ""}-${index}`}
+                              className="rounded-xl border border-border/60 bg-secondary/20 p-4"
+                            >
+                              <div className="mb-4 flex items-start justify-between gap-4">
+                                <div className="space-y-1">
+                                  <h3 className="text-sm font-medium">
+                                    Ownership entry {index + 1}
+                                  </h3>
+                                  <p className="text-xs text-muted-foreground">
+                                    Capture ownership dates, notes, and verification.
+                                  </p>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                  onClick={() => {
                                     const updated = [
                                       ...(formData.ownershipHistory || []),
                                     ];
-                                    updated[index] = {
-                                      ...entry,
-                                      owner: e.target.value,
-                                    };
+                                    updated.splice(index, 1);
                                     updateField("ownershipHistory", updated);
                                   }}
-                                  placeholder={placeholders("ownerName")}
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor={`startYear-${index}`}>
-                                  From
-                                </Label>
-                                <Input
-                                  id={`startYear-${index}`}
-                                  value={entry.startYear || ""}
-                                  onChange={(e) => {
-                                    const updated = [
-                                      ...(formData.ownershipHistory || []),
-                                    ];
-                                    updated[index] = {
-                                      ...entry,
-                                      startYear: e.target.value,
-                                    };
-                                    updateField("ownershipHistory", updated);
-                                  }}
-                                  placeholder="e.g., 1920"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor={`endYear-${index}`}>To</Label>
-                                <Input
-                                  id={`endYear-${index}`}
-                                  value={entry.endYear || ""}
-                                  onChange={(e) => {
-                                    const updated = [
-                                      ...(formData.ownershipHistory || []),
-                                    ];
-                                    updated[index] = {
-                                      ...entry,
-                                      endYear: e.target.value,
-                                    };
-                                    updateField("ownershipHistory", updated);
-                                  }}
-                                  placeholder="e.g., 1985 or Present"
-                                />
-                              </div>
-                            </div>
-                            <div>
-                              <Label htmlFor={`description-${index}`}>
-                                Notes
-                              </Label>
-                              <Textarea
-                                id={`description-${index}`}
-                                value={entry.description || ""}
-                                onChange={(e) => {
-                                  const updated = [
-                                    ...(formData.ownershipHistory || []),
-                                  ];
-                                  updated[index] = {
-                                    ...entry,
-                                    description: e.target.value,
-                                  };
-                                  updateField("ownershipHistory", updated);
-                                }}
-                                rows={2}
-                                placeholder={placeholders("ownershipNotes")}
-                              />
-                            </div>
-                            <div className="flex flex-wrap items-center gap-4">
-                              <div className="flex items-center gap-2">
-                                <Checkbox
-                                  id={`verified-${index}`}
-                                  checked={entry.verified ?? false}
-                                  onCheckedChange={(checked) => {
-                                    const updated = [
-                                      ...(formData.ownershipHistory || []),
-                                    ];
-                                    updated[index] = {
-                                      ...entry,
-                                      verified: checked === true,
-                                    };
-                                    updateField("ownershipHistory", updated);
-                                  }}
-                                />
-                                <Label
-                                  htmlFor={`verified-${index}`}
-                                  className="flex items-center gap-1 text-sm font-normal"
                                 >
-                                  <CheckCircle className="h-3 w-3 text-green-500" />
-                                  Verified
-                                </Label>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </div>
-                              {entry.verified && (
-                                <div className="flex-1">
-                                  <Input
-                                    value={entry.verificationSource || ""}
-                                    onChange={(e) => {
+
+                              <div className="grid gap-4">
+                                <div className="grid gap-4 md:grid-cols-3">
+                                  <div className="md:col-span-1">
+                                    <Label htmlFor={`owner-${index}`}>
+                                      Owner <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input
+                                      id={`owner-${index}`}
+                                      value={entry.owner}
+                                      onChange={(event) => {
+                                        const updated = [
+                                          ...(formData.ownershipHistory || []),
+                                        ];
+                                        updated[index] = {
+                                          ...entry,
+                                          owner: event.target.value,
+                                        };
+                                        updateField("ownershipHistory", updated);
+                                      }}
+                                      placeholder={placeholders("ownerName")}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor={`startYear-${index}`}>From</Label>
+                                    <Input
+                                      id={`startYear-${index}`}
+                                      value={entry.startYear || ""}
+                                      onChange={(event) => {
+                                        const updated = [
+                                          ...(formData.ownershipHistory || []),
+                                        ];
+                                        updated[index] = {
+                                          ...entry,
+                                          startYear: event.target.value,
+                                        };
+                                        updateField("ownershipHistory", updated);
+                                      }}
+                                      placeholder="e.g., 1920"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor={`endYear-${index}`}>To</Label>
+                                    <Input
+                                      id={`endYear-${index}`}
+                                      value={entry.endYear || ""}
+                                      onChange={(event) => {
+                                        const updated = [
+                                          ...(formData.ownershipHistory || []),
+                                        ];
+                                        updated[index] = {
+                                          ...entry,
+                                          endYear: event.target.value,
+                                        };
+                                        updateField("ownershipHistory", updated);
+                                      }}
+                                      placeholder="e.g., 1985 or Present"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <Label htmlFor={`description-${index}`}>Notes</Label>
+                                  <Textarea
+                                    id={`description-${index}`}
+                                    value={entry.description || ""}
+                                    onChange={(event) => {
                                       const updated = [
                                         ...(formData.ownershipHistory || []),
                                       ];
                                       updated[index] = {
                                         ...entry,
-                                        verificationSource: e.target.value,
+                                        description: event.target.value,
                                       };
                                       updateField("ownershipHistory", updated);
                                     }}
-                                    placeholder={placeholders(
-                                      "verificationSource",
-                                    )}
-                                    className="h-8 text-sm"
+                                    rows={2}
+                                    placeholder={placeholders("ownershipNotes")}
                                   />
                                 </div>
-                              )}
+
+                                <div className="flex flex-wrap items-center gap-4">
+                                  <div className="flex items-center gap-2">
+                                    <Checkbox
+                                      id={`verified-${index}`}
+                                      checked={entry.verified ?? false}
+                                      onCheckedChange={(checked) => {
+                                        const updated = [
+                                          ...(formData.ownershipHistory || []),
+                                        ];
+                                        updated[index] = {
+                                          ...entry,
+                                          verified: checked === true,
+                                        };
+                                        updateField("ownershipHistory", updated);
+                                      }}
+                                    />
+                                    <Label
+                                      htmlFor={`verified-${index}`}
+                                      className="flex items-center gap-1 text-sm font-normal"
+                                    >
+                                      <CheckCircle className="h-3 w-3 text-green-500" />
+                                      Verified
+                                    </Label>
+                                  </div>
+
+                                  {entry.verified ? (
+                                    <div className="flex-1">
+                                      <Input
+                                        value={entry.verificationSource || ""}
+                                        onChange={(event) => {
+                                          const updated = [
+                                            ...(formData.ownershipHistory || []),
+                                          ];
+                                          updated[index] = {
+                                            ...entry,
+                                            verificationSource: event.target.value,
+                                          };
+                                          updateField("ownershipHistory", updated);
+                                        }}
+                                        placeholder={placeholders("verificationSource")}
+                                        className="h-9 text-sm"
+                                      />
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </div>
                             </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </EditSection>
+
+                  <EditSection
+                    title="Links"
+                    description="Reference external resources, catalog entries, or supporting material."
+                  >
+                    <div className="space-y-3">
+                      {(formData.links || []).map((link, index) => (
+                        <div
+                          key={`${link.url}-${link.label || ""}-${index}`}
+                          className="grid gap-3 rounded-xl border border-border/50 p-4 md:grid-cols-[1fr_1fr_auto]"
+                        >
+                          <div className="space-y-2">
+                            <Label htmlFor={`link-url-${index}`}>URL</Label>
+                            <Input
+                              id={`link-url-${index}`}
+                              type="url"
+                              value={link.url}
+                              onChange={(event) => {
+                                const nextLinks = [...(formData.links || [])];
+                                nextLinks[index] = {
+                                  ...nextLinks[index],
+                                  url: event.target.value,
+                                };
+                                updateField("links", nextLinks);
+                              }}
+                              onBlur={(event) => {
+                                const nextLinks = [...(formData.links || [])];
+                                if (event.target.value && !nextLinks[index]?.label) {
+                                  nextLinks[index] = {
+                                    url: nextLinks[index]?.url || "",
+                                    label: event.target.value,
+                                  };
+                                  updateField("links", nextLinks);
+                                }
+                              }}
+                              placeholder="https://example.com"
+                            />
                           </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`link-label-${index}`}>Label</Label>
+                            <Input
+                              id={`link-label-${index}`}
+                              value={link.label || ""}
+                              onChange={(event) => {
+                                const nextLinks = [...(formData.links || [])];
+                                nextLinks[index] = {
+                                  url: nextLinks[index]?.url || "",
+                                  label: event.target.value,
+                                };
+                                updateField("links", nextLinks);
+                              }}
+                              placeholder={placeholders("linkName")}
+                            />
+                          </div>
+                          {(formData.links || []).length > 1 ? (
+                            <div className="flex items-end">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  const nextLinks = [...(formData.links || [])];
+                                  nextLinks.splice(index, 1);
+                                  updateField("links", nextLinks);
+                                }}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : null}
                         </div>
                       ))}
-                    </div>
-                  )}
-                </div>
 
-                {/* Links Section */}
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <h3 className="mb-3 text-base font-semibold">Links</h3>
-                  <div className="space-y-3">
-                    {(formData.links || []).map((link, index) => (
-                      <div
-                        key={`${link.url}-${link.label || ""}-${index}`}
-                        className="flex gap-2"
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          updateField("links", [
+                            ...(formData.links || []),
+                            { url: "", label: "" },
+                          ]);
+                        }}
                       >
-                        <div className="flex-1">
-                          <Label htmlFor={`link-url-${index}`}>
-                            URL{" "}
-                            {index === 0 ? (
-                              ""
-                            ) : (
-                              <span className="text-red-500">*</span>
-                            )}
-                          </Label>
-                          <Input
-                            id={`link-url-${index}`}
-                            type="url"
-                            value={link.url}
-                            onChange={(e) => {
-                              const newLinks = [...(formData.links || [])];
-                              newLinks[index] = {
-                                ...newLinks[index],
-                                url: e.target.value,
-                              };
-                              updateField("links", newLinks);
-                            }}
-                            onBlur={(e) => {
-                              const newLinks = [...(formData.links || [])];
-                              if (e.target.value && !newLinks[index]?.label) {
-                                newLinks[index] = {
-                                  url: newLinks[index]?.url || "",
-                                  label: e.target.value,
-                                };
-                                updateField("links", newLinks);
-                              }
-                            }}
-                            placeholder="https://example.com"
-                            required={index > 0}
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <Label htmlFor={`link-label-${index}`}>Label</Label>
-                          <Input
-                            id={`link-label-${index}`}
-                            value={link.label || ""}
-                            onChange={(e) => {
-                              const newLinks = [...(formData.links || [])];
-                              newLinks[index] = {
-                                url: newLinks[index]?.url || "",
-                                label: e.target.value,
-                              };
-                              updateField("links", newLinks);
-                            }}
-                            placeholder={placeholders("linkName")}
-                          />
-                        </div>
-                        {(formData.links || []).length > 1 && (
-                          <div className="flex items-end">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                const newLinks = [...(formData.links || [])];
-                                newLinks.splice(index, 1);
-                                updateField("links", newLinks);
-                              }}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        updateField("links", [
-                          ...(formData.links || []),
-                          { url: "", label: "" },
-                        ]);
-                      }}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Link
-                    </Button>
-                  </div>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Link
+                      </Button>
+                    </div>
+                  </EditSection>
                 </div>
+              ) : null}
 
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <h3 className="mb-4 text-sm font-semibold">
-                    Visibility Settings
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="isPubliclyVisible">
-                          Public Visibility
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                          Allow this object to appear in public catalogs
-                        </p>
+              {activeTab === "physical" ? (
+                <div className="space-y-8">
+                  <EditSection
+                    title="Physical characteristics"
+                    description="Material, dimensional, and condition details for the object."
+                  >
+                    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="materials">Materials</Label>
+                        <MaterialsCombobox
+                          organizationId={collection.organizationId}
+                          collectionId={collectionId}
+                          value={
+                            Array.isArray(formData.materials)
+                              ? formData.materials
+                              : []
+                          }
+                          onValueChange={(value) =>
+                            updateField("materials", value)
+                          }
+                        />
                       </div>
-                      <Switch
-                        id="isPubliclyVisible"
-                        checked={formData.isPubliclyVisible ?? false}
-                        onCheckedChange={(checked) =>
-                          updateField("isPubliclyVisible", checked)
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="isHighResDownloadable">
-                          High-Resolution Downloads
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                          Allow public users to download high-resolution images
-                        </p>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="dimensions">Dimensions</Label>
+                        <Input
+                          id="dimensions"
+                          value={formData.dimensions || ""}
+                          onChange={(event) =>
+                            updateField("dimensions", event.target.value)
+                          }
+                          placeholder={placeholders("dimensions")}
+                        />
                       </div>
-                      <Switch
-                        id="isHighResDownloadable"
-                        checked={formData.isHighResDownloadable ?? false}
-                        onCheckedChange={(checked) =>
-                          updateField("isHighResDownloadable", checked)
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="isSearchable">Searchable</Label>
-                        <p className="text-xs text-muted-foreground">
-                          Include in public search results
-                        </p>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="condition">Condition</Label>
+                        <ConditionCombobox
+                          organizationId={collection.organizationId}
+                          value={formData.condition || ""}
+                          onValueChange={(value) =>
+                            updateField("condition", value)
+                          }
+                        />
                       </div>
-                      <Switch
-                        id="isSearchable"
-                        checked={formData.isSearchable ?? true}
-                        onCheckedChange={(checked) =>
-                          updateField("isSearchable", checked)
-                        }
-                      />
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="isValuationVisible">
-                          Valuation Visibility
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                          Show valuation information on public page
-                        </p>
-                      </div>
-                      <Switch
-                        id="isValuationVisible"
-                        checked={formData.isValuationVisible ?? false}
-                        onCheckedChange={(checked) =>
-                          updateField("isValuationVisible", checked)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="publicSlug">Public URL Slug</Label>
-                      <Input
-                        id="publicSlug"
-                        value={formData.publicSlug ?? ""}
-                        onChange={(e) =>
-                          updateField("publicSlug", e.target.value)
-                        }
-                        placeholder="custom-url-slug"
-                        className="font-mono text-sm"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Custom URL path for public access (optional)
-                      </p>
-                    </div>
-                  </div>
+                  </EditSection>
                 </div>
-              </div>
+              ) : null}
 
-              {/* Right column - Media Uploader */}
-              <div className="w-96 flex-shrink-0">
-                <div className="sticky top-4 space-y-4">
-                  {/* Image Upload Section */}
-                  <div className="rounded-lg border border-border bg-card p-4">
-                    <h3 className="mb-3 text-base font-semibold">
-                      Image Upload
-                    </h3>
-
+              {activeTab === "media" ? (
+                <div className="space-y-8">
+                  <EditSection
+                    title="Images"
+                    description="Upload images, assign a primary image, and manage thumbnails for the object record."
+                  >
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -1347,7 +1600,6 @@ export default function CollectionEditPage() {
                       className="hidden"
                       multiple
                     />
-
                     <input
                       ref={cameraInputRef}
                       type="file"
@@ -1357,105 +1609,98 @@ export default function CollectionEditPage() {
                       className="hidden"
                     />
 
-                    <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div className="mb-5 flex flex-wrap gap-3">
                       <Button
                         type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full"
                         variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
                       >
                         <Upload className="mr-2 h-4 w-4" />
-                        Upload
+                        Upload Images
                       </Button>
                       <Button
                         type="button"
-                        onClick={() => cameraInputRef.current?.click()}
-                        className="w-full"
                         variant="outline"
+                        onClick={() => cameraInputRef.current?.click()}
                       >
                         <Camera className="mr-2 h-4 w-4" />
                         Take Photo
                       </Button>
                     </div>
 
-                    {images && images.length > 0 ? (
-                      <div className="grid grid-cols-3 gap-2">
+                    {images.length > 0 ? (
+                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                         {images.map((file) => (
                           <div
                             key={file._id}
-                            className="group relative aspect-square overflow-hidden rounded-md border bg-card"
+                            className="group relative aspect-square overflow-hidden rounded-xl border border-border/60 bg-card"
                           >
-                            {file.url && file.fileType === "image" && (
-                              <>
-                                <Image
-                                  src={file.url}
-                                  alt={file.fileName}
-                                  fill
-                                  sizes="128px"
-                                  className="object-cover"
-                                />
+                            {file.url ? (
+                              <Image
+                                src={file.url}
+                                alt={file.fileName}
+                                fill
+                                sizes="(max-width: 768px) 50vw, 25vw"
+                                className="object-cover"
+                              />
+                            ) : null}
 
-                                {/* Hover overlay */}
-                                <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
-                                  {!file.isPrimary && (
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="secondary"
-                                      onClick={() => handleSetPrimary(file._id)}
-                                      title={common("setAsPrimary")}
-                                    >
-                                      <Star className="h-3 w-3" />
-                                    </Button>
-                                  )}
+                            <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 p-3">
+                              {file.isPrimary ? (
+                                <div className="rounded-full bg-primary px-2 py-1 text-[10px] font-medium text-primary-foreground">
+                                  Primary
+                                </div>
+                              ) : (
+                                <div />
+                              )}
+                            </div>
+
+                            <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/65 p-3 opacity-0 transition-opacity group-hover:opacity-100">
+                              <div className="truncate text-xs text-white">
+                                {file.fileName}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {!file.isPrimary ? (
                                   <Button
                                     type="button"
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => handleDelete(file._id)}
-                                    title={common("delete")}
+                                    size="icon"
+                                    variant="secondary"
+                                    className="h-8 w-8"
+                                    onClick={() => handleSetPrimary(file._id)}
+                                    title={common("setAsPrimary")}
                                   >
-                                    <X className="h-3 w-3" />
+                                    <Star className="h-3.5 w-3.5" />
                                   </Button>
-                                </div>
-
-                                {/* Primary badge */}
-                                {file.isPrimary && (
-                                  <div className="absolute top-1 right-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
-                                    Primary
-                                  </div>
-                                )}
-                              </>
-                            )}
+                                ) : null}
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="destructive"
+                                  className="h-8 w-8"
+                                  onClick={() => handleDeleteMedia(file._id)}
+                                  title={common("delete")}
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed">
+                      <div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-border/60">
                         <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">
-                          No images uploaded
+                        <p className="text-sm text-muted-foreground">
+                          No images uploaded yet.
                         </p>
                       </div>
                     )}
+                  </EditSection>
 
-                    {images.length > 0 && (
-                      <p className="mt-3 text-center text-xs text-muted-foreground">
-                        {images.length}{" "}
-                        {images.length === 1 ? "image" : "images"}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Document Upload Section */}
-                  <div className="rounded-lg border border-border bg-card p-4">
-                    <h3 className="mb-3 text-base font-semibold">
-                      Document Upload
-                    </h3>
-                    <p className="mb-3 text-xs text-muted-foreground">
-                      Upload related documents (PDFs, scanned images, etc.)
-                    </p>
-
+                  <EditSection
+                    title="Documents"
+                    description="Upload supporting PDFs, scans, and related object files."
+                  >
                     <input
                       ref={documentInputRef}
                       type="file"
@@ -1465,58 +1710,215 @@ export default function CollectionEditPage() {
                       multiple
                     />
 
-                    <Button
-                      type="button"
-                      onClick={() => documentInputRef.current?.click()}
-                      className="w-full mb-4"
-                      variant="outline"
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload Documents
-                    </Button>
+                    <div className="mb-5 flex flex-wrap gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => documentInputRef.current?.click()}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload Documents
+                      </Button>
+                    </div>
 
                     {documents.length > 0 ? (
-                      <div className="space-y-2">
-                        {documents.map((doc) => (
+                      <div className="space-y-3">
+                        {documents.map((document) => (
                           <div
-                            key={doc._id}
-                            className="flex items-center justify-between rounded-md border bg-card p-2 text-sm"
+                            key={document._id}
+                            className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/70 px-4 py-3"
                           >
-                            <span className="truncate">{doc.fileName}</span>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-foreground">
+                                {document.fileName}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Saved to this object
+                              </p>
+                            </div>
                             <Button
                               type="button"
-                              size="sm"
+                              size="icon"
                               variant="ghost"
-                              onClick={() => handleDelete(doc._id)}
+                              onClick={() => handleDeleteMedia(document._id)}
                               title={common("delete")}
                             >
-                              <X className="h-3 w-3" />
+                              <X className="h-4 w-4" />
                             </Button>
                           </div>
                         ))}
-                        <p className="mt-2 text-center text-xs text-muted-foreground">
-                          {documents.length}{" "}
-                          {documents.length === 1 ? "document" : "documents"}
-                        </p>
                       </div>
                     ) : (
-                      <div className="flex h-20 flex-col items-center justify-center rounded-lg border border-dashed">
-                        <p className="text-xs text-muted-foreground">
-                          No documents uploaded
+                      <div className="flex h-28 items-center justify-center rounded-xl border border-dashed border-border/60">
+                        <p className="text-sm text-muted-foreground">
+                          No documents uploaded yet.
                         </p>
                       </div>
                     )}
-                  </div>
+                  </EditSection>
                 </div>
-              </div>
+              ) : null}
+
+              {activeTab === "digital" ? (
+                <div className="space-y-8">
+                  <EditSection
+                    title="Digital asset visibility"
+                    description="Control how this object appears and behaves in public experiences."
+                  >
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 px-4 py-4">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="isPubliclyVisible">
+                            Public Visibility
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            Allow this object to appear in public catalogs.
+                          </p>
+                        </div>
+                        <Switch
+                          id="isPubliclyVisible"
+                          checked={formData.isPubliclyVisible ?? false}
+                          onCheckedChange={(checked) =>
+                            updateField("isPubliclyVisible", checked)
+                          }
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 px-4 py-4">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="isHighResDownloadable">
+                            High-Resolution Downloads
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            Allow public users to download high-resolution images.
+                          </p>
+                        </div>
+                        <Switch
+                          id="isHighResDownloadable"
+                          checked={formData.isHighResDownloadable ?? false}
+                          onCheckedChange={(checked) =>
+                            updateField("isHighResDownloadable", checked)
+                          }
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 px-4 py-4">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="isSearchable">Searchable</Label>
+                          <p className="text-xs text-muted-foreground">
+                            Include this object in public search results.
+                          </p>
+                        </div>
+                        <Switch
+                          id="isSearchable"
+                          checked={formData.isSearchable ?? true}
+                          onCheckedChange={(checked) =>
+                            updateField("isSearchable", checked)
+                          }
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 px-4 py-4">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="isValuationVisible">
+                            Valuation Visibility
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            Show valuation information on the public page.
+                          </p>
+                        </div>
+                        <Switch
+                          id="isValuationVisible"
+                          checked={formData.isValuationVisible ?? false}
+                          onCheckedChange={(checked) =>
+                            updateField("isValuationVisible", checked)
+                          }
+                        />
+                      </div>
+                    </div>
+                  </EditSection>
+
+                  <EditSection
+                    title="Public URL"
+                    description="Optional custom slug for public-facing access."
+                  >
+                    <div className="space-y-2">
+                      <Label htmlFor="publicSlug">Public URL Slug</Label>
+                      <Input
+                        id="publicSlug"
+                        value={formData.publicSlug ?? ""}
+                        onChange={(event) =>
+                          updateField("publicSlug", event.target.value)
+                        }
+                        placeholder="custom-url-slug"
+                        className="font-mono text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Leave blank to use the default public path.
+                      </p>
+                    </div>
+                  </EditSection>
+                </div>
+              ) : null}
             </div>
-          </form>
+          </div>
+        </form>
+      </div>
+
+      <div className="shrink-0 border-t border-border/60 bg-background/95 px-6 py-3 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm">
+            {error ? (
+              <span className="text-destructive">{error}</span>
+            ) : isSubmitting ? (
+              <span className="text-foreground">Saving changes…</span>
+            ) : isFormDirty ? (
+              <span className="text-foreground">
+                You have unsaved field changes across tabs.
+              </span>
+            ) : hasMediaChanges ? (
+              <span className="text-muted-foreground">
+                Media changes are already applied.
+              </span>
+            ) : (
+              <span className="text-muted-foreground">
+                No unsaved field changes.
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleNavigate(`/objects/${collectionId}`)}
+            >
+              {common("cancel")}
+            </Button>
+            <Button
+              type="submit"
+              form="object-edit-form"
+              disabled={isSubmitting || !isFormDirty}
+            >
+              <Save className="mr-2 h-4 w-4" />
+              {isSubmitting ? common("updating") : t("form.actions.updateObject")}
+            </Button>
+          </div>
         </div>
       </div>
+
+      <UnsavedChangesDialog
+        open={showUnsavedDialog}
+        onOpenChange={setShowUnsavedDialog}
+        onDiscard={handleDiscardAndNavigate}
+        onSave={handleSaveAndNavigate}
+        isSaving={isSubmitting}
+      />
+
       <DeaccessionDialog
         open={deaccessionDialogOpen}
         onOpenChange={setDeaccessionDialogOpen}
-        collectionId={collectionId as Id<"collections">}
+        collectionId={typedCollectionId}
         collectionTitle={collection.title}
         organizationId={collection.organizationId}
       />
