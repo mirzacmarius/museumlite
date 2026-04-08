@@ -12,7 +12,6 @@ export { MediaTab } from "./media-tab";
 export { NaturalHistoryDetailsTab } from "./natural-history-details-tab";
 export { PhysicalTab } from "./physical-tab";
 export { PrintPreviewModal } from "./print-preview-modal";
-export { ProvenanceTab } from "./provenance-tab";
 export { QRLabelModal } from "./qr-label-modal";
 export { RecordContextSidebar } from "./record-context-sidebar";
 export { VehicleDetailsTab } from "./vehicle-details-tab";

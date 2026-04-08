@@ -24,9 +24,8 @@ export interface ObjectTabDefinition {
   featureKey?: "conservation" | "exhibitions" | "loans";
 }
 
-const baseTabs: ObjectTabDefinition[] = [
+const viewBaseTabs: ObjectTabDefinition[] = [
   { id: "general", label: "General", editable: true },
-  { id: "provenance", label: "Provenance", editable: true },
   { id: "physical", label: "Physical Description", editable: true },
   { id: "media", label: "Media", editable: true },
   { id: "digital", label: "Digital Assets", editable: true },
@@ -45,6 +44,14 @@ const baseTabs: ObjectTabDefinition[] = [
   { id: "loans", label: "Loans", editable: false, featureKey: "loans" },
   { id: "comments", label: "Comments", editable: false },
   { id: "logs", label: "Logs", editable: false },
+];
+
+const editBaseTabs: ObjectTabDefinition[] = [
+  { id: "general", label: "General", editable: true },
+  { id: "provenance", label: "Provenance", editable: true },
+  { id: "physical", label: "Physical Description", editable: true },
+  { id: "media", label: "Media", editable: true },
+  { id: "digital", label: "Digital Assets", editable: true },
 ];
 
 const moduleTabMap: Partial<
@@ -76,14 +83,12 @@ export function getObjectViewTabs(options: {
     options.collectionType &&
     options.collectionType !== "general" &&
     options.collectionType in moduleTabMap
-      ? moduleTabMap[
-          options.collectionType as keyof typeof moduleTabMap
-        ]
+      ? moduleTabMap[options.collectionType as keyof typeof moduleTabMap]
       : undefined;
 
   const orderedTabs = moduleTab
-    ? [baseTabs[0], moduleTab, ...baseTabs.slice(1)]
-    : baseTabs;
+    ? [viewBaseTabs[0], moduleTab, ...viewBaseTabs.slice(1)]
+    : viewBaseTabs;
 
   return orderedTabs.filter((tab): tab is ObjectTabDefinition => {
     if (!tab) return false;
@@ -93,5 +98,5 @@ export function getObjectViewTabs(options: {
 }
 
 export function getObjectEditTabs() {
-  return baseTabs.filter((tab) => tab.editable);
+  return editBaseTabs.filter((tab) => tab.editable);
 }

@@ -39,8 +39,8 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
-  getObjectViewTabs,
   type ObjectTabId as TabId,
+  getObjectViewTabs,
 } from "./_components/object-tab-config";
 
 const LoadingPanel = () => (
@@ -114,10 +114,6 @@ const PrintPreviewModal = dynamic(
     import("./_components/print-preview-modal").then(
       (mod) => mod.PrintPreviewModal,
     ),
-  { loading: LoadingPanel },
-);
-const ProvenanceTab = dynamic(
-  () => import("./_components/provenance-tab").then((mod) => mod.ProvenanceTab),
   { loading: LoadingPanel },
 );
 const QRLabelModal = dynamic(
@@ -270,311 +266,308 @@ export function ObjectDetailClient({
       <main className="z-10 flex h-full min-h-0 min-w-0 w-full flex-1 flex-col bg-background print:hidden">
         {/* Navbar */}
         <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
-            <div className="flex items-center gap-2 text-xs">
-              <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-                <Link href="/objects">
-                  <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-2 text-xs">
+            <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+              <Link href="/objects">
+                <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+              </Link>
+            </Button>
+            <span className="text-muted-foreground">
+              {t("detail.collections")}
+            </span>
+            <span className="text-muted-foreground/50">/</span>
+            {collectionGroup && (
+              <>
+                <span className="text-muted-foreground">
+                  {collectionGroup.name}
+                </span>
+                <span className="text-muted-foreground/50">/</span>
+              </>
+            )}
+            <span className="font-medium text-foreground">
+              {collection.title}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  title={common("share")}
+                >
+                  <Share2 className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={handleCopyLink}>
+                  {linkCopied ? (
+                    <Check className="mr-2 h-4 w-4 text-green-500" />
+                  ) : (
+                    <Link2 className="mr-2 h-4 w-4" />
+                  )}
+                  {linkCopied
+                    ? t("detail.linkCopied")
+                    : t("detail.copyObjectLink")}
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <FileDown className="mr-2 h-4 w-4" />
+                  {t("detail.exportToPdf")}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <Send className="mr-2 h-4 w-4" />
+                  {t("detail.requestLoan")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              title={common("printRecord")}
+              onClick={() => setIsPrintModalOpen(true)}
+            >
+              <Printer className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              title={t("detail.printLabel")}
+              onClick={() => setIsQrLabelModalOpen(true)}
+            >
+              <QrCode className="h-4 w-4" />
+            </Button>
+            <div className="h-4 w-px bg-border" />
+            <PermissionGate permission="collections.update">
+              <Button asChild>
+                <Link href={`/objects/${collectionId}/edit`}>
+                  <Pencil className="mr-2 h-3.5 w-3.5" />
+                  {t("detail.editObject")}
                 </Link>
               </Button>
-              <span className="text-muted-foreground">
-                {t("detail.collections")}
-              </span>
-              <span className="text-muted-foreground/50">/</span>
-              {collectionGroup && (
-                <>
-                  <span className="text-muted-foreground">
-                    {collectionGroup.name}
-                  </span>
-                  <span className="text-muted-foreground/50">/</span>
-                </>
-              )}
-              <span className="font-medium text-foreground">
-                {collection.title}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    title={common("share")}
-                  >
-                    <Share2 className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={handleCopyLink}>
-                    {linkCopied ? (
-                      <Check className="mr-2 h-4 w-4 text-green-500" />
-                    ) : (
-                      <Link2 className="mr-2 h-4 w-4" />
-                    )}
-                    {linkCopied
-                      ? t("detail.linkCopied")
-                      : t("detail.copyObjectLink")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <FileDown className="mr-2 h-4 w-4" />
-                    {t("detail.exportToPdf")}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Send className="mr-2 h-4 w-4" />
-                    {t("detail.requestLoan")}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                title={common("printRecord")}
-                onClick={() => setIsPrintModalOpen(true)}
-              >
-                <Printer className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                title={t("detail.printLabel")}
-                onClick={() => setIsQrLabelModalOpen(true)}
-              >
-                <QrCode className="h-4 w-4" />
-              </Button>
-              <div className="h-4 w-px bg-border" />
-              <PermissionGate permission="collections.update">
-                <Button asChild>
-                  <Link href={`/objects/${collectionId}/edit`}>
-                    <Pencil className="mr-2 h-3.5 w-3.5" />
-                    {t("detail.editObject")}
-                  </Link>
-                </Button>
-              </PermissionGate>
-            </div>
+            </PermissionGate>
+          </div>
         </header>
 
         {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto">
-            {/* Hero Section */}
-            <div className="border-b border-border/60 bg-secondary/10 px-8 py-8">
-              <div className="mx-auto flex max-w-5xl items-start gap-8">
-                {/* Hero Image */}
-                <button
-                  type="button"
-                  className="group relative shrink-0 cursor-zoom-in"
-                  onClick={() => heroImage?.url && setIsHeroLightboxOpen(true)}
-                  aria-label={t("detail.viewFullSize")}
-                >
-                  {heroImage?.url ? (
-                    <img
-                      src={heroImage.thumbnailUrl || heroImage.url}
-                      alt={collection.title}
-                      className="h-48 w-48 rounded-xl border border-border/60 bg-secondary object-cover shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
-                    />
-                  ) : (
-                    <div className="flex h-48 w-48 items-center justify-center rounded-xl border border-border/60 bg-secondary">
-                      <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                    <Maximize2 className="h-6 w-6 text-white" />
+        <div className="flex-1 overflow-y-auto">
+          {/* Hero Section */}
+          <div className="border-b border-border/60 bg-secondary/10 px-8 py-8">
+            <div className="mx-auto flex max-w-5xl items-start gap-8">
+              {/* Hero Image */}
+              <button
+                type="button"
+                className="group relative shrink-0 cursor-zoom-in"
+                onClick={() => heroImage?.url && setIsHeroLightboxOpen(true)}
+                aria-label={t("detail.viewFullSize")}
+              >
+                {heroImage?.url ? (
+                  <img
+                    src={heroImage.thumbnailUrl || heroImage.url}
+                    alt={collection.title}
+                    className="h-48 w-48 rounded-xl border border-border/60 bg-secondary object-cover shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
+                  />
+                ) : (
+                  <div className="flex h-48 w-48 items-center justify-center rounded-xl border border-border/60 bg-secondary">
+                    <ImageIcon className="h-12 w-12 text-muted-foreground" />
                   </div>
-                </button>
+                )}
+                <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                  <Maximize2 className="h-6 w-6 text-white" />
+                </div>
+              </button>
 
-                {/* Hero Image Lightbox */}
-                <ImageLightbox
-                  images={heroLightboxImages}
-                  initialIndex={lightboxInitialIndex}
-                  isOpen={isHeroLightboxOpen}
-                  onClose={() => setIsHeroLightboxOpen(false)}
-                />
+              {/* Hero Image Lightbox */}
+              <ImageLightbox
+                images={heroLightboxImages}
+                initialIndex={lightboxInitialIndex}
+                isOpen={isHeroLightboxOpen}
+                onClose={() => setIsHeroLightboxOpen(false)}
+              />
 
-                {/* Hero Info */}
-                <div className="flex-1 space-y-4">
-                  {pendingMoveRequest && (
-                    <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-sm font-medium text-blue-100">
-                            <ArrowRightLeft className="h-4 w-4" />
-                            Pending organization transfer
-                          </div>
-                          <p className="text-sm text-blue-200/80">
-                            This object is awaiting approval to move to{" "}
-                            {pendingMoveRequest.targetOrganizationName}.
-                          </p>
+              {/* Hero Info */}
+              <div className="flex-1 space-y-4">
+                {pendingMoveRequest && (
+                  <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-sm font-medium text-blue-100">
+                          <ArrowRightLeft className="h-4 w-4" />
+                          Pending organization transfer
                         </div>
-                        <Button variant="outline" size="sm" asChild>
-                          <Link
-                            href={`/objects/move-requests/${pendingMoveRequest._id}`}
-                          >
-                            Open transfer request
-                          </Link>
-                        </Button>
+                        <p className="text-sm text-blue-200/80">
+                          This object is awaiting approval to move to{" "}
+                          {pendingMoveRequest.targetOrganizationName}.
+                        </p>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Status, Accession & Alternates Row */}
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    {/* Display Status Badge */}
-                    <div
-                      className={cn(
-                        "rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider",
-                        collection.status === "active"
-                          ? "bg-emerald-500/10 text-emerald-400"
-                          : "bg-muted text-muted-foreground",
-                      )}
-                    >
-                      {collection.status}
-                    </div>
-
-                    {/* Accession Number */}
-                    <div className="rounded bg-secondary/60 px-2 py-1 text-[10px] font-mono text-muted-foreground">
-                      {collection.accessionNumber}
+                      <Button variant="outline" size="sm" asChild>
+                        <Link
+                          href={`/objects/move-requests/${pendingMoveRequest._id}`}
+                        >
+                          Open transfer request
+                        </Link>
+                      </Button>
                     </div>
                   </div>
+                )}
 
-                  <h1 className="text-2xl font-semibold tracking-tight">
-                    {collection.title}
-                  </h1>
+                {/* Status, Accession & Alternates Row */}
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {/* Display Status Badge */}
+                  <div
+                    className={cn(
+                      "rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider",
+                      collection.status === "active"
+                        ? "bg-emerald-500/10 text-emerald-400"
+                        : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {collection.status}
+                  </div>
 
-                  {collection.description && (
-                    <p className="text-sm text-muted-foreground">
-                      {collection.description}
-                    </p>
-                  )}
+                  {/* Accession Number */}
+                  <div className="rounded bg-secondary/60 px-2 py-1 text-[10px] font-mono text-muted-foreground">
+                    {collection.accessionNumber}
+                  </div>
+                </div>
 
-                  <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
+                <h1 className="text-2xl font-semibold tracking-tight">
+                  {collection.title}
+                </h1>
+
+                {collection.description && (
+                  <p className="text-sm text-muted-foreground">
+                    {collection.description}
+                  </p>
+                )}
+
+                <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <span>{collection.dateCreated || common("unknown")}</span>
+                  </div>
+                  {locationString && (
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>{collection.dateCreated || common("unknown")}</span>
+                      <MapPin className="h-4 w-4" />
+                      <span>{locationString}</span>
                     </div>
-                    {locationString && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        <span>{locationString}</span>
-                      </div>
-                    )}
-                    {collection.creator && (
-                      <div className="flex items-center gap-2">
-                        <Info className="h-4 w-4" />
-                        <span>{collection.creator}</span>
-                      </div>
-                    )}
-                  </div>
+                  )}
+                  {collection.creator && (
+                    <div className="flex items-center gap-2">
+                      <Info className="h-4 w-4" />
+                      <span>{collection.creator}</span>
+                    </div>
+                  )}
                 </div>
-              </div>
-            </div>
-
-            {/* Tabs + Content */}
-            <div className="mx-auto w-full max-w-6xl px-6 py-8">
-              <div className="w-full">
-                <div className="mb-6 flex flex-wrap items-center gap-2">
-                  {tabs.map((tab) => (
-                    <Button
-                      key={tab.id}
-                      variant={activeTab === tab.id ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setActiveTab(tab.id)}
-                    >
-                      {tab.label}
-                    </Button>
-                  ))}
-                </div>
-
-                {activeTab === "general" && (
-                  <GeneralTab collection={collection} />
-                )}
-                {activeTab === "provenance" && (
-                  <ProvenanceTab collection={collection} />
-                )}
-                {activeTab === "physical" && (
-                  <PhysicalTab collection={collection} />
-                )}
-                {activeTab === "media" && (
-                  <MediaTab
-                    collectionId={collectionId}
-                    onOpenLightbox={(index) => {
-                      setLightboxInitialIndex(index);
-                      setIsHeroLightboxOpen(true);
-                    }}
-                  />
-                )}
-                {activeTab === "digital" && (
-                  <DigitalAssetsTab collection={collection} />
-                )}
-                {activeTab === "conservation" && (
-                  <ConservationTab
-                    collectionId={collectionId}
-                    locale={locale}
-                    hasAccess={hasConservationFeature}
-                  />
-                )}
-                {activeTab === "exhibitions" && (
-                  <ExhibitionsTab
-                    collectionId={collectionId}
-                    locale={locale}
-                    hasAccess={hasExhibitionsFeature}
-                  />
-                )}
-                {activeTab === "loans" && (
-                  <LoansTab
-                    collectionId={collectionId}
-                    locale={locale}
-                    hasAccess={hasLoansFeature}
-                  />
-                )}
-                {activeTab === "comments" && (
-                  <CommentsTab
-                    collectionId={collectionId}
-                    organizationId={organizationId}
-                  />
-                )}
-                {activeTab === "logs" && (
-                  <LogsTab
-                    collectionId={collectionId}
-                    organizationId={organizationId}
-                    locale={locale}
-                  />
-                )}
-                {activeTab === "fine_art" && (
-                  <FineArtDetailsTab
-                    collectionId={collectionId}
-                    organizationId={organizationId}
-                  />
-                )}
-                {activeTab === "wine" && (
-                  <WineDetailsTab
-                    collectionId={collectionId}
-                    organizationId={organizationId}
-                  />
-                )}
-                {activeTab === "automotive" && (
-                  <VehicleDetailsTab
-                    collectionId={collectionId}
-                    organizationId={organizationId}
-                  />
-                )}
-                {activeTab === "natural_history" && (
-                  <NaturalHistoryDetailsTab
-                    collectionId={collectionId}
-                    organizationId={organizationId}
-                  />
-                )}
-                {activeTab === "archive" && (
-                  <ArchiveDetailsTab
-                    collectionId={collectionId}
-                    organizationId={organizationId}
-                  />
-                )}
               </div>
             </div>
           </div>
+
+          {/* Tabs + Content */}
+          <div className="mx-auto w-full max-w-6xl px-6 py-8">
+            <div className="w-full">
+              <div className="mb-6 flex flex-wrap items-center gap-2">
+                {tabs.map((tab) => (
+                  <Button
+                    key={tab.id}
+                    variant={activeTab === tab.id ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setActiveTab(tab.id)}
+                  >
+                    {tab.label}
+                  </Button>
+                ))}
+              </div>
+
+              {activeTab === "general" && (
+                <GeneralTab collection={collection} />
+              )}
+              {activeTab === "physical" && (
+                <PhysicalTab collection={collection} />
+              )}
+              {activeTab === "media" && (
+                <MediaTab
+                  collectionId={collectionId}
+                  onOpenLightbox={(index) => {
+                    setLightboxInitialIndex(index);
+                    setIsHeroLightboxOpen(true);
+                  }}
+                />
+              )}
+              {activeTab === "digital" && (
+                <DigitalAssetsTab collection={collection} />
+              )}
+              {activeTab === "conservation" && (
+                <ConservationTab
+                  collectionId={collectionId}
+                  locale={locale}
+                  hasAccess={hasConservationFeature}
+                />
+              )}
+              {activeTab === "exhibitions" && (
+                <ExhibitionsTab
+                  collectionId={collectionId}
+                  locale={locale}
+                  hasAccess={hasExhibitionsFeature}
+                />
+              )}
+              {activeTab === "loans" && (
+                <LoansTab
+                  collectionId={collectionId}
+                  locale={locale}
+                  hasAccess={hasLoansFeature}
+                />
+              )}
+              {activeTab === "comments" && (
+                <CommentsTab
+                  collectionId={collectionId}
+                  organizationId={organizationId}
+                />
+              )}
+              {activeTab === "logs" && (
+                <LogsTab
+                  collectionId={collectionId}
+                  organizationId={organizationId}
+                  locale={locale}
+                />
+              )}
+              {activeTab === "fine_art" && (
+                <FineArtDetailsTab
+                  collectionId={collectionId}
+                  organizationId={organizationId}
+                />
+              )}
+              {activeTab === "wine" && (
+                <WineDetailsTab
+                  collectionId={collectionId}
+                  organizationId={organizationId}
+                />
+              )}
+              {activeTab === "automotive" && (
+                <VehicleDetailsTab
+                  collectionId={collectionId}
+                  organizationId={organizationId}
+                />
+              )}
+              {activeTab === "natural_history" && (
+                <NaturalHistoryDetailsTab
+                  collectionId={collectionId}
+                  organizationId={organizationId}
+                />
+              )}
+              {activeTab === "archive" && (
+                <ArchiveDetailsTab
+                  collectionId={collectionId}
+                  organizationId={organizationId}
+                />
+              )}
+            </div>
+          </div>
+        </div>
       </main>
 
       <PrintPreviewModal
