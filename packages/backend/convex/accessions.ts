@@ -1586,6 +1586,7 @@ export const createCollectionFromAccession = internalMutation({
       parentObjectId: draftObjectData?.parentObjectId,
       currentLocationId: draftObjectData?.currentLocationId,
       alternateAccessionNumbers: draftObjectData?.alternateAccessionNumbers,
+      displayStatus: draftObjectData?.displayStatus,
       isPubliclyVisible: draftObjectData?.isPubliclyVisible,
       isHighResDownloadable: draftObjectData?.isHighResDownloadable,
       isSearchable: draftObjectData?.isSearchable,

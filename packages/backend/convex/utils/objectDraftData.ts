@@ -49,6 +49,7 @@ export const objectDraftDataValidator = v.object({
       v.literal("general"),
     ),
   ),
+  displayStatus: v.optional(v.string()),
   isPubliclyVisible: v.optional(v.boolean()),
   isHighResDownloadable: v.optional(v.boolean()),
   isSearchable: v.optional(v.boolean()),

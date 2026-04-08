@@ -54,8 +54,8 @@ import { useParams, useRouter } from "next/navigation";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  getObjectEditTabs,
   type ObjectTabId,
+  getObjectEditTabs,
 } from "../_components/object-tab-config";
 
 interface OwnershipEntry {
@@ -77,6 +77,7 @@ interface CollectionFormData {
   dateCreated?: string;
   materials?: string | string[];
   dimensions?: string;
+  inscriptions?: string;
   description?: string;
   condition?: string;
   provenance?: string;
@@ -91,6 +92,7 @@ interface CollectionFormData {
   collectionGroupId?: string;
   alternateAccessionNumbers?: string[];
   ownershipHistory?: OwnershipEntry[];
+  displayStatus?: string;
   isPubliclyVisible?: boolean;
   isHighResDownloadable?: boolean;
   isSearchable?: boolean;
@@ -98,7 +100,9 @@ interface CollectionFormData {
   publicSlug?: string;
 }
 
-type CollectionDoc = NonNullable<FunctionReturnType<typeof api.collections.get>>;
+type CollectionDoc = NonNullable<
+  FunctionReturnType<typeof api.collections.get>
+>;
 type MediaItem = NonNullable<FunctionReturnType<typeof api.media.list>>[number];
 type EditTabId = Extract<
   ObjectTabId,
@@ -115,6 +119,7 @@ const EMPTY_FORM: CollectionFormData = {
   dateCreated: "",
   materials: [],
   dimensions: "",
+  inscriptions: "",
   description: "",
   condition: "",
   provenance: "",
@@ -129,6 +134,7 @@ const EMPTY_FORM: CollectionFormData = {
   collectionGroupId: "",
   alternateAccessionNumbers: [],
   ownershipHistory: [],
+  displayStatus: undefined,
   isPubliclyVisible: false,
   isHighResDownloadable: false,
   isSearchable: true,
@@ -159,6 +165,7 @@ function createInitialFormData(collection: CollectionDoc): CollectionFormData {
     dateCreated: collection.dateCreated || "",
     materials: parseStringListField(collection.materials),
     dimensions: collection.dimensions || "",
+    inscriptions: collection.inscriptions || "",
     description: collection.description || "",
     condition: collection.condition || "",
     provenance: collection.provenance || "",
@@ -176,6 +183,7 @@ function createInitialFormData(collection: CollectionDoc): CollectionFormData {
     collectionGroupId: (collection.collectionGroupId as string) || "",
     alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
     ownershipHistory: collection.ownershipHistory || [],
+    displayStatus: collection.displayStatus,
     isPubliclyVisible: collection.isPubliclyVisible ?? false,
     isHighResDownloadable: collection.isHighResDownloadable ?? false,
     isSearchable: collection.isSearchable ?? true,
@@ -306,7 +314,10 @@ export default function CollectionEditPage() {
   );
 
   const tabs = useMemo(
-    () => getObjectEditTabs().map((tab) => ({ ...tab, id: tab.id as EditTabId })),
+    () =>
+      getObjectEditTabs()
+        .filter((tab) => tab.id !== "provenance")
+        .map((tab) => ({ ...tab, id: tab.id as EditTabId })),
     [],
   );
 
@@ -468,7 +479,9 @@ export default function CollectionEditPage() {
       },
       onUploadError: (uploadError) => {
         setError(
-          uploadError && typeof uploadError === "object" && "message" in uploadError
+          uploadError &&
+            typeof uploadError === "object" &&
+            "message" in uploadError
             ? String(uploadError.message)
             : "Upload failed",
         );
@@ -477,7 +490,7 @@ export default function CollectionEditPage() {
   );
 
   const updateField = useCallback(
-    <K extends keyof CollectionFormData,>(
+    <K extends keyof CollectionFormData>(
       field: K,
       value: CollectionFormData[K],
     ) => {
@@ -519,7 +532,9 @@ export default function CollectionEditPage() {
           }
 
           const uploadResult = await uploadResponse.json();
-          const storageId = uploadResult.storageId as Id<"_storage"> | undefined;
+          const storageId = uploadResult.storageId as
+            | Id<"_storage">
+            | undefined;
 
           if (!storageId) {
             throw new Error(`No storage ID returned for ${file.name}`);
@@ -774,7 +789,9 @@ export default function CollectionEditPage() {
           >
             <ArrowLeft className="h-4 w-4 text-muted-foreground" />
           </Button>
-          <span className="text-muted-foreground">{t("detail.collections")}</span>
+          <span className="text-muted-foreground">
+            {t("detail.collections")}
+          </span>
           <span className="text-muted-foreground/50">/</span>
           <span className="font-medium text-foreground">Edit object</span>
         </div>
@@ -864,7 +881,9 @@ export default function CollectionEditPage() {
                         </p>
                       </div>
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/objects/move-requests/${pendingMoveRequest._id}`}>
+                        <Link
+                          href={`/objects/move-requests/${pendingMoveRequest._id}`}
+                        >
                           Open transfer request
                         </Link>
                       </Button>
@@ -896,7 +915,9 @@ export default function CollectionEditPage() {
                   <Input
                     id="hero-title"
                     value={formData.title}
-                    onChange={(event) => updateField("title", event.target.value)}
+                    onChange={(event) =>
+                      updateField("title", event.target.value)
+                    }
                     placeholder={placeholders("title")}
                     className="h-14 border-border/60 bg-background/90 text-xl font-semibold sm:text-2xl"
                     required
@@ -997,7 +1018,9 @@ export default function CollectionEditPage() {
                   >
                     <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                       <div className="space-y-2">
-                        <Label htmlFor="accessionNumber">Accession Number</Label>
+                        <Label htmlFor="accessionNumber">
+                          Accession Number
+                        </Label>
                         <Input
                           id="accessionNumber"
                           value={collection.accessionNumber}
@@ -1106,13 +1129,18 @@ export default function CollectionEditPage() {
                   >
                     <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                       <div className="space-y-2 xl:col-span-2">
-                        <Label htmlFor="currentLocationId">Current Location</Label>
+                        <Label htmlFor="currentLocationId">
+                          Current Location
+                        </Label>
                         <LocationSelector
                           organizationId={collection.organizationId}
                           value={formData.currentLocationId || "__none__"}
-                          onValueChange={(value) =>
-                            updateField("currentLocationId", value)
-                          }
+                          onValueChange={(value) => {
+                            updateField("currentLocationId", value);
+                            if (value === "__none__") {
+                              updateField("displayStatus", undefined);
+                            }
+                          }}
                           placeholder={placeholders("location")}
                         />
                       </div>
@@ -1145,6 +1173,28 @@ export default function CollectionEditPage() {
                           placeholder={placeholders("parentObject")}
                         />
                       </div>
+
+                      <div className="md:col-span-2 xl:col-span-3">
+                        <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 px-4 py-4">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="displayStatus">On display</Label>
+                            <p className="text-xs text-muted-foreground">
+                              Mark this object as visible to visitors in its
+                              current location.
+                            </p>
+                          </div>
+                          <Switch
+                            id="displayStatus"
+                            checked={formData.displayStatus === "on_display"}
+                            onCheckedChange={(checked) =>
+                              updateField(
+                                "displayStatus",
+                                checked ? "on_display" : undefined,
+                              )
+                            }
+                          />
+                        </div>
+                      </div>
                     </div>
                   </EditSection>
 
@@ -1169,7 +1219,7 @@ export default function CollectionEditPage() {
                 </div>
               ) : null}
 
-              {activeTab === "provenance" ? (
+              {activeTab === "general" ? (
                 <div className="space-y-8">
                   <EditSection
                     title="Provenance and history"
@@ -1191,7 +1241,9 @@ export default function CollectionEditPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="exhibitionHistory">Exhibition History</Label>
+                        <Label htmlFor="exhibitionHistory">
+                          Exhibition History
+                        </Label>
                         <Textarea
                           autoResize
                           id="exhibitionHistory"
@@ -1218,7 +1270,9 @@ export default function CollectionEditPage() {
                         donatedDate={formData.donated_date}
                         donationInfo={formData.donation_info}
                         donorPlaceholder={placeholders("selectDonors")}
-                        donationInfoPlaceholder={placeholders("donationInfoLong")}
+                        donationInfoPlaceholder={placeholders(
+                          "donationInfoLong",
+                        )}
                         onDonatedByChange={(value) =>
                           updateField("donated_by", value)
                         }
@@ -1282,165 +1336,203 @@ export default function CollectionEditPage() {
                         </div>
                       ) : (
                         <div className="space-y-4">
-                          {(formData.ownershipHistory || []).map((entry, index) => (
-                            <div
-                              key={`ownership-${entry.owner || ""}-${entry.startYear || ""}-${index}`}
-                              className="rounded-xl border border-border/60 bg-secondary/20 p-4"
-                            >
-                              <div className="mb-4 flex items-start justify-between gap-4">
-                                <div className="space-y-1">
-                                  <h3 className="text-sm font-medium">
-                                    Ownership entry {index + 1}
-                                  </h3>
-                                  <p className="text-xs text-muted-foreground">
-                                    Capture ownership dates, notes, and verification.
-                                  </p>
-                                </div>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                  onClick={() => {
-                                    const updated = [
-                                      ...(formData.ownershipHistory || []),
-                                    ];
-                                    updated.splice(index, 1);
-                                    updateField("ownershipHistory", updated);
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-
-                              <div className="grid gap-4">
-                                <div className="grid gap-4 md:grid-cols-3">
-                                  <div className="md:col-span-1">
-                                    <Label htmlFor={`owner-${index}`}>
-                                      Owner <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Input
-                                      id={`owner-${index}`}
-                                      value={entry.owner}
-                                      onChange={(event) => {
-                                        const updated = [
-                                          ...(formData.ownershipHistory || []),
-                                        ];
-                                        updated[index] = {
-                                          ...entry,
-                                          owner: event.target.value,
-                                        };
-                                        updateField("ownershipHistory", updated);
-                                      }}
-                                      placeholder={placeholders("ownerName")}
-                                    />
+                          {(formData.ownershipHistory || []).map(
+                            (entry, index) => (
+                              <div
+                                key={`ownership-${entry.owner || ""}-${entry.startYear || ""}-${index}`}
+                                className="rounded-xl border border-border/60 bg-secondary/20 p-4"
+                              >
+                                <div className="mb-4 flex items-start justify-between gap-4">
+                                  <div className="space-y-1">
+                                    <h3 className="text-sm font-medium">
+                                      Ownership entry {index + 1}
+                                    </h3>
+                                    <p className="text-xs text-muted-foreground">
+                                      Capture ownership dates, notes, and
+                                      verification.
+                                    </p>
                                   </div>
-                                  <div>
-                                    <Label htmlFor={`startYear-${index}`}>From</Label>
-                                    <Input
-                                      id={`startYear-${index}`}
-                                      value={entry.startYear || ""}
-                                      onChange={(event) => {
-                                        const updated = [
-                                          ...(formData.ownershipHistory || []),
-                                        ];
-                                        updated[index] = {
-                                          ...entry,
-                                          startYear: event.target.value,
-                                        };
-                                        updateField("ownershipHistory", updated);
-                                      }}
-                                      placeholder="e.g., 1920"
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor={`endYear-${index}`}>To</Label>
-                                    <Input
-                                      id={`endYear-${index}`}
-                                      value={entry.endYear || ""}
-                                      onChange={(event) => {
-                                        const updated = [
-                                          ...(formData.ownershipHistory || []),
-                                        ];
-                                        updated[index] = {
-                                          ...entry,
-                                          endYear: event.target.value,
-                                        };
-                                        updateField("ownershipHistory", updated);
-                                      }}
-                                      placeholder="e.g., 1985 or Present"
-                                    />
-                                  </div>
-                                </div>
-
-                                <div>
-                                  <Label htmlFor={`description-${index}`}>Notes</Label>
-                                  <Textarea
-                                    id={`description-${index}`}
-                                    value={entry.description || ""}
-                                    onChange={(event) => {
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                    onClick={() => {
                                       const updated = [
                                         ...(formData.ownershipHistory || []),
                                       ];
-                                      updated[index] = {
-                                        ...entry,
-                                        description: event.target.value,
-                                      };
+                                      updated.splice(index, 1);
                                       updateField("ownershipHistory", updated);
                                     }}
-                                    rows={2}
-                                    placeholder={placeholders("ownershipNotes")}
-                                  />
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
                                 </div>
 
-                                <div className="flex flex-wrap items-center gap-4">
-                                  <div className="flex items-center gap-2">
-                                    <Checkbox
-                                      id={`verified-${index}`}
-                                      checked={entry.verified ?? false}
-                                      onCheckedChange={(checked) => {
+                                <div className="grid gap-4">
+                                  <div className="grid gap-4 md:grid-cols-3">
+                                    <div className="md:col-span-1">
+                                      <Label htmlFor={`owner-${index}`}>
+                                        Owner{" "}
+                                        <span className="text-red-500">*</span>
+                                      </Label>
+                                      <Input
+                                        id={`owner-${index}`}
+                                        value={entry.owner}
+                                        onChange={(event) => {
+                                          const updated = [
+                                            ...(formData.ownershipHistory ||
+                                              []),
+                                          ];
+                                          updated[index] = {
+                                            ...entry,
+                                            owner: event.target.value,
+                                          };
+                                          updateField(
+                                            "ownershipHistory",
+                                            updated,
+                                          );
+                                        }}
+                                        placeholder={placeholders("ownerName")}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor={`startYear-${index}`}>
+                                        From
+                                      </Label>
+                                      <Input
+                                        id={`startYear-${index}`}
+                                        value={entry.startYear || ""}
+                                        onChange={(event) => {
+                                          const updated = [
+                                            ...(formData.ownershipHistory ||
+                                              []),
+                                          ];
+                                          updated[index] = {
+                                            ...entry,
+                                            startYear: event.target.value,
+                                          };
+                                          updateField(
+                                            "ownershipHistory",
+                                            updated,
+                                          );
+                                        }}
+                                        placeholder="e.g., 1920"
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor={`endYear-${index}`}>
+                                        To
+                                      </Label>
+                                      <Input
+                                        id={`endYear-${index}`}
+                                        value={entry.endYear || ""}
+                                        onChange={(event) => {
+                                          const updated = [
+                                            ...(formData.ownershipHistory ||
+                                              []),
+                                          ];
+                                          updated[index] = {
+                                            ...entry,
+                                            endYear: event.target.value,
+                                          };
+                                          updateField(
+                                            "ownershipHistory",
+                                            updated,
+                                          );
+                                        }}
+                                        placeholder="e.g., 1985 or Present"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <Label htmlFor={`description-${index}`}>
+                                      Notes
+                                    </Label>
+                                    <Textarea
+                                      id={`description-${index}`}
+                                      value={entry.description || ""}
+                                      onChange={(event) => {
                                         const updated = [
                                           ...(formData.ownershipHistory || []),
                                         ];
                                         updated[index] = {
                                           ...entry,
-                                          verified: checked === true,
+                                          description: event.target.value,
                                         };
-                                        updateField("ownershipHistory", updated);
+                                        updateField(
+                                          "ownershipHistory",
+                                          updated,
+                                        );
                                       }}
+                                      rows={2}
+                                      placeholder={placeholders(
+                                        "ownershipNotes",
+                                      )}
                                     />
-                                    <Label
-                                      htmlFor={`verified-${index}`}
-                                      className="flex items-center gap-1 text-sm font-normal"
-                                    >
-                                      <CheckCircle className="h-3 w-3 text-green-500" />
-                                      Verified
-                                    </Label>
                                   </div>
 
-                                  {entry.verified ? (
-                                    <div className="flex-1">
-                                      <Input
-                                        value={entry.verificationSource || ""}
-                                        onChange={(event) => {
+                                  <div className="flex flex-wrap items-center gap-4">
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox
+                                        id={`verified-${index}`}
+                                        checked={entry.verified ?? false}
+                                        onCheckedChange={(checked) => {
                                           const updated = [
-                                            ...(formData.ownershipHistory || []),
+                                            ...(formData.ownershipHistory ||
+                                              []),
                                           ];
                                           updated[index] = {
                                             ...entry,
-                                            verificationSource: event.target.value,
+                                            verified: checked === true,
                                           };
-                                          updateField("ownershipHistory", updated);
+                                          updateField(
+                                            "ownershipHistory",
+                                            updated,
+                                          );
                                         }}
-                                        placeholder={placeholders("verificationSource")}
-                                        className="h-9 text-sm"
                                       />
+                                      <Label
+                                        htmlFor={`verified-${index}`}
+                                        className="flex items-center gap-1 text-sm font-normal"
+                                      >
+                                        <CheckCircle className="h-3 w-3 text-green-500" />
+                                        Verified
+                                      </Label>
                                     </div>
-                                  ) : null}
+
+                                    {entry.verified ? (
+                                      <div className="flex-1">
+                                        <Input
+                                          value={entry.verificationSource || ""}
+                                          onChange={(event) => {
+                                            const updated = [
+                                              ...(formData.ownershipHistory ||
+                                                []),
+                                            ];
+                                            updated[index] = {
+                                              ...entry,
+                                              verificationSource:
+                                                event.target.value,
+                                            };
+                                            updateField(
+                                              "ownershipHistory",
+                                              updated,
+                                            );
+                                          }}
+                                          placeholder={placeholders(
+                                            "verificationSource",
+                                          )}
+                                          className="h-9 text-sm"
+                                        />
+                                      </div>
+                                    ) : null}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            ),
+                          )}
                         </div>
                       )}
                     </div>
@@ -1472,7 +1564,10 @@ export default function CollectionEditPage() {
                               }}
                               onBlur={(event) => {
                                 const nextLinks = [...(formData.links || [])];
-                                if (event.target.value && !nextLinks[index]?.label) {
+                                if (
+                                  event.target.value &&
+                                  !nextLinks[index]?.label
+                                ) {
                                   nextLinks[index] = {
                                     url: nextLinks[index]?.url || "",
                                     label: event.target.value,
@@ -1579,6 +1674,22 @@ export default function CollectionEditPage() {
                           onValueChange={(value) =>
                             updateField("condition", value)
                           }
+                        />
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2 xl:col-span-3">
+                        <Label htmlFor="inscriptions">
+                          Inscriptions & Marks
+                        </Label>
+                        <Textarea
+                          autoResize
+                          id="inscriptions"
+                          value={formData.inscriptions || ""}
+                          onChange={(event) =>
+                            updateField("inscriptions", event.target.value)
+                          }
+                          rows={4}
+                          placeholder="Document signatures, stamps, labels, engravings, or collector marks"
                         />
                       </div>
                     </div>
@@ -1790,7 +1901,8 @@ export default function CollectionEditPage() {
                             High-Resolution Downloads
                           </Label>
                           <p className="text-xs text-muted-foreground">
-                            Allow public users to download high-resolution images.
+                            Allow public users to download high-resolution
+                            images.
                           </p>
                         </div>
                         <Switch
@@ -1901,7 +2013,9 @@ export default function CollectionEditPage() {
               disabled={isSubmitting || !isFormDirty}
             >
               <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? common("updating") : t("form.actions.updateObject")}
+              {isSubmitting
+                ? common("updating")
+                : t("form.actions.updateObject")}
             </Button>
           </div>
         </div>
