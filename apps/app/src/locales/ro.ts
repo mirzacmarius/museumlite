@@ -985,6 +985,13 @@ export default {
       temperaturePlaceholder: "ex., 21.0",
       humidityLabel: "Umiditate (%)",
       humidityPlaceholder: "ex., 45",
+      locationPhotoLabel: "Fotografie locație",
+      locationPhotoHint:
+        "Încarcă o imagine de referință pentru această locație.",
+      locationPhotoEmpty: "Nu există fotografie pentru locație",
+      uploadLocationPhoto: "Încarcă fotografie",
+      replaceLocationPhoto: "Înlocuiește fotografia",
+      removeLocationPhoto: "Elimină fotografia",
       notesLabel: "Note",
       notesPlaceholder: "Note suplimentare...",
       notesEnterPlaceholder: "Introdu note suplimentare (opțional)",

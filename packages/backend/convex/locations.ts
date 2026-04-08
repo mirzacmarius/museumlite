@@ -446,6 +446,7 @@ export const get = query({
       isActive: v.boolean(),
       capacity: v.optional(v.number()),
       customFields: v.optional(v.record(v.string(), customFieldValue)),
+      imageUrl: v.optional(v.string()),
       children: v.array(
         v.object({
           _id: v.id("locations"),
@@ -466,6 +467,14 @@ export const get = query({
     }
 
     await requirePermission(ctx, location.organizationId, "locations.read");
+
+    const locationImageId =
+      typeof location.customFields?.locationImageId === "string"
+        ? (location.customFields.locationImageId as Id<"_storage">)
+        : undefined;
+    const imageUrl = locationImageId
+      ? (await ctx.storage.getUrl(locationImageId)) ?? undefined
+      : undefined;
 
     // Get children
     const children = await ctx.db
@@ -497,6 +506,7 @@ export const get = query({
       isActive: location.isActive,
       capacity: location.capacity,
       customFields: location.customFields,
+      imageUrl,
       children: children.map((child) => ({
         _id: child._id,
         name: child.name,

@@ -1947,6 +1947,13 @@ export default {
       temperaturePlaceholder: "ex., 21.0",
       humidityLabel: "Humidité (%)",
       humidityPlaceholder: "ex., 45",
+      locationPhotoLabel: "Photo de l'emplacement",
+      locationPhotoHint:
+        "Téléversez une image de référence pour cet emplacement.",
+      locationPhotoEmpty: "Aucune photo d'emplacement téléversée",
+      uploadLocationPhoto: "Téléverser une photo",
+      replaceLocationPhoto: "Remplacer la photo",
+      removeLocationPhoto: "Supprimer la photo",
       notesLabel: "Notes",
       notesPlaceholder: "Notes supplémentaires...",
       notesEnterPlaceholder: "Entrez des notes supplémentaires (optionnel)",

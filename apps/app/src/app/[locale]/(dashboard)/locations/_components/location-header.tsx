@@ -1,6 +1,11 @@
 "use client";
 
-import { ChevronRight, Droplets, Thermometer } from "lucide-react";
+import {
+  ChevronRight,
+  Droplets,
+  Image as ImageIcon,
+  Thermometer,
+} from "lucide-react";
 
 interface LocationHeaderProps {
   location: {
@@ -8,6 +13,7 @@ interface LocationHeaderProps {
     locationCode: string;
     type: string;
     isActive: boolean;
+    imageUrl?: string;
   };
   environmentalData: {
     temperature?: number;
@@ -72,8 +78,8 @@ export function LocationHeader({
   };
 
   return (
-    <div className="mb-8 flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-      <div>
+    <div className="mb-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+      <div className="min-w-0">
         <div className="mb-1 flex items-center gap-2 text-xs text-zinc-500">
           <span>Locations</span>
           <ChevronRight className="h-3 w-3" />
@@ -96,36 +102,44 @@ export function LocationHeader({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-4 xl:justify-end">
-        <div className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2">
-          <div className="rounded bg-blue-500/10 p-1.5 text-blue-400">
-            <Thermometer className="h-4 w-4" />
-          </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-zinc-500">
-              Temperature
+      <div className="relative overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-900/70 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
+        {location.imageUrl ? (
+          <>
+            <img
+              src={location.imageUrl}
+              alt={location.name}
+              className="h-52 w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-black/20" />
+          </>
+        ) : (
+          <div className="flex h-52 w-full items-center justify-center bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.28),_transparent_35%),linear-gradient(135deg,rgba(24,24,27,0.98),rgba(10,10,10,1))]">
+            <div className="flex flex-col items-center gap-3 text-zinc-500">
+              <div className="rounded-full border border-zinc-700 bg-zinc-900/80 p-3">
+                <ImageIcon className="h-6 w-6" />
+              </div>
+              <span className="text-sm font-medium">No location photo</span>
             </div>
-            <div className="text-sm font-semibold text-zinc-200">
+          </div>
+        )}
+
+        <div className="absolute right-3 top-3 flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/45 px-3 py-1.5 backdrop-blur-md">
+            <Thermometer className="h-4 w-4 text-blue-300" />
+            <span className="text-sm font-semibold text-white">
               {environmentalData?.temperature !== undefined
                 ? `${environmentalData.temperature.toFixed(1)}°C`
                 : "N/A"}
-            </div>
+            </span>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2">
-          <div className="rounded bg-cyan-500/10 p-1.5 text-cyan-400">
-            <Droplets className="h-4 w-4" />
-          </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-zinc-500">
-              Humidity
-            </div>
-            <div className="text-sm font-semibold text-zinc-200">
+          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/45 px-3 py-1.5 backdrop-blur-md">
+            <Droplets className="h-4 w-4 text-cyan-300" />
+            <span className="text-sm font-semibold text-white">
               {environmentalData?.humidity !== undefined
-                ? `${environmentalData.humidity.toFixed(0)}% RH`
+                ? `${environmentalData.humidity.toFixed(0)}%`
                 : "N/A"}
-            </div>
+            </span>
           </div>
         </div>
       </div>
