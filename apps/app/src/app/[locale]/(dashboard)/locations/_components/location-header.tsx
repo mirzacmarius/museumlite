@@ -14,6 +14,10 @@ interface LocationHeaderProps {
     type: string;
     isActive: boolean;
     imageUrl?: string;
+    customFields?: Record<
+      string,
+      string | number | boolean | string[] | null | undefined
+    >;
   };
   environmentalData: {
     temperature?: number;
@@ -26,6 +30,18 @@ export function LocationHeader({
   location,
   environmentalData,
 }: LocationHeaderProps) {
+  const storedTemperature =
+    typeof location.customFields?.temperature === "number"
+      ? location.customFields.temperature
+      : undefined;
+  const storedHumidity =
+    typeof location.customFields?.humidity === "number"
+      ? location.customFields.humidity
+      : undefined;
+  const displayTemperature =
+    environmentalData?.temperature ?? storedTemperature;
+  const displayHumidity = environmentalData?.humidity ?? storedHumidity;
+
   const getStatusBadge = () => {
     if (!location.isActive) {
       return {
@@ -127,8 +143,8 @@ export function LocationHeader({
           <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/45 px-3 py-1.5 backdrop-blur-md">
             <Thermometer className="h-4 w-4 text-blue-300" />
             <span className="text-sm font-semibold text-white">
-              {environmentalData?.temperature !== undefined
-                ? `${environmentalData.temperature.toFixed(1)}°C`
+              {displayTemperature !== undefined
+                ? `${displayTemperature.toFixed(1)}°C`
                 : "N/A"}
             </span>
           </div>
@@ -136,8 +152,8 @@ export function LocationHeader({
           <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/45 px-3 py-1.5 backdrop-blur-md">
             <Droplets className="h-4 w-4 text-cyan-300" />
             <span className="text-sm font-semibold text-white">
-              {environmentalData?.humidity !== undefined
-                ? `${environmentalData.humidity.toFixed(0)}%`
+              {displayHumidity !== undefined
+                ? `${displayHumidity.toFixed(0)}%`
                 : "N/A"}
             </span>
           </div>
