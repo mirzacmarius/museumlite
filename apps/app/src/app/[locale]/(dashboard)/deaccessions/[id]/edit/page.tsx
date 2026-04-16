@@ -24,6 +24,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type DeaccessionMethod = "sale" | "donation" | "destruction" | "transfer";
+type DeaccessionTargetStatus = "deaccessioned" | "archived" | "deleted";
 
 export default function EditDeaccessionPage() {
   const params = useParams();
@@ -47,6 +48,7 @@ export default function EditDeaccessionPage() {
   const [formData, setFormData] = useState({
     reason: "",
     method: "sale" as DeaccessionMethod,
+    targetCollectionStatus: "deaccessioned" as DeaccessionTargetStatus,
     disposition: "",
     notes: "",
     proceedsAmount: "",
@@ -61,6 +63,7 @@ export default function EditDeaccessionPage() {
       setFormData({
         reason: deaccession.reason || "",
         method: deaccession.method,
+        targetCollectionStatus: deaccession.targetCollectionStatus,
         disposition: deaccession.disposition || "",
         notes: deaccession.notes || "",
         proceedsAmount: deaccession.proceedsAmount?.toString() || "",
@@ -135,6 +138,7 @@ export default function EditDeaccessionPage() {
         deaccessionId: deaccessionId as Id<"deaccessions">,
         reason: formData.reason,
         method: formData.method,
+        targetCollectionStatus: formData.targetCollectionStatus,
         disposition: formData.disposition || undefined,
         notes: formData.notes || undefined,
         proceedsAmount: formData.proceedsAmount
@@ -218,6 +222,34 @@ export default function EditDeaccessionPage() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="targetCollectionStatus">Requested Action</Label>
+                <Select
+                  value={formData.targetCollectionStatus}
+                  onValueChange={(value) => {
+                    const nextTargetCollectionStatus =
+                      value as DeaccessionTargetStatus;
+                    setFormData({
+                      ...formData,
+                      targetCollectionStatus: nextTargetCollectionStatus,
+                      method:
+                        nextTargetCollectionStatus === "deaccessioned"
+                          ? formData.method
+                          : "destruction",
+                    });
+                  }}
+                >
+                  <SelectTrigger id="targetCollectionStatus">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="deaccessioned">Deaccession</SelectItem>
+                    <SelectItem value="archived">Archive</SelectItem>
+                    <SelectItem value="deleted">Delete</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="method">{t("form.methodLabel")}</Label>
                 <Select
                   value={formData.method}
@@ -228,7 +260,12 @@ export default function EditDeaccessionPage() {
                     })
                   }
                 >
-                  <SelectTrigger id="method">
+                  <SelectTrigger
+                    id="method"
+                    disabled={
+                      formData.targetCollectionStatus !== "deaccessioned"
+                    }
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -244,6 +281,12 @@ export default function EditDeaccessionPage() {
                     </SelectItem>
                   </SelectContent>
                 </Select>
+                {formData.targetCollectionStatus !== "deaccessioned" ? (
+                  <p className="text-xs text-muted-foreground">
+                    Archive and delete requests use the deaccession approval
+                    workflow and do not need a separate disposal method.
+                  </p>
+                ) : null}
               </div>
 
               <div className="space-y-2">
@@ -276,115 +319,116 @@ export default function EditDeaccessionPage() {
                 />
               </div>
 
-              {formData.method === "sale" && (
-                <div className="border-t border-border pt-6 mt-6">
-                  <h3 className="text-sm font-medium text-foreground mb-4">
-                    {t("form.proceedsTitle")}
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="proceedsAmount">
-                          {t("form.proceedsAmount")}
-                        </Label>
-                        <Input
-                          id="proceedsAmount"
-                          type="number"
-                          step="0.01"
-                          value={formData.proceedsAmount}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              proceedsAmount: e.target.value,
-                            })
-                          }
-                          placeholder={t("form.proceedsAmountPlaceholder")}
-                        />
+              {formData.targetCollectionStatus === "deaccessioned" &&
+                formData.method === "sale" && (
+                  <div className="border-t border-border pt-6 mt-6">
+                    <h3 className="text-sm font-medium text-foreground mb-4">
+                      {t("form.proceedsTitle")}
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="proceedsAmount">
+                            {t("form.proceedsAmount")}
+                          </Label>
+                          <Input
+                            id="proceedsAmount"
+                            type="number"
+                            step="0.01"
+                            value={formData.proceedsAmount}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                proceedsAmount: e.target.value,
+                              })
+                            }
+                            placeholder={t("form.proceedsAmountPlaceholder")}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="proceedsCurrency">
+                            {t("form.proceedsCurrency")}
+                          </Label>
+                          <Select
+                            value={formData.proceedsCurrency}
+                            onValueChange={(value) =>
+                              setFormData({
+                                ...formData,
+                                proceedsCurrency: value,
+                              })
+                            }
+                          >
+                            <SelectTrigger id="proceedsCurrency">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="USD">USD</SelectItem>
+                              <SelectItem value="EUR">EUR</SelectItem>
+                              <SelectItem value="GBP">GBP</SelectItem>
+                              <SelectItem value="CHF">CHF</SelectItem>
+                              <SelectItem value="NOK">NOK</SelectItem>
+                              <SelectItem value="SEK">SEK</SelectItem>
+                              <SelectItem value="DKK">DKK</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="proceedsCurrency">
-                          {t("form.proceedsCurrency")}
-                        </Label>
-                        <Select
-                          value={formData.proceedsCurrency}
-                          onValueChange={(value) =>
-                            setFormData({
-                              ...formData,
-                              proceedsCurrency: value,
-                            })
-                          }
-                        >
-                          <SelectTrigger id="proceedsCurrency">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="USD">USD</SelectItem>
-                            <SelectItem value="EUR">EUR</SelectItem>
-                            <SelectItem value="GBP">GBP</SelectItem>
-                            <SelectItem value="CHF">CHF</SelectItem>
-                            <SelectItem value="NOK">NOK</SelectItem>
-                            <SelectItem value="SEK">SEK</SelectItem>
-                            <SelectItem value="DKK">DKK</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="proceedsRecipient">
-                          {t("form.proceedsRecipient")}
-                        </Label>
-                        <Input
-                          id="proceedsRecipient"
-                          value={formData.proceedsRecipient}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              proceedsRecipient: e.target.value,
-                            })
-                          }
-                          placeholder={t("form.proceedsRecipientPlaceholder")}
-                        />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="proceedsRecipient">
+                            {t("form.proceedsRecipient")}
+                          </Label>
+                          <Input
+                            id="proceedsRecipient"
+                            value={formData.proceedsRecipient}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                proceedsRecipient: e.target.value,
+                              })
+                            }
+                            placeholder={t("form.proceedsRecipientPlaceholder")}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="proceedsDate">
+                            {t("form.proceedsDate")}
+                          </Label>
+                          <Input
+                            id="proceedsDate"
+                            type="date"
+                            value={formData.proceedsDate}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                proceedsDate: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="proceedsDate">
-                          {t("form.proceedsDate")}
-                        </Label>
-                        <Input
-                          id="proceedsDate"
-                          type="date"
-                          value={formData.proceedsDate}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              proceedsDate: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="proceedsNotes">
-                        {t("form.proceedsNotes")}
-                      </Label>
-                      <Textarea
-                        id="proceedsNotes"
-                        value={formData.proceedsNotes}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            proceedsNotes: e.target.value,
-                          })
-                        }
-                        placeholder={t("form.proceedsNotesPlaceholder")}
-                        rows={2}
-                      />
+                      <div className="space-y-2">
+                        <Label htmlFor="proceedsNotes">
+                          {t("form.proceedsNotes")}
+                        </Label>
+                        <Textarea
+                          id="proceedsNotes"
+                          value={formData.proceedsNotes}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              proceedsNotes: e.target.value,
+                            })
+                          }
+                          placeholder={t("form.proceedsNotesPlaceholder")}
+                          rows={2}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               <div className="flex justify-end gap-4">
                 <Button

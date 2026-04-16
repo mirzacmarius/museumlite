@@ -75,10 +75,6 @@ export function DeaccessionDialog({
 
   const router = useRouter();
   const createDeaccession = useMutation(api.deaccessions.create);
-  const archiveCollection = useMutation(api.collections.archiveCollection);
-  const softDeleteCollection = useMutation(
-    api.collections.softDeleteCollection,
-  );
   const createMoveRequest = useMutation(api.objectMoves.createRequest);
 
   const workflowConfigs = useQuery(
@@ -151,34 +147,45 @@ export function DeaccessionDialog({
 
     try {
       if (removalType === "sold") {
-        await createDeaccession({
+        const deaccessionId = await createDeaccession({
           organizationId,
           collectionId,
           dateDeaccessioned: date.getTime(),
           reason: reason.trim(),
           method,
+          targetCollectionStatus: "deaccessioned",
           disposition: disposition.trim() || undefined,
           notes: notes.trim() || undefined,
         });
         resetForm();
         onOpenChange(false);
-        router.push("/deaccessions");
+        router.push(`/deaccessions/${deaccessionId}`);
       } else if (removalType === "archived") {
-        await archiveCollection({
+        const deaccessionId = await createDeaccession({
+          organizationId,
           collectionId,
+          dateDeaccessioned: date.getTime(),
           reason: reason.trim(),
+          method: "destruction",
+          targetCollectionStatus: "archived",
+          notes: notes.trim() || undefined,
         });
         resetForm();
         onOpenChange(false);
-        router.push("/objects");
+        router.push(`/deaccessions/${deaccessionId}`);
       } else if (removalType === "deleted") {
-        await softDeleteCollection({
+        const deaccessionId = await createDeaccession({
+          organizationId,
           collectionId,
+          dateDeaccessioned: date.getTime(),
           reason: reason.trim(),
+          method: "destruction",
+          targetCollectionStatus: "deleted",
+          notes: notes.trim() || undefined,
         });
         resetForm();
         onOpenChange(false);
-        router.push("/objects");
+        router.push(`/deaccessions/${deaccessionId}`);
       } else if (removalType === "move") {
         const requestId = await createMoveRequest({
           collectionId,
@@ -218,9 +225,9 @@ export function DeaccessionDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Remove or Transfer Object</DialogTitle>
+          <DialogTitle>Deaccession Object</DialogTitle>
           <DialogDescription>
-            Choose how to remove or transfer "{collectionTitle}".
+            Choose how to deaccession {collectionTitle}.
           </DialogDescription>
         </DialogHeader>
 
@@ -283,6 +290,10 @@ export function DeaccessionDialog({
                   Remove from the active collection but preserve all data,
                   history, and media. The object can be restored later.
                 </p>
+                <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+                  Submitted to deaccession approval before the object is
+                  archived
+                </p>
               </div>
             </button>
 
@@ -299,6 +310,9 @@ export function DeaccessionDialog({
                 <p className="mt-1 text-sm text-muted-foreground">
                   Hide this object from the main catalog. Use this if it was
                   added incorrectly or is a duplicate.
+                </p>
+                <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+                  Submitted to deaccession approval before the object is deleted
                 </p>
               </div>
             </button>
@@ -607,9 +621,9 @@ export function DeaccessionDialog({
                     Archiving Object
                   </p>
                   <p className="mt-1 text-amber-700 dark:text-amber-300">
-                    This object will be removed from the active collection but
-                    all data, history, and media will be preserved. You can
-                    restore it at any time.
+                    This object will be sent to Deaccessions for approval before
+                    it is archived. Once approved, all data, history, and media
+                    will be preserved and the object can be restored later.
                   </p>
                 </div>
               </div>
@@ -650,9 +664,10 @@ export function DeaccessionDialog({
                     Deleting Object
                   </p>
                   <p className="mt-1 text-red-700 dark:text-red-300">
-                    This object will be marked as deleted and hidden from the
-                    Objects catalog. Use this if the object was added
-                    incorrectly or is a duplicate.
+                    This object will be sent to Deaccessions for approval before
+                    it is marked as deleted and hidden from the Objects catalog.
+                    Use this if the object was added incorrectly or is a
+                    duplicate.
                   </p>
                 </div>
               </div>
@@ -708,8 +723,8 @@ export function DeaccessionDialog({
               )}
               {removalType === "sold" && "Submit for Approval"}
               {removalType === "move" && "Submit Move Request"}
-              {removalType === "archived" && "Archive Object"}
-              {removalType === "deleted" && "Delete Object"}
+              {removalType === "archived" && "Submit Archive Request"}
+              {removalType === "deleted" && "Submit Delete Request"}
             </Button>
           </DialogFooter>
         )}

@@ -27,6 +27,30 @@ interface ApprovalWorkflowProps {
   deaccessionId: string;
 }
 
+function getDeaccessionActionLabel(deaccession: {
+  targetCollectionStatus: "deaccessioned" | "archived" | "deleted";
+  method: "sale" | "donation" | "destruction" | "transfer";
+}) {
+  if (deaccession.targetCollectionStatus === "archived") {
+    return "Archive";
+  }
+
+  if (deaccession.targetCollectionStatus === "deleted") {
+    return "Delete";
+  }
+
+  switch (deaccession.method) {
+    case "sale":
+      return "Sale";
+    case "donation":
+      return "Donation";
+    case "transfer":
+      return "Transfer";
+    case "destruction":
+      return "Disposal";
+  }
+}
+
 export function ApprovalWorkflow({ deaccessionId }: ApprovalWorkflowProps) {
   const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("deaccessions");
@@ -48,6 +72,8 @@ export function ApprovalWorkflow({ deaccessionId }: ApprovalWorkflowProps) {
   if (!deaccession || deaccession.status !== "pending") {
     return null;
   }
+
+  const actionLabel = getDeaccessionActionLabel(deaccession);
 
   const handleApprove = async () => {
     setIsSubmitting(true);
@@ -112,9 +138,7 @@ export function ApprovalWorkflow({ deaccessionId }: ApprovalWorkflowProps) {
               className="bg-green-600 hover:bg-green-700"
             >
               <CheckCircle className="mr-2 h-4 w-4" />
-              {deaccession.workflowStep
-                ? t("detail.step", { step: deaccession.workflowStep })
-                : t("actions.approve")}
+              {`Approve ${actionLabel}`}
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>

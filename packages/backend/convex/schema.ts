@@ -1155,6 +1155,13 @@ export default defineSchema({
       v.literal("approved"),
       v.literal("rejected"),
     ),
+    targetCollectionStatus: v.optional(
+      v.union(
+        v.literal("deaccessioned"),
+        v.literal("archived"),
+        v.literal("deleted"),
+      ),
+    ),
     notes: v.optional(v.string()),
     workflowStep: v.optional(v.number()),
     workflowHistory: v.optional(

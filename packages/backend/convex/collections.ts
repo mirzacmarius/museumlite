@@ -2210,6 +2210,39 @@ export const getParentObjectWithThumbnail = query({
   },
 });
 
+export const getThumbnail = query({
+  args: {
+    collectionId: v.id("collections"),
+  },
+  returns: v.union(
+    v.object({
+      thumbnailUrl: v.union(v.string(), v.null()),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      return null;
+    }
+
+    await requirePermission(ctx, collection.organizationId, "collections.read");
+
+    const primaryMedia = await ctx.db
+      .query("mediaFiles")
+      .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
+      .filter((q) => q.eq(q.field("isPrimary"), true))
+      .first();
+
+    let thumbnailUrl: string | null = null;
+    if (primaryMedia?.storageId) {
+      thumbnailUrl = await ctx.storage.getUrl(primaryMedia.storageId);
+    }
+
+    return { thumbnailUrl };
+  },
+});
+
 export const bulkUpdateLocation = mutation({
   args: {
     collectionIds: v.array(v.id("collections")),

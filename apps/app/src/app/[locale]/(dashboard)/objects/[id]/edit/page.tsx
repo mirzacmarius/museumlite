@@ -807,7 +807,7 @@ export default function CollectionEditPage() {
                 onClick={() => setDeaccessionDialogOpen(true)}
               >
                 <Archive className="mr-2 h-4 w-4" />
-                Remove / Transfer
+                Deaccession
               </Button>
             ) : null}
             {collection.status === "active" && hasActiveLoan ? (

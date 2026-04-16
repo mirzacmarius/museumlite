@@ -20,6 +20,63 @@ import {
   requirePermission,
 } from "./utils/permissions";
 
+const targetCollectionStatusValidator = v.union(
+  v.literal("deaccessioned"),
+  v.literal("archived"),
+  v.literal("deleted"),
+);
+
+function resolveTargetCollectionStatus(deaccession: {
+  targetCollectionStatus?: "deaccessioned" | "archived" | "deleted";
+}) {
+  return deaccession.targetCollectionStatus ?? "deaccessioned";
+}
+
+async function applyApprovedCollectionStatus(
+  ctx: MutationCtx,
+  deaccession: Doc<"deaccessions">,
+  userId: Id<"users">,
+) {
+  const approvedAt = Date.now();
+  const targetCollectionStatus = resolveTargetCollectionStatus(deaccession);
+
+  if (targetCollectionStatus === "archived") {
+    await ctx.db.patch(deaccession.collectionId, {
+      status: "archived",
+      archivedAt: approvedAt,
+      archivedBy: userId,
+      archivedReason: deaccession.reason,
+      deletedAt: undefined,
+      deletedBy: undefined,
+      deletedReason: undefined,
+      lastModifiedBy: userId,
+      lastModifiedAt: approvedAt,
+    });
+    return;
+  }
+
+  if (targetCollectionStatus === "deleted") {
+    await ctx.db.patch(deaccession.collectionId, {
+      status: "deleted",
+      deletedAt: approvedAt,
+      deletedBy: userId,
+      deletedReason: deaccession.reason,
+      archivedAt: undefined,
+      archivedBy: undefined,
+      archivedReason: undefined,
+      lastModifiedBy: userId,
+      lastModifiedAt: approvedAt,
+    });
+    return;
+  }
+
+  await ctx.db.patch(deaccession.collectionId, {
+    status: "deaccessioned",
+    lastModifiedBy: userId,
+    lastModifiedAt: approvedAt,
+  });
+}
+
 /**
  * Generate deaccession number
  * Format: DA-{ORG}-{YEAR}-{SEQUENCE} e.g. DA-MUS-2025-001
@@ -104,6 +161,7 @@ async function createDeaccessionRecord(
     dateDeaccessioned: number;
     reason: string;
     method: "sale" | "donation" | "destruction" | "transfer";
+    targetCollectionStatus?: "deaccessioned" | "archived" | "deleted";
     disposition?: string;
     notes?: string;
     proceedsAmount?: number;
@@ -123,6 +181,10 @@ async function createDeaccessionRecord(
     throw new Error("Collection does not belong to organization");
   }
 
+  if (collection.status === "loaned") {
+    throw new Error("Cannot remove an object that is currently on loan");
+  }
+
   const canInitiate = await canInitiateDeaccessionWorkflowForUser(
     ctx,
     args.organizationId,
@@ -139,10 +201,11 @@ async function createDeaccessionRecord(
 
   const workflowConfig = await ctx.db
     .query("workflowConfigs")
-    .withIndex("by_organization", (q) =>
-      q.eq("organizationId", args.organizationId),
+    .withIndex("by_organization_and_workflowType", (q) =>
+      q
+        .eq("organizationId", args.organizationId)
+        .eq("workflowType", "deaccession"),
     )
-    .filter((q) => q.eq(q.field("workflowType"), "deaccession"))
     .first();
 
   const workflowHistory = workflowConfig
@@ -166,6 +229,7 @@ async function createDeaccessionRecord(
     disposition: args.disposition,
     notes: args.notes,
     status: workflowConfig ? "pending" : "approved",
+    targetCollectionStatus: args.targetCollectionStatus ?? "deaccessioned",
     workflowStep: workflowConfig ? 1 : undefined,
     workflowHistory,
     proceedsAmount: args.proceedsAmount,
@@ -211,11 +275,10 @@ async function createDeaccessionRecord(
   }
 
   if (!workflowConfig) {
-    await ctx.db.patch(args.collectionId, {
-      status: "deaccessioned",
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
-    });
+    const createdDeaccession = await ctx.db.get(deaccessionId);
+    if (createdDeaccession) {
+      await applyApprovedCollectionStatus(ctx, createdDeaccession, userId);
+    }
   }
 
   return deaccessionId;
@@ -237,6 +300,7 @@ export const create = mutation({
       v.literal("destruction"),
       v.literal("transfer"),
     ),
+    targetCollectionStatus: v.optional(targetCollectionStatusValidator),
     disposition: v.optional(v.string()),
     notes: v.optional(v.string()),
     proceedsAmount: v.optional(v.number()),
@@ -270,6 +334,7 @@ export const createInternal = internalMutation({
       v.literal("destruction"),
       v.literal("transfer"),
     ),
+    targetCollectionStatus: v.optional(targetCollectionStatusValidator),
     disposition: v.optional(v.string()),
     notes: v.optional(v.string()),
     proceedsAmount: v.optional(v.number()),
@@ -289,6 +354,7 @@ export const createInternal = internalMutation({
         dateDeaccessioned: args.dateDeaccessioned,
         reason: args.reason,
         method: args.method,
+        targetCollectionStatus: args.targetCollectionStatus,
         disposition: args.disposition,
         notes: args.notes,
         proceedsAmount: args.proceedsAmount,
@@ -334,6 +400,7 @@ export const list = query({
           v.literal("destruction"),
           v.literal("transfer"),
         ),
+        targetCollectionStatus: targetCollectionStatusValidator,
         status: v.union(
           v.literal("pending"),
           v.literal("approved"),
@@ -418,6 +485,7 @@ export const list = query({
         dateDeaccessioned: item.dateDeaccessioned,
         reason: item.reason,
         method: item.method,
+        targetCollectionStatus: resolveTargetCollectionStatus(item),
         status: item.status,
         workflowStep: item.workflowStep,
       })),
@@ -481,8 +549,9 @@ export const getWorkflowSteps = query({
       { stepNumber: -2, name: "Rejected" },
     ].filter(
       (step, index, steps) =>
-        steps.findIndex((candidate) => candidate.stepNumber === step.stepNumber) ===
-        index,
+        steps.findIndex(
+          (candidate) => candidate.stepNumber === step.stepNumber,
+        ) === index,
     );
 
     return {
@@ -514,6 +583,7 @@ export const get = query({
         v.literal("destruction"),
         v.literal("transfer"),
       ),
+      targetCollectionStatus: targetCollectionStatusValidator,
       disposition: v.optional(v.string()),
       approvedBy: v.optional(v.id("users")),
       approvedAt: v.optional(v.number()),
@@ -563,6 +633,7 @@ export const get = query({
       dateDeaccessioned: deaccession.dateDeaccessioned,
       reason: deaccession.reason,
       method: deaccession.method,
+      targetCollectionStatus: resolveTargetCollectionStatus(deaccession),
       disposition: deaccession.disposition,
       approvedBy: deaccession.approvedBy,
       approvedAt: deaccession.approvedAt,
@@ -594,6 +665,7 @@ export const update = mutation({
         v.literal("transfer"),
       ),
     ),
+    targetCollectionStatus: v.optional(targetCollectionStatusValidator),
     disposition: v.optional(v.string()),
     notes: v.optional(v.string()),
     proceedsAmount: v.optional(v.number()),
@@ -629,6 +701,7 @@ export const update = mutation({
     const updates: {
       reason?: string;
       method?: "sale" | "donation" | "destruction" | "transfer";
+      targetCollectionStatus?: "deaccessioned" | "archived" | "deleted";
       disposition?: string;
       notes?: string;
       proceedsAmount?: number;
@@ -640,6 +713,9 @@ export const update = mutation({
 
     if (args.reason !== undefined) updates.reason = args.reason;
     if (args.method !== undefined) updates.method = args.method;
+    if (args.targetCollectionStatus !== undefined) {
+      updates.targetCollectionStatus = args.targetCollectionStatus;
+    }
     if (args.disposition !== undefined) updates.disposition = args.disposition;
     if (args.notes !== undefined) updates.notes = args.notes;
     if (args.proceedsAmount !== undefined)
@@ -798,12 +874,7 @@ export const approve = mutation({
           });
         }
 
-        // Mark collection as deaccessioned
-        await ctx.db.patch(deaccession.collectionId, {
-          status: "deaccessioned",
-          lastModifiedBy: userId,
-          lastModifiedAt: Date.now(),
-        });
+        await applyApprovedCollectionStatus(ctx, deaccession, userId);
       } else {
         // Move to next step
         await ctx.db.patch(args.deaccessionId, {
@@ -883,12 +954,7 @@ export const approve = mutation({
         }
       }
 
-      // Mark collection as deaccessioned
-      await ctx.db.patch(deaccession.collectionId, {
-        status: "deaccessioned",
-        lastModifiedBy: userId,
-        lastModifiedAt: Date.now(),
-      });
+      await applyApprovedCollectionStatus(ctx, deaccession, userId);
     }
 
     return null;

@@ -22,6 +22,7 @@ import {
   CheckCircle,
   Clock,
   DollarSign,
+  ImageIcon,
   Loader2,
   Printer,
   XCircle,
@@ -29,6 +30,36 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+
+function getDeaccessionActionLabel(deaccession: {
+  targetCollectionStatus: "deaccessioned" | "archived" | "deleted";
+  method: "sale" | "donation" | "destruction" | "transfer";
+}) {
+  if (deaccession.targetCollectionStatus === "archived") {
+    return "Archive";
+  }
+
+  if (deaccession.targetCollectionStatus === "deleted") {
+    return "Delete";
+  }
+
+  switch (deaccession.method) {
+    case "sale":
+      return "Sale";
+    case "donation":
+      return "Donation";
+    case "transfer":
+      return "Transfer";
+    case "destruction":
+      return "Disposal";
+  }
+}
+
+function formatStatusLabel(value: string) {
+  return value
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
 
 export default function DeaccessionDetailPage() {
   const params = useParams();
@@ -47,6 +78,10 @@ export default function DeaccessionDetailPage() {
 
   const collection = useQuery(
     api.collections.get,
+    deaccession ? { collectionId: deaccession.collectionId } : "skip",
+  );
+  const collectionThumbnail = useQuery(
+    api.collections.getThumbnail,
     deaccession ? { collectionId: deaccession.collectionId } : "skip",
   );
 
@@ -100,6 +135,8 @@ export default function DeaccessionDetailPage() {
       </div>
     );
   }
+
+  const actionLabel = getDeaccessionActionLabel(deaccession);
 
   const handleApprove = async () => {
     setIsApproving(true);
@@ -161,203 +198,292 @@ export default function DeaccessionDetailPage() {
     }
   };
 
-  return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-        <div className="flex w-full flex-col gap-6">
-          {/* Back button */}
-          <Button variant="ghost" size="sm" asChild className="w-fit">
-            <Link href="/deaccessions">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              {t("actions.backToDeaccessions")}
-            </Link>
-          </Button>
+  const formattedDeaccessionedDate = formatDateFns(
+    new Date(deaccession.dateDeaccessioned),
+    "MMMM d, yyyy",
+    locale,
+  );
+  const collectionStatusLabel = collection
+    ? formatStatusLabel(collection.status)
+    : null;
+  const workflowEntryCount = workflowHistory?.length ?? 0;
+  const reviewStateLabel =
+    deaccession.status === "pending"
+      ? "Awaiting review"
+      : deaccession.status === "approved"
+        ? "Approved"
+        : "Rejected";
 
-          {/* Deaccession Info Card */}
-          <div className="rounded-lg border border-border bg-card p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h2 className="text-2xl font-semibold">
-                  {deaccession.deaccessionNumber}
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  {formatDateFns(
-                    new Date(deaccession.dateDeaccessioned),
-                    "MMMM d, yyyy",
-                    locale,
-                  )}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                {getStatusBadge(deaccession.status)}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsPrintModalOpen(true)}
-                >
-                  <Printer className="mr-2 h-4 w-4" />
-                  {t("actions.boardReport")}
-                </Button>
-              </div>
+  return (
+    <>
+      <main className="flex h-full min-h-0 w-full flex-col bg-background">
+        <div className="flex-1 overflow-y-auto px-6">
+          <div className="mx-auto min-h-full w-full max-w-[1440px] py-6">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+              <Button variant="ghost" size="sm" asChild className="w-fit">
+                <Link href="/deaccessions">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  {t("actions.backToDeaccessions")}
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsPrintModalOpen(true)}
+                className="border-border/70 bg-card/70 backdrop-blur"
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                {t("actions.boardReport")}
+              </Button>
             </div>
 
-            <div className="grid gap-4">
-              <div>
-                <Label className="text-muted-foreground">
-                  {t("detail.reason")}
-                </Label>
-                <p className="mt-1 whitespace-pre-wrap">{deaccession.reason}</p>
-              </div>
-
-              <div>
-                <Label className="text-muted-foreground">
-                  {t("detail.methodLabel")}
-                </Label>
-                <p className="mt-1 capitalize">{deaccession.method}</p>
-              </div>
-
-              {deaccession.disposition && (
-                <div>
-                  <Label className="text-muted-foreground">
-                    {t("detail.disposition")}
-                  </Label>
-                  <p className="mt-1 whitespace-pre-wrap">
-                    {deaccession.disposition}
-                  </p>
+            <div className="space-y-4">
+              <section className="overflow-hidden rounded-[22px] border border-border/70 bg-card shadow-[0_18px_48px_rgba(0,0,0,0.12)]">
+                <div className="border-b border-border/60 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.04),transparent_55%)] px-5 py-5 sm:px-6">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground/75">
+                        Deaccession Review
+                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2">
+                        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                          {deaccession.deaccessionNumber}
+                        </h1>
+                        {getStatusBadge(deaccession.status)}
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                        <span>{formattedDeaccessionedDate}</span>
+                        <span className="h-1 w-1 rounded-full bg-muted-foreground/50" />
+                        <span>{actionLabel}</span>
+                        <span className="h-1 w-1 rounded-full bg-muted-foreground/50" />
+                        <span className="capitalize">{deaccession.method}</span>
+                        {collection && (
+                          <>
+                            <span className="h-1 w-1 rounded-full bg-muted-foreground/50" />
+                            <span className="truncate">{collection.title}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-5 gap-y-2 text-sm lg:text-right">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/65">
+                          Object Status
+                        </p>
+                        <p className="mt-1 font-medium">
+                          {collectionStatusLabel || "Unavailable"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/65">
+                          Review State
+                        </p>
+                        <p className="mt-1 font-medium">{reviewStateLabel}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              )}
 
-              {deaccession.notes && (
-                <div>
-                  <Label className="text-muted-foreground">
-                    {t("detail.notes")}
-                  </Label>
-                  <p className="mt-1 whitespace-pre-wrap">
-                    {deaccession.notes}
-                  </p>
+                <div className="grid gap-4 px-5 py-5 sm:px-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.95fr)]">
+                  <div className="grid gap-4">
+                    <div className="rounded-2xl border border-border/60 bg-background/40 p-4">
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/65">
+                        {t("detail.reason")}
+                      </p>
+                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground/92">
+                        {deaccession.reason}
+                      </p>
+                    </div>
+
+                    {(deaccession.disposition || deaccession.notes) && (
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {deaccession.disposition && (
+                          <div className="rounded-xl border border-border/60 bg-background/40 p-4">
+                            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/65">
+                              {t("detail.disposition")}
+                            </p>
+                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground/85">
+                              {deaccession.disposition}
+                            </p>
+                          </div>
+                        )}
+                        {deaccession.notes && (
+                          <div className="rounded-xl border border-border/60 bg-background/40 p-4">
+                            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/65">
+                              {t("detail.notes")}
+                            </p>
+                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground/85">
+                              {deaccession.notes}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid gap-4">
+                    {collection && (
+                      <div className="rounded-2xl border border-border/60 bg-background/45 p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/65">
+                              Linked Object
+                            </p>
+                            <h2 className="mt-1 text-base font-semibold">
+                              {t("detail.collectionObject")}
+                            </h2>
+                          </div>
+                        </div>
+                        <Link
+                          href={`/collections/${collection._id}`}
+                          className="mt-3 flex items-center gap-3 rounded-xl border border-border/60 bg-background/60 px-3 py-3 transition-colors hover:bg-accent/60"
+                        >
+                          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/60 bg-background">
+                            {collectionThumbnail?.thumbnailUrl ? (
+                              <img
+                                src={collectionThumbnail.thumbnailUrl}
+                                alt={collection.title}
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">
+                              {collection.title}
+                            </p>
+                            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                              <span>{collection.accessionNumber}</span>
+                              <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
+                              <span>{collectionStatusLabel}</span>
+                            </div>
+                          </div>
+                          <ArrowLeft className="h-4 w-4 flex-shrink-0 rotate-180 text-muted-foreground" />
+                        </Link>
+                      </div>
+                    )}
+
+                    {deaccession.status === "pending" && (
+                      <PermissionGate permission="collections.approve_deaccession">
+                        <div className="rounded-2xl border border-border/60 bg-background/45 p-4">
+                          <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/65">
+                            Approval
+                          </p>
+                          <h2 className="mt-1 text-base font-semibold">
+                            {t("detail.approvalAction")}
+                          </h2>
+                          <div className="mt-3 space-y-3">
+                            <div>
+                              <Label htmlFor="comment">
+                                {t("detail.commentLabel")}
+                              </Label>
+                              <Textarea
+                                id="comment"
+                                value={comment}
+                                onChange={(e) => setComment(e.target.value)}
+                                placeholder={t("detail.commentPlaceholder")}
+                                rows={3}
+                                disabled={isApproving || isRejecting}
+                                className="mt-2 resize-none border-border/70 bg-background/70"
+                              />
+                            </div>
+                            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                              <Button
+                                onClick={handleApprove}
+                                disabled={isApproving || isRejecting}
+                                className="w-full"
+                              >
+                                {isApproving && (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                )}
+                                {!isApproving && (
+                                  <CheckCircle className="mr-2 h-4 w-4" />
+                                )}
+                                {`Approve ${actionLabel}`}
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                onClick={handleReject}
+                                disabled={isApproving || isRejecting}
+                                className="w-full"
+                              >
+                                {isRejecting && (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                )}
+                                {!isRejecting && (
+                                  <XCircle className="mr-2 h-4 w-4" />
+                                )}
+                                {t("actions.reject")}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </PermissionGate>
+                    )}
+                  </div>
                 </div>
+              </section>
+
+              {workflowHistory && workflowHistory.length > 0 && (
+                <section className="rounded-[20px] border border-border/70 bg-card p-5 shadow-[0_14px_36px_rgba(0,0,0,0.1)]">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/65">
+                        Process Log
+                      </p>
+                      <h2 className="mt-1 text-lg font-semibold">
+                        {t("detail.workflowHistory")}
+                      </h2>
+                    </div>
+                    <div className="rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs text-muted-foreground">
+                      {workflowEntryCount} entries
+                    </div>
+                  </div>
+
+                  <div className="grid gap-2.5">
+                    {workflowHistory.map((entry) => (
+                      <div
+                        key={`${entry.step}-${entry.approvedAt}`}
+                        className="grid gap-3 rounded-xl border border-border/60 bg-background/40 px-3 py-3 sm:grid-cols-[44px_minmax(0,1fr)] sm:items-start"
+                      >
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-border/60 bg-background text-sm font-semibold">
+                          {entry.step}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <p className="text-sm font-medium">
+                              {entry.step === 0
+                                ? t("detail.created")
+                                : t("detail.step", { step: entry.step })}
+                            </p>
+                            <span className="text-xs text-muted-foreground">
+                              {entry.approverName || t("detail.unknown")}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDateFns(
+                                new Date(entry.approvedAt),
+                                "MMM d, yyyy 'at' h:mm a",
+                                locale,
+                              )}
+                            </span>
+                          </div>
+                          {entry.comment && (
+                            <p className="mt-2 text-sm italic text-foreground/82">
+                              {entry.comment}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
               )}
             </div>
           </div>
-
-          {/* Collection Info Card */}
-          {collection && (
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h3 className="text-lg font-semibold mb-4">
-                {t("detail.collectionObject")}
-              </h3>
-              <Link
-                href={`/collections/${collection._id}`}
-                className="flex items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-accent"
-              >
-                <div className="flex-1">
-                  <h4 className="font-medium">{collection.title}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {collection.accessionNumber}
-                  </p>
-                  <p className="text-sm text-muted-foreground capitalize mt-1">
-                    Status: {collection.status}
-                  </p>
-                </div>
-                <ArrowLeft className="h-4 w-4 rotate-180 flex-shrink-0" />
-              </Link>
-            </div>
-          )}
-
-          {/* Workflow Timeline */}
-          {workflowHistory && workflowHistory.length > 0 && (
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h3 className="text-lg font-semibold mb-4">
-                {t("detail.workflowHistory")}
-              </h3>
-              <div className="space-y-4">
-                {workflowHistory.map((entry, index) => (
-                  <div
-                    key={`${entry.step}-${entry.approvedAt}`}
-                    className="flex gap-4"
-                  >
-                    <div className="flex flex-col items-center">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-medium flex-shrink-0">
-                        {entry.step}
-                      </div>
-                      {index < workflowHistory.length - 1 && (
-                        <div className="flex-1 w-px bg-border mt-2 min-h-[40px]" />
-                      )}
-                    </div>
-                    <div className="flex-1 pb-4">
-                      <p className="font-medium">
-                        {entry.step === 0
-                          ? t("detail.created")
-                          : t("detail.step", { step: entry.step })}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {entry.approverName || t("detail.unknown")} •{" "}
-                        {formatDateFns(
-                          new Date(entry.approvedAt),
-                          "MMM d, yyyy 'at' h:mm a",
-                          locale,
-                        )}
-                      </p>
-                      {entry.comment && (
-                        <p className="mt-2 text-sm italic bg-muted/50 p-2 rounded">
-                          {entry.comment}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Approval Actions */}
-          {deaccession.status === "pending" && (
-            <PermissionGate permission="collections.approve_deaccession">
-              <div className="rounded-lg border border-border bg-card p-6">
-                <h3 className="text-lg font-semibold mb-4">
-                  {t("detail.approvalAction")}
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="comment">{t("detail.commentLabel")}</Label>
-                    <Textarea
-                      id="comment"
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                      placeholder={t("detail.commentPlaceholder")}
-                      rows={3}
-                      disabled={isApproving || isRejecting}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={handleApprove}
-                      disabled={isApproving || isRejecting}
-                    >
-                      {isApproving && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      {!isApproving && <CheckCircle className="mr-2 h-4 w-4" />}
-                      {t("actions.approve")}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={handleReject}
-                      disabled={isApproving || isRejecting}
-                    >
-                      {isRejecting && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      {!isRejecting && <XCircle className="mr-2 h-4 w-4" />}
-                      {t("actions.reject")}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </PermissionGate>
-          )}
         </div>
-      </div>
+      </main>
 
       <Dialog open={isPrintModalOpen} onOpenChange={setIsPrintModalOpen}>
         <DialogContent className="flex flex-col max-w-[210mm] w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0">
@@ -654,6 +780,6 @@ export default function DeaccessionDetailPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
