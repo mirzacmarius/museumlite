@@ -4,10 +4,10 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
+  type MutationCtx,
   internalMutation,
   mutation,
   query,
-  type MutationCtx,
 } from "./_generated/server";
 import { env } from "./env";
 import { getNextCounterValue } from "./utils/accessionCounter";
@@ -45,9 +45,7 @@ function getDraftDisplaySource(
     | undefined,
 ) {
   return (
-    objectData?.creator?.trim() ||
-    objectData?.title?.trim() ||
-    "Object intake"
+    objectData?.creator?.trim() || objectData?.title?.trim() || "Object intake"
   );
 }
 
@@ -69,9 +67,7 @@ async function ensureAccessionNumberAvailable(
 ) {
   const existingAccession = await ctx.db
     .query("accessions")
-    .withIndex("by_organization", (q) =>
-      q.eq("organizationId", organizationId),
-    )
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
     .filter((q) => q.eq(q.field("accessionNumber"), accessionNumber))
     .first();
 
@@ -100,7 +96,10 @@ async function generateUniqueAccessionNumber(
   let lastGeneratedAccessionNumber: string | null = null;
 
   for (let attempt = 0; attempt < 5; attempt += 1) {
-    const nextAccessionNumber = await generateAccessionNumber(ctx, organizationId);
+    const nextAccessionNumber = await generateAccessionNumber(
+      ctx,
+      organizationId,
+    );
     lastGeneratedAccessionNumber = nextAccessionNumber;
     try {
       await ensureAccessionNumberAvailable(
@@ -151,9 +150,7 @@ async function findReusablePendingDraftAccession(
 ) {
   const candidate = await ctx.db
     .query("accessions")
-    .withIndex("by_organization", (q) =>
-      q.eq("organizationId", organizationId),
-    )
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
     .filter((q) =>
       q.and(
         q.eq(q.field("accessionNumber"), accessionNumber),
@@ -173,7 +170,7 @@ async function findReusablePendingDraftAccession(
  * Generate accession number based on organization format template
  */
 async function generateAccessionNumber(
-  ctx: any,
+  ctx: MutationCtx,
   organizationId: Id<"organizations">,
 ): Promise<string> {
   const org = await ctx.db.get(organizationId);
@@ -438,7 +435,8 @@ export const upsertObjectDraft = mutation({
       await requirePermission(ctx, args.organizationId, "collections.update");
 
       const accessionNumber =
-        normalizedObjectData.accessionNumber?.trim() || existing.accessionNumber;
+        normalizedObjectData.accessionNumber?.trim() ||
+        existing.accessionNumber;
 
       await ensureAccessionNumberAvailable(
         ctx,
@@ -853,6 +851,7 @@ export const get = query({
       notes: v.optional(v.string()),
       workflowStep: v.optional(v.number()),
       draftObjectData: v.optional(objectDraftDataValidator),
+      draftMedia: v.optional(v.array(accessionDraftMediaValidator)),
       workflowHistory: v.optional(
         v.array(
           v.object({
@@ -896,6 +895,7 @@ export const get = query({
       notes: accession.notes,
       workflowStep: accession.workflowStep,
       draftObjectData: accession.draftObjectData,
+      draftMedia: accession.draftMedia,
       workflowHistory,
     };
   },
@@ -1564,7 +1564,8 @@ export const createCollectionFromAccession = internalMutation({
       accessionNumber: accession.accessionNumber,
       collectionGroupId: draftObjectData?.collectionGroupId,
       title:
-        draftObjectData?.title?.trim() || `Accession ${accession.accessionNumber}`,
+        draftObjectData?.title?.trim() ||
+        `Accession ${accession.accessionNumber}`,
       creator: draftObjectData?.creator,
       objectType: serializeStringList(draftObjectData?.objectType),
       objectName: draftObjectData?.objectName,
@@ -1720,8 +1721,9 @@ export const getWorkflowSteps = query({
       { stepNumber: -1, name: "Approved" },
     ].filter(
       (step, index, steps) =>
-        steps.findIndex((candidate) => candidate.stepNumber === step.stepNumber) ===
-        index,
+        steps.findIndex(
+          (candidate) => candidate.stepNumber === step.stepNumber,
+        ) === index,
     );
 
     return {
@@ -2408,7 +2410,7 @@ export const validateBulkImport = mutation({
 
       preview.push({
         row: rowNumber,
-        accessionNumber: accessionNumber || `[Auto-generated]`,
+        accessionNumber: accessionNumber || "[Auto-generated]",
         dateReceived,
         source: item.source,
         method: validMethods.includes(method) ? method : "other",

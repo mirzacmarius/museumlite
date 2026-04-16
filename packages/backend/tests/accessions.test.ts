@@ -1,18 +1,60 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
-import schema from "../convex/schema";
-import type { Id } from "../convex/_generated/dataModel";
 import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
+import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
 
-function authedForUser(
-  t: ReturnType<typeof convexTest>,
-  userId: Id<"users">,
-) {
+function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   return t.withIdentity({
     subject: `${userId}|session-1`,
     issuer: "https://example.test",
+  });
+}
+
+async function createOrgUserWithPermissions(
+  t: ReturnType<typeof convexTest>,
+  permissionNames: string[],
+) {
+  return t.run(async (ctx) => {
+    const organizationId = await ctx.db.insert("organizations", {
+      name: "Test Museum",
+      slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
+      type: "museum",
+    });
+
+    const userId = await ctx.db.insert("users", {
+      email: `user-${Math.random().toString(36).slice(2, 8)}@example.com`,
+      name: "Test User",
+    });
+
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "Registrar",
+      isSystemRole: false,
+    });
+
+    for (const permissionName of permissionNames) {
+      const permissionId = await ctx.db.insert("permissions", {
+        name: permissionName,
+        category: permissionName.split(".")[0] || "collections",
+      });
+
+      await ctx.db.insert("rolePermissions", {
+        roleId,
+        permissionId,
+      });
+    }
+
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+
+    return { organizationId, userId, roleId };
   });
 }
 
@@ -44,6 +86,81 @@ test("should attach donor information", async () => {
 test("should complete accession process", async () => {
   const t = convexTest(schema, modules);
   expect(true).toBe(true);
+});
+
+test("object draft save keeps the accession at workflow step 0", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.create", "collections.read", "collections.update"],
+  );
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [{ stepNumber: 1, roleId, name: "Approve" }],
+      canInitiateRoles: [roleId],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const accessionId = await authed.mutation(api.accessions.upsertObjectDraft, {
+    organizationId,
+    saveMode: "draft",
+    objectData: {
+      accessionNumber: "DRAFT-001",
+      title: "Draft Object",
+    },
+  });
+
+  const accession = await authed.query(api.accessions.get, {
+    accessionId,
+  });
+
+  expect(accession).not.toBeNull();
+  expect(accession?.status).toBe("pending");
+  expect(accession?.workflowStep).toBe(0);
+  expect(accession?.draftObjectData?.title).toBe("Draft Object");
+});
+
+test("submitForApproval moves object drafts from step 0 to step 1", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.create", "collections.read", "collections.update"],
+  );
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [{ stepNumber: 1, roleId, name: "Approve" }],
+      canInitiateRoles: [roleId],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const accessionId = await authed.mutation(api.accessions.upsertObjectDraft, {
+    organizationId,
+    saveMode: "draft",
+    objectData: {
+      accessionNumber: "DRAFT-002",
+      title: "Pending Submission Draft",
+    },
+  });
+
+  await authed.mutation(api.accessions.submitForApproval, {
+    accessionId,
+  });
+
+  const accession = await authed.query(api.accessions.get, {
+    accessionId,
+  });
+
+  expect(accession).not.toBeNull();
+  expect(accession?.status).toBe("pending");
+  expect(accession?.workflowStep).toBe(1);
 });
 
 /**
@@ -155,16 +272,13 @@ test("should batch lookup collections and assignees for list query", async () =>
 
   // Query the first page (25 items)
   const authed = authedForUser(t, userId);
-  const result = await authed.query(
-    api.accessions.list,
-    {
-      organizationId: orgId,
-      paginationOpts: {
-        cursor: null,
-        numItems: 25,
-      },
+  const result = await authed.query(api.accessions.list, {
+    organizationId: orgId,
+    paginationOpts: {
+      cursor: null,
+      numItems: 25,
     },
-  );
+  });
 
   // Verify pagination works
   expect(result.page).toHaveLength(25);
@@ -185,17 +299,14 @@ test("should batch lookup collections and assignees for list query", async () =>
   }
 
   // Test search with collection title (this uses batch lookup for collections)
-  const searchResult = await authed.query(
-    api.accessions.list,
-    {
-      organizationId: orgId,
-      search: "Collection 1", // Should match accessions with Collection 1
-      paginationOpts: {
-        cursor: null,
-        numItems: 25,
-      },
+  const searchResult = await authed.query(api.accessions.list, {
+    organizationId: orgId,
+    search: "Collection 1", // Should match accessions with Collection 1
+    paginationOpts: {
+      cursor: null,
+      numItems: 25,
     },
-  );
+  });
 
   // Verify search results
   expect(searchResult.page.length).toBeGreaterThan(0);
@@ -204,16 +315,13 @@ test("should batch lookup collections and assignees for list query", async () =>
   expect(searchResult.page.length).toBeLessThanOrEqual(30);
 
   // Test pagination to get remaining items
-  const page2Result = await authed.query(
-    api.accessions.list,
-    {
-      organizationId: orgId,
-      paginationOpts: {
-        cursor: result.continueCursor,
-        numItems: 25,
-      },
+  const page2Result = await authed.query(api.accessions.list, {
+    organizationId: orgId,
+    paginationOpts: {
+      cursor: result.continueCursor,
+      numItems: 25,
     },
-  );
+  });
 
   // Verify second page has remaining items
   expect(page2Result.page).toHaveLength(5); // 30 total - 25 on first page = 5

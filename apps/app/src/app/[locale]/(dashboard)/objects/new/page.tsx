@@ -97,13 +97,24 @@ type EditTabId = Extract<
   "general" | "provenance" | "physical" | "media" | "digital"
 >;
 
-type LegacyDraftPayload = {
-  formData: CollectionFormData;
-  savedAt: number;
-};
+interface DraftMediaItem {
+  storageId: Id<"_storage">;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  mediaCategory: "image" | "document";
+  isPrimary: boolean;
+}
 
-const LEGACY_DRAFT_KEY = "objects.new.draft.v1";
-const DRAFT_ACCESSION_KEY = "objects.new.accessionDraftId.v1";
+interface ObjectRequestFormPageProps {
+  mode?: "create" | "draft-edit";
+  accessionId?: Id<"accessions">;
+  initialDraftObjectData?: Partial<CollectionFormData>;
+  initialDraftMedia?: DraftMediaItem[];
+  initialDraftSavedAt?: number | null;
+  prefilledCollectionGroupId?: string;
+  backHref?: string;
+}
 
 function createEmptyFormData(
   prefilledCollectionGroupId?: string,
@@ -263,37 +274,26 @@ function EditSection({
   );
 }
 
-export default function CollectionFormPage() {
+export function ObjectRequestFormPage({
+  mode = "create",
+  accessionId,
+  initialDraftObjectData,
+  initialDraftMedia,
+  initialDraftSavedAt = null,
+  prefilledCollectionGroupId,
+  backHref,
+}: ObjectRequestFormPageProps) {
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const placeholders = useScopedI18n("objects.form.placeholders");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const collectionGroupId = searchParams.get("collectionGroupId");
+  const collectionGroupId =
+    prefilledCollectionGroupId || searchParams.get("collectionGroupId");
   const { currentOrganizationId } = useOrganization();
   const upsertObjectDraft = useMutation(api.accessions.upsertObjectDraft);
   const generateDraftUploadUrl = useMutation(
     api.accessions.generateDraftUploadUrl,
-  );
-  const setPreference = useMutation(api.userPreferences.set);
-  const removePreference = useMutation(api.userPreferences.remove);
-  const savedDraftAccessionId = useQuery(
-    api.userPreferences.get,
-    currentOrganizationId
-      ? { key: DRAFT_ACCESSION_KEY, organizationId: currentOrganizationId }
-      : "skip",
-  );
-  const legacySavedDraft = useQuery(
-    api.userPreferences.get,
-    currentOrganizationId
-      ? { key: LEGACY_DRAFT_KEY, organizationId: currentOrganizationId }
-      : "skip",
-  );
-  const savedDraftAccession = useQuery(
-    api.accessions.get,
-    savedDraftAccessionId
-      ? { accessionId: savedDraftAccessionId as Id<"accessions"> }
-      : "skip",
   );
 
   const initialForm = useMemo(
@@ -305,7 +305,7 @@ export default function CollectionFormPage() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
   const initialFormSignatureRef = useRef(getFormSignature(initialForm));
-  const hasHydratedDraftRef = useRef(false);
+  const hasInitializedRef = useRef(false);
 
   const [formData, setFormData] = useState<CollectionFormData>(initialForm);
   const [activeTab, setActiveTab] = useState<EditTabId>("general");
@@ -329,7 +329,10 @@ export default function CollectionFormPage() {
   >([]);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
   const [currentDraftAccessionId, setCurrentDraftAccessionId] =
-    useState<Id<"accessions"> | null>(null);
+    useState<Id<"accessions"> | null>(accessionId ?? null);
+  const [persistedDraftMedia, setPersistedDraftMedia] = useState<
+    DraftMediaItem[]
+  >(initialDraftMedia ?? []);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(
     null,
@@ -348,56 +351,31 @@ export default function CollectionFormPage() {
   }, [activeTab, tabs]);
 
   useEffect(() => {
-    if (hasHydratedDraftRef.current) {
+    if (hasInitializedRef.current) {
       return;
     }
 
-    if (savedDraftAccessionId === undefined || legacySavedDraft === undefined) {
-      return;
-    }
-    if (savedDraftAccessionId && savedDraftAccession === undefined) {
-      return;
-    }
+    hasInitializedRef.current = true;
 
-    hasHydratedDraftRef.current = true;
+    const nextFormData = initialDraftObjectData
+      ? createFormDataFromDraftObject(
+          initialDraftObjectData,
+          collectionGroupId || undefined,
+        )
+      : initialForm;
 
-    if (savedDraftAccession?.draftObjectData) {
-      const nextFormData = createFormDataFromDraftObject(
-        savedDraftAccession.draftObjectData,
-        collectionGroupId || undefined,
-      );
-      setFormData(nextFormData);
-      setCurrentDraftAccessionId(savedDraftAccession._id);
-      initialFormSignatureRef.current = getFormSignature(nextFormData);
-      setDraftSavedAt(savedDraftAccession._creationTime);
-      return;
-    }
-
-    if (!legacySavedDraft) {
-      setFormData(initialForm);
-      initialFormSignatureRef.current = getFormSignature(initialForm);
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(legacySavedDraft) as LegacyDraftPayload;
-      const nextFormData = createFormDataFromDraftObject(
-        parsed.formData,
-        collectionGroupId || undefined,
-      );
-      setFormData(nextFormData);
-      initialFormSignatureRef.current = getFormSignature(nextFormData);
-      setDraftSavedAt(parsed.savedAt ?? Date.now());
-    } catch {
-      setFormData(initialForm);
-      initialFormSignatureRef.current = getFormSignature(initialForm);
-    }
+    setFormData(nextFormData);
+    setCurrentDraftAccessionId(accessionId ?? null);
+    setPersistedDraftMedia(initialDraftMedia ?? []);
+    setDraftSavedAt(initialDraftSavedAt);
+    initialFormSignatureRef.current = getFormSignature(nextFormData);
   }, [
+    accessionId,
     collectionGroupId,
     initialForm,
-    legacySavedDraft,
-    savedDraftAccession,
-    savedDraftAccessionId,
+    initialDraftMedia,
+    initialDraftObjectData,
+    initialDraftSavedAt,
   ]);
 
   useEffect(() => {
@@ -429,11 +407,18 @@ export default function CollectionFormPage() {
   const hasUnsavedChanges = isFormDirty || hasLocalMediaSelections;
   const hasSavedFieldDraft = draftSavedAt !== null;
   const isDraftCurrent = hasSavedFieldDraft && !isFormDirty;
-  const persistedDraftAccessionId = savedDraftAccessionId
-    ? (savedDraftAccessionId as Id<"accessions">)
-    : null;
-  const activeDraftAccessionId =
-    currentDraftAccessionId || persistedDraftAccessionId;
+  const activeDraftAccessionId = currentDraftAccessionId;
+  const isDraftEditMode = mode === "draft-edit";
+  const resolvedBackHref =
+    backHref ||
+    (isDraftEditMode && accessionId
+      ? `/accessions/${accessionId}`
+      : "/objects");
+  const pageTitle = isDraftEditMode ? "Edit Object" : "New Object";
+  const pageBadge = isDraftEditMode ? "Draft object" : "New object";
+  const organizationPrompt = isDraftEditMode
+    ? "Please select an organization to edit drafts."
+    : "Please select an organization to create objects.";
 
   useBeforeUnload(hasUnsavedChanges);
 
@@ -636,50 +621,51 @@ export default function CollectionFormPage() {
     selectedFiles,
   ]);
 
-  const handleSaveDraft = useCallback(async () => {
-    if (!currentOrganizationId) {
-      return false;
-    }
+  const handleSaveDraft = useCallback(
+    async ({
+      redirectToDetail = false,
+    }: {
+      redirectToDetail?: boolean;
+    } = {}) => {
+      if (!currentOrganizationId) {
+        return false;
+      }
 
-    setIsSavingDraft(true);
-    setError(null);
+      setIsSavingDraft(true);
+      setError(null);
 
-    try {
-      const accessionId = await upsertObjectDraft({
-        organizationId: currentOrganizationId,
-        accessionId: activeDraftAccessionId || undefined,
-        saveMode: "draft",
-        objectData: buildObjectDraftPayload(formData),
-      });
+      try {
+        const savedAccessionId = await upsertObjectDraft({
+          organizationId: currentOrganizationId,
+          accessionId: activeDraftAccessionId || undefined,
+          saveMode: "draft",
+          objectData: buildObjectDraftPayload(formData),
+        });
 
-      await setPreference({
-        key: DRAFT_ACCESSION_KEY,
-        value: accessionId,
-        organizationId: currentOrganizationId,
-      });
-      await removePreference({
-        key: LEGACY_DRAFT_KEY,
-        organizationId: currentOrganizationId,
-      });
+        setCurrentDraftAccessionId(savedAccessionId);
+        initialFormSignatureRef.current = getFormSignature(formData);
+        setDraftSavedAt(Date.now());
 
-      setCurrentDraftAccessionId(accessionId);
-      initialFormSignatureRef.current = getFormSignature(formData);
-      setDraftSavedAt(Date.now());
-      return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save draft.");
-      return false;
-    } finally {
-      setIsSavingDraft(false);
-    }
-  }, [
-    activeDraftAccessionId,
-    currentOrganizationId,
-    formData,
-    removePreference,
-    setPreference,
-    upsertObjectDraft,
-  ]);
+        if (redirectToDetail) {
+          router.push(`/accessions/${savedAccessionId}`);
+        }
+
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to save draft.");
+        return false;
+      } finally {
+        setIsSavingDraft(false);
+      }
+    },
+    [
+      activeDraftAccessionId,
+      currentOrganizationId,
+      formData,
+      router,
+      upsertObjectDraft,
+    ],
+  );
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent) => {
@@ -698,9 +684,13 @@ export default function CollectionFormPage() {
       setIsSubmitting(true);
 
       try {
-        const draftMedia =
+        const newDraftMedia =
           selectedFiles.length > 0 || selectedDocuments.length > 0
             ? await uploadDraftMedia()
+            : [];
+        const draftMedia =
+          persistedDraftMedia.length > 0 || newDraftMedia.length > 0
+            ? [...persistedDraftMedia, ...newDraftMedia]
             : undefined;
 
         const accessionId = await upsertObjectDraft({
@@ -710,17 +700,6 @@ export default function CollectionFormPage() {
           objectData: buildObjectDraftPayload(formData),
           draftMedia,
         });
-
-        await removePreference({
-          key: DRAFT_ACCESSION_KEY,
-          organizationId: currentOrganizationId,
-        });
-        await removePreference({
-          key: LEGACY_DRAFT_KEY,
-          organizationId: currentOrganizationId,
-        });
-
-        setCurrentDraftAccessionId(null);
         router.push(`/accessions/${accessionId}`);
       } catch (err) {
         console.error("Error submitting object request:", err);
@@ -735,7 +714,7 @@ export default function CollectionFormPage() {
       currentOrganizationId,
       activeDraftAccessionId,
       formData,
-      removePreference,
+      persistedDraftMedia,
       router,
       t,
       upsertObjectDraft,
@@ -779,9 +758,7 @@ export default function CollectionFormPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">
-          Please select an organization to create objects.
-        </p>
+        <p className="text-muted-foreground">{organizationPrompt}</p>
       </div>
     );
   }
@@ -801,7 +778,7 @@ export default function CollectionFormPage() {
             variant="ghost"
             size="icon"
             className="h-7 w-7"
-            onClick={() => handleNavigate("/objects")}
+            onClick={() => handleNavigate(resolvedBackHref)}
           >
             <ArrowLeft className="h-4 w-4 text-muted-foreground" />
           </Button>
@@ -809,7 +786,7 @@ export default function CollectionFormPage() {
             {t("detail.collections")}
           </span>
           <span className="text-muted-foreground/50">/</span>
-          <span className="font-medium text-foreground">New object</span>
+          <span className="font-medium text-foreground">{pageTitle}</span>
         </div>
 
         <div className="flex items-center gap-3">
@@ -817,7 +794,7 @@ export default function CollectionFormPage() {
             type="button"
             variant="outline"
             size="sm"
-            onClick={handleSaveDraft}
+            onClick={() => void handleSaveDraft({ redirectToDetail: true })}
             disabled={isSavingDraft || isSubmitting}
           >
             <Archive className="mr-2 h-4 w-4" />
@@ -827,7 +804,7 @@ export default function CollectionFormPage() {
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => handleNavigate("/objects")}
+            onClick={() => handleNavigate(resolvedBackHref)}
           >
             {common("cancel")}
           </Button>
@@ -877,7 +854,7 @@ export default function CollectionFormPage() {
               <div className="flex-1 space-y-6">
                 <div className="flex flex-wrap items-center gap-2.5">
                   <div className="rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-500">
-                    New object
+                    {pageBadge}
                   </div>
                   <div className="rounded bg-background/80 px-2 py-1 text-[10px] font-mono text-muted-foreground">
                     {isDraftCurrent
@@ -964,9 +941,10 @@ export default function CollectionFormPage() {
 
                 <p className="text-sm text-muted-foreground">
                   Build the record using the same tab structure as object detail
-                  and edit. Draft saves create an accession intake record.
-                  Images and documents stay local until you submit the object
-                  request for approval.
+                  and edit. Draft saves keep this object in the accession draft
+                  workflow until you explicitly submit it for approval. Images
+                  and documents stay local until you submit the object request
+                  for approval.
                 </p>
               </div>
             </div>
@@ -1670,7 +1648,7 @@ export default function CollectionFormPage() {
                 <div className="space-y-8">
                   <EditSection
                     title="Images"
-                    description="Select images for the object and choose which one becomes primary after creation."
+                    description="Select images for the object and choose which one becomes primary after approval."
                   >
                     <input
                       ref={fileInputRef}
@@ -1708,6 +1686,35 @@ export default function CollectionFormPage() {
                         Take Photo
                       </Button>
                     </div>
+
+                    {persistedDraftMedia.filter(
+                      (item) => item.mediaCategory === "image",
+                    ).length > 0 ? (
+                      <div className="mb-5 space-y-3">
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                          Already attached
+                        </p>
+                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                          {persistedDraftMedia
+                            .filter((item) => item.mediaCategory === "image")
+                            .map((item) => (
+                              <div
+                                key={item.storageId}
+                                className="rounded-xl border border-border/60 bg-background/70 px-4 py-3"
+                              >
+                                <p className="truncate text-sm font-medium text-foreground">
+                                  {item.fileName}
+                                </p>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  {item.isPrimary
+                                    ? "Primary image already saved"
+                                    : "Saved with this draft"}
+                                </p>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    ) : null}
 
                     {selectedFiles.length > 0 ? (
                       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -1770,7 +1777,11 @@ export default function CollectionFormPage() {
                       <div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-border/60">
                         <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
                         <p className="text-sm text-muted-foreground">
-                          No images selected yet.
+                          {persistedDraftMedia.some(
+                            (item) => item.mediaCategory === "image",
+                          )
+                            ? "No new images selected yet."
+                            : "No images selected yet."}
                         </p>
                       </div>
                     )}
@@ -1778,7 +1789,7 @@ export default function CollectionFormPage() {
 
                   <EditSection
                     title="Documents"
-                    description="Attach supporting PDFs, scans, and reference files to upload after creation."
+                    description="Attach supporting PDFs, scans, and reference files to upload when this request is submitted."
                   >
                     <input
                       ref={documentInputRef}
@@ -1800,6 +1811,35 @@ export default function CollectionFormPage() {
                       </Button>
                     </div>
 
+                    {persistedDraftMedia.filter(
+                      (item) => item.mediaCategory === "document",
+                    ).length > 0 ? (
+                      <div className="mb-5 space-y-3">
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                          Already attached
+                        </p>
+                        <div className="space-y-3">
+                          {persistedDraftMedia
+                            .filter((item) => item.mediaCategory === "document")
+                            .map((item) => (
+                              <div
+                                key={item.storageId}
+                                className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/70 px-4 py-3"
+                              >
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-medium text-foreground">
+                                    {item.fileName}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Saved with this draft
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    ) : null}
+
                     {selectedDocuments.length > 0 ? (
                       <div className="space-y-3">
                         {selectedDocuments.map((document) => (
@@ -1812,7 +1852,7 @@ export default function CollectionFormPage() {
                                 {document.fileName}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                Queued for upload on create
+                                Queued for upload on submit
                               </p>
                             </div>
                             <Button
@@ -1830,7 +1870,11 @@ export default function CollectionFormPage() {
                     ) : (
                       <div className="flex h-28 items-center justify-center rounded-xl border border-dashed border-border/60">
                         <p className="text-sm text-muted-foreground">
-                          No documents selected yet.
+                          {persistedDraftMedia.some(
+                            (item) => item.mediaCategory === "document",
+                          )
+                            ? "No new documents selected yet."
+                            : "No documents selected yet."}
                         </p>
                       </div>
                     )}
@@ -1984,7 +2028,7 @@ export default function CollectionFormPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={handleSaveDraft}
+              onClick={() => void handleSaveDraft({ redirectToDetail: true })}
               disabled={isSavingDraft || isSubmitting}
             >
               <Archive className="mr-2 h-4 w-4" />
@@ -1993,7 +2037,7 @@ export default function CollectionFormPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => handleNavigate("/objects")}
+              onClick={() => handleNavigate(resolvedBackHref)}
             >
               {common("cancel")}
             </Button>
@@ -2022,4 +2066,8 @@ export default function CollectionFormPage() {
       />
     </div>
   );
+}
+
+export default function CollectionFormPage() {
+  return <ObjectRequestFormPage mode="create" />;
 }

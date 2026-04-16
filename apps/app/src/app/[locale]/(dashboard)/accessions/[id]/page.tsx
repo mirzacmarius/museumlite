@@ -10,6 +10,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useMutation, useQuery } from "convex/react";
 import {
+  Archive,
   ArrowLeft,
   CheckCircle,
   Clock,
@@ -29,6 +30,9 @@ export default function AccessionDetailPage() {
   const { currentOrganizationId } = useOrganization();
   const locale = useCurrentLocale();
   const tCommon = useScopedI18n("common");
+  const submitForApproval = useMutation(api.accessions.submitForApproval);
+  const [isSubmittingDraft, setIsSubmittingDraft] = useState(false);
+  const [draftActionError, setDraftActionError] = useState<string | null>(null);
 
   const accession = useQuery(
     api.accessions.get,
@@ -61,8 +65,14 @@ export default function AccessionDetailPage() {
     );
   }
 
+  const isDraft =
+    accession.status === "pending" && accession.workflowStep === 0;
+  const displayStatus = isDraft ? "draft" : accession.status;
+
   const getStatusIcon = (status: string) => {
     switch (status) {
+      case "draft":
+        return <Archive className="h-5 w-5 text-slate-400" />;
       case "pending":
         return <Clock className="h-5 w-5 text-yellow-500" />;
       case "approved":
@@ -76,6 +86,8 @@ export default function AccessionDetailPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "draft":
+        return "bg-slate-500/10 text-slate-300";
       case "pending":
         return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400";
       case "approved":
@@ -84,6 +96,23 @@ export default function AccessionDetailPage() {
         return "bg-red-500/10 text-red-600 dark:text-red-400";
       default:
         return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const handleSubmitDraft = async () => {
+    setIsSubmittingDraft(true);
+    setDraftActionError(null);
+    try {
+      await submitForApproval({
+        accessionId: accessionId as Id<"accessions">,
+      });
+      router.refresh();
+    } catch (err) {
+      setDraftActionError(
+        err instanceof Error ? err.message : "Failed to submit draft",
+      );
+    } finally {
+      setIsSubmittingDraft(false);
     }
   };
 
@@ -101,14 +130,14 @@ export default function AccessionDetailPage() {
                 </Link>
               </Button>
               <div className="flex items-center gap-3">
-                {getStatusIcon(accession.status)}
+                {getStatusIcon(displayStatus)}
                 <span
                   className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusColor(
-                    accession.status,
+                    displayStatus,
                   )}`}
                 >
-                  {accession.status.charAt(0).toUpperCase() +
-                    accession.status.slice(1)}
+                  {displayStatus.charAt(0).toUpperCase() +
+                    displayStatus.slice(1)}
                 </span>
                 {accession.workflowStep !== undefined && (
                   <span className="text-sm text-muted-foreground">
@@ -118,7 +147,17 @@ export default function AccessionDetailPage() {
               </div>
             </div>
             <div className="flex gap-2">
-              {accession.status === "pending" && (
+              {isDraft ? (
+                <PermissionGate permission="collections.update">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/accessions/${accessionId}/edit-object`}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit Draft
+                    </Link>
+                  </Button>
+                </PermissionGate>
+              ) : null}
+              {accession.status === "pending" && !isDraft ? (
                 <PermissionGate permission="collections.update">
                   <Button variant="outline" size="sm" asChild>
                     <Link href={`/accessions/${accessionId}/edit`}>
@@ -127,7 +166,7 @@ export default function AccessionDetailPage() {
                     </Link>
                   </Button>
                 </PermissionGate>
-              )}
+              ) : null}
               {accession.collectionId && (
                 <Button variant="outline" size="sm" asChild>
                   <Link href={`/collections/${accession.collectionId}`}>
@@ -141,6 +180,12 @@ export default function AccessionDetailPage() {
 
           {/* Content */}
           <div className="p-6">
+            {draftActionError ? (
+              <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                {draftActionError}
+              </div>
+            ) : null}
+
             {accession.draftObjectData ? (
               <div className="mb-6 rounded-xl border border-border/60 bg-secondary/20 p-5">
                 <div className="space-y-1">
@@ -191,6 +236,34 @@ export default function AccessionDetailPage() {
                     </p>
                     <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">
                       {accession.draftObjectData.description}
+                    </p>
+                  </div>
+                ) : null}
+
+                {isDraft ? (
+                  <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-border/60 pt-5">
+                    <PermissionGate permission="collections.update">
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/accessions/${accessionId}/edit-object`}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit Draft
+                        </Link>
+                      </Button>
+                    </PermissionGate>
+                    <PermissionGate permission="collections.update">
+                      <Button
+                        size="sm"
+                        onClick={() => void handleSubmitDraft()}
+                        disabled={isSubmittingDraft}
+                      >
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        {isSubmittingDraft
+                          ? "Submitting..."
+                          : "Submit for Approval"}
+                      </Button>
+                    </PermissionGate>
+                    <p className="text-sm text-muted-foreground">
+                      Drafts must be submitted before approval can begin.
                     </p>
                   </div>
                 ) : null}
@@ -267,7 +340,7 @@ export default function AccessionDetailPage() {
             </div>
 
             {/* Approval Workflow */}
-            {accession.status === "pending" && (
+            {accession.status === "pending" && !isDraft && (
               <div className="mt-8 border-t border-border pt-6">
                 <ApprovalWorkflow key={accessionId} accessionId={accessionId} />
               </div>
