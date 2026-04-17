@@ -153,6 +153,29 @@ export function ObjectDetailClient({
   const locale = useCurrentLocale();
   const { currentOrganizationId } = useOrganization();
   const { hasFeature } = useFeatureAccess();
+  const liveCollection = useQuery(api.collections.get, { collectionId });
+  collection = liveCollection === undefined ? collection : liveCollection;
+  const liveCollectionGroup = useQuery(
+    api.collectionGroups.get,
+    collection?.collectionGroupId
+      ? { groupId: collection.collectionGroupId }
+      : "skip",
+  );
+  collectionGroup =
+    liveCollectionGroup === undefined ? collectionGroup : liveCollectionGroup;
+  const liveLocationPath = useQuery(
+    api.locations.getLocationPath,
+    collection?.currentLocationId
+      ? { locationId: collection.currentLocationId }
+      : "skip",
+  );
+  locationPath =
+    liveLocationPath === undefined ? locationPath : liveLocationPath;
+  const liveMedia = useQuery(
+    api.media.list,
+    collection ? { collectionId: collection._id } : "skip",
+  );
+  media = liveMedia === undefined ? media : liveMedia;
   const [activeTab, setActiveTab] = useState<TabId>("general");
   const featureOrganizationId =
     collection?.organizationId ?? currentOrganizationId ?? undefined;
@@ -484,7 +507,10 @@ export function ObjectDetailClient({
               </div>
 
               {activeTab === "general" && (
-                <GeneralTab collection={collection} />
+                <GeneralTab
+                  collection={collection}
+                  locationPath={locationPath ?? undefined}
+                />
               )}
               {activeTab === "physical" && (
                 <PhysicalTab collection={collection} />

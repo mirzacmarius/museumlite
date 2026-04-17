@@ -32,6 +32,12 @@ export function LocationSelector({
       ? { organizationId: organizationId as Id<"organizations"> }
       : "skip",
   );
+  const currentLocationPath = useQuery(
+    api.locations.getLocationPath,
+    value && value !== "__none__"
+      ? { locationId: value as Id<"locations"> }
+      : "skip",
+  );
 
   if (locations === undefined) {
     return (
@@ -70,13 +76,52 @@ export function LocationSelector({
     return `${pathString} → ${location.name} (${location.type})`;
   };
 
+  const formatLocationPathLabel = (
+    path: Array<{ name: string; type: string }>,
+  ) => {
+    const currentLocation = path[path.length - 1];
+    if (!currentLocation) {
+      return placeholder;
+    }
+
+    if (path.length <= 1) {
+      return `${currentLocation.name} (${currentLocation.type})`;
+    }
+
+    const pathString = path
+      .slice(0, -1)
+      .map((p) => p.name)
+      .join(" → ");
+    return `${pathString} → ${currentLocation.name} (${currentLocation.type})`;
+  };
+
+  const hasSelectedLocation =
+    !!value &&
+    value !== "__none__" &&
+    sortedLocations.some((location) => location._id === value);
+  const selectedLocation =
+    value && value !== "__none__"
+      ? sortedLocations.find((location) => location._id === value)
+      : undefined;
+  const shouldShowCurrentInactiveLocation =
+    !!value &&
+    value !== "__none__" &&
+    !hasSelectedLocation &&
+    Array.isArray(currentLocationPath) &&
+    currentLocationPath.length > 0;
+  const selectedLabel = selectedLocation
+    ? formatLocationLabel(selectedLocation)
+    : shouldShowCurrentInactiveLocation
+      ? `${formatLocationPathLabel(currentLocationPath)} (current)`
+      : placeholder;
+
   return (
     <Select
       value={value || (allowNone ? "__none__" : undefined)}
       onValueChange={(val) => onValueChange(val === "__none__" ? "" : val)}
     >
       <SelectTrigger>
-        <SelectValue placeholder={placeholder} />
+        <SelectValue placeholder={placeholder}>{selectedLabel}</SelectValue>
       </SelectTrigger>
       <SelectContent>
         {allowNone && (
@@ -84,6 +129,11 @@ export function LocationSelector({
             <span className="text-muted-foreground">None</span>
           </SelectItem>
         )}
+        {shouldShowCurrentInactiveLocation ? (
+          <SelectItem value={value}>
+            {`${formatLocationPathLabel(currentLocationPath)} (current)`}
+          </SelectItem>
+        ) : null}
         {sortedLocations.map((location) => (
           <SelectItem key={location._id} value={location._id}>
             {formatLocationLabel(location)}

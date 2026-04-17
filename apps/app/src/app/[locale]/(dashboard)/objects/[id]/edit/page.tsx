@@ -6,6 +6,7 @@ import { DeaccessionDialog } from "@/components/deaccession-dialog";
 import { DonationDetailsField } from "@/components/donation-details-field";
 import { LocationSelector } from "@/components/location-selector";
 import { MaterialsCombobox } from "@/components/materials-combobox";
+import { MediaEditorDialog } from "@/components/media-editor-dialog";
 import { ObjectCombobox } from "@/components/object-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
@@ -38,6 +39,7 @@ import {
   Calendar,
   Camera,
   CheckCircle,
+  Edit,
   Image as ImageIcon,
   Info,
   MapPin,
@@ -130,7 +132,7 @@ const EMPTY_FORM: CollectionFormData = {
   previous_owners: [],
   links: [{ url: "", label: "" }],
   parentObjectId: "",
-  currentLocationId: "__none__",
+  currentLocationId: "",
   collectionGroupId: "",
   alternateAccessionNumbers: [],
   ownershipHistory: [],
@@ -179,7 +181,7 @@ function createInitialFormData(collection: CollectionDoc): CollectionFormData {
         ? collection.links
         : [{ url: "", label: "" }],
     parentObjectId: (collection.parentObjectId as string) || "",
-    currentLocationId: (collection.currentLocationId as string) || "__none__",
+    currentLocationId: (collection.currentLocationId as string) || "",
     collectionGroupId: (collection.collectionGroupId as string) || "",
     alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
     ownershipHistory: collection.ownershipHistory || [],
@@ -308,6 +310,9 @@ export default function CollectionEditPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deaccessionDialogOpen, setDeaccessionDialogOpen] = useState(false);
+  const [editingImageId, setEditingImageId] = useState<Id<"mediaFiles"> | null>(
+    null,
+  );
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(
     null,
@@ -326,15 +331,6 @@ export default function CollectionEditPage() {
       setActiveTab(tabs[0]?.id ?? "general");
     }
   }, [activeTab, tabs]);
-
-  useEffect(() => {
-    if (collection && !isInitialized) {
-      const nextFormData = createInitialFormData(collection);
-      setFormData(nextFormData);
-      initialFormSignatureRef.current = getFormSignature(nextFormData);
-      setIsInitialized(true);
-    }
-  }, [collection, isInitialized]);
 
   useEffect(() => {
     if (media !== undefined && !isMediaBaselineReady) {
@@ -367,10 +363,15 @@ export default function CollectionEditPage() {
     return images.find((item) => item.isPrimary) ?? images[0] ?? null;
   }, [images]);
 
+  const resolvedCurrentLocationId =
+    formData.currentLocationId ||
+    (collection?.currentLocationId as string) ||
+    "";
+
   const currentLocationPath = useQuery(
     api.locations.getLocationPath,
-    formData.currentLocationId && formData.currentLocationId !== "__none__"
-      ? { locationId: formData.currentLocationId as Id<"locations"> }
+    resolvedCurrentLocationId && resolvedCurrentLocationId !== "__none__"
+      ? { locationId: resolvedCurrentLocationId as Id<"locations"> }
       : "skip",
   );
 
@@ -398,6 +399,27 @@ export default function CollectionEditPage() {
   const hasMediaChanges =
     isMediaBaselineReady &&
     currentMediaSignature !== initialMediaSignatureRef.current;
+
+  useEffect(() => {
+    if (!collection) {
+      return;
+    }
+
+    const nextFormData = createInitialFormData(collection);
+    const nextSignature = getFormSignature(nextFormData);
+
+    if (!isInitialized) {
+      setFormData(nextFormData);
+      initialFormSignatureRef.current = nextSignature;
+      setIsInitialized(true);
+      return;
+    }
+
+    if (!isFormDirty && nextSignature !== initialFormSignatureRef.current) {
+      setFormData(nextFormData);
+      initialFormSignatureRef.current = nextSignature;
+    }
+  }, [collection, isFormDirty, isInitialized]);
 
   useBeforeUnload(isFormDirty);
 
@@ -1134,10 +1156,10 @@ export default function CollectionEditPage() {
                         </Label>
                         <LocationSelector
                           organizationId={collection.organizationId}
-                          value={formData.currentLocationId || "__none__"}
+                          value={resolvedCurrentLocationId}
                           onValueChange={(value) => {
                             updateField("currentLocationId", value);
-                            if (value === "__none__") {
+                            if (!value) {
                               updateField("displayStatus", undefined);
                             }
                           }}
@@ -1766,11 +1788,25 @@ export default function CollectionEditPage() {
                               )}
                             </div>
 
-                            <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/65 p-3 opacity-0 transition-opacity group-hover:opacity-100">
+                            <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/65 p-3">
                               <div className="truncate text-xs text-white">
                                 {file.fileName}
                               </div>
                               <div className="flex items-center gap-1">
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="secondary"
+                                  className="h-8 w-8"
+                                  onClick={() =>
+                                    setEditingImageId(
+                                      file._id as Id<"mediaFiles">,
+                                    )
+                                  }
+                                  title={common("edit")}
+                                >
+                                  <Edit className="h-3.5 w-3.5" />
+                                </Button>
                                 {!file.isPrimary ? (
                                   <Button
                                     type="button"
@@ -2035,6 +2071,11 @@ export default function CollectionEditPage() {
         collectionId={typedCollectionId}
         collectionTitle={collection.title}
         organizationId={collection.organizationId}
+      />
+      <MediaEditorDialog
+        mediaId={editingImageId}
+        isOpen={!!editingImageId}
+        onClose={() => setEditingImageId(null)}
       />
     </div>
   );

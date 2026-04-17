@@ -11,19 +11,24 @@ import {
   Link as LinkIcon,
   Tag,
 } from "lucide-react";
-import type { CollectionData } from "./types";
+import type { CollectionData, LocationPathItem } from "./types";
 
 interface GeneralTabProps {
   collection: CollectionData;
+  locationPath?: LocationPathItem[] | null;
 }
 
-export function GeneralTab({ collection }: GeneralTabProps) {
+export function GeneralTab({ collection, locationPath }: GeneralTabProps) {
   const collectionGroup = useQuery(
     api.collectionGroups.get,
     collection.collectionGroupId
       ? { groupId: collection.collectionGroupId }
       : "skip",
   );
+  const locationLabel =
+    locationPath && locationPath.length > 0
+      ? locationPath.map((location) => location.name).join(" > ")
+      : "—";
   const hasHistoricalContext =
     Boolean(collection.provenance) ||
     Boolean(collection.exhibitionHistory) ||
@@ -93,6 +98,13 @@ export function GeneralTab({ collection }: GeneralTabProps) {
               <div className="text-sm text-foreground">
                 {collection.creator || "—"}
               </div>
+            </div>
+
+            <div className="grid gap-1 md:col-span-2">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Current Location
+              </label>
+              <div className="text-sm text-foreground">{locationLabel}</div>
             </div>
           </div>
 

@@ -51,12 +51,14 @@ interface MediaGalleryProps {
   collectionId: string;
   mediaType?: "images" | "documents";
   onOpenLightbox?: (index: number) => void;
+  editable?: boolean;
 }
 
 export function MediaGallery({
   collectionId,
   mediaType = "images",
   onOpenLightbox,
+  editable = false,
 }: MediaGalleryProps) {
   const t = useScopedI18n("common.toast");
   const common = useScopedI18n("common");
@@ -240,12 +242,20 @@ export function MediaGallery({
                   return (
                     <div
                       key={file._id}
-                      draggable={!file.isPrimary}
-                      onDragStart={(e) => handleDragStart(e, mediaId)}
-                      onDragOver={(e) => handleDragOver(e, mediaId)}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, mediaId)}
-                      onDragEnd={handleDragEnd}
+                      draggable={editable && !file.isPrimary}
+                      onDragStart={
+                        editable
+                          ? (e) => handleDragStart(e, mediaId)
+                          : undefined
+                      }
+                      onDragOver={
+                        editable ? (e) => handleDragOver(e, mediaId) : undefined
+                      }
+                      onDragLeave={editable ? handleDragLeave : undefined}
+                      onDrop={
+                        editable ? (e) => handleDrop(e, mediaId) : undefined
+                      }
+                      onDragEnd={editable ? handleDragEnd : undefined}
                       className={cn(
                         "group relative aspect-square cursor-pointer overflow-hidden rounded-lg border bg-secondary transition-all",
                         isDragging && "opacity-50 scale-95",
@@ -307,7 +317,7 @@ export function MediaGallery({
                             <Maximize2 className="h-6 w-6 text-white" />
                           </div>
 
-                          {!file.isPrimary && (
+                          {editable && !file.isPrimary && (
                             <div className="absolute left-2 top-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                               <div className="flex h-7 w-7 items-center justify-center rounded bg-black/50 cursor-grab active:cursor-grabbing">
                                 <GripVertical className="h-3.5 w-3.5 text-white" />
@@ -315,102 +325,104 @@ export function MediaGallery({
                             </div>
                           )}
 
-                          <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                            <PermissionGate permission="media.upload">
-                              {!file.isPrimary && (
+                          {editable && (
+                            <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                              <PermissionGate permission="media.upload">
+                                {!file.isPrimary && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSetPrimary(file._id);
+                                    }}
+                                    title={common("setAsPrimary")}
+                                    className="h-7 w-7 p-0"
+                                  >
+                                    <Star className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
                                 <Button
                                   type="button"
                                   size="sm"
                                   variant="secondary"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleSetPrimary(file._id);
+                                    setEditingImageId(
+                                      file._id as Id<"mediaFiles">,
+                                    );
                                   }}
-                                  title={common("setAsPrimary")}
+                                  title={common("edit")}
                                   className="h-7 w-7 p-0"
                                 >
-                                  <Star className="h-3.5 w-3.5" />
+                                  <Edit className="h-3.5 w-3.5" />
                                 </Button>
-                              )}
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingImageId(
-                                    file._id as Id<"mediaFiles">,
-                                  );
-                                }}
-                                title={common("edit")}
-                                className="h-7 w-7 p-0"
-                              >
-                                <Edit className="h-3.5 w-3.5" />
-                              </Button>
-                              <MediaEditDialog
-                                media={file}
-                                onUpdate={async (updates) => {
-                                  setError(null);
-                                  try {
-                                    await updateMedia({
-                                      mediaId: file._id as Id<"mediaFiles">,
-                                      ...updates,
-                                    });
-                                    setEditingMedia(null);
-                                  } catch (err) {
-                                    setError(
-                                      err instanceof Error
-                                        ? err.message
-                                        : formErrors("failedToUpdateMedia"),
-                                    );
+                                <MediaEditDialog
+                                  media={file}
+                                  onUpdate={async (updates) => {
+                                    setError(null);
+                                    try {
+                                      await updateMedia({
+                                        mediaId: file._id as Id<"mediaFiles">,
+                                        ...updates,
+                                      });
+                                      setEditingMedia(null);
+                                    } catch (err) {
+                                      setError(
+                                        err instanceof Error
+                                          ? err.message
+                                          : formErrors("failedToUpdateMedia"),
+                                      );
+                                    }
+                                  }}
+                                  open={editingMedia === file._id}
+                                  onOpenChange={(open) =>
+                                    setEditingMedia(open ? file._id : null)
                                   }
-                                }}
-                                open={editingMedia === file._id}
-                                onOpenChange={(open) =>
-                                  setEditingMedia(open ? file._id : null)
-                                }
-                              />
-                              <AlertDialog
-                                open={deleteConfirmOpen === file._id}
-                                onOpenChange={(open) =>
-                                  setDeleteConfirmOpen(open ? file._id : null)
-                                }
-                              >
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={(e) => e.stopPropagation()}
-                                    title={common("delete")}
-                                    className="h-7 w-7 p-0"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                      {tMedia("deleteMedia")}
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      {tMedia("deleteMediaConfirm")}
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>
-                                      {common("cancel")}
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDelete(file._id)}
+                                />
+                                <AlertDialog
+                                  open={deleteConfirmOpen === file._id}
+                                  onOpenChange={(open) =>
+                                    setDeleteConfirmOpen(open ? file._id : null)
+                                  }
+                                >
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={(e) => e.stopPropagation()}
+                                      title={common("delete")}
+                                      className="h-7 w-7 p-0"
                                     >
-                                      {common("delete")}
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </PermissionGate>
-                          </div>
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        {tMedia("deleteMedia")}
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        {tMedia("deleteMediaConfirm")}
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        {common("cancel")}
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDelete(file._id)}
+                                      >
+                                        {common("delete")}
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </PermissionGate>
+                            </div>
+                          )}
 
                           {file.isPrimary && (
                             <div className="absolute left-2 top-2 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">
@@ -433,11 +445,13 @@ export function MediaGallery({
                 />
               )}
 
-              <MediaEditorDialog
-                mediaId={editingImageId}
-                isOpen={!!editingImageId}
-                onClose={() => setEditingImageId(null)}
-              />
+              {editable && (
+                <MediaEditorDialog
+                  mediaId={editingImageId}
+                  isOpen={!!editingImageId}
+                  onClose={() => setEditingImageId(null)}
+                />
+              )}
             </>
           )}
         </div>
@@ -468,7 +482,7 @@ export function MediaGallery({
                       </p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 ml-4">
+                  <div className="ml-4 flex items-center gap-2">
                     {doc.url && (
                       <Button type="button" size="sm" variant="ghost" asChild>
                         <a
@@ -481,77 +495,79 @@ export function MediaGallery({
                         </a>
                       </Button>
                     )}
-                    <PermissionGate permission="media.upload">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setEditingMedia(doc._id)}
-                        title={common("edit")}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <MediaEditDialog
-                        media={doc}
-                        onUpdate={async (updates) => {
-                          setError(null);
-                          try {
-                            await updateMedia({
-                              mediaId: doc._id as Id<"mediaFiles">,
-                              ...updates,
-                            });
-                            setEditingMedia(null);
-                          } catch (err) {
-                            setError(
-                              err instanceof Error
-                                ? err.message
-                                : formErrors("failedToUpdateMedia"),
-                            );
+                    {editable && (
+                      <PermissionGate permission="media.upload">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEditingMedia(doc._id)}
+                          title={common("edit")}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <MediaEditDialog
+                          media={doc}
+                          onUpdate={async (updates) => {
+                            setError(null);
+                            try {
+                              await updateMedia({
+                                mediaId: doc._id as Id<"mediaFiles">,
+                                ...updates,
+                              });
+                              setEditingMedia(null);
+                            } catch (err) {
+                              setError(
+                                err instanceof Error
+                                  ? err.message
+                                  : formErrors("failedToUpdateMedia"),
+                              );
+                            }
+                          }}
+                          open={editingMedia === doc._id}
+                          onOpenChange={(open) =>
+                            setEditingMedia(open ? doc._id : null)
                           }
-                        }}
-                        open={editingMedia === doc._id}
-                        onOpenChange={(open) =>
-                          setEditingMedia(open ? doc._id : null)
-                        }
-                      />
-                      <AlertDialog
-                        open={deleteConfirmOpen === doc._id}
-                        onOpenChange={(open) =>
-                          setDeleteConfirmOpen(open ? doc._id : null)
-                        }
-                      >
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            title={common("delete")}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              {tMedia("deleteDocument")}
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              {tMedia("deleteDocumentConfirm")}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>
-                              {common("cancel")}
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDelete(doc._id)}
+                        />
+                        <AlertDialog
+                          open={deleteConfirmOpen === doc._id}
+                          onOpenChange={(open) =>
+                            setDeleteConfirmOpen(open ? doc._id : null)
+                          }
+                        >
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              title={common("delete")}
                             >
-                              {common("delete")}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </PermissionGate>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                {tMedia("deleteDocument")}
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {tMedia("deleteDocumentConfirm")}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>
+                                {common("cancel")}
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(doc._id)}
+                              >
+                                {common("delete")}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </PermissionGate>
+                    )}
                   </div>
                 </div>
               ))}
