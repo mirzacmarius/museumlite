@@ -253,6 +253,11 @@ export async function canApproveAtStep(
     return false;
   }
 
+  // Organization administrators are allowed to override workflow step roles.
+  if (await hasPermission(ctx, organizationId, "organization.manage_settings")) {
+    return true;
+  }
+
   const workflowConfig = await ctx.db
     .query("workflowConfigs")
     .withIndex("by_organization_and_workflowType", (q) =>

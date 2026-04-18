@@ -163,6 +163,108 @@ test("submitForApproval moves object drafts from step 0 to step 1", async () => 
   expect(accession?.workflowStep).toBe(1);
 });
 
+test("organization administrators can approve an accession even when the workflow step belongs to another role", async () => {
+  const t = convexTest(schema, modules);
+
+  const { organizationId, adminUserId } = await t.run(async (ctx) => {
+      const organizationId = await ctx.db.insert("organizations", {
+        name: "Admin Approval Museum",
+        slug: `admin-approval-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      });
+
+      const adminUserId = await ctx.db.insert("users", {
+        email: `admin-${Math.random().toString(36).slice(2, 8)}@example.com`,
+        name: "Administrator",
+      });
+
+      const adminRoleId = await ctx.db.insert("roles", {
+        organizationId,
+        name: "admin",
+        isSystemRole: true,
+      });
+
+      const reviewerRoleId = await ctx.db.insert("roles", {
+        organizationId,
+        name: "Registrar",
+        isSystemRole: false,
+      });
+
+      for (const permissionName of [
+        "organization.manage_settings",
+        "collections.create",
+        "collections.read",
+        "collections.update",
+        "collections.approve_accession",
+      ]) {
+        const permissionId = await ctx.db.insert("permissions", {
+          name: permissionName,
+          category: permissionName.split(".")[0] || "collections",
+        });
+
+        await ctx.db.insert("rolePermissions", {
+          roleId: adminRoleId,
+          permissionId,
+        });
+      }
+
+      await ctx.db.insert("userOrganizations", {
+        userId: adminUserId,
+        organizationId,
+        roleId: adminRoleId,
+        joinedAt: Date.now(),
+      });
+
+      await ctx.db.insert("workflowConfigs", {
+        organizationId,
+        workflowType: "accession",
+        steps: [{ stepNumber: 1, roleId: reviewerRoleId, name: "Registrar Review" }],
+        canInitiateRoles: [adminRoleId],
+      });
+
+      return { organizationId, adminUserId };
+    });
+
+  const admin = authedForUser(t, adminUserId);
+
+  const accessionId = await admin.mutation(api.accessions.upsertObjectDraft, {
+    organizationId,
+    saveMode: "submit",
+    objectData: {
+      accessionNumber: "ADMIN-APPROVE-001",
+      title: "Admin Override Accession",
+      description: "Submitted by admin for approval regression coverage",
+    },
+  });
+
+  await admin.mutation(api.accessions.approve, {
+    accessionId,
+    comment: "Approved by organization administrator",
+  });
+
+  const accession = await admin.query(api.accessions.get, {
+    accessionId,
+  });
+
+  expect(accession).not.toBeNull();
+  expect(accession?.status).toBe("approved");
+  expect(accession?.approvedBy).toBe(adminUserId);
+
+  const collection = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("collections")
+      .withIndex("by_organization_and_accessionNumber", (q) =>
+        q
+          .eq("organizationId", organizationId)
+          .eq("accessionNumber", "ADMIN-APPROVE-001"),
+      )
+      .first();
+  });
+
+  expect(collection).not.toBeNull();
+  expect(collection?.title).toBe("Admin Override Accession");
+});
+
 /**
  * Integration test for batch lookup optimization (N+1 query elimination).
  *
