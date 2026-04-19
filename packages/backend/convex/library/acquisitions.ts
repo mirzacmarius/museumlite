@@ -11,6 +11,7 @@ import {
   getUsersToNotifyForWorkflowStep,
   requirePermission,
 } from "../utils/permissions";
+import { resolveWorkflowStepState } from "../utils/workflowSteps";
 
 // Priority validator
 const priorityValidator = v.union(
@@ -79,6 +80,14 @@ export const create = mutation({
       )
       .filter((q) => q.eq(q.field("workflowType"), "acquisition"))
       .first();
+    const workflowState = resolveWorkflowStepState(
+      workflowConfig?.steps,
+      undefined,
+    );
+
+    if (workflowConfig && workflowState.firstStep === undefined) {
+      throw new Error("Workflow has no approval steps configured");
+    }
 
     const now = Date.now();
     const workflowHistory = workflowConfig
@@ -108,7 +117,7 @@ export const create = mutation({
       vendorId: args.vendorId,
       fundSource: args.fundSource,
       status: "submitted",
-      workflowStep: workflowConfig ? 1 : undefined,
+      workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
       notes: args.notes,
     });
@@ -127,20 +136,20 @@ export const create = mutation({
         ctx,
         args.organizationId,
         "acquisition",
-        1,
+        workflowState.firstStep ?? 1,
       );
 
       for (const approverId of usersToNotify) {
         if (approverId !== userId) {
           await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: args.organizationId,
-            userId: approverId,
-            type: "workflow_pending",
-            title: "Acquisition Request Requires Approval",
-            message: `Acquisition request for "${args.title}" is pending your approval at step 1.`,
-            relatedEntityType: "libraryAcquisitionRequest",
-            relatedEntityId: requestId,
-          });
+              organizationId: args.organizationId,
+              userId: approverId,
+              type: "workflow_pending",
+              title: "Acquisition Request Requires Approval",
+              message: `Acquisition request for "${args.title}" is pending your approval at step ${workflowState.firstStep ?? 1}.`,
+              relatedEntityType: "libraryAcquisitionRequest",
+              relatedEntityId: requestId,
+            });
         }
       }
     }
@@ -657,7 +666,19 @@ export const approve = mutation({
     const now = Date.now();
 
     if (workflowConfig) {
-      const currentStep = request.workflowStep ?? 1;
+      const workflowState = resolveWorkflowStepState(
+        workflowConfig.steps,
+        request.workflowStep,
+      );
+      const currentStep = workflowState.currentStep;
+
+      if (currentStep === undefined) {
+        throw new Error("Workflow has no approval steps configured");
+      }
+      if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
+        throw new Error("Current workflow step is not configured");
+      }
+
       const canApprove = await canApproveAtStep(
         ctx,
         request.organizationId,
@@ -670,14 +691,16 @@ export const approve = mutation({
       }
 
       const history = request.workflowHistory ?? [];
-      history.push({
-        step: currentStep,
-        approvedBy: userId,
-        approvedAt: now,
-        comment: args.comment,
-      });
+      if (!workflowState.isPastLastStep) {
+        history.push({
+          step: currentStep,
+          approvedBy: userId,
+          approvedAt: now,
+          comment: args.comment,
+        });
+      }
 
-      const isLastStep = currentStep >= workflowConfig.steps.length;
+      const isLastStep = workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
         await ctx.db.patch(args.requestId, {
@@ -711,9 +734,14 @@ export const approve = mutation({
           });
         }
       } else {
+        const nextStep = workflowState.nextStep;
+        if (nextStep === undefined) {
+          throw new Error("Next workflow step is not configured");
+        }
+
         await ctx.db.patch(args.requestId, {
           status: "under_review",
-          workflowStep: currentStep + 1,
+          workflowStep: nextStep,
           workflowHistory: history,
         });
 
@@ -723,14 +751,14 @@ export const approve = mutation({
           action: "step_approved",
           entityType: "libraryAcquisitionRequest",
           entityId: args.requestId,
-          changes: { step: currentStep, nextStep: currentStep + 1 },
+          changes: { step: currentStep, nextStep },
         });
 
         const usersToNotify = await getUsersToNotifyForWorkflowStep(
           ctx,
           request.organizationId,
           "acquisition",
-          currentStep + 1,
+          nextStep,
         );
 
         for (const approverId of usersToNotify) {
@@ -740,7 +768,7 @@ export const approve = mutation({
               userId: approverId,
               type: "workflow_pending",
               title: "Acquisition Request Requires Your Approval",
-              message: `Acquisition request for "${request.title}" is pending your approval at step ${currentStep + 1}.`,
+              message: `Acquisition request for "${request.title}" is pending your approval at step ${nextStep}.`,
               relatedEntityType: "libraryAcquisitionRequest",
               relatedEntityId: args.requestId,
             });
@@ -792,7 +820,18 @@ export const reject = mutation({
       throw new Error("Request is not pending approval");
     }
 
-    const currentStep = request.workflowStep ?? 1;
+    const workflowConfig = await ctx.db
+      .query("workflowConfigs")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", request.organizationId),
+      )
+      .filter((q) => q.eq(q.field("workflowType"), "acquisition"))
+      .first();
+    const workflowState = resolveWorkflowStepState(
+      workflowConfig?.steps,
+      request.workflowStep,
+    );
+    const currentStep = workflowState.currentStep ?? request.workflowStep ?? 1;
     const canApprove = await canApproveAtStep(
       ctx,
       request.organizationId,

@@ -27,6 +27,11 @@ interface ApprovalWorkflowProps {
   accessionId: string;
 }
 
+type WorkflowStepInfo = {
+  stepNumber: number;
+  name: string;
+};
+
 export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
   const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("accessions");
@@ -39,13 +44,26 @@ export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
     api.accessions.get,
     accessionId ? { accessionId: accessionId as Id<"accessions"> } : "skip",
   );
+  const workflowSteps = useQuery(
+    api.accessions.getWorkflowSteps,
+    currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
+  );
 
   const approveAccession = useMutation(api.accessions.approve);
   const rejectAccession = useMutation(api.accessions.reject);
 
-  if (!accession || accession.status !== "pending") {
+  if (
+    !accession ||
+    accession.status !== "pending" ||
+    !accession.canCurrentUserApprove
+  ) {
     return null;
   }
+
+  const currentStep =
+    workflowSteps?.steps.find(
+      (step: WorkflowStepInfo) => step.stepNumber === accession.workflowStep,
+    ) ?? null;
 
   const handleApprove = async () => {
     setIsSubmitting(true);
@@ -106,8 +124,10 @@ export function ApprovalWorkflow({ accessionId }: ApprovalWorkflowProps) {
               className="bg-green-600 hover:bg-green-700"
             >
               <CheckCircle className="mr-2 h-4 w-4" />
-              {accession.workflowStep
-                ? t("approval.approveStep", { step: accession.workflowStep })
+              {currentStep
+                ? `Approve ${currentStep.name}`
+                : accession.workflowStep
+                  ? t("approval.approveStep", { step: accession.workflowStep })
                 : t("approval.approve")}
             </Button>
             <AlertDialog>

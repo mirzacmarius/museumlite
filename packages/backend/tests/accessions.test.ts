@@ -163,6 +163,782 @@ test("submitForApproval moves object drafts from step 0 to step 1", async () => 
   expect(accession?.workflowStep).toBe(1);
 });
 
+test("getWorkflowSteps returns descriptive workflow metadata", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.read"],
+  );
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [
+        {
+          stepNumber: 1,
+          roleId,
+          name: "Registrar Review",
+          approvalMode: "multi",
+          requiredApprovals: 2,
+          requiredDocuments: ["deed_of_gift"],
+        },
+      ],
+      canInitiateRoles: [roleId],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const workflow = await authed.query(api.accessions.getWorkflowSteps, {
+    organizationId,
+  });
+
+  expect(workflow.hasWorkflow).toBe(true);
+  expect(workflow.requireSourceVerification).toBe(false);
+  expect(workflow.steps[1]?.name).toBe("Registrar Review");
+  expect(workflow.steps[1]?.roleName).toBe("Registrar");
+  expect(workflow.steps[1]?.approvalMode).toBe("multi");
+  expect(workflow.steps[1]?.requiredApprovals).toBe(2);
+  expect("requiredDocuments" in (workflow.steps[1] ?? {})).toBe(false);
+});
+
+test("getWorkflowSteps does not surface document requirements for accession approvals", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.read"],
+  );
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [{ stepNumber: 1, roleId, name: "Documentation Check" }],
+      canInitiateRoles: [roleId],
+      requiredDocuments: [
+        {
+          documentType: "deed_of_gift",
+          description: "Legal transfer document",
+          requiredAtStep: 1,
+        },
+      ],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const workflow = await authed.query(api.accessions.getWorkflowSteps, {
+    organizationId,
+  });
+
+  expect("requiredDocuments" in (workflow.steps[1] ?? {})).toBe(false);
+});
+
+test("draft save does not require workflow initiation permission", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+    "collections.create",
+    "collections.read",
+    "collections.update",
+  ]);
+
+  const approverRoleId = await t.run(async (ctx) => {
+    return await ctx.db.insert("roles", {
+      organizationId,
+      name: "Approver",
+      isSystemRole: false,
+    });
+  });
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [{ stepNumber: 1, roleId: approverRoleId, name: "Approve" }],
+      canInitiateRoles: [approverRoleId],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const accessionId = await authed.mutation(api.accessions.upsertObjectDraft, {
+    organizationId,
+    saveMode: "draft",
+    objectData: {
+      accessionNumber: "DRAFT-NO-INIT-001",
+      title: "Draft Without Workflow Initiation",
+    },
+  });
+
+  const accession = await authed.query(api.accessions.get, {
+    accessionId,
+  });
+
+  expect(accession).not.toBeNull();
+  expect(accession?.status).toBe("pending");
+  expect(accession?.workflowStep).toBe(0);
+
+  await expect(
+    authed.mutation(api.accessions.upsertObjectDraft, {
+      organizationId,
+      accessionId,
+      saveMode: "submit",
+      objectData: {
+        accessionNumber: "DRAFT-NO-INIT-001",
+        title: "Draft Without Workflow Initiation",
+      },
+    }),
+  ).rejects.toThrow("Permission denied: cannot initiate accession workflow");
+});
+
+test("accession approval still requires the configured step role for non-admin users", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+    "collections.create",
+    "collections.read",
+    "collections.update",
+    "collections.approve_accession",
+  ]);
+
+  const approverRoleId = await t.run(async (ctx) => {
+    return await ctx.db.insert("roles", {
+      organizationId,
+      name: "Workflow Approver",
+      isSystemRole: false,
+    });
+  });
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [{ stepNumber: 1, roleId: approverRoleId, name: "Approval Step" }],
+      canInitiateRoles: [approverRoleId],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const accessionId = await authed.mutation(api.accessions.upsertObjectDraft, {
+    organizationId,
+    saveMode: "draft",
+    objectData: {
+      accessionNumber: "APPROVE-PERM-001",
+      title: "Approval Permission Override",
+      description: "Should approve based on permission gate",
+    },
+  });
+
+  await authed.mutation(api.accessions.submitForApproval, {
+    accessionId,
+  });
+
+  const accession = await authed.query(api.accessions.get, {
+    accessionId,
+  });
+
+  expect(accession).not.toBeNull();
+  expect(accession?.canCurrentUserApprove).toBe(false);
+
+  await expect(
+    authed.mutation(api.accessions.approve, {
+      accessionId,
+      comment: "Attempt approve without step role",
+    }),
+  ).rejects.toThrow("Permission denied: cannot approve at this step");
+});
+
+test("object draft approvals bypass source verification requirements", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    [
+      "collections.create",
+      "collections.read",
+      "collections.update",
+      "collections.approve_accession",
+    ],
+  );
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [{ stepNumber: 1, roleId, name: "Approve" }],
+      canInitiateRoles: [roleId],
+      requireSourceVerification: true,
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const accessionId = await authed.mutation(api.accessions.upsertObjectDraft, {
+    organizationId,
+    saveMode: "submit",
+    objectData: {
+      accessionNumber: "OBJ-SOURCE-001",
+      title: "Object Draft Without Source Verification",
+      description: "Draft-based object intake",
+    },
+  });
+
+  await authed.mutation(api.accessions.approve, {
+    accessionId,
+    comment: "Approved without source verification",
+  });
+
+  const accession = await authed.query(api.accessions.get, {
+    accessionId,
+  });
+
+  expect(accession).not.toBeNull();
+  expect(accession?.status).toBe("approved");
+  expect(accession?.sourceVerified).toBeUndefined();
+});
+
+test("standard accessions still require source verification when configured", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    [
+      "collections.create",
+      "collections.read",
+      "collections.update",
+      "collections.approve_accession",
+    ],
+  );
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [{ stepNumber: 1, roleId, name: "Approve" }],
+      canInitiateRoles: [roleId],
+      requireSourceVerification: true,
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const accessionId = await authed.mutation(api.accessions.create, {
+    organizationId,
+    accessionNumber: "STD-SOURCE-001",
+    dateReceived: Date.now(),
+    source: "Donor intake",
+    method: "gift",
+  });
+
+  await authed.mutation(api.accessions.submitForApproval, {
+    accessionId,
+  });
+
+  await expect(
+    authed.mutation(api.accessions.approve, {
+      accessionId,
+      comment: "Attempt approval without source verification",
+    }),
+  ).rejects.toThrow("Source verification is required before approval");
+});
+
+test("get returns source verification state after verifySource", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    [
+      "collections.create",
+      "collections.read",
+      "collections.update",
+      "collections.approve_accession",
+    ],
+  );
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [{ stepNumber: 1, roleId, name: "Documentation Check" }],
+      canInitiateRoles: [roleId],
+      requireSourceVerification: true,
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const accessionId = await authed.mutation(api.accessions.create, {
+    organizationId,
+    accessionNumber: "SRC-READ-001",
+    dateReceived: Date.now(),
+    source: "Donor intake",
+    method: "gift",
+  });
+
+  await authed.mutation(api.accessions.verifySource, {
+    accessionId,
+    verificationNotes: "Documents reviewed",
+  });
+
+  const accession = await authed.query(api.accessions.get, {
+    accessionId,
+  });
+
+  expect(accession).not.toBeNull();
+  expect(accession?.sourceVerified).toBe(true);
+  expect(accession?.sourceVerificationNotes).toBe("Documents reviewed");
+
+  const workflow = await authed.query(api.accessions.getWorkflowSteps, {
+    organizationId,
+  });
+
+  expect(workflow.requireSourceVerification).toBe(true);
+});
+
+test("object draft approvals bypass required document checks", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    [
+      "collections.create",
+      "collections.read",
+      "collections.update",
+      "collections.approve_accession",
+    ],
+  );
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [
+        {
+          stepNumber: 1,
+          roleId,
+          name: "Approve",
+          requiredDocuments: ["deed_of_gift"],
+        },
+      ],
+      canInitiateRoles: [roleId],
+      requiredDocuments: [
+        {
+          documentType: "deed_of_gift",
+          description: "Legal transfer document",
+          requiredAtStep: 1,
+        },
+      ],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const accessionId = await authed.mutation(api.accessions.upsertObjectDraft, {
+    organizationId,
+    saveMode: "submit",
+    objectData: {
+      accessionNumber: "OBJ-DOC-001",
+      title: "Object Draft Without Checklist Docs",
+      description: "Draft-based object intake",
+    },
+  });
+
+  await authed.mutation(api.accessions.approve, {
+    accessionId,
+    comment: "Approved without checklist documents",
+  });
+
+  const accession = await authed.query(api.accessions.get, {
+    accessionId,
+  });
+
+  expect(accession).not.toBeNull();
+  expect(accession?.status).toBe("approved");
+});
+
+test("standard accessions ignore configured checklist documents during approval", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    [
+      "collections.create",
+      "collections.read",
+      "collections.update",
+      "collections.approve_accession",
+    ],
+  );
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [
+        {
+          stepNumber: 1,
+          roleId,
+          name: "Approve",
+          requiredDocuments: ["deed_of_gift"],
+        },
+      ],
+      canInitiateRoles: [roleId],
+      requiredDocuments: [
+        {
+          documentType: "deed_of_gift",
+          description: "Legal transfer document",
+          requiredAtStep: 1,
+        },
+      ],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const accessionId = await authed.mutation(api.accessions.create, {
+    organizationId,
+    accessionNumber: "STD-DOC-001",
+    dateReceived: Date.now(),
+    source: "Donor intake",
+    method: "gift",
+  });
+
+  await authed.mutation(api.accessions.initializeDocumentChecklist, {
+    accessionId,
+  });
+
+  await authed.mutation(api.accessions.submitForApproval, {
+    accessionId,
+  });
+
+  await authed.mutation(api.accessions.approve, {
+    accessionId,
+    comment: "Approve without deed of gift",
+  });
+
+  const accession = await authed.query(api.accessions.get, {
+    accessionId,
+  });
+
+  expect(accession).not.toBeNull();
+  expect(accession?.status).toBe("approved");
+});
+
+test("multi-step accessions advance and finish without document blockers", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    [
+      "collections.create",
+      "collections.read",
+      "collections.update",
+      "collections.approve_accession",
+    ],
+  );
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [
+        {
+          stepNumber: 1,
+          roleId,
+          name: "Documentation Check",
+          requiredDocuments: ["deed_of_gift"],
+        },
+        {
+          stepNumber: 2,
+          roleId,
+          name: "Final Approval",
+        },
+      ],
+      canInitiateRoles: [roleId],
+      requiredDocuments: [
+        {
+          documentType: "deed_of_gift",
+          description: "Legal transfer document",
+          requiredAtStep: 1,
+        },
+      ],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const accessionId = await authed.mutation(api.accessions.create, {
+    organizationId,
+    accessionNumber: "MULTI-STEP-DOC-001",
+    dateReceived: Date.now(),
+    source: "Donor intake",
+    method: "gift",
+  });
+
+  await authed.mutation(api.accessions.submitForApproval, {
+    accessionId,
+  });
+
+  await authed.mutation(api.accessions.approve, {
+    accessionId,
+    comment: "Advance to step 2 without documents",
+  });
+
+  let accession = await authed.query(api.accessions.get, {
+    accessionId,
+  });
+
+  expect(accession).not.toBeNull();
+  expect(accession?.status).toBe("pending");
+  expect(accession?.workflowStep).toBe(2);
+
+  await authed.mutation(api.accessions.approve, {
+    accessionId,
+    comment: "Finalize without documents",
+  });
+
+  accession = await authed.query(api.accessions.get, {
+    accessionId,
+  });
+
+  expect(accession).not.toBeNull();
+  expect(accession?.status).toBe("approved");
+});
+
+test("accession workflows with config step 0 still complete on the last real approval step", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    [
+      "collections.create",
+      "collections.read",
+      "collections.update",
+      "collections.approve_accession",
+    ],
+  );
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [
+        { stepNumber: 0, roleId, name: "Initial Review" },
+        { stepNumber: 1, roleId, name: "Documentation Check" },
+        { stepNumber: 2, roleId, name: "Final Approval" },
+      ],
+      canInitiateRoles: [roleId],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const accessionId = await authed.mutation(api.accessions.upsertObjectDraft, {
+    organizationId,
+    saveMode: "submit",
+    objectData: {
+      accessionNumber: "HIDDEN-ZERO-STEP-001",
+      title: "Workflow With Hidden Zero Step",
+    },
+  });
+
+  await authed.mutation(api.accessions.approve, {
+    accessionId,
+    comment: "Approve visible step 1",
+  });
+
+  let accession = await authed.query(api.accessions.get, {
+    accessionId,
+  });
+
+  expect(accession).not.toBeNull();
+  expect(accession?.status).toBe("pending");
+  expect(accession?.workflowStep).toBe(2);
+
+  await authed.mutation(api.accessions.approve, {
+    accessionId,
+    comment: "Approve visible step 2",
+  });
+
+  accession = await authed.query(api.accessions.get, {
+    accessionId,
+  });
+
+  expect(accession).not.toBeNull();
+  expect(accession?.status).toBe("approved");
+});
+
+test("stale accessions past the last approval step are finalized on approve", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    [
+      "collections.create",
+      "collections.read",
+      "collections.update",
+      "collections.approve_accession",
+    ],
+  );
+
+  const accessionId = await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [
+        { stepNumber: 0, roleId, name: "Initial Review" },
+        { stepNumber: 1, roleId, name: "Documentation Check" },
+        { stepNumber: 2, roleId, name: "Final Approval" },
+      ],
+      canInitiateRoles: [roleId],
+    });
+
+    return await ctx.db.insert("accessions", {
+      organizationId,
+      accessionNumber: "STALE-STEP-001",
+      dateReceived: Date.now(),
+      source: "Donor intake",
+      method: "gift",
+      status: "pending",
+      workflowStep: 3,
+      workflowHistory: [
+        {
+          step: 1,
+          approvedBy: userId,
+          approvedAt: Date.now() - 1000,
+        },
+        {
+          step: 2,
+          approvedBy: userId,
+          approvedAt: Date.now() - 500,
+        },
+      ],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+
+  await authed.mutation(api.accessions.approve, {
+    accessionId,
+    comment: "Finalize stale accession",
+  });
+
+  const accession = await authed.query(api.accessions.get, {
+    accessionId,
+  });
+
+  expect(accession).not.toBeNull();
+  expect(accession?.status).toBe("approved");
+  expect(accession?.approvedBy).toBe(userId);
+});
+
+test("stale accessions past the last approval step still require source verification", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    [
+      "collections.create",
+      "collections.read",
+      "collections.update",
+      "collections.approve_accession",
+    ],
+  );
+
+  const accessionId = await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [
+        { stepNumber: 0, roleId, name: "Initial Review" },
+        { stepNumber: 1, roleId, name: "Documentation Check" },
+        { stepNumber: 2, roleId, name: "Final Approval" },
+      ],
+      canInitiateRoles: [roleId],
+      requireSourceVerification: true,
+    });
+
+    return await ctx.db.insert("accessions", {
+      organizationId,
+      accessionNumber: "STALE-SOURCE-001",
+      dateReceived: Date.now(),
+      source: "Donor intake",
+      method: "gift",
+      status: "pending",
+      workflowStep: 3,
+      workflowHistory: [
+        {
+          step: 1,
+          approvedBy: userId,
+          approvedAt: Date.now() - 1000,
+        },
+        {
+          step: 2,
+          approvedBy: userId,
+          approvedAt: Date.now() - 500,
+        },
+      ],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+
+  await expect(
+    authed.mutation(api.accessions.approve, {
+      accessionId,
+      comment: "Try to finalize stale accession without source verification",
+    }),
+  ).rejects.toThrow("Source verification is required before approval");
+});
+
+test("stale accessions past the last approval step still require the last step role", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+    "collections.create",
+    "collections.read",
+    "collections.update",
+    "collections.approve_accession",
+  ]);
+
+  const approverRoleId = await t.run(async (ctx) => {
+    return await ctx.db.insert("roles", {
+      organizationId,
+      name: "Workflow Approver",
+      isSystemRole: false,
+    });
+  });
+
+  const accessionId = await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [
+        { stepNumber: 0, roleId: approverRoleId, name: "Initial Review" },
+        { stepNumber: 1, roleId: approverRoleId, name: "Documentation Check" },
+        { stepNumber: 2, roleId: approverRoleId, name: "Final Approval" },
+      ],
+      canInitiateRoles: [approverRoleId],
+    });
+
+    return await ctx.db.insert("accessions", {
+      organizationId,
+      accessionNumber: "STALE-AUTH-001",
+      dateReceived: Date.now(),
+      source: "Donor intake",
+      method: "gift",
+      status: "pending",
+      workflowStep: 3,
+      workflowHistory: [
+        {
+          step: 1,
+          approvedBy: userId,
+          approvedAt: Date.now() - 1000,
+        },
+        {
+          step: 2,
+          approvedBy: userId,
+          approvedAt: Date.now() - 500,
+        },
+      ],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const accession = await authed.query(api.accessions.get, {
+    accessionId,
+  });
+
+  expect(accession).not.toBeNull();
+  expect(accession?.canCurrentUserApprove).toBe(false);
+
+  await expect(
+    authed.mutation(api.accessions.approve, {
+      accessionId,
+      comment: "Try to finalize stale accession without final step role",
+    }),
+  ).rejects.toThrow("Permission denied: cannot approve at this step");
+});
+
 test("organization administrators can approve an accession even when the workflow step belongs to another role", async () => {
   const t = convexTest(schema, modules);
 

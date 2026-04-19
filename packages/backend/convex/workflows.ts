@@ -1,6 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { env } from "./env";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
@@ -10,6 +9,7 @@ import {
   query,
 } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
+import { getPositiveWorkflowSteps } from "./utils/workflowSteps";
 
 const workflowTypeValidator = v.union(
   v.literal("accession"),
@@ -159,6 +159,12 @@ export const upsert = mutation({
       args.organizationId,
       "organization.manage_settings",
     );
+
+    if (getPositiveWorkflowSteps(args.steps).length === 0) {
+      throw new Error(
+        "Workflow must include at least one approval step with stepNumber greater than 0",
+      );
+    }
 
     const existing = await ctx.db
       .query("workflowConfigs")
@@ -716,9 +722,11 @@ export const assignDeaccession = mutation({
 
       // Get organization for building deep link
       const org = await ctx.db.get(deaccession.organizationId);
-      const taskUrl = org
-        ? `${env.SITE_URL}/${org.slug}/deaccessions/${args.deaccessionId}`
-        : undefined;
+      const siteUrl = process.env.SITE_URL;
+      const taskUrl =
+        org && siteUrl
+          ? `${siteUrl}/${org.slug}/deaccessions/${args.deaccessionId}`
+          : undefined;
 
       await ctx.runMutation(internal.notifications.sendNotification, {
         organizationId: deaccession.organizationId,
@@ -835,9 +843,11 @@ export const assignLoan = mutation({
 
       // Get organization for building deep link
       const org = await ctx.db.get(loan.organizationId);
-      const taskUrl = org
-        ? `${env.SITE_URL}/${org.slug}/loans/${args.loanId}`
-        : undefined;
+      const siteUrl = process.env.SITE_URL;
+      const taskUrl =
+        org && siteUrl
+          ? `${siteUrl}/${org.slug}/loans/${args.loanId}`
+          : undefined;
 
       await ctx.runMutation(internal.notifications.sendNotification, {
         organizationId: loan.organizationId,

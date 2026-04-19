@@ -11,6 +11,7 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
 async function requireExhibitionAccess(
   ctx: any,
@@ -158,7 +159,10 @@ export const get = query({
       collectionTitle: collection?.title,
       status: exhibition.status,
       workflowStep: exhibition.workflowStep,
-      totalWorkflowSteps: workflowConfig?.steps.length,
+      totalWorkflowSteps: workflowConfig
+        ? resolveWorkflowStepState(workflowConfig.steps, undefined).approvalSteps
+            .length
+        : undefined,
       approvedBy: exhibition.approvedBy,
       approvedAt: exhibition.approvedAt,
       approverName: approver?.name ?? approver?.username ?? undefined,
@@ -412,6 +416,14 @@ export const create = mutation({
       )
       .filter((q) => q.eq(q.field("workflowType"), "exhibition"))
       .first();
+    const workflowState = resolveWorkflowStepState(
+      workflowConfig?.steps,
+      undefined,
+    );
+
+    if (workflowConfig && workflowState.firstStep === undefined) {
+      throw new Error("Workflow has no approval steps configured");
+    }
 
     const workflowHistory = workflowConfig
       ? [
@@ -436,7 +448,7 @@ export const create = mutation({
       loanVenue: args.loanVenue,
       notes: args.notes,
       status: workflowConfig ? "proposed" : "active",
-      workflowStep: workflowConfig ? 1 : undefined,
+      workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
       createdBy: userId,
     });
@@ -458,7 +470,7 @@ export const create = mutation({
         ctx,
         collection.organizationId,
         "exhibition",
-        1,
+        workflowState.firstStep ?? 1,
       );
 
       for (const approverId of usersToNotify) {
@@ -468,7 +480,7 @@ export const create = mutation({
             userId: approverId,
             type: "workflow_pending",
             title: "New Exhibition Requires Approval",
-            message: `Exhibition "${args.title}" is pending your approval at step 1.`,
+            message: `Exhibition "${args.title}" is pending your approval at step ${workflowState.firstStep ?? 1}.`,
             relatedEntityType: "exhibition",
             relatedEntityId: exhibitionId,
           });
@@ -512,7 +524,19 @@ export const approve = mutation({
       .first();
 
     if (workflowConfig) {
-      const currentStep = exhibition.workflowStep ?? 1;
+      const workflowState = resolveWorkflowStepState(
+        workflowConfig.steps,
+        exhibition.workflowStep,
+      );
+      const currentStep = workflowState.currentStep;
+
+      if (currentStep === undefined) {
+        throw new Error("Workflow has no approval steps configured");
+      }
+      if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
+        throw new Error("Current workflow step is not configured");
+      }
+
       const canApprove = await canApproveAtStep(
         ctx,
         exhibition.organizationId,
@@ -525,14 +549,16 @@ export const approve = mutation({
       }
 
       const history = exhibition.workflowHistory ?? [];
-      history.push({
-        step: currentStep,
-        approvedBy: userId,
-        approvedAt: Date.now(),
-        comment: args.comment,
-      });
+      if (!workflowState.isPastLastStep) {
+        history.push({
+          step: currentStep,
+          approvedBy: userId,
+          approvedAt: Date.now(),
+          comment: args.comment,
+        });
+      }
 
-      const isLastStep = currentStep >= workflowConfig.steps.length;
+      const isLastStep = workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
         await ctx.db.patch(args.exhibitionId, {
@@ -565,8 +591,13 @@ export const approve = mutation({
           });
         }
       } else {
+        const nextStep = workflowState.nextStep;
+        if (nextStep === undefined) {
+          throw new Error("Next workflow step is not configured");
+        }
+
         await ctx.db.patch(args.exhibitionId, {
-          workflowStep: currentStep + 1,
+          workflowStep: nextStep,
           workflowHistory: history,
         });
 
@@ -576,14 +607,14 @@ export const approve = mutation({
           action: "step_approved",
           entityType: "exhibition",
           entityId: args.exhibitionId,
-          changes: { step: currentStep, nextStep: currentStep + 1 },
+          changes: { step: currentStep, nextStep },
         });
 
         const usersToNotify = await getUsersToNotifyForWorkflowStep(
           ctx,
           exhibition.organizationId,
           "exhibition",
-          currentStep + 1,
+          nextStep,
         );
 
         for (const approverId of usersToNotify) {
@@ -593,7 +624,7 @@ export const approve = mutation({
               userId: approverId,
               type: "workflow_pending",
               title: "Exhibition Requires Your Approval",
-              message: `Exhibition "${exhibition.title}" is pending your approval at step ${currentStep + 1}.`,
+              message: `Exhibition "${exhibition.title}" is pending your approval at step ${nextStep}.`,
               relatedEntityType: "exhibition",
               relatedEntityId: args.exhibitionId,
             });
@@ -650,7 +681,18 @@ export const reject = mutation({
       throw new Error("Exhibition is not pending approval");
     }
 
-    const currentStep = exhibition.workflowStep ?? 1;
+    const workflowConfig = await ctx.db
+      .query("workflowConfigs")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", exhibition.organizationId),
+      )
+      .filter((q) => q.eq(q.field("workflowType"), "exhibition"))
+      .first();
+    const workflowState = resolveWorkflowStepState(
+      workflowConfig?.steps,
+      exhibition.workflowStep,
+    );
+    const currentStep = workflowState.currentStep ?? exhibition.workflowStep ?? 1;
     const canApprove = await canApproveAtStep(
       ctx,
       exhibition.organizationId,

@@ -10,7 +10,6 @@ import {
   mutation,
   query,
 } from "./_generated/server";
-import { env } from "./env";
 import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
 import {
   getCurrentYear,
@@ -24,6 +23,7 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
 async function requireLoansAccess(
   ctx: QueryCtx | MutationCtx,
@@ -125,6 +125,14 @@ export const create = mutation({
       )
       .filter((q) => q.eq(q.field("workflowType"), "loan"))
       .first();
+    const workflowState = resolveWorkflowStepState(
+      workflowConfig?.steps,
+      undefined,
+    );
+
+    if (workflowConfig && workflowState.firstStep === undefined) {
+      throw new Error("Workflow has no approval steps configured");
+    }
 
     // Store creator in workflow history for notification purposes
     const workflowHistory = workflowConfig
@@ -152,7 +160,7 @@ export const create = mutation({
       insuranceValue: args.insuranceValue,
       notes: args.notes,
       useDetailedConditionReports: args.useDetailedConditionReports ?? false,
-      workflowStep: workflowConfig ? 1 : undefined,
+      workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
     });
 
@@ -238,7 +246,7 @@ export const create = mutation({
         ctx,
         args.organizationId,
         "loan",
-        1,
+        workflowState.firstStep ?? 1,
       );
 
       for (const approverId of usersToNotify) {
@@ -248,7 +256,7 @@ export const create = mutation({
             userId: approverId,
             type: "workflow_pending",
             title: "New Loan Requires Approval",
-            message: `Loan ${loanNumber} (${args.type}) is pending your approval at step 1.`,
+            message: `Loan ${loanNumber} (${args.type}) is pending your approval at step ${workflowState.firstStep ?? 1}.`,
             relatedEntityType: "loan",
             relatedEntityId: loanId,
           });
@@ -853,7 +861,19 @@ export const approve = mutation({
       .first();
 
     if (workflowConfig) {
-      const currentStep = loan.workflowStep ?? 1;
+      const workflowState = resolveWorkflowStepState(
+        workflowConfig.steps,
+        loan.workflowStep,
+      );
+      const currentStep = workflowState.currentStep;
+
+      if (currentStep === undefined) {
+        throw new Error("Workflow has no approval steps configured");
+      }
+      if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
+        throw new Error("Current workflow step is not configured");
+      }
+
       const canApprove = await canApproveAtStep(
         ctx,
         loan.organizationId,
@@ -866,14 +886,16 @@ export const approve = mutation({
       }
 
       const history = loan.workflowHistory ?? [];
-      history.push({
-        step: currentStep,
-        approvedBy: userId,
-        approvedAt: Date.now(),
-        comment: args.comment,
-      });
+      if (!workflowState.isPastLastStep) {
+        history.push({
+          step: currentStep,
+          approvedBy: userId,
+          approvedAt: Date.now(),
+          comment: args.comment,
+        });
+      }
 
-      const isLastStep = currentStep >= workflowConfig.steps.length;
+      const isLastStep = workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
         await ctx.db.patch(args.loanId, {
@@ -922,7 +944,8 @@ export const approve = mutation({
           : "TBD";
 
         // Build loan URL
-        const loanUrl = `${env.SITE_URL}/loans/${args.loanId}`;
+        const siteUrl = process.env.SITE_URL;
+        const loanUrl = siteUrl ? `${siteUrl}/loans/${args.loanId}` : undefined;
 
         const creatorEntry = history.find((h) => h.step === 0);
         const creatorId = creatorEntry?.approvedBy;
@@ -946,8 +969,13 @@ export const approve = mutation({
           });
         }
       } else {
+        const nextStep = workflowState.nextStep;
+        if (nextStep === undefined) {
+          throw new Error("Next workflow step is not configured");
+        }
+
         await ctx.db.patch(args.loanId, {
-          workflowStep: currentStep + 1,
+          workflowStep: nextStep,
           workflowHistory: history,
         });
 
@@ -957,14 +985,14 @@ export const approve = mutation({
           action: "step_approved",
           entityType: "loan",
           entityId: args.loanId,
-          changes: { step: currentStep, nextStep: currentStep + 1 },
+          changes: { step: currentStep, nextStep },
         });
 
         const usersToNotify = await getUsersToNotifyForWorkflowStep(
           ctx,
           loan.organizationId,
           "loan",
-          currentStep + 1,
+          nextStep,
         );
 
         for (const approverId of usersToNotify) {
@@ -974,7 +1002,7 @@ export const approve = mutation({
               userId: approverId,
               type: "workflow_pending",
               title: "Loan Requires Your Approval",
-              message: `Loan ${loan.loanNumber} is pending your approval at step ${currentStep + 1}.`,
+              message: `Loan ${loan.loanNumber} is pending your approval at step ${nextStep}.`,
               relatedEntityType: "loan",
               relatedEntityId: args.loanId,
             });
@@ -1034,7 +1062,8 @@ export const approve = mutation({
         : "TBD";
 
       // Build loan URL (this will be used in the email deep link)
-      const loanUrl = `${env.SITE_URL}/loans/${args.loanId}`;
+      const siteUrl = process.env.SITE_URL;
+      const loanUrl = siteUrl ? `${siteUrl}/loans/${args.loanId}` : undefined;
 
       for (const userOrg of userOrgs) {
         if (userOrg.userId !== userId) {
@@ -1086,7 +1115,18 @@ export const reject = mutation({
       throw new Error("Loan is not pending approval");
     }
 
-    const currentStep = loan.workflowStep ?? 1;
+    const workflowConfig = await ctx.db
+      .query("workflowConfigs")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", loan.organizationId),
+      )
+      .filter((q) => q.eq(q.field("workflowType"), "loan"))
+      .first();
+    const workflowState = resolveWorkflowStepState(
+      workflowConfig?.steps,
+      loan.workflowStep,
+    );
+    const currentStep = workflowState.currentStep ?? loan.workflowStep ?? 1;
     const canApprove = await canApproveAtStep(
       ctx,
       loan.organizationId,
@@ -1150,7 +1190,8 @@ export const reject = mutation({
       : "TBD";
 
     // Build loan URL
-    const loanUrl = `${env.SITE_URL}/loans/${args.loanId}`;
+    const siteUrl = process.env.SITE_URL;
+    const loanUrl = siteUrl ? `${siteUrl}/loans/${args.loanId}` : undefined;
 
     const creatorEntry = history.find((h) => h.step === 0);
     const creatorId = creatorEntry?.approvedBy;
@@ -2266,7 +2307,27 @@ export const bulkApprove = mutation({
         .first();
 
       if (workflowConfig) {
-        const currentStep = loan.workflowStep ?? 1;
+        const workflowState = resolveWorkflowStepState(
+          workflowConfig.steps,
+          loan.workflowStep,
+        );
+        const currentStep = workflowState.currentStep;
+
+        if (currentStep === undefined) {
+          errors.push(
+            `Loan ${loan.loanNumber} workflow has no approval steps configured`,
+          );
+          skipped++;
+          continue;
+        }
+        if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
+          errors.push(
+            `Loan ${loan.loanNumber} current workflow step is not configured`,
+          );
+          skipped++;
+          continue;
+        }
+
         const canApprove = await canApproveAtStep(
           ctx,
           loan.organizationId,
@@ -2283,14 +2344,17 @@ export const bulkApprove = mutation({
         }
 
         const history = loan.workflowHistory ?? [];
-        history.push({
-          step: currentStep,
-          approvedBy: userId,
-          approvedAt: Date.now(),
-          comment: "Bulk approved",
-        });
+        if (!workflowState.isPastLastStep) {
+          history.push({
+            step: currentStep,
+            approvedBy: userId,
+            approvedAt: Date.now(),
+            comment: "Bulk approved",
+          });
+        }
 
-        const isLastStep = currentStep >= workflowConfig.steps.length;
+        const isLastStep =
+          workflowState.isPastLastStep || workflowState.isLastStep;
 
         if (isLastStep) {
           await ctx.db.patch(loanId, {
@@ -2300,8 +2364,17 @@ export const bulkApprove = mutation({
             workflowHistory: history,
           });
         } else {
+          const nextStep = workflowState.nextStep;
+          if (nextStep === undefined) {
+            errors.push(
+              `Loan ${loan.loanNumber} next workflow step is not configured`,
+            );
+            skipped++;
+            continue;
+          }
+
           await ctx.db.patch(loanId, {
-            workflowStep: currentStep + 1,
+            workflowStep: nextStep,
             workflowHistory: history,
           });
         }

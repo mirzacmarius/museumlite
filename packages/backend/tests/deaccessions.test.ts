@@ -148,3 +148,66 @@ test("approving an archive request marks the collection as archived", async () =
   expect(collection?.status).toBe("archived");
   expect(collection?.archivedReason).toBe("Moved out of active catalog");
 });
+
+test("deaccession workflows with config step 0 still complete on the last real approval step", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId, collectionId } =
+    await createOrgUserWithPermissions(t, [
+      "collections.create",
+      "collections.read",
+      "collections.approve_deaccession",
+    ]);
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "deaccession",
+      steps: [
+        { stepNumber: 0, roleId, name: "Initial Review" },
+        { stepNumber: 1, roleId, name: "Registrar Review" },
+        { stepNumber: 2, roleId, name: "Final Approval" },
+      ],
+      canInitiateRoles: [roleId],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const deaccessionId = await authed.mutation(api.deaccessions.create, {
+    organizationId,
+    collectionId,
+    dateDeaccessioned: Date.now(),
+    reason: "Duplicate object",
+    method: "destruction",
+    targetCollectionStatus: "deleted",
+  });
+
+  let deaccession = await authed.query(api.deaccessions.get, {
+    deaccessionId,
+  });
+
+  expect(deaccession).not.toBeNull();
+  expect(deaccession?.workflowStep).toBe(1);
+
+  await authed.mutation(api.deaccessions.approve, {
+    deaccessionId,
+  });
+
+  deaccession = await authed.query(api.deaccessions.get, {
+    deaccessionId,
+  });
+
+  expect(deaccession).not.toBeNull();
+  expect(deaccession?.status).toBe("pending");
+  expect(deaccession?.workflowStep).toBe(2);
+
+  await authed.mutation(api.deaccessions.approve, {
+    deaccessionId,
+  });
+
+  deaccession = await authed.query(api.deaccessions.get, {
+    deaccessionId,
+  });
+
+  expect(deaccession).not.toBeNull();
+  expect(deaccession?.status).toBe("approved");
+});

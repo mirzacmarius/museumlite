@@ -9,7 +9,6 @@ import {
   mutation,
   query,
 } from "./_generated/server";
-import { env } from "./env";
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
 import { batchLookup } from "./utils/batchLookup";
@@ -26,8 +25,10 @@ import {
   canApproveAtStep,
   canInitiateWorkflow,
   getUsersToNotifyForWorkflowStep,
+  hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
 const MAX_SMALL_IMAGE_SIZE = 50 * 1024 * 1024;
 
@@ -271,6 +272,14 @@ export const create = mutation({
       )
       .filter((q) => q.eq(q.field("workflowType"), "accession"))
       .first();
+    const workflowState = resolveWorkflowStepState(
+      workflowConfig?.steps,
+      undefined,
+    );
+
+    if (workflowConfig && workflowState.firstStep === undefined) {
+      throw new Error("Workflow has no approval steps configured");
+    }
 
     // Store creator in workflow history for notification purposes
     const workflowHistory = workflowConfig
@@ -318,7 +327,7 @@ export const create = mutation({
         ctx,
         args.organizationId,
         "accession",
-        1,
+        workflowState.firstStep ?? 1,
       );
 
       // Create notifications for approvers
@@ -330,7 +339,7 @@ export const create = mutation({
             userId: approverId,
             type: "workflow_pending",
             title: "New Accession Requires Approval",
-            message: `Accession ${accessionNumber} is pending your approval at step 1.`,
+            message: `Accession ${accessionNumber} is pending your approval at step ${workflowState.firstStep ?? 1}.`,
             relatedEntityType: "accession",
             relatedEntityId: accessionId,
           });
@@ -389,16 +398,6 @@ export const upsertObjectDraft = mutation({
       throw new Error("Not authenticated");
     }
 
-    const canInitiate = await canInitiateWorkflow(
-      ctx,
-      args.organizationId,
-      "accession",
-    );
-
-    if (!canInitiate) {
-      throw new Error("Permission denied: cannot initiate accession workflow");
-    }
-
     const workflowConfig = await ctx.db
       .query("workflowConfigs")
       .withIndex("by_organization", (q) =>
@@ -416,9 +415,36 @@ export const upsertObjectDraft = mutation({
       throw new Error("Title is required");
     }
 
+    if (args.saveMode === "submit") {
+      const canInitiate = await canInitiateWorkflow(
+        ctx,
+        args.organizationId,
+        "accession",
+      );
+
+      if (!canInitiate) {
+        throw new Error("Permission denied: cannot initiate accession workflow");
+      }
+    }
+
     const source = getDraftDisplaySource(normalizedObjectData);
+    const workflowState = resolveWorkflowStepState(
+      workflowConfig?.steps,
+      undefined,
+    );
+
+    if (
+      args.saveMode === "submit" &&
+      workflowConfig &&
+      workflowState.firstStep === undefined
+    ) {
+      throw new Error("Workflow has no approval steps configured");
+    }
+
     const nextWorkflowStep =
-      args.saveMode === "submit" && workflowConfig ? 1 : 0;
+      args.saveMode === "submit" && workflowConfig
+        ? (workflowState.firstStep ?? 1)
+        : 0;
 
     if (args.accessionId) {
       const existing = await ctx.db.get(args.accessionId);
@@ -841,6 +867,9 @@ export const get = query({
         v.literal("bequest"),
       ),
       cost: v.optional(v.number()),
+      sourceVerified: v.optional(v.boolean()),
+      sourceVerificationNotes: v.optional(v.string()),
+      canCurrentUserApprove: v.boolean(),
       approvedBy: v.optional(v.id("users")),
       approvedAt: v.optional(v.number()),
       status: v.union(
@@ -873,6 +902,40 @@ export const get = query({
 
     await requirePermission(ctx, accession.organizationId, "collections.read");
 
+    let canCurrentUserApprove = false;
+    if (accession.status === "pending" && accession.workflowStep !== 0) {
+      const workflowConfig = await ctx.db
+        .query("workflowConfigs")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", accession.organizationId),
+        )
+        .filter((q) => q.eq(q.field("workflowType"), "accession"))
+        .first();
+
+      const workflowState = resolveWorkflowStepState(
+        workflowConfig?.steps,
+        accession.workflowStep,
+      );
+      const effectiveApprovalStep = workflowState.currentStep;
+
+      if (effectiveApprovalStep !== undefined) {
+        const hasApprovalPermission = await hasPermission(
+          ctx,
+          accession.organizationId,
+          "collections.approve_accession",
+        );
+
+        canCurrentUserApprove =
+          hasApprovalPermission &&
+          (await canApproveAtStep(
+            ctx,
+            accession.organizationId,
+            "accession",
+            effectiveApprovalStep,
+          ));
+      }
+    }
+
     // Ensure workflowHistory is always an array (even if empty)
     const workflowHistory = accession.workflowHistory ?? [];
 
@@ -889,6 +952,9 @@ export const get = query({
       source: accession.source,
       method: accession.method,
       cost: accession.cost,
+      sourceVerified: accession.sourceVerified,
+      sourceVerificationNotes: accession.sourceVerificationNotes,
+      canCurrentUserApprove,
       approvedBy: accession.approvedBy,
       approvedAt: accession.approvedAt,
       status: accession.status,
@@ -1050,9 +1116,27 @@ export const submitForApproval = mutation({
       throw new Error("Accession is not pending");
     }
 
+    const workflowConfig = await ctx.db
+      .query("workflowConfigs")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", accession.organizationId),
+      )
+      .filter((q) => q.eq(q.field("workflowType"), "accession"))
+      .first();
+
+    const workflowState = resolveWorkflowStepState(
+      workflowConfig?.steps,
+      undefined,
+    );
+    const firstApprovalStep = workflowState.firstStep;
+
+    if (workflowConfig && firstApprovalStep === undefined) {
+      throw new Error("Workflow has no approval steps configured");
+    }
+
     // Reset workflow step if needed
     await ctx.db.patch(args.accessionId, {
-      workflowStep: 1,
+      workflowStep: firstApprovalStep ?? 1,
     });
 
     return null;
@@ -1095,7 +1179,19 @@ export const approve = mutation({
       .first();
 
     if (workflowConfig) {
-      const currentStep = accession.workflowStep ?? 1;
+      const workflowState = resolveWorkflowStepState(
+        workflowConfig.steps,
+        accession.workflowStep,
+      );
+      const currentStep = workflowState.currentStep;
+
+      if (currentStep === undefined) {
+        throw new Error("Workflow has no approval steps configured");
+      }
+      if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
+        throw new Error("Current workflow step is not configured");
+      }
+
       const canApprove = await canApproveAtStep(
         ctx,
         accession.organizationId,
@@ -1109,6 +1205,7 @@ export const approve = mutation({
 
       if (
         workflowConfig.requireSourceVerification &&
+        !accession.draftObjectData &&
         !accession.sourceVerified
       ) {
         throw new Error("Source verification is required before approval");
@@ -1117,43 +1214,17 @@ export const approve = mutation({
       const currentStepConfig = workflowConfig.steps.find(
         (s) => s.stepNumber === currentStep,
       );
-      if (currentStepConfig?.requiredDocuments?.length) {
-        const checklist = accession.documentChecklist ?? [];
-        for (const requiredDoc of currentStepConfig.requiredDocuments) {
-          const doc = checklist.find((d) => d.documentType === requiredDoc);
-          if (!doc?.uploaded) {
-            throw new Error(
-              `Required document "${requiredDoc}" must be uploaded before approval`,
-            );
-          }
-        }
+      if (!currentStepConfig) {
+        throw new Error("Current workflow step is not configured");
       }
-
-      if (workflowConfig.requiredDocuments?.length) {
-        const checklist = accession.documentChecklist ?? [];
-        for (const reqDoc of workflowConfig.requiredDocuments) {
-          if (
-            reqDoc.requiredAtStep !== undefined &&
-            reqDoc.requiredAtStep <= currentStep
-          ) {
-            const doc = checklist.find(
-              (d) => d.documentType === reqDoc.documentType,
-            );
-            if (!doc?.uploaded) {
-              throw new Error(
-                `Required document "${reqDoc.documentType}" must be uploaded before step ${currentStep} approval`,
-              );
-            }
-          }
-        }
-      }
-
       const approvalMode = currentStepConfig?.approvalMode ?? "single";
       const requiredApprovals = currentStepConfig?.requiredApprovals ?? 1;
 
-      let shouldAdvance = false;
+      let shouldAdvance = workflowState.isPastLastStep;
 
-      if (approvalMode === "single") {
+      if (workflowState.isPastLastStep) {
+        shouldAdvance = true;
+      } else if (approvalMode === "single") {
         shouldAdvance = true;
       } else {
         const approvalStatus = await ctx.runQuery(
@@ -1231,14 +1302,16 @@ export const approve = mutation({
       }
 
       const history = accession.workflowHistory ?? [];
-      history.push({
-        step: currentStep,
-        approvedBy: userId,
-        approvedAt: Date.now(),
-        comment: args.comment,
-      });
+      if (!workflowState.isPastLastStep) {
+        history.push({
+          step: currentStep,
+          approvedBy: userId,
+          approvedAt: Date.now(),
+          comment: args.comment,
+        });
+      }
 
-      const isLastStep = currentStep >= workflowConfig.steps.length;
+      const isLastStep = workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
         await ctx.db.patch(args.accessionId, {
@@ -1252,7 +1325,7 @@ export const approve = mutation({
           organizationId: accession.organizationId,
           workflowType: "accession",
           entityId: args.accessionId,
-          fromStep: currentStep,
+          fromStep: workflowState.requestedStep ?? currentStep,
           toStep: -1,
           action: "completed",
           performedBy: userId,
@@ -1265,7 +1338,10 @@ export const approve = mutation({
           action: "approved",
           entityType: "accession",
           entityId: args.accessionId,
-          changes: { status: "approved", step: currentStep },
+          changes: {
+            status: "approved",
+            step: workflowState.requestedStep ?? currentStep,
+          },
         });
 
         const creatorEntry = history.find((h) => h.step === 0);
@@ -1289,7 +1365,11 @@ export const approve = mutation({
           },
         );
       } else {
-        const nextStep = currentStep + 1;
+        const nextStep = workflowState.nextStep;
+
+        if (nextStep === undefined) {
+          throw new Error("Next workflow step is not configured");
+        }
 
         const transitionValid = await ctx.runQuery(
           internal.workflows.validateTransition,
@@ -1674,11 +1754,20 @@ export const getWorkflowSteps = query({
   },
   returns: v.object({
     hasWorkflow: v.boolean(),
+    requireSourceVerification: v.boolean(),
     steps: v.array(
       v.object({
         stepNumber: v.number(),
         name: v.string(),
         roleName: v.optional(v.string()),
+        approvalMode: v.optional(
+          v.union(
+            v.literal("single"),
+            v.literal("multi"),
+            v.literal("unanimous"),
+          ),
+        ),
+        requiredApprovals: v.optional(v.number()),
       }),
     ),
   }),
@@ -1697,6 +1786,7 @@ export const getWorkflowSteps = query({
     if (!workflowConfig) {
       return {
         hasWorkflow: false,
+        requireSourceVerification: false,
         steps: [
           { stepNumber: 0, name: "Draft" },
           { stepNumber: -1, name: "Approved" },
@@ -1707,10 +1797,13 @@ export const getWorkflowSteps = query({
     const stepsWithRoles = await Promise.all(
       workflowConfig.steps.map(async (step) => {
         const role = await ctx.db.get(step.roleId);
+
         return {
           stepNumber: step.stepNumber,
           name: step.name,
           roleName: role?.name,
+          approvalMode: step.approvalMode,
+          requiredApprovals: step.requiredApprovals,
         };
       }),
     );
@@ -1728,6 +1821,8 @@ export const getWorkflowSteps = query({
 
     return {
       hasWorkflow: true,
+      requireSourceVerification:
+        workflowConfig.requireSourceVerification ?? false,
       steps: normalizedSteps,
     };
   },
@@ -1781,9 +1876,11 @@ export const assign = mutation({
 
       // Get organization for building deep link
       const org = await ctx.db.get(accession.organizationId);
-      const taskUrl = org
-        ? `${env.SITE_URL}/${org.slug}/accessions/${args.accessionId}`
-        : undefined;
+      const siteUrl = process.env.SITE_URL;
+      const taskUrl =
+        org && siteUrl
+          ? `${siteUrl}/${org.slug}/accessions/${args.accessionId}`
+          : undefined;
 
       await ctx.runMutation(internal.notifications.sendNotification, {
         organizationId: accession.organizationId,

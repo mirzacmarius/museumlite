@@ -105,6 +105,7 @@ import type * as utils_permissions from "../utils/permissions.js";
 import type * as utils_spectrum from "../utils/spectrum.js";
 import type * as utils_storageUsage from "../utils/storageUsage.js";
 import type * as utils_validators from "../utils/validators.js";
+import type * as utils_workflowSteps from "../utils/workflowSteps.js";
 import type * as vehicleDetails from "../vehicleDetails.js";
 import type * as web from "../web.js";
 import type * as webhooks from "../webhooks.js";
@@ -217,6 +218,7 @@ declare const fullApi: ApiFromModules<{
   "utils/spectrum": typeof utils_spectrum;
   "utils/storageUsage": typeof utils_storageUsage;
   "utils/validators": typeof utils_validators;
+  "utils/workflowSteps": typeof utils_workflowSteps;
   vehicleDetails: typeof vehicleDetails;
   web: typeof web;
   webhooks: typeof webhooks;

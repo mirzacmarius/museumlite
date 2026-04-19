@@ -11,6 +11,7 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
 const treatmentTypeValidator = v.union(
   v.literal("routine"),
@@ -358,6 +359,14 @@ export const create = mutation({
       )
       .filter((q) => q.eq(q.field("workflowType"), "conservation"))
       .first();
+    const workflowState = resolveWorkflowStepState(
+      workflowConfig?.steps,
+      undefined,
+    );
+
+    if (workflowConfig && workflowState.firstStep === undefined) {
+      throw new Error("Workflow has no approval steps configured");
+    }
 
     const workflowHistory = workflowConfig
       ? [
@@ -381,7 +390,7 @@ export const create = mutation({
       performedAt: args.performedAt ?? Date.now(),
       notes: args.notes,
       status: workflowConfig ? "proposed" : "completed",
-      workflowStep: workflowConfig ? 1 : undefined,
+      workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
       createdBy: userId,
     });
@@ -403,7 +412,7 @@ export const create = mutation({
         ctx,
         collection.organizationId,
         "conservation",
-        1,
+        workflowState.firstStep ?? 1,
       );
 
       for (const approverId of usersToNotify) {
@@ -413,7 +422,7 @@ export const create = mutation({
             userId: approverId,
             type: "workflow_pending",
             title: "New Conservation Treatment Requires Approval",
-            message: `Conservation treatment "${args.title}" is pending your approval at step 1.`,
+            message: `Conservation treatment "${args.title}" is pending your approval at step ${workflowState.firstStep ?? 1}.`,
             relatedEntityType: "conservationTreatment",
             relatedEntityId: treatmentId,
           });
@@ -455,7 +464,19 @@ export const approve = mutation({
       .first();
 
     if (workflowConfig) {
-      const currentStep = treatment.workflowStep ?? 1;
+      const workflowState = resolveWorkflowStepState(
+        workflowConfig.steps,
+        treatment.workflowStep,
+      );
+      const currentStep = workflowState.currentStep;
+
+      if (currentStep === undefined) {
+        throw new Error("Workflow has no approval steps configured");
+      }
+      if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
+        throw new Error("Current workflow step is not configured");
+      }
+
       const canApprove = await canApproveAtStep(
         ctx,
         treatment.organizationId,
@@ -468,14 +489,16 @@ export const approve = mutation({
       }
 
       const history = treatment.workflowHistory ?? [];
-      history.push({
-        step: currentStep,
-        approvedBy: userId,
-        approvedAt: Date.now(),
-        comment: args.comment,
-      });
+      if (!workflowState.isPastLastStep) {
+        history.push({
+          step: currentStep,
+          approvedBy: userId,
+          approvedAt: Date.now(),
+          comment: args.comment,
+        });
+      }
 
-      const isLastStep = currentStep >= workflowConfig.steps.length;
+      const isLastStep = workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
         await ctx.db.patch(args.treatmentId, {
@@ -508,8 +531,13 @@ export const approve = mutation({
           });
         }
       } else {
+        const nextStep = workflowState.nextStep;
+        if (nextStep === undefined) {
+          throw new Error("Next workflow step is not configured");
+        }
+
         await ctx.db.patch(args.treatmentId, {
-          workflowStep: currentStep + 1,
+          workflowStep: nextStep,
           workflowHistory: history,
         });
 
@@ -519,14 +547,14 @@ export const approve = mutation({
           action: "step_approved",
           entityType: "conservationTreatment",
           entityId: args.treatmentId,
-          changes: { step: currentStep, nextStep: currentStep + 1 },
+          changes: { step: currentStep, nextStep },
         });
 
         const usersToNotify = await getUsersToNotifyForWorkflowStep(
           ctx,
           treatment.organizationId,
           "conservation",
-          currentStep + 1,
+          nextStep,
         );
 
         for (const approverId of usersToNotify) {
@@ -536,7 +564,7 @@ export const approve = mutation({
               userId: approverId,
               type: "workflow_pending",
               title: "Conservation Treatment Requires Your Approval",
-              message: `Conservation treatment "${treatment.title}" is pending your approval at step ${currentStep + 1}.`,
+              message: `Conservation treatment "${treatment.title}" is pending your approval at step ${nextStep}.`,
               relatedEntityType: "conservationTreatment",
               relatedEntityId: args.treatmentId,
             });
@@ -591,7 +619,18 @@ export const reject = mutation({
       throw new Error("Treatment is not pending approval");
     }
 
-    const currentStep = treatment.workflowStep ?? 1;
+    const workflowConfig = await ctx.db
+      .query("workflowConfigs")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", treatment.organizationId),
+      )
+      .filter((q) => q.eq(q.field("workflowType"), "conservation"))
+      .first();
+    const workflowState = resolveWorkflowStepState(
+      workflowConfig?.steps,
+      treatment.workflowStep,
+    );
+    const currentStep = workflowState.currentStep ?? treatment.workflowStep ?? 1;
     const canApprove = await canApproveAtStep(
       ctx,
       treatment.organizationId,

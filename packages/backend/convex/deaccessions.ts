@@ -19,6 +19,7 @@ import {
   getUsersToNotifyForWorkflowStep,
   requirePermission,
 } from "./utils/permissions";
+import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
 const targetCollectionStatusValidator = v.union(
   v.literal("deaccessioned"),
@@ -207,6 +208,14 @@ async function createDeaccessionRecord(
         .eq("workflowType", "deaccession"),
     )
     .first();
+  const workflowState = resolveWorkflowStepState(
+    workflowConfig?.steps,
+    undefined,
+  );
+
+  if (workflowConfig && workflowState.firstStep === undefined) {
+    throw new Error("Workflow has no approval steps configured");
+  }
 
   const workflowHistory = workflowConfig
     ? [
@@ -230,7 +239,7 @@ async function createDeaccessionRecord(
     notes: args.notes,
     status: workflowConfig ? "pending" : "approved",
     targetCollectionStatus: args.targetCollectionStatus ?? "deaccessioned",
-    workflowStep: workflowConfig ? 1 : undefined,
+    workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
     workflowHistory,
     proceedsAmount: args.proceedsAmount,
     proceedsCurrency: args.proceedsCurrency,
@@ -256,7 +265,7 @@ async function createDeaccessionRecord(
       ctx,
       args.organizationId,
       "deaccession",
-      1,
+      workflowState.firstStep ?? 1,
     );
 
     for (const approverId of usersToNotify) {
@@ -266,7 +275,7 @@ async function createDeaccessionRecord(
           userId: approverId,
           type: "workflow_pending",
           title: "New Deaccession Requires Approval",
-          message: `Deaccession ${deaccessionNumber} is pending your approval at step 1.`,
+          message: `Deaccession ${deaccessionNumber} is pending your approval at step ${workflowState.firstStep ?? 1}.`,
           relatedEntityType: "deaccession",
           relatedEntityId: deaccessionId,
         });
@@ -765,9 +774,26 @@ export const submitForApproval = mutation({
       throw new Error("Deaccession is not pending");
     }
 
+    const workflowConfig = await ctx.db
+      .query("workflowConfigs")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", deaccession.organizationId),
+      )
+      .filter((q) => q.eq(q.field("workflowType"), "deaccession"))
+      .first();
+
+    const workflowState = resolveWorkflowStepState(
+      workflowConfig?.steps,
+      undefined,
+    );
+
+    if (workflowConfig && workflowState.firstStep === undefined) {
+      throw new Error("Workflow has no approval steps configured");
+    }
+
     // Reset workflow step if needed
     await ctx.db.patch(args.deaccessionId, {
-      workflowStep: 1,
+      workflowStep: workflowState.firstStep ?? 1,
     });
 
     return null;
@@ -815,8 +841,19 @@ export const approve = mutation({
       .first();
 
     if (workflowConfig) {
-      // Multi-step workflow
-      const currentStep = deaccession.workflowStep ?? 1;
+      const workflowState = resolveWorkflowStepState(
+        workflowConfig.steps,
+        deaccession.workflowStep,
+      );
+      const currentStep = workflowState.currentStep;
+
+      if (currentStep === undefined) {
+        throw new Error("Workflow has no approval steps configured");
+      }
+      if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
+        throw new Error("Current workflow step is not configured");
+      }
+
       const canApprove = await canApproveAtStep(
         ctx,
         deaccession.organizationId,
@@ -830,15 +867,17 @@ export const approve = mutation({
 
       // Add to workflow history
       const history = deaccession.workflowHistory ?? [];
-      history.push({
-        step: currentStep,
-        approvedBy: userId,
-        approvedAt: Date.now(),
-        comment: args.comment,
-      });
+      if (!workflowState.isPastLastStep) {
+        history.push({
+          step: currentStep,
+          approvedBy: userId,
+          approvedAt: Date.now(),
+          comment: args.comment,
+        });
+      }
 
       // Check if this is the last step
-      const isLastStep = currentStep >= workflowConfig.steps.length;
+      const isLastStep = workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
         // Approve and mark collection as deaccessioned
@@ -877,8 +916,13 @@ export const approve = mutation({
         await applyApprovedCollectionStatus(ctx, deaccession, userId);
       } else {
         // Move to next step
+        const nextStep = workflowState.nextStep;
+        if (nextStep === undefined) {
+          throw new Error("Next workflow step is not configured");
+        }
+
         await ctx.db.patch(args.deaccessionId, {
-          workflowStep: currentStep + 1,
+          workflowStep: nextStep,
           workflowHistory: history,
         });
 
@@ -889,7 +933,7 @@ export const approve = mutation({
           action: "step_approved",
           entityType: "deaccession",
           entityId: args.deaccessionId,
-          changes: { step: currentStep, nextStep: currentStep + 1 },
+          changes: { step: currentStep, nextStep },
         });
 
         // Notify users who can approve the next step
@@ -897,7 +941,7 @@ export const approve = mutation({
           ctx,
           deaccession.organizationId,
           "deaccession",
-          currentStep + 1,
+          nextStep,
         );
 
         for (const approverId of usersToNotify) {
@@ -907,7 +951,7 @@ export const approve = mutation({
               userId: approverId,
               type: "workflow_pending",
               title: "Deaccession Requires Your Approval",
-              message: `Deaccession ${deaccession.deaccessionNumber} is pending your approval at step ${currentStep + 1}.`,
+              message: `Deaccession ${deaccession.deaccessionNumber} is pending your approval at step ${nextStep}.`,
               relatedEntityType: "deaccession",
               relatedEntityId: args.deaccessionId,
             });

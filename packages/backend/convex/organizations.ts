@@ -20,6 +20,7 @@ import {
   requireFeatureAccess,
 } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
+import { getPositiveWorkflowSteps } from "./utils/workflowSteps";
 import {
   createEmptyUsageCounter,
   getUsageCounter,
@@ -753,6 +754,12 @@ export const updateWorkflowConfig = mutation({
       args.organizationId,
       "organization.manage_settings",
     );
+
+    if (getPositiveWorkflowSteps(args.steps).length === 0) {
+      throw new Error(
+        "Workflow must include at least one approval step with stepNumber greater than 0",
+      );
+    }
 
     const existing = await ctx.db
       .query("workflowConfigs")

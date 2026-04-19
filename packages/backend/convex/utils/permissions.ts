@@ -280,8 +280,10 @@ export async function canApproveAtStep(
     return false;
   }
 
-  // Check if user's role matches the step's required role
-  return step.roleId === userOrganization.roleId;
+  if (step.roleId === userOrganization.roleId) {
+    return true;
+  }
+  return false;
 }
 
 export async function getUsersToNotifyForWorkflowStep(
