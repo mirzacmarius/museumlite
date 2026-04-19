@@ -4,12 +4,14 @@ import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { ObjectRequestFormPage } from "../../../objects/new/page";
 
 export default function EditAccessionObjectPage() {
   const params = useParams();
   const accessionId = params.id as string;
+  const router = useRouter();
   const tCommon = useScopedI18n("common");
 
   const accession = useQuery(
@@ -35,6 +37,12 @@ export default function EditAccessionObjectPage() {
 
   const isDraft =
     accession.status === "pending" && accession.workflowStep === 0;
+
+  useEffect(() => {
+    if (accession && isDraft && !accession.draftObjectData) {
+      router.replace(`/accessions/${accessionId}/edit`);
+    }
+  }, [accession, accessionId, isDraft, router]);
 
   if (!isDraft || !accession.draftObjectData) {
     return (

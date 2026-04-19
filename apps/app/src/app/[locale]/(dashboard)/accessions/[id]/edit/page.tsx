@@ -48,6 +48,26 @@ function EditSection({
   );
 }
 
+function GuideCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-border/60 bg-background/70 p-5 shadow-sm">
+      <div className="space-y-1">
+        <h2 className="text-base font-semibold text-foreground">{title}</h2>
+        <p className="text-sm leading-6 text-muted-foreground">{description}</p>
+      </div>
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+}
+
 export default function EditAccessionPage() {
   const params = useParams();
   const router = useRouter();
@@ -242,164 +262,225 @@ export default function EditAccessionPage() {
           </div>
         </div>
 
-        <div className="mx-auto w-full max-w-4xl px-6 py-8">
-          <form
-            id="accession-edit-form"
-            onSubmit={handleSubmit}
-            className="rounded-2xl border border-border/60 bg-background/70 px-5 py-6 shadow-sm sm:px-8 sm:py-8"
-          >
-            {error ? (
-              <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            ) : null}
-
-            <div className="space-y-8">
-              <EditSection
-                title="Locked intake details"
-                description="These identifiers are set when the accession is created and stay read-only during pending review."
-              >
-                <div className="grid gap-5 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>{t("form.accessionNumber")}</Label>
-                    <Input
-                      value={accession.accessionNumber}
-                      disabled
-                      className="bg-muted"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {t("detail.accessionNumberCannotChange")}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>{t("form.dateReceived")}</Label>
-                    <Input
-                      value={formatDate(new Date(accession.dateReceived), locale)}
-                      disabled
-                      className="bg-muted"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {t("detail.dateReceivedCannotChange")}
-                    </p>
-                  </div>
+        <div className="mx-auto w-full max-w-6xl px-6 py-8">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <form
+              id="accession-edit-form"
+              onSubmit={handleSubmit}
+              className="rounded-2xl border border-border/60 bg-background/70 px-5 py-6 shadow-sm sm:px-8 sm:py-8"
+            >
+              {error ? (
+                <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                  {error}
                 </div>
-              </EditSection>
+              ) : null}
 
-              <EditSection
-                title="Accession information"
-                description="Edit source, acquisition method, valuation context, and any staff notes before approval."
-              >
-                <div className="grid gap-5 md:grid-cols-2">
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="source">
-                      {t("form.source")} {t("form.required")}
-                    </Label>
-                    <Input
-                      id="source"
-                      value={formData.source}
-                      onChange={(e) =>
-                        setFormData({ ...formData, source: e.target.value })
-                      }
-                      placeholder={t("form.sourcePlaceholder")}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="method">
-                      {t("form.method")} {t("form.required")}
-                    </Label>
-                    <Select
-                      value={formData.method}
-                      onValueChange={(
-                        value:
-                          | "purchase"
-                          | "gift"
-                          | "loan"
-                          | "transfer"
-                          | "donation"
-                          | "other"
-                          | "bequest",
-                      ) => setFormData({ ...formData, method: value })}
-                    >
-                      <SelectTrigger id="method">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="purchase">
-                          {t("form.methods.purchase")}
-                        </SelectItem>
-                        <SelectItem value="gift">
-                          {t("form.methods.gift")}
-                        </SelectItem>
-                        <SelectItem value="loan">
-                          {t("form.methods.loan")}
-                        </SelectItem>
-                        <SelectItem value="transfer">
-                          {t("form.methods.transfer")}
-                        </SelectItem>
-                        <SelectItem value="donation">
-                          {t("form.methods.donation")}
-                        </SelectItem>
-                        <SelectItem value="bequest">
-                          {t("form.methods.bequest")}
-                        </SelectItem>
-                        <SelectItem value="other">
-                          {t("form.methods.other")}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cost">{t("form.cost")}</Label>
-                    <Input
-                      id="cost"
-                      type="number"
-                      step="0.01"
-                      value={formData.cost}
-                      onChange={(e) =>
-                        setFormData({ ...formData, cost: e.target.value })
-                      }
-                      placeholder={t("form.costPlaceholder")}
-                    />
-                  </div>
-
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="notes">{t("form.notes")}</Label>
-                    <Textarea
-                      id="notes"
-                      value={formData.notes}
-                      onChange={(e) =>
-                        setFormData({ ...formData, notes: e.target.value })
-                      }
-                      placeholder={t("form.notesPlaceholder")}
-                      rows={4}
-                    />
-                  </div>
-                </div>
-              </EditSection>
-
-              <div className="flex justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.back()}
+              <div className="space-y-8">
+                <EditSection
+                  title="Locked intake details"
+                  description="These identifiers are set when the accession is created and stay read-only during pending review."
                 >
-                  {tCommon("cancel")}
-                </Button>
-                <PermissionGate permission="collections.update">
-                  <Button type="submit" disabled={isSubmitting}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {isSubmitting
-                      ? t("form.updating")
-                      : t("form.updateAccession")}
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>{t("form.accessionNumber")}</Label>
+                      <Input
+                        value={accession.accessionNumber}
+                        disabled
+                        className="bg-muted"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {t("detail.accessionNumberCannotChange")}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>{t("form.dateReceived")}</Label>
+                      <Input
+                        value={formatDate(new Date(accession.dateReceived), locale)}
+                        disabled
+                        className="bg-muted"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {t("detail.dateReceivedCannotChange")}
+                      </p>
+                    </div>
+                  </div>
+                </EditSection>
+
+                <EditSection
+                  title="Accession information"
+                  description="Edit source, acquisition method, valuation context, and any staff notes before approval."
+                >
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="source">
+                        {t("form.source")} {t("form.required")}
+                      </Label>
+                      <Input
+                        id="source"
+                        value={formData.source}
+                        onChange={(e) =>
+                          setFormData({ ...formData, source: e.target.value })
+                        }
+                        placeholder={t("form.sourcePlaceholder")}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Use the person, estate, dealer, institution, or source reference the approver will recognize.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="method">
+                        {t("form.method")} {t("form.required")}
+                      </Label>
+                      <Select
+                        value={formData.method}
+                        onValueChange={(
+                          value:
+                            | "purchase"
+                            | "gift"
+                            | "loan"
+                            | "transfer"
+                            | "donation"
+                            | "other"
+                            | "bequest",
+                        ) => setFormData({ ...formData, method: value })}
+                      >
+                        <SelectTrigger id="method">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="purchase">
+                            {t("form.methods.purchase")}
+                          </SelectItem>
+                          <SelectItem value="gift">
+                            {t("form.methods.gift")}
+                          </SelectItem>
+                          <SelectItem value="loan">
+                            {t("form.methods.loan")}
+                          </SelectItem>
+                          <SelectItem value="transfer">
+                            {t("form.methods.transfer")}
+                          </SelectItem>
+                          <SelectItem value="donation">
+                            {t("form.methods.donation")}
+                          </SelectItem>
+                          <SelectItem value="bequest">
+                            {t("form.methods.bequest")}
+                          </SelectItem>
+                          <SelectItem value="other">
+                            {t("form.methods.other")}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        This affects how the accession will be interpreted in review and reporting.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="cost">{t("form.cost")}</Label>
+                      <Input
+                        id="cost"
+                        type="number"
+                        step="0.01"
+                        value={formData.cost}
+                        onChange={(e) =>
+                          setFormData({ ...formData, cost: e.target.value })
+                        }
+                        placeholder={t("form.costPlaceholder")}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Leave blank when no acquisition cost applies.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="notes">{t("form.notes")}</Label>
+                      <Textarea
+                        id="notes"
+                        value={formData.notes}
+                        onChange={(e) =>
+                          setFormData({ ...formData, notes: e.target.value })
+                        }
+                        placeholder={t("form.notesPlaceholder")}
+                        rows={4}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Add review context, provenance caveats, or handling notes that should travel with the approval decision.
+                      </p>
+                    </div>
+                  </div>
+                </EditSection>
+
+                <div className="flex justify-end gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.back()}
+                  >
+                    {tCommon("cancel")}
                   </Button>
-                </PermissionGate>
+                  <PermissionGate permission="collections.update">
+                    <Button type="submit" disabled={isSubmitting}>
+                      <Save className="mr-2 h-4 w-4" />
+                      {isSubmitting
+                        ? t("form.updating")
+                        : t("form.updateAccession")}
+                    </Button>
+                  </PermissionGate>
+                </div>
               </div>
+            </form>
+
+            <div className="space-y-6 xl:sticky xl:top-20 xl:self-start">
+              <GuideCard
+                title="Editing guidance"
+                description="Keep only decision-relevant information here so approvers can move quickly and trust the record."
+              >
+                <div className="space-y-3 text-sm leading-6 text-muted-foreground">
+                  <p>Use the exact source name reviewers expect to validate.</p>
+                  <p>Choose the acquisition method that matches accounting and workflow expectations.</p>
+                  <p>Use notes for context, not duplication of the source field.</p>
+                </div>
+              </GuideCard>
+
+              <GuideCard
+                title="Review snapshot"
+                description="These fields will stay visible to the reviewer on the accession page."
+              >
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-border/60 bg-background/50 p-4">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                      Source preview
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-foreground">
+                      {formData.source || "No source entered yet"}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-border/60 bg-background/50 p-4">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                      Method preview
+                    </p>
+                    <p className="mt-2 text-sm font-medium capitalize text-foreground">
+                      {formData.method}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-border/60 bg-background/50 p-4">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                      Notes length
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-foreground">
+                      {formData.notes.trim().length > 0
+                        ? `${formData.notes.trim().length} characters`
+                        : "No notes added"}
+                    </p>
+                  </div>
+                </div>
+              </GuideCard>
             </div>
-          </form>
+          </div>
         </div>
       </div>
     </main>
