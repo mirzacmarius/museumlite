@@ -48,14 +48,13 @@ export const getUser = query({
     if (!user) {
       return null;
     }
-    const subscription = await polar.getCurrentSubscription(ctx, {
-      userId: user._id,
-    });
-    const avatarUrl = user.imageId ? await ctx.storage.getUrl(user.imageId) : null;
+    const avatarUrl = user.imageId
+      ? await ctx.storage.getUrl(user.imageId)
+      : null;
     return {
       ...user,
       name: user.name || user.username,
-      subscription,
+      subscription: null,
       avatarUrl: avatarUrl ?? undefined,
     };
   },
@@ -156,15 +155,24 @@ export const deleteCurrentUserAccount = action({
     if (!userId) {
       return null;
     }
-    const subscription = await polar.getCurrentSubscription(ctx, {
-      userId,
-    });
-    if (!subscription) {
+    const customer = await polar.getCustomerByUserId(ctx, userId);
+    if (!customer) {
       console.error("No subscription found");
     } else {
-      await polar.cancelSubscription(ctx, {
-        revokeImmediately: true,
+      const subscriptions = await polar.sdk.subscriptions.list({
+        customerId: customer.id,
+        active: true,
+        limit: 100,
       });
+      const activeSubscription = subscriptions.result.items[0];
+
+      if (!activeSubscription) {
+        console.error("No subscription found");
+      } else {
+        await polar.sdk.subscriptions.revoke({
+          id: activeSubscription.id,
+        });
+      }
     }
     await ctx.runMutation(internal.usersMutations.deleteUserAccount, {
       userId,

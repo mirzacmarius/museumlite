@@ -3808,6 +3808,35 @@ export default defineSchema({
     .index("by_subscription", ["subscriptionId"])
     .index("by_status", ["status"]),
 
+  organizationSubscriptions: defineTable({
+    organizationId: v.id("organizations"),
+    tier: v.union(v.literal("pro"), v.literal("enterprise")),
+    productId: v.string(),
+    productName: v.optional(v.string()),
+    productDescription: v.optional(v.union(v.string(), v.null())),
+    subscriptionId: v.string(),
+    customerId: v.string(),
+    recurringInterval: v.optional(
+      v.union(v.literal("month"), v.literal("year")),
+    ),
+    status: v.union(
+      v.literal("active"),
+      v.literal("canceled"),
+      v.literal("past_due"),
+      v.literal("unpaid"),
+      v.literal("incomplete"),
+    ),
+    cancelAtPeriodEnd: v.boolean(),
+    currentPeriodStart: v.number(),
+    currentPeriodEnd: v.optional(v.number()),
+    metadata: v.optional(metadataRecord),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_subscription", ["subscriptionId"])
+    .index("by_status", ["status"]),
+
   contacts: defineTable({
     organizationId: v.id("organizations"),
     accountId: v.id("accounts"),

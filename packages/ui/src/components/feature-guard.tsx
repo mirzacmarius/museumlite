@@ -1,9 +1,7 @@
 "use client";
 
-import { CheckoutLink } from "@convex-dev/polar/react";
-import { api } from "@v1/backend/convex/_generated/api";
+import Link from "next/link";
 import { Button } from "@v1/ui/button";
-import { useQuery } from "convex/react";
 import { Lock } from "lucide-react";
 
 interface FeatureGuardProps {
@@ -23,20 +21,6 @@ export function FeatureGuard({
   tierNeeded = "pro",
   showUpgrade = true,
 }: FeatureGuardProps) {
-  const products = useQuery(api.subscriptions.listAllProducts);
-
-  const upgradeProduct = products?.find(
-    (product) =>
-      product.name.toLowerCase().includes(tierNeeded) &&
-      product.recurringInterval === "month",
-  );
-
-  const yearlyUpgradeProduct = products?.find(
-    (product) =>
-      product.name.toLowerCase().includes(tierNeeded) &&
-      product.recurringInterval === "year",
-  );
-
   if (isLocked) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] w-full border border-white/10 rounded-lg bg-black/20 p-8 text-center animate-in fade-in duration-500">
@@ -48,19 +32,16 @@ export function FeatureGuard({
         </h3>
         <p className="text-white/60 max-w-md mb-6">{description}</p>
 
-        {showUpgrade && upgradeProduct && yearlyUpgradeProduct && (
+        {showUpgrade && (
           <Button
             asChild
             size="lg"
             className="bg-white text-black hover:bg-white/90"
           >
-            <CheckoutLink
-              polarApi={api.subscriptions}
-              productIds={[upgradeProduct.id, yearlyUpgradeProduct.id]}
-            >
+            <Link href="/settings/billing">
               Upgrade to{" "}
               {tierNeeded.charAt(0).toUpperCase() + tierNeeded.slice(1)}
-            </CheckoutLink>
+            </Link>
           </Button>
         )}
       </div>

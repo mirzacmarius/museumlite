@@ -30,10 +30,7 @@ export default async function Layout({
   if (!user?.username || !organizations || organizations.length === 0) {
     return redirect("/onboarding");
   }
-  const [preloadedUser, preloadedProducts] = await Promise.all([
-    preloadQuery(api.users.getUser, {}, { token }),
-    preloadQuery(api.subscriptions.listAllProducts, {}, { token }),
-  ]);
+  const preloadedUser = await preloadQuery(api.users.getUser, {}, { token });
   return (
     <OrganizationProvider>
       <PermissionProvider>
@@ -42,10 +39,7 @@ export default async function Layout({
             <SidebarProvider>
               <SkipNavigation />
               <NavigationProgress />
-              <AppSidebar
-                preloadedUser={preloadedUser}
-                preloadedProducts={preloadedProducts}
-              />
+              <AppSidebar preloadedUser={preloadedUser} />
               <main className="flex h-screen w-full flex-col overflow-hidden bg-background">
                 <DashboardHeader>
                   <div id="search" className="flex items-center gap-2">

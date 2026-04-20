@@ -1,91 +1,276 @@
 "use client";
 
+import { useOrganization } from "@/components/organization-provider";
 import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
-import { CheckoutLink, CustomerPortalLink } from "@convex-dev/polar/react";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Switch } from "@v1/ui/switch";
-import { useQuery } from "convex/react";
-import { useState } from "react";
+import { useAction, useQuery } from "convex/react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
 
-const Plan = ({
+type BillingInterval = "month" | "year";
+type PaidTier = "pro" | "enterprise";
+
+function getPlanProduct(
+  products:
+    | Array<{
+        id: string;
+        name: string;
+        description: string | null;
+        recurringInterval?: "month" | "year" | null;
+        prices: Array<{
+          priceAmount?: number;
+        }>;
+      }>
+    | undefined,
+  tier: PaidTier,
+  interval: BillingInterval,
+) {
+  return products?.find((product) => {
+    const normalizedName = product.name.trim().toLowerCase();
+    return (
+      normalizedName.includes(tier) && product.recurringInterval === interval
+    );
+  });
+}
+
+function PlanCard({
   name,
   description,
-  isCurrent,
   amount,
-  interval,
-  onChangeInterval,
-  t,
+  intervalLabel,
+  isCurrent,
+  currentLabel,
+  actionLabel,
+  isDisabled,
+  isLoading,
+  onAction,
 }: {
   name: string;
   description: string | null;
-  isCurrent: boolean;
   amount: number;
-  interval?: "month" | "year";
-  onChangeInterval?: () => void;
-  t: (key: "perMonth" | "perYear" | "monthly" | "yearly") => string;
-}) => {
+  intervalLabel: string | null;
+  isCurrent: boolean;
+  currentLabel?: string;
+  actionLabel?: string;
+  isDisabled?: boolean;
+  isLoading?: boolean;
+  onAction?: () => void;
+}) {
   return (
     <div
-      className={`flex w-full select-none items-center rounded-md border border-border ${
-        isCurrent && "border-primary/60"
+      className={`flex w-full flex-col gap-4 rounded-md border p-4 ${
+        isCurrent ? "border-primary/60 bg-primary/5" : "border-border"
       }`}
     >
-      <div className="flex w-full flex-col items-start p-4">
-        <div className="flex items-center gap-2">
-          <span className="text-base font-medium text-primary">{name}</span>
-          {Boolean(amount) && (
-            <span className="flex items-center rounded-md bg-primary/10 px-1.5 text-sm font-medium text-primary/80">
-              ${amount / 100} /{" "}
-              {interval === "month" ? t("perMonth") : t("perYear")}
-            </span>
-          )}
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-base font-medium text-primary">{name}</span>
+            {Boolean(amount) && intervalLabel ? (
+              <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-sm font-medium text-primary/80">
+                ${amount / 100} / {intervalLabel}
+              </span>
+            ) : null}
+          </div>
+          <p className="text-sm font-normal text-primary/60">{description}</p>
         </div>
-        <p className="text-start text-sm font-normal text-primary/60">
-          {description}
-        </p>
+        {isCurrent ? (
+          <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary/80">
+            {currentLabel}
+          </span>
+        ) : null}
       </div>
 
-      {Boolean(amount) && (
-        <div className="flex items-center gap-2 px-4">
-          <label
-            htmlFor="interval-switch"
-            className="text-start text-sm text-primary/60"
+      {actionLabel && onAction ? (
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            size="sm"
+            onClick={onAction}
+            disabled={isDisabled || isLoading}
           >
-            {interval === "month" ? t("monthly") : t("yearly")}
-          </label>
-          <Switch
-            id="interval-switch"
-            checked={interval === "year"}
-            onCheckedChange={() => onChangeInterval?.()}
-          />
+            {isLoading ? "Working..." : actionLabel}
+          </Button>
         </div>
-      )}
+      ) : null}
     </div>
   );
-};
+}
 
 export default function BillingSettings() {
   const locale = useCurrentLocale();
+  const searchParams = useSearchParams();
   const t = useScopedI18n("billing");
-  const user = useQuery(api.users.getUser);
-  const products = useQuery(api.subscriptions.listAllProducts);
+  const { currentOrganization, currentOrganizationId } = useOrganization();
+  const cachedProducts = useQuery(api.subscriptions.listAllProducts);
+  const organizationSubscription = useQuery(
+    api.subscriptions.getOrganizationSubscription,
+    currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
+  );
+  const canManageBilling = useQuery(
+    api.roles.checkPermission,
+    currentOrganizationId
+      ? {
+          organizationId: currentOrganizationId,
+          permissionName: "organization.manage_settings",
+        }
+      : "skip",
+  );
+  const createCheckoutLink = useAction(
+    api.subscriptions.createOrganizationCheckoutLink,
+  );
+  const changeOrganizationSubscriptionPlan = useAction(
+    api.subscriptions.changeOrganizationSubscriptionPlan,
+  );
+  const syncOrganizationSubscription = useAction(
+    api.subscriptions.syncOrganizationSubscription,
+  );
+  const listBillingProducts = useAction(api.subscriptions.listBillingProducts);
+  const createOrganizationCustomerPortalUrl = useAction(
+    api.subscriptions.createOrganizationCustomerPortalUrl,
+  );
 
-  const [selectedPlanInterval, setSelectedPlanInterval] = useState<
-    "month" | "year"
-  >("month");
+  const [billingInterval, setBillingInterval] =
+    useState<BillingInterval>("month");
+  const [products, setProducts] = useState<
+    Array<{
+      id: string;
+      name: string;
+      description: string | null;
+      recurringInterval?: "month" | "year" | null;
+      prices: Array<{
+        priceAmount?: number;
+      }>;
+    }>
+  >([]);
+  const [pendingProductId, setPendingProductId] = useState<string | null>(null);
+  const [isManagingPortal, setIsManagingPortal] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const syncedCheckoutRef = useRef(false);
+  const loadedProductsRef = useRef(false);
 
-  if (!user) {
+  useEffect(() => {
+    if (syncedCheckoutRef.current) {
+      return;
+    }
+
+    if (searchParams.get("checkout") !== "success") {
+      return;
+    }
+
+    if (!currentOrganizationId || canManageBilling !== true) {
+      return;
+    }
+
+    syncedCheckoutRef.current = true;
+    void syncOrganizationSubscription({
+      organizationId: currentOrganizationId,
+    });
+  }, [
+    canManageBilling,
+    currentOrganizationId,
+    searchParams,
+    syncOrganizationSubscription,
+  ]);
+
+  useEffect(() => {
+    if (loadedProductsRef.current) {
+      return;
+    }
+
+    if (cachedProducts === undefined) {
+      return;
+    }
+
+    if (cachedProducts.length > 0) {
+      loadedProductsRef.current = true;
+      setProducts(cachedProducts);
+      return;
+    }
+
+    loadedProductsRef.current = true;
+    void listBillingProducts().then((result) => {
+      setProducts(result);
+    });
+  }, [cachedProducts, listBillingProducts]);
+
+  if (!currentOrganizationId || !currentOrganization) {
     return null;
   }
 
-  const monthlyProProduct = products?.find(
-    (product) => product.recurringInterval === "month",
+  const monthlyLabel =
+    billingInterval === "month" ? t("perMonth") : t("perYear");
+  const currentProductId = organizationSubscription?.productId ?? null;
+  const currentTier =
+    organizationSubscription?.tier ??
+    currentOrganization.subscriptionTier ??
+    "free";
+  const proProduct = getPlanProduct(products, "pro", billingInterval);
+  const enterpriseProduct = getPlanProduct(
+    products,
+    "enterprise",
+    billingInterval,
   );
-  const yearlyProProduct = products?.find(
-    (product) => product.recurringInterval === "year",
+  const paidPlans = [proProduct, enterpriseProduct].flatMap((product) =>
+    product ? [product] : [],
   );
+
+  const handleCheckout = (productId: string) => {
+    startTransition(async () => {
+      try {
+        setPendingProductId(productId);
+        const successUrl = new URL(window.location.href);
+        successUrl.searchParams.set("checkout", "success");
+
+        const checkout = await createCheckoutLink({
+          organizationId: currentOrganizationId,
+          productId,
+          successUrl: successUrl.toString(),
+        });
+
+        window.location.assign(checkout.url);
+      } finally {
+        setPendingProductId(null);
+      }
+    });
+  };
+
+  const handlePlanChange = (productId: string) => {
+    startTransition(async () => {
+      try {
+        setPendingProductId(productId);
+        await changeOrganizationSubscriptionPlan({
+          organizationId: currentOrganizationId,
+          productId,
+        });
+      } finally {
+        setPendingProductId(null);
+      }
+    });
+  };
+
+  const handleManageSubscription = () => {
+    startTransition(async () => {
+      try {
+        setIsManagingPortal(true);
+        const portal = await createOrganizationCustomerPortalUrl({
+          organizationId: currentOrganizationId,
+        });
+        window.location.assign(portal.url);
+      } finally {
+        setIsManagingPortal(false);
+      }
+    });
+  };
+
+  const subscriptionDate =
+    organizationSubscription?.currentPeriodEnd !== null &&
+    organizationSubscription?.currentPeriodEnd !== undefined
+      ? formatDate(new Date(organizationSubscription.currentPeriodEnd), locale)
+      : null;
 
   return (
     <div className="flex h-full w-full flex-col gap-6">
@@ -109,156 +294,133 @@ export default function BillingSettings() {
       </div>
 
       <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
-        <div className="flex flex-col gap-2 p-6">
-          <h2 className="text-xl font-medium text-primary">{t("title")}</h2>
-          <p className="flex items-start gap-1 text-sm font-normal text-primary/60">
-            {t("currentPlan")}{" "}
-            <span className="flex h-[18px] items-center rounded-md bg-primary/10 px-1.5 text-sm font-medium text-primary/80">
-              {user.subscription ? user.subscription.product.name : t("free")}
-            </span>
-            {t("plan")}.
-          </p>
-        </div>
+        <div className="flex w-full flex-col gap-4 p-6">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-xl font-medium text-primary">{t("title")}</h2>
+            <p className="flex items-start gap-1 text-sm font-normal text-primary/60">
+              {t("currentPlan")}{" "}
+              <span className="flex h-[18px] items-center rounded-md bg-primary/10 px-1.5 text-sm font-medium text-primary/80">
+                {organizationSubscription?.productName ??
+                  (currentTier === "free" ? t("free") : currentTier)}
+              </span>
+              {t("plan")}.
+            </p>
+            {organizationSubscription && subscriptionDate ? (
+              <p className="text-sm font-normal text-primary/60">
+                {organizationSubscription.cancelAtPeriodEnd
+                  ? t("expires")
+                  : t("renews")}{" "}
+                {t("on")} {subscriptionDate}.
+              </p>
+            ) : null}
+          </div>
 
-        {!user.subscription && (
-          <div className="flex w-full flex-col items-center justify-evenly gap-2 border-border p-6 pt-0">
-            <Plan
-              name={t("free")}
-              description={t("freeDescription")}
-              isCurrent={!user.subscription}
-              amount={0}
-              t={
-                t as unknown as (
-                  key: "monthly" | "yearly" | "perMonth" | "perYear",
-                ) => string
+          <div className="flex items-center gap-3 self-end">
+            <span className="text-sm text-primary/60">{t("monthly")}</span>
+            <Switch
+              id="billing-interval"
+              checked={billingInterval === "year"}
+              onCheckedChange={() =>
+                setBillingInterval((state) =>
+                  state === "month" ? "year" : "month",
+                )
               }
             />
-            {selectedPlanInterval === "month" && monthlyProProduct && (
-              <Plan
-                name={monthlyProProduct.name}
-                description={monthlyProProduct.description}
-                isCurrent={false}
-                amount={monthlyProProduct.prices[0]?.priceAmount ?? 0}
-                interval={selectedPlanInterval}
-                onChangeInterval={() => {
-                  setSelectedPlanInterval((state) =>
-                    state === "month" ? "year" : "month",
-                  );
-                }}
-                t={
-                  t as unknown as (
-                    key: "monthly" | "yearly" | "perMonth" | "perYear",
-                  ) => string
-                }
-              />
-            )}
-            {selectedPlanInterval === "year" && yearlyProProduct && (
-              <Plan
-                name={yearlyProProduct.name}
-                description={yearlyProProduct.description}
-                isCurrent={false}
-                amount={yearlyProProduct.prices[0]?.priceAmount ?? 0}
-                interval={selectedPlanInterval}
-                onChangeInterval={() => {
-                  setSelectedPlanInterval((state) =>
-                    state === "month" ? "year" : "month",
-                  );
-                }}
-                t={
-                  t as unknown as (
-                    key: "monthly" | "yearly" | "perMonth" | "perYear",
-                  ) => string
-                }
-              />
-            )}
+            <span className="text-sm text-primary/60">{t("yearly")}</span>
           </div>
-        )}
 
-        {user.subscription &&
-          (user.subscription?.productId === monthlyProProduct?.id ||
-            user.subscription?.productId === yearlyProProduct?.id) && (
-            <div className="flex w-full flex-col items-center justify-evenly gap-2 border-border p-6 pt-0">
-              <div className="flex w-full items-center overflow-hidden rounded-md border border-primary/60">
-                <div className="flex w-full flex-col items-start p-4">
-                  <div className="flex items-end gap-2">
-                    <span className="text-base font-medium text-primary">
-                      {user.subscription?.product.name}
-                    </span>
-                    <p className="flex items-start gap-1 text-sm font-normal text-primary/60">
-                      {user.subscription.cancelAtPeriodEnd === true ? (
-                        <span className="flex h-[18px] items-center text-sm font-medium text-red-500">
-                          {t("expires")}
-                        </span>
-                      ) : (
-                        <span className="flex h-[18px] items-center text-sm font-medium text-green-500">
-                          {t("renews")}
-                        </span>
-                      )}
-                      {t("on")}:{" "}
-                      {formatDate(
-                        new Date(
-                          user.subscription.currentPeriodEnd ?? 0 * 1000,
-                        ),
-                        locale,
-                      )}
-                      .
-                    </p>
-                  </div>
-                  <p className="text-start text-sm font-normal text-primary/60">
-                    {user.subscription?.product.description}
-                  </p>
-                </div>
+          <div className="flex w-full flex-col gap-3">
+            <PlanCard
+              name={t("free")}
+              description={t("freeDescription")}
+              amount={0}
+              intervalLabel={null}
+              isCurrent={currentTier === "free"}
+              currentLabel={t("current")}
+            />
+
+            {paidPlans.map((product) => {
+              const isCurrent = currentProductId === product.id;
+              const isLoading = isPending && pendingProductId === product.id;
+              const actionLabel = isCurrent
+                ? t("current")
+                : canManageBilling !== true
+                  ? undefined
+                  : organizationSubscription
+                    ? t("switchPlan")
+                    : t("upgrade");
+
+              return (
+                <PlanCard
+                  key={product.id}
+                  name={product.name}
+                  description={product.description}
+                  amount={product.prices[0]?.priceAmount ?? 0}
+                  intervalLabel={monthlyLabel}
+                  isCurrent={isCurrent}
+                  currentLabel={t("current")}
+                  actionLabel={actionLabel}
+                  isDisabled={canManageBilling !== true}
+                  isLoading={isLoading}
+                  onAction={() => {
+                    if (organizationSubscription) {
+                      handlePlanChange(product.id);
+                      return;
+                    }
+                    handleCheckout(product.id);
+                  }}
+                />
+              );
+            })}
+
+            {paidPlans.length === 0 ? (
+              <div className="rounded-md border border-dashed border-border p-4 text-sm text-primary/60">
+                Loading paid plans...
               </div>
-            </div>
-          )}
-
-        {!user.subscription && (
-          <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 py-3 dark:bg-card">
-            <p className="text-sm font-normal text-primary/60">
-              {t("noChargeTest")}
-            </p>
-            {monthlyProProduct && yearlyProProduct && (
-              <Button type="submit" size="sm" asChild>
-                <CheckoutLink
-                  polarApi={api.subscriptions}
-                  productIds={[
-                    selectedPlanInterval === "month"
-                      ? monthlyProProduct.id
-                      : yearlyProProduct.id,
-                  ]}
-                >
-                  {t("upgradeToPro")}
-                </CheckoutLink>
-              </Button>
-            )}
+            ) : null}
           </div>
-        )}
+        </div>
+
+        <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 py-3 dark:bg-card">
+          <p className="text-sm font-normal text-primary/60">
+            {canManageBilling === false ? t("managedByOrg") : t("noChargeTest")}
+          </p>
+        </div>
       </div>
 
-      {user.subscription && (
+      {organizationSubscription ? (
         <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
           <div className="flex flex-col gap-2 p-6">
             <h2 className="text-xl font-medium text-primary">
               {t("manageSubscription")}
             </h2>
             <p className="flex items-start gap-1 text-sm font-normal text-primary/60">
-              {t("manageDescription")}
+              {canManageBilling === false
+                ? t("managedByOrg")
+                : t("manageDescription")}
             </p>
           </div>
 
           <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 py-3 dark:bg-card">
             <p className="text-sm font-normal text-primary/60">
-              {t("redirectPortal")}
+              {canManageBilling === false
+                ? t("managedByOrg")
+                : t("redirectPortal")}
             </p>
 
-            <CustomerPortalLink polarApi={api.subscriptions}>
-              <Button type="submit" size="sm">
-                {t("manage")}
+            {canManageBilling === true ? (
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleManageSubscription}
+                disabled={isManagingPortal || isPending}
+              >
+                {isManagingPortal ? "Working..." : t("manage")}
               </Button>
-            </CustomerPortalLink>
+            ) : null}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -102,6 +102,7 @@ import type * as utils_numberGenerator from "../utils/numberGenerator.js";
 import type * as utils_objectDraftData from "../utils/objectDraftData.js";
 import type * as utils_organizationUsageCounters from "../utils/organizationUsageCounters.js";
 import type * as utils_permissions from "../utils/permissions.js";
+import type * as utils_polarBilling from "../utils/polarBilling.js";
 import type * as utils_spectrum from "../utils/spectrum.js";
 import type * as utils_storageUsage from "../utils/storageUsage.js";
 import type * as utils_validators from "../utils/validators.js";
@@ -215,6 +216,7 @@ declare const fullApi: ApiFromModules<{
   "utils/objectDraftData": typeof utils_objectDraftData;
   "utils/organizationUsageCounters": typeof utils_organizationUsageCounters;
   "utils/permissions": typeof utils_permissions;
+  "utils/polarBilling": typeof utils_polarBilling;
   "utils/spectrum": typeof utils_spectrum;
   "utils/storageUsage": typeof utils_storageUsage;
   "utils/validators": typeof utils_validators;

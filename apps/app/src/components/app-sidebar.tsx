@@ -39,7 +39,6 @@ import { useCommandPalette } from "@/components/command-palette-provider";
 import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { CheckoutLink } from "@convex-dev/polar/react";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
@@ -272,7 +271,7 @@ function PlanUsageStats({
         </div>
         {!isEnterprise && (
           <Link
-            href="/settings"
+            href="/settings/billing"
             className="text-[9px] text-zinc-500 hover:text-indigo-400 transition-colors uppercase tracking-wide font-medium"
           >
             Upgrade
@@ -377,17 +376,14 @@ function PlanUsageStats({
 
 export function AppSidebar({
   preloadedUser,
-  preloadedProducts,
 }: {
   preloadedUser: Preloaded<typeof api.users.getUser>;
-  preloadedProducts: Preloaded<typeof api.subscriptions.listAllProducts>;
 }) {
   const { organizations, currentOrganizationId, setCurrentOrganizationId } =
     useOrganization();
   const { hasFeature, hasModule } = useFeatureAccess();
   const { setOpen } = useCommandPalette();
   const user = usePreloadedQuery(preloadedUser);
-  const products = usePreloadedQuery(preloadedProducts);
   const { signOut } = useAuthActions();
   const pathname = usePathname();
   const router = useRouter();
@@ -398,13 +394,6 @@ export function AppSidebar({
       window.dispatchEvent(new CustomEvent("command-palette:open"));
     }
   }, [setOpen]);
-
-  const monthlyProProduct = products?.find(
-    (product) => product.recurringInterval === "month",
-  );
-  const yearlyProProduct = products?.find(
-    (product) => product.recurringInterval === "year",
-  );
 
   const currentOrg = organizations.find(
     (org) => org._id === currentOrganizationId,
@@ -757,24 +746,16 @@ export function AppSidebar({
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-zinc-800" />
-                {monthlyProProduct && yearlyProProduct && (
+                {currentOrganizationId ? (
                   <>
                     <DropdownMenuItem className="p-0 focus:bg-transparent">
                       <Button size="sm" className="w-full" asChild>
-                        <CheckoutLink
-                          polarApi={api.subscriptions}
-                          productIds={[
-                            monthlyProProduct.id,
-                            yearlyProProduct.id,
-                          ]}
-                        >
-                          Upgrade to PRO
-                        </CheckoutLink>
+                        <Link href="/settings/billing">Manage Billing</Link>
                       </Button>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-zinc-800" />
                   </>
-                )}
+                ) : null}
                 <DropdownMenuItem className="flex justify-between focus:bg-zinc-900 focus:text-zinc-200">
                   <span>Theme</span>
                   <ThemeSwitcher />
