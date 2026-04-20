@@ -3,7 +3,12 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { mutation, query, type QueryCtx } from "./_generated/server";
+import {
+  type MutationCtx,
+  type QueryCtx,
+  mutation,
+  query,
+} from "./_generated/server";
 // Note: customFieldValue, provenanceChainEntry, shippingLogEntry are defined in schema
 // but return validators use v.any() to allow for existing data that may not match strict types
 import { getNextCounterValue } from "./utils/accessionCounter";
@@ -15,6 +20,14 @@ import {
 } from "./utils/featureGates";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
+
+const conditionHistoryEntryValidator = v.object({
+  condition: v.string(),
+  note: v.optional(v.string()),
+  changedAt: v.number(),
+  changedBy: v.id("users"),
+  changedByName: v.optional(v.string()),
+});
 
 function isImageMedia(media: {
   fileType?: string;
@@ -32,7 +45,7 @@ function isImageMedia(media: {
  * Generate accession number based on organization format template
  */
 async function generateAccessionNumber(
-  ctx: any,
+  ctx: MutationCtx,
   organizationId: Id<"organizations">,
 ): Promise<string> {
   const org = await ctx.db.get(organizationId);
@@ -122,7 +135,7 @@ async function getLocationPathString(
   let currentId: Id<"locations"> | undefined = locationId;
 
   while (currentId) {
-    const location = await ctx.db.get(currentId);
+    const location: Doc<"locations"> | null = await ctx.db.get(currentId);
     if (!location) {
       break;
     }
@@ -132,6 +145,28 @@ async function getLocationPathString(
   }
 
   return pathSegments.length > 0 ? pathSegments.join(" > ") : undefined;
+}
+
+function normalizeOptionalString(value?: string | null) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+async function buildConditionHistoryEntry(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<"users">,
+  condition: string,
+  note?: string,
+) {
+  const user = await ctx.db.get(userId);
+
+  return {
+    condition,
+    note,
+    changedAt: Date.now(),
+    changedBy: userId,
+    changedByName: user?.name ?? user?.username ?? user?.email ?? undefined,
+  };
 }
 
 async function getCollectionsWithOpenDeaccessions(
@@ -281,6 +316,18 @@ export const create = mutation({
       throw new Error("Accession number already exists");
     }
 
+    const normalizedCondition = normalizeOptionalString(args.condition);
+    const conditionHistory = normalizedCondition
+      ? [
+          await buildConditionHistoryEntry(
+            ctx,
+            userId,
+            normalizedCondition,
+            undefined,
+          ),
+        ]
+      : undefined;
+
     // Create collection object
     const collectionId = await ctx.db.insert("collections", {
       organizationId: args.organizationId,
@@ -305,7 +352,8 @@ export const create = mutation({
       dimensionUnit: args.dimensionUnit,
       weightUnit: args.weightUnit,
       description: args.description,
-      condition: args.condition,
+      condition: normalizedCondition,
+      conditionHistory,
       inscriptions: args.inscriptions,
       inscriptionMarks: args.inscriptionMarks,
       tags: args.tags,
@@ -441,6 +489,7 @@ export const get = query({
       weightUnit: v.optional(v.string()),
       description: v.optional(v.string()),
       condition: v.optional(v.string()),
+      conditionHistory: v.optional(v.array(conditionHistoryEntryValidator)),
       inscriptions: v.optional(v.string()),
       inscriptionMarks: v.optional(
         v.array(
@@ -978,7 +1027,7 @@ export const list = query({
           return filter;
         });
 
-      let searchResults = await searchQuery.collect();
+      const searchResults = await searchQuery.collect();
 
       // Also search other fields that aren't in the searchIndex
       const regularQuery = ctx.db
@@ -1243,7 +1292,7 @@ export const search = query({
         return filter;
       });
 
-    let results = await searchQuery.take(limit);
+    const results = await searchQuery.take(limit);
 
     // Also search other fields that aren't in the searchIndex
     // This extends the search to accession numbers and other fields
@@ -1358,6 +1407,7 @@ export const update = mutation({
     weightUnit: v.optional(v.string()),
     description: v.optional(v.string()),
     condition: v.optional(v.string()),
+    conditionChangeNote: v.optional(v.string()),
     inscriptions: v.optional(v.string()),
     inscriptionMarks: v.optional(
       v.array(
@@ -1457,7 +1507,30 @@ export const update = mutation({
       updates.dimensionUnit = args.dimensionUnit;
     if (args.weightUnit !== undefined) updates.weightUnit = args.weightUnit;
     if (args.description !== undefined) updates.description = args.description;
-    if (args.condition !== undefined) updates.condition = args.condition;
+    if (args.condition !== undefined) {
+      const previousCondition = normalizeOptionalString(collection.condition);
+      const nextCondition = normalizeOptionalString(args.condition);
+      const conditionChanged = previousCondition !== nextCondition;
+
+      updates.condition = nextCondition;
+
+      if (conditionChanged) {
+        const note = normalizeOptionalString(args.conditionChangeNote);
+
+        if (previousCondition && !note) {
+          throw new Error(
+            "Condition change note is required when updating the condition.",
+          );
+        }
+
+        if (nextCondition) {
+          updates.conditionHistory = [
+            ...(collection.conditionHistory ?? []),
+            await buildConditionHistoryEntry(ctx, userId, nextCondition, note),
+          ];
+        }
+      }
+    }
     if (args.inscriptions !== undefined)
       updates.inscriptions = args.inscriptions;
     if (args.inscriptionMarks !== undefined)

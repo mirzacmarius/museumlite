@@ -397,6 +397,17 @@ export default defineSchema({
     weightUnit: v.optional(v.string()), // "kg", "lb", etc.
     description: v.optional(v.string()),
     condition: v.optional(v.string()),
+    conditionHistory: v.optional(
+      v.array(
+        v.object({
+          condition: v.string(),
+          note: v.optional(v.string()),
+          changedAt: v.number(),
+          changedBy: v.id("users"),
+          changedByName: v.optional(v.string()),
+        }),
+      ),
+    ),
     inscriptions: v.optional(v.string()), // Free-text description of inscriptions/marks
     inscriptionMarks: v.optional(
       v.array(

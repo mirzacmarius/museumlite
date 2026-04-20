@@ -182,6 +182,11 @@ function parseOptionalNonNegativeNumber(value?: string | number) {
     : { isValid: false as const, value: undefined };
 }
 
+function normalizeOptionalString(value?: string | null) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : "";
+}
+
 function createOwnershipEntryLocalId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
@@ -397,6 +402,7 @@ export default function CollectionEditPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [alternateAccessionDraft, setAlternateAccessionDraft] = useState("");
+  const [conditionChangeNote, setConditionChangeNote] = useState("");
   const [deaccessionDialogOpen, setDeaccessionDialogOpen] = useState(false);
   const [editingImageId, setEditingImageId] = useState<Id<"mediaFiles"> | null>(
     null,
@@ -481,6 +487,12 @@ export default function CollectionEditPage() {
     () => getMediaSignature(media ?? []),
     [media],
   );
+  const initialConditionValue = normalizeOptionalString(collection?.condition);
+  const currentConditionValue = normalizeOptionalString(formData.condition);
+  const hasConditionChanged =
+    isInitialized && currentConditionValue !== initialConditionValue;
+  const requiresConditionChangeNote =
+    hasConditionChanged && initialConditionValue.length > 0;
   const isFormDirty =
     isInitialized &&
     getFormSignature(formData) !== initialFormSignatureRef.current;
@@ -510,6 +522,12 @@ export default function CollectionEditPage() {
   }, [collection, isFormDirty, isInitialized]);
 
   useBeforeUnload(isFormDirty);
+
+  useEffect(() => {
+    if (!hasConditionChanged && conditionChangeNote) {
+      setConditionChangeNote("");
+    }
+  }, [conditionChangeNote, hasConditionChanged]);
 
   const { startUpload } = useUploadFiles(
     async () => {
@@ -839,6 +857,13 @@ export default function CollectionEditPage() {
       return false;
     }
 
+    if (requiresConditionChangeNote && !conditionChangeNote.trim()) {
+      setError(
+        "Condition change note is required when updating the condition.",
+      );
+      return false;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -870,6 +895,9 @@ export default function CollectionEditPage() {
         collectionGroupId: formData.collectionGroupId
           ? (formData.collectionGroupId as Id<"collectionGroups">)
           : undefined,
+        conditionChangeNote: hasConditionChanged
+          ? conditionChangeNote.trim() || undefined
+          : undefined,
         alternateAccessionNumbers: formData.alternateAccessionNumbers,
         ownershipHistory: formData.ownershipHistory?.map(
           ({ localId: _localId, ...entry }) => entry,
@@ -887,7 +915,15 @@ export default function CollectionEditPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [formData, t, typedCollectionId, updateCollection]);
+  }, [
+    conditionChangeNote,
+    formData,
+    hasConditionChanged,
+    requiresConditionChangeNote,
+    t,
+    typedCollectionId,
+    updateCollection,
+  ]);
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent) => {
@@ -1912,6 +1948,34 @@ export default function CollectionEditPage() {
                             updateField("condition", value)
                           }
                         />
+                        {hasConditionChanged ? (
+                          <div className="rounded-lg border border-dashed border-border/60 bg-secondary/10 p-3">
+                            <p className="text-xs text-muted-foreground">
+                              This change will be dated and attributed
+                              automatically.
+                            </p>
+                            <div className="mt-3 space-y-2">
+                              <Label htmlFor="conditionChangeNote">
+                                Condition change note
+                              </Label>
+                              <Textarea
+                                autoResize
+                                id="conditionChangeNote"
+                                value={conditionChangeNote}
+                                onChange={(event) =>
+                                  setConditionChangeNote(event.target.value)
+                                }
+                                rows={3}
+                                placeholder="Explain what changed and why."
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                {requiresConditionChangeNote
+                                  ? "Required when replacing an existing condition."
+                                  : "Optional for the initial condition entry."}
+                              </p>
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
 
                       <div className="space-y-3 md:col-span-2 xl:col-span-3">
