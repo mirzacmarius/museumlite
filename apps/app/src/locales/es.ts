@@ -2178,6 +2178,7 @@ export default {
       parentObject: "Objeto Padre",
       currentLocation: "Ubicación Actual",
       collectionGroup: "Grupo de Colección",
+      onDisplay: "En exhibición",
       searchable: "Buscable",
       publicUrlSlug: "URL Pública",
       notSearchable: "No Buscable",

@@ -2230,6 +2230,7 @@ export default {
         "Numéros de catalogue précédents, identifiants hérités ou références système externes utilisés pour identifier cet objet avant ou parallèlement au numéro d'accession actuel.",
       copiedToClipboard: "Copié dans le presse-papiers",
       alternativeTitle: "Titre Alternatif",
+      onDisplay: "En exposition",
     },
     pagination: {
       loadMore: "Charger Plus",

@@ -1817,6 +1817,7 @@ export default {
         "Previous catalog numbers, legacy IDs, or external system references used to identify this object before or alongside the current accession number.",
       copiedToClipboard: "Copied to clipboard",
       alternativeTitle: "Alternative Title",
+      onDisplay: "On Display",
     },
     qrLabel: {
       title: "Print QR Label",

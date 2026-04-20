@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { writeTextToClipboard } from "@/lib/clipboard";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
@@ -98,8 +99,12 @@ export default function LoanDetailPage() {
     );
   }
 
-  const handleCopyId = () => {
-    navigator.clipboard.writeText(loan.loanNumber);
+  const handleCopyId = async () => {
+    const didCopy = await writeTextToClipboard(loan.loanNumber);
+    if (!didCopy) {
+      return;
+    }
+
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

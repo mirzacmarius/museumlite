@@ -3,6 +3,7 @@
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { writeTextToClipboard } from "@/lib/clipboard";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -231,8 +232,12 @@ export function ObjectDetailClient({
   const [linkCopied, setLinkCopied] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState("");
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
+  const handleCopyLink = async () => {
+    const didCopy = await writeTextToClipboard(window.location.href);
+    if (!didCopy) {
+      return;
+    }
+
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 2000);
   };
@@ -283,6 +288,7 @@ export function ObjectDetailClient({
   const heroImageForPrint = heroImage?.url
     ? { url: heroImage.url, thumbnailUrl: heroImage.thumbnailUrl }
     : null;
+  const isOnDisplay = collection.displayStatus === "on_display";
 
   return (
     <>
@@ -452,6 +458,12 @@ export function ObjectDetailClient({
                     {collection.status}
                   </div>
 
+                  {isOnDisplay ? (
+                    <div className="rounded bg-emerald-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                      {t("detail.onDisplay")}
+                    </div>
+                  ) : null}
+
                   {/* Accession Number */}
                   <div className="rounded bg-secondary/60 px-2 py-1 text-[10px] font-mono text-muted-foreground">
                     {collection.accessionNumber}
@@ -474,7 +486,14 @@ export function ObjectDetailClient({
                     <span>{collection.dateCreated || common("unknown")}</span>
                   </div>
                   {locationString && (
-                    <div className="flex items-center gap-2">
+                    <div
+                      className={cn(
+                        "flex items-center gap-2",
+                        isOnDisplay
+                          ? "text-emerald-400"
+                          : "text-muted-foreground",
+                      )}
+                    >
                       <MapPin className="h-4 w-4" />
                       <span>{locationString}</span>
                     </div>

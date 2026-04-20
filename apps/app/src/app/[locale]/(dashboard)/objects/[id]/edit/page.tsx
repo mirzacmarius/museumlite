@@ -10,7 +10,6 @@ import { MediaEditorDialog } from "@/components/media-editor-dialog";
 import { ObjectCombobox } from "@/components/object-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { TypeCombobox } from "@/components/type-combobox";
 import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 import { useBeforeUnload } from "@/hooks/use-before-unload";
@@ -141,7 +140,7 @@ const EMPTY_FORM: CollectionFormData = {
   donated_date: "",
   donation_info: "",
   previous_owners: [],
-  links: [{ url: "", label: "" }],
+  links: [{ localId: createLinkEntryLocalId(), url: "", label: "" }],
   parentObjectId: "",
   currentLocationId: "",
   collectionGroupId: "",
@@ -1516,40 +1515,27 @@ export default function CollectionEditPage() {
                   </EditSection>
 
                   <EditSection
-                    title="Donation and previous ownership"
-                    description="Record donor information and prior owners before the current institution."
+                    title="Donation details"
+                    description="Record donor information, donation date, and supporting notes."
                   >
-                    <div className="space-y-6">
-                      <DonationDetailsField
-                        organizationId={collection.organizationId}
-                        collectionId={collectionId}
-                        donatedBy={formData.donated_by || []}
-                        donatedDate={formData.donated_date}
-                        donationInfo={formData.donation_info}
-                        donorPlaceholder={placeholders("selectDonors")}
-                        donationInfoPlaceholder={placeholders(
-                          "donationInfoLong",
-                        )}
-                        onDonatedByChange={(value) =>
-                          updateField("donated_by", value)
-                        }
-                        onDonatedDateChange={(value) =>
-                          updateField("donated_date", value)
-                        }
-                        onDonationInfoChange={(value) =>
-                          updateField("donation_info", value)
-                        }
-                      />
-
-                      <RepeatableTextField
-                        label="Previous Owner(s)"
-                        value={formData.previous_owners || []}
-                        onChange={(values) =>
-                          updateField("previous_owners", values)
-                        }
-                        placeholder="e.g., Estate of Jane Doe"
-                      />
-                    </div>
+                    <DonationDetailsField
+                      organizationId={collection.organizationId}
+                      collectionId={collectionId}
+                      donatedBy={formData.donated_by || []}
+                      donatedDate={formData.donated_date}
+                      donationInfo={formData.donation_info}
+                      donorPlaceholder={placeholders("selectDonors")}
+                      donationInfoPlaceholder={placeholders("donationInfoLong")}
+                      onDonatedByChange={(value) =>
+                        updateField("donated_by", value)
+                      }
+                      onDonatedDateChange={(value) =>
+                        updateField("donated_date", value)
+                      }
+                      onDonationInfoChange={(value) =>
+                        updateField("donation_info", value)
+                      }
+                    />
                   </EditSection>
 
                   <EditSection
@@ -1802,7 +1788,7 @@ export default function CollectionEditPage() {
                     <div className="space-y-3">
                       {(formData.links || []).map((link, index) => (
                         <div
-                          key={link.localId}
+                          key={link.localId ?? `link-${index}`}
                           className="grid gap-3 rounded-xl border border-border/50 p-4 md:grid-cols-[1fr_1fr_auto]"
                         >
                           <div className="space-y-2">

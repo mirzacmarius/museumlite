@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { writeTextToClipboard } from "@/lib/clipboard";
 import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -156,12 +157,18 @@ function ApiKeysTab({
     }
   };
 
-  const handleCopy = useCallback(() => {
-    if (createdKey) {
-      navigator.clipboard.writeText(createdKey);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const handleCopy = useCallback(async () => {
+    if (!createdKey) {
+      return;
     }
+
+    const didCopy = await writeTextToClipboard(createdKey);
+    if (!didCopy) {
+      return;
+    }
+
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }, [createdKey]);
 
   const handleRevoke = async (keyId: Id<"apiKeys">) => {
@@ -496,12 +503,18 @@ function WebhooksTab({
     }
   };
 
-  const handleCopy = useCallback(() => {
-    if (createdSecret) {
-      navigator.clipboard.writeText(createdSecret);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const handleCopy = useCallback(async () => {
+    if (!createdSecret) {
+      return;
     }
+
+    const didCopy = await writeTextToClipboard(createdSecret);
+    if (!didCopy) {
+      return;
+    }
+
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }, [createdSecret]);
 
   const closeDialog = () => {

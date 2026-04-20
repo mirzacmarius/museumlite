@@ -1265,40 +1265,26 @@ export function ObjectRequestFormPage({
                   </EditSection>
 
                   <EditSection
-                    title="Donation and previous ownership"
-                    description="Record donor information and prior owners before the current institution."
+                    title="Donation details"
+                    description="Record donor information, donation date, and supporting notes."
                   >
-                    <div className="space-y-6">
-                      <DonationDetailsField
-                        organizationId={currentOrganizationId}
-                        donatedBy={formData.donated_by || []}
-                        donatedDate={formData.donated_date}
-                        donationInfo={formData.donation_info}
-                        donorPlaceholder={placeholders("selectDonors")}
-                        donationInfoPlaceholder={placeholders(
-                          "donationContext",
-                        )}
-                        onDonatedByChange={(value) =>
-                          updateField("donated_by", value)
-                        }
-                        onDonatedDateChange={(value) =>
-                          updateField("donated_date", value)
-                        }
-                        onDonationInfoChange={(value) =>
-                          updateField("donation_info", value)
-                        }
-                      />
-
-                      <RepeatableTextField
-                        label="Previous Owner(s)"
-                        value={formData.previous_owners || []}
-                        onChange={(values) =>
-                          updateField("previous_owners", values)
-                        }
-                        placeholder={placeholders("previousOwner")}
-                        id="previous_owners"
-                      />
-                    </div>
+                    <DonationDetailsField
+                      organizationId={currentOrganizationId}
+                      donatedBy={formData.donated_by || []}
+                      donatedDate={formData.donated_date}
+                      donationInfo={formData.donation_info}
+                      donorPlaceholder={placeholders("selectDonors")}
+                      donationInfoPlaceholder={placeholders("donationContext")}
+                      onDonatedByChange={(value) =>
+                        updateField("donated_by", value)
+                      }
+                      onDonatedDateChange={(value) =>
+                        updateField("donated_date", value)
+                      }
+                      onDonationInfoChange={(value) =>
+                        updateField("donation_info", value)
+                      }
+                    />
                   </EditSection>
 
                   <EditSection

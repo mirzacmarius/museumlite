@@ -2173,6 +2173,7 @@ export default {
       currentLocation: "Nåværende Plassering",
       collectionGroup: "Samlingsgruppe",
       searchable: "Søkbar",
+      onDisplay: "På utstilling",
       publicUrlSlug: "Offentlig URL",
       notSearchable: "Ikke Søkbar",
       isSearchable: "Søkbar",
