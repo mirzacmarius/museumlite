@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { PlanUsageStats } from "@/components/plan-usage-stats";
 import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -294,10 +295,19 @@ export default function BillingSettings() {
         </p>
       </div>
 
+      <div className="px-6">
+        <PlanUsageStats
+          organizationId={currentOrganizationId}
+          showUpgradeLink={false}
+        />
+      </div>
+
       <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
         <div className="flex w-full flex-col gap-4 p-6">
           <div className="flex flex-col gap-2">
-            <h2 className="text-xl font-medium text-foreground">{t("title")}</h2>
+            <h2 className="text-xl font-medium text-foreground">
+              {t("title")}
+            </h2>
             <p className="flex items-start gap-1 text-sm font-normal text-muted-foreground">
               {t("currentPlan")}{" "}
               <span className="flex h-[18px] items-center rounded-md bg-primary/10 px-1.5 text-sm font-medium text-primary/80">
@@ -317,7 +327,9 @@ export default function BillingSettings() {
           </div>
 
           <div className="flex items-center gap-3 self-end">
-            <span className="text-sm text-muted-foreground">{t("monthly")}</span>
+            <span className="text-sm text-muted-foreground">
+              {t("monthly")}
+            </span>
             <Switch
               id="billing-interval"
               checked={billingInterval === "year"}
