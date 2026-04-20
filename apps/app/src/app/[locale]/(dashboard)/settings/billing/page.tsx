@@ -275,17 +275,18 @@ export default function BillingSettings() {
   return (
     <div className="flex h-full w-full flex-col gap-6">
       <div className="flex w-full flex-col gap-2 p-6 py-2">
-        <h2 className="text-xl font-medium text-primary">
-          This is a demo app.
+        <h2 className="text-xl font-medium text-foreground">
+          Billing overview
         </h2>
-        <p className="text-sm font-normal text-primary/60">
-          Convex SaaS is a demo app that uses Polar test environment. You can
-          find a list of test card numbers in this{" "}
+        <p className="text-sm font-normal text-muted-foreground">
+          Review your current plan, compare available tiers, and manage billing
+          for your organization. For test purchases, you can use the card
+          numbers listed in this{" "}
           <a
             href="https://stripe.com/docs/testing#cards"
             target="_blank"
             rel="noreferrer"
-            className="font-medium text-primary/80 underline"
+            className="font-medium text-foreground underline"
           >
             resource from Stripe
           </a>
@@ -296,8 +297,8 @@ export default function BillingSettings() {
       <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
         <div className="flex w-full flex-col gap-4 p-6">
           <div className="flex flex-col gap-2">
-            <h2 className="text-xl font-medium text-primary">{t("title")}</h2>
-            <p className="flex items-start gap-1 text-sm font-normal text-primary/60">
+            <h2 className="text-xl font-medium text-foreground">{t("title")}</h2>
+            <p className="flex items-start gap-1 text-sm font-normal text-muted-foreground">
               {t("currentPlan")}{" "}
               <span className="flex h-[18px] items-center rounded-md bg-primary/10 px-1.5 text-sm font-medium text-primary/80">
                 {organizationSubscription?.productName ??
@@ -306,7 +307,7 @@ export default function BillingSettings() {
               {t("plan")}.
             </p>
             {organizationSubscription && subscriptionDate ? (
-              <p className="text-sm font-normal text-primary/60">
+              <p className="text-sm font-normal text-muted-foreground">
                 {organizationSubscription.cancelAtPeriodEnd
                   ? t("expires")
                   : t("renews")}{" "}
@@ -316,7 +317,7 @@ export default function BillingSettings() {
           </div>
 
           <div className="flex items-center gap-3 self-end">
-            <span className="text-sm text-primary/60">{t("monthly")}</span>
+            <span className="text-sm text-muted-foreground">{t("monthly")}</span>
             <Switch
               id="billing-interval"
               checked={billingInterval === "year"}
@@ -326,7 +327,7 @@ export default function BillingSettings() {
                 )
               }
             />
-            <span className="text-sm text-primary/60">{t("yearly")}</span>
+            <span className="text-sm text-muted-foreground">{t("yearly")}</span>
           </div>
 
           <div className="flex w-full flex-col gap-3">
@@ -374,7 +375,7 @@ export default function BillingSettings() {
             })}
 
             {paidPlans.length === 0 ? (
-              <div className="rounded-md border border-dashed border-border p-4 text-sm text-primary/60">
+              <div className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
                 Loading paid plans...
               </div>
             ) : null}
@@ -382,7 +383,7 @@ export default function BillingSettings() {
         </div>
 
         <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 py-3 dark:bg-card">
-          <p className="text-sm font-normal text-primary/60">
+          <p className="text-sm font-normal text-muted-foreground">
             {canManageBilling === false ? t("managedByOrg") : t("noChargeTest")}
           </p>
         </div>
@@ -391,10 +392,10 @@ export default function BillingSettings() {
       {organizationSubscription ? (
         <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
           <div className="flex flex-col gap-2 p-6">
-            <h2 className="text-xl font-medium text-primary">
+            <h2 className="text-xl font-medium text-foreground">
               {t("manageSubscription")}
             </h2>
-            <p className="flex items-start gap-1 text-sm font-normal text-primary/60">
+            <p className="flex items-start gap-1 text-sm font-normal text-muted-foreground">
               {canManageBilling === false
                 ? t("managedByOrg")
                 : t("manageDescription")}
@@ -402,7 +403,7 @@ export default function BillingSettings() {
           </div>
 
           <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 py-3 dark:bg-card">
-            <p className="text-sm font-normal text-primary/60">
+            <p className="text-sm font-normal text-muted-foreground">
               {canManageBilling === false
                 ? t("managedByOrg")
                 : t("redirectPortal")}

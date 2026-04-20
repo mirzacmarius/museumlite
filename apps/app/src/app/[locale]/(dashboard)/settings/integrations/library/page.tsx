@@ -139,7 +139,7 @@ export default function LibrarySettingsPage() {
             </Link>
           </Button>
           <div>
-            <h2 className="text-xl font-medium text-primary">
+            <h2 className="text-xl font-medium text-foreground">
               Library Settings
             </h2>
             <p className="text-sm text-muted-foreground">

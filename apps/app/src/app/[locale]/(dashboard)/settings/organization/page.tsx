@@ -277,7 +277,7 @@ export default function OrganizationSettingsPage() {
   const pageHeader = (
     <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex flex-col gap-2">
-        <h2 className="text-xl font-medium text-primary">
+        <h2 className="text-xl font-medium text-foreground">
           {t("organization.title")}
         </h2>
         <p className="text-sm text-muted-foreground">

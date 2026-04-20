@@ -73,10 +73,10 @@ export default function DashboardSettings() {
       <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
         <div className="flex w-full flex-col-reverse sm:flex-row items-start sm:justify-between gap-4 rounded-lg p-4 sm:p-6">
           <div className="flex flex-col gap-2">
-            <h2 className="text-lg sm:text-xl font-medium text-primary">
+            <h2 className="text-lg sm:text-xl font-medium text-foreground">
               {t("avatar.title")}
             </h2>
-            <p className="text-sm font-normal text-primary/60">
+            <p className="text-sm font-normal text-muted-foreground">
               {t("avatar.description")}
             </p>
           </div>
@@ -109,7 +109,7 @@ export default function DashboardSettings() {
           />
         </div>
         <div className="flex min-h-14 w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 rounded-lg rounded-t-none border-t border-border bg-secondary px-4 sm:px-6 py-3 sm:py-0 dark:bg-card">
-          <p className="text-sm font-normal text-primary/60">
+          <p className="text-sm font-normal text-muted-foreground">
             {t("avatar.uploadHint")}
           </p>
           {user.avatarUrl && (
@@ -138,10 +138,10 @@ export default function DashboardSettings() {
       >
         <div className="flex w-full flex-col gap-4 rounded-lg p-4 sm:p-6">
           <div className="flex flex-col gap-2">
-            <h2 className="text-lg sm:text-xl font-medium text-primary">
+            <h2 className="text-lg sm:text-xl font-medium text-foreground">
               {t("name.title")}
             </h2>
-            <p className="text-sm font-normal text-primary/60">
+            <p className="text-sm font-normal text-muted-foreground">
               {t("name.description")}
             </p>
           </div>
@@ -162,7 +162,7 @@ export default function DashboardSettings() {
           />
         </div>
         <div className="flex min-h-14 w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 rounded-lg rounded-t-none border-t border-border bg-secondary px-4 sm:px-6 py-3 sm:py-0 dark:bg-card">
-          <p className="text-sm font-normal text-primary/60">
+          <p className="text-sm font-normal text-muted-foreground">
             {t("name.hint")}
           </p>
           <Button type="submit" size="sm">
@@ -182,10 +182,10 @@ export default function DashboardSettings() {
       >
         <div className="flex w-full flex-col gap-4 rounded-lg p-4 sm:p-6">
           <div className="flex flex-col gap-2">
-            <h2 className="text-lg sm:text-xl font-medium text-primary">
+            <h2 className="text-lg sm:text-xl font-medium text-foreground">
               {t("username.title")}
             </h2>
-            <p className="text-sm font-normal text-primary/60">
+            <p className="text-sm font-normal text-muted-foreground">
               {t("username.description")}
             </p>
           </div>
@@ -217,7 +217,7 @@ export default function DashboardSettings() {
           )}
         </div>
         <div className="flex min-h-14 w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 rounded-lg rounded-t-none border-t border-border bg-secondary px-4 sm:px-6 py-3 sm:py-0 dark:bg-card">
-          <p className="text-sm font-normal text-primary/60">
+          <p className="text-sm font-normal text-muted-foreground">
             {t("username.hint")}
           </p>
           <Button type="submit" size="sm">
@@ -229,15 +229,15 @@ export default function DashboardSettings() {
       {/* Delete Account */}
       <div className="flex w-full flex-col items-start rounded-lg border border-destructive bg-card">
         <div className="flex flex-col gap-2 p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-medium text-primary">
+          <h2 className="text-lg sm:text-xl font-medium text-foreground">
             {t("deleteAccount.title")}
           </h2>
-          <p className="text-sm font-normal text-primary/60">
+          <p className="text-sm font-normal text-muted-foreground">
             {t("deleteAccount.description")}
           </p>
         </div>
         <div className="flex min-h-14 w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 rounded-lg rounded-t-none border-t border-border bg-red-500/10 px-4 sm:px-6 py-3 sm:py-0 dark:bg-red-500/10">
-          <p className="text-sm font-normal text-primary/60">
+          <p className="text-sm font-normal text-muted-foreground">
             {t("deleteAccount.warning")}
           </p>
           <Button

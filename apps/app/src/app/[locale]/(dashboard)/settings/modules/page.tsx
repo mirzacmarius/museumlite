@@ -131,8 +131,8 @@ export default function ModulesSettingsPage() {
     <div className="flex h-full w-full flex-col gap-6">
       <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
         <div className="flex w-full flex-col gap-2 p-6">
-          <h2 className="text-xl font-medium text-primary">{t("title")}</h2>
-          <p className="text-sm font-normal text-primary/60">
+          <h2 className="text-xl font-medium text-foreground">{t("title")}</h2>
+          <p className="text-sm font-normal text-muted-foreground">
             {t("description")}
           </p>
         </div>

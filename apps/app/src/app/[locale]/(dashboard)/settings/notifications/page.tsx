@@ -106,7 +106,7 @@ export default function NotificationSettingsPage() {
   return (
     <div className="flex w-full flex-col gap-6">
       <div className="flex w-full flex-col gap-2">
-        <h2 className="text-xl font-medium text-primary">
+        <h2 className="text-xl font-medium text-foreground">
           Email Notification Settings
         </h2>
         <p className="text-sm text-muted-foreground">

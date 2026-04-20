@@ -60,7 +60,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
               className={cn(
                 "px-3 py-1.5 text-sm rounded-md whitespace-nowrap transition-colors",
                 item.active
-                  ? "bg-primary/10 text-primary font-medium"
+                  ? "bg-muted text-foreground font-medium"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted",
               )}
             >
@@ -75,13 +75,13 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
           <Link
             href="/settings"
             className={cn(
-              `${buttonVariants({ variant: "ghost" })} ${isSettingsPath && "bg-primary/5"}`,
+              `${buttonVariants({ variant: "ghost" })} ${isSettingsPath && "bg-muted"}`,
               "justify-start rounded-md",
             )}
           >
             <span
               className={cn(
-                `text-sm text-primary/80 ${isSettingsPath && "font-medium text-primary"}`,
+                `text-sm text-foreground/80 ${isSettingsPath && "font-medium text-foreground"}`,
               )}
             >
               {t("general")}
@@ -90,12 +90,12 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
           <Link
             href="/settings/organization"
             className={cn(
-              `${buttonVariants({ variant: "ghost" })} ${isOrganizationPath && "bg-primary/5"} justify-start rounded-md`,
+              `${buttonVariants({ variant: "ghost" })} ${isOrganizationPath && "bg-muted"} justify-start rounded-md`,
             )}
           >
             <span
               className={cn(
-                `text-sm text-primary/80 ${isOrganizationPath && "font-medium text-primary"}`,
+                `text-sm text-foreground/80 ${isOrganizationPath && "font-medium text-foreground"}`,
               )}
             >
               {t("organization")}
@@ -104,12 +104,12 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
           <Link
             href="/settings/users"
             className={cn(
-              `${buttonVariants({ variant: "ghost" })} ${isUsersPath && "bg-primary/5"} justify-start rounded-md`,
+              `${buttonVariants({ variant: "ghost" })} ${isUsersPath && "bg-muted"} justify-start rounded-md`,
             )}
           >
             <span
               className={cn(
-                `text-sm text-primary/80 ${isUsersPath && "font-medium text-primary"}`,
+                `text-sm text-foreground/80 ${isUsersPath && "font-medium text-foreground"}`,
               )}
             >
               {t("users")}
@@ -118,12 +118,12 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
           <Link
             href="/settings/roles"
             className={cn(
-              `${buttonVariants({ variant: "ghost" })} ${isRolesPath && "bg-primary/5"} justify-start rounded-md`,
+              `${buttonVariants({ variant: "ghost" })} ${isRolesPath && "bg-muted"} justify-start rounded-md`,
             )}
           >
             <span
               className={cn(
-                `text-sm text-primary/80 ${isRolesPath && "font-medium text-primary"}`,
+                `text-sm text-foreground/80 ${isRolesPath && "font-medium text-foreground"}`,
               )}
             >
               {t("roles")}
@@ -132,12 +132,12 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
           <Link
             href="/settings/sites"
             className={cn(
-              `${buttonVariants({ variant: "ghost" })} ${isSitesPath && "bg-primary/5"} justify-start rounded-md`,
+              `${buttonVariants({ variant: "ghost" })} ${isSitesPath && "bg-muted"} justify-start rounded-md`,
             )}
           >
             <span
               className={cn(
-                `text-sm text-primary/80 ${isSitesPath && "font-medium text-primary"}`,
+                `text-sm text-foreground/80 ${isSitesPath && "font-medium text-foreground"}`,
               )}
             >
               {t("sites")}
@@ -146,12 +146,12 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
           <Link
             href="/settings/integrations"
             className={cn(
-              `${buttonVariants({ variant: "ghost" })} ${isIntegrationsPath && "bg-primary/5"} justify-start rounded-md`,
+              `${buttonVariants({ variant: "ghost" })} ${isIntegrationsPath && "bg-muted"} justify-start rounded-md`,
             )}
           >
             <span
               className={cn(
-                `text-sm text-primary/80 ${isIntegrationsPath && "font-medium text-primary"}`,
+                `text-sm text-foreground/80 ${isIntegrationsPath && "font-medium text-foreground"}`,
               )}
             >
               {t("integrations")}
@@ -160,12 +160,12 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
           <Link
             href="/settings/modules"
             className={cn(
-              `${buttonVariants({ variant: "ghost" })} ${isModulesPath && "bg-primary/5"} justify-start rounded-md`,
+              `${buttonVariants({ variant: "ghost" })} ${isModulesPath && "bg-muted"} justify-start rounded-md`,
             )}
           >
             <span
               className={cn(
-                `text-sm text-primary/80 ${isModulesPath && "font-medium text-primary"}`,
+                `text-sm text-foreground/80 ${isModulesPath && "font-medium text-foreground"}`,
               )}
             >
               {t("modules")}
@@ -174,12 +174,12 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
           <Link
             href="/settings/billing"
             className={cn(
-              `${buttonVariants({ variant: "ghost" })} ${isBillingPath && "bg-primary/5"} justify-start rounded-md`,
+              `${buttonVariants({ variant: "ghost" })} ${isBillingPath && "bg-muted"} justify-start rounded-md`,
             )}
           >
             <span
               className={cn(
-                `text-sm text-primary/80 ${isBillingPath && "font-medium text-primary"}`,
+                `text-sm text-foreground/80 ${isBillingPath && "font-medium text-foreground"}`,
               )}
             >
               {t("billing")}
@@ -188,12 +188,12 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
           <Link
             href="/settings/activity"
             className={cn(
-              `${buttonVariants({ variant: "ghost" })} ${isActivityPath && "bg-primary/5"} justify-start rounded-md`,
+              `${buttonVariants({ variant: "ghost" })} ${isActivityPath && "bg-muted"} justify-start rounded-md`,
             )}
           >
             <span
               className={cn(
-                `text-sm text-primary/80 ${isActivityPath && "font-medium text-primary"}`,
+                `text-sm text-foreground/80 ${isActivityPath && "font-medium text-foreground"}`,
               )}
             >
               {t("activity")}
@@ -202,12 +202,12 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
           <Link
             href="/settings/developer"
             className={cn(
-              `${buttonVariants({ variant: "ghost" })} ${isDeveloperPath && "bg-primary/5"} justify-start rounded-md`,
+              `${buttonVariants({ variant: "ghost" })} ${isDeveloperPath && "bg-muted"} justify-start rounded-md`,
             )}
           >
             <span
               className={cn(
-                `text-sm text-primary/80 ${isDeveloperPath && "font-medium text-primary"}`,
+                `text-sm text-foreground/80 ${isDeveloperPath && "font-medium text-foreground"}`,
               )}
             >
               {t("developer")}
@@ -216,12 +216,12 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
           <Link
             href="/settings/data"
             className={cn(
-              `${buttonVariants({ variant: "ghost" })} ${isDataPath && "bg-primary/5"} justify-start rounded-md`,
+              `${buttonVariants({ variant: "ghost" })} ${isDataPath && "bg-muted"} justify-start rounded-md`,
             )}
           >
             <span
               className={cn(
-                `text-sm text-primary/80 ${isDataPath && "font-medium text-primary"}`,
+                `text-sm text-foreground/80 ${isDataPath && "font-medium text-foreground"}`,
               )}
             >
               {t("data")}

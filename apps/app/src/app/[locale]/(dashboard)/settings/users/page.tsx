@@ -169,7 +169,7 @@ export default function UsersSettingsPage() {
   return (
     <div className="flex w-full flex-col gap-6">
       <div className="flex w-full flex-col gap-2">
-        <h2 className="text-xl font-medium text-primary">{t("title")}</h2>
+        <h2 className="text-xl font-medium text-foreground">{t("title")}</h2>
         <p className="text-sm text-muted-foreground">{t("description")}</p>
       </div>
       <div className="flex w-full items-center justify-between">
