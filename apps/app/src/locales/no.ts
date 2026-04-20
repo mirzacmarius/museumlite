@@ -3571,6 +3571,24 @@ export default {
       rejectDialogDescription:
         "Er du sikker på at du vil avvise denne aksesjonen? Denne handlingen kan ikke angres.",
       rejectAccession: "Avvis Aksesjon",
+      errors: {
+        defaultTitle: "Godkjenningen kunne ikke fullføres",
+        defaultDescription: "Gå gjennom aksesjonsdetaljene og prøv igjen.",
+        sourceVerificationRequiredTitle:
+          "Kildeverifisering er fortsatt påkrevd",
+        sourceVerificationRequiredDescription:
+          "Denne aksesjonen kan ikke godkjennes ennå fordi det påkrevde steget for kildeverifisering ikke er fullført. Fullfør den gjennomgangen først og prøv deretter igjen.",
+        permissionDeniedTitle: "Du kan ikke godkjenne dette steget",
+        permissionDeniedDescription:
+          "Dette arbeidsflytsteget er tildelt en annen godkjennerrolle. Be noen som er tildelt dette steget om å gjennomgå aksesjonen.",
+        alreadyApprovedTitle: "Du har allerede godkjent dette steget",
+        alreadyApprovedDescription:
+          "Godkjenningen din er allerede registrert. Hvis flere godkjenninger kreves, forblir aksesjonen ventende til de øvrige godkjennerne har godkjent den.",
+        workflowConfigurationTitle:
+          "Godkjenningsarbeidsflyten trenger oppmerksomhet",
+        workflowConfigurationDescription:
+          "Denne aksesjonen kan ikke godkjennes fordi arbeidsflytsteget ikke er konfigurert riktig. Gå gjennom arbeidsflytinnstillingene og prøv igjen.",
+      },
     },
     error: {
       failedToLoad: "Kunne ikke laste aksesjoner",

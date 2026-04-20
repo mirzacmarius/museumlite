@@ -3691,6 +3691,23 @@ export default {
       rejectDialogDescription:
         "Are you sure you want to reject this accession? This action cannot be undone.",
       rejectAccession: "Reject Accession",
+      errors: {
+        defaultTitle: "Approval couldn't be completed",
+        defaultDescription: "Review the accession details and try again.",
+        sourceVerificationRequiredTitle:
+          "Source verification is still required",
+        sourceVerificationRequiredDescription:
+          "This accession can't be approved yet because the required source verification step hasn't been completed. Finish that review first, then try approval again.",
+        permissionDeniedTitle: "You can't approve this step",
+        permissionDeniedDescription:
+          "This workflow step is assigned to a different approver role. Ask someone assigned to this step to review the accession.",
+        alreadyApprovedTitle: "This step has already been approved by you",
+        alreadyApprovedDescription:
+          "Your approval is already recorded. If more approvals are required, the accession will stay pending until the remaining reviewers approve it.",
+        workflowConfigurationTitle: "The approval workflow needs attention",
+        workflowConfigurationDescription:
+          "This accession can't be approved because the workflow step is not configured correctly. Review the workflow settings and try again.",
+      },
     },
     error: {
       failedToLoad: "Failed to Load Accessions",

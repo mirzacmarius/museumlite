@@ -3597,6 +3597,24 @@ export default {
       rejectDialogDescription:
         "¿Estás seguro de que quieres rechazar esta adquisición? Esta acción no se puede deshacer.",
       rejectAccession: "Rechazar Adquisición",
+      errors: {
+        defaultTitle: "No se pudo completar la aprobación",
+        defaultDescription:
+          "Revisa los detalles de la adquisición e inténtalo de nuevo.",
+        sourceVerificationRequiredTitle:
+          "La verificación de la fuente sigue siendo obligatoria",
+        sourceVerificationRequiredDescription:
+          "Esta adquisición no puede aprobarse todavía porque el paso obligatorio de verificación de la fuente no se ha completado. Termina esa revisión primero y vuelve a intentar la aprobación.",
+        permissionDeniedTitle: "No puedes aprobar este paso",
+        permissionDeniedDescription:
+          "Este paso del flujo de trabajo está asignado a otro rol aprobador. Pide a alguien asignado a este paso que revise la adquisición.",
+        alreadyApprovedTitle: "Ya aprobaste este paso",
+        alreadyApprovedDescription:
+          "Tu aprobación ya está registrada. Si se requieren más aprobaciones, la adquisición seguirá pendiente hasta que los revisores restantes la aprueben.",
+        workflowConfigurationTitle: "El flujo de aprobación necesita atención",
+        workflowConfigurationDescription:
+          "Esta adquisición no puede aprobarse porque el paso del flujo no está configurado correctamente. Revisa la configuración del flujo de trabajo y vuelve a intentarlo.",
+      },
     },
     error: {
       failedToLoad: "Error al Cargar Adquisiciones",

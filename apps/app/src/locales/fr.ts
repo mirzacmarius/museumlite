@@ -3614,6 +3614,25 @@ export default {
       rejectDialogDescription:
         "Êtes-vous sûr de vouloir rejeter cette acquisition ? Cette action ne peut pas être annulée.",
       rejectAccession: "Rejeter l'Acquisition",
+      errors: {
+        defaultTitle: "L'approbation n'a pas pu être finalisée",
+        defaultDescription:
+          "Vérifiez les détails de l'acquisition puis réessayez.",
+        sourceVerificationRequiredTitle:
+          "La vérification de la source est toujours requise",
+        sourceVerificationRequiredDescription:
+          "Cette acquisition ne peut pas encore être approuvée car l'étape obligatoire de vérification de la source n'est pas terminée. Terminez cette vérification puis réessayez l'approbation.",
+        permissionDeniedTitle: "Vous ne pouvez pas approuver cette étape",
+        permissionDeniedDescription:
+          "Cette étape du workflow est attribuée à un autre rôle approbateur. Demandez à une personne assignée à cette étape d'examiner l'acquisition.",
+        alreadyApprovedTitle: "Vous avez déjà approuvé cette étape",
+        alreadyApprovedDescription:
+          "Votre approbation est déjà enregistrée. Si d'autres approbations sont requises, l'acquisition restera en attente jusqu'à ce que les autres réviseurs l'approuvent.",
+        workflowConfigurationTitle:
+          "Le workflow d'approbation nécessite une intervention",
+        workflowConfigurationDescription:
+          "Cette acquisition ne peut pas être approuvée car l'étape du workflow n'est pas configurée correctement. Vérifiez la configuration du workflow puis réessayez.",
+      },
     },
     error: {
       failedToLoad: "Échec du Chargement des Acquisitions",
