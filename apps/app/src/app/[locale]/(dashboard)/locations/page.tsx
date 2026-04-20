@@ -18,9 +18,12 @@ import { LocationSidebar } from "./_components/location-sidebar";
 import { StorageView } from "./_components/storage-view";
 import { getNumericCustomFieldNumber } from "./location-custom-fields";
 import {
+  getAutomaticDisplayUnitCounts,
   getDefaultLocationId,
+  getDescendantLocations,
   getVisibleSidebarLocations,
   isStorageLocation,
+  shouldAutoDisplayChildLocations,
 } from "./location-view-helpers";
 
 export default function LocationsPage() {
@@ -127,15 +130,12 @@ function LocationLayout({
   const selectedLocationType =
     selectedLocation?.type ??
     allLocations?.find((location) => location._id === selectedLocationId)?.type;
-  const hasChildLocations =
-    !!selectedLocationId &&
-    (allLocations?.some(
-      (location) => location.parentLocationId === selectedLocationId,
-    ) ??
-      false);
+  const shouldAutoDisplayDescendants =
+    !!selectedLocationType &&
+    shouldAutoDisplayChildLocations(selectedLocationType);
   const includesDescendants = selectedLocationType
-    ? isStorageLocation(selectedLocationType) || hasChildLocations
-    : hasChildLocations;
+    ? isStorageLocation(selectedLocationType) || shouldAutoDisplayDescendants
+    : false;
 
   const objectsAtLocation = useQuery(
     api.locations.getObjectsAtLocation,
@@ -185,6 +185,14 @@ function LocationLayout({
     allLocations?.filter(
       (loc) => loc.parentLocationId === selectedLocationId,
     ) ?? [];
+  const descendantLocations =
+    selectedLocationId && allLocations
+      ? getDescendantLocations(allLocations, selectedLocationId)
+      : [];
+  const automaticDisplayUnitCounts =
+    selectedLocationId && shouldAutoDisplayDescendants
+      ? getAutomaticDisplayUnitCounts(allLocations ?? [], selectedLocationId)
+      : null;
 
   return (
     <div className="flex h-full min-h-0 w-full">
@@ -317,16 +325,20 @@ function LocationLayout({
                   })) ?? []
                 }
                 vitrineCount={
+                  automaticDisplayUnitCounts?.vitrineCount ||
                   getNumericCustomFieldNumber(
                     selectedLocation.customFields,
                     "vitrineCount",
-                  ) ?? undefined
+                  ) ||
+                  undefined
                 }
                 wallCount={
+                  automaticDisplayUnitCounts?.wallCount ||
                   getNumericCustomFieldNumber(
                     selectedLocation.customFields,
                     "wallCount",
-                  ) ?? undefined
+                  ) ||
+                  undefined
                 }
                 wallItemsPerWall={
                   getNumericCustomFieldNumber(
@@ -335,23 +347,31 @@ function LocationLayout({
                   ) ?? undefined
                 }
                 cabinetCount={
+                  automaticDisplayUnitCounts?.cabinetCount ||
                   getNumericCustomFieldNumber(
                     selectedLocation.customFields,
                     "cabinetCount",
-                  ) ?? undefined
+                  ) ||
+                  undefined
                 }
                 shelfCount={
+                  automaticDisplayUnitCounts?.shelfCount ||
                   getNumericCustomFieldNumber(
                     selectedLocation.customFields,
                     "shelfCount",
-                  ) ?? undefined
+                  ) ||
+                  undefined
                 }
+                backgroundImageUrl={selectedLocation.imageUrl}
               />
             )}
 
             {isStorageView && (
               <StorageView
-                units={childLocations.map((loc) => ({
+                units={(includesDescendants
+                  ? descendantLocations
+                  : childLocations
+                ).map((loc) => ({
                   _id: loc._id,
                   name: loc.name,
                   type: loc.type,

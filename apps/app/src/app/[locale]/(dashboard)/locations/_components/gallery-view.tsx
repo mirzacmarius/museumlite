@@ -19,6 +19,7 @@ interface GalleryViewProps {
   wallItemsPerWall?: number;
   cabinetCount?: number;
   shelfCount?: number;
+  backgroundImageUrl?: string | null;
 }
 
 const DEFAULT_VITRINE_COUNT = 0;
@@ -35,6 +36,7 @@ export function GalleryView({
   wallItemsPerWall = DEFAULT_WALL_ITEMS_PER_WALL,
   cabinetCount = DEFAULT_CABINET_COUNT,
   shelfCount = DEFAULT_SHELF_COUNT,
+  backgroundImageUrl,
 }: GalleryViewProps) {
   const normalizedVitrineCount = Math.max(0, vitrineCount);
   const normalizedWallCount = Math.max(0, wallCount);
@@ -149,6 +151,17 @@ export function GalleryView({
                 Wall Mounted Display
               </h3>
               <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+                {backgroundImageUrl ? (
+                  <>
+                    <img
+                      src={backgroundImageUrl}
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 h-full w-full object-cover opacity-15"
+                    />
+                    <div className="absolute inset-0 bg-black/70" />
+                  </>
+                ) : null}
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
                 <div
                   className="relative z-10 grid gap-2"

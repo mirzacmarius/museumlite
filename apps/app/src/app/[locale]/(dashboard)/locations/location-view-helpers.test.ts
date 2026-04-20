@@ -2,9 +2,13 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { describe, expect, test } from "vitest";
 
 import {
+  getAutomaticDisplayUnitCounts,
   getDefaultLocationId,
+  getDescendantLocations,
   getVisibleSidebarLocations,
   isStorageLocation,
+  shouldAutoDisplayChildLocations,
+  shouldShowInExhibitionSidebar,
 } from "./location-view-helpers";
 
 function locationId(value: string) {
@@ -101,5 +105,126 @@ describe("location view helpers", () => {
   test("storage detection matches operational location types", () => {
     expect(isStorageLocation("archive box")).toBe(true);
     expect(isStorageLocation("gallery")).toBe(false);
+  });
+
+  test("auto-display detection matches exhibition container types", () => {
+    expect(shouldAutoDisplayChildLocations("building")).toBe(true);
+    expect(shouldAutoDisplayChildLocations("gallery room")).toBe(true);
+    expect(shouldAutoDisplayChildLocations("cabinet")).toBe(false);
+  });
+
+  test("exhibition sidebar hides display-unit descendants", () => {
+    expect(shouldShowInExhibitionSidebar("gallery")).toBe(true);
+    expect(shouldShowInExhibitionSidebar("room")).toBe(true);
+    expect(shouldShowInExhibitionSidebar("cabinet")).toBe(false);
+    expect(shouldShowInExhibitionSidebar("shelf")).toBe(false);
+    expect(shouldShowInExhibitionSidebar("wall")).toBe(false);
+  });
+
+  test("collects all descendant locations recursively", () => {
+    const locations = [
+      {
+        _id: locationId("loc-building"),
+        name: "Main Building",
+        locationCode: "B-001",
+        type: "building",
+        isActive: true,
+      },
+      {
+        _id: locationId("loc-gallery"),
+        name: "Gallery A",
+        locationCode: "G-001",
+        type: "gallery",
+        isActive: true,
+        parentLocationId: locationId("loc-building"),
+      },
+      {
+        _id: locationId("loc-cabinet"),
+        name: "Cabinet A-1",
+        locationCode: "CAB-001",
+        type: "cabinet",
+        isActive: true,
+        parentLocationId: locationId("loc-gallery"),
+      },
+      {
+        _id: locationId("loc-shelf"),
+        name: "Shelf 1",
+        locationCode: "SH-001",
+        type: "shelf",
+        isActive: true,
+        parentLocationId: locationId("loc-cabinet"),
+      },
+    ];
+
+    expect(
+      getDescendantLocations(locations, locationId("loc-building")).map(
+        (location) => location._id,
+      ),
+    ).toEqual([
+      locationId("loc-gallery"),
+      locationId("loc-cabinet"),
+      locationId("loc-shelf"),
+    ]);
+  });
+
+  test("derives display unit counts from descendant locations", () => {
+    const locations = [
+      {
+        _id: locationId("loc-building"),
+        name: "Main Building",
+        locationCode: "B-001",
+        type: "building",
+        isActive: true,
+      },
+      {
+        _id: locationId("loc-gallery"),
+        name: "Gallery A",
+        locationCode: "G-001",
+        type: "gallery",
+        isActive: true,
+        parentLocationId: locationId("loc-building"),
+      },
+      {
+        _id: locationId("loc-wall"),
+        name: "Wall North",
+        locationCode: "W-001",
+        type: "wall",
+        isActive: true,
+        parentLocationId: locationId("loc-gallery"),
+      },
+      {
+        _id: locationId("loc-cabinet"),
+        name: "Cabinet A-1",
+        locationCode: "CAB-001",
+        type: "cabinet",
+        isActive: true,
+        parentLocationId: locationId("loc-gallery"),
+      },
+      {
+        _id: locationId("loc-shelf"),
+        name: "Shelf 1",
+        locationCode: "SH-001",
+        type: "shelf",
+        isActive: true,
+        parentLocationId: locationId("loc-cabinet"),
+      },
+      {
+        _id: locationId("loc-vitrine"),
+        name: "Case 1",
+        locationCode: "V-001",
+        type: "display case",
+        isActive: true,
+        parentLocationId: locationId("loc-gallery"),
+      },
+    ];
+
+    expect(
+      getAutomaticDisplayUnitCounts(locations, locationId("loc-building")),
+    ).toEqual({
+      vitrineCount: 1,
+      wallCount: 1,
+      cabinetCount: 1,
+      shelfCount: 1,
+    });
   });
 });

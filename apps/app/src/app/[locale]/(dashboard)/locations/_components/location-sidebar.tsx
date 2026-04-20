@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  isStorageLocation,
+  shouldShowInExhibitionSidebar,
+} from "@/app/[locale]/(dashboard)/locations/location-view-helpers";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Lock, Thermometer } from "lucide-react";
 
@@ -31,6 +35,10 @@ export function LocationSidebar({
     allLocations.filter(
       (location) => location.parentLocationId === parentLocationId,
     );
+  const getExhibitionChildren = (parentLocationId: Id<"locations">) =>
+    getChildren(parentLocationId).filter((location) =>
+      shouldShowInExhibitionSidebar(location.type),
+    );
 
   return (
     <div className="h-full min-h-0 w-60 shrink-0 overflow-y-auto border-r border-zinc-800/60 bg-zinc-950 p-4 custom-scrollbar">
@@ -44,8 +52,8 @@ export function LocationSidebar({
               <LocationNavTreeItem
                 key={location._id}
                 location={location}
-                childLocations={getChildren(location._id)}
-                getChildren={getChildren}
+                childLocations={getExhibitionChildren(location._id)}
+                getChildren={getExhibitionChildren}
                 selectedLocationId={selectedLocationId}
                 onSelectLocation={onSelectLocation}
                 isSecure={false}
@@ -104,11 +112,7 @@ function LocationNavTreeItem({
   isSecure,
   depth = 0,
 }: LocationNavTreeItemProps) {
-  const isLocationSecure =
-    isSecure ||
-    ["storage", "vault", "cabinet", "shelf", "archive"].some((type) =>
-      location.type.toLowerCase().includes(type),
-    );
+  const isLocationSecure = isSecure || isStorageLocation(location.type);
 
   return (
     <li>
