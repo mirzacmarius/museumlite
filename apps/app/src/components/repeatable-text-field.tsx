@@ -4,7 +4,7 @@ import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Plus, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface RepeatableTextFieldProps {
   label: string;
@@ -14,6 +14,12 @@ interface RepeatableTextFieldProps {
   id?: string;
 }
 
+function createRepeatableFieldItemId() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `repeatable-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export function RepeatableTextField({
   label,
   value,
@@ -21,11 +27,39 @@ export function RepeatableTextField({
   placeholder,
   id,
 }: RepeatableTextFieldProps) {
+  const [itemIds, setItemIds] = useState(() =>
+    value.map(() => createRepeatableFieldItemId()),
+  );
+
+  useEffect(() => {
+    setItemIds((previousIds) => {
+      if (previousIds.length === value.length) {
+        return previousIds;
+      }
+
+      if (previousIds.length > value.length) {
+        return previousIds.slice(0, value.length);
+      }
+
+      return [
+        ...previousIds,
+        ...Array.from({ length: value.length - previousIds.length }, () =>
+          createRepeatableFieldItemId(),
+        ),
+      ];
+    });
+  }, [value.length]);
+
   const handleAdd = () => {
+    setItemIds((previousIds) => [
+      ...previousIds,
+      createRepeatableFieldItemId(),
+    ]);
     onChange([...value, ""]);
   };
 
   const handleRemove = (index: number) => {
+    setItemIds((previousIds) => previousIds.filter((_, i) => i !== index));
     onChange(value.filter((_, i) => i !== index));
   };
 
@@ -45,7 +79,7 @@ export function RepeatableTextField({
           </div>
         ) : (
           value.map((item, index) => (
-            <div key={`${index}-${item}`} className="flex gap-2">
+            <div key={itemIds[index]} className="flex gap-2">
               <Input
                 value={item}
                 onChange={(e) => handleChange(index, e.target.value)}

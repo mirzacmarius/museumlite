@@ -3620,6 +3620,16 @@ export default {
       approved: "Approved",
       rejected: "Rejected",
     },
+    stats: {
+      pending: "Pending",
+      approved: "Approved",
+    },
+    actions: {
+      emptyTrash: "Empty Trash",
+      emptyingTrash: "Emptying...",
+      emptyTrashConfirm:
+        "Delete all {count} rejected accessions? This action cannot be undone.",
+    },
     form: {
       accessionNumber: "Accession Number",
       accessionNumberPlaceholder: "Auto-generated if left empty",
@@ -3687,6 +3697,7 @@ export default {
       unexpectedError: "An unexpected error occurred while loading accessions.",
       failedToApprove: "Failed to approve accession",
       failedToReject: "Failed to reject accession",
+      failedToEmptyTrash: "Failed to empty rejected accessions",
       failedToUpdate: "Failed to update accession. Please try again.",
       sourceRequired: "Source is required",
     },

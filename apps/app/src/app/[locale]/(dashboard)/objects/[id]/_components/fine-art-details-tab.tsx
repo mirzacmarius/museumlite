@@ -18,6 +18,7 @@ import {
   Shield,
   Truck,
 } from "lucide-react";
+import { formatOwnershipDateRange } from "./format-ownership-date-range";
 
 interface FineArtDetailsTabProps {
   collectionId: string;
@@ -210,10 +211,17 @@ export function FineArtDetailsTab({
                         {entry.owner}
                       </h4>
                     </div>
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {entry.startYear}
-                      {entry.endYear ? ` – ${entry.endYear}` : " – Present"}
-                    </span>
+                    {formatOwnershipDateRange(entry, {
+                      presentLabel: "Present",
+                      separator: " – ",
+                    }) ? (
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {formatOwnershipDateRange(entry, {
+                          presentLabel: "Present",
+                          separator: " – ",
+                        })}
+                      </span>
+                    ) : null}
                   </div>
                   {entry.location && (
                     <p className="text-xs text-muted-foreground">

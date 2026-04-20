@@ -9,6 +9,7 @@ import {
   FileEdit,
   Search,
   ShieldCheck,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -39,6 +40,7 @@ const stepDotStyles: Record<number, string> = {
   3: "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]",
   4: "bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]",
   [-1]: "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]",
+  [-2]: "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]",
 };
 
 const DEFAULT_DOT_STYLE = "bg-slate-500 shadow-[0_0_8px_rgba(100,116,139,0.5)]";
@@ -56,6 +58,7 @@ function getStepDotStyle(stepNumber: number): string {
 function getStepIcon(stepNumber: number) {
   if (stepNumber === 0) return <FileEdit className="h-4 w-4" />;
   if (stepNumber === -1) return <CheckCircle className="h-4 w-4" />;
+  if (stepNumber === -2) return <XCircle className="h-4 w-4" />;
   if (stepNumber === 1) return <Clock className="h-4 w-4" />;
   if (stepNumber === 2) return <Search className="h-4 w-4" />;
   return <ShieldCheck className="h-4 w-4" />;
@@ -85,12 +88,13 @@ export function KanbanColumn({
   const filteredAccessions =
     accessions?.page?.filter((a: AccessionItem) => {
       const currentStep = a.workflowStep ?? 0;
-      const isApproved = a.status === "approved";
 
       const matchesStep =
         stepNumber === -1
-          ? isApproved
-          : !isApproved && currentStep === stepNumber;
+          ? a.status === "approved"
+          : stepNumber === -2
+            ? a.status === "rejected"
+            : a.status === "pending" && currentStep === stepNumber;
 
       const matchesSearch = searchQuery
         ? a.accessionNumber
@@ -140,10 +144,14 @@ export function KanbanColumn({
                       <div className={`w-1.5 h-1.5 rounded-full ${dotStyle}`} />
                     </div>
                     <p className="text-sm text-zinc-200 font-medium mb-1 group-hover:text-indigo-400 transition-colors line-clamp-2">
-                      {accession.draftTitle || accession.source || t("kanban.unknownSource")}
+                      {accession.draftTitle ||
+                        accession.source ||
+                        t("kanban.unknownSource")}
                     </p>
                     <p className="text-xs text-zinc-500 mb-3 line-clamp-2">
-                      {accession.draftTitle ? accession.source : accession.method}
+                      {accession.draftTitle
+                        ? accession.source
+                        : accession.method}
                     </p>
                     {accession.assigneeName && (
                       <div className="flex items-center gap-2">

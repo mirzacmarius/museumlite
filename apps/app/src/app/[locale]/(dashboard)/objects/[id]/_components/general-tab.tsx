@@ -1,5 +1,6 @@
 "use client";
 
+import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
@@ -11,6 +12,7 @@ import {
   Link as LinkIcon,
   Tag,
 } from "lucide-react";
+import { formatOwnershipDateRange } from "./format-ownership-date-range";
 import type { CollectionData, LocationPathItem } from "./types";
 
 interface GeneralTabProps {
@@ -19,6 +21,7 @@ interface GeneralTabProps {
 }
 
 export function GeneralTab({ collection, locationPath }: GeneralTabProps) {
+  const tObjects = useScopedI18n("objects.printView");
   const collectionGroup = useQuery(
     api.collectionGroups.get,
     collection.collectionGroupId
@@ -291,10 +294,15 @@ export function GeneralTab({ collection, locationPath }: GeneralTabProps) {
                         <h4 className="text-sm font-semibold text-foreground">
                           {entry.owner}
                         </h4>
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {entry.startYear}
-                          {entry.endYear ? ` - ${entry.endYear}` : " - Present"}
-                        </span>
+                        {formatOwnershipDateRange(entry, {
+                          presentLabel: tObjects("present"),
+                        }) ? (
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {formatOwnershipDateRange(entry, {
+                              presentLabel: tObjects("present"),
+                            })}
+                          </span>
+                        ) : null}
                       </div>
                       {entry.description && (
                         <p className="text-sm text-muted-foreground">

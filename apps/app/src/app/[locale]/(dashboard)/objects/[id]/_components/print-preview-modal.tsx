@@ -12,6 +12,7 @@ import {
 } from "@v1/ui/dialog";
 import { cn } from "@v1/ui/utils";
 import { Printer } from "lucide-react";
+import { formatOwnershipDateRange } from "./format-ownership-date-range";
 import type { CollectionData, HeroImageData, LocationPathItem } from "./types";
 
 interface PrintPreviewModalProps {
@@ -328,12 +329,17 @@ export function PrintPreviewModal({
                         className="rounded border border-gray-200 p-2 text-sm"
                       >
                         <p className="font-medium text-black">{entry.owner}</p>
-                        {(entry.startYear || entry.endYear) && (
+                        {formatOwnershipDateRange(entry, {
+                          presentLabel: t("present"),
+                          separator: " – ",
+                        }) ? (
                           <p className="text-xs text-gray-500">
-                            {entry.startYear || "?"} –{" "}
-                            {entry.endYear || t("present")}
+                            {formatOwnershipDateRange(entry, {
+                              presentLabel: t("present"),
+                              separator: " – ",
+                            })}
                           </p>
-                        )}
+                        ) : null}
                         {entry.description && (
                           <p className="mt-1 text-gray-600">
                             {entry.description}

@@ -21,6 +21,7 @@ import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import { ImageOff, Pencil, Share2, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { formatOwnershipDateRange } from "./format-ownership-date-range";
 
 interface RecordContextSidebarProps {
   collectionId: string;
@@ -170,10 +171,17 @@ export function RecordContextSidebar({
                       />
                       <div>
                         <p className="text-foreground">{entry.owner}</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {entry.startYear}
-                          {entry.endYear ? `–${entry.endYear}` : "–present"}
-                        </p>
+                        {formatOwnershipDateRange(entry, {
+                          presentLabel: "Present",
+                          separator: "–",
+                        }) ? (
+                          <p className="text-[10px] text-muted-foreground">
+                            {formatOwnershipDateRange(entry, {
+                              presentLabel: "Present",
+                              separator: "–",
+                            })}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   ))}

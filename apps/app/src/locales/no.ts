@@ -3499,6 +3499,16 @@ export default {
       approved: "Godkjent",
       rejected: "Avvist",
     },
+    stats: {
+      pending: "Ventende",
+      approved: "Godkjent",
+    },
+    actions: {
+      emptyTrash: "Tøm papirkurv",
+      emptyingTrash: "Tømmer...",
+      emptyTrashConfirm:
+        "Slette alle {count} avviste aksesjoner? Denne handlingen kan ikke angres.",
+    },
     form: {
       accessionNumber: "Aksesjonsnummer",
       accessionNumberPlaceholder: "Genereres automatisk hvis tom",
@@ -3567,6 +3577,7 @@ export default {
       unexpectedError: "En uventet feil oppstod under lasting av aksesjoner.",
       failedToApprove: "Kunne ikke godkjenne aksesjon",
       failedToReject: "Kunne ikke avvise aksesjon",
+      failedToEmptyTrash: "Kunne ikke tømme avviste aksesjoner",
       failedToUpdate: "Kunne ikke oppdatere aksesjon. Vennligst prøv igjen.",
       sourceRequired: "Kilde er påkrevd",
     },

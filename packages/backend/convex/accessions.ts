@@ -423,7 +423,9 @@ export const upsertObjectDraft = mutation({
       );
 
       if (!canInitiate) {
-        throw new Error("Permission denied: cannot initiate accession workflow");
+        throw new Error(
+          "Permission denied: cannot initiate accession workflow",
+        );
       }
     }
 
@@ -443,7 +445,7 @@ export const upsertObjectDraft = mutation({
 
     const nextWorkflowStep =
       args.saveMode === "submit" && workflowConfig
-        ? (workflowState.firstStep ?? 1)
+        ? workflowState.firstStep ?? 1
         : 0;
 
     if (args.accessionId) {
@@ -1311,7 +1313,8 @@ export const approve = mutation({
         });
       }
 
-      const isLastStep = workflowState.isPastLastStep || workflowState.isLastStep;
+      const isLastStep =
+        workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
         await ctx.db.patch(args.accessionId, {
@@ -1529,6 +1532,7 @@ export const reject = mutation({
 
     await ctx.db.patch(args.accessionId, {
       status: "rejected",
+      workflowStep: -2,
       approvedBy: userId,
       approvedAt: Date.now(),
       notes: args.comment
@@ -1563,6 +1567,64 @@ export const reject = mutation({
     }
 
     return null;
+  },
+});
+
+export const emptyRejected = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    deletedCount: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(ctx, args.organizationId, "collections.delete");
+
+    const rejectedAccessions = await ctx.db
+      .query("accessions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .filter((q) => q.eq(q.field("status"), "rejected"))
+      .collect();
+
+    let deletedCount = 0;
+
+    for (const accession of rejectedAccessions) {
+      if (accession.collectionId) {
+        continue;
+      }
+
+      const storageIds = new Set<Id<"_storage">>();
+
+      for (const storageId of accession.documents || []) {
+        storageIds.add(storageId);
+      }
+
+      for (const mediaItem of accession.draftMedia || []) {
+        storageIds.add(mediaItem.storageId);
+      }
+
+      for (const checklistItem of accession.documentChecklist || []) {
+        if (checklistItem.storageId) {
+          storageIds.add(checklistItem.storageId);
+        }
+      }
+
+      for (const storageId of storageIds) {
+        await ctx.storage.delete(storageId);
+      }
+
+      await ctx.db.delete(accession._id);
+      deletedCount += 1;
+    }
+
+    return { deletedCount };
   },
 });
 
@@ -1793,6 +1855,7 @@ export const getWorkflowSteps = query({
         steps: [
           { stepNumber: 0, name: "Draft" },
           { stepNumber: -1, name: "Approved" },
+          { stepNumber: -2, name: "Rejected" },
         ],
       };
     }
@@ -1815,6 +1878,7 @@ export const getWorkflowSteps = query({
       { stepNumber: 0, name: "Draft" },
       ...stepsWithRoles,
       { stepNumber: -1, name: "Approved" },
+      { stepNumber: -2, name: "Rejected" },
     ].filter(
       (step, index, steps) =>
         steps.findIndex(

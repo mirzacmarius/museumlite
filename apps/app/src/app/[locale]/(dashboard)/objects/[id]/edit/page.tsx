@@ -61,12 +61,19 @@ import {
 } from "../_components/object-tab-config";
 
 interface OwnershipEntry {
+  localId?: string;
   owner: string;
   startYear?: string;
   endYear?: string;
   description?: string;
   verified?: boolean;
   verificationSource?: string;
+}
+
+interface LinkEntry {
+  localId?: string;
+  url: string;
+  label?: string;
 }
 
 interface CollectionFormData {
@@ -90,7 +97,7 @@ interface CollectionFormData {
   donated_date?: string;
   donation_info?: string;
   previous_owners?: string[];
-  links?: Array<{ url: string; label?: string }>;
+  links?: LinkEntry[];
   parentObjectId?: string;
   currentLocationId?: string;
   collectionGroupId?: string;
@@ -176,6 +183,40 @@ function parseOptionalNonNegativeNumber(value?: string | number) {
     : { isValid: false as const, value: undefined };
 }
 
+function createOwnershipEntryLocalId() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `ownership-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function createLinkEntryLocalId() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `link-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function withOwnershipEntryLocalIds(entries?: OwnershipEntry[]) {
+  return (entries || []).map((entry) =>
+    entry.localId
+      ? entry
+      : {
+          ...entry,
+          localId: createOwnershipEntryLocalId(),
+        },
+  );
+}
+
+function withLinkEntryLocalIds(entries?: LinkEntry[]) {
+  return (entries || []).map((entry) =>
+    entry.localId
+      ? entry
+      : {
+          ...entry,
+          localId: createLinkEntryLocalId(),
+        },
+  );
+}
+
 function createInitialFormData(collection: CollectionDoc): CollectionFormData {
   let objectTypeArray: string[] = [];
   if (collection.objectType) {
@@ -221,13 +262,13 @@ function createInitialFormData(collection: CollectionDoc): CollectionFormData {
     previous_owners: collection.previous_owners || [],
     links:
       collection.links && collection.links.length > 0
-        ? collection.links
-        : [{ url: "", label: "" }],
+        ? withLinkEntryLocalIds(collection.links)
+        : [{ localId: createLinkEntryLocalId(), url: "", label: "" }],
     parentObjectId: (collection.parentObjectId as string) || "",
     currentLocationId: (collection.currentLocationId as string) || "",
     collectionGroupId: (collection.collectionGroupId as string) || "",
     alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
-    ownershipHistory: collection.ownershipHistory || [],
+    ownershipHistory: withOwnershipEntryLocalIds(collection.ownershipHistory),
     displayStatus: collection.displayStatus,
     isPubliclyVisible: collection.isPubliclyVisible ?? false,
     isHighResDownloadable: collection.isHighResDownloadable ?? false,
@@ -253,8 +294,12 @@ function getFormSignature(formData: CollectionFormData) {
     donated_by: formData.donated_by || [],
     previous_owners: formData.previous_owners || [],
     alternateAccessionNumbers: formData.alternateAccessionNumbers || [],
-    ownershipHistory: formData.ownershipHistory || [],
-    links: formData.links || [],
+    ownershipHistory:
+      formData.ownershipHistory?.map(
+        ({ localId: _localId, ...entry }) => entry,
+      ) || [],
+    links:
+      formData.links?.map(({ localId: _localId, ...entry }) => entry) || [],
   });
 }
 
@@ -352,6 +397,7 @@ export default function CollectionEditPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [alternateAccessionDraft, setAlternateAccessionDraft] = useState("");
   const [deaccessionDialogOpen, setDeaccessionDialogOpen] = useState(false);
   const [editingImageId, setEditingImageId] = useState<Id<"mediaFiles"> | null>(
     null,
@@ -564,6 +610,69 @@ export default function CollectionEditPage() {
     [],
   );
 
+  const createOwnershipEntry = useCallback(
+    (entry: Omit<OwnershipEntry, "localId">): OwnershipEntry => ({
+      ...entry,
+      localId: createOwnershipEntryLocalId(),
+    }),
+    [],
+  );
+
+  useEffect(() => {
+    const ownershipHistory = formData.ownershipHistory;
+    if (!ownershipHistory?.some((entry) => !entry.localId)) {
+      return;
+    }
+
+    updateField(
+      "ownershipHistory",
+      withOwnershipEntryLocalIds(ownershipHistory),
+    );
+  }, [formData.ownershipHistory, updateField]);
+
+  useEffect(() => {
+    const links = formData.links;
+    if (!links?.some((entry) => !entry.localId)) {
+      return;
+    }
+
+    updateField("links", withLinkEntryLocalIds(links));
+  }, [formData.links, updateField]);
+
+  const handleAddAlternateAccessionNumber = useCallback(() => {
+    const nextValue = alternateAccessionDraft.trim();
+    if (!nextValue) {
+      return;
+    }
+
+    const existingValues = formData.alternateAccessionNumbers || [];
+    if (existingValues.includes(nextValue)) {
+      setError("Alternate accession number already exists.");
+      return;
+    }
+
+    updateField("alternateAccessionNumbers", [...existingValues, nextValue]);
+    setAlternateAccessionDraft("");
+    setError(null);
+  }, [
+    alternateAccessionDraft,
+    formData.alternateAccessionNumbers,
+    updateField,
+  ]);
+
+  const handleRemoveAlternateAccessionNumber = useCallback(
+    (indexToRemove: number) => {
+      updateField(
+        "alternateAccessionNumbers",
+        (formData.alternateAccessionNumbers || []).filter(
+          (_, index) => index !== indexToRemove,
+        ),
+      );
+      setError(null);
+    },
+    [formData.alternateAccessionNumbers, updateField],
+  );
+
   const handleDocumentUpload = useCallback(
     async (files: File[]) => {
       if (!collection) {
@@ -748,7 +857,9 @@ export default function CollectionEditPage() {
         dimensions: formData.dimensions?.trim() || "",
         dimensionDiameter: formData.dimensionDiameter?.trim() || "",
         dimensionWeight: parsedDimensionWeight.value ?? null,
-        links: formData.links?.filter((link) => link.url.trim() !== ""),
+        links: formData.links
+          ?.filter((link) => link.url.trim() !== "")
+          .map(({ localId: _localId, ...entry }) => entry),
         parentObjectId: formData.parentObjectId
           ? (formData.parentObjectId as Id<"collections">)
           : undefined,
@@ -761,6 +872,9 @@ export default function CollectionEditPage() {
           ? (formData.collectionGroupId as Id<"collectionGroups">)
           : undefined,
         alternateAccessionNumbers: formData.alternateAccessionNumbers,
+        ownershipHistory: formData.ownershipHistory?.map(
+          ({ localId: _localId, ...entry }) => entry,
+        ),
       });
 
       initialFormSignatureRef.current = getFormSignature(formData);
@@ -1108,16 +1222,83 @@ export default function CollectionEditPage() {
                         </p>
                       </div>
 
-                      <div className="space-y-2 xl:col-span-2">
-                        <RepeatableTextField
-                          label="Alternate Accession Numbers"
-                          value={formData.alternateAccessionNumbers || []}
-                          onChange={(values) =>
-                            updateField("alternateAccessionNumbers", values)
-                          }
-                          placeholder={placeholders("alternateId")}
-                          id="alternateAccessionNumbers"
-                        />
+                      <div className="space-y-3 xl:col-span-2">
+                        <Label htmlFor="alternateAccessionNumbers">
+                          Alternate Accession Numbers
+                        </Label>
+                        <div className="space-y-2">
+                          {(formData.alternateAccessionNumbers || []).length >
+                          0 ? (
+                            (formData.alternateAccessionNumbers || []).map(
+                              (alternateAccessionNumber, index, values) => {
+                                const occurrence = values
+                                  .slice(0, index + 1)
+                                  .filter(
+                                    (value) =>
+                                      value === alternateAccessionNumber,
+                                  ).length;
+
+                                return (
+                                  <div
+                                    key={`${alternateAccessionNumber}-${occurrence}`}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <Input
+                                      value={alternateAccessionNumber}
+                                      disabled
+                                      className="bg-muted/60 font-mono"
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() =>
+                                        handleRemoveAlternateAccessionNumber(
+                                          index,
+                                        )
+                                      }
+                                      title="Remove alternate accession number"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                );
+                              },
+                            )
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              No alternate accession numbers added.
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            id="alternateAccessionNumbers"
+                            value={alternateAccessionDraft}
+                            onChange={(event) =>
+                              setAlternateAccessionDraft(event.target.value)
+                            }
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                handleAddAlternateAccessionNumber();
+                              }
+                            }}
+                            placeholder={placeholders("alternateId")}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleAddAlternateAccessionNumber}
+                          >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Existing alternate accession numbers can be removed,
+                          but not edited in place.
+                        </p>
                       </div>
 
                       <div className="space-y-2">
@@ -1385,14 +1566,14 @@ export default function CollectionEditPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            const newEntry: OwnershipEntry = {
+                            const newEntry = createOwnershipEntry({
                               owner: "",
                               startYear: "",
                               endYear: "",
                               description: "",
                               verified: false,
                               verificationSource: "",
-                            };
+                            });
                             updateField("ownershipHistory", [
                               ...(formData.ownershipHistory || []),
                               newEntry,
@@ -1415,7 +1596,7 @@ export default function CollectionEditPage() {
                           {(formData.ownershipHistory || []).map(
                             (entry, index) => (
                               <div
-                                key={`ownership-${entry.owner || ""}-${entry.startYear || ""}-${index}`}
+                                key={entry.localId}
                                 className="rounded-xl border border-border/60 bg-secondary/20 p-4"
                               >
                                 <div className="mb-4 flex items-start justify-between gap-4">
@@ -1621,7 +1802,7 @@ export default function CollectionEditPage() {
                     <div className="space-y-3">
                       {(formData.links || []).map((link, index) => (
                         <div
-                          key={`${link.url}-${link.label || ""}-${index}`}
+                          key={link.localId}
                           className="grid gap-3 rounded-xl border border-border/50 p-4 md:grid-cols-[1fr_1fr_auto]"
                         >
                           <div className="space-y-2">
@@ -1645,6 +1826,7 @@ export default function CollectionEditPage() {
                                   !nextLinks[index]?.label
                                 ) {
                                   nextLinks[index] = {
+                                    localId: nextLinks[index]?.localId,
                                     url: nextLinks[index]?.url || "",
                                     label: event.target.value,
                                   };
@@ -1662,6 +1844,7 @@ export default function CollectionEditPage() {
                               onChange={(event) => {
                                 const nextLinks = [...(formData.links || [])];
                                 nextLinks[index] = {
+                                  localId: nextLinks[index]?.localId,
                                   url: nextLinks[index]?.url || "",
                                   label: event.target.value,
                                 };
@@ -1695,7 +1878,11 @@ export default function CollectionEditPage() {
                         onClick={() => {
                           updateField("links", [
                             ...(formData.links || []),
-                            { url: "", label: "" },
+                            {
+                              localId: createLinkEntryLocalId(),
+                              url: "",
+                              label: "",
+                            },
                           ]);
                         }}
                       >

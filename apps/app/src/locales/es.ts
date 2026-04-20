@@ -3523,6 +3523,16 @@ export default {
       approved: "Aprobado",
       rejected: "Rechazado",
     },
+    stats: {
+      pending: "Pendiente",
+      approved: "Aprobado",
+    },
+    actions: {
+      emptyTrash: "Vaciar papelera",
+      emptyingTrash: "Vaciando...",
+      emptyTrashConfirm:
+        "¿Eliminar las {count} adquisiciones rechazadas? Esta acción no se puede deshacer.",
+    },
     form: {
       accessionNumber: "Número de Adquisición",
       accessionNumberPlaceholder: "Auto-generado si está vacío",
@@ -3594,6 +3604,7 @@ export default {
         "Ocurrió un error inesperado al cargar las adquisiciones.",
       failedToApprove: "Error al aprobar la adquisición",
       failedToReject: "Error al rechazar la adquisición",
+      failedToEmptyTrash: "Error al eliminar las adquisiciones rechazadas",
       failedToUpdate:
         "Error al actualizar la adquisición. Por favor, inténtalo de nuevo.",
       sourceRequired: "La fuente es obligatoria",

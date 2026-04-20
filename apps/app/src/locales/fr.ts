@@ -3539,6 +3539,16 @@ export default {
       approved: "Approuvé",
       rejected: "Rejeté",
     },
+    stats: {
+      pending: "En Attente",
+      approved: "Approuvé",
+    },
+    actions: {
+      emptyTrash: "Vider la corbeille",
+      emptyingTrash: "Suppression...",
+      emptyTrashConfirm:
+        "Supprimer les {count} acquisitions rejetées ? Cette action est irréversible.",
+    },
     form: {
       accessionNumber: "Numéro d'Acquisition",
       accessionNumberPlaceholder: "Généré automatiquement si vide",
@@ -3611,6 +3621,7 @@ export default {
         "Une erreur inattendue s'est produite lors du chargement des acquisitions.",
       failedToApprove: "Échec de l'approbation de l'acquisition",
       failedToReject: "Échec du rejet de l'acquisition",
+      failedToEmptyTrash: "Échec de la suppression des acquisitions rejetées",
       failedToUpdate:
         "Échec de la mise à jour de l'acquisition. Veuillez réessayer.",
       sourceRequired: "La source est obligatoire",
