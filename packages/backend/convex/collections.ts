@@ -179,6 +179,7 @@ export const create = mutation({
     materials: v.optional(v.string()),
     technique: v.optional(v.string()),
     dimensions: v.optional(v.string()),
+    dimensionDiameter: v.optional(v.string()),
     dimensionHeight: v.optional(v.number()),
     dimensionWidth: v.optional(v.number()),
     dimensionDepth: v.optional(v.number()),
@@ -296,6 +297,7 @@ export const create = mutation({
       materials: args.materials,
       technique: args.technique,
       dimensions: args.dimensions,
+      dimensionDiameter: args.dimensionDiameter,
       dimensionHeight: args.dimensionHeight,
       dimensionWidth: args.dimensionWidth,
       dimensionDepth: args.dimensionDepth,
@@ -1346,10 +1348,11 @@ export const update = mutation({
     materials: v.optional(v.string()),
     technique: v.optional(v.string()),
     dimensions: v.optional(v.string()),
+    dimensionDiameter: v.optional(v.string()),
     dimensionHeight: v.optional(v.number()),
     dimensionWidth: v.optional(v.number()),
     dimensionDepth: v.optional(v.number()),
-    dimensionWeight: v.optional(v.number()),
+    dimensionWeight: v.optional(v.union(v.number(), v.null())),
     dimensionUnit: v.optional(v.string()),
     weightUnit: v.optional(v.string()),
     description: v.optional(v.string()),
@@ -1439,6 +1442,8 @@ export const update = mutation({
     if (args.materials !== undefined) updates.materials = args.materials;
     if (args.technique !== undefined) updates.technique = args.technique;
     if (args.dimensions !== undefined) updates.dimensions = args.dimensions;
+    if (args.dimensionDiameter !== undefined)
+      updates.dimensionDiameter = args.dimensionDiameter;
     if (args.dimensionHeight !== undefined)
       updates.dimensionHeight = args.dimensionHeight;
     if (args.dimensionWidth !== undefined)
@@ -1446,7 +1451,7 @@ export const update = mutation({
     if (args.dimensionDepth !== undefined)
       updates.dimensionDepth = args.dimensionDepth;
     if (args.dimensionWeight !== undefined)
-      updates.dimensionWeight = args.dimensionWeight;
+      updates.dimensionWeight = args.dimensionWeight ?? undefined;
     if (args.dimensionUnit !== undefined)
       updates.dimensionUnit = args.dimensionUnit;
     if (args.weightUnit !== undefined) updates.weightUnit = args.weightUnit;

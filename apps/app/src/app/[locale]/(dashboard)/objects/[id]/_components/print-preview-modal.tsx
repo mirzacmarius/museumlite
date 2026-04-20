@@ -179,6 +179,14 @@ export function PrintPreviewModal({
                     <p className="text-black">{collection.dimensions}</p>
                   </div>
                 )}
+                {collection.dimensionDiameter && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">
+                      {t("diameter")}
+                    </p>
+                    <p className="text-black">{collection.dimensionDiameter}</p>
+                  </div>
+                )}
                 {(collection.dimensionHeight ||
                   collection.dimensionWidth ||
                   collection.dimensionDepth) && (
@@ -201,7 +209,7 @@ export function PrintPreviewModal({
                     </p>
                   </div>
                 )}
-                {collection.dimensionWeight && (
+                {collection.dimensionWeight !== undefined && (
                   <div>
                     <p className="text-xs font-medium text-gray-500">
                       {t("weight")}

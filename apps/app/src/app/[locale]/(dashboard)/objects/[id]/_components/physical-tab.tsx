@@ -13,6 +13,24 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
     collection.materials,
     "Not specified",
   );
+  const dimensions =
+    collection.dimensions ||
+    [
+      collection.dimensionHeight && `H: ${collection.dimensionHeight}`,
+      collection.dimensionWidth && `W: ${collection.dimensionWidth}`,
+      collection.dimensionDepth && `D: ${collection.dimensionDepth}`,
+    ]
+      .filter(Boolean)
+      .join(" × ");
+  const diameter =
+    collection.dimensionDiameter ||
+    (!collection.dimensionHeight &&
+    !collection.dimensionDepth &&
+    collection.dimensionWidth !== undefined
+      ? `${collection.dimensionWidth}${
+          collection.dimensionUnit ? ` ${collection.dimensionUnit}` : ""
+        }`
+      : undefined);
 
   return (
     <div className="space-y-8">
@@ -71,68 +89,34 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
           Detailed Dimensions
         </h3>
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-6">
-          <div className="grid grid-cols-1 gap-6 divide-y md:grid-cols-2 md:divide-x md:divide-y-0 lg:grid-cols-4">
-            {/* Height */}
+          <div className="grid grid-cols-1 gap-6 divide-y md:grid-cols-3 md:divide-x md:divide-y-0">
             <div className="space-y-1">
               <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                Total Height
+                Dimensions
               </span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-light text-foreground">
-                  {collection.dimensionHeight ?? "—"}
-                </span>
-                {collection.dimensionHeight && (
-                  <span className="text-xs text-muted-foreground">
-                    {collection.dimensionUnit || "cm"}
-                  </span>
-                )}
-              </div>
+              <p className="text-sm font-medium text-foreground">
+                {dimensions || "—"}
+              </p>
             </div>
 
-            {/* Width */}
             <div className="space-y-1 pt-4 md:pl-6 md:pt-0">
               <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                Max Width
+                Diameter
               </span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-light text-foreground">
-                  {collection.dimensionWidth ?? "—"}
-                </span>
-                {collection.dimensionWidth && (
-                  <span className="text-xs text-muted-foreground">
-                    {collection.dimensionUnit || "cm"}
-                  </span>
-                )}
-              </div>
+              <p className="text-sm font-medium text-foreground">
+                {diameter || "—"}
+              </p>
             </div>
 
-            {/* Depth */}
-            <div className="space-y-1 pt-4 md:pl-6 md:pt-0">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                Depth
-              </span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-light text-foreground">
-                  {collection.dimensionDepth ?? "—"}
-                </span>
-                {collection.dimensionDepth && (
-                  <span className="text-xs text-muted-foreground">
-                    {collection.dimensionUnit || "cm"}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Weight */}
             <div className="space-y-1 pt-4 md:pl-6 md:pt-0">
               <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                 Weight
               </span>
               <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-light text-foreground">
+                <span className="text-sm font-medium text-foreground">
                   {collection.dimensionWeight ?? "—"}
                 </span>
-                {collection.dimensionWeight && (
+                {collection.dimensionWeight !== undefined && (
                   <span className="text-xs text-muted-foreground">
                     {collection.weightUnit || "kg"}
                   </span>
@@ -140,18 +124,6 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
               </div>
             </div>
           </div>
-
-          {/* Legacy dimensions string */}
-          {collection.dimensions && !collection.dimensionHeight && (
-            <div className="mt-4 border-t border-border/60 pt-4">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                Dimensions (legacy)
-              </span>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {collection.dimensions}
-              </p>
-            </div>
-          )}
         </div>
       </div>
 

@@ -69,6 +69,8 @@ interface CollectionFormData {
   dateCreated?: string;
   materials?: string | string[];
   dimensions?: string;
+  dimensionDiameter?: string;
+  dimensionWeight?: string | number;
   description?: string;
   condition?: string;
   provenance?: string;
@@ -130,6 +132,8 @@ function createEmptyFormData(
     dateCreated: "",
     materials: [],
     dimensions: "",
+    dimensionDiameter: "",
+    dimensionWeight: "",
     description: "",
     condition: "",
     provenance: "",
@@ -152,6 +156,26 @@ function createEmptyFormData(
     isValuationVisible: false,
     publicSlug: "",
   };
+}
+
+function parseOptionalNonNegativeNumber(value?: string | number) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) && value >= 0
+      ? { isValid: true as const, value }
+      : { isValid: false as const, value: undefined };
+  }
+
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return { isValid: true as const, value: undefined };
+  }
+
+  const normalized = trimmed.replace(",", ".");
+  const parsed = Number(normalized);
+
+  return Number.isFinite(parsed) && parsed >= 0
+    ? { isValid: true as const, value: parsed }
+    : { isValid: false as const, value: undefined };
 }
 
 function getFormSignature(formData: CollectionFormData) {
@@ -196,10 +220,22 @@ function createFormDataFromDraftObject(
       draftObjectData?.links && draftObjectData.links.length > 0
         ? draftObjectData.links
         : [{ url: "", label: "" }],
+    dimensionWeight:
+      typeof draftObjectData?.dimensionWeight === "number"
+        ? draftObjectData.dimensionWeight
+        : "",
   };
 }
 
 function buildObjectDraftPayload(formData: CollectionFormData) {
+  const parsedDimensionWeight = parseOptionalNonNegativeNumber(
+    formData.dimensionWeight,
+  );
+
+  if (!parsedDimensionWeight.isValid) {
+    throw new Error("Weight must be a valid non-negative number.");
+  }
+
   return {
     accessionNumber: formData.accessionNumber?.trim() || undefined,
     title: formData.title.trim(),
@@ -215,6 +251,8 @@ function buildObjectDraftPayload(formData: CollectionFormData) {
       ? formData.materials.filter(Boolean)
       : [],
     dimensions: formData.dimensions?.trim() || undefined,
+    dimensionDiameter: formData.dimensionDiameter?.trim() || undefined,
+    dimensionWeight: parsedDimensionWeight.value,
     description: formData.description?.trim() || undefined,
     condition: formData.condition?.trim() || undefined,
     provenance: formData.provenance?.trim() || undefined,
@@ -1618,18 +1656,6 @@ export function ObjectRequestFormPage({
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="dimensions">Dimensions</Label>
-                        <Input
-                          id="dimensions"
-                          value={formData.dimensions || ""}
-                          onChange={(event) =>
-                            updateField("dimensions", event.target.value)
-                          }
-                          placeholder={placeholders("dimensions")}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
                         <Label htmlFor="condition">Condition</Label>
                         <ConditionCombobox
                           organizationId={currentOrganizationId}
@@ -1638,6 +1664,64 @@ export function ObjectRequestFormPage({
                             updateField("condition", value)
                           }
                         />
+                      </div>
+
+                      <div className="space-y-3 md:col-span-2 xl:col-span-3">
+                        <div className="space-y-1">
+                          <h3 className="text-sm font-medium text-foreground">
+                            Detailed Dimensions
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            Document dimensions, diameter, and weight.
+                          </p>
+                        </div>
+                        <div className="grid gap-5 md:grid-cols-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="dimensions">Dimensions</Label>
+                            <Input
+                              id="dimensions"
+                              value={formData.dimensions || ""}
+                              onChange={(event) =>
+                                updateField("dimensions", event.target.value)
+                              }
+                              placeholder={placeholders("dimensions")}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="dimensionDiameter">Diameter</Label>
+                            <Input
+                              id="dimensionDiameter"
+                              value={formData.dimensionDiameter || ""}
+                              onChange={(event) =>
+                                updateField(
+                                  "dimensionDiameter",
+                                  event.target.value,
+                                )
+                              }
+                              placeholder="e.g., 43 mm"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="dimensionWeight">Weight</Label>
+                            <Input
+                              id="dimensionWeight"
+                              type="number"
+                              inputMode="decimal"
+                              min="0"
+                              step="0.01"
+                              value={formData.dimensionWeight ?? ""}
+                              onChange={(event) =>
+                                updateField(
+                                  "dimensionWeight",
+                                  event.target.value,
+                                )
+                              }
+                              placeholder="e.g., 2.5"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </EditSection>

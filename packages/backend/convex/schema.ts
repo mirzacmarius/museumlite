@@ -388,6 +388,7 @@ export default defineSchema({
     technique: v.optional(v.string()), // e.g., "Carved, Drill-work, Polished"
     dimensions: v.optional(v.string()),
     // Detailed dimensions
+    dimensionDiameter: v.optional(v.string()),
     dimensionHeight: v.optional(v.number()), // in cm
     dimensionWidth: v.optional(v.number()), // in cm
     dimensionDepth: v.optional(v.number()), // in cm

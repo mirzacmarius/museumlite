@@ -79,6 +79,8 @@ interface CollectionFormData {
   dateCreated?: string;
   materials?: string | string[];
   dimensions?: string;
+  dimensionDiameter?: string;
+  dimensionWeight?: string | number;
   inscriptions?: string;
   description?: string;
   condition?: string;
@@ -121,6 +123,8 @@ const EMPTY_FORM: CollectionFormData = {
   dateCreated: "",
   materials: [],
   dimensions: "",
+  dimensionDiameter: "",
+  dimensionWeight: "",
   inscriptions: "",
   description: "",
   condition: "",
@@ -143,6 +147,34 @@ const EMPTY_FORM: CollectionFormData = {
   isValuationVisible: false,
   publicSlug: "",
 };
+
+function formatMeasurementValue(value?: number, unit?: string) {
+  if (value === undefined) {
+    return "";
+  }
+
+  return unit ? `${value} ${unit}` : value.toString();
+}
+
+function parseOptionalNonNegativeNumber(value?: string | number) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) && value >= 0
+      ? { isValid: true as const, value }
+      : { isValid: false as const, value: undefined };
+  }
+
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return { isValid: true as const, value: undefined };
+  }
+
+  const normalized = trimmed.replace(",", ".");
+  const parsed = Number(normalized);
+
+  return Number.isFinite(parsed) && parsed >= 0
+    ? { isValid: true as const, value: parsed }
+    : { isValid: false as const, value: undefined };
+}
 
 function createInitialFormData(collection: CollectionDoc): CollectionFormData {
   let objectTypeArray: string[] = [];
@@ -167,6 +199,17 @@ function createInitialFormData(collection: CollectionDoc): CollectionFormData {
     dateCreated: collection.dateCreated || "",
     materials: parseStringListField(collection.materials),
     dimensions: collection.dimensions || "",
+    dimensionDiameter:
+      collection.dimensionDiameter ||
+      (!collection.dimensionHeight &&
+      !collection.dimensionDepth &&
+      collection.dimensionWidth !== undefined
+        ? formatMeasurementValue(
+            collection.dimensionWidth,
+            collection.dimensionUnit,
+          )
+        : ""),
+    dimensionWeight: collection.dimensionWeight ?? "",
     inscriptions: collection.inscriptions || "",
     description: collection.description || "",
     condition: collection.condition || "",
@@ -680,6 +723,14 @@ export default function CollectionEditPage() {
       return false;
     }
 
+    const parsedDimensionWeight = parseOptionalNonNegativeNumber(
+      formData.dimensionWeight,
+    );
+    if (!parsedDimensionWeight.isValid) {
+      setError("Weight must be a valid non-negative number.");
+      return false;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -694,6 +745,9 @@ export default function CollectionEditPage() {
         ...formData,
         materials: materialsString,
         objectType: objectTypeString,
+        dimensions: formData.dimensions?.trim() || "",
+        dimensionDiameter: formData.dimensionDiameter?.trim() || "",
+        dimensionWeight: parsedDimensionWeight.value ?? null,
         links: formData.links?.filter((link) => link.url.trim() !== ""),
         parentObjectId: formData.parentObjectId
           ? (formData.parentObjectId as Id<"collections">)
@@ -1677,18 +1731,6 @@ export default function CollectionEditPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="dimensions">Dimensions</Label>
-                        <Input
-                          id="dimensions"
-                          value={formData.dimensions || ""}
-                          onChange={(event) =>
-                            updateField("dimensions", event.target.value)
-                          }
-                          placeholder={placeholders("dimensions")}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
                         <Label htmlFor="condition">Condition</Label>
                         <ConditionCombobox
                           organizationId={collection.organizationId}
@@ -1697,6 +1739,64 @@ export default function CollectionEditPage() {
                             updateField("condition", value)
                           }
                         />
+                      </div>
+
+                      <div className="space-y-3 md:col-span-2 xl:col-span-3">
+                        <div className="space-y-1">
+                          <h3 className="text-sm font-medium text-foreground">
+                            Detailed Dimensions
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            Document dimensions, diameter, and weight.
+                          </p>
+                        </div>
+                        <div className="grid gap-5 md:grid-cols-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="dimensions">Dimensions</Label>
+                            <Input
+                              id="dimensions"
+                              value={formData.dimensions || ""}
+                              onChange={(event) =>
+                                updateField("dimensions", event.target.value)
+                              }
+                              placeholder={placeholders("dimensions")}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="dimensionDiameter">Diameter</Label>
+                            <Input
+                              id="dimensionDiameter"
+                              value={formData.dimensionDiameter || ""}
+                              onChange={(event) =>
+                                updateField(
+                                  "dimensionDiameter",
+                                  event.target.value,
+                                )
+                              }
+                              placeholder="e.g., 43 mm"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="dimensionWeight">Weight</Label>
+                            <Input
+                              id="dimensionWeight"
+                              type="number"
+                              inputMode="decimal"
+                              min="0"
+                              step="0.01"
+                              value={formData.dimensionWeight ?? ""}
+                              onChange={(event) =>
+                                updateField(
+                                  "dimensionWeight",
+                                  event.target.value,
+                                )
+                              }
+                              placeholder="e.g., 2.5"
+                            />
+                          </div>
+                        </div>
                       </div>
 
                       <div className="space-y-2 md:col-span-2 xl:col-span-3">
