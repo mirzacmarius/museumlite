@@ -56,7 +56,7 @@ export default function DashboardSettings() {
 
   const usernameForm = useForm({
     defaultValues: {
-      username: user?.username,
+      username: user?.username || "",
     },
     onSubmit: async ({ value }) => {
       await updateUsername({ username: value.username || "" });
