@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
 import { Building2, Check, ChevronDown, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useOrganization } from "./organization-provider";
 
 export function OrganizationSwitcher() {
@@ -19,6 +20,18 @@ export function OrganizationSwitcher() {
     setCurrentOrganizationId,
     isLoading,
   } = useOrganization();
+  const router = useRouter();
+
+  const handleOrganizationChange = (
+    organizationId: typeof currentOrganizationId,
+  ) => {
+    if (organizationId === currentOrganizationId) {
+      return;
+    }
+
+    setCurrentOrganizationId(organizationId);
+    router.replace("/");
+  };
 
   if (isLoading) {
     return (
@@ -61,7 +74,7 @@ export function OrganizationSwitcher() {
         {organizations.map((org) => (
           <DropdownMenuItem
             key={org._id}
-            onClick={() => setCurrentOrganizationId(org._id)}
+            onClick={() => handleOrganizationChange(org._id)}
             className="cursor-pointer"
           >
             <div className="flex w-full items-center justify-between">

@@ -212,6 +212,18 @@ export function AppSidebar({
   const pathname = usePathname();
   const router = useRouter();
 
+  const handleOrganizationChange = React.useCallback(
+    (organizationId: Id<"organizations">) => {
+      if (organizationId === currentOrganizationId) {
+        return;
+      }
+
+      setCurrentOrganizationId(organizationId);
+      router.replace("/");
+    },
+    [currentOrganizationId, router, setCurrentOrganizationId],
+  );
+
   const openCommandPalette = React.useCallback(() => {
     setOpen(true);
     if (typeof window !== "undefined") {
@@ -354,7 +366,7 @@ export function AppSidebar({
                 {organizations.map((org) => (
                   <DropdownMenuItem
                     key={org._id}
-                    onClick={() => setCurrentOrganizationId(org._id)}
+                    onClick={() => handleOrganizationChange(org._id)}
                     className="gap-2 p-2 focus:bg-zinc-900 focus:text-zinc-200"
                   >
                     <div className="flex size-6 items-center justify-center rounded-sm border border-zinc-800 bg-zinc-900">
