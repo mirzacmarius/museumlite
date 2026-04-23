@@ -52,7 +52,14 @@ export function shouldAutoDisplayChildLocations(type: string) {
 }
 
 export function shouldShowInExhibitionSidebar(type: string) {
-  return shouldAutoDisplayChildLocations(type);
+  const normalizedType = type.toLowerCase();
+
+  return (
+    shouldAutoDisplayChildLocations(type) ||
+    vitrineTypes.some((value) => normalizedType.includes(value)) ||
+    wallTypes.some((value) => normalizedType.includes(value)) ||
+    cabinetTypes.some((value) => normalizedType.includes(value))
+  );
 }
 
 export function getDescendantLocations(

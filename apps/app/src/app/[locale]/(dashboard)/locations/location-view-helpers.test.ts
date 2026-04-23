@@ -113,12 +113,13 @@ describe("location view helpers", () => {
     expect(shouldAutoDisplayChildLocations("cabinet")).toBe(false);
   });
 
-  test("exhibition sidebar hides display-unit descendants", () => {
+  test("exhibition sidebar shows one display-unit level", () => {
     expect(shouldShowInExhibitionSidebar("gallery")).toBe(true);
     expect(shouldShowInExhibitionSidebar("room")).toBe(true);
-    expect(shouldShowInExhibitionSidebar("cabinet")).toBe(false);
+    expect(shouldShowInExhibitionSidebar("cabinet")).toBe(true);
+    expect(shouldShowInExhibitionSidebar("display case")).toBe(true);
+    expect(shouldShowInExhibitionSidebar("wall")).toBe(true);
     expect(shouldShowInExhibitionSidebar("shelf")).toBe(false);
-    expect(shouldShowInExhibitionSidebar("wall")).toBe(false);
   });
 
   test("collects all descendant locations recursively", () => {
