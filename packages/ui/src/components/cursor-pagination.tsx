@@ -40,7 +40,7 @@ export function CursorPagination(props: CursorPaginationProps) {
     return (
       <div
         className={cn(
-          "flex items-center justify-between border-t border-white/10 bg-zinc-950 px-6 py-3 text-xs text-zinc-500",
+          "flex items-center justify-between border-t border-border bg-background px-6 py-3 text-xs text-muted-foreground",
           className,
         )}
       >
@@ -52,7 +52,7 @@ export function CursorPagination(props: CursorPaginationProps) {
               variant="outline"
               size="sm"
               onClick={onLoadMore}
-              className="h-7 border-white/10 bg-zinc-900/60 text-xs text-zinc-200 hover:bg-zinc-900 hover:text-zinc-100"
+              className="h-7 border-input bg-background/60 text-xs hover:bg-accent hover:text-accent-foreground"
             >
               {loadMoreLabel}
             </Button>
@@ -75,7 +75,7 @@ export function CursorPagination(props: CursorPaginationProps) {
   return (
     <div
       className={cn(
-        "flex items-center justify-between border-t border-white/10 bg-zinc-950 px-6 py-3 text-xs text-zinc-500",
+        "flex items-center justify-between border-t border-border bg-background px-6 py-3 text-xs text-muted-foreground",
         className,
       )}
     >
@@ -87,7 +87,7 @@ export function CursorPagination(props: CursorPaginationProps) {
           size="sm"
           onClick={onPrev}
           disabled={!canPrev}
-          className="h-7 border-white/10 bg-zinc-900/60 text-xs text-zinc-200 hover:bg-zinc-900 hover:text-zinc-100 disabled:opacity-50"
+          className="h-7 border-input bg-background/60 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
         >
           {prevLabel}
         </Button>
@@ -97,7 +97,7 @@ export function CursorPagination(props: CursorPaginationProps) {
           size="sm"
           onClick={onNext}
           disabled={!canNext}
-          className="h-7 border-white/10 bg-zinc-900/60 text-xs text-zinc-200 hover:bg-zinc-900 hover:text-zinc-100 disabled:opacity-50"
+          className="h-7 border-input bg-background/60 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
         >
           {nextLabel}
         </Button>

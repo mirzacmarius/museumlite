@@ -30,7 +30,7 @@ const stepDotStyles: Record<number, string> = {
   [-2]: "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]",
 };
 
-const DEFAULT_DOT_STYLE = "bg-slate-500 shadow-[0_0_8px_rgba(100,116,139,0.5)]";
+const DEFAULT_DOT_STYLE = "bg-muted-foreground";
 
 function getStepDotStyle(stepNumber: number): string {
   const directStyle = stepDotStyles[stepNumber];
@@ -102,12 +102,14 @@ export function DeaccessionKanbanColumn({
 
   return (
     <div className="flex w-72 flex-shrink-0 flex-col">
-      <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-zinc-400">
+      <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         <span>
           {stepName}
-          {roleName ? <span className="ml-1 opacity-70">({roleName})</span> : null}
+          {roleName ? (
+            <span className="ml-1 text-muted-foreground/85">({roleName})</span>
+          ) : null}
         </span>
-        <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-500">
+        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
           {filteredDeaccessions.length}
         </span>
       </div>
@@ -127,16 +129,16 @@ export function DeaccessionKanbanColumn({
                 <Link
                   key={item._id}
                   href={`/deaccessions/${item._id}`}
-                  className="group block cursor-pointer rounded-lg border border-zinc-800 bg-zinc-900 p-3 transition-colors hover:border-zinc-700 animate-enter"
+                  className="group block animate-enter cursor-pointer rounded-lg border border-border bg-background/70 p-3 transition-colors hover:border-ring/60 hover:bg-accent/50"
                   style={{ animationDelay: `${Math.min(index * 50, 300)}ms` }}
                 >
                   <div className="mb-2 flex items-start justify-between">
                     <div className="min-w-0">
-                      <p className="text-[10px] font-mono text-zinc-500">
+                      <p className="font-mono text-[10px] text-muted-foreground">
                         {item.deaccessionNumber}
                       </p>
                       {item.accessionNumber ? (
-                        <p className="truncate text-[10px] text-zinc-600">
+                        <p className="truncate text-[10px] text-muted-foreground/80">
                           {item.accessionNumber}
                         </p>
                       ) : null}
@@ -144,16 +146,18 @@ export function DeaccessionKanbanColumn({
                     <div className={`h-1.5 w-1.5 rounded-full ${dotStyle}`} />
                   </div>
 
-                  <p className="mb-1 line-clamp-2 text-sm font-medium text-zinc-200 transition-colors group-hover:text-indigo-400">
+                  <p className="mb-1 line-clamp-2 text-sm font-medium text-foreground transition-colors group-hover:text-primary">
                     {item.collectionTitle}
                   </p>
-                  <p className="mb-3 line-clamp-2 text-xs text-zinc-500">
+                  <p className="mb-3 line-clamp-2 text-xs text-muted-foreground">
                     {item.reason}
                   </p>
 
-                  <div className="flex items-center justify-between gap-2 text-[10px] text-zinc-400">
-                    <span className="truncate">{t(`method.${item.method}`)}</span>
-                    <span className="shrink-0 text-zinc-500">
+                  <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                    <span className="truncate">
+                      {t(`method.${item.method}`)}
+                    </span>
+                    <span className="shrink-0 text-muted-foreground">
                       {formatDateFns(
                         new Date(item.dateDeaccessioned),
                         "MMM d, yyyy",

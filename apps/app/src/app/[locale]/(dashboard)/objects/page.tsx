@@ -46,7 +46,15 @@ import {
 import { ObjectAppliedFilters } from "./_components/object-applied-filters";
 import { ObjectFiltersDropdown } from "./_components/object-filters-dropdown";
 import { ObjectGridView } from "./_components/object-grid-view";
-import { type ViewMode } from "./_components/view-toggle";
+import type { ViewMode } from "./_components/view-toggle";
+
+type CollectionListItem = FunctionReturnType<
+  typeof api.collections.list
+>["page"][number];
+type TypeOption = FunctionReturnType<typeof api.typeOptions.list>[number];
+type BulkExportItem = FunctionReturnType<
+  typeof api.collections.bulkExport
+>[number];
 
 export default function CollectionsPage() {
   const t = useScopedI18n("objects");
@@ -109,7 +117,7 @@ export default function CollectionsPage() {
   }
 
   return (
-    <div className="flex h-full w-full bg-zinc-950 flex-col overflow-hidden">
+    <div className="flex h-full w-full flex-col overflow-hidden bg-background">
       <CollectionFiltersAndList
         organizationId={currentOrganizationId}
         onExport={handleExport}
@@ -189,10 +197,7 @@ function CollectionFiltersAndList({
   }, [savedColumns, defaultColumns]);
 
   useEffect(() => {
-    if (
-      filters.status === "deaccessioned" ||
-      filters.status === "deleted"
-    ) {
+    if (filters.status === "deaccessioned" || filters.status === "deleted") {
       setFilters({ status: "any" });
     }
   }, [filters.status, setFilters]);
@@ -265,10 +270,10 @@ function CollectionFiltersAndList({
 
   const objectTypeOptions = useMemo(() => {
     const types = new Set<string>();
-    typeOptions?.forEach((option) => {
+    typeOptions?.forEach((option: TypeOption) => {
       if (option.name) types.add(option.name);
     });
-    collections.forEach((item) => {
+    collections.forEach((item: CollectionListItem) => {
       if (item.objectType) types.add(item.objectType);
     });
     return Array.from(types)
@@ -330,32 +335,37 @@ function CollectionFiltersAndList({
       "Cataloged Date",
     ];
 
-    const rows = (bulkExport || []).map((item) => [
-      item.accessionNumber,
-      item.title,
-      item.alternativeTitle ?? "",
-      item.creator ?? "",
-      item.objectType ?? "",
-      item.objectName ?? "",
-      item.culture ?? "",
-      item.period ?? "",
-      item.dateCreated ?? "",
-      item.materials ?? "",
-      item.technique ?? "",
-      item.dimensions ?? "",
-      item.description?.replace(/[\n\r]/g, " ") ?? "",
-      item.condition ?? "",
-      item.provenance?.replace(/[\n\r]/g, " ") ?? "",
-      item.status,
-      item.locationPath ?? "",
-      item.collectionGroup ?? "",
-      new Date(item.catalogedAt).toISOString().split("T")[0] ?? "",
-    ]);
+    const rows = (bulkExport || []).map((item: BulkExportItem): string[] => {
+      const catalogedDate =
+        new Date(item.catalogedAt).toISOString().split("T")[0] ?? "";
+
+      return [
+        item.accessionNumber,
+        item.title,
+        item.alternativeTitle ?? "",
+        item.creator ?? "",
+        item.objectType ?? "",
+        item.objectName ?? "",
+        item.culture ?? "",
+        item.period ?? "",
+        item.dateCreated ?? "",
+        item.materials ?? "",
+        item.technique ?? "",
+        item.dimensions ?? "",
+        item.description?.replace(/[\n\r]/g, " ") ?? "",
+        item.condition ?? "",
+        item.provenance?.replace(/[\n\r]/g, " ") ?? "",
+        item.status,
+        item.locationPath ?? "",
+        item.collectionGroup ?? "",
+        catalogedDate,
+      ];
+    });
 
     const csvContent = [
       headers.join(","),
-      ...rows.map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
+      ...rows.map((row: string[]) =>
+        row.map((cell: string) => `"${cell.replace(/"/g, '""')}"`).join(","),
       ),
     ].join("\n");
 
@@ -378,21 +388,21 @@ function CollectionFiltersAndList({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex flex-col border-b border-zinc-800/60 bg-zinc-900/20 backdrop-blur-sm z-20">
+      <div className="z-20 flex flex-col border-b border-border bg-card/60 backdrop-blur-sm">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
-            <h2 className="text-lg font-semibold text-zinc-200 tracking-tight">
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">
               {t("title")}
             </h2>
-            <div className="h-4 w-px bg-zinc-800" />
+            <div className="h-4 w-px bg-border" />
             <div className="relative group">
-              <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
+              <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground transition-colors group-focus-within:text-foreground" />
               <input
                 type="text"
                 placeholder={t("searchPlaceholder")}
                 value={filters.search || ""}
                 onChange={(e) => setFilters({ search: e.target.value })}
-                className="w-64 bg-zinc-900/50 border border-zinc-800 rounded-md py-1.5 pl-8 pr-3 text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-indigo-500/50 focus:bg-zinc-900/80 transition-all"
+                className="w-64 rounded-md border border-input bg-background/60 py-1.5 pl-8 pr-3 text-xs text-foreground transition-all placeholder:text-muted-foreground focus:border-ring focus:bg-background focus:outline-none"
               />
             </div>
             <ObjectFiltersDropdown
@@ -409,14 +419,14 @@ function CollectionFiltersAndList({
             />
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex bg-zinc-900 p-0.5 rounded-md border border-zinc-800">
+            <div className="flex rounded-md border border-border bg-muted p-0.5">
               <button
                 type="button"
                 onClick={() => handleViewModeChange("list")}
                 className={`p-1.5 rounded shadow-sm transition-all ${
                   viewMode === "list"
-                    ? "bg-zinc-800 text-zinc-200"
-                    : "text-zinc-500 hover:text-zinc-300"
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <List className="h-3.5 w-3.5" />
@@ -426,8 +436,8 @@ function CollectionFiltersAndList({
                 onClick={() => handleViewModeChange("grid")}
                 className={`p-1.5 rounded shadow-sm transition-all ${
                   viewMode === "grid"
-                    ? "bg-zinc-800 text-zinc-200"
-                    : "text-zinc-500 hover:text-zinc-300"
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <LayoutGrid className="h-3.5 w-3.5" />
@@ -447,14 +457,14 @@ function CollectionFiltersAndList({
                 filename="objects"
                 variant="outline"
                 size="sm"
-                className="h-8 text-xs border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 hover:text-zinc-200"
+                className="h-8 border-input bg-background/60 text-xs hover:bg-accent hover:text-accent-foreground"
               />
             </PermissionGate>
 
             <PermissionGate permission="collections.create">
               <Button
                 asChild
-                className="h-8 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md text-xs font-medium shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)] transition-all border-none"
+                className="h-8 rounded-md border-none text-xs font-medium transition-all"
               >
                 <Link href="/objects/new" className="flex items-center gap-2">
                   <Plus className="h-3.5 w-3.5" />
@@ -488,7 +498,7 @@ function CollectionFiltersAndList({
         )}
       </div>
 
-      <div className="flex-1 overflow-hidden relative bg-zinc-900/10">
+      <div className="relative flex-1 overflow-hidden bg-background">
         <CollectionList
           organizationId={organizationId}
           collections={collections}
@@ -653,12 +663,11 @@ function CollectionList({
 
   const allSelected =
     collections.length > 0 &&
-    collections.every((item) =>
-      selectedIds.has(item._id as Id<"collections">),
-    );
+    collections.every((item) => selectedIds.has(item._id as Id<"collections">));
   const someSelected =
-    collections.some((item) => selectedIds.has(item._id as Id<"collections">)) &&
-    !allSelected;
+    collections.some((item) =>
+      selectedIds.has(item._id as Id<"collections">),
+    ) && !allSelected;
 
   return (
     <div className="h-full flex flex-col">
@@ -701,40 +710,40 @@ function CollectionList({
             />
           </div>
         ) : (
-          <table className="w-full text-left text-xs border-separate border-spacing-0">
-            <thead className="sticky top-0 z-10 bg-zinc-950/95 backdrop-blur-md shadow-sm">
+          <table className="w-full border-separate border-spacing-0 text-left text-xs">
+            <thead className="sticky top-0 z-10 bg-background/95 shadow-sm backdrop-blur-md">
               <tr>
-                <th className="border-b border-zinc-800/80 px-4 py-3 w-10">
+                <th className="w-10 border-b border-border px-4 py-3">
                   <Checkbox
                     checked={
                       allSelected || (someSelected ? "indeterminate" : false)
                     }
                     onCheckedChange={(checked) => onSelectAll(checked === true)}
-                    className="border-zinc-700 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                    className="border-input"
                   />
                 </th>
-                <th className="border-b border-zinc-800/80 px-4 py-3 font-medium text-zinc-500 w-16">
+                <th className="w-16 border-b border-border px-4 py-3 font-medium text-muted-foreground">
                   Image
                 </th>
-                <th className="border-b border-zinc-800/80 px-4 py-3 font-medium text-zinc-500">
+                <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
                   Object ID & Description
                 </th>
-                <th className="border-b border-zinc-800/80 px-4 py-3 font-medium text-zinc-500">
+                <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
                   Collection
                 </th>
-                <th className="border-b border-zinc-800/80 px-4 py-3 font-medium text-zinc-500">
+                <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
                   Location
                 </th>
-                <th className="border-b border-zinc-800/80 px-4 py-3 font-medium text-zinc-500">
+                <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
                   Date Acquired
                 </th>
-                <th className="border-b border-zinc-800/80 px-4 py-3 font-medium text-zinc-500 text-right">
+                <th className="border-b border-border px-4 py-3 text-right font-medium text-muted-foreground">
                   Status
                 </th>
-                <th className="border-b border-zinc-800/80 px-4 py-3 font-medium text-zinc-500 w-10" />
+                <th className="w-10 border-b border-border px-4 py-3 font-medium text-muted-foreground" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/40">
+            <tbody className="divide-y divide-border/50">
               {collections.map((item) => (
                 <CollectionTableRow
                   key={item._id}
@@ -755,13 +764,13 @@ function CollectionList({
         <div ref={loadMoreRef} className="h-6 w-full" />
       </div>
 
-      <div className="shrink-0 border-t border-zinc-800/60 bg-zinc-950 px-6 py-3 text-xs text-zinc-500">
+      <div className="shrink-0 border-t border-border bg-background px-6 py-3 text-xs text-muted-foreground">
         {collectionsStatus === "LoadingMore" ? (
           <span>{common("loading")}</span>
         ) : (
           <>
             {t("pagination.showing")}{" "}
-            <span className="text-zinc-300">{collections.length}</span>{" "}
+            <span className="text-foreground">{collections.length}</span>{" "}
             {t("pagination.items")}
           </>
         )}
@@ -769,10 +778,6 @@ function CollectionList({
     </div>
   );
 }
-
-type CollectionListItem = FunctionReturnType<
-  typeof api.collections.list
->["page"][number];
 
 function CollectionTableRow({
   item,
@@ -800,25 +805,25 @@ function CollectionTableRow({
       case "active":
       case "verified":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium capitalize">
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-status-success/20 bg-status-success/10 px-2 py-0.5 font-medium text-status-success-foreground capitalize">
             {status}
           </span>
         );
       case "loaned":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 font-medium capitalize">
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-status-info/20 bg-status-info/10 px-2 py-0.5 font-medium text-status-info-foreground capitalize">
             {status}
           </span>
         );
       case "deaccessioned":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 font-medium capitalize">
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-status-error/20 bg-status-error/10 px-2 py-0.5 font-medium text-status-error-foreground capitalize">
             {status}
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-500 font-medium capitalize">
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-status-warning/20 bg-status-warning/10 px-2 py-0.5 font-medium text-status-warning-foreground capitalize">
             {status}
           </span>
         );
@@ -828,18 +833,18 @@ function CollectionTableRow({
   return (
     <>
       <tr
-        className={`group hover:bg-zinc-900/60 transition-colors ${isSelected ? "bg-zinc-900/80" : ""}`}
+        className={`group transition-colors hover:bg-accent/50 ${isSelected ? "bg-accent" : ""}`}
       >
         <td className="px-4 py-3">
           <Checkbox
             checked={isSelected}
             onCheckedChange={(checked) => onSelect(!!checked)}
             onClick={(e) => e.stopPropagation()}
-            className="border-zinc-700 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+            className="border-input"
           />
         </td>
         <td className="px-4 py-3">
-          <div className="w-10 h-10 rounded-lg bg-zinc-800 border border-zinc-700 overflow-hidden relative">
+          <div className="relative h-10 w-10 overflow-hidden rounded-lg border border-border bg-muted">
             {item.primaryImageUrl ? (
               <Image
                 src={item.primaryImageUrl}
@@ -851,7 +856,7 @@ function CollectionTableRow({
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center">
-                <Building2 className="h-4 w-4 text-zinc-600" />
+                <Building2 className="h-4 w-4 text-muted-foreground/60" />
               </div>
             )}
           </div>
@@ -861,16 +866,16 @@ function CollectionTableRow({
             href={`/objects/${item._id}`}
             className="flex flex-col group-hover:cursor-pointer"
           >
-            <span className="text-zinc-200 font-medium group-hover:text-indigo-400 transition-colors truncate max-w-[200px]">
+            <span className="max-w-[200px] truncate font-medium text-foreground transition-colors group-hover:text-primary">
               {item.title}
             </span>
-            <span className="text-[10px] text-zinc-500 font-mono mt-0.5">
+            <span className="mt-0.5 font-mono text-[10px] text-muted-foreground">
               {item.accessionNumber}
             </span>
           </Link>
         </td>
         <td className="px-4 py-3">
-          <span className="px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 truncate max-w-[120px] inline-block">
+          <span className="inline-block max-w-[120px] truncate rounded-full border border-border bg-muted px-2 py-0.5 text-muted-foreground">
             {(() => {
               if (!item.objectType) return "General";
               try {
@@ -882,14 +887,14 @@ function CollectionTableRow({
             })()}
           </span>
         </td>
-        <td className="px-4 py-3 text-zinc-400 truncate max-w-[150px]">
+        <td className="max-w-[150px] truncate px-4 py-3 text-muted-foreground">
           {item.locationPath ? (
             <span className="flex items-center gap-1">{item.locationPath}</span>
           ) : (
-            <span className="text-zinc-600">-</span>
+            <span className="text-muted-foreground/60">-</span>
           )}
         </td>
-        <td className="px-4 py-3 text-zinc-500 font-mono text-[10px]">
+        <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground">
           {new Date(item._creationTime).toLocaleDateString()}
         </td>
         <td className="px-4 py-3 text-right">{getStatusBadge(item.status)}</td>
@@ -900,7 +905,7 @@ function CollectionTableRow({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-zinc-500 hover:text-white"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -913,11 +918,11 @@ function CollectionTableRow({
               <DropdownMenuContent
                 align="end"
                 onClick={(e) => e.stopPropagation()}
-                className="bg-zinc-950 border-zinc-800 text-zinc-300"
+                className="border-border bg-popover text-popover-foreground"
               >
                 <PermissionGate permission="collections.update">
                   <DropdownMenuItem
-                    className="hover:bg-zinc-900 focus:bg-zinc-900 cursor-pointer"
+                    className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();

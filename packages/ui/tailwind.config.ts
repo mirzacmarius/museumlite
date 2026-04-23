@@ -1,7 +1,10 @@
 import type { Config } from "tailwindcss";
 
+const withOpacity = (variable: string) =>
+  `color-mix(in oklab, var(${variable}) calc(<alpha-value> * 100%), transparent)`;
+
 const config = {
-  darkMode: ["class"],
+  darkMode: "class",
   content: [
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -36,56 +39,76 @@ const config = {
         ],
       },
       colors: {
-        border: "hsl(var(--border) / <alpha-value>)",
-        input: "hsl(var(--input) / <alpha-value>)",
-        ring: "hsl(var(--ring) / <alpha-value>)",
-        background: "hsl(var(--background) / <alpha-value>)",
-        foreground: "hsl(var(--foreground) / <alpha-value>)",
+        border: withOpacity("--border"),
+        input: withOpacity("--input"),
+        ring: withOpacity("--ring"),
+        background: withOpacity("--background"),
+        foreground: withOpacity("--foreground"),
         primary: {
-          DEFAULT: "hsl(var(--primary) / <alpha-value>)",
-          foreground: "hsl(var(--primary-foreground) / <alpha-value>)",
+          DEFAULT: withOpacity("--primary"),
+          foreground: withOpacity("--primary-foreground"),
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary) / <alpha-value>)",
-          foreground: "hsl(var(--secondary-foreground) / <alpha-value>)",
+          DEFAULT: withOpacity("--secondary"),
+          foreground: withOpacity("--secondary-foreground"),
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive) / <alpha-value>)",
-          foreground: "hsl(var(--destructive-foreground) / <alpha-value>)",
+          DEFAULT: withOpacity("--destructive"),
+          foreground: withOpacity("--destructive-foreground"),
         },
         muted: {
-          DEFAULT: "hsl(var(--muted) / <alpha-value>)",
-          foreground: "hsl(var(--muted-foreground) / <alpha-value>)",
+          DEFAULT: withOpacity("--muted"),
+          foreground: withOpacity("--muted-foreground"),
         },
         accent: {
-          DEFAULT: "hsl(var(--accent) / <alpha-value>)",
-          foreground: "hsl(var(--accent-foreground) / <alpha-value>)",
+          DEFAULT: withOpacity("--accent"),
+          foreground: withOpacity("--accent-foreground"),
         },
         popover: {
-          DEFAULT: "hsl(var(--popover) / <alpha-value>)",
-          foreground: "hsl(var(--popover-foreground) / <alpha-value>)",
+          DEFAULT: withOpacity("--popover"),
+          foreground: withOpacity("--popover-foreground"),
         },
         card: {
-          DEFAULT: "hsl(var(--card) / <alpha-value>)",
-          foreground: "hsl(var(--card-foreground) / <alpha-value>)",
+          DEFAULT: withOpacity("--card"),
+          foreground: withOpacity("--card-foreground"),
         },
         sidebar: {
-          DEFAULT: "hsl(var(--sidebar-background) / <alpha-value>)",
-          foreground: "hsl(var(--sidebar-foreground) / <alpha-value>)",
-          primary: "hsl(var(--sidebar-primary) / <alpha-value>)",
-          "primary-foreground":
-            "hsl(var(--sidebar-primary-foreground) / <alpha-value>)",
-          accent: "hsl(var(--sidebar-accent) / <alpha-value>)",
-          "accent-foreground":
-            "hsl(var(--sidebar-accent-foreground) / <alpha-value>)",
-          border: "hsl(var(--sidebar-border) / <alpha-value>)",
-          ring: "hsl(var(--sidebar-ring) / <alpha-value>)",
+          DEFAULT: withOpacity("--sidebar"),
+          foreground: withOpacity("--sidebar-foreground"),
+          primary: withOpacity("--sidebar-primary"),
+          "primary-foreground": withOpacity("--sidebar-primary-foreground"),
+          accent: withOpacity("--sidebar-accent"),
+          "accent-foreground": withOpacity("--sidebar-accent-foreground"),
+          border: withOpacity("--sidebar-border"),
+          ring: withOpacity("--sidebar-ring"),
+        },
+        status: {
+          success: {
+            DEFAULT: withOpacity("--status-success"),
+            foreground: withOpacity("--status-success-foreground"),
+          },
+          warning: {
+            DEFAULT: withOpacity("--status-warning"),
+            foreground: withOpacity("--status-warning-foreground"),
+          },
+          error: {
+            DEFAULT: withOpacity("--status-error"),
+            foreground: withOpacity("--status-error-foreground"),
+          },
+          info: {
+            DEFAULT: withOpacity("--status-info"),
+            foreground: withOpacity("--status-info-foreground"),
+          },
         },
       },
       borderRadius: {
+        sm: "calc(var(--radius) * 0.6)",
+        md: "calc(var(--radius) * 0.8)",
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        xl: "calc(var(--radius) * 1.4)",
+        "2xl": "calc(var(--radius) * 1.8)",
+        "3xl": "calc(var(--radius) * 2.2)",
+        "4xl": "calc(var(--radius) * 2.6)",
       },
       keyframes: {
         "accordion-down": {

@@ -91,8 +91,8 @@ export function AccessionsPageClient({
   }, [emptyRejectedAccessions, organizationId, rejected, t]);
 
   return (
-    <div className="p-6 h-full flex flex-col">
-      <div className="flex justify-between items-center mb-6">
+    <div className="flex h-full flex-col p-6">
+      <div className="mb-6 flex items-center justify-between">
         <div className="space-y-2">
           <AccessionsStats
             stats={{
@@ -108,13 +108,13 @@ export function AccessionsPageClient({
 
         <div className="flex items-center gap-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               placeholder={t("searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-56 h-8 bg-zinc-900 border border-zinc-800 rounded-full pl-8 pr-3 text-xs text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-700"
+              className="h-8 w-56 rounded-full border border-input bg-background/60 pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-ring focus:bg-background focus:outline-none"
             />
           </div>
           <PermissionGate permission="collections.read">
@@ -127,7 +127,7 @@ export function AccessionsPageClient({
           <PermissionGate permission="collections.create">
             <Link
               href="/accessions/import"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-md hover:bg-zinc-800 transition-colors"
+              className="flex items-center gap-1.5 rounded-md border border-input bg-background/60 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             >
               <FileUp className="h-3.5 w-3.5" />
               {t("importCSV")}
@@ -136,7 +136,7 @@ export function AccessionsPageClient({
           <PermissionGate permission="collections.create">
             <Link
               href="/accessions/new"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 transition-colors shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)]"
+              className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)] transition-colors hover:bg-primary/90"
             >
               <Plus className="h-3.5 w-3.5" />
               {t("newAccession")}

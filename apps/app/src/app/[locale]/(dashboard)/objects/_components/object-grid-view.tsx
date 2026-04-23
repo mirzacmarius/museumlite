@@ -46,25 +46,25 @@ function ObjectGridItem({
       case "active":
       case "verified":
         return (
-          <span className="px-1.5 py-0.5 rounded bg-emerald-500/80 text-[9px] text-white font-medium capitalize shadow-sm">
+          <span className="rounded bg-status-success/80 px-1.5 py-0.5 text-[9px] font-medium text-background capitalize shadow-sm">
             {status}
           </span>
         );
       case "loaned":
         return (
-          <span className="px-1.5 py-0.5 rounded bg-blue-500/80 text-[9px] text-white font-medium capitalize shadow-sm">
+          <span className="rounded bg-status-info/80 px-1.5 py-0.5 text-[9px] font-medium text-background capitalize shadow-sm">
             {status}
           </span>
         );
       case "deaccessioned":
         return (
-          <span className="px-1.5 py-0.5 rounded bg-red-500/80 text-[9px] text-white font-medium capitalize shadow-sm">
+          <span className="rounded bg-status-error/80 px-1.5 py-0.5 text-[9px] font-medium text-background capitalize shadow-sm">
             {status}
           </span>
         );
       default:
         return (
-          <span className="px-1.5 py-0.5 rounded bg-zinc-500/80 text-[9px] text-white font-medium capitalize shadow-sm">
+          <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground capitalize shadow-sm">
             {status}
           </span>
         );
@@ -74,8 +74,8 @@ function ObjectGridItem({
   return (
     <>
       <div
-        className={`group relative rounded-lg border bg-zinc-900 border-zinc-800 overflow-hidden transition-all duration-300 hover:border-zinc-600 hover:shadow-xl ${
-          isSelected ? "border-indigo-500 ring-1 ring-indigo-500" : ""
+        className={`group relative overflow-hidden rounded-lg border border-border bg-card transition-all duration-300 hover:border-ring/50 hover:shadow-xl ${
+          isSelected ? "border-primary ring-1 ring-primary" : ""
         }`}
       >
         {onSelect && (
@@ -88,12 +88,12 @@ function ObjectGridItem({
               checked={isSelected}
               onCheckedChange={(checked) => onSelect(!!checked)}
               onClick={(e) => e.stopPropagation()}
-              className="bg-zinc-950/80 border-zinc-700 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+              className="border-input bg-background/80"
             />
           </div>
         )}
         <Link href={`/objects/${item._id}`} className="block">
-          <div className="relative aspect-square bg-zinc-950 overflow-hidden">
+          <div className="relative aspect-square overflow-hidden bg-background">
             {item.primaryImageUrl ? (
               <Image
                 src={item.primaryImageUrl}
@@ -104,7 +104,7 @@ function ObjectGridItem({
                 className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-zinc-700 group-hover:text-zinc-500 transition-colors">
+              <div className="flex h-full w-full items-center justify-center text-muted-foreground/50 transition-colors group-hover:text-muted-foreground">
                 <Building2 className="h-12 w-12" />
               </div>
             )}
@@ -115,10 +115,10 @@ function ObjectGridItem({
             </div>
           </div>
           <div className="p-3">
-            <h3 className="font-medium text-xs text-zinc-200 truncate">
+            <h3 className="truncate text-xs font-medium text-card-foreground">
               {item.title}
             </h3>
-            <p className="text-[10px] text-zinc-500 font-mono mt-1 truncate">
+            <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">
               {item.accessionNumber}
             </p>
             {item.objectType && (
@@ -130,20 +130,20 @@ function ObjectGridItem({
                       return types.slice(0, 2).map((type: string) => (
                         <span
                           key={type}
-                          className="inline-flex items-center rounded bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 text-[9px] text-zinc-400 font-medium"
+                          className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground"
                         >
                           {type}
                         </span>
                       ));
                     }
                     return (
-                      <span className="inline-flex items-center rounded bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 text-[9px] text-zinc-400 font-medium">
+                      <span className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
                         {item.objectType}
                       </span>
                     );
                   } catch {
                     return (
-                      <span className="inline-flex items-center rounded bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 text-[9px] text-zinc-400 font-medium">
+                      <span className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
                         {item.objectType}
                       </span>
                     );
@@ -161,7 +161,7 @@ function ObjectGridItem({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 bg-zinc-950/80 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 rounded-full border border-zinc-700"
+                  className="h-6 w-6 rounded-full border border-border bg-background/80 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -173,11 +173,11 @@ function ObjectGridItem({
               <DropdownMenuContent
                 align="end"
                 onClick={(e) => e.stopPropagation()}
-                className="bg-zinc-950 border-zinc-800 text-zinc-300"
+                className="border-border bg-popover text-popover-foreground"
               >
                 <PermissionGate permission="collections.update">
                   <DropdownMenuItem
-                    className="hover:bg-zinc-900 focus:bg-zinc-900 cursor-pointer"
+                    className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();

@@ -7,6 +7,7 @@ import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { Download, Loader2, Plus, Printer, Search } from "lucide-react";
 import Link from "next/link";
 import { useDeferredValue, useState } from "react";
@@ -26,6 +27,13 @@ type DeaccessionsPageClientProps = {
   preloadedDeaccessions: Preloaded<typeof api.deaccessions.list>;
 };
 
+type DeaccessionsList = FunctionReturnType<typeof api.deaccessions.list>;
+type DeaccessionListItem = DeaccessionsList["page"][number];
+type DeaccessionsExportData = FunctionReturnType<
+  typeof api.deaccessions.listForExport
+>;
+type DeaccessionsExportItem = DeaccessionsExportData["items"][number];
+
 export function DeaccessionsPageClient({
   organizationId,
   preloadedDeaccessions,
@@ -34,11 +42,19 @@ export function DeaccessionsPageClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [isReportOpen, setIsReportOpen] = useState(false);
   const deferredSearchQuery = useDeferredValue(searchQuery);
-  const deaccessions = usePreloadedQuery(preloadedDeaccessions);
+  const deaccessions: DeaccessionsList = usePreloadedQuery(
+    preloadedDeaccessions,
+  );
 
-  const pending = deaccessions.page.filter((item) => item.status === "pending").length;
-  const approved = deaccessions.page.filter((item) => item.status === "approved").length;
-  const rejected = deaccessions.page.filter((item) => item.status === "rejected").length;
+  const pending = deaccessions.page.filter(
+    (item: DeaccessionListItem) => item.status === "pending",
+  ).length;
+  const approved = deaccessions.page.filter(
+    (item: DeaccessionListItem) => item.status === "approved",
+  ).length;
+  const rejected = deaccessions.page.filter(
+    (item: DeaccessionListItem) => item.status === "rejected",
+  ).length;
 
   return (
     <>
@@ -52,13 +68,13 @@ export function DeaccessionsPageClient({
 
           <div className="flex items-center gap-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
                 placeholder={t("searchPlaceholder")}
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                className="h-8 w-56 rounded-full border border-zinc-800 bg-zinc-900 pl-8 pr-3 text-xs text-zinc-200 placeholder:text-zinc-500 focus:border-zinc-700 focus:outline-none"
+                className="h-8 w-56 rounded-full border border-input bg-background/60 pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-ring focus:bg-background focus:outline-none"
               />
             </div>
 
@@ -66,7 +82,7 @@ export function DeaccessionsPageClient({
               <button
                 type="button"
                 onClick={() => setIsReportOpen(true)}
-                className="flex items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-800"
+                className="flex items-center gap-1.5 rounded-md border border-input bg-background/60 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
               >
                 <Download className="h-3.5 w-3.5" />
                 {t("actions.exportReport")}
@@ -76,7 +92,7 @@ export function DeaccessionsPageClient({
             <PermissionGate permission="collections.create">
               <Link
                 href="/deaccessions/new"
-                className="flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-indigo-500 shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)]"
+                className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)] transition-colors hover:bg-primary/90"
               >
                 <Plus className="h-3.5 w-3.5" />
                 {t("actions.create")}
@@ -114,7 +130,7 @@ function DeaccessionsReportDialog({
 }: DeaccessionsReportDialogProps) {
   const locale = useCurrentLocale();
   const t = useScopedI18n("deaccessions");
-  const exportData = useQuery(
+  const exportData: DeaccessionsExportData | undefined = useQuery(
     api.deaccessions.listForExport,
     isOpen ? { organizationId } : "skip",
   );
@@ -136,7 +152,9 @@ function DeaccessionsReportDialog({
                 <h1 className="text-xl font-bold text-black">
                   {t("report.deaccessionReport")}
                 </h1>
-                <p className="text-sm text-gray-600">{t("report.allDeaccessions")}</p>
+                <p className="text-sm text-gray-600">
+                  {t("report.allDeaccessions")}
+                </p>
               </div>
 
               <div className="grid grid-cols-4 gap-4 print:gap-2">
@@ -156,7 +174,9 @@ function DeaccessionsReportDialog({
                   <p className="text-2xl font-bold text-green-600">
                     {exportData.totals.approvedCount}
                   </p>
-                  <p className="text-xs text-gray-500">{t("report.approved")}</p>
+                  <p className="text-xs text-gray-500">
+                    {t("report.approved")}
+                  </p>
                 </div>
                 <div className="rounded border border-gray-200 p-3 text-center">
                   <p className="text-2xl font-bold text-black">
@@ -197,7 +217,7 @@ function DeaccessionsReportDialog({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {exportData.items.map((item) => (
+                    {exportData.items.map((item: DeaccessionsExportItem) => (
                       <tr key={item.deaccessionNumber}>
                         <td className="py-2">
                           <p className="font-medium text-black">
@@ -248,8 +268,12 @@ function DeaccessionsReportDialog({
               <div className="border-t border-gray-200 pt-3 text-[10px] text-gray-400">
                 <p>
                   {t("report.generatedOn")}{" "}
-                  {formatDateFns(new Date(), "MMMM d, yyyy 'at' h:mm a", locale)} •{" "}
-                  {exportData.organization.name}
+                  {formatDateFns(
+                    new Date(),
+                    "MMMM d, yyyy 'at' h:mm a",
+                    locale,
+                  )}{" "}
+                  • {exportData.organization.name}
                 </p>
               </div>
             </div>

@@ -1,7 +1,8 @@
-import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { getScopedI18n } from "@/locales/server";
+import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@v1/backend/convex/_generated/api";
 import { fetchQuery, preloadQuery } from "convex/nextjs";
+import type { FunctionReturnType } from "convex/server";
 import { Archive, Plus } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -11,13 +12,21 @@ import { DeaccessionsPageClient } from "./deaccessions-page-client";
 
 export const dynamic = "force-dynamic";
 
+type Organization = FunctionReturnType<
+  typeof api.organizations.listUserOrganizations
+>[number];
+
 export default async function DeaccessionsPage() {
   const token = await convexAuthNextjsToken();
 
   const [user, organizations, preferredOrgId] = await Promise.all([
     fetchQuery(api.users.getUser, {}, { token }),
     fetchQuery(api.organizations.listUserOrganizations, {}, { token }),
-    fetchQuery(api.userPreferences.get, { key: "organization.activeOrgId" }, { token }),
+    fetchQuery(
+      api.userPreferences.get,
+      { key: "organization.activeOrgId" },
+      { token },
+    ),
   ]);
 
   if (!user?.username) {
@@ -30,7 +39,9 @@ export default async function DeaccessionsPage() {
 
   const selectedOrg =
     (preferredOrgId
-      ? organizations.find((organization) => organization._id === preferredOrgId)
+      ? organizations.find(
+          (organization: Organization) => organization._id === preferredOrgId,
+        )
       : null) ?? organizations[0];
 
   if (!selectedOrg) {
@@ -77,7 +88,7 @@ async function NoOrganizationState() {
         </div>
         <Link
           href="/organizations/new"
-          className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-indigo-500 shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)]"
+          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)] transition-all hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" />
           {t("noOrg.createButton")}

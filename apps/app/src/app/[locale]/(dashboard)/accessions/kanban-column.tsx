@@ -43,7 +43,7 @@ const stepDotStyles: Record<number, string> = {
   [-2]: "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]",
 };
 
-const DEFAULT_DOT_STYLE = "bg-slate-500 shadow-[0_0_8px_rgba(100,116,139,0.5)]";
+const DEFAULT_DOT_STYLE = "bg-muted-foreground";
 
 function getStepDotStyle(stepNumber: number): string {
   const direct = stepDotStyles[stepNumber];
@@ -108,12 +108,14 @@ export function KanbanColumn({
 
   return (
     <div className="flex w-72 flex-shrink-0 flex-col">
-      <div className="flex items-center justify-between text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+      <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         <span>
           {stepName}
-          {roleName && <span className="ml-1 opacity-70">({roleName})</span>}
+          {roleName && (
+            <span className="ml-1 text-muted-foreground/85">({roleName})</span>
+          )}
         </span>
-        <span className="bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded text-[10px]">
+        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
           {filteredAccessions.length}
         </span>
       </div>
@@ -134,31 +136,31 @@ export function KanbanColumn({
                   <Link
                     key={accession._id}
                     href={`/accessions/${accession._id}`}
-                    className="bg-zinc-900 border border-zinc-800 p-3 rounded-lg hover:border-zinc-700 transition-colors cursor-pointer group animate-enter block"
+                    className="group block animate-enter cursor-pointer rounded-lg border border-border bg-background/70 p-3 transition-colors hover:border-ring/60 hover:bg-accent/50"
                     style={{ animationDelay: `${Math.min(index * 50, 300)}ms` }}
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-[10px] font-mono text-zinc-500">
+                    <div className="mb-2 flex items-start justify-between">
+                      <span className="font-mono text-[10px] text-muted-foreground">
                         {accession.accessionNumber}
                       </span>
-                      <div className={`w-1.5 h-1.5 rounded-full ${dotStyle}`} />
+                      <div className={`h-1.5 w-1.5 rounded-full ${dotStyle}`} />
                     </div>
-                    <p className="text-sm text-zinc-200 font-medium mb-1 group-hover:text-indigo-400 transition-colors line-clamp-2">
+                    <p className="mb-1 line-clamp-2 text-sm font-medium text-foreground transition-colors group-hover:text-primary">
                       {accession.draftTitle ||
                         accession.source ||
                         t("kanban.unknownSource")}
                     </p>
-                    <p className="text-xs text-zinc-500 mb-3 line-clamp-2">
+                    <p className="mb-3 line-clamp-2 text-xs text-muted-foreground">
                       {accession.draftTitle
                         ? accession.source
                         : accession.method}
                     </p>
                     {accession.assigneeName && (
                       <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center text-[9px] text-indigo-300">
+                        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[9px] text-primary">
                           {getInitials(accession.assigneeName)}
                         </div>
-                        <span className="text-[10px] text-zinc-400">
+                        <span className="text-[10px] text-muted-foreground">
                           {accession.assigneeName}
                         </span>
                       </div>

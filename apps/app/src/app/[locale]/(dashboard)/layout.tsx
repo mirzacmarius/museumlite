@@ -9,7 +9,7 @@ import { PermissionProvider } from "@/components/permission-gate";
 import { SkipNavigation } from "@/components/skip-navigation";
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@v1/backend/convex/_generated/api";
-import { SidebarProvider } from "@v1/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@v1/ui/sidebar";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { fetchQuery, preloadQuery } from "convex/nextjs";
@@ -40,7 +40,7 @@ export default async function Layout({
               <SkipNavigation />
               <NavigationProgress />
               <AppSidebar preloadedUser={preloadedUser} />
-              <main className="flex h-screen w-full flex-col overflow-hidden bg-background">
+              <SidebarInset className="h-svh min-w-0 overflow-hidden">
                 <DashboardHeader>
                   <div id="search" className="flex items-center gap-2">
                     <CommandPalette />
@@ -53,7 +53,7 @@ export default async function Layout({
                 >
                   {children}
                 </div>
-              </main>
+              </SidebarInset>
               <Analytics />
               <SpeedInsights />
             </SidebarProvider>

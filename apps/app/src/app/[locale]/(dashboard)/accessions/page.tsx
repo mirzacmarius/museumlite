@@ -1,14 +1,19 @@
-import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { getScopedI18n } from "@/locales/server";
+import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@v1/backend/convex/_generated/api";
 import { fetchQuery, preloadQuery } from "convex/nextjs";
-import { redirect } from "next/navigation";
+import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AccessionsPageClient } from "./accessions-page-client";
 import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
 
 export const dynamic = "force-dynamic";
+
+type Organization = FunctionReturnType<
+  typeof api.organizations.listUserOrganizations
+>[number];
 
 export default async function AccessionsPage() {
   const token = await convexAuthNextjsToken();
@@ -17,7 +22,11 @@ export default async function AccessionsPage() {
   const [user, organizations, preferredOrgId] = await Promise.all([
     fetchQuery(api.users.getUser, {}, { token }),
     fetchQuery(api.organizations.listUserOrganizations, {}, { token }),
-    fetchQuery(api.userPreferences.get, { key: "organization.activeOrgId" }, { token }),
+    fetchQuery(
+      api.userPreferences.get,
+      { key: "organization.activeOrgId" },
+      { token },
+    ),
   ]);
 
   // Early return for auth/organization checks
@@ -31,7 +40,9 @@ export default async function AccessionsPage() {
 
   const selectedOrg =
     (preferredOrgId
-      ? organizations.find((o) => o._id === preferredOrgId)
+      ? organizations.find(
+          (organization: Organization) => organization._id === preferredOrgId,
+        )
       : null) ?? organizations[0];
   if (!selectedOrg) {
     return <NoOrganizationState />;
@@ -95,7 +106,7 @@ async function NoOrganizationState() {
         </div>
         <Link
           href="/organizations/new"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md text-sm font-medium shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)] transition-all"
+          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)] transition-all hover:bg-primary/90"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

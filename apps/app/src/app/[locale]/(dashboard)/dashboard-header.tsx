@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { Separator } from "@v1/ui/separator";
 import { SidebarTrigger } from "@v1/ui/sidebar";
 import { Building2 } from "lucide-react";
 import { useParams, usePathname } from "next/navigation";
@@ -33,10 +34,14 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
   };
 
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 sm:px-6 backdrop-blur-xl">
+    <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-xl transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
       <div className="flex items-center gap-2">
         <SidebarTrigger className="-ml-1" />
-        <div className="flex items-center gap-2 text-xs ml-2">
+        <Separator
+          orientation="vertical"
+          className="mr-2 data-[orientation=vertical]:h-4"
+        />
+        <div className="flex items-center gap-2 text-xs">
           <span className="text-muted-foreground flex items-center gap-2">
             <Building2 className="w-3.5 h-3.5" />
             {currentOrganization?.name ?? "MuseumLite"}

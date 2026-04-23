@@ -139,7 +139,7 @@ export function ObjectAppliedFilters({
       <AppliedFilterChip
         label={common("clearAll")}
         onRemove={onClearAll}
-        className="text-zinc-300 hover:text-zinc-100"
+        className="text-foreground"
       />
     </AppliedFiltersBar>
   );

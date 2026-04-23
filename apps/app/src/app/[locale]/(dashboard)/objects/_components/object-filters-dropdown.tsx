@@ -130,7 +130,7 @@ export function ObjectFiltersDropdown({
         />
 
         <div className="mt-2 h-full w-full overflow-y-auto">
-          <div className="divide-y divide-white/10">
+          <div className="divide-y divide-border">
             <FilterSection
               title={t("filters.status")}
               count={filters.status !== "any" ? 1 : 0}
@@ -155,7 +155,7 @@ export function ObjectFiltersDropdown({
                     />
                   ))
                 ) : (
-                  <p className="px-1.5 py-2 text-xs italic text-zinc-500">
+                  <p className="px-1.5 py-2 text-xs italic text-muted-foreground">
                     {common("noResults")}
                   </p>
                 )}
@@ -189,7 +189,7 @@ export function ObjectFiltersDropdown({
                     />
                   ))
                 ) : (
-                  <p className="px-1.5 py-2 text-xs italic text-zinc-500">
+                  <p className="px-1.5 py-2 text-xs italic text-muted-foreground">
                     {common("noResults")}
                   </p>
                 )}
@@ -229,7 +229,7 @@ export function ObjectFiltersDropdown({
                     );
                   })
                 ) : (
-                  <p className="px-1.5 py-2 text-xs italic text-zinc-500">
+                  <p className="px-1.5 py-2 text-xs italic text-muted-foreground">
                     {common("noResults")}
                   </p>
                 )}
@@ -266,7 +266,7 @@ export function ObjectFiltersDropdown({
                     />
                   ))
                 ) : (
-                  <p className="px-1.5 py-2 text-xs italic text-zinc-500">
+                  <p className="px-1.5 py-2 text-xs italic text-muted-foreground">
                     {common("noResults")}
                   </p>
                 )}

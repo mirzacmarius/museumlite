@@ -7,9 +7,10 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@v1/ui/select";
+import { cn } from "@v1/ui/utils";
 import { Languages } from "lucide-react";
 
-export function LanguageSwitcher() {
+export function LanguageSwitcher({ triggerClass }: { triggerClass?: string }) {
   const changeLocale = useChangeLocale();
   const locale = useCurrentLocale();
 
@@ -26,7 +27,12 @@ export function LanguageSwitcher() {
 
   return (
     <Select value={locale} onValueChange={changeLocale}>
-      <SelectTrigger className="h-6 rounded border-primary/20 bg-secondary !px-2 hover:border-primary/40">
+      <SelectTrigger
+        className={cn(
+          "h-6 rounded border-primary/20 bg-secondary !px-2 hover:border-primary/40",
+          triggerClass,
+        )}
+      >
         <div className="flex items-start gap-2">
           <Languages className="h-[14px] w-[14px]" />
           <span className="text-xs font-medium">{formatLanguage(locale)}</span>
