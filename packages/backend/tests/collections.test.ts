@@ -34,7 +34,9 @@ describe("collections publishing", () => {
         slug: "free-org",
         type: "museum",
         subscriptionTier: "free",
-        settings: { portalSettings: { isEnabled: true, portalSlug: "gallery" } },
+        settings: {
+          portalSettings: { isEnabled: true, portalSlug: "gallery" },
+        },
       });
 
       const userId = await ctx.db.insert("users", { email: "u@example.com" });
@@ -67,7 +69,9 @@ describe("collections publishing", () => {
         slug: "pro-org",
         type: "museum",
         subscriptionTier: "pro",
-        settings: { portalSettings: { isEnabled: false, portalSlug: "gallery" } },
+        settings: {
+          portalSettings: { isEnabled: false, portalSlug: "gallery" },
+        },
       });
 
       const userId = await ctx.db.insert("users", { email: "u2@example.com" });
@@ -100,7 +104,9 @@ describe("collections publishing", () => {
         slug: "pro-org-2",
         type: "museum",
         subscriptionTier: "pro",
-        settings: { portalSettings: { isEnabled: true, portalSlug: "gallery" } },
+        settings: {
+          portalSettings: { isEnabled: true, portalSlug: "gallery" },
+        },
       });
 
       const userId = await ctx.db.insert("users", { email: "u3@example.com" });
@@ -133,7 +139,9 @@ describe("collections publishing", () => {
         slug: "pro-org-3",
         type: "museum",
         subscriptionTier: "pro",
-        settings: { portalSettings: { isEnabled: true, portalSlug: "gallery" } },
+        settings: {
+          portalSettings: { isEnabled: true, portalSlug: "gallery" },
+        },
       });
 
       const userId = await ctx.db.insert("users", { email: "u4@example.com" });
@@ -155,5 +163,46 @@ describe("collections publishing", () => {
     });
 
     expect(result.items[0]?.urlSlug).toBe("my-public-slug");
+  });
+
+  test("public portal includes visible loaned objects", async () => {
+    const t = convexTest(schema, modules);
+
+    await t.run(async (ctx) => {
+      const organizationId = await ctx.db.insert("organizations", {
+        name: "Pro Org 4",
+        slug: "pro-org-4",
+        type: "museum",
+        subscriptionTier: "pro",
+        settings: {
+          portalSettings: { isEnabled: true, portalSlug: "gallery" },
+        },
+      });
+
+      const userId = await ctx.db.insert("users", { email: "u5@example.com" });
+
+      await ctx.db.insert("collections", {
+        organizationId,
+        accessionNumber: "A-5",
+        title: "Loaned Public Item",
+        status: "loaned",
+        isPubliclyVisible: true,
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      });
+    });
+
+    const listResult = await t.query(api.collections.listPublic, {
+      organizationSlug: "pro-org-4",
+    });
+    expect(listResult.items.map((item) => item.title)).toEqual([
+      "Loaned Public Item",
+    ]);
+
+    const detailResult = await t.query(api.collections.getPublic, {
+      organizationSlug: "pro-org-4",
+      accessionNumber: "A-5",
+    });
+    expect(detailResult?.title).toBe("Loaned Public Item");
   });
 });

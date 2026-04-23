@@ -1,5 +1,6 @@
 "use client";
 
+import { getPublicPortalBaseUrl } from "@/lib/portal-url";
 import { Globe } from "lucide-react";
 
 interface PortalPreviewProps {
@@ -13,7 +14,7 @@ export function PortalPreview({
   orgSlug,
   portalSlug,
 }: PortalPreviewProps) {
-  const webUrl = process.env.NEXT_PUBLIC_WEB_URL || "https://museumlite.com";
+  const webUrl = getPublicPortalBaseUrl();
   const portalUrl = `${webUrl}/${orgSlug}/${portalSlug}`;
 
   return (

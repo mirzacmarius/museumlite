@@ -21,6 +21,12 @@ import {
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
 
+const PUBLIC_CATALOG_STATUSES = ["active", "loaned"] as const;
+
+function isPublicCatalogStatus(status: Doc<"collections">["status"]) {
+  return status === "active" || status === "loaned";
+}
+
 const conditionHistoryEntryValidator = v.object({
   condition: v.string(),
   note: v.optional(v.string()),
@@ -193,6 +199,27 @@ async function getCollectionsWithOpenDeaccessions(
       (deaccession) => deaccession.collectionId,
     ),
   );
+}
+
+async function getPublicCatalogCollections(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+) {
+  const collectionsByStatus = await Promise.all(
+    PUBLIC_CATALOG_STATUSES.map((status) =>
+      ctx.db
+        .query("collections")
+        .withIndex("by_organization_status_public", (q) =>
+          q
+            .eq("organizationId", organizationId)
+            .eq("status", status)
+            .eq("isPubliclyVisible", true),
+        )
+        .collect(),
+    ),
+  );
+
+  return collectionsByStatus.flat();
 }
 
 /**
@@ -2607,15 +2634,10 @@ export const listPublic = query({
     }
 
     const pageSize = args.paginationOpts?.numItems ?? args.limit ?? 24;
-    const allCollections = await ctx.db
-      .query("collections")
-      .withIndex("by_organization_status_public", (q) =>
-        q
-          .eq("organizationId", organization._id)
-          .eq("status", "active")
-          .eq("isPubliclyVisible", true),
-      )
-      .collect();
+    const allCollections = await getPublicCatalogCollections(
+      ctx,
+      organization._id,
+    );
 
     let filtered = allCollections;
 
@@ -2776,7 +2798,7 @@ export const getPublic = query({
     if (
       !collection ||
       !collection.isPubliclyVisible ||
-      collection.status !== "active"
+      !isPublicCatalogStatus(collection.status)
     ) {
       return null;
     }
@@ -2881,15 +2903,10 @@ export const getPublicFilters = query({
       return { objectTypes: [], cultures: [], periods: [] };
     }
 
-    const collections = await ctx.db
-      .query("collections")
-      .withIndex("by_organization_status_public", (q) =>
-        q
-          .eq("organizationId", organization._id)
-          .eq("status", "active")
-          .eq("isPubliclyVisible", true),
-      )
-      .collect();
+    const collections = await getPublicCatalogCollections(
+      ctx,
+      organization._id,
+    );
 
     const objectTypes = [
       ...new Set(collections.map((c) => c.objectType).filter(Boolean)),
@@ -2939,14 +2956,7 @@ export const listPublicForSitemap = query({
         continue;
       }
 
-      const collections = await ctx.db
-        .query("collections")
-        .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
-        .collect();
-
-      const publicCollections = collections.filter(
-        (c) => c.isPubliclyVisible === true && c.status === "active",
-      );
+      const publicCollections = await getPublicCatalogCollections(ctx, org._id);
 
       for (const c of publicCollections) {
         results.push({

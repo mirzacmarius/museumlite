@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { getPublicPortalBaseUrl } from "@/lib/portal-url";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -69,7 +70,7 @@ export function PortalSettingsSidebar() {
     }
   };
 
-  const webUrl = process.env.NEXT_PUBLIC_WEB_URL || "https://museumlite.com";
+  const webUrl = getPublicPortalBaseUrl();
   const fullPortalUrl = portalSettings?.orgSlug
     ? `${webUrl}/${portalSettings.orgSlug}/${portalSlug}`
     : "";
