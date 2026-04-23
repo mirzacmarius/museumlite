@@ -453,18 +453,35 @@ export const getAnalytics = query({
         }),
     );
 
+    const collectionIdsWithOpenDeaccessions = new Set(
+      deaccessions
+        .filter(
+          (deaccession) =>
+            deaccession.status === "pending" ||
+            deaccession.status === "approved",
+        )
+        .map((deaccession) => deaccession.collectionId),
+    );
+    const catalogObjects = collections.filter(
+      (collection) =>
+        collection.status !== "deleted" &&
+        collection.status !== "deaccessioned" &&
+        !collectionIdsWithOpenDeaccessions.has(collection._id),
+    );
+
     return {
       collections: {
         total: collectionGroups.length,
       },
       objects: {
-        total: collections.length,
-        active: collections.filter((c) => c.status === "active").length,
-        loaned: collections.filter((c) => c.status === "loaned").length,
+        total: catalogObjects.length,
+        active: catalogObjects.filter((c) => c.status === "active").length,
+        loaned: catalogObjects.filter((c) => c.status === "loaned").length,
         deaccessioned: collections.filter((c) => c.status === "deaccessioned")
           .length,
-        onDisplay: collections.filter((c) => c.displayStatus === "on_display")
-          .length,
+        onDisplay: catalogObjects.filter(
+          (c) => c.displayStatus === "on_display",
+        ).length,
       },
       loans: {
         total: loans.length,

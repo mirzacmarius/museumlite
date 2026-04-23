@@ -68,7 +68,7 @@ function createCollection(
   userId: Id<"users">,
   title: string,
   accessionNumber: string,
-  status: "active" | "loaned" | "deaccessioned" | "archived",
+  status: "active" | "loaned" | "deaccessioned" | "archived" | "deleted",
 ) {
   return {
     organizationId,
@@ -149,6 +149,38 @@ describe("Dashboard: getAnalytics", () => {
           "deaccessioned",
         ),
       );
+      await ctx.db.insert(
+        "collections",
+        createCollection(
+          organizationId,
+          userId,
+          "Deleted",
+          "ACC-005",
+          "deleted",
+        ),
+      );
+      const pendingRemovalCollectionId = await ctx.db.insert(
+        "collections",
+        createCollection(
+          organizationId,
+          userId,
+          "Pending removal",
+          "ACC-006",
+          "active",
+        ),
+      );
+      await ctx.db.insert("deaccessions", {
+        organizationId,
+        collectionId: pendingRemovalCollectionId,
+        deaccessionNumber: "DA-001",
+        dateDeaccessioned: Date.now(),
+        reason: "Duplicate object",
+        method: "destruction",
+        status: "pending",
+        targetCollectionStatus: "deleted",
+        workflowStep: 1,
+        workflowHistory: [],
+      });
     });
 
     // #when
@@ -162,7 +194,7 @@ describe("Dashboard: getAnalytics", () => {
     });
 
     // #then
-    expect(analytics.objects.total).toBe(4);
+    expect(analytics.objects.total).toBe(3);
     expect(analytics.objects.active).toBe(2);
     expect(analytics.objects.loaned).toBe(1);
     expect(analytics.objects.deaccessioned).toBe(1);
