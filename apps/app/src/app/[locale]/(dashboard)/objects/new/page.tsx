@@ -106,6 +106,7 @@ interface DraftMediaItem {
   mimeType: string;
   mediaCategory: "image" | "document";
   isPrimary: boolean;
+  url?: string | null;
 }
 
 interface ObjectRequestFormPageProps {
@@ -286,6 +287,10 @@ function buildObjectDraftPayload(formData: CollectionFormData) {
     isValuationVisible: formData.isValuationVisible ?? false,
     publicSlug: formData.publicSlug?.trim() || undefined,
   };
+}
+
+function buildDraftMediaPayload(draftMedia: DraftMediaItem[]) {
+  return draftMedia.map(({ url: _url, ...item }) => item);
 }
 
 function EditSection({
@@ -569,7 +574,7 @@ export function ObjectRequestFormPage({
     setSelectedDocuments((prev) => prev.filter((item) => item.id !== docId));
   }, []);
 
-  const uploadDraftMedia = useCallback(async () => {
+  const uploadDraftMedia = useCallback(async (): Promise<DraftMediaItem[]> => {
     if (!currentOrganizationId) {
       return [];
     }
@@ -673,14 +678,29 @@ export function ObjectRequestFormPage({
       setError(null);
 
       try {
+        const newDraftMedia =
+          selectedFiles.length > 0 || selectedDocuments.length > 0
+            ? await uploadDraftMedia()
+            : [];
+        const draftMedia =
+          persistedDraftMedia.length > 0 || newDraftMedia.length > 0
+            ? [...persistedDraftMedia, ...newDraftMedia]
+            : undefined;
+
         const savedAccessionId = await upsertObjectDraft({
           organizationId: currentOrganizationId,
           accessionId: activeDraftAccessionId || undefined,
           saveMode: "draft",
           objectData: buildObjectDraftPayload(formData),
+          draftMedia: draftMedia
+            ? buildDraftMediaPayload(draftMedia)
+            : undefined,
         });
 
         setCurrentDraftAccessionId(savedAccessionId);
+        setPersistedDraftMedia(draftMedia ?? []);
+        setSelectedFiles([]);
+        setSelectedDocuments([]);
         initialFormSignatureRef.current = getFormSignature(formData);
         setDraftSavedAt(Date.now());
 
@@ -700,8 +720,12 @@ export function ObjectRequestFormPage({
       activeDraftAccessionId,
       currentOrganizationId,
       formData,
+      persistedDraftMedia,
       router,
+      selectedDocuments,
+      selectedFiles,
       upsertObjectDraft,
+      uploadDraftMedia,
     ],
   );
 
@@ -736,7 +760,9 @@ export function ObjectRequestFormPage({
           accessionId: activeDraftAccessionId || undefined,
           saveMode: "submit",
           objectData: buildObjectDraftPayload(formData),
-          draftMedia,
+          draftMedia: draftMedia
+            ? buildDraftMediaPayload(draftMedia)
+            : undefined,
         });
         router.push(`/accessions/${accessionId}`);
       } catch (err) {
@@ -1770,16 +1796,25 @@ export function ObjectRequestFormPage({
                             .map((item) => (
                               <div
                                 key={item.storageId}
-                                className="rounded-xl border border-border/60 bg-background/70 px-4 py-3"
+                                className="overflow-hidden rounded-xl border border-border/60 bg-background/70"
                               >
-                                <p className="truncate text-sm font-medium text-foreground">
-                                  {item.fileName}
-                                </p>
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                  {item.isPrimary
-                                    ? "Primary image already saved"
-                                    : "Saved with this draft"}
-                                </p>
+                                {item.url ? (
+                                  <img
+                                    src={item.url}
+                                    alt={item.fileName}
+                                    className="aspect-square w-full object-cover"
+                                  />
+                                ) : null}
+                                <div className="px-4 py-3">
+                                  <p className="truncate text-sm font-medium text-foreground">
+                                    {item.fileName}
+                                  </p>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    {item.isPrimary
+                                      ? "Primary image already saved"
+                                      : "Saved with this draft"}
+                                  </p>
+                                </div>
                               </div>
                             ))}
                         </div>

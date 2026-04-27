@@ -32,6 +32,16 @@ import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
 const MAX_SMALL_IMAGE_SIZE = 50 * 1024 * 1024;
 
+const accessionDraftMediaWithUrlValidator = v.object({
+  storageId: v.id("_storage"),
+  fileName: v.string(),
+  fileSize: v.number(),
+  mimeType: v.string(),
+  mediaCategory: v.union(v.literal("image"), v.literal("document")),
+  isPrimary: v.boolean(),
+  url: v.union(v.string(), v.null()),
+});
+
 function serializeStringList(values?: string[]) {
   return values && values.length > 0 ? JSON.stringify(values) : undefined;
 }
@@ -882,7 +892,7 @@ export const get = query({
       notes: v.optional(v.string()),
       workflowStep: v.optional(v.number()),
       draftObjectData: v.optional(objectDraftDataValidator),
-      draftMedia: v.optional(v.array(accessionDraftMediaValidator)),
+      draftMedia: v.optional(v.array(accessionDraftMediaWithUrlValidator)),
       workflowHistory: v.optional(
         v.array(
           v.object({
@@ -940,6 +950,14 @@ export const get = query({
 
     // Ensure workflowHistory is always an array (even if empty)
     const workflowHistory = accession.workflowHistory ?? [];
+    const draftMedia = accession.draftMedia
+      ? await Promise.all(
+          accession.draftMedia.map(async (mediaItem) => ({
+            ...mediaItem,
+            url: await ctx.storage.getUrl(mediaItem.storageId),
+          })),
+        )
+      : undefined;
 
     // IMPORTANT: Convex return validators are strict. Do not spread `accession`,
     // because the DB document may include additional fields (for example
@@ -963,7 +981,7 @@ export const get = query({
       notes: accession.notes,
       workflowStep: accession.workflowStep,
       draftObjectData: accession.draftObjectData,
-      draftMedia: accession.draftMedia,
+      draftMedia,
       workflowHistory,
     };
   },
