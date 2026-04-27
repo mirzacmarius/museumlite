@@ -35,7 +35,7 @@ export default {
   settings: {
     title: "Paramètres",
     headerTitle: "Paramètres",
-    headerDescription: "Gérez vos paramètres de compte.",
+    headerDescription: "Gérez vos paramètres personnels.",
     avatar: {
       title: "Votre Avatar",
       description: "Ceci est votre avatar. Il sera affiché sur votre profil.",
@@ -62,13 +62,13 @@ export default {
     deleteAccount: {
       title: "Supprimer le Compte",
       description:
-        "Supprimez définitivement votre compte Convex SaaS, tous vos projets, liens et leurs statistiques respectives.",
+        "Supprimez définitivement votre compte utilisateur MuseumLite et les données de votre profil personnel.",
       warning: "Cette action ne peut pas être annulée, procédez avec prudence.",
       deleteButton: "Supprimer le Compte",
       confirmButton: "Êtes-vous sûr ?",
     },
     sidebar: {
-      general: "Général",
+      general: "Personnel",
       organization: "Organisation",
       users: "Utilisateurs",
       roles: "Rôles",

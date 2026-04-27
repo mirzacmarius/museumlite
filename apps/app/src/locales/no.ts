@@ -34,7 +34,7 @@ export default {
   settings: {
     title: "Innstillinger",
     headerTitle: "Innstillinger",
-    headerDescription: "Administrer kontoinnstillingene dine.",
+    headerDescription: "Administrer dine personlige innstillinger.",
     avatar: {
       title: "Din avatar",
       description: "Dette er din avatar. Den vil vises på profilen din.",
@@ -60,13 +60,13 @@ export default {
     deleteAccount: {
       title: "Slett konto",
       description:
-        "Slett permanent din Convex SaaS-konto, alle prosjektene dine, lenker og deres respektive statistikk.",
+        "Slett MuseumLite-brukerkontoen din og personlige profildata permanent.",
       warning: "Denne handlingen kan ikke angres, vær forsiktig.",
       deleteButton: "Slett konto",
       confirmButton: "Er du sikker?",
     },
     sidebar: {
-      general: "Generelt",
+      general: "Personlig",
       organization: "Organisasjon",
       users: "Brukere",
       roles: "Roller",
