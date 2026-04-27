@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { Button } from "@v1/ui/button";
 import { Lock } from "lucide-react";
+import Link from "next/link";
 
 interface FeatureGuardProps {
   children: React.ReactNode;

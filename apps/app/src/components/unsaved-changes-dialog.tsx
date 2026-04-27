@@ -15,7 +15,7 @@ interface UnsavedChangesDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDiscard: () => void;
-  onSave?: () => Promise<boolean | void>;
+  onSave?: () => Promise<boolean | undefined>;
   isSaving?: boolean;
 }
 

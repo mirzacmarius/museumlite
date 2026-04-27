@@ -25,7 +25,7 @@ describe("collections publishing", () => {
     expect(result.hasMore).toBe(false);
   });
 
-  test("listPublic returns items on free tier when portal enabled", async () => {
+  test("listPublic returns empty without public_portal access", async () => {
     const t = convexTest(schema, modules);
 
     await t.run(async (ctx) => {
@@ -56,8 +56,9 @@ describe("collections publishing", () => {
       organizationSlug: "free-org",
     });
 
-    expect(result.items.map((item) => item.title)).toEqual(["Public Item"]);
+    expect(result.items).toEqual([]);
     expect(result.hasMore).toBe(false);
+    expect(result.portalStatus).toBe("upgrade_required");
   });
 
   test("listPublic returns empty when portal is disabled", async () => {

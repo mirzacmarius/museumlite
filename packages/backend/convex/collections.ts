@@ -2618,6 +2618,7 @@ export const bulkExport = query({
 export const listPublic = query({
   args: {
     organizationSlug: v.string(),
+    portalSlug: v.optional(v.string()),
     search: v.optional(v.string()),
     objectType: v.optional(v.string()),
     culture: v.optional(v.string()),
@@ -2647,6 +2648,13 @@ export const listPublic = query({
     ),
     nextCursor: v.optional(v.string()),
     hasMore: v.boolean(),
+    portalStatus: v.union(
+      v.literal("ok"),
+      v.literal("org_not_found"),
+      v.literal("upgrade_required"),
+      v.literal("portal_disabled"),
+      v.literal("portal_slug_mismatch"),
+    ),
   }),
   handler: async (ctx, args) => {
     const organization = await ctx.db
@@ -2655,7 +2663,12 @@ export const listPublic = query({
       .unique();
 
     if (!organization) {
-      return { items: [], nextCursor: undefined, hasMore: false };
+      return {
+        items: [],
+        nextCursor: undefined,
+        hasMore: false,
+        portalStatus: "org_not_found",
+      };
     }
 
     const hasAccess = await hasFeatureAccess(
@@ -2663,8 +2676,35 @@ export const listPublic = query({
       organization._id,
       "public_portal",
     );
-    if (!hasAccess || !organization.settings?.portalSettings?.isEnabled) {
-      return { items: [], nextCursor: undefined, hasMore: false };
+    if (!hasAccess) {
+      return {
+        items: [],
+        nextCursor: undefined,
+        hasMore: false,
+        portalStatus: "upgrade_required",
+      };
+    }
+
+    if (!organization.settings?.portalSettings?.isEnabled) {
+      return {
+        items: [],
+        nextCursor: undefined,
+        hasMore: false,
+        portalStatus: "portal_disabled",
+      };
+    }
+
+    if (
+      args.portalSlug &&
+      organization.settings.portalSettings.portalSlug &&
+      args.portalSlug !== organization.settings.portalSettings.portalSlug
+    ) {
+      return {
+        items: [],
+        nextCursor: undefined,
+        hasMore: false,
+        portalStatus: "portal_slug_mismatch",
+      };
     }
 
     const pageSize = args.paginationOpts?.numItems ?? args.limit ?? 24;
@@ -2801,6 +2841,7 @@ export const listPublic = query({
       items,
       nextCursor: hasMore ? String(startIndex + pageSize) : undefined,
       hasMore,
+      portalStatus: "ok",
     };
   },
 });
