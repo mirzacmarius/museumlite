@@ -205,4 +205,68 @@ describe("collections publishing", () => {
     });
     expect(detailResult?.title).toBe("Loaned Public Item");
   });
+
+  test("public portal includes published library items", async () => {
+    const t = convexTest(schema, modules);
+
+    const { itemId } = await t.run(async (ctx) => {
+      const organizationId = await ctx.db.insert("organizations", {
+        name: "Library Org",
+        slug: "library-org",
+        type: "library",
+        subscriptionTier: "pro",
+        settings: {
+          enabledModules: ["library"],
+          portalSettings: { isEnabled: true, portalSlug: "catalog" },
+        },
+      });
+
+      const userId = await ctx.db.insert("users", { email: "u6@example.com" });
+
+      const itemId = await ctx.db.insert("libraryItems", {
+        organizationId,
+        itemType: "book",
+        title: "Published Library Item",
+        authors: ["Test Author"],
+        language: "en",
+        totalCopies: 1,
+        availableCopies: 1,
+        catalogStatus: "published",
+        isCirculating: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+
+      await ctx.db.insert("libraryItems", {
+        organizationId,
+        itemType: "book",
+        title: "Draft Library Item",
+        authors: ["Hidden Author"],
+        language: "en",
+        totalCopies: 1,
+        availableCopies: 1,
+        catalogStatus: "draft",
+        isCirculating: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+
+      return { itemId };
+    });
+
+    const listResult = await t.query(api.collections.listPublic, {
+      organizationSlug: "library-org",
+    });
+    expect(listResult.items.map((item) => item.title)).toEqual([
+      "Published Library Item",
+    ]);
+    expect(listResult.items[0]?.urlSlug).toBe(`library-${itemId}`);
+
+    const detailResult = await t.query(api.collections.getPublic, {
+      organizationSlug: "library-org",
+      accessionNumber: `library-${itemId}`,
+    });
+    expect(detailResult?.title).toBe("Published Library Item");
+    expect(detailResult?.creator).toBe("Test Author");
+  });
 });

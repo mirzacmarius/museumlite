@@ -222,6 +222,40 @@ async function getPublicCatalogCollections(
   return collectionsByStatus.flat();
 }
 
+function isLibraryCatalogPubliclyVisible(organization: Doc<"organizations">) {
+  return (
+    organization.type === "library" ||
+    organization.settings?.enabledModules?.includes("library") === true
+  );
+}
+
+async function getPublicLibraryCatalogItems(
+  ctx: QueryCtx,
+  organization: Doc<"organizations">,
+) {
+  if (!isLibraryCatalogPubliclyVisible(organization)) {
+    return [];
+  }
+
+  return await ctx.db
+    .query("libraryItems")
+    .withIndex("by_organization_and_status", (q) =>
+      q.eq("organizationId", organization._id).eq("catalogStatus", "published"),
+    )
+    .collect();
+}
+
+async function getLibraryCoverImageUrl(
+  ctx: QueryCtx,
+  item: Doc<"libraryItems">,
+) {
+  if (item.coverImageId) {
+    return (await ctx.storage.getUrl(item.coverImageId)) ?? item.coverImageUrl;
+  }
+
+  return item.coverImageUrl;
+}
+
 /**
  * Create new collection object
  */
@@ -2595,7 +2629,7 @@ export const listPublic = query({
   returns: v.object({
     items: v.array(
       v.object({
-        _id: v.id("collections"),
+        _id: v.string(),
         urlSlug: v.string(),
         accessionNumber: v.string(),
         title: v.string(),
@@ -2634,32 +2668,66 @@ export const listPublic = query({
     }
 
     const pageSize = args.paginationOpts?.numItems ?? args.limit ?? 24;
-    const allCollections = await getPublicCatalogCollections(
-      ctx,
-      organization._id,
-    );
+    const [allCollections, allLibraryItems] = await Promise.all([
+      getPublicCatalogCollections(ctx, organization._id),
+      getPublicLibraryCatalogItems(ctx, organization),
+    ]);
 
-    let filtered = allCollections;
+    const collectionEntries = allCollections.map((collection) => ({
+      source: "collection" as const,
+      item: collection,
+      searchableText: [
+        collection.title,
+        collection.creator,
+        collection.accessionNumber,
+      ],
+      objectType: collection.objectType,
+      culture: collection.culture,
+      period: collection.period,
+      isSearchable: collection.isSearchable,
+    }));
+
+    const libraryEntries = allLibraryItems.map((item) => ({
+      source: "library" as const,
+      item,
+      searchableText: [
+        item.title,
+        item.subtitle,
+        item.accessionNumber,
+        item.callNumber,
+        item.isbn,
+        item.isbn13,
+        ...item.authors,
+      ],
+      objectType: item.itemType,
+      culture: item.language,
+      period: item.publicationYear?.toString(),
+      isSearchable: true,
+    }));
+
+    let filtered = [...collectionEntries, ...libraryEntries];
 
     if (args.search) {
       const searchLower = args.search.toLowerCase();
       filtered = filtered.filter(
-        (c) =>
-          c.isSearchable !== false &&
-          (c.title.toLowerCase().includes(searchLower) ||
-            c.creator?.toLowerCase().includes(searchLower) ||
-            c.accessionNumber.toLowerCase().includes(searchLower)),
+        (entry) =>
+          entry.isSearchable !== false &&
+          entry.searchableText.some((value) =>
+            value?.toLowerCase().includes(searchLower),
+          ),
       );
     }
 
     if (args.objectType) {
-      filtered = filtered.filter((c) => c.objectType === args.objectType);
+      filtered = filtered.filter(
+        (entry) => entry.objectType === args.objectType,
+      );
     }
     if (args.culture) {
-      filtered = filtered.filter((c) => c.culture === args.culture);
+      filtered = filtered.filter((entry) => entry.culture === args.culture);
     }
     if (args.period) {
-      filtered = filtered.filter((c) => c.period === args.period);
+      filtered = filtered.filter((entry) => entry.period === args.period);
     }
 
     const cursor =
@@ -2669,7 +2737,35 @@ export const listPublic = query({
     const hasMore = startIndex + pageSize < filtered.length;
 
     const items = await Promise.all(
-      paged.map(async (c) => {
+      paged.map(async (entry) => {
+        if (entry.source === "library") {
+          const item = entry.item;
+          const primaryImageUrl = await getLibraryCoverImageUrl(ctx, item);
+          const accessionNumber =
+            item.accessionNumber ?? item.callNumber ?? item.isbn13 ?? item.isbn;
+
+          return {
+            _id: item._id,
+            urlSlug: `library-${item._id}`,
+            accessionNumber: accessionNumber ?? item._id,
+            title: item.subtitle
+              ? `${item.title}: ${item.subtitle}`
+              : item.title,
+            creator:
+              item.authors.length > 0 ? item.authors.join(", ") : undefined,
+            objectType: item.itemType,
+            culture: item.language,
+            period: item.publicationYear?.toString(),
+            dateCreated: item.publicationYear?.toString(),
+            materials: item.format,
+            dimensions: item.dimensions,
+            description: item.summary ?? item.description,
+            creditLine: item.publisher,
+            primaryImageUrl,
+          };
+        }
+
+        const c = entry.item;
         const primaryMedia = await ctx.db
           .query("mediaFiles")
           .withIndex("by_collection", (q) => q.eq("collectionId", c._id))
@@ -2716,7 +2812,7 @@ export const getPublic = query({
   },
   returns: v.union(
     v.object({
-      _id: v.id("collections"),
+      _id: v.string(),
       accessionNumber: v.string(),
       title: v.string(),
       alternativeTitle: v.optional(v.string()),
@@ -2746,7 +2842,7 @@ export const getPublic = query({
       ),
       images: v.array(
         v.object({
-          _id: v.id("mediaFiles"),
+          _id: v.string(),
           url: v.string(),
           isPrimary: v.boolean(),
           caption: v.optional(v.string()),
@@ -2795,8 +2891,69 @@ export const getPublic = query({
         .unique();
     }
 
+    if (!collection) {
+      const publicLibraryItems = await getPublicLibraryCatalogItems(
+        ctx,
+        organization,
+      );
+      const libraryItem = publicLibraryItems.find(
+        (item) =>
+          `library-${item._id}` === args.accessionNumber ||
+          item.accessionNumber === args.accessionNumber ||
+          item.callNumber === args.accessionNumber ||
+          item.isbn13 === args.accessionNumber ||
+          item.isbn === args.accessionNumber,
+      );
+
+      if (!libraryItem) {
+        return null;
+      }
+
+      const coverImageUrl = await getLibraryCoverImageUrl(ctx, libraryItem);
+      const accessionNumber =
+        libraryItem.accessionNumber ??
+        libraryItem.callNumber ??
+        libraryItem.isbn13 ??
+        libraryItem.isbn;
+
+      return {
+        _id: libraryItem._id,
+        accessionNumber: accessionNumber ?? libraryItem._id,
+        title: libraryItem.title,
+        alternativeTitle: libraryItem.subtitle,
+        creator:
+          libraryItem.authors.length > 0
+            ? libraryItem.authors.join(", ")
+            : undefined,
+        objectType: libraryItem.itemType,
+        objectName: libraryItem.format,
+        culture: libraryItem.language,
+        period: libraryItem.publicationYear?.toString(),
+        dateCreated: libraryItem.publicationYear?.toString(),
+        materials: libraryItem.publisher,
+        dimensions: libraryItem.dimensions,
+        description: libraryItem.summary ?? libraryItem.description,
+        creditLine: libraryItem.publisher,
+        tags: [
+          ...(libraryItem.categories ?? []),
+          ...(libraryItem.genres ?? []),
+          ...(libraryItem.subjects ?? []),
+        ],
+        images: coverImageUrl
+          ? [
+              {
+                _id: libraryItem._id,
+                url: coverImageUrl,
+                isPrimary: true,
+                caption: "Cover image",
+              },
+            ]
+          : [],
+        organizationName: organization.name,
+      };
+    }
+
     if (
-      !collection ||
       !collection.isPubliclyVisible ||
       !isPublicCatalogStatus(collection.status)
     ) {
@@ -2903,19 +3060,30 @@ export const getPublicFilters = query({
       return { objectTypes: [], cultures: [], periods: [] };
     }
 
-    const collections = await getPublicCatalogCollections(
-      ctx,
-      organization._id,
-    );
+    const [collections, libraryItems] = await Promise.all([
+      getPublicCatalogCollections(ctx, organization._id),
+      getPublicLibraryCatalogItems(ctx, organization),
+    ]);
 
     const objectTypes = [
-      ...new Set(collections.map((c) => c.objectType).filter(Boolean)),
+      ...new Set([
+        ...collections.map((c) => c.objectType).filter(Boolean),
+        ...libraryItems.map((item) => item.itemType),
+      ]),
     ] as string[];
     const cultures = [
-      ...new Set(collections.map((c) => c.culture).filter(Boolean)),
+      ...new Set([
+        ...collections.map((c) => c.culture).filter(Boolean),
+        ...libraryItems.map((item) => item.language),
+      ]),
     ] as string[];
     const periods = [
-      ...new Set(collections.map((c) => c.period).filter(Boolean)),
+      ...new Set([
+        ...collections.map((c) => c.period).filter(Boolean),
+        ...libraryItems
+          .map((item) => item.publicationYear?.toString())
+          .filter(Boolean),
+      ]),
     ] as string[];
 
     return {
