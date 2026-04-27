@@ -8,11 +8,11 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { CursorPagination } from "@v1/ui/cursor-pagination";
 import { EmptyState } from "@v1/ui/empty-state";
-import { Image as ImageIcon, Loader2, Plus, Search, Star, Upload } from "lucide-react";
+import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
+import { Image as ImageIcon, Loader2, Search, Star } from "lucide-react";
 import dynamic from "next/dynamic";
 import NextImage from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
 import { MediaAppliedFilters } from "./_components/media-applied-filters";
 
 function formatFileSize(bytes: number): string {
@@ -107,9 +107,8 @@ export function MediaPageClient({
   );
   const media = shouldUsePreloaded ? preloadedMediaResult : liveMediaResult;
 
-  const [selectedMediaId, setSelectedMediaId] = useState<Id<"mediaFiles"> | null>(
-    null,
-  );
+  const [selectedMediaId, setSelectedMediaId] =
+    useState<Id<"mediaFiles"> | null>(null);
 
   const tabs: Array<{ id: MediaFileType; label: string }> = [
     { id: "all", label: "All Assets" },
@@ -127,7 +126,7 @@ export function MediaPageClient({
           </h2>
           <div className="flex items-center gap-3">
             {stats && usage && (
-              <div className="mr-4 flex items-center gap-2 text-xs text-zinc-500">
+              <div className="flex items-center gap-2 text-xs text-zinc-500">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 <span>{formatFileSize(stats.totalSize)} Used</span>
                 <span className="text-zinc-700">/</span>
@@ -138,13 +137,6 @@ export function MediaPageClient({
                 )}
               </div>
             )}
-            <button
-              type="button"
-              className="flex items-center gap-2 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-500"
-            >
-              <Upload className="h-3.5 w-3.5" />
-              Upload Files
-            </button>
           </div>
         </div>
 
@@ -196,22 +188,13 @@ export function MediaPageClient({
           <EmptyState
             icon={ImageIcon}
             title={t("mediaPage.empty")}
-            description="Upload images, videos, and documents to your media library"
+            description="Media uploaded from object records will appear here."
             size="md"
           />
         )}
 
         {media && media.page.length > 0 && (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            <div className="group flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-zinc-800 transition-all hover:border-zinc-600 hover:bg-zinc-900/40">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-zinc-900 text-zinc-500 transition-all group-hover:scale-110 group-hover:border-indigo-500/30 group-hover:text-indigo-400">
-                <Plus className="h-5 w-5" />
-              </div>
-              <span className="text-xs font-medium text-zinc-500">
-                New Upload
-              </span>
-            </div>
-
             {media.page.map((item) => (
               <div
                 key={item._id}
@@ -226,7 +209,8 @@ export function MediaPageClient({
                 className="group relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 transition-all duration-300 hover:border-zinc-600 hover:shadow-xl"
               >
                 <div className="relative aspect-square overflow-hidden bg-zinc-950">
-                  {item.fileType === "image" && (item.thumbnailUrl || item.url) ? (
+                  {item.fileType === "image" &&
+                  (item.thumbnailUrl || item.url) ? (
                     <NextImage
                       src={item.thumbnailUrl ?? item.url ?? ""}
                       alt={item.fileName}

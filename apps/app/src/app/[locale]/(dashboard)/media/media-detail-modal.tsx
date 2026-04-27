@@ -11,24 +11,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
-import { Input } from "@v1/ui/input";
-import { Label } from "@v1/ui/label";
 import { ScrollArea } from "@v1/ui/scroll-area";
-import { Textarea } from "@v1/ui/textarea";
-import { useMutation, useQuery } from "convex/react";
-import {
-  Clock,
-  Download,
-  Edit,
-  File,
-  Loader2,
-  RotateCcw,
-  Star,
-} from "lucide-react";
-import Link from "next/link";
+import { useQuery } from "convex/react";
+import { Download, File, Loader2, Star } from "lucide-react";
 import NextImage from "next/image";
-import { useEffect, useState } from "react";
-import { MediaEditorDialog } from "@/components/media-editor-dialog";
+import Link from "next/link";
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -82,61 +69,9 @@ export function MediaDetailModal({
 }) {
   const t = useI18n();
   const locale = useCurrentLocale();
-  const [isEditing, setIsEditing] = useState(false);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [caption, setCaption] = useState("");
-  const [photographer, setPhotographer] = useState("");
-  const [copyright, setCopyright] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [revertVersionId, setRevertVersionId] =
-    useState<Id<"mediaVersions"> | null>(null);
 
   const item = useQuery(api.media.getWithMetadata, { mediaId });
   const versions = useQuery(api.mediaVersions.listVersions, { mediaId });
-
-  const updateMedia = useMutation(api.media.update);
-  const setPrimary = useMutation(api.media.setPrimary);
-  const deleteMedia = useMutation(api.media.deleteMedia);
-  const revertToVersion = useMutation(api.mediaVersions.revertToVersion);
-
-  useEffect(() => {
-    if (item) {
-      setCaption(item.caption || "");
-      setPhotographer(item.photographer || "");
-      setCopyright(item.copyright || "");
-    }
-  }, [item]);
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      await updateMedia({
-        mediaId,
-        caption: caption || undefined,
-        photographer: photographer || undefined,
-        copyright: copyright || undefined,
-      });
-      setIsEditing(false);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSetPrimary = async () => {
-    await setPrimary({ mediaId });
-  };
-
-  const handleDelete = async () => {
-    if (confirm(t("mediaPage.deleteConfirm"))) {
-      await deleteMedia({ mediaId });
-      onClose();
-    }
-  };
-
-  const handleRevert = async (versionId: Id<"mediaVersions">) => {
-    await revertToVersion({ versionId });
-    setRevertVersionId(null);
-  };
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -203,132 +138,34 @@ export function MediaDetailModal({
                 )}
               </div>
 
-              {isEditing ? (
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="caption" className="text-xs text-zinc-400">
+              <div className="space-y-2">
+                {item.caption && (
+                  <div>
+                    <p className="text-xs text-zinc-500">
                       {t("mediaPage.details.caption")}
-                    </Label>
-                    <Textarea
-                      id="caption"
-                      value={caption}
-                      onChange={(e) => setCaption(e.target.value)}
-                      rows={2}
-                      className="border-zinc-800 bg-zinc-950 text-sm text-zinc-200"
-                    />
+                    </p>
+                    <p className="text-sm text-zinc-300">{item.caption}</p>
                   </div>
-                  <div className="space-y-1">
-                    <Label
-                      htmlFor="photographer"
-                      className="text-xs text-zinc-400"
-                    >
+                )}
+                {item.photographer && (
+                  <div>
+                    <p className="text-xs text-zinc-500">
                       {t("mediaPage.details.photographer")}
-                    </Label>
-                    <Input
-                      id="photographer"
-                      value={photographer}
-                      onChange={(e) => setPhotographer(e.target.value)}
-                      className="border-zinc-800 bg-zinc-950 text-sm text-zinc-200"
-                    />
+                    </p>
+                    <p className="text-sm text-zinc-300">{item.photographer}</p>
                   </div>
-                  <div className="space-y-1">
-                    <Label
-                      htmlFor="copyright"
-                      className="text-xs text-zinc-400"
-                    >
+                )}
+                {item.copyright && (
+                  <div>
+                    <p className="text-xs text-zinc-500">
                       {t("mediaPage.details.copyright")}
-                    </Label>
-                    <Input
-                      id="copyright"
-                      value={copyright}
-                      onChange={(e) => setCopyright(e.target.value)}
-                      className="border-zinc-800 bg-zinc-950 text-sm text-zinc-200"
-                    />
+                    </p>
+                    <p className="text-sm text-zinc-300">{item.copyright}</p>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      className="bg-indigo-600 hover:bg-indigo-500"
-                    >
-                      {isSaving
-                        ? t("mediaPage.details.saving")
-                        : t("mediaPage.details.save")}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setIsEditing(false)}
-                      className="border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                    >
-                      {t("mediaPage.details.cancel")}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {item.caption && (
-                    <div>
-                      <p className="text-xs text-zinc-500">
-                        {t("mediaPage.details.caption")}
-                      </p>
-                      <p className="text-sm text-zinc-300">{item.caption}</p>
-                    </div>
-                  )}
-                  {item.photographer && (
-                    <div>
-                      <p className="text-xs text-zinc-500">
-                        {t("mediaPage.details.photographer")}
-                      </p>
-                      <p className="text-sm text-zinc-300">
-                        {item.photographer}
-                      </p>
-                    </div>
-                  )}
-                  {item.copyright && (
-                    <div>
-                      <p className="text-xs text-zinc-500">
-                        {t("mediaPage.details.copyright")}
-                      </p>
-                      <p className="text-sm text-zinc-300">{item.copyright}</p>
-                    </div>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
 
               <div className="flex flex-wrap gap-2 border-t border-zinc-800 pt-4">
-                {!isEditing && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setIsEditing(true)}
-                    className="border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                  >
-                    <Edit className="mr-1 h-3 w-3" />
-                    {t("mediaPage.details.editMetadata")}
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleSetPrimary}
-                  className="border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                >
-                  <Star className="mr-1 h-3 w-3" />
-                  {t("mediaPage.details.setPrimary")}
-                </Button>
-                {item.fileType === "image" && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setIsEditorOpen(true)}
-                    className="border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                  >
-                    <Clock className="mr-1 h-3 w-3" />
-                    Edit Image
-                  </Button>
-                )}
                 {item.url && (
                   <Button
                     size="sm"
@@ -342,14 +179,6 @@ export function MediaDetailModal({
                     </a>
                   </Button>
                 )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleDelete}
-                  className="border-red-900/50 text-red-400 hover:bg-red-950/30 hover:text-red-300"
-                >
-                  {t("mediaPage.details.delete")}
-                </Button>
               </div>
 
               <div className="space-y-2 border-t border-zinc-800 pt-4">
@@ -413,21 +242,6 @@ export function MediaDetailModal({
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center">
-                            {!isCurrentVersion && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                  setRevertVersionId(version._id)
-                                }
-                                className="border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                              >
-                                <RotateCcw className="mr-1 h-3 w-3" />
-                                Revert
-                              </Button>
-                            )}
-                          </div>
                         </div>
                       );
                     })}
@@ -438,48 +252,6 @@ export function MediaDetailModal({
           </div>
         )}
       </DialogContent>
-
-      <MediaEditorDialog
-        mediaId={mediaId}
-        isOpen={isEditorOpen}
-        onClose={() => setIsEditorOpen(false)}
-        onSaved={() => setIsEditorOpen(false)}
-      />
-
-      {revertVersionId && (
-        <Dialog open onOpenChange={() => setRevertVersionId(null)}>
-          <DialogContent className="max-w-md border-zinc-800 bg-zinc-900">
-            <DialogHeader>
-              <DialogTitle className="text-zinc-200">
-                Revert to Version?
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <p className="text-sm text-zinc-400">
-                Are you sure you want to revert to this version? This will make
-                the selected version the current version of this media file.
-              </p>
-              <div className="flex justify-end gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setRevertVersionId(null)}
-                  className="border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => handleRevert(revertVersionId)}
-                  className="bg-indigo-600 hover:bg-indigo-500"
-                >
-                  Revert
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
     </Dialog>
   );
 }
