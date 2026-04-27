@@ -193,6 +193,10 @@ function LocationLayout({
     selectedLocationId && shouldAutoDisplayDescendants
       ? getAutomaticDisplayUnitCounts(allLocations ?? [], selectedLocationId)
       : null;
+  const selectedLocationPath =
+    selectedLocationId && allLocations
+      ? buildLocationPath(allLocations, selectedLocationId)
+      : [];
 
   return (
     <div className="flex h-full min-h-0 w-full">
@@ -269,12 +273,27 @@ function LocationLayout({
         {selectedLocationId && selectedLocation && (
           <>
             <header className="-mx-6 sticky top-0 z-20 mb-8 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-muted-foreground">Locations</span>
-                <span className="text-muted-foreground/50">/</span>
-                <span className="font-medium text-foreground">
-                  {selectedLocation.name}
+              <div className="flex min-w-0 items-center gap-2 text-xs">
+                <span className="shrink-0 text-muted-foreground">
+                  Locations
                 </span>
+                {selectedLocationPath.map((pathLocation) => (
+                  <div
+                    key={pathLocation._id}
+                    className="flex min-w-0 items-center gap-2"
+                  >
+                    <span className="shrink-0 text-muted-foreground/50">/</span>
+                    <span
+                      className={
+                        pathLocation._id === selectedLocation._id
+                          ? "truncate font-medium text-foreground"
+                          : "truncate text-muted-foreground"
+                      }
+                    >
+                      {pathLocation.name}
+                    </span>
+                  </div>
+                ))}
               </div>
 
               <div className="flex items-center gap-3">
@@ -409,4 +428,33 @@ function LocationLayout({
       </div>
     </div>
   );
+}
+
+function buildLocationPath(
+  locations: Array<{
+    _id: Id<"locations">;
+    name: string;
+    parentLocationId?: Id<"locations">;
+  }>,
+  locationId: Id<"locations">,
+) {
+  const locationsById = new Map(
+    locations.map((location) => [location._id, location]),
+  );
+  const path: Array<{ _id: string; name: string }> = [];
+  const visitedLocationIds = new Set<Id<"locations">>();
+  let currentLocation = locationsById.get(locationId);
+
+  while (currentLocation && !visitedLocationIds.has(currentLocation._id)) {
+    path.unshift({
+      _id: currentLocation._id,
+      name: currentLocation.name,
+    });
+    visitedLocationIds.add(currentLocation._id);
+    currentLocation = currentLocation.parentLocationId
+      ? locationsById.get(currentLocation.parentLocationId)
+      : undefined;
+  }
+
+  return path;
 }

@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  ChevronRight,
-  Droplets,
-  Image as ImageIcon,
-  Thermometer,
-} from "lucide-react";
+import { Droplets, Image as ImageIcon, Thermometer } from "lucide-react";
 
 interface LocationHeaderProps {
   location: {
@@ -73,34 +68,9 @@ export function LocationHeader({
 
   const statusBadge = getStatusBadge();
 
-  const getBreadcrumbCategory = () => {
-    const type = location.type.toLowerCase();
-    if (
-      type.includes("gallery") ||
-      type.includes("exhibition") ||
-      type.includes("wing") ||
-      type.includes("hall")
-    ) {
-      return "Exhibition Spaces";
-    }
-    if (
-      type.includes("storage") ||
-      type.includes("vault") ||
-      type.includes("archive")
-    ) {
-      return "Secure Storage";
-    }
-    return "Locations";
-  };
-
   return (
     <div className="mb-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
       <div className="min-w-0">
-        <div className="mb-1 flex items-center gap-2 text-xs text-zinc-500">
-          <span>Locations</span>
-          <ChevronRight className="h-3 w-3" />
-          <span>{getBreadcrumbCategory()}</span>
-        </div>
         <h2 className="flex items-center gap-3 text-2xl font-bold tracking-tight text-zinc-100">
           <span>{location.name}</span>
           <span
