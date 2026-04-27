@@ -40,7 +40,7 @@ const FEATURE_REQUIREMENTS: Record<FeatureId, SubscriptionTier> = {
   exhibitions: "pro",
   conservation: "pro",
   reporting: "pro",
-  public_portal: "pro",
+  public_portal: "free",
   installations: "pro",
   compliance: "enterprise",
 };
