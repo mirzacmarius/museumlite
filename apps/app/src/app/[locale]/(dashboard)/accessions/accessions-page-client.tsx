@@ -135,11 +135,11 @@ export function AccessionsPageClient({
           </PermissionGate>
           <PermissionGate permission="collections.create">
             <Link
-              href="/accessions/new"
+              href="/objects/new"
               className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)] transition-colors hover:bg-primary/90"
             >
               <Plus className="h-3.5 w-3.5" />
-              {t("newAccession")}
+              {t("addObject")}
             </Link>
           </PermissionGate>
           <PermissionGate permission="collections.delete">

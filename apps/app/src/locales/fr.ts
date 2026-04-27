@@ -3523,6 +3523,7 @@ export default {
     description:
       "Gérer les éléments entrants et le flux de travail d'approbation",
     newAccession: "Nouvelle Acquisition",
+    addObject: "Ajouter un Objet",
     searchPlaceholder: "Rechercher des acquisitions...",
     importCSV: "Importer CSV",
     backToAccessions: "Retour aux Acquisitions",

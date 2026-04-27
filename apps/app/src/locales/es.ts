@@ -3507,6 +3507,7 @@ export default {
     description:
       "Gestionar elementos entrantes y flujo de trabajo de aprobación",
     newAccession: "Nueva Adquisición",
+    addObject: "Agregar Objeto",
     searchPlaceholder: "Buscar adquisiciones...",
     importCSV: "Importar CSV",
     backToAccessions: "Volver a Adquisiciones",

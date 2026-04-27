@@ -3604,6 +3604,7 @@ export default {
     title: "Accessions",
     description: "Manage incoming items and approval workflow",
     newAccession: "New Accession",
+    addObject: "Add Object",
     searchPlaceholder: "Search accessions...",
     importCSV: "Import CSV",
     backToAccessions: "Back to Accessions",

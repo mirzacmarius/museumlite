@@ -241,13 +241,6 @@ export default function DashboardPage() {
       icon: Warehouse,
     },
     {
-      href: "/accessions/new",
-      title: "New Accession",
-      description: "Start a new accession workflow.",
-      label: "Workflow",
-      icon: FileClock,
-    },
-    {
       href: "/analytics",
       title: "Analytics",
       description: "Open detailed reports and trends.",
