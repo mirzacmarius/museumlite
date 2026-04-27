@@ -499,6 +499,7 @@ export default function CollectionEditPage() {
   const hasMediaChanges =
     isMediaBaselineReady &&
     currentMediaSignature !== initialMediaSignatureRef.current;
+  const canUpdateObject = isFormDirty || hasMediaChanges;
 
   useEffect(() => {
     if (!collection) {
@@ -928,12 +929,16 @@ export default function CollectionEditPage() {
   const handleSubmit = useCallback(
     async (event: React.FormEvent) => {
       event.preventDefault();
-      const didSave = await saveRecord();
-      if (didSave) {
+      if (!isFormDirty && hasMediaChanges) {
+        router.push(`/objects/${collectionId}`);
+        return;
+      }
+
+      if (await saveRecord()) {
         router.push(`/objects/${collectionId}`);
       }
     },
-    [collectionId, router, saveRecord],
+    [collectionId, hasMediaChanges, isFormDirty, router, saveRecord],
   );
 
   const handleNavigate = useCallback(
@@ -1058,7 +1063,7 @@ export default function CollectionEditPage() {
             type="submit"
             size="sm"
             form="object-edit-form"
-            disabled={isSubmitting || !isFormDirty}
+            disabled={isSubmitting || !canUpdateObject}
           >
             <Save className="mr-2 h-4 w-4" />
             {isSubmitting ? common("updating") : t("form.actions.updateObject")}
@@ -2383,7 +2388,7 @@ export default function CollectionEditPage() {
             <Button
               type="submit"
               form="object-edit-form"
-              disabled={isSubmitting || !isFormDirty}
+              disabled={isSubmitting || !canUpdateObject}
             >
               <Save className="mr-2 h-4 w-4" />
               {isSubmitting
