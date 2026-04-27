@@ -330,6 +330,8 @@ function LocationLayout({
             <LocationHeader
               location={selectedLocation}
               environmentalData={environmentalData ?? null}
+              totalObjects={occupancy?.objectCount ?? 0}
+              capacity={occupancy?.capacity ?? 0}
             />
 
             {!isStorageView && (
@@ -396,9 +398,6 @@ function LocationLayout({
                   type: loc.type,
                   isActive: loc.isActive,
                 }))}
-                totalObjects={occupancy?.objectCount ?? 0}
-                capacity={occupancy?.capacity ?? 0}
-                lastAuditDate={undefined}
                 objects={
                   objectsAtLocation?.map((object) => ({
                     _id: object._id,

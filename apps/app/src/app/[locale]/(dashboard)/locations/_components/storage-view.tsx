@@ -11,9 +11,6 @@ interface StorageUnit {
 
 interface StorageViewProps {
   units: StorageUnit[];
-  totalObjects: number;
-  capacity: number;
-  lastAuditDate?: Date;
   objects: Array<{
     _id: string;
     currentLocationId: string;
@@ -27,14 +24,9 @@ interface StorageViewProps {
 
 export function StorageView({
   units,
-  totalObjects,
-  capacity,
-  lastAuditDate,
   objects,
   includesDescendants = false,
 }: StorageViewProps) {
-  const occupancyPercent =
-    capacity > 0 ? Math.round((totalObjects / capacity) * 100) : 0;
   const unitObjects = new Map(
     units.map((unit) => [
       unit._id,
@@ -44,47 +36,6 @@ export function StorageView({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="p-4 bg-zinc-900/30 border border-zinc-800 rounded-lg">
-          <div className="text-[10px] text-zinc-500 uppercase font-bold mb-1">
-            Capacity
-          </div>
-          <div className="text-xl font-semibold text-zinc-200">
-            {occupancyPercent}% Full
-          </div>
-          <div className="w-full bg-zinc-900 h-1.5 rounded-full mt-2 overflow-hidden">
-            <div
-              className="bg-indigo-500 h-full"
-              style={{ width: `${Math.min(occupancyPercent, 100)}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="p-4 bg-zinc-900/30 border border-zinc-800 rounded-lg">
-          <div className="text-[10px] text-zinc-500 uppercase font-bold mb-1">
-            Total Items
-          </div>
-          <div className="text-xl font-semibold text-zinc-200">
-            {totalObjects.toLocaleString()} Objects
-          </div>
-        </div>
-
-        <div className="p-4 bg-zinc-900/30 border border-zinc-800 rounded-lg">
-          <div className="text-[10px] text-zinc-500 uppercase font-bold mb-1">
-            Last Audit
-          </div>
-          <div className="text-xl font-semibold text-zinc-200">
-            {lastAuditDate
-              ? new Intl.DateTimeFormat("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                }).format(lastAuditDate)
-              : "Never"}
-          </div>
-        </div>
-      </div>
-
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/20 p-4">
         <div className="mb-4 flex items-center justify-between gap-4">
           <div>

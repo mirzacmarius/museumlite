@@ -144,7 +144,7 @@ export function GalleryView({
       ) : null}
 
       {hasWalls || hasCabinets ? (
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-8 2xl:grid-cols-2">
           {hasWalls ? (
             <div>
               <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-300">

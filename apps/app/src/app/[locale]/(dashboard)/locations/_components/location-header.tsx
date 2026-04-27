@@ -19,11 +19,17 @@ interface LocationHeaderProps {
     humidity?: number;
     recordedAt: number;
   } | null;
+  totalObjects: number;
+  capacity: number;
+  lastAuditDate?: Date;
 }
 
 export function LocationHeader({
   location,
   environmentalData,
+  totalObjects,
+  capacity,
+  lastAuditDate,
 }: LocationHeaderProps) {
   const storedTemperature =
     typeof location.customFields?.temperature === "number"
@@ -36,6 +42,8 @@ export function LocationHeader({
   const displayTemperature =
     environmentalData?.temperature ?? storedTemperature;
   const displayHumidity = environmentalData?.humidity ?? storedHumidity;
+  const occupancyPercent =
+    capacity > 0 ? Math.round((totalObjects / capacity) * 100) : 0;
 
   const getStatusBadge = () => {
     if (!location.isActive) {
@@ -69,37 +77,19 @@ export function LocationHeader({
   const statusBadge = getStatusBadge();
 
   return (
-    <div className="mb-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
-      <div className="min-w-0">
-        <h2 className="flex items-center gap-3 text-2xl font-bold tracking-tight text-zinc-100">
-          <span>{location.name}</span>
-          <span
-            className={`rounded-full border px-2 py-0.5 text-xs font-normal ${statusBadge.className}`}
-          >
-            {statusBadge.text}
-          </span>
-        </h2>
-        <div className="mt-2 text-sm text-zinc-400">
-          <span className="text-zinc-500">Location ID</span>
-          <span className="mx-2 text-zinc-700">•</span>
-          <span className="font-medium text-zinc-200">
-            {location.locationCode}
-          </span>
-        </div>
-      </div>
-
-      <div className="relative overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-900/70 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
+    <div className="mb-8 grid gap-6 xl:grid-cols-[176px_minmax(0,1fr)] xl:items-start">
+      <div className="relative order-2 aspect-square w-44 max-w-full overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-900/70 shadow-[0_24px_80px_rgba(0,0,0,0.35)] xl:order-1">
         {location.imageUrl ? (
           <>
             <img
               src={location.imageUrl}
               alt={location.name}
-              className="h-52 w-full object-cover"
+              className="h-full w-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-black/20" />
           </>
         ) : (
-          <div className="flex h-52 w-full items-center justify-center bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.28),_transparent_35%),linear-gradient(135deg,rgba(24,24,27,0.98),rgba(10,10,10,1))]">
+          <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.28),_transparent_35%),linear-gradient(135deg,rgba(24,24,27,0.98),rgba(10,10,10,1))]">
             <div className="flex flex-col items-center gap-3 text-zinc-500">
               <div className="rounded-full border border-zinc-700 bg-zinc-900/80 p-3">
                 <ImageIcon className="h-6 w-6" />
@@ -126,6 +116,65 @@ export function LocationHeader({
                 ? `${displayHumidity.toFixed(0)}%`
                 : "N/A"}
             </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="order-1 min-w-0 xl:order-2">
+        <h2 className="flex flex-wrap items-center gap-3 text-2xl font-bold tracking-tight text-zinc-100">
+          <span>{location.name}</span>
+          <span
+            className={`rounded-full border px-2 py-0.5 text-xs font-normal ${statusBadge.className}`}
+          >
+            {statusBadge.text}
+          </span>
+        </h2>
+        <div className="mt-2 text-sm text-zinc-400">
+          <span className="text-zinc-500">Location ID</span>
+          <span className="mx-2 text-zinc-700">•</span>
+          <span className="font-medium text-zinc-200">
+            {location.locationCode}
+          </span>
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
+            <div className="mb-1 text-[10px] font-bold uppercase text-zinc-500">
+              Capacity
+            </div>
+            <div className="text-xl font-semibold text-zinc-200">
+              {occupancyPercent}% Full
+            </div>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-900">
+              <div
+                className="h-full bg-indigo-500"
+                style={{ width: `${Math.min(occupancyPercent, 100)}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
+            <div className="mb-1 text-[10px] font-bold uppercase text-zinc-500">
+              Total Items
+            </div>
+            <div className="text-xl font-semibold text-zinc-200">
+              {totalObjects.toLocaleString()} Objects
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
+            <div className="mb-1 text-[10px] font-bold uppercase text-zinc-500">
+              Last Audit
+            </div>
+            <div className="text-xl font-semibold text-zinc-200">
+              {lastAuditDate
+                ? new Intl.DateTimeFormat("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  }).format(lastAuditDate)
+                : "Never"}
+            </div>
           </div>
         </div>
       </div>
