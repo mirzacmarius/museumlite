@@ -534,7 +534,10 @@ export function ObjectRequestFormPage({
 
       const remaining = prev.filter((item) => item.id !== fileId);
       if (remaining.length > 0 && !remaining.some((item) => item.isPrimary)) {
-        remaining[0] = { ...remaining[0], isPrimary: true };
+        const first = remaining[0];
+        if (first) {
+          return [{ ...first, isPrimary: true }, ...remaining.slice(1)];
+        }
       }
 
       return remaining;

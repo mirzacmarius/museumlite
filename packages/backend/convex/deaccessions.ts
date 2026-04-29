@@ -426,11 +426,12 @@ export const list = query({
 
     let allResults: Doc<"deaccessions">[];
 
-    if (args.status) {
+    const status = args.status;
+    if (status) {
       allResults = await ctx.db
         .query("deaccessions")
         .withIndex("by_organization_and_status", (q) =>
-          q.eq("organizationId", args.organizationId).eq("status", args.status),
+          q.eq("organizationId", args.organizationId).eq("status", status),
         )
         .collect();
     } else {

@@ -3009,7 +3009,7 @@ export const listPublic = query({
         items: [],
         nextCursor: undefined,
         hasMore: false,
-        portalStatus: "org_not_found",
+        portalStatus: "org_not_found" as const,
       };
     }
 
@@ -3023,7 +3023,7 @@ export const listPublic = query({
         items: [],
         nextCursor: undefined,
         hasMore: false,
-        portalStatus: "upgrade_required",
+        portalStatus: "upgrade_required" as const,
       };
     }
 
@@ -3032,7 +3032,7 @@ export const listPublic = query({
         items: [],
         nextCursor: undefined,
         hasMore: false,
-        portalStatus: "portal_disabled",
+        portalStatus: "portal_disabled" as const,
       };
     }
 
@@ -3045,7 +3045,7 @@ export const listPublic = query({
         items: [],
         nextCursor: undefined,
         hasMore: false,
-        portalStatus: "portal_slug_mismatch",
+        portalStatus: "portal_slug_mismatch" as const,
       };
     }
 
@@ -3183,7 +3183,7 @@ export const listPublic = query({
       items,
       nextCursor: hasMore ? String(startIndex + pageSize) : undefined,
       hasMore,
-      portalStatus: "ok",
+      portalStatus: "ok" as const,
     };
   },
 });

@@ -526,10 +526,7 @@ export function ObjectDetailClient({
               </div>
 
               {activeTab === "general" && (
-                <GeneralTab
-                  collection={collection}
-                  locationPath={locationPath ?? undefined}
-                />
+                <GeneralTab collection={collection} />
               )}
               {activeTab === "physical" && (
                 <PhysicalTab collection={collection} />

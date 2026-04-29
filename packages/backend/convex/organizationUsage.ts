@@ -107,7 +107,7 @@ export const recomputeOrganizationUsageCounter = internalMutation({
 export const recomputeAllOrganizationUsageCounters = internalAction({
   args: {},
   returns: v.number(),
-  handler: async (ctx) => {
+  handler: async (ctx): Promise<number> => {
     const organizations = await ctx.runQuery(
       internal.organizationUsage.listOrganizationIdsForUsageRebuild,
       {},

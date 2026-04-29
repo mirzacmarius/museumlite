@@ -333,7 +333,6 @@ function getMediaSignature(media: MediaItem[]) {
 function getStatusBadgeClass(status: CollectionDoc["status"]) {
   switch (status) {
     case "active":
-    case "verified":
       return "bg-emerald-500/10 text-emerald-400";
     case "loaned":
       return "bg-blue-500/10 text-blue-400";

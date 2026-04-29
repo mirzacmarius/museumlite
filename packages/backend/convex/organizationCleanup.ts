@@ -1,5 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { ConvexError, v } from "convex/values";
+import { ConvexError, type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id, TableNames } from "./_generated/dataModel";
 import {
@@ -51,6 +51,9 @@ const purgeOrganizationResultValidator = v.object({
   storageFiles: v.number(),
   storageBytes: v.number(),
 });
+
+type OrganizationFootprint = Infer<typeof organizationFootprintValidator>;
+type PurgeOrganizationResult = Infer<typeof purgeOrganizationResultValidator>;
 
 const organizationScopedTables = [
   "organizationUsageCounters",
@@ -287,7 +290,7 @@ async function collectOrganizationScopedDocs<
 async function buildOrganizationFootprint(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
-) {
+): Promise<OrganizationFootprint | null> {
   const organization = await ctx.db.get(organizationId);
   if (!organization) {
     return null;
@@ -465,7 +468,7 @@ async function collectPurgeSnapshot(
       .then((docs) =>
         docs.filter(
           (doc) =>
-            collectionGroupIds.includes(doc.groupId) ||
+            collectionGroupIds.includes(doc.collectionGroupId) ||
             collectionIds.includes(doc.collectionId),
         ),
       ),
@@ -624,7 +627,7 @@ export const getOrganizationFootprints = query({
     organizationIds: v.optional(v.array(v.id("organizations"))),
   },
   returns: v.array(organizationFootprintValidator),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<Array<OrganizationFootprint>> => {
     const organizationIds = await resolveRequestedOrganizationIds(
       ctx,
       args.organizationIds,
@@ -646,7 +649,7 @@ export const getOrganizationFootprintsInternal = internalQuery({
     organizationIds: v.array(v.id("organizations")),
   },
   returns: v.array(organizationFootprintValidator),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<Array<OrganizationFootprint>> => {
     const footprints = await Promise.all(
       args.organizationIds.map((organizationId) =>
         buildOrganizationFootprint(ctx, organizationId),
@@ -665,7 +668,7 @@ export const purgeOrganizations = mutation({
     dryRun: v.boolean(),
   },
   returns: v.array(purgeOrganizationResultValidator),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<Array<PurgeOrganizationResult>> => {
     const organizationIds = await resolveRequestedOrganizationIds(
       ctx,
       args.organizationIds,
@@ -687,16 +690,8 @@ export const purgeOrganizationsInternal = internalMutation({
     dryRun: v.boolean(),
   },
   returns: v.array(purgeOrganizationResultValidator),
-  handler: async (ctx, args) => {
-    const results: Array<{
-      organizationId: Id<"organizations">;
-      organizationName: string;
-      dryRun: boolean;
-      tableCounts: Array<{ count: number; table: string }>;
-      totalDocuments: number;
-      storageFiles: number;
-      storageBytes: number;
-    }> = [];
+  handler: async (ctx, args): Promise<Array<PurgeOrganizationResult>> => {
+    const results: Array<PurgeOrganizationResult> = [];
 
     for (const organizationId of args.organizationIds) {
       const snapshot = await collectPurgeSnapshot(ctx, organizationId);

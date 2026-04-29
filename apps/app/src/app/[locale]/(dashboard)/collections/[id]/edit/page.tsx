@@ -140,6 +140,7 @@ export default function EditCollectionPage() {
     }
     setShowUnsavedDialog(false);
     setPendingNavigation(null);
+    return true;
   }, [pendingNavigation, router, save]);
 
   if (!currentOrganizationId) {

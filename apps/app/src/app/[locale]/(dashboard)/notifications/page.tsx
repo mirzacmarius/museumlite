@@ -294,7 +294,7 @@ export default function NotificationsPage() {
       </div>
 
       <div className="flex-1">
-        {notificationsData === undefined ? (
+        {notificationCenter === undefined ? (
           <div className="flex h-64 items-center justify-center">
             <p className="text-muted-foreground">
               {t("notificationsPage.loadingNotifications")}
