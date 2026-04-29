@@ -77,7 +77,7 @@ export function PortalSettingsSidebar() {
 
   if (portalSettings === undefined) {
     return (
-      <div className="w-80 flex-shrink-0">
+      <div className="w-0 flex-shrink-0">
         <div className="rounded-lg border border-border bg-card p-6">
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

@@ -916,7 +916,7 @@ function CollectionTableRow({
             href={`/objects/${item._id}`}
             className="flex flex-col group-hover:cursor-pointer"
           >
-            <span className="max-w-[200px] truncate font-medium text-foreground transition-colors group-hover:text-primary">
+            <span className="max-w-[200px] truncate font-medium text-foreground transition-colors">
               {item.title}
             </span>
             <span className="mt-0.5 font-mono text-[10px] text-muted-foreground">
