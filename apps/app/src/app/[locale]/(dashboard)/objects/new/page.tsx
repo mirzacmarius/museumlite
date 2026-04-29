@@ -73,6 +73,7 @@ interface CollectionFormData {
   dimensionWeight?: string | number;
   description?: string;
   condition?: string;
+  inscriptions?: string;
   provenance?: string;
   exhibitionHistory?: string;
   donated_by?: string[];
@@ -137,6 +138,7 @@ function createEmptyFormData(
     dimensionWeight: "",
     description: "",
     condition: "",
+    inscriptions: "",
     provenance: "",
     exhibitionHistory: "",
     donated_by: [],
@@ -256,6 +258,7 @@ function buildObjectDraftPayload(formData: CollectionFormData) {
     dimensionWeight: parsedDimensionWeight.value,
     description: formData.description?.trim() || undefined,
     condition: formData.condition?.trim() || undefined,
+    inscriptions: formData.inscriptions?.trim() || undefined,
     provenance: formData.provenance?.trim() || undefined,
     exhibitionHistory: formData.exhibitionHistory?.trim() || undefined,
     donated_by: formData.donated_by?.filter(Boolean) || [],
@@ -1734,6 +1737,22 @@ export function ObjectRequestFormPage({
                             />
                           </div>
                         </div>
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2 xl:col-span-3">
+                        <Label htmlFor="inscriptions">
+                          Inscriptions & Marks
+                        </Label>
+                        <Textarea
+                          autoResize
+                          id="inscriptions"
+                          value={formData.inscriptions || ""}
+                          onChange={(event) =>
+                            updateField("inscriptions", event.target.value)
+                          }
+                          rows={4}
+                          placeholder="Document signatures, stamps, labels, engravings, or collector marks"
+                        />
                       </div>
                     </div>
                   </EditSection>

@@ -1739,6 +1739,7 @@ export const createCollectionFromAccession = internalMutation({
       weightUnit: draftObjectData?.weightUnit,
       description: draftObjectData?.description,
       condition: draftObjectData?.condition,
+      inscriptions: draftObjectData?.inscriptions,
       provenance: draftObjectData?.provenance,
       exhibitionHistory: draftObjectData?.exhibitionHistory,
       ownershipHistory: draftObjectData?.ownershipHistory,

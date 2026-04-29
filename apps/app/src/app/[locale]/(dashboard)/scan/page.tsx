@@ -32,6 +32,28 @@ interface ScanHistoryItem {
   objectTitle?: string;
 }
 
+function getObjectPathFromScan(decodedText: string) {
+  const trimmedText = decodedText.trim();
+  const baseUrl =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : "https://app.museumlite.com";
+
+  try {
+    const url = new URL(trimmedText, baseUrl);
+    const segments = url.pathname.split("/").filter(Boolean);
+    const objectsSegmentIndex = segments.indexOf("objects");
+    const objectId =
+      objectsSegmentIndex === -1
+        ? undefined
+        : segments[objectsSegmentIndex + 1];
+
+    return objectId ? `/objects/${encodeURIComponent(objectId)}` : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function ScanPage() {
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
@@ -60,7 +82,7 @@ export default function ScanPage() {
         return;
       }
 
-      setCurrentScan(decodedText);
+      const objectPath = getObjectPathFromScan(decodedText);
       toast.success(`Scanned: ${decodedText}`);
 
       // Add to history
@@ -69,12 +91,19 @@ export default function ScanPage() {
         accessionNumber: decodedText,
         format,
         timestamp: new Date(),
-        found: false,
+        found: objectPath !== null,
       };
 
       setScanHistory((prev) => [historyItem, ...prev.slice(0, 9)]);
+
+      if (objectPath) {
+        router.push(objectPath);
+        return;
+      }
+
+      setCurrentScan(decodedText);
     },
-    [currentOrganizationId],
+    [currentOrganizationId, router],
   );
 
   const handleScanError = useCallback((error: string) => {

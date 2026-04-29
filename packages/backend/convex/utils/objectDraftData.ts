@@ -30,6 +30,7 @@ export const objectDraftDataValidator = v.object({
   weightUnit: v.optional(v.string()),
   description: v.optional(v.string()),
   condition: v.optional(v.string()),
+  inscriptions: v.optional(v.string()),
   provenance: v.optional(v.string()),
   exhibitionHistory: v.optional(v.string()),
   donated_by: v.optional(v.array(v.string())),

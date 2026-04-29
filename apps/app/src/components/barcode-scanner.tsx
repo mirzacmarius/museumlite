@@ -2,6 +2,7 @@
 
 import { Button } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
+import type { Html5Qrcode } from "html5-qrcode";
 import {
   AlertCircle,
   Camera,
@@ -12,7 +13,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Html5Qrcode } from "html5-qrcode";
 
 interface BarcodeScannerProps {
   onScanSuccess: (decodedText: string, format: string) => void;
@@ -44,10 +44,10 @@ export function BarcodeScanner({
   const [status, setStatus] = useState<ScannerStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [flashEnabled, setFlashEnabled] = useState(false);
-  const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
   const scannerRef = useRef<HTMLDivElement>(null);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const isCleaningUpRef = useRef(false);
+  const lastScannedCodeRef = useRef<string | null>(null);
 
   const stopScanner = useCallback(async () => {
     if (html5QrCodeRef.current && !isCleaningUpRef.current) {
@@ -109,15 +109,15 @@ export function BarcodeScanner({
         { facingMode: "environment" },
         config,
         (decodedText, decodedResult) => {
-          if (decodedText && decodedText !== lastScannedCode) {
-            setLastScannedCode(decodedText);
+          if (decodedText && decodedText !== lastScannedCodeRef.current) {
+            lastScannedCodeRef.current = decodedText;
             setStatus("success");
             const format = decodedResult.result.format?.formatName || "UNKNOWN";
             onScanSuccess(decodedText, format);
 
             setTimeout(() => {
               setStatus("scanning");
-              setLastScannedCode(null);
+              lastScannedCodeRef.current = null;
             }, 2000);
           }
         },
@@ -145,16 +145,7 @@ export function BarcodeScanner({
         onScanError(errorMsg);
       }
     }
-  }, [
-    disabled,
-    status,
-    fps,
-    qrbox,
-    aspectRatio,
-    onScanSuccess,
-    onScanError,
-    lastScannedCode,
-  ]);
+  }, [disabled, status, fps, qrbox, aspectRatio, onScanSuccess, onScanError]);
 
   useEffect(() => {
     return () => {
