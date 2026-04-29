@@ -1,4 +1,4 @@
-import "@v1/ui/globals.css";
+import "../globals.css";
 import { I18nProviderClient } from "@/locales/client";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { Toaster } from "@v1/ui/sonner";
