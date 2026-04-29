@@ -52,7 +52,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@sentry/nextjs": "^8",
+    "@sentry/nextjs": "^10.50.0",
     "@tailwindcss/postcss": "^4.2.4",
     "@types/node": "^22",
     "@types/qrcode": "^1.5.6",
