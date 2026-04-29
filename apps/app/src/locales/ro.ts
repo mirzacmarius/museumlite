@@ -708,6 +708,16 @@ export default {
       notFound: "Obiectul nu a fost găsit",
       confirmDelete: "Ești sigur că vrei să ștergi acest obiect?",
     },
+    actions: {
+      emptyTrash: "Golește coșul",
+      emptyingTrash: "Se golește...",
+      emptyTrashConfirm:
+        "Șterge toate cele {count} obiecte șterse? Această acțiune nu poate fi anulată.",
+      emptyTrashSuccess: "{deletedCount} obiect(e) șters(e)",
+    },
+    error: {
+      failedToEmptyTrash: "Golirea obiectelor șterse a eșuat",
+    },
     print: {
       title: "Printează Etichete",
       preview: "Previzualizare Etichetă",

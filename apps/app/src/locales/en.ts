@@ -1749,6 +1749,16 @@ export default {
       deaccession: "Deaccession",
       clearSelection: "Clear selection",
     },
+    actions: {
+      emptyTrash: "Empty Trash",
+      emptyingTrash: "Emptying...",
+      emptyTrashConfirm:
+        "Delete all {count} deleted objects? This action cannot be undone.",
+      emptyTrashSuccess: "Deleted {deletedCount} object(s)",
+    },
+    error: {
+      failedToEmptyTrash: "Failed to empty deleted objects",
+    },
     bulkDialogs: {
       addToGroup: {
         title: "Add to Collection Group",

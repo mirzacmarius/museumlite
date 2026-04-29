@@ -175,6 +175,286 @@ async function buildConditionHistoryEntry(
   };
 }
 
+async function deleteStorageIds(
+  ctx: MutationCtx,
+  storageIds: Iterable<Id<"_storage"> | undefined>,
+) {
+  for (const storageId of storageIds) {
+    if (storageId) {
+      await ctx.storage.delete(storageId);
+    }
+  }
+}
+
+async function deleteCollectionMedia(
+  ctx: MutationCtx,
+  collectionId: Id<"collections">,
+) {
+  const mediaFiles = await ctx.db
+    .query("mediaFiles")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+
+  for (const media of mediaFiles) {
+    const mediaVersions = await ctx.db
+      .query("mediaVersions")
+      .withIndex("by_original_media", (q) => q.eq("originalMediaId", media._id))
+      .collect();
+
+    await deleteStorageIds(
+      ctx,
+      mediaVersions.map((version) => version.storageId),
+    );
+
+    for (const version of mediaVersions) {
+      await ctx.db.delete(version._id);
+    }
+
+    const editHistory = await ctx.db
+      .query("mediaEditHistory")
+      .withIndex("by_media", (q) => q.eq("mediaId", media._id))
+      .collect();
+    for (const entry of editHistory) {
+      await ctx.db.delete(entry._id);
+    }
+
+    const downloads = await ctx.db
+      .query("mediaDownloads")
+      .withIndex("by_media", (q) => q.eq("mediaId", media._id))
+      .collect();
+    for (const download of downloads) {
+      await ctx.db.delete(download._id);
+    }
+
+    await deleteStorageIds(ctx, [media.storageId, media.thumbnailStorageId]);
+    await ctx.db.delete(media._id);
+  }
+}
+
+async function deleteCollectionDependents(
+  ctx: MutationCtx,
+  collectionId: Id<"collections">,
+) {
+  await deleteCollectionMedia(ctx, collectionId);
+
+  const collectionGroupItems = await ctx.db
+    .query("collectionGroupItems")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const item of collectionGroupItems) {
+    await ctx.db.delete(item._id);
+  }
+
+  const objectComments = await ctx.db
+    .query("objectComments")
+    .withIndex("by_object", (q) => q.eq("objectId", collectionId))
+    .collect();
+  for (const comment of objectComments) {
+    await ctx.db.delete(comment._id);
+  }
+
+  const fineArtDetails = await ctx.db
+    .query("fineArtDetails")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const detail of fineArtDetails) {
+    const provenanceDocumentIds =
+      detail.provenanceChain?.flatMap((entry) => entry.documentIds ?? []) ?? [];
+    await deleteStorageIds(ctx, provenanceDocumentIds);
+    await ctx.db.delete(detail._id);
+  }
+
+  const wineDetails = await ctx.db
+    .query("wineDetails")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const detail of wineDetails) {
+    await ctx.db.delete(detail._id);
+  }
+
+  const vehicleDetails = await ctx.db
+    .query("vehicleDetails")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const detail of vehicleDetails) {
+    const serviceDocumentIds =
+      detail.serviceLog?.flatMap((entry) => entry.documentIds ?? []) ?? [];
+    await deleteStorageIds(ctx, serviceDocumentIds);
+    await ctx.db.delete(detail._id);
+  }
+
+  const naturalHistoryDetails = await ctx.db
+    .query("naturalHistoryDetails")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const detail of naturalHistoryDetails) {
+    await ctx.db.delete(detail._id);
+  }
+
+  const archiveDetails = await ctx.db
+    .query("archiveDetails")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const detail of archiveDetails) {
+    await ctx.db.delete(detail._id);
+  }
+
+  const accessions = await ctx.db
+    .query("accessions")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const accession of accessions) {
+    await ctx.db.patch(accession._id, { collectionId: undefined });
+  }
+
+  const deaccessions = await ctx.db
+    .query("deaccessions")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const deaccession of deaccessions) {
+    await deleteStorageIds(ctx, [
+      deaccession.proceedsReceiptDocument,
+      ...(deaccession.regulatoryApprovalDocuments ?? []),
+    ]);
+    await ctx.db.delete(deaccession._id);
+  }
+
+  const appraisals = await ctx.db
+    .query("appraisals")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const appraisal of appraisals) {
+    await deleteStorageIds(ctx, appraisal.documents ?? []);
+    await ctx.db.delete(appraisal._id);
+  }
+
+  const locationHistory = await ctx.db
+    .query("locationHistory")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const history of locationHistory) {
+    await ctx.db.delete(history._id);
+  }
+
+  const locationMoveRequests = await ctx.db
+    .query("locationMoveRequests")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const request of locationMoveRequests) {
+    await ctx.db.delete(request._id);
+  }
+
+  const organizationMoveRequests = await ctx.db
+    .query("organizationMoveRequests")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const request of organizationMoveRequests) {
+    await ctx.db.delete(request._id);
+  }
+
+  const loanItems = await ctx.db
+    .query("loanItems")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const loanItem of loanItems) {
+    const conditionReports = await ctx.db
+      .query("conditionReports")
+      .withIndex("by_loanItem", (q) => q.eq("loanItemId", loanItem._id))
+      .collect();
+    for (const report of conditionReports) {
+      await deleteStorageIds(ctx, report.photos ?? []);
+      await ctx.db.delete(report._id);
+    }
+    await ctx.db.delete(loanItem._id);
+  }
+
+  const conditionDisputes = await ctx.db
+    .query("conditionDisputes")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const dispute of conditionDisputes) {
+    await deleteStorageIds(ctx, [
+      ...(dispute.conditionBeforePhotos ?? []),
+      ...(dispute.conditionAfterPhotos ?? []),
+      ...(dispute.investigationPhotos ?? []),
+    ]);
+    await ctx.db.delete(dispute._id);
+  }
+
+  const conservationTreatments = await ctx.db
+    .query("conservationTreatments")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const treatment of conservationTreatments) {
+    await ctx.db.delete(treatment._id);
+  }
+
+  const assessmentSchedules = await ctx.db
+    .query("assessmentSchedules")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const schedule of assessmentSchedules) {
+    await ctx.db.delete(schedule._id);
+  }
+
+  const exhibitions = await ctx.db
+    .query("exhibitions")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const exhibition of exhibitions) {
+    const exhibitionObjects = await ctx.db
+      .query("exhibitionObjects")
+      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", exhibition._id))
+      .collect();
+    for (const exhibitionObject of exhibitionObjects) {
+      await ctx.db.delete(exhibitionObject._id);
+    }
+
+    const exhibitionDocuments = await ctx.db
+      .query("exhibitionDocuments")
+      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", exhibition._id))
+      .collect();
+    for (const document of exhibitionDocuments) {
+      await deleteStorageIds(ctx, [document.storageId]);
+      await ctx.db.delete(document._id);
+    }
+
+    await ctx.db.delete(exhibition._id);
+  }
+
+  const exhibitionObjects = await ctx.db
+    .query("exhibitionObjects")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const exhibitionObject of exhibitionObjects) {
+    await ctx.db.delete(exhibitionObject._id);
+  }
+
+  const transitItems = await ctx.db
+    .query("transitItems")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const transitItem of transitItems) {
+    await ctx.db.delete(transitItem._id);
+  }
+
+  const libraryItems = await ctx.db
+    .query("libraryItems")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const libraryItem of libraryItems) {
+    await ctx.db.patch(libraryItem._id, { collectionId: undefined });
+  }
+
+  const insuranceCoverages = await ctx.db
+    .query("insuranceCoverages")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  for (const coverage of insuranceCoverages) {
+    await ctx.db.patch(coverage._id, { collectionId: undefined });
+  }
+}
+
 async function getCollectionsWithOpenDeaccessions(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
@@ -1836,6 +2116,68 @@ export const softDeleteCollection = mutation({
     });
 
     return null;
+  },
+});
+
+export const countDeletedCollections = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
+    const deletedCollections = await ctx.db
+      .query("collections")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", args.organizationId).eq("status", "deleted"),
+      )
+      .collect();
+
+    return deletedCollections.length;
+  },
+});
+
+export const emptyDeletedCollections = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    deletedCount: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(ctx, args.organizationId, "collections.delete");
+
+    const deletedCollections = await ctx.db
+      .query("collections")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", args.organizationId).eq("status", "deleted"),
+      )
+      .collect();
+
+    let deletedCount = 0;
+
+    for (const collection of deletedCollections) {
+      await deleteCollectionDependents(ctx, collection._id);
+      await ctx.db.delete(collection._id);
+      deletedCount += 1;
+    }
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "emptied_deleted_collections",
+      entityType: "collection",
+      entityId: args.organizationId,
+      changes: { deletedCount },
+    });
+
+    return { deletedCount };
   },
 });
 

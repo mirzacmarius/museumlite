@@ -2080,6 +2080,16 @@ export default {
       deaccession: "Fraregistrer",
       clearSelection: "Tøm valg",
     },
+    actions: {
+      emptyTrash: "Tøm papirkurv",
+      emptyingTrash: "Tømmer...",
+      emptyTrashConfirm:
+        "Slett alle {count} slettede objekter? Denne handlingen kan ikke angres.",
+      emptyTrashSuccess: "{deletedCount} objekt(er) slettet",
+    },
+    error: {
+      failedToEmptyTrash: "Kunne ikke tømme slettede objekter",
+    },
     bulkDialogs: {
       addToGroup: {
         title: "Legg til Samlingsgruppe",

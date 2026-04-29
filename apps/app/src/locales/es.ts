@@ -2085,6 +2085,16 @@ export default {
       deaccession: "Desaccesionar",
       clearSelection: "Limpiar selección",
     },
+    actions: {
+      emptyTrash: "Vaciar papelera",
+      emptyingTrash: "Vaciando...",
+      emptyTrashConfirm:
+        "¿Eliminar todos los {count} objetos eliminados? Esta acción no se puede deshacer.",
+      emptyTrashSuccess: "{deletedCount} objeto(s) eliminado(s)",
+    },
+    error: {
+      failedToEmptyTrash: "Error al vaciar los objetos eliminados",
+    },
     bulkDialogs: {
       addToGroup: {
         title: "Agregar a Grupo de Colección",

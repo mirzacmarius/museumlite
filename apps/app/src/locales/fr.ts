@@ -2168,6 +2168,16 @@ export default {
       deaccession: "Désaccession",
       clearSelection: "Effacer la sélection",
     },
+    actions: {
+      emptyTrash: "Vider la corbeille",
+      emptyingTrash: "Suppression...",
+      emptyTrashConfirm:
+        "Supprimer les {count} objets supprimés ? Cette action est irréversible.",
+      emptyTrashSuccess: "{deletedCount} objet(s) supprimé(s)",
+    },
+    error: {
+      failedToEmptyTrash: "Échec du vidage des objets supprimés",
+    },
     bulkDialogs: {
       addToGroup: {
         title: "Ajouter au Groupe de Collection",
