@@ -89,20 +89,20 @@ export function PortalSettingsSidebar() {
 
   return (
     <div className="w-80 flex-shrink-0">
-      <div className="rounded-lg border border-border bg-card p-6 space-y-6">
+      <div className="space-y-5 rounded-lg border border-border bg-card p-5">
         <div>
-          <h3 className="text-lg font-medium mb-1">Portal Settings</h3>
-          <p className="text-sm text-muted-foreground">
+          <h3 className="section-title mb-1">Portal Settings</h3>
+          <p className="caption text-muted-foreground">
             Configure your public collection portal
           </p>
         </div>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="portal-slug" className="text-sm font-medium">
+            <Label htmlFor="portal-slug" className="field-label">
               Portal URL Slug
             </Label>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+            <div className="caption mb-2 flex items-center gap-1 text-muted-foreground">
               <span className="truncate">
                 {webUrl}/{portalSettings.orgSlug}/
               </span>
@@ -112,14 +112,14 @@ export function PortalSettingsSidebar() {
               value={portalSlug}
               onChange={(e) => setPortalSlug(e.target.value)}
               placeholder="gallery"
-              className="font-mono text-sm"
+              className="code-text"
             />
           </div>
 
           <div className="space-y-1">
-            <Label className="text-sm font-medium">Full Portal URL</Label>
+            <Label className="field-label">Full Portal URL</Label>
             <div className="flex items-center gap-2">
-              <div className="flex-1 px-3 py-2 rounded-md bg-secondary/50 border border-border text-sm text-muted-foreground truncate font-mono">
+              <div className="code-text flex-1 truncate rounded-md border border-border bg-secondary/50 px-3 py-2 text-muted-foreground">
                 {fullPortalUrl || "Not configured"}
               </div>
               {fullPortalUrl && isEnabled && (
@@ -127,7 +127,7 @@ export function PortalSettingsSidebar() {
                   href={fullPortalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 rounded-md hover:bg-secondary transition-colors"
+                  className="rounded-md p-2 transition-colors hover:bg-secondary"
                 >
                   <ExternalLink className="h-4 w-4 text-muted-foreground" />
                 </a>
@@ -139,10 +139,10 @@ export function PortalSettingsSidebar() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="portal-enabled" className="text-sm font-medium">
+              <Label htmlFor="portal-enabled" className="field-label">
                 Portal Enabled
               </Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="caption text-muted-foreground">
                 Make your collection publicly accessible
               </p>
             </div>
@@ -155,10 +155,10 @@ export function PortalSettingsSidebar() {
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="search-enabled" className="text-sm font-medium">
+              <Label htmlFor="search-enabled" className="field-label">
                 Public Search
               </Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="caption text-muted-foreground">
                 Allow visitors to search your collection
               </p>
             </div>
@@ -172,10 +172,10 @@ export function PortalSettingsSidebar() {
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="highres-enabled" className="text-sm font-medium">
+              <Label htmlFor="highres-enabled" className="field-label">
                 High-Res Downloads
               </Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="caption text-muted-foreground">
                 Allow downloading high-resolution images
               </p>
             </div>
@@ -191,11 +191,11 @@ export function PortalSettingsSidebar() {
             <div className="space-y-0.5">
               <Label
                 htmlFor="valuations-visible"
-                className="text-sm font-medium"
+                className="field-label"
               >
                 Show Valuations
               </Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="caption text-muted-foreground">
                 Display valuation information publicly
               </p>
             </div>

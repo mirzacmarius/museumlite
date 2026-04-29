@@ -40,8 +40,8 @@ export default function PublicPortalPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
           <Building2 className="h-12 w-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">No Organization Selected</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <h3 className="section-title">No Organization Selected</h3>
+            <p className="caption mt-2 text-muted-foreground">
               Please select or create an organization to manage your public
               portal.
             </p>
@@ -79,17 +79,15 @@ export default function PublicPortalPage() {
 
   return (
     <FeatureGuard featureName="Public Portal" isLocked={false} tierNeeded="pro">
-      <div className="flex h-full w-full flex-col bg-background px-4 sm:px-6 py-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-foreground">
-            Public Portal
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+      <div className="flex h-full w-full flex-col overflow-hidden bg-background">
+        <div className="shrink-0 border-b border-border px-6 py-4">
+          <h1 className="page-title">Public Portal</h1>
+          <p className="page-description mt-1">
             Configure and preview your public-facing collection portal
           </p>
         </div>
 
-        <div className="flex flex-1 gap-6 min-h-0">
+        <div className="flex min-h-0 flex-1 gap-6 p-6">
           <PortalSettingsSidebar />
           <PortalPreview
             isEnabled={portalSettings.isEnabled}

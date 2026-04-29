@@ -539,7 +539,7 @@ export function AppSidebar({
                   onClick={openCommandPalette}
                 >
                   <Search />
-                  <span>Search objects, loans...</span>
+                  <span>Search</span>
                   <kbd className="ml-auto rounded border border-sidebar-border px-1 text-[10px] text-sidebar-foreground/70">
                     ⌘K
                   </kbd>
