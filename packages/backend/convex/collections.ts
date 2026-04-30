@@ -35,6 +35,133 @@ const conditionHistoryEntryValidator = v.object({
   changedByName: v.optional(v.string()),
 });
 
+const linkValidator = v.object({
+  url: v.string(),
+  label: v.optional(v.string()),
+});
+
+const ownershipHistoryEntryValidator = v.object({
+  owner: v.string(),
+  startYear: v.optional(v.string()),
+  endYear: v.optional(v.string()),
+  description: v.optional(v.string()),
+  verified: v.optional(v.boolean()),
+  verificationSource: v.optional(v.string()),
+});
+
+const inscriptionMarkValidator = v.object({
+  label: v.string(),
+  description: v.string(),
+});
+
+const objectDetailCollectionValidator = v.object({
+  _id: v.id("collections"),
+  organizationId: v.id("organizations"),
+  collectionGroupId: v.optional(v.id("collectionGroups")),
+  accessionNumber: v.string(),
+  alternateAccessionNumbers: v.optional(v.array(v.string())),
+  accessionNumberHistory: v.optional(
+    v.array(
+      v.object({
+        number: v.string(),
+        validFrom: v.number(),
+        validTo: v.optional(v.number()),
+      }),
+    ),
+  ),
+  title: v.string(),
+  alternativeTitle: v.optional(v.string()),
+  creator: v.optional(v.string()),
+  objectType: v.optional(v.string()),
+  objectName: v.optional(v.string()),
+  culture: v.optional(v.string()),
+  period: v.optional(v.string()),
+  dateCreated: v.optional(v.string()),
+  materials: v.optional(v.string()),
+  technique: v.optional(v.string()),
+  dimensions: v.optional(v.string()),
+  dimensionDiameter: v.optional(v.string()),
+  dimensionHeight: v.optional(v.number()),
+  dimensionWidth: v.optional(v.number()),
+  dimensionDepth: v.optional(v.number()),
+  dimensionWeight: v.optional(v.union(v.number(), v.null())),
+  dimensionUnit: v.optional(v.string()),
+  weightUnit: v.optional(v.string()),
+  description: v.optional(v.string()),
+  condition: v.optional(v.string()),
+  conditionHistory: v.optional(v.array(conditionHistoryEntryValidator)),
+  inscriptions: v.optional(v.string()),
+  inscriptionMarks: v.optional(v.array(inscriptionMarkValidator)),
+  tags: v.optional(v.array(v.string())),
+  provenance: v.optional(v.string()),
+  exhibitionHistory: v.optional(v.string()),
+  ownershipHistory: v.optional(v.array(ownershipHistoryEntryValidator)),
+  donated_by: v.optional(v.array(v.string())),
+  donated_date: v.optional(v.string()),
+  donation_info: v.optional(v.string()),
+  creditLine: v.optional(v.string()),
+  previous_owners: v.optional(v.array(v.string())),
+  links: v.optional(v.array(linkValidator)),
+  parentObjectId: v.optional(v.id("collections")),
+  currentLocationId: v.optional(v.id("locations")),
+  acquisitionMethod: v.optional(v.string()),
+  legalRestrictions: v.optional(v.boolean()),
+  isPubliclyVisible: v.optional(v.boolean()),
+  isHighResDownloadable: v.optional(v.boolean()),
+  isSearchable: v.optional(v.boolean()),
+  isValuationVisible: v.optional(v.boolean()),
+  publicSlug: v.optional(v.string()),
+  displayStatus: v.optional(v.string()),
+  status: v.union(
+    v.literal("active"),
+    v.literal("loaned"),
+    v.literal("deaccessioned"),
+    v.literal("archived"),
+    v.literal("deleted"),
+  ),
+  archivedAt: v.optional(v.number()),
+  archivedBy: v.optional(v.id("users")),
+  archivedReason: v.optional(v.string()),
+  deletedAt: v.optional(v.number()),
+  deletedBy: v.optional(v.id("users")),
+  deletedReason: v.optional(v.string()),
+  catalogedBy: v.id("users"),
+  catalogedAt: v.number(),
+  lastModifiedBy: v.optional(v.id("users")),
+  lastModifiedAt: v.optional(v.number()),
+  collectionType: v.optional(
+    v.union(
+      v.literal("fine_art"),
+      v.literal("wine"),
+      v.literal("automotive"),
+      v.literal("natural_history"),
+      v.literal("archive"),
+      v.literal("general"),
+    ),
+  ),
+  customFields: v.optional(v.record(v.string(), v.any())),
+  verified: v.optional(v.boolean()),
+  verifiedBy: v.optional(v.id("users")),
+  verifiedByName: v.optional(v.string()),
+  verifiedAt: v.optional(v.number()),
+  _creationTime: v.number(),
+});
+
+const objectDetailMediaValidator = v.object({
+  _id: v.id("mediaFiles"),
+  url: v.union(v.string(), v.null()),
+  thumbnailUrl: v.union(v.string(), v.null()),
+  fileName: v.string(),
+  fileType: v.string(),
+  caption: v.optional(v.string()),
+  isPrimary: v.boolean(),
+});
+
+const objectDetailLocationPathItemValidator = v.object({
+  _id: v.id("locations"),
+  name: v.string(),
+});
+
 function isImageMedia(media: {
   fileType?: string;
   mediaCategory?: "image" | "document";
@@ -131,6 +258,67 @@ async function getCollectionPrimaryImageUrl(
   }
 
   return undefined;
+}
+
+async function getObjectDetailHeroImage(
+  ctx: QueryCtx,
+  collectionId: Id<"collections">,
+) {
+  const mediaFiles = await ctx.db
+    .query("mediaFiles")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+
+  const imageMedia = mediaFiles.filter((media) => isImageMedia(media));
+  const preferredMedia =
+    imageMedia.find((media) => media.isPrimary) ?? imageMedia[0];
+
+  if (!preferredMedia) {
+    return null;
+  }
+
+  const [url, thumbnailUrl] = await Promise.all([
+    ctx.storage.getUrl(preferredMedia.storageId),
+    preferredMedia.thumbnailStorageId
+      ? ctx.storage.getUrl(preferredMedia.thumbnailStorageId)
+      : Promise.resolve(null),
+  ]);
+
+  return {
+    _id: preferredMedia._id,
+    url,
+    thumbnailUrl,
+    fileName: preferredMedia.fileName,
+    fileType: preferredMedia.fileType,
+    caption: preferredMedia.caption,
+    isPrimary: preferredMedia.isPrimary,
+  };
+}
+
+async function getObjectDetailLocationPath(
+  ctx: QueryCtx,
+  locationId: Id<"locations">,
+) {
+  const path: Array<{
+    _id: Id<"locations">;
+    name: string;
+  }> = [];
+  let currentId: Id<"locations"> | undefined = locationId;
+
+  while (currentId) {
+    const location: Doc<"locations"> | null = await ctx.db.get(currentId);
+    if (!location) {
+      break;
+    }
+
+    path.unshift({
+      _id: location._id,
+      name: location.name,
+    });
+    currentId = location.parentLocationId;
+  }
+
+  return path;
 }
 
 async function getLocationPathString(
@@ -934,6 +1122,69 @@ export const get = query({
     return {
       ...collection,
       verifiedByName,
+    };
+  },
+});
+
+export const getObjectDetail = query({
+  args: {
+    collectionId: v.id("collections"),
+  },
+  returns: v.union(
+    v.object({
+      collection: objectDetailCollectionValidator,
+      collectionGroup: v.union(
+        v.object({
+          _id: v.id("collectionGroups"),
+          name: v.string(),
+        }),
+        v.null(),
+      ),
+      locationPath: v.array(objectDetailLocationPathItemValidator),
+      heroImage: v.union(objectDetailMediaValidator, v.null()),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      return null;
+    }
+
+    await requirePermission(ctx, collection.organizationId, "collections.read");
+
+    const [collectionGroup, locationPath, heroImage, verifier] =
+      await Promise.all([
+        collection.collectionGroupId
+          ? ctx.db.get(collection.collectionGroupId)
+          : Promise.resolve(null),
+        collection.currentLocationId
+          ? getObjectDetailLocationPath(ctx, collection.currentLocationId)
+          : Promise.resolve([]),
+        getObjectDetailHeroImage(ctx, collection._id),
+        collection.verifiedBy
+          ? ctx.db.get(collection.verifiedBy)
+          : Promise.resolve(null),
+      ]);
+
+    return {
+      collection: {
+        ...collection,
+        verifiedByName: verifier?.name ?? verifier?.email ?? undefined,
+      },
+      collectionGroup: collectionGroup
+        ? {
+            _id: collectionGroup._id,
+            name: collectionGroup.name,
+          }
+        : null,
+      locationPath,
+      heroImage,
     };
   },
 });

@@ -17,8 +17,7 @@ import {
 } from "@v1/ui/dropdown-menu";
 import { ImageLightbox, type LightboxImage } from "@v1/ui/image-lightbox";
 import { cn } from "@v1/ui/utils";
-import { useQuery } from "convex/react";
-import type { FunctionReturnType } from "convex/server";
+import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
 import {
   ArrowLeft,
   ArrowRightLeft,
@@ -43,6 +42,7 @@ import {
   type ObjectTabId as TabId,
   getObjectViewTabs,
 } from "./_components/object-tab-config";
+import type { ObjectDetailData } from "./_components/types";
 
 const LoadingPanel = () => (
   <div className="h-32 w-full animate-pulse rounded-xl bg-card/40" />
@@ -136,47 +136,64 @@ const WineDetailsTab = dynamic(
 
 type ObjectDetailClientProps = {
   collectionId: Id<"collections">;
-  collection: FunctionReturnType<typeof api.collections.get> | null;
-  collectionGroup: FunctionReturnType<typeof api.collectionGroups.get> | null;
-  locationPath: FunctionReturnType<typeof api.locations.getLocationPath> | null;
-  media: FunctionReturnType<typeof api.media.list> | null;
-};
+} & (
+  | {
+      preloadedObjectDetail: Preloaded<typeof api.collections.getObjectDetail>;
+      initialObjectDetail?: never;
+    }
+  | {
+      preloadedObjectDetail?: never;
+      initialObjectDetail: ObjectDetailData | null;
+    }
+);
 
-export function ObjectDetailClient({
+export function ObjectDetailClient(props: ObjectDetailClientProps) {
+  if (props.preloadedObjectDetail) {
+    return (
+      <PreloadedObjectDetailClient
+        collectionId={props.collectionId}
+        preloadedObjectDetail={props.preloadedObjectDetail}
+      />
+    );
+  }
+
+  return (
+    <ObjectDetailView
+      collectionId={props.collectionId}
+      objectDetail={props.initialObjectDetail}
+    />
+  );
+}
+
+function PreloadedObjectDetailClient({
   collectionId,
-  collection,
-  collectionGroup,
-  locationPath,
-  media,
-}: ObjectDetailClientProps) {
+  preloadedObjectDetail,
+}: {
+  collectionId: Id<"collections">;
+  preloadedObjectDetail: Preloaded<typeof api.collections.getObjectDetail>;
+}) {
+  const objectDetail = usePreloadedQuery(preloadedObjectDetail);
+  return (
+    <ObjectDetailView collectionId={collectionId} objectDetail={objectDetail} />
+  );
+}
+
+function ObjectDetailView({
+  collectionId,
+  objectDetail,
+}: {
+  collectionId: Id<"collections">;
+  objectDetail: ObjectDetailData | null;
+}) {
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const locale = useCurrentLocale();
   const { currentOrganizationId } = useOrganization();
   const { hasFeature } = useFeatureAccess();
-  const liveCollection = useQuery(api.collections.get, { collectionId });
-  collection = liveCollection === undefined ? collection : liveCollection;
-  const liveCollectionGroup = useQuery(
-    api.collectionGroups.get,
-    collection?.collectionGroupId
-      ? { groupId: collection.collectionGroupId }
-      : "skip",
-  );
-  collectionGroup =
-    liveCollectionGroup === undefined ? collectionGroup : liveCollectionGroup;
-  const liveLocationPath = useQuery(
-    api.locations.getLocationPath,
-    collection?.currentLocationId
-      ? { locationId: collection.currentLocationId }
-      : "skip",
-  );
-  locationPath =
-    liveLocationPath === undefined ? locationPath : liveLocationPath;
-  const liveMedia = useQuery(
-    api.media.list,
-    collection ? { collectionId: collection._id } : "skip",
-  );
-  media = liveMedia === undefined ? media : liveMedia;
+  const collection = objectDetail?.collection ?? null;
+  const collectionGroup = objectDetail?.collectionGroup ?? null;
+  const locationPath = objectDetail?.locationPath ?? [];
+  const heroImage = objectDetail?.heroImage ?? null;
   const [activeTab, setActiveTab] = useState<TabId>("general");
   const featureOrganizationId =
     collection?.organizationId ?? currentOrganizationId ?? undefined;
@@ -189,9 +206,10 @@ export function ObjectDetailClient({
   const hasLoansFeature = featureOrganizationId
     ? hasFeature("loans", featureOrganizationId)
     : false;
-  const pendingMoveRequest = useQuery(api.objectMoves.getPendingForCollection, {
-    collectionId,
-  });
+  const pendingMoveRequest = useQuery(
+    api.objectMoves.getPendingForCollection,
+    collection ? { collectionId } : "skip",
+  );
 
   const tabs = useMemo(() => {
     return getObjectViewTabs({
@@ -215,16 +233,8 @@ export function ObjectDetailClient({
     }
   }, [activeTab, tabs]);
 
-  // Get primary image
-  const primaryImage = media?.find(
-    (m) => m.isPrimary && m.fileType === "image",
-  );
-  const firstImage = media?.find((m) => m.fileType === "image");
-  const heroImage = primaryImage || firstImage;
-
   // Hero lightbox state
   const [isHeroLightboxOpen, setIsHeroLightboxOpen] = useState(false);
-  const [lightboxInitialIndex, setLightboxInitialIndex] = useState(0);
 
   // Print modal state
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
@@ -252,17 +262,17 @@ export function ObjectDetailClient({
     );
   }, [collectionId]);
   const heroLightboxImages: LightboxImage[] = useMemo(() => {
-    if (!media) return [];
-    return media
-      .filter((m) => m.fileType === "image" && m.url)
-      .map((m) => ({
-        id: m._id,
-        url: m.url as string,
-        thumbnailUrl: m.thumbnailUrl || undefined,
-        title: m.fileName,
-        caption: m.caption || undefined,
-      }));
-  }, [media]);
+    if (!heroImage?.url || heroImage.fileType !== "image") return [];
+    return [
+      {
+        id: heroImage._id,
+        url: heroImage.url,
+        thumbnailUrl: heroImage.thumbnailUrl || undefined,
+        title: heroImage.fileName,
+        caption: heroImage.caption || undefined,
+      },
+    ];
+  }, [heroImage]);
 
   if (!currentOrganizationId) {
     return (
@@ -413,7 +423,7 @@ export function ObjectDetailClient({
               {/* Hero Image Lightbox */}
               <ImageLightbox
                 images={heroLightboxImages}
-                initialIndex={lightboxInitialIndex}
+                initialIndex={0}
                 isOpen={isHeroLightboxOpen}
                 onClose={() => setIsHeroLightboxOpen(false)}
               />
@@ -526,19 +536,16 @@ export function ObjectDetailClient({
               </div>
 
               {activeTab === "general" && (
-                <GeneralTab collection={collection} />
+                <GeneralTab
+                  collection={collection}
+                  collectionGroupName={collectionGroup?.name}
+                />
               )}
               {activeTab === "physical" && (
                 <PhysicalTab collection={collection} />
               )}
               {activeTab === "media" && (
-                <MediaTab
-                  collectionId={collectionId}
-                  onOpenLightbox={(index) => {
-                    setLightboxInitialIndex(index);
-                    setIsHeroLightboxOpen(true);
-                  }}
-                />
+                <MediaTab collectionId={collectionId} />
               )}
               {activeTab === "digital" && (
                 <DigitalAssetsTab collection={collection} />

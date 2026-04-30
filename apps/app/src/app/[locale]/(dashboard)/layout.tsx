@@ -22,9 +22,14 @@ export default async function Layout({
   children: React.ReactNode;
 }) {
   const token = await convexAuthNextjsToken();
-  const [user, organizations] = await Promise.all([
+  const [user, organizations, activeOrgPreference] = await Promise.all([
     fetchQuery(api.users.getUser, {}, { token }),
     fetchQuery(api.organizations.listUserOrganizations, {}, { token }),
+    fetchQuery(
+      api.userPreferences.get,
+      { key: "organization.activeOrgId" },
+      { token },
+    ),
   ]);
 
   if (!user?.username || !organizations || organizations.length === 0) {
@@ -32,7 +37,10 @@ export default async function Layout({
   }
   const preloadedUser = await preloadQuery(api.users.getUser, {}, { token });
   return (
-    <OrganizationProvider>
+    <OrganizationProvider
+      initialOrganizations={organizations}
+      initialActiveOrgPreference={activeOrgPreference}
+    >
       <PermissionProvider>
         <CommandPaletteProvider>
           <KeyboardShortcutsProvider>

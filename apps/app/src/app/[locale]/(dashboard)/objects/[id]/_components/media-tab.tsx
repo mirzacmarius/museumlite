@@ -5,7 +5,7 @@ import { MediaGallery } from "./media-gallery";
 
 interface MediaTabProps {
   collectionId: string;
-  onOpenLightbox: (index: number) => void;
+  onOpenLightbox?: (index: number) => void;
 }
 
 export function MediaTab({ collectionId, onOpenLightbox }: MediaTabProps) {

@@ -1,9 +1,7 @@
 "use client";
 
 import { useScopedI18n } from "@/locales/client";
-import { api } from "@v1/backend/convex/_generated/api";
 import { cn } from "@v1/ui/utils";
-import { useQuery } from "convex/react";
 import {
   Building2,
   CheckCircle,
@@ -17,16 +15,14 @@ import type { CollectionData } from "./types";
 
 interface GeneralTabProps {
   collection: CollectionData;
+  collectionGroupName?: string;
 }
 
-export function GeneralTab({ collection }: GeneralTabProps) {
+export function GeneralTab({
+  collection,
+  collectionGroupName,
+}: GeneralTabProps) {
   const tObjects = useScopedI18n("objects.printView");
-  const collectionGroup = useQuery(
-    api.collectionGroups.get,
-    collection.collectionGroupId
-      ? { groupId: collection.collectionGroupId }
-      : "skip",
-  );
   const hasHistoricalContext =
     Boolean(collection.provenance) ||
     Boolean(collection.exhibitionHistory) ||
@@ -53,7 +49,7 @@ export function GeneralTab({ collection }: GeneralTabProps) {
                 Collection
               </label>
               <div className="text-sm text-foreground">
-                {collectionGroup?.name || "—"}
+                {collectionGroupName || "—"}
               </div>
             </div>
 

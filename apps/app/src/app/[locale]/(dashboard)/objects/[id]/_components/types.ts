@@ -3,7 +3,11 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
 
 export type CollectionData = NonNullable<
-  FunctionReturnType<typeof api.collections.get>
+  FunctionReturnType<typeof api.collections.getObjectDetail>
+>["collection"];
+
+export type ObjectDetailData = NonNullable<
+  FunctionReturnType<typeof api.collections.getObjectDetail>
 >;
 
 export interface HeroImageData {

@@ -3,6 +3,7 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import {
   type ReactNode,
   useCallback,
@@ -75,15 +76,62 @@ const OrganizationContext = createContext<OrganizationContextType | undefined>(
   undefined,
 );
 
-export function OrganizationProvider({ children }: { children: ReactNode }) {
-  const organizations = useQuery(api.organizations.listUserOrganizations);
-  const activeOrgPreference = useQuery(api.userPreferences.get, {
-    key: "organization.activeOrgId",
-  });
+type UserOrganizations = FunctionReturnType<
+  typeof api.organizations.listUserOrganizations
+>;
+
+type ActiveOrgPreference = FunctionReturnType<typeof api.userPreferences.get>;
+
+function getInitialOrganizationId(
+  organizations: UserOrganizations | undefined,
+  activeOrgPreference: ActiveOrgPreference | undefined,
+) {
+  if (!organizations || organizations.length === 0) {
+    return null;
+  }
+
+  const preferredId = activeOrgPreference as Id<"organizations"> | null;
+  const preferredOrganization = preferredId
+    ? organizations.find((organization) => organization._id === preferredId)
+    : undefined;
+
+  return preferredOrganization?._id ?? organizations[0]?._id ?? null;
+}
+
+interface OrganizationProviderProps {
+  children: ReactNode;
+  initialOrganizations?: UserOrganizations;
+  initialActiveOrgPreference?: ActiveOrgPreference;
+}
+
+export function OrganizationProvider({
+  children,
+  initialOrganizations,
+  initialActiveOrgPreference,
+}: OrganizationProviderProps) {
+  const liveOrganizations = useQuery(
+    api.organizations.listUserOrganizations,
+    initialOrganizations ? "skip" : {},
+  );
+  const liveActiveOrgPreference = useQuery(
+    api.userPreferences.get,
+    initialActiveOrgPreference !== undefined
+      ? "skip"
+      : {
+          key: "organization.activeOrgId",
+        },
+  );
+  const organizations = liveOrganizations ?? initialOrganizations;
+  const activeOrgPreference =
+    liveActiveOrgPreference === undefined
+      ? initialActiveOrgPreference
+      : liveActiveOrgPreference;
   const setPreference = useMutation(api.userPreferences.set);
   const removePreference = useMutation(api.userPreferences.remove);
   const [currentOrganizationId, setCurrentOrganizationId] =
-    useState<Id<"organizations"> | null>(null);
+    useState<Id<"organizations"> | null>(() =>
+      getInitialOrganizationId(initialOrganizations, initialActiveOrgPreference),
+    );
   const hasBootstrappedPreference = useRef(false);
 
   const persistOrganizationSelection = useCallback(
