@@ -385,7 +385,7 @@ export default function DashboardPage() {
 
           <div className="mt-auto grid gap-2 pt-5 sm:grid-cols-2">
             <Link
-              href="/transfers"
+              href="/accessions/transfers"
               className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-colors hover:border-white/20"
             >
               <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">

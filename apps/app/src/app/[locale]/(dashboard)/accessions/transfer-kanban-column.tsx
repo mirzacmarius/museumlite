@@ -38,32 +38,35 @@ const statusStyles: Record<
 > = {
   pending: {
     badge: "bg-sky-500/15 text-sky-300",
-    card:
-      "border-sky-500/30 bg-[linear-gradient(180deg,rgba(14,165,233,0.14),rgba(9,9,11,0.92))]",
+    card: "border-sky-500/30 bg-[linear-gradient(180deg,rgba(14,165,233,0.14),rgba(9,9,11,0.92))]",
     icon: Clock3,
     empty: "No transfer approvals are waiting right now.",
   },
   executed: {
     badge: "bg-emerald-500/15 text-emerald-300",
-    card:
-      "border-emerald-500/30 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(9,9,11,0.92))]",
+    card: "border-emerald-500/30 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(9,9,11,0.92))]",
     icon: CheckCircle2,
     empty: "No executed transfers match this search.",
   },
   rejected: {
     badge: "bg-rose-500/15 text-rose-300",
-    card:
-      "border-rose-500/30 bg-[linear-gradient(180deg,rgba(244,63,94,0.12),rgba(9,9,11,0.92))]",
+    card: "border-rose-500/30 bg-[linear-gradient(180deg,rgba(244,63,94,0.12),rgba(9,9,11,0.92))]",
     icon: XCircle,
     empty: "No rejected transfers match this search.",
   },
   cancelled: {
     badge: "bg-zinc-500/15 text-zinc-300",
-    card:
-      "border-zinc-700 bg-[linear-gradient(180deg,rgba(63,63,70,0.18),rgba(9,9,11,0.92))]",
+    card: "border-zinc-700 bg-[linear-gradient(180deg,rgba(63,63,70,0.18),rgba(9,9,11,0.92))]",
     icon: Ban,
     empty: "No cancelled transfers match this search.",
   },
+};
+
+const statusLabels: Record<TransferStatus, string> = {
+  pending: "Awaiting approval",
+  executed: "Transfer executed",
+  rejected: "Rejected",
+  cancelled: "Cancelled",
 };
 
 function getAccessionHandlingSummary(request: TransferRequest) {
@@ -139,7 +142,7 @@ export function TransferKanbanColumn({
                 <Link
                   key={request._id}
                   href={`/objects/move-requests/${request._id}`}
-                  className={`block rounded-xl border p-3 transition-colors group animate-enter ${style.card}`}
+                  className={`group block animate-enter rounded-xl border p-3 transition-colors ${style.card}`}
                   style={{ animationDelay: `${Math.min(index * 50, 300)}ms` }}
                 >
                   <div className="mb-3 flex items-start justify-between gap-3">
@@ -151,27 +154,29 @@ export function TransferKanbanColumn({
                       <p className="mt-2 text-sm font-medium text-white transition-colors group-hover:text-sky-200">
                         {request.collectionTitle}
                       </p>
-                      <p className="mt-1 text-[11px] font-mono text-zinc-400">
+                      <p className="mt-1 font-mono text-[11px] text-zinc-400">
                         {request.sourceAccessionNumber}
                       </p>
                     </div>
                     <span
                       className={`rounded-full px-2 py-1 text-[10px] font-medium ${style.badge}`}
                     >
-                      {status}
+                      {statusLabels[status]}
                     </span>
                   </div>
 
                   <div className="space-y-2 text-xs text-zinc-300">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-zinc-500">Target</span>
+                      <span className="text-zinc-500">Receiver</span>
                       <span className="text-right">
                         {request.targetOrganizationName}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-zinc-500">Requested by</span>
-                      <span className="text-right">{request.requestedByName}</span>
+                      <span className="text-right">
+                        {request.requestedByName}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-zinc-500">Requested</span>
@@ -194,7 +199,7 @@ export function TransferKanbanColumn({
                     </p>
                   </div>
 
-                  {request.reviewNotes && (
+                  {request.reviewNotes ? (
                     <div className="mt-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2">
                       <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">
                         Review notes
@@ -203,7 +208,7 @@ export function TransferKanbanColumn({
                         {request.reviewNotes}
                       </p>
                     </div>
-                  )}
+                  ) : null}
                 </Link>
               ))
             )}

@@ -2,7 +2,6 @@
 
 import {
   Activity,
-  ArrowRightLeft,
   BookOpen,
   Building2,
   Check,
@@ -369,7 +368,6 @@ export function AppSidebar({
     { title: "Scan", url: "/scan", icon: QrCode },
     { title: "Accessions", url: "/accessions", icon: FileCheck },
     { title: "Deaccessions", url: "/deaccessions", icon: FileX },
-    { title: "Transfers", url: "/transfers", icon: ArrowRightLeft },
     { title: "Location & Tracking", url: "/locations", icon: MapPin },
   ];
 

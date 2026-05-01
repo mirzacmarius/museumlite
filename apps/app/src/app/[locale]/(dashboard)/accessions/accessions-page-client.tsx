@@ -2,7 +2,12 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { type Preloaded, useMutation, usePreloadedQuery } from "convex/react";
+import {
+  type Preloaded,
+  useMutation,
+  usePreloadedQuery,
+  useQuery,
+} from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { useCallback, useDeferredValue, useState } from "react";
 
@@ -10,13 +15,14 @@ import {
   ExportButtonWithFormat,
   type ExportFormat,
 } from "@/components/export-button-with-format";
-import { PermissionGate } from "@/components/permission-gate";
+import { PermissionGate, usePermissions } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { FileUp, Loader2, Plus, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { AccessionKanban } from "./accession-kanban";
 import { AccessionsStats } from "./accessions-stats";
+import { AccessionsWorkbenchNav } from "./accessions-workbench-nav";
 
 type AccessionsPageClientProps = {
   organizationId: Id<"organizations">;
@@ -37,6 +43,13 @@ export function AccessionsPageClient({
   const [bulkActionError, setBulkActionError] = useState<string | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const accessions = usePreloadedQuery(preloadedAccessions);
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
+  const canReviewTransfers =
+    !permissionsLoading && hasPermission("organization.manage_settings");
+  const transferRequests = useQuery(
+    api.objectMoves.listForOrganization,
+    canReviewTransfers ? { organizationId } : "skip",
+  );
 
   const exportAccessionsWithFormat = useMutation(
     api.imports.exportAccessionsWithFormat,
@@ -52,6 +65,9 @@ export function AccessionsPageClient({
   const rejected = accessions.page.filter(
     (item: AccessionListItem) => item.status === "rejected",
   ).length;
+  const pendingTransfers =
+    transferRequests?.filter((request) => request.status === "pending")
+      .length ?? "-";
 
   const handleExport = useCallback(
     async (format: ExportFormat) => {
@@ -162,6 +178,12 @@ export function AccessionsPageClient({
           </PermissionGate>
         </div>
       </div>
+
+      <AccessionsWorkbenchNav
+        activeView="overview"
+        pendingAccessions={pending}
+        pendingTransfers={pendingTransfers}
+      />
 
       <AccessionKanban
         organizationId={organizationId}
