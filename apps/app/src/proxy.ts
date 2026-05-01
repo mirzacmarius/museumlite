@@ -15,8 +15,7 @@ const isSignInPage = createRouteMatcher(["/login", "/register"]);
 
 export default convexAuthNextjsMiddleware(
   async (request, { convexAuth }) => {
-    const token = await convexAuth.getToken();
-    const isAuthenticated = token !== undefined;
+    const isAuthenticated = await convexAuth.isAuthenticated();
     const isSignIn = isSignInPage(request);
     const isInvitePage = request.nextUrl.pathname.startsWith("/invite/");
     const isPublic = isSignIn || isInvitePage;
