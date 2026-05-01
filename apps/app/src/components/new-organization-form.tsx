@@ -5,6 +5,7 @@ import { useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { Checkbox } from "@v1/ui/checkbox";
 import { Input } from "@v1/ui/input";
 import {
   Select,
@@ -50,8 +51,9 @@ export function NewOrganizationForm() {
   const t = useI18n();
   const router = useRouter();
   const createOrganization = useMutation(api.organizations.create);
-  const { setCurrentOrganizationId } = useOrganization();
+  const { currentOrganization, setCurrentOrganizationId } = useOrganization();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createAsSubOrganization, setCreateAsSubOrganization] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -76,6 +78,10 @@ export function NewOrganizationForm() {
         name: formData.name,
         slug,
         type: formData.type,
+        parentOrganizationId:
+          createAsSubOrganization && currentOrganization
+            ? currentOrganization._id
+            : undefined,
       });
 
       setCurrentOrganizationId(organizationId as Id<"organizations">);
@@ -170,6 +176,28 @@ export function NewOrganizationForm() {
               </SelectContent>
             </Select>
           </div>
+
+          {currentOrganization &&
+            (currentOrganization.subscriptionTier === "pro" ||
+              currentOrganization.subscriptionTier === "enterprise") && (
+              <label className="flex items-start gap-3 rounded-lg border border-border p-3">
+                <Checkbox
+                  checked={createAsSubOrganization}
+                  onCheckedChange={(checked) =>
+                    setCreateAsSubOrganization(checked === true)
+                  }
+                />
+                <span className="flex flex-col gap-1">
+                  <span className="text-sm font-medium">
+                    Create under {currentOrganization.name}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Sub-organizations can transfer objects within the same
+                    hierarchy.
+                  </span>
+                </span>
+              </label>
+            )}
 
           {error && (
             <div className="rounded-lg border border-destructive bg-destructive/10 p-3">

@@ -6,10 +6,7 @@ import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
 
-function authedForUser(
-  t: ReturnType<typeof convexTest>,
-  userId: Id<"users">,
-) {
+function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   return t.withIdentity({
     subject: `${userId}|session-1`,
     issuer: "https://example.test",
@@ -44,6 +41,88 @@ test("should remove user from organization", async () => {
 test("should transfer organization ownership", async () => {
   const t = convexTest(schema, modules);
   expect(true).toBe(true);
+});
+
+describe("organization hierarchy", () => {
+  async function createUser(t: ReturnType<typeof convexTest>) {
+    return await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Hierarchy Admin",
+        email: `hierarchy-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+    });
+  }
+
+  test("pro parent can create and list child organizations", async () => {
+    const t = convexTest(schema, modules);
+    const userId = await createUser(t);
+    const authed = authedForUser(t, userId);
+
+    const parentOrganizationId = await authed.mutation(
+      api.organizations.create,
+      {
+        name: "Parent Museum",
+        slug: `parent-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      },
+    );
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch(parentOrganizationId, {
+        subscriptionTier: "pro",
+      });
+    });
+
+    const childOrganizationId = await authed.mutation(
+      api.organizations.create,
+      {
+        name: "Child Museum",
+        slug: `child-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+        parentOrganizationId,
+      },
+    );
+
+    const childOrganization = await t.run(async (ctx) => {
+      return await ctx.db.get(childOrganizationId);
+    });
+    const children = await authed.query(
+      api.organizations.listChildOrganizations,
+      {
+        organizationId: parentOrganizationId,
+      },
+    );
+
+    expect(childOrganization?.parentOrganizationId).toBe(parentOrganizationId);
+    expect(childOrganization?.rootOrganizationId).toBe(parentOrganizationId);
+    expect(children.some((child) => child._id === childOrganizationId)).toBe(
+      true,
+    );
+  });
+
+  test("free parent cannot create child organizations", async () => {
+    const t = convexTest(schema, modules);
+    const userId = await createUser(t);
+    const authed = authedForUser(t, userId);
+
+    const parentOrganizationId = await authed.mutation(
+      api.organizations.create,
+      {
+        name: "Free Parent Museum",
+        slug: `free-parent-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      },
+    );
+
+    await expect(
+      authed.mutation(api.organizations.create, {
+        name: "Blocked Child Museum",
+        slug: `blocked-child-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+        parentOrganizationId,
+      }),
+    ).rejects.toThrow("Pro or Enterprise");
+  });
 });
 
 describe("getUsageStats", () => {
@@ -221,11 +300,11 @@ describe("watermark settings", () => {
     });
 
     await t.run(async (ctx) => {
-    await ctx.db.insert("userOrganizations", {
-      userId,
-      organizationId: orgId,
-      roleId,
-      joinedAt: Date.now(),
+      await ctx.db.insert("userOrganizations", {
+        userId,
+        organizationId: orgId,
+        roleId,
+        joinedAt: Date.now(),
       });
     });
 

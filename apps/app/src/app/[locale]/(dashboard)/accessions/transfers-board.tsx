@@ -29,6 +29,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
     if (!transferRequests) {
       return {
         pending: "-",
+        incoming: "-",
         executed: "-",
         rejected: "-",
         cancelled: "-",
@@ -37,16 +38,26 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
 
     return {
       pending: transferRequests.filter(
-        (request) => request.status === "pending",
+        (request) =>
+          request.status === "pending_source_approval" &&
+          request.direction === "outgoing",
+      ).length,
+      incoming: transferRequests.filter(
+        (request) =>
+          request.status === "awaiting_acceptance" &&
+          request.direction === "incoming",
       ).length,
       executed: transferRequests.filter(
-        (request) => request.status === "executed",
+        (request) =>
+          request.status === "executed" && request.direction === "outgoing",
       ).length,
       rejected: transferRequests.filter(
-        (request) => request.status === "rejected",
+        (request) =>
+          request.status === "rejected" && request.direction === "outgoing",
       ).length,
       cancelled: transferRequests.filter(
-        (request) => request.status === "cancelled",
+        (request) =>
+          request.status === "cancelled" && request.direction === "outgoing",
       ).length,
     };
   }, [transferRequests]);
@@ -80,6 +91,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
 
         <div className="flex gap-4">
           <TransferStat label="Pending" value={stats.pending} />
+          <TransferStat label="Incoming" value={stats.incoming} />
           <TransferStat label="Executed" value={stats.executed} />
           <TransferStat label="Rejected" value={stats.rejected} />
           <TransferStat label="Cancelled" value={stats.cancelled} />
@@ -107,25 +119,36 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
       <div className="flex-1 overflow-x-auto custom-scrollbar">
         <div className="flex h-full min-w-max gap-6 pb-4">
           <TransferKanbanColumn
-            status="pending"
-            title="Pending approval transferring object"
+            status="pending_source_approval"
+            direction="outgoing"
+            title="Pending transfer approval"
+            searchQuery={deferredSearchQuery}
+            transferRequests={transferRequests}
+          />
+          <TransferKanbanColumn
+            status="awaiting_acceptance"
+            direction="incoming"
+            title="Incoming transfer requests"
             searchQuery={deferredSearchQuery}
             transferRequests={transferRequests}
           />
           <TransferKanbanColumn
             status="executed"
+            direction="outgoing"
             title="Executed transfers"
             searchQuery={deferredSearchQuery}
             transferRequests={transferRequests}
           />
           <TransferKanbanColumn
             status="rejected"
+            direction="outgoing"
             title="Rejected transfers"
             searchQuery={deferredSearchQuery}
             transferRequests={transferRequests}
           />
           <TransferKanbanColumn
             status="cancelled"
+            direction="outgoing"
             title="Cancelled transfers"
             searchQuery={deferredSearchQuery}
             transferRequests={transferRequests}

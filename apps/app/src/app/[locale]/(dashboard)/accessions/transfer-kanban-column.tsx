@@ -19,9 +19,11 @@ type TransferRequest = FunctionReturnType<
 >[number];
 
 type TransferStatus = TransferRequest["status"];
+type TransferDirection = TransferRequest["direction"];
 
 type TransferKanbanColumnProps = {
   status: TransferStatus;
+  direction: TransferDirection;
   title: string;
   searchQuery: string;
   transferRequests: TransferRequest[];
@@ -41,6 +43,24 @@ const statusStyles: Record<
     card: "border-sky-500/30 bg-[linear-gradient(180deg,rgba(14,165,233,0.14),rgba(9,9,11,0.92))]",
     icon: Clock3,
     empty: "No transfer approvals are waiting right now.",
+  },
+  pending_source_approval: {
+    badge: "bg-sky-500/15 text-sky-300",
+    card: "border-sky-500/30 bg-[linear-gradient(180deg,rgba(14,165,233,0.14),rgba(9,9,11,0.92))]",
+    icon: Clock3,
+    empty: "No transfer approvals are waiting right now.",
+  },
+  approved_for_transfer: {
+    badge: "bg-amber-500/15 text-amber-300",
+    card: "border-amber-500/30 bg-[linear-gradient(180deg,rgba(245,158,11,0.12),rgba(9,9,11,0.92))]",
+    icon: Clock3,
+    empty: "No approved transfers are waiting right now.",
+  },
+  awaiting_acceptance: {
+    badge: "bg-amber-500/15 text-amber-300",
+    card: "border-amber-500/30 bg-[linear-gradient(180deg,rgba(245,158,11,0.12),rgba(9,9,11,0.92))]",
+    icon: Clock3,
+    empty: "No incoming transfer requests are waiting right now.",
   },
   executed: {
     badge: "bg-emerald-500/15 text-emerald-300",
@@ -64,6 +84,9 @@ const statusStyles: Record<
 
 const statusLabels: Record<TransferStatus, string> = {
   pending: "Awaiting approval",
+  pending_source_approval: "Pending transfer approval",
+  approved_for_transfer: "Approved for transfer",
+  awaiting_acceptance: "Awaiting acceptance",
   executed: "Transfer executed",
   rejected: "Rejected",
   cancelled: "Cancelled",
@@ -86,6 +109,7 @@ function getAccessionHandlingSummary(request: TransferRequest) {
 
 export function TransferKanbanColumn({
   status,
+  direction,
   title,
   searchQuery,
   transferRequests,
@@ -95,7 +119,7 @@ export function TransferKanbanColumn({
   const Icon = style.icon;
 
   const filteredRequests = transferRequests.filter((request) => {
-    if (request.status !== status) {
+    if (request.status !== status || request.direction !== direction) {
       return false;
     }
 
@@ -199,13 +223,13 @@ export function TransferKanbanColumn({
                     </p>
                   </div>
 
-                  {request.reviewNotes ? (
+                  {request.targetReviewNotes || request.sourceReviewNotes ? (
                     <div className="mt-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2">
                       <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">
                         Review notes
                       </p>
                       <p className="mt-1 line-clamp-3 text-xs text-zinc-300">
-                        {request.reviewNotes}
+                        {request.targetReviewNotes ?? request.sourceReviewNotes}
                       </p>
                     </div>
                   ) : null}

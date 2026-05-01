@@ -24,6 +24,9 @@ const accessionModeValidator = v.union(
 );
 
 const requestStatusValidator = v.union(
+  v.literal("pending_source_approval"),
+  v.literal("approved_for_transfer"),
+  v.literal("awaiting_acceptance"),
   v.literal("pending"),
   v.literal("executed"),
   v.literal("rejected"),
@@ -54,6 +57,14 @@ const organizationMoveRequestSummaryValidator = v.object({
   reviewedByName: v.optional(v.string()),
   reviewedAt: v.optional(v.number()),
   reviewNotes: v.optional(v.string()),
+  sourceReviewedByName: v.optional(v.string()),
+  sourceReviewedAt: v.optional(v.number()),
+  sourceReviewNotes: v.optional(v.string()),
+  targetReviewedByName: v.optional(v.string()),
+  targetReviewedAt: v.optional(v.number()),
+  targetReviewNotes: v.optional(v.string()),
+  deaccessionId: v.optional(v.id("deaccessions")),
+  direction: v.union(v.literal("outgoing"), v.literal("incoming")),
 });
 
 const ACTIVE_LOAN_STATUSES = new Set(["active", "dispatched"]);
@@ -80,9 +91,74 @@ type MoveBlocker = {
   message: string;
 };
 
+type RequestStatus =
+  | "pending_source_approval"
+  | "approved_for_transfer"
+  | "awaiting_acceptance"
+  | "pending"
+  | "executed"
+  | "rejected"
+  | "cancelled";
+
 type EligibilityCheckOptions = {
   ignoreRequestId?: Id<"organizationMoveRequests">;
+  ignoreDeaccessionId?: Id<"deaccessions">;
 };
+
+const ACTIVE_REQUEST_STATUSES = new Set([
+  "pending",
+  "pending_source_approval",
+  "approved_for_transfer",
+  "awaiting_acceptance",
+]);
+
+function normalizeRequestStatus(status: RequestStatus): RequestStatus {
+  return status === "pending" ? "pending_source_approval" : status;
+}
+
+function getEffectiveRootOrganizationId(organization: {
+  _id: Id<"organizations">;
+  rootOrganizationId?: Id<"organizations">;
+}) {
+  return organization.rootOrganizationId ?? organization._id;
+}
+
+async function getTransferHierarchy(
+  ctx: QueryCtx | MutationCtx,
+  sourceOrganizationId: Id<"organizations">,
+  targetOrganizationId: Id<"organizations">,
+) {
+  const sourceOrganization = await ctx.db.get(sourceOrganizationId);
+  const targetOrganization = await ctx.db.get(targetOrganizationId);
+
+  if (!sourceOrganization || !targetOrganization) {
+    throw new Error("Organization not found");
+  }
+
+  const sourceRootId = getEffectiveRootOrganizationId(sourceOrganization);
+  const targetRootId = getEffectiveRootOrganizationId(targetOrganization);
+  if (sourceRootId !== targetRootId) {
+    throw new Error(
+      "Objects can only be transferred between organizations in the same hierarchy.",
+    );
+  }
+
+  const rootOrganization = await ctx.db.get(sourceRootId);
+  if (!rootOrganization) {
+    throw new Error("Root organization not found");
+  }
+
+  const rootTier = rootOrganization.subscriptionTier ?? "free";
+  if (rootTier !== "pro" && rootTier !== "enterprise") {
+    throw new Error("Hierarchical transfers require a Pro or Enterprise plan.");
+  }
+
+  return {
+    sourceOrganization,
+    targetOrganization,
+    rootOrganization,
+  };
+}
 
 async function generateAccessionNumber(
   ctx: MutationCtx,
@@ -341,7 +417,8 @@ async function buildEligibilityBlockers(
   if (
     moveRequests.some(
       (request) =>
-        request.status === "pending" && request._id !== options.ignoreRequestId,
+        ACTIVE_REQUEST_STATUSES.has(request.status) &&
+        request._id !== options.ignoreRequestId,
     )
   ) {
     blockers.push({
@@ -410,7 +487,10 @@ async function buildEligibilityBlockers(
     .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
     .collect();
 
-  if (deaccessions.length > 0) {
+  const blockingDeaccessions = deaccessions.filter(
+    (deaccession) => deaccession._id !== options.ignoreDeaccessionId,
+  );
+  if (blockingDeaccessions.length > 0) {
     blockers.push({
       code: "has_deaccessions",
       message:
@@ -703,6 +783,68 @@ async function executeMove(
   });
 }
 
+async function createApprovedTransferDeaccession(
+  ctx: MutationCtx,
+  request: {
+    _id: Id<"organizationMoveRequests">;
+    sourceOrganizationId: Id<"organizations">;
+    targetOrganizationId: Id<"organizations">;
+    collectionId: Id<"collections">;
+    sourceAccessionNumber: string;
+    reason: string;
+    deaccessionId?: Id<"deaccessions">;
+  },
+  userId: Id<"users">,
+) {
+  if (request.deaccessionId) {
+    return request.deaccessionId;
+  }
+
+  const sourceOrganization = await ctx.db.get(request.sourceOrganizationId);
+  const targetOrganization = await ctx.db.get(request.targetOrganizationId);
+  if (!sourceOrganization || !targetOrganization) {
+    throw new Error("Organization not found");
+  }
+
+  const now = Date.now();
+  const deaccessionId = await ctx.db.insert("deaccessions", {
+    organizationId: request.sourceOrganizationId,
+    collectionId: request.collectionId,
+    deaccessionNumber: `TR-${sourceOrganization.slug.toUpperCase().slice(0, 6)}-${now}`,
+    dateDeaccessioned: now,
+    reason: request.reason,
+    method: "transfer",
+    disposition: `Transfer to ${targetOrganization.name}`,
+    approvedBy: userId,
+    approvedAt: now,
+    status: "approved",
+    targetCollectionStatus: "deaccessioned",
+    notes: `Created from transfer request for ${request.sourceAccessionNumber}.`,
+    workflowHistory: [
+      {
+        step: 1,
+        approvedBy: userId,
+        approvedAt: now,
+        comment: "Approved for transfer",
+      },
+    ],
+  });
+
+  await ctx.runMutation(internal.audit.logAction, {
+    organizationId: request.sourceOrganizationId,
+    userId,
+    action: "created_transfer_deaccession",
+    entityType: "deaccession",
+    entityId: deaccessionId,
+    changes: {
+      requestId: request._id,
+      targetOrganizationId: request.targetOrganizationId,
+    },
+  });
+
+  return deaccessionId;
+}
+
 export const listEligibleTargetOrganizations = query({
   args: {
     collectionId: v.id("collections"),
@@ -768,6 +910,16 @@ export const listEligibleTargetOrganizations = query({
           return null;
         }
 
+        try {
+          await getTransferHierarchy(
+            ctx,
+            collection.organizationId,
+            organization._id,
+          );
+        } catch {
+          return null;
+        }
+
         return {
           _id: organization._id,
           name: organization.name,
@@ -822,6 +974,22 @@ export const getEligibility = query({
     );
 
     if (args.targetOrganizationId) {
+      try {
+        await getTransferHierarchy(
+          ctx,
+          collection.organizationId,
+          args.targetOrganizationId,
+        );
+      } catch (error) {
+        blockers.push({
+          code: "target_not_in_hierarchy",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Destination organization is not eligible for transfer.",
+        });
+      }
+
       const membership = await getCurrentUserOrganization(
         ctx,
         args.targetOrganizationId,
@@ -888,6 +1056,11 @@ export const createRequest = mutation({
       args.targetOrganizationId,
       "collections.create",
     );
+    await getTransferHierarchy(
+      ctx,
+      collection.organizationId,
+      args.targetOrganizationId,
+    );
 
     const membership = await getCurrentUserOrganization(
       ctx,
@@ -948,7 +1121,7 @@ export const createRequest = mutation({
       requestedAccessionNumber,
       reason,
       notes: args.notes?.trim() || undefined,
-      status: "pending",
+      status: "pending_source_approval",
       requestedBy: userId,
       requestedAt: Date.now(),
     });
@@ -1020,17 +1193,26 @@ export const get = query({
     const reviewedByUser = request.reviewedBy
       ? await ctx.db.get(request.reviewedBy)
       : null;
+    const sourceReviewedByUser = request.sourceReviewedBy
+      ? await ctx.db.get(request.sourceReviewedBy)
+      : null;
+    const targetReviewedByUser = request.targetReviewedBy
+      ? await ctx.db.get(request.targetReviewedBy)
+      : null;
     const executedByUser = request.executedBy
       ? await ctx.db.get(request.executedBy)
       : null;
 
     return {
       ...request,
+      status: normalizeRequestStatus(request.status),
       collection,
       sourceOrganization,
       targetOrganization,
       requestedByUser,
       reviewedByUser,
+      sourceReviewedByUser,
+      targetReviewedByUser,
       executedByUser,
     };
   },
@@ -1050,21 +1232,50 @@ export const listForOrganization = query({
       "organization.manage_settings",
     );
 
-    const queryRef = args.status
-      ? ctx.db
+    const sourceRequests = args.status
+      ? await ctx.db
           .query("organizationMoveRequests")
           .withIndex("by_source_organization_and_status", (q) =>
             q
               .eq("sourceOrganizationId", args.organizationId)
               .eq("status", args.status!),
           )
-      : ctx.db
+          .collect()
+      : await ctx.db
           .query("organizationMoveRequests")
           .withIndex("by_source_organization", (q) =>
             q.eq("sourceOrganizationId", args.organizationId),
-          );
+          )
+          .collect();
 
-    const requests = await queryRef.collect();
+    const targetRequests = args.status
+      ? await ctx.db
+          .query("organizationMoveRequests")
+          .withIndex("by_target_organization_and_status", (q) =>
+            q
+              .eq("targetOrganizationId", args.organizationId)
+              .eq("status", args.status!),
+          )
+          .collect()
+      : await ctx.db
+          .query("organizationMoveRequests")
+          .withIndex("by_target_organization", (q) =>
+            q.eq("targetOrganizationId", args.organizationId),
+          )
+          .collect();
+
+    const requestsById = new Map<
+      Id<"organizationMoveRequests">,
+      (typeof sourceRequests)[number]
+    >();
+    const visibleTargetRequests = targetRequests.filter(
+      (request) =>
+        normalizeRequestStatus(request.status) !== "pending_source_approval",
+    );
+    for (const request of [...sourceRequests, ...visibleTargetRequests]) {
+      requestsById.set(request._id, request);
+    }
+    const requests = Array.from(requestsById.values());
 
     let enrichedRequests = await Promise.all(
       requests.map(async (request) => {
@@ -1076,6 +1287,16 @@ export const listForOrganization = query({
         const reviewedByUser = request.reviewedBy
           ? await ctx.db.get(request.reviewedBy)
           : null;
+        const sourceReviewedByUser = request.sourceReviewedBy
+          ? await ctx.db.get(request.sourceReviewedBy)
+          : null;
+        const targetReviewedByUser = request.targetReviewedBy
+          ? await ctx.db.get(request.targetReviewedBy)
+          : null;
+        const direction: "incoming" | "outgoing" =
+          request.targetOrganizationId === args.organizationId
+            ? "incoming"
+            : "outgoing";
 
         return {
           _id: request._id,
@@ -1090,7 +1311,7 @@ export const listForOrganization = query({
             targetOrganization?.name ?? "Unknown organization",
           reason: request.reason,
           notes: request.notes,
-          status: request.status,
+          status: normalizeRequestStatus(request.status),
           requestedBy: request.requestedBy,
           requestedByName:
             requestedByUser?.name ??
@@ -1100,6 +1321,16 @@ export const listForOrganization = query({
           reviewedByName: reviewedByUser?.name ?? reviewedByUser?.username,
           reviewedAt: request.reviewedAt,
           reviewNotes: request.reviewNotes,
+          sourceReviewedByName:
+            sourceReviewedByUser?.name ?? sourceReviewedByUser?.username,
+          sourceReviewedAt: request.sourceReviewedAt,
+          sourceReviewNotes: request.sourceReviewNotes,
+          targetReviewedByName:
+            targetReviewedByUser?.name ?? targetReviewedByUser?.username,
+          targetReviewedAt: request.targetReviewedAt,
+          targetReviewNotes: request.targetReviewNotes,
+          deaccessionId: request.deaccessionId,
+          direction,
         };
       }),
     );
@@ -1159,7 +1390,8 @@ export const getPendingForCollection = query({
       .collect();
 
     const pendingRequest =
-      request.find((entry) => entry.status === "pending") ?? null;
+      request.find((entry) => ACTIVE_REQUEST_STATUSES.has(entry.status)) ??
+      null;
 
     if (!pendingRequest) {
       return null;
@@ -1174,7 +1406,7 @@ export const getPendingForCollection = query({
       targetOrganizationId: pendingRequest.targetOrganizationId,
       targetOrganizationName:
         targetOrganization?.name ?? "Unknown organization",
-      status: pendingRequest.status,
+      status: normalizeRequestStatus(pendingRequest.status),
       reason: pendingRequest.reason,
       accessionMode: pendingRequest.accessionMode,
       requestedAt: pendingRequest.requestedAt,
@@ -1205,7 +1437,7 @@ export const approve = mutation({
       "organization.manage_settings",
     );
 
-    if (request.status !== "pending") {
+    if (normalizeRequestStatus(request.status) !== "pending_source_approval") {
       throw new Error(`Move request is already ${request.status}.`);
     }
 
@@ -1219,6 +1451,110 @@ export const approve = mutation({
       collection,
       request.targetOrganizationId,
       { ignoreRequestId: request._id },
+    );
+
+    if (blockers.length > 0) {
+      throw new Error(blockers.map((blocker) => blocker.message).join(" "));
+    }
+
+    await getTransferHierarchy(
+      ctx,
+      request.sourceOrganizationId,
+      request.targetOrganizationId,
+    );
+
+    const deaccessionId = await createApprovedTransferDeaccession(
+      ctx,
+      request,
+      userId,
+    );
+
+    const now = Date.now();
+    await ctx.db.patch(args.requestId, {
+      status: "awaiting_acceptance",
+      sourceReviewedBy: userId,
+      sourceReviewedAt: now,
+      sourceReviewNotes: args.reviewNotes?.trim() || undefined,
+      reviewedBy: userId,
+      reviewedAt: now,
+      reviewNotes: args.reviewNotes?.trim() || undefined,
+      deaccessionId,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: request.sourceOrganizationId,
+      userId,
+      action: "approved_organization_move_request_for_transfer",
+      entityType: "organizationMoveRequest",
+      entityId: args.requestId,
+      changes: {
+        collectionId: request.collectionId,
+        targetOrganizationId: request.targetOrganizationId,
+        deaccessionId,
+      },
+    });
+
+    await ctx.runMutation(internal.notifications.notifyUsersWithPermission, {
+      organizationId: request.targetOrganizationId,
+      permission: "organization.manage_settings",
+      type: NOTIFICATION_TYPES.MOVE_REQUEST_CREATED,
+      title: `Incoming Transfer Request: ${collection.accessionNumber}`,
+      message: `${collection.title} is awaiting acceptance before the transfer is completed.`,
+      relatedEntityType: "move_request",
+      relatedEntityId: args.requestId,
+      excludeUserId: userId,
+    });
+
+    return null;
+  },
+});
+
+export const accept = mutation({
+  args: {
+    requestId: v.id("organizationMoveRequests"),
+    reviewNotes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const request = await ctx.db.get(args.requestId);
+    if (!request) {
+      throw new Error("Move request not found");
+    }
+
+    await requirePermission(
+      ctx,
+      request.targetOrganizationId,
+      "organization.manage_settings",
+    );
+
+    if (request.status !== "awaiting_acceptance") {
+      throw new Error(`Move request is already ${request.status}.`);
+    }
+
+    const collection = await ctx.db.get(request.collectionId);
+    if (!collection) {
+      throw new Error("Collection not found");
+    }
+
+    await getTransferHierarchy(
+      ctx,
+      request.sourceOrganizationId,
+      request.targetOrganizationId,
+    );
+
+    const blockers = await buildEligibilityBlockers(
+      ctx,
+      collection,
+      request.targetOrganizationId,
+      {
+        ignoreRequestId: request._id,
+        ignoreDeaccessionId: request.deaccessionId,
+      },
     );
 
     if (blockers.length > 0) {
@@ -1263,9 +1599,9 @@ export const approve = mutation({
     await ctx.db.patch(args.requestId, {
       status: "executed",
       finalAccessionNumber,
-      reviewedBy: userId,
-      reviewedAt: now,
-      reviewNotes: args.reviewNotes?.trim() || undefined,
+      targetReviewedBy: userId,
+      targetReviewedAt: now,
+      targetReviewNotes: args.reviewNotes?.trim() || undefined,
       executedBy: userId,
       executedAt: now,
     });
@@ -1332,15 +1668,22 @@ export const reject = mutation({
       throw new Error("Move request not found");
     }
 
-    await requirePermission(
-      ctx,
-      request.sourceOrganizationId,
-      "organization.manage_settings",
-    );
-
-    if (request.status !== "pending") {
+    const normalizedStatus = normalizeRequestStatus(request.status);
+    if (
+      normalizedStatus !== "pending_source_approval" &&
+      normalizedStatus !== "awaiting_acceptance"
+    ) {
       throw new Error(`Move request is already ${request.status}.`);
     }
+
+    const isTargetReview = normalizedStatus === "awaiting_acceptance";
+    await requirePermission(
+      ctx,
+      isTargetReview
+        ? request.targetOrganizationId
+        : request.sourceOrganizationId,
+      "organization.manage_settings",
+    );
 
     const reviewNotes = args.reviewNotes.trim();
     if (!reviewNotes) {
@@ -1349,17 +1692,30 @@ export const reject = mutation({
       );
     }
 
+    const now = Date.now();
     await ctx.db.patch(args.requestId, {
       status: "rejected",
-      reviewedBy: userId,
-      reviewedAt: Date.now(),
-      reviewNotes,
+      reviewedBy: isTargetReview ? request.reviewedBy : userId,
+      reviewedAt: isTargetReview ? request.reviewedAt : now,
+      reviewNotes: isTargetReview ? request.reviewNotes : reviewNotes,
+      sourceReviewedBy: isTargetReview ? request.sourceReviewedBy : userId,
+      sourceReviewedAt: isTargetReview ? request.sourceReviewedAt : now,
+      sourceReviewNotes: isTargetReview
+        ? request.sourceReviewNotes
+        : reviewNotes,
+      targetReviewedBy: isTargetReview ? userId : undefined,
+      targetReviewedAt: isTargetReview ? now : undefined,
+      targetReviewNotes: isTargetReview ? reviewNotes : undefined,
     });
 
     await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.sourceOrganizationId,
+      organizationId: isTargetReview
+        ? request.targetOrganizationId
+        : request.sourceOrganizationId,
       userId,
-      action: "rejected_organization_move_request",
+      action: isTargetReview
+        ? "rejected_incoming_organization_move_request"
+        : "rejected_organization_move_request",
       entityType: "organizationMoveRequest",
       entityId: args.requestId,
       changes: {
@@ -1372,7 +1728,9 @@ export const reject = mutation({
         organizationId: request.sourceOrganizationId,
         userId: request.requestedBy,
         type: "workflow_rejected",
-        title: "Object Move Rejected",
+        title: isTargetReview
+          ? "Incoming Transfer Rejected"
+          : "Object Move Rejected",
         message: reviewNotes,
         relatedEntityType: "move_request",
         relatedEntityId: args.requestId,
@@ -1399,7 +1757,7 @@ export const cancel = mutation({
       throw new Error("Move request not found");
     }
 
-    if (request.status !== "pending") {
+    if (normalizeRequestStatus(request.status) !== "pending_source_approval") {
       throw new Error(`Move request is already ${request.status}.`);
     }
 
@@ -1419,6 +1777,8 @@ export const cancel = mutation({
       status: "cancelled",
       reviewedBy: isSourceAdmin ? userId : undefined,
       reviewedAt: Date.now(),
+      sourceReviewedBy: isSourceAdmin ? userId : undefined,
+      sourceReviewedAt: isSourceAdmin ? Date.now() : undefined,
     });
 
     await ctx.runMutation(internal.audit.logAction, {

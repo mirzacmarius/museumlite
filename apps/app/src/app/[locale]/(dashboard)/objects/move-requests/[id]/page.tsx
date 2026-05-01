@@ -27,10 +27,19 @@ import { toast } from "sonner";
 function getStatusBadge(status: string) {
   switch (status) {
     case "pending":
+    case "pending_source_approval":
       return (
         <Badge className="border-blue-500/30 bg-blue-500/10 text-blue-300 hover:bg-blue-500/10">
           <Clock className="mr-1 h-3 w-3" />
-          Pending
+          Pending transfer approval
+        </Badge>
+      );
+    case "approved_for_transfer":
+    case "awaiting_acceptance":
+      return (
+        <Badge className="border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/10">
+          <Clock className="mr-1 h-3 w-3" />
+          Awaiting acceptance
         </Badge>
       );
     case "executed":
@@ -81,7 +90,7 @@ export default function MoveRequestDetailPage() {
 
   const [reviewNotes, setReviewNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState<
-    null | "approve" | "reject" | "cancel"
+    null | "approve" | "accept" | "reject" | "cancel"
   >(null);
 
   const request = useQuery(
@@ -93,6 +102,7 @@ export default function MoveRequestDetailPage() {
   const currentUser = useQuery(api.users.getUser, {});
 
   const approve = useMutation(api.objectMoves.approve);
+  const accept = useMutation(api.objectMoves.accept);
   const reject = useMutation(api.objectMoves.reject);
   const cancel = useMutation(api.objectMoves.cancel);
 
@@ -100,9 +110,16 @@ export default function MoveRequestDetailPage() {
   const isSourceAdmin =
     currentOrganizationId === request?.sourceOrganization?._id &&
     hasPermission("organization.manage_settings");
-  const canApproveOrReject = request?.status === "pending" && isSourceAdmin;
+  const isTargetAdmin =
+    currentOrganizationId === request?.targetOrganization?._id &&
+    hasPermission("organization.manage_settings");
+  const canSourceApproveOrReject =
+    request?.status === "pending_source_approval" && isSourceAdmin;
+  const canTargetAcceptOrReject =
+    request?.status === "awaiting_acceptance" && isTargetAdmin;
   const canCancel =
-    request?.status === "pending" && (isRequester || isSourceAdmin);
+    request?.status === "pending_source_approval" &&
+    (isRequester || isSourceAdmin);
 
   const accessionSummary = useMemo(() => {
     if (!request) {
@@ -158,12 +175,32 @@ export default function MoveRequestDetailPage() {
         reviewNotes: reviewNotes.trim() || undefined,
       });
       setReviewNotes("");
-      toast.success("Move request approved and executed.");
+      toast.success("Transfer approved and sent for acceptance.");
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
           : "Failed to approve move request.",
+      );
+    } finally {
+      setIsSubmitting(null);
+    }
+  };
+
+  const handleAccept = async () => {
+    setIsSubmitting("accept");
+    try {
+      await accept({
+        requestId: request._id,
+        reviewNotes: reviewNotes.trim() || undefined,
+      });
+      setReviewNotes("");
+      toast.success("Transfer accepted and completed.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to accept transfer request.",
       );
     } finally {
       setIsSubmitting(null);
@@ -288,12 +325,28 @@ export default function MoveRequestDetailPage() {
                     )}
                   </p>
                 </div>
-                {request.reviewedAt && (
+                {request.sourceReviewedAt && (
                   <div>
-                    <Label className="text-muted-foreground">Reviewed at</Label>
+                    <Label className="text-muted-foreground">
+                      Source approved at
+                    </Label>
                     <p className="mt-1">
                       {formatDateFns(
-                        new Date(request.reviewedAt),
+                        new Date(request.sourceReviewedAt),
+                        "MMMM d, yyyy 'at' p",
+                        locale,
+                      )}
+                    </p>
+                  </div>
+                )}
+                {request.targetReviewedAt && (
+                  <div>
+                    <Label className="text-muted-foreground">
+                      Target reviewed at
+                    </Label>
+                    <p className="mt-1">
+                      {formatDateFns(
+                        new Date(request.targetReviewedAt),
                         "MMMM d, yyyy 'at' p",
                         locale,
                       )}
@@ -330,11 +383,11 @@ export default function MoveRequestDetailPage() {
                 </div>
               )}
 
-              {request.reviewNotes && (
+              {(request.sourceReviewNotes || request.targetReviewNotes) && (
                 <div>
                   <Label className="text-muted-foreground">Review notes</Label>
                   <p className="mt-1 whitespace-pre-wrap">
-                    {request.reviewNotes}
+                    {request.targetReviewNotes ?? request.sourceReviewNotes}
                   </p>
                 </div>
               )}
@@ -360,11 +413,13 @@ export default function MoveRequestDetailPage() {
             </div>
           )}
 
-          {(canApproveOrReject || canCancel) && (
+          {(canSourceApproveOrReject ||
+            canTargetAcceptOrReject ||
+            canCancel) && (
             <div className="rounded-lg border border-border bg-card p-6">
               <h2 className="text-lg font-semibold">Actions</h2>
               <div className="mt-4 space-y-4">
-                {canApproveOrReject && (
+                {(canSourceApproveOrReject || canTargetAcceptOrReject) && (
                   <div className="space-y-2">
                     <Label htmlFor="reviewNotes">Review notes</Label>
                     <Textarea
@@ -378,7 +433,7 @@ export default function MoveRequestDetailPage() {
                 )}
 
                 <div className="flex flex-wrap gap-3">
-                  {canApproveOrReject && (
+                  {canSourceApproveOrReject && (
                     <Button
                       onClick={handleApprove}
                       disabled={isSubmitting !== null}
@@ -386,10 +441,21 @@ export default function MoveRequestDetailPage() {
                       {isSubmitting === "approve" && (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       )}
-                      Approve and execute move
+                      Approve for transfer
                     </Button>
                   )}
-                  {canApproveOrReject && (
+                  {canTargetAcceptOrReject && (
+                    <Button
+                      onClick={handleAccept}
+                      disabled={isSubmitting !== null}
+                    >
+                      {isSubmitting === "accept" && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      Accept and complete transfer
+                    </Button>
+                  )}
+                  {(canSourceApproveOrReject || canTargetAcceptOrReject) && (
                     <Button
                       variant="destructive"
                       onClick={handleReject}

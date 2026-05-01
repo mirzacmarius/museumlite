@@ -196,7 +196,12 @@ export default defineSchema({
     subscriptionTier: v.optional(
       v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
     ),
-  }).index("by_slug", ["slug"]),
+    parentOrganizationId: v.optional(v.id("organizations")),
+    rootOrganizationId: v.optional(v.id("organizations")),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_parent_organization", ["parentOrganizationId"])
+    .index("by_root_organization", ["rootOrganizationId"]),
 
   organizationUsageCounters: defineTable({
     organizationId: v.id("organizations"),
@@ -1395,6 +1400,9 @@ export default defineSchema({
     reason: v.string(),
     notes: v.optional(v.string()),
     status: v.union(
+      v.literal("pending_source_approval"),
+      v.literal("approved_for_transfer"),
+      v.literal("awaiting_acceptance"),
       v.literal("pending"),
       v.literal("executed"),
       v.literal("rejected"),
@@ -1402,17 +1410,28 @@ export default defineSchema({
     ),
     requestedBy: v.id("users"),
     requestedAt: v.number(),
+    sourceReviewedBy: v.optional(v.id("users")),
+    sourceReviewedAt: v.optional(v.number()),
+    sourceReviewNotes: v.optional(v.string()),
+    targetReviewedBy: v.optional(v.id("users")),
+    targetReviewedAt: v.optional(v.number()),
+    targetReviewNotes: v.optional(v.string()),
     reviewedBy: v.optional(v.id("users")),
     reviewedAt: v.optional(v.number()),
     reviewNotes: v.optional(v.string()),
     executedBy: v.optional(v.id("users")),
     executedAt: v.optional(v.number()),
+    deaccessionId: v.optional(v.id("deaccessions")),
   })
     .index("by_source_organization", ["sourceOrganizationId"])
     .index("by_target_organization", ["targetOrganizationId"])
     .index("by_collection", ["collectionId"])
     .index("by_source_organization_and_status", [
       "sourceOrganizationId",
+      "status",
+    ])
+    .index("by_target_organization_and_status", [
+      "targetOrganizationId",
       "status",
     ]),
 

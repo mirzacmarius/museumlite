@@ -19,12 +19,12 @@ import {
   getTierLimits,
   requireFeatureAccess,
 } from "./utils/featureGates";
-import { requirePermission } from "./utils/permissions";
-import { getPositiveWorkflowSteps } from "./utils/workflowSteps";
 import {
   createEmptyUsageCounter,
   getUsageCounter,
 } from "./utils/organizationUsageCounters";
+import { requirePermission } from "./utils/permissions";
+import { getPositiveWorkflowSteps } from "./utils/workflowSteps";
 
 type EnabledModule =
   | "library"
@@ -48,6 +48,47 @@ const enabledModuleValidator = v.union(
   v.literal("accounts"),
 );
 
+function getEffectiveRootOrganizationId(
+  organization: Doc<"organizations">,
+): Id<"organizations"> {
+  return organization.rootOrganizationId ?? organization._id;
+}
+
+function hasHierarchyAccess(organization: Doc<"organizations">) {
+  const tier = organization.subscriptionTier ?? "free";
+  return tier === "pro" || tier === "enterprise";
+}
+
+async function requireHierarchyOwnerAccess(
+  ctx: Parameters<typeof requirePermission>[0],
+  parentOrganizationId: Id<"organizations">,
+) {
+  await requirePermission(
+    ctx,
+    parentOrganizationId,
+    "organization.manage_settings",
+  );
+
+  const parentOrganization = await ctx.db.get(parentOrganizationId);
+  if (!parentOrganization) {
+    throw new ConvexError("Parent organization not found");
+  }
+
+  const rootOrganizationId = getEffectiveRootOrganizationId(parentOrganization);
+  const rootOrganization = await ctx.db.get(rootOrganizationId);
+  if (!rootOrganization) {
+    throw new ConvexError("Root organization not found");
+  }
+
+  if (!hasHierarchyAccess(rootOrganization)) {
+    throw new ConvexError(
+      "Creating sub-organizations requires a Pro or Enterprise plan",
+    );
+  }
+
+  return { parentOrganization, rootOrganizationId };
+}
+
 /**
  * Create new organization
  */
@@ -69,6 +110,7 @@ export const create = mutation({
         enableDetailedConditionReports: v.optional(v.boolean()),
       }),
     ),
+    parentOrganizationId: v.optional(v.id("organizations")),
   },
   returns: v.id("organizations"),
   handler: async (ctx, args) => {
@@ -104,6 +146,10 @@ export const create = mutation({
       });
     }
 
+    const hierarchy = args.parentOrganizationId
+      ? await requireHierarchyOwnerAccess(ctx, args.parentOrganizationId)
+      : null;
+
     const orgPrefix = normalizedSlug.toUpperCase().substring(0, 3);
     const defaultAccessionFormat = `${orgPrefix}-{YYYY}-{####}`;
 
@@ -129,6 +175,8 @@ export const create = mutation({
       type: args.type,
       settings: mergedSettings,
       subscriptionTier: "free",
+      parentOrganizationId: args.parentOrganizationId,
+      rootOrganizationId: hierarchy?.rootOrganizationId,
     });
 
     await ctx.db.insert(
@@ -288,6 +336,8 @@ export const create = mutation({
         name,
         slug: normalizedSlug,
         type: args.type,
+        parentOrganizationId: args.parentOrganizationId,
+        rootOrganizationId: hierarchy?.rootOrganizationId,
       },
     });
 
@@ -359,6 +409,8 @@ export const get = query({
       subscriptionTier: v.optional(
         v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
       ),
+      parentOrganizationId: v.optional(v.id("organizations")),
+      rootOrganizationId: v.optional(v.id("organizations")),
       _creationTime: v.number(),
     }),
     v.null(),
@@ -418,6 +470,8 @@ export const getBySlug = query({
       subscriptionTier: v.optional(
         v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
       ),
+      parentOrganizationId: v.optional(v.id("organizations")),
+      rootOrganizationId: v.optional(v.id("organizations")),
       _creationTime: v.number(),
     }),
     v.null(),
@@ -1042,6 +1096,8 @@ export const listUserOrganizations = query({
       subscriptionTier: v.optional(
         v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
       ),
+      parentOrganizationId: v.optional(v.id("organizations")),
+      rootOrganizationId: v.optional(v.id("organizations")),
       _creationTime: v.number(),
     }),
   ),
@@ -1081,6 +1137,8 @@ export const listUserOrganizations = query({
               }
             : undefined,
           subscriptionTier: org.subscriptionTier,
+          parentOrganizationId: org.parentOrganizationId,
+          rootOrganizationId: org.rootOrganizationId,
           _creationTime: org._creationTime,
         };
       }),
@@ -1089,6 +1147,55 @@ export const listUserOrganizations = query({
     return organizations.filter(
       (org): org is NonNullable<typeof org> => org !== null,
     );
+  },
+});
+
+export const listChildOrganizations = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("organizations"),
+      name: v.string(),
+      slug: v.string(),
+      type: v.union(
+        v.literal("museum"),
+        v.literal("gallery"),
+        v.literal("library"),
+        v.literal("collector"),
+      ),
+      parentOrganizationId: v.optional(v.id("organizations")),
+      rootOrganizationId: v.optional(v.id("organizations")),
+      subscriptionTier: v.optional(
+        v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
+      ),
+      _creationTime: v.number(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
+
+    const organization = await ctx.db.get(args.organizationId);
+    if (!organization) {
+      throw new ConvexError("Organization not found");
+    }
+
+    const rootOrganizationId = getEffectiveRootOrganizationId(organization);
+    const children = await ctx.db
+      .query("organizations")
+      .withIndex("by_root_organization", (q) =>
+        q.eq("rootOrganizationId", rootOrganizationId),
+      )
+      .collect();
+
+    return children
+      .filter((child) => child._id !== args.organizationId)
+      .sort((left, right) => left.name.localeCompare(right.name));
   },
 });
 

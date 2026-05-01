@@ -48,6 +48,11 @@ async function createOrganization(
     accessionCounterScope?: "global" | "year" | "month" | "day";
     autoGenerateAccessionNumbers?: boolean;
   },
+  hierarchy?: {
+    parentOrganizationId?: Id<"organizations">;
+    rootOrganizationId?: Id<"organizations">;
+    subscriptionTier?: "free" | "pro" | "enterprise";
+  },
 ) {
   return await t.run(async (ctx) => {
     return await ctx.db.insert("organizations", {
@@ -55,6 +60,9 @@ async function createOrganization(
       slug,
       type: "museum",
       settings,
+      subscriptionTier: hierarchy?.subscriptionTier,
+      parentOrganizationId: hierarchy?.parentOrganizationId,
+      rootOrganizationId: hierarchy?.rootOrganizationId,
     });
   });
 }
@@ -192,17 +200,28 @@ async function createMoveFixture(
     "Admin",
     `admin-${Math.random().toString(36).slice(2, 8)}@test.dev`,
   );
+  const targetAdminId = await createUser(
+    t,
+    "Target Admin",
+    `target-admin-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+  );
 
   const sourceOrganizationId = await createOrganization(
     t,
     "Source Museum",
     `source-${Math.random().toString(36).slice(2, 8)}`,
+    undefined,
+    { subscriptionTier: "pro" },
   );
   const targetOrganizationId = await createOrganization(
     t,
     "Target Museum",
     `target-${Math.random().toString(36).slice(2, 8)}`,
     options?.targetSettings,
+    {
+      parentOrganizationId: sourceOrganizationId,
+      rootOrganizationId: sourceOrganizationId,
+    },
   );
 
   const requesterSourceRoleId = await createRoleWithPermissions(
@@ -223,6 +242,12 @@ async function createMoveFixture(
     ["organization.manage_settings", "collections.read"],
     "Source Admin Role",
   );
+  const targetAdminRoleId = await createRoleWithPermissions(
+    t,
+    targetOrganizationId,
+    ["organization.manage_settings", "collections.read", "collections.create"],
+    "Target Admin Role",
+  );
 
   await addMembership(
     t,
@@ -237,6 +262,12 @@ async function createMoveFixture(
     requesterTargetRoleId,
   );
   await addMembership(t, adminId, sourceOrganizationId, adminRoleId);
+  await addMembership(
+    t,
+    targetAdminId,
+    targetOrganizationId,
+    targetAdminRoleId,
+  );
 
   const collectionGroupId = await createCollectionGroup(
     t,
@@ -284,6 +315,7 @@ async function createMoveFixture(
   return {
     requesterId,
     adminId,
+    targetAdminId,
     sourceOrganizationId,
     targetOrganizationId,
     collectionId,
@@ -291,6 +323,7 @@ async function createMoveFixture(
     locationId,
     requester: authedForUser(t, requesterId),
     admin: authedForUser(t, adminId),
+    targetAdmin: authedForUser(t, targetAdminId),
   };
 }
 
@@ -314,7 +347,7 @@ describe("objectMoves", () => {
       return await ctx.db.get(requestId);
     });
 
-    expect(request?.status).toBe("pending");
+    expect(request?.status).toBe("pending_source_approval");
     expect(request?.sourceOrganizationId).toBe(fixture.sourceOrganizationId);
     expect(request?.targetOrganizationId).toBe(fixture.targetOrganizationId);
 
@@ -365,6 +398,39 @@ describe("objectMoves", () => {
         reason: "Invalid same-org move",
       }),
     ).rejects.toThrow("destination organization must be different");
+  });
+
+  test("fails when target organization is outside the source hierarchy", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const externalOrganizationId = await createOrganization(
+      t,
+      "External Museum",
+      `external-${Math.random().toString(36).slice(2, 8)}`,
+      undefined,
+      { subscriptionTier: "pro" },
+    );
+    const externalRoleId = await createRoleWithPermissions(
+      t,
+      externalOrganizationId,
+      ["collections.create", "collections.read"],
+      "External Role",
+    );
+    await addMembership(
+      t,
+      fixture.requesterId,
+      externalOrganizationId,
+      externalRoleId,
+    );
+
+    await expect(
+      fixture.requester.mutation(api.objectMoves.createRequest, {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: externalOrganizationId,
+        accessionMode: "keep",
+        reason: "Invalid cross-hierarchy move",
+      }),
+    ).rejects.toThrow("same hierarchy");
   });
 
   test("fails when the requester is not a member of the target organization", async () => {
@@ -474,9 +540,12 @@ describe("objectMoves", () => {
       notes: "Handle with registrar review",
     });
 
-    const requests = await fixture.admin.query(api.objectMoves.listForOrganization, {
-      organizationId: fixture.sourceOrganizationId,
-    });
+    const requests = await fixture.admin.query(
+      api.objectMoves.listForOrganization,
+      {
+        organizationId: fixture.sourceOrganizationId,
+      },
+    );
 
     expect(requests).toHaveLength(1);
     expect(requests[0]).toMatchObject({
@@ -489,9 +558,10 @@ describe("objectMoves", () => {
       targetOrganizationName: "Target Museum",
       reason: "Curatorial transfer for gallery rotation",
       notes: "Handle with registrar review",
-      status: "pending",
+      status: "pending_source_approval",
       requestedBy: fixture.requesterId,
       requestedByName: "Requester",
+      direction: "outgoing",
     });
 
     const matchingSearches = [
@@ -517,7 +587,7 @@ describe("objectMoves", () => {
     }
   });
 
-  test("listForOrganization is source-organization scoped", async () => {
+  test("listForOrganization hides source-pending requests from the target organization", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
 
@@ -528,26 +598,7 @@ describe("objectMoves", () => {
       reason: "Source-scoped listing check",
     });
 
-    const targetAdminId = await createUser(
-      t,
-      "Target Admin",
-      `target-admin-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-    );
-    const targetAdminRoleId = await createRoleWithPermissions(
-      t,
-      fixture.targetOrganizationId,
-      ["organization.manage_settings", "collections.read"],
-      "Target Admin Role",
-    );
-    await addMembership(
-      t,
-      targetAdminId,
-      fixture.targetOrganizationId,
-      targetAdminRoleId,
-    );
-
-    const targetAdmin = authedForUser(t, targetAdminId);
-    const targetScopedRequests = await targetAdmin.query(
+    const targetScopedRequests = await fixture.targetAdmin.query(
       api.objectMoves.listForOrganization,
       {
         organizationId: fixture.targetOrganizationId,
@@ -557,7 +608,7 @@ describe("objectMoves", () => {
     expect(targetScopedRequests).toHaveLength(0);
   });
 
-  test("approving a keep request moves the object, clears source-only links, and updates related records", async () => {
+  test("source approval creates a transfer deaccession without moving the object", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
 
@@ -574,6 +625,50 @@ describe("objectMoves", () => {
     await fixture.admin.mutation(api.objectMoves.approve, {
       requestId,
       reviewNotes: "Approved by source admin",
+    });
+
+    const collection = await t.run(async (ctx) => {
+      return await ctx.db.get(fixture.collectionId);
+    });
+    const request = await t.run(async (ctx) => {
+      return await ctx.db.get(requestId);
+    });
+    const deaccession = request?.deaccessionId
+      ? await t.run(async (ctx) => {
+          return await ctx.db.get(request.deaccessionId!);
+        })
+      : null;
+
+    expect(request?.status).toBe("awaiting_acceptance");
+    expect(request?.sourceReviewNotes).toBe("Approved by source admin");
+    expect(request?.deaccessionId).toBeDefined();
+    expect(deaccession?.method).toBe("transfer");
+    expect(deaccession?.status).toBe("approved");
+    expect(collection?.organizationId).toBe(fixture.sourceOrganizationId);
+    expect(collection?.accessionNumber).toBe("SRC-001");
+  });
+
+  test("target acceptance moves the object, clears source-only links, and updates related records", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Approved move",
+      },
+    );
+
+    await fixture.admin.mutation(api.objectMoves.approve, {
+      requestId,
+      reviewNotes: "Approved by source admin",
+    });
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      reviewNotes: "Accepted by target admin",
     });
 
     const collection = await t.run(async (ctx) => {
@@ -629,6 +724,7 @@ describe("objectMoves", () => {
 
     expect(request?.status).toBe("executed");
     expect(request?.finalAccessionNumber).toBe("SRC-001");
+    expect(request?.targetReviewNotes).toBe("Accepted by target admin");
     expect(collection?.organizationId).toBe(fixture.targetOrganizationId);
     expect(collection?.accessionNumber).toBe("SRC-001");
     expect(collection?.collectionGroupId).toBeUndefined();
@@ -675,6 +771,10 @@ describe("objectMoves", () => {
       requestId,
       reviewNotes: "Manual accession approved",
     });
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      reviewNotes: "Manual accession accepted",
+    });
 
     const collection = await t.run(async (ctx) => {
       return await ctx.db.get(fixture.collectionId);
@@ -718,6 +818,10 @@ describe("objectMoves", () => {
       requestId,
       reviewNotes: "Auto accession approved",
     });
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      reviewNotes: "Auto accession accepted",
+    });
 
     const collection = await t.run(async (ctx) => {
       return await ctx.db.get(fixture.collectionId);
@@ -746,7 +850,7 @@ describe("objectMoves", () => {
       api.objectMoves.listForOrganization,
       {
         organizationId: fixture.sourceOrganizationId,
-        status: "pending",
+        status: "pending_source_approval",
       },
     );
     expect(pendingRequests.some((request) => request._id === requestId)).toBe(
@@ -756,6 +860,22 @@ describe("objectMoves", () => {
     await fixture.admin.mutation(api.objectMoves.approve, {
       requestId,
       reviewNotes: "Approved during lifecycle test",
+    });
+
+    const incomingRequests = await fixture.targetAdmin.query(
+      api.objectMoves.listForOrganization,
+      {
+        organizationId: fixture.targetOrganizationId,
+        status: "awaiting_acceptance",
+      },
+    );
+    expect(incomingRequests.some((request) => request._id === requestId)).toBe(
+      true,
+    );
+
+    await fixture.targetAdmin.mutation(api.objectMoves.accept, {
+      requestId,
+      reviewNotes: "Accepted during lifecycle test",
     });
 
     const executedRequests = await fixture.admin.query(
@@ -845,6 +965,51 @@ describe("objectMoves", () => {
     );
   });
 
+  test("target rejection leaves the object unchanged and appears in source rejected list", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Target may reject this move",
+      },
+    );
+
+    await fixture.admin.mutation(api.objectMoves.approve, {
+      requestId,
+      reviewNotes: "Source approves transfer",
+    });
+    await fixture.targetAdmin.mutation(api.objectMoves.reject, {
+      requestId,
+      reviewNotes: "Target cannot accept custody",
+    });
+
+    const request = await t.run(async (ctx) => {
+      return await ctx.db.get(requestId);
+    });
+    const collection = await t.run(async (ctx) => {
+      return await ctx.db.get(fixture.collectionId);
+    });
+    const rejectedRequests = await fixture.admin.query(
+      api.objectMoves.listForOrganization,
+      {
+        organizationId: fixture.sourceOrganizationId,
+        status: "rejected",
+      },
+    );
+
+    expect(request?.status).toBe("rejected");
+    expect(request?.targetReviewNotes).toBe("Target cannot accept custody");
+    expect(collection?.organizationId).toBe(fixture.sourceOrganizationId);
+    expect(rejectedRequests.some((entry) => entry._id === requestId)).toBe(
+      true,
+    );
+  });
+
   test("cancelling a pending request leaves the object unchanged", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
@@ -897,8 +1062,8 @@ describe("objectMoves", () => {
         status: "cancelled",
       },
     );
-    expect(
-      cancelledRequests.some((request) => request._id === requestId),
-    ).toBe(true);
+    expect(cancelledRequests.some((request) => request._id === requestId)).toBe(
+      true,
+    );
   });
 });

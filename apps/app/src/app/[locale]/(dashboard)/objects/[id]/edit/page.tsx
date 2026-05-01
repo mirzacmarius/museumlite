@@ -1140,11 +1140,17 @@ export default function CollectionEditPage() {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-sm font-medium text-blue-100">
                           <ArrowRightLeft className="h-4 w-4" />
-                          Pending organization transfer
+                          {pendingMoveRequest.status === "awaiting_acceptance"
+                            ? "Awaiting transfer acceptance"
+                            : "Pending transfer approval"}
                         </div>
                         <p className="text-sm text-blue-200/80">
-                          This object is awaiting approval to move to{" "}
-                          {pendingMoveRequest.targetOrganizationName}.
+                          This object is{" "}
+                          {pendingMoveRequest.status === "awaiting_acceptance"
+                            ? "awaiting acceptance"
+                            : "awaiting approval"}{" "}
+                          to move to {pendingMoveRequest.targetOrganizationName}
+                          .
                         </p>
                       </div>
                       <Button variant="outline" size="sm" asChild>

@@ -6,8 +6,8 @@ import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
   type ReactNode,
-  useCallback,
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -42,6 +42,8 @@ interface OrganizationContextType {
       >;
     };
     subscriptionTier?: "free" | "pro" | "enterprise";
+    parentOrganizationId?: Id<"organizations">;
+    rootOrganizationId?: Id<"organizations">;
     _creationTime: number;
   }>;
   currentOrganization: {
@@ -68,6 +70,8 @@ interface OrganizationContextType {
       >;
     };
     subscriptionTier?: "free" | "pro" | "enterprise";
+    parentOrganizationId?: Id<"organizations">;
+    rootOrganizationId?: Id<"organizations">;
   } | null;
   isLoading: boolean;
 }
@@ -130,7 +134,10 @@ export function OrganizationProvider({
   const removePreference = useMutation(api.userPreferences.remove);
   const [currentOrganizationId, setCurrentOrganizationId] =
     useState<Id<"organizations"> | null>(() =>
-      getInitialOrganizationId(initialOrganizations, initialActiveOrgPreference),
+      getInitialOrganizationId(
+        initialOrganizations,
+        initialActiveOrgPreference,
+      ),
     );
   const hasBootstrappedPreference = useRef(false);
 
