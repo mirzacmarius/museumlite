@@ -3,11 +3,27 @@
 import { getConditionIcon } from "@/components/condition-combobox";
 import { formatStringListField } from "@/lib/string-list-field";
 import { cn } from "@v1/ui/utils";
-import { Hammer, Ruler, Search } from "lucide-react";
+import { Hammer, Ruler, Search, Shapes } from "lucide-react";
 import type { CollectionData } from "./types";
 
 interface PhysicalTabProps {
   collection: CollectionData;
+}
+
+function formatObjectType(value?: string) {
+  if (!value) {
+    return "Not specified";
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) &&
+      parsed.every((item) => typeof item === "string")
+      ? parsed.join(" / ")
+      : value;
+  } catch {
+    return value;
+  }
 }
 
 export function PhysicalTab({ collection }: PhysicalTabProps) {
@@ -44,6 +60,20 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="space-y-5">
+            <div>
+              <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                Object Type
+              </span>
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
+                  <Shapes className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+                <span className="text-sm font-medium text-foreground">
+                  {formatObjectType(collection.objectType)}
+                </span>
+              </div>
+            </div>
+
             <div>
               <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                 Materials

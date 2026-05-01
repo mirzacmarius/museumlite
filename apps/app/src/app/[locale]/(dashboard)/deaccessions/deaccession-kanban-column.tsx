@@ -3,13 +3,7 @@
 import { formatDateFns } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ScrollArea } from "@v1/ui/scroll-area";
-import {
-  Archive,
-  CheckCircle,
-  Clock,
-  ShieldCheck,
-  XCircle,
-} from "lucide-react";
+import { Archive, CheckCircle, Clock, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import type { DeaccessionKanbanItem } from "./deaccession-kanban";
 
@@ -27,7 +21,6 @@ const stepDotStyles: Record<number, string> = {
   3: "bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.5)]",
   4: "bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.5)]",
   [-1]: "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]",
-  [-2]: "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]",
 };
 
 const DEFAULT_DOT_STYLE = "bg-muted-foreground";
@@ -51,10 +44,6 @@ function getStepIcon(stepNumber: number) {
     return <CheckCircle className="h-4 w-4" />;
   }
 
-  if (stepNumber === -2) {
-    return <XCircle className="h-4 w-4" />;
-  }
-
   if (stepNumber === 1) {
     return <Clock className="h-4 w-4" />;
   }
@@ -64,6 +53,19 @@ function getStepIcon(stepNumber: number) {
   }
 
   return <ShieldCheck className="h-4 w-4" />;
+}
+
+function formatTargetStatus(
+  targetCollectionStatus: "deaccessioned" | "archived" | "deleted",
+) {
+  switch (targetCollectionStatus) {
+    case "deaccessioned":
+      return "Deaccession";
+    case "archived":
+      return "Archived";
+    case "deleted":
+      return "Deleted";
+  }
 }
 
 export function DeaccessionKanbanColumn({
@@ -85,9 +87,7 @@ export function DeaccessionKanbanColumn({
     const matchesStep =
       stepNumber === -1
         ? item.status === "approved"
-        : stepNumber === -2
-          ? item.status === "rejected"
-          : item.status === "pending" && currentStep === stepNumber;
+        : item.status === "pending" && currentStep === stepNumber;
 
     const matchesSearch = normalizedSearchQuery
       ? item.deaccessionNumber.toLowerCase().includes(normalizedSearchQuery) ||
@@ -155,7 +155,9 @@ export function DeaccessionKanbanColumn({
 
                   <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
                     <span className="truncate">
-                      {t(`method.${item.method}`)}
+                      {stepNumber === -1
+                        ? formatTargetStatus(item.targetCollectionStatus)
+                        : t(`method.${item.method}`)}
                     </span>
                     <span className="shrink-0 text-muted-foreground">
                       {formatDateFns(

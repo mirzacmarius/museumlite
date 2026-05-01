@@ -55,6 +55,10 @@ const ArchiveDetailsTab = dynamic(
     ),
   { loading: LoadingPanel },
 );
+const AccessionTab = dynamic(
+  () => import("./_components/accession-tab").then((mod) => mod.AccessionTab),
+  { loading: LoadingPanel },
+);
 const CommentsTab = dynamic(
   () => import("./_components/comments-tab").then((mod) => mod.CommentsTab),
   { loading: LoadingPanel },
@@ -110,10 +114,24 @@ const PhysicalTab = dynamic(
   () => import("./_components/physical-tab").then((mod) => mod.PhysicalTab),
   { loading: LoadingPanel },
 );
+const PlacementRelationshipsTab = dynamic(
+  () =>
+    import("./_components/placement-relationships-tab").then(
+      (mod) => mod.PlacementRelationshipsTab,
+    ),
+  { loading: LoadingPanel },
+);
 const PrintPreviewModal = dynamic(
   () =>
     import("./_components/print-preview-modal").then(
       (mod) => mod.PrintPreviewModal,
+    ),
+  { loading: LoadingPanel },
+);
+const ProvenanceHistoryTab = dynamic(
+  () =>
+    import("./_components/provenance-history-tab").then(
+      (mod) => mod.ProvenanceHistoryTab,
     ),
   { loading: LoadingPanel },
 );
@@ -555,6 +573,19 @@ function ObjectDetailView({
               )}
               {activeTab === "digital" && (
                 <DigitalAssetsTab collection={collection} />
+              )}
+              {activeTab === "accession" && (
+                <AccessionTab collection={collection} />
+              )}
+              {activeTab === "provenance" && (
+                <ProvenanceHistoryTab collection={collection} />
+              )}
+              {activeTab === "placement" && (
+                <PlacementRelationshipsTab
+                  collection={collection}
+                  collectionId={collectionId}
+                  locationPath={locationPath ?? []}
+                />
               )}
               {activeTab === "conservation" && (
                 <ConservationTab

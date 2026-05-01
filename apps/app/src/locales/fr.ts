@@ -3554,6 +3554,7 @@ export default {
     stats: {
       pending: "En Attente",
       approved: "Approuvé",
+      deaccessions: "Désaccessions",
     },
     actions: {
       emptyTrash: "Vider la corbeille",

@@ -3635,6 +3635,7 @@ export default {
     stats: {
       pending: "Pending",
       approved: "Approved",
+      deaccessions: "Deaccessions",
     },
     actions: {
       emptyTrash: "Empty Trash",

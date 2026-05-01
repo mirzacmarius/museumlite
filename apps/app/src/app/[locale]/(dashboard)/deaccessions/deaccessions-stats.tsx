@@ -3,15 +3,13 @@
 import { useScopedI18n } from "@/locales/client";
 
 type DeaccessionsStatsProps = {
-  approved: number;
+  deaccessioned: number;
   pending: number;
-  rejected: number;
 };
 
 export function DeaccessionsStats({
-  approved,
+  deaccessioned,
   pending,
-  rejected,
 }: DeaccessionsStatsProps) {
   const t = useScopedI18n("deaccessions");
 
@@ -27,18 +25,10 @@ export function DeaccessionsStats({
       </div>
       <div className="flex flex-col gap-1">
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {t("stats.approved")}
+          {t("stats.deaccessions")}
         </span>
         <span className="text-2xl font-semibold tracking-tight text-foreground">
-          {approved}
-        </span>
-      </div>
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {t("status.rejected")}
-        </span>
-        <span className="text-2xl font-semibold tracking-tight text-foreground">
-          {rejected}
+          {deaccessioned}
         </span>
       </div>
     </div>

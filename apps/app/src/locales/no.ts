@@ -3680,6 +3680,7 @@ export default {
     stats: {
       pending: "Venter",
       approved: "Godkjent",
+      deaccessions: "Deaksesjoner",
     },
     actions: {
       exportReport: "Eksporter Rapport",

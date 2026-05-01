@@ -4,6 +4,8 @@ export type ObjectTabId =
   | "general"
   | "physical"
   | "media"
+  | "accession"
+  | "placement"
   | "digital"
   | "provenance"
   | "conservation"
@@ -28,6 +30,9 @@ const viewBaseTabs: ObjectTabDefinition[] = [
   { id: "general", label: "General", editable: true },
   { id: "physical", label: "Physical Description", editable: true },
   { id: "media", label: "Media", editable: true },
+  { id: "accession", label: "Accession", editable: true },
+  { id: "provenance", label: "Provenance and History", editable: true },
+  { id: "placement", label: "Placement and Relationships", editable: true },
   { id: "digital", label: "Digital Assets", editable: true },
   {
     id: "conservation",
@@ -48,9 +53,11 @@ const viewBaseTabs: ObjectTabDefinition[] = [
 
 const editBaseTabs: ObjectTabDefinition[] = [
   { id: "general", label: "General", editable: true },
-  { id: "provenance", label: "Provenance", editable: true },
   { id: "physical", label: "Physical Description", editable: true },
   { id: "media", label: "Media", editable: true },
+  { id: "accession", label: "Accession", editable: true },
+  { id: "provenance", label: "Provenance and History", editable: true },
+  { id: "placement", label: "Placement and Relationships", editable: true },
   { id: "digital", label: "Digital Assets", editable: true },
 ];
 

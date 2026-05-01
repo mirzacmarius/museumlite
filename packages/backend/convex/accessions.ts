@@ -114,6 +114,7 @@ async function createCollectionObjectFromAccession(
     donated_by: draftObjectData?.donated_by,
     donated_date: draftObjectData?.donated_date,
     donation_info: draftObjectData?.donation_info,
+    acquisitionMethod: draftObjectData?.acquisitionMethod,
     previous_owners: draftObjectData?.previous_owners,
     links: draftObjectData?.links,
     parentObjectId: draftObjectData?.parentObjectId,

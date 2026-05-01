@@ -16,6 +16,7 @@ export interface DeaccessionKanbanItem {
   dateDeaccessioned: number;
   reason: string;
   method: "sale" | "donation" | "destruction" | "transfer";
+  targetCollectionStatus: "deaccessioned" | "archived" | "deleted";
   status: "pending" | "approved" | "rejected";
   workflowStep?: number;
 }

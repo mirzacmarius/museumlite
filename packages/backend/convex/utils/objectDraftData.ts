@@ -36,6 +36,7 @@ export const objectDraftDataValidator = v.object({
   donated_by: v.optional(v.array(v.string())),
   donated_date: v.optional(v.string()),
   donation_info: v.optional(v.string()),
+  acquisitionMethod: v.optional(v.string()),
   previous_owners: v.optional(v.array(v.string())),
   links: v.optional(v.array(objectDraftLinkValidator)),
   parentObjectId: v.optional(v.id("collections")),

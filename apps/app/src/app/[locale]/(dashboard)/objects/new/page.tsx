@@ -22,6 +22,13 @@ import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
 import { Switch } from "@v1/ui/switch";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
@@ -79,6 +86,7 @@ interface CollectionFormData {
   donated_by?: string[];
   donated_date?: string;
   donation_info?: string;
+  acquisitionMethod?: string;
   previous_owners?: string[];
   links?: Array<{ url: string; label?: string }>;
   parentObjectId?: string;
@@ -98,8 +106,25 @@ interface CollectionFormData {
 
 type EditTabId = Extract<
   ObjectTabId,
-  "general" | "provenance" | "physical" | "media" | "digital"
+  | "general"
+  | "provenance"
+  | "physical"
+  | "media"
+  | "digital"
+  | "accession"
+  | "placement"
 >;
+
+const ACQUISITION_METHODS = [
+  "Donated",
+  "Bequest",
+  "Found",
+  "Gift",
+  "Loan",
+  "Purchase",
+  "Trade",
+  "Transfer",
+] as const;
 
 interface DraftMediaItem {
   storageId: Id<"_storage">;
@@ -145,6 +170,7 @@ function createEmptyFormData(
     donated_by: [],
     donated_date: "",
     donation_info: "",
+    acquisitionMethod: "",
     previous_owners: [],
     links: [{ url: "", label: "" }],
     parentObjectId: "",
@@ -278,6 +304,7 @@ function buildObjectDraftPayload(formData: CollectionFormData) {
     donated_by: formData.donated_by?.filter(Boolean) || [],
     donated_date: formData.donated_date?.trim() || undefined,
     donation_info: formData.donation_info?.trim() || undefined,
+    acquisitionMethod: formData.acquisitionMethod?.trim() || undefined,
     previous_owners: formData.previous_owners?.filter(Boolean) || [],
     links:
       formData.links?.filter((link) => link.url.trim().length > 0) || undefined,
@@ -1002,7 +1029,7 @@ export function ObjectRequestFormPage({
                   <button
                     type="button"
                     className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
-                    onClick={() => setActiveTab("general")}
+                    onClick={() => setActiveTab("placement")}
                   >
                     <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                       <MapPin className="h-3.5 w-3.5" />
@@ -1015,7 +1042,7 @@ export function ObjectRequestFormPage({
                   <button
                     type="button"
                     className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
-                    onClick={() => setActiveTab("general")}
+                    onClick={() => setActiveTab("placement")}
                   >
                     <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                       <Info className="h-3.5 w-3.5" />
@@ -1181,81 +1208,6 @@ export function ObjectRequestFormPage({
                   </EditSection>
 
                   <EditSection
-                    title="Placement and relationships"
-                    description="Where the object should live in the system and how it relates to other records."
-                  >
-                    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                      <div className="space-y-2 xl:col-span-2">
-                        <Label htmlFor="currentLocationId">
-                          Current Location
-                        </Label>
-                        <LocationSelector
-                          organizationId={currentOrganizationId}
-                          value={formData.currentLocationId}
-                          onValueChange={(value) => {
-                            updateField("currentLocationId", value);
-                            if (!value) {
-                              updateField("displayStatus", undefined);
-                            }
-                          }}
-                          placeholder={placeholders("location")}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="collectionGroupId">Collection</Label>
-                        <CollectionGroupCombobox
-                          organizationId={currentOrganizationId}
-                          value={formData.collectionGroupIds}
-                          onValueChange={(value) => {
-                            updateField("collectionGroupIds", value);
-                            updateField("collectionGroupId", value[0] || "");
-                          }}
-                          placeholder={placeholders("collection")}
-                        />
-                      </div>
-
-                      <div className="space-y-2 md:col-span-2 xl:col-span-3">
-                        <Label htmlFor="parentObjectId">Parent Object</Label>
-                        <p className="text-xs text-muted-foreground">
-                          Link this object to a parent record when it belongs to
-                          a larger set or container.
-                        </p>
-                        <ObjectCombobox
-                          organizationId={currentOrganizationId}
-                          value={formData.parentObjectId}
-                          onValueChange={(value) =>
-                            updateField("parentObjectId", value)
-                          }
-                          placeholder={placeholders("parentObject")}
-                        />
-                      </div>
-
-                      <div className="md:col-span-2 xl:col-span-3">
-                        <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 px-4 py-4">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="displayStatus">On display</Label>
-                            <p className="text-xs text-muted-foreground">
-                              Mark this object as visible to visitors in its
-                              current location.
-                            </p>
-                          </div>
-                          <Switch
-                            id="displayStatus"
-                            checked={formData.displayStatus === "on_display"}
-                            onCheckedChange={(checked) =>
-                              updateField(
-                                "displayStatus",
-                                checked ? "on_display" : undefined,
-                              )
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </EditSection>
-
-                  <EditSection
                     title="Description"
                     description="The primary description shown across the object record."
                   >
@@ -1272,6 +1224,75 @@ export function ObjectRequestFormPage({
                         placeholder={placeholders("description")}
                       />
                     </div>
+                  </EditSection>
+                </div>
+              ) : null}
+
+              {activeTab === "accession" ? (
+                <div className="space-y-8">
+                  <EditSection
+                    title="Acquisition information"
+                    description="Record how the object enters the collection and who it comes from."
+                  >
+                    <div className="grid gap-5 lg:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="acquisitionMethod">
+                          Acquisition Type
+                        </Label>
+                        <Select
+                          value={formData.acquisitionMethod || undefined}
+                          onValueChange={(value) =>
+                            updateField("acquisitionMethod", value)
+                          }
+                        >
+                          <SelectTrigger id="acquisitionMethod">
+                            <SelectValue placeholder="Select acquisition type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ACQUISITION_METHODS.map((method) => (
+                              <SelectItem key={method} value={method}>
+                                {method}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <DonationDetailsField
+                        organizationId={currentOrganizationId}
+                        donatedBy={formData.donated_by || []}
+                        donatedDate={formData.donated_date}
+                        donationInfo={formData.donation_info}
+                        donorPlaceholder={placeholders("selectDonors")}
+                        donationInfoPlaceholder={placeholders(
+                          "donationContext",
+                        )}
+                        onDonatedByChange={(value) =>
+                          updateField("donated_by", value)
+                        }
+                        onDonatedDateChange={(value) =>
+                          updateField("donated_date", value)
+                        }
+                        onDonationInfoChange={(value) =>
+                          updateField("donation_info", value)
+                        }
+                      />
+                    </div>
+                  </EditSection>
+
+                  <EditSection
+                    title="Previous owners"
+                    description="Capture known previous owners as simple accession context."
+                  >
+                    <RepeatableTextField
+                      id="previous_owners"
+                      label="Previous Owner"
+                      value={formData.previous_owners || []}
+                      onChange={(value) =>
+                        updateField("previous_owners", value)
+                      }
+                      placeholder="Owner name"
+                    />
                   </EditSection>
                 </div>
               ) : null}
@@ -1313,29 +1334,6 @@ export function ObjectRequestFormPage({
                         />
                       </div>
                     </div>
-                  </EditSection>
-
-                  <EditSection
-                    title="Donation details"
-                    description="Record donor information, donation date, and supporting notes."
-                  >
-                    <DonationDetailsField
-                      organizationId={currentOrganizationId}
-                      donatedBy={formData.donated_by || []}
-                      donatedDate={formData.donated_date}
-                      donationInfo={formData.donation_info}
-                      donorPlaceholder={placeholders("selectDonors")}
-                      donationInfoPlaceholder={placeholders("donationContext")}
-                      onDonatedByChange={(value) =>
-                        updateField("donated_by", value)
-                      }
-                      onDonatedDateChange={(value) =>
-                        updateField("donated_date", value)
-                      }
-                      onDonationInfoChange={(value) =>
-                        updateField("donation_info", value)
-                      }
-                    />
                   </EditSection>
 
                   <EditSection
@@ -1665,6 +1663,91 @@ export function ObjectRequestFormPage({
                         <Plus className="mr-2 h-4 w-4" />
                         Add Link
                       </Button>
+                    </div>
+                  </EditSection>
+                </div>
+              ) : null}
+
+              {activeTab === "placement" ? (
+                <div className="space-y-8">
+                  <EditSection
+                    title="Placement and relationships"
+                    description="Where the object should live in the system and how it relates to other records."
+                  >
+                    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                      <div className="space-y-2 xl:col-span-2">
+                        <Label htmlFor="placementCurrentLocationId">
+                          Current Location
+                        </Label>
+                        <LocationSelector
+                          organizationId={currentOrganizationId}
+                          value={formData.currentLocationId}
+                          onValueChange={(value) => {
+                            updateField("currentLocationId", value);
+                            if (!value) {
+                              updateField("displayStatus", undefined);
+                            }
+                          }}
+                          placeholder={placeholders("location")}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="placementCollectionGroupId">
+                          Collection
+                        </Label>
+                        <CollectionGroupCombobox
+                          organizationId={currentOrganizationId}
+                          value={formData.collectionGroupIds}
+                          onValueChange={(value) => {
+                            updateField("collectionGroupIds", value);
+                            updateField("collectionGroupId", value[0] || "");
+                          }}
+                          placeholder={placeholders("collection")}
+                        />
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2 xl:col-span-3">
+                        <Label htmlFor="placementParentObjectId">
+                          Parent Object
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Link this object to a parent record when it belongs to
+                          a larger set or container.
+                        </p>
+                        <ObjectCombobox
+                          organizationId={currentOrganizationId}
+                          value={formData.parentObjectId}
+                          onValueChange={(value) =>
+                            updateField("parentObjectId", value)
+                          }
+                          placeholder={placeholders("parentObject")}
+                        />
+                      </div>
+
+                      <div className="md:col-span-2 xl:col-span-3">
+                        <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 px-4 py-4">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="placementDisplayStatus">
+                              On display
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              Mark this object as visible to visitors in its
+                              current location.
+                            </p>
+                          </div>
+                          <Switch
+                            id="placementDisplayStatus"
+                            checked={formData.displayStatus === "on_display"}
+                            onCheckedChange={(checked) =>
+                              updateField(
+                                "displayStatus",
+                                checked ? "on_display" : undefined,
+                              )
+                            }
+                          />
+                        </div>
+                      </div>
                     </div>
                   </EditSection>
                 </div>

@@ -49,22 +49,15 @@ export function DeaccessionsPageClient({
   const pending = deaccessions.page.filter(
     (item: DeaccessionListItem) => item.status === "pending",
   ).length;
-  const approved = deaccessions.page.filter(
+  const deaccessioned = deaccessions.page.filter(
     (item: DeaccessionListItem) => item.status === "approved",
-  ).length;
-  const rejected = deaccessions.page.filter(
-    (item: DeaccessionListItem) => item.status === "rejected",
   ).length;
 
   return (
     <>
       <div className="flex h-full flex-col p-6">
         <div className="mb-6 flex items-center justify-between">
-          <DeaccessionsStats
-            approved={approved}
-            pending={pending}
-            rejected={rejected}
-          />
+          <DeaccessionsStats deaccessioned={deaccessioned} pending={pending} />
 
           <div className="flex items-center gap-3">
             <div className="relative">

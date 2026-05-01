@@ -211,3 +211,87 @@ test("deaccession workflows with config step 0 still complete on the last real a
   expect(deaccession).not.toBeNull();
   expect(deaccession?.status).toBe("approved");
 });
+
+test("getWorkflowSteps returns deaccessions terminal column without rejected column", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.create", "collections.read"],
+  );
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "deaccession",
+      steps: [
+        { stepNumber: 1, roleId, name: "Curator Review" },
+        { stepNumber: 2, roleId, name: "Director Approval" },
+      ],
+      canInitiateRoles: [roleId],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const workflow = await authed.query(api.deaccessions.getWorkflowSteps, {
+    organizationId,
+  });
+
+  expect(workflow.steps.map((step) => step.name)).toEqual([
+    "Curator Review",
+    "Director Approval",
+    "Deaccessions",
+  ]);
+  expect(workflow.steps.map((step) => step.name)).not.toContain("Rejected");
+});
+
+test("rejecting a deaccession restores prematurely removed objects to active catalog", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId, collectionId } =
+    await createOrgUserWithPermissions(t, [
+      "collections.create",
+      "collections.read",
+      "collections.approve_deaccession",
+    ]);
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "deaccession",
+      steps: [{ stepNumber: 1, roleId, name: "Curator Review" }],
+      canInitiateRoles: [roleId],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const deaccessionId = await authed.mutation(api.deaccessions.create, {
+    organizationId,
+    collectionId,
+    dateDeaccessioned: Date.now(),
+    reason: "Duplicate object",
+    method: "destruction",
+    targetCollectionStatus: "deleted",
+  });
+
+  await t.run(async (ctx) => {
+    await ctx.db.patch(collectionId, {
+      status: "deleted",
+      deletedAt: Date.now(),
+      deletedBy: userId,
+      deletedReason: "Premature deletion",
+    });
+  });
+
+  await authed.mutation(api.deaccessions.reject, {
+    deaccessionId,
+    comment: "Keep object",
+  });
+
+  const collection = await authed.query(api.collections.get, {
+    collectionId,
+  });
+
+  expect(collection?.status).toBe("active");
+  expect(collection?.deletedAt).toBeUndefined();
+  expect(collection?.deletedBy).toBeUndefined();
+  expect(collection?.deletedReason).toBeUndefined();
+});

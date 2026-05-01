@@ -34,6 +34,41 @@ function resolveTargetCollectionStatus(deaccession: {
   return deaccession.targetCollectionStatus ?? "deaccessioned";
 }
 
+async function restoreRejectedCollectionStatus(
+  ctx: MutationCtx,
+  deaccession: Doc<"deaccessions">,
+  userId: Id<"users">,
+) {
+  const collection = await ctx.db.get(deaccession.collectionId);
+  if (!collection) {
+    return;
+  }
+
+  const rejectedAt = Date.now();
+  const targetCollectionStatus = resolveTargetCollectionStatus(deaccession);
+
+  if (
+    collection.status !== targetCollectionStatus &&
+    collection.status !== "archived" &&
+    collection.status !== "deleted" &&
+    collection.status !== "deaccessioned"
+  ) {
+    return;
+  }
+
+  await ctx.db.patch(deaccession.collectionId, {
+    status: "active",
+    archivedAt: undefined,
+    archivedBy: undefined,
+    archivedReason: undefined,
+    deletedAt: undefined,
+    deletedBy: undefined,
+    deletedReason: undefined,
+    lastModifiedBy: userId,
+    lastModifiedAt: rejectedAt,
+  });
+}
+
 async function applyApprovedCollectionStatus(
   ctx: MutationCtx,
   deaccession: Doc<"deaccessions">,
@@ -616,8 +651,7 @@ export const getWorkflowSteps = query({
         hasWorkflow: false,
         steps: [
           { stepNumber: 1, name: "Pending Review" },
-          { stepNumber: -1, name: "Approved" },
-          { stepNumber: -2, name: "Rejected" },
+          { stepNumber: -1, name: "Deaccessions" },
         ],
       };
     }
@@ -635,8 +669,7 @@ export const getWorkflowSteps = query({
 
     const normalizedSteps = [
       ...stepsWithRoles,
-      { stepNumber: -1, name: "Approved" },
-      { stepNumber: -2, name: "Rejected" },
+      { stepNumber: -1, name: "Deaccessions" },
     ].filter(
       (step, index, steps) =>
         steps.findIndex(
@@ -1136,6 +1169,8 @@ export const reject = mutation({
       entityId: args.deaccessionId,
       changes: { status: "rejected", comment: args.comment },
     });
+
+    await restoreRejectedCollectionStatus(ctx, deaccession, userId);
 
     // Notify users who were involved in the workflow (from history)
     const history = deaccession.workflowHistory ?? [];
