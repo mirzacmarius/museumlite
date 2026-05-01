@@ -84,6 +84,7 @@ interface CollectionFormData {
   parentObjectId?: string;
   currentLocationId?: string;
   collectionGroupId?: string;
+  collectionGroupIds?: string[];
   alternateAccessionNumbers?: string[];
   ownershipHistory?: OwnershipEntry[];
   collectionType?: CollectionType;
@@ -149,6 +150,9 @@ function createEmptyFormData(
     parentObjectId: "",
     currentLocationId: "",
     collectionGroupId: prefilledCollectionGroupId || "",
+    collectionGroupIds: prefilledCollectionGroupId
+      ? [prefilledCollectionGroupId]
+      : [],
     alternateAccessionNumbers: [],
     ownershipHistory: [],
     collectionType: "general",
@@ -196,6 +200,7 @@ function getFormSignature(formData: CollectionFormData) {
         : [],
     donated_by: formData.donated_by || [],
     previous_owners: formData.previous_owners || [],
+    collectionGroupIds: formData.collectionGroupIds || [],
     alternateAccessionNumbers: formData.alternateAccessionNumbers || [],
     ownershipHistory: formData.ownershipHistory || [],
     links: formData.links || [],
@@ -217,6 +222,15 @@ function createFormDataFromDraftObject(
       : [],
     donated_by: draftObjectData?.donated_by || [],
     previous_owners: draftObjectData?.previous_owners || [],
+    collectionGroupIds:
+      draftObjectData?.collectionGroupIds ||
+      (draftObjectData?.collectionGroupId
+        ? [draftObjectData.collectionGroupId]
+        : prefilledCollectionGroupId
+          ? [prefilledCollectionGroupId]
+          : []),
+    collectionGroupId:
+      draftObjectData?.collectionGroupId || prefilledCollectionGroupId || "",
     alternateAccessionNumbers: draftObjectData?.alternateAccessionNumbers || [],
     ownershipHistory: draftObjectData?.ownershipHistory || [],
     links:
@@ -276,6 +290,9 @@ function buildObjectDraftPayload(formData: CollectionFormData) {
     collectionGroupId: formData.collectionGroupId
       ? (formData.collectionGroupId as Id<"collectionGroups">)
       : undefined,
+    collectionGroupIds: formData.collectionGroupIds
+      ?.filter(Boolean)
+      .map((collectionGroupId) => collectionGroupId as Id<"collectionGroups">),
     alternateAccessionNumbers:
       formData.alternateAccessionNumbers?.filter(Boolean) || [],
     ownershipHistory:
@@ -437,11 +454,9 @@ export function ObjectRequestFormPage({
       : "skip",
   );
 
-  const currentCollectionGroup = useQuery(
-    api.collectionGroups.get,
-    formData.collectionGroupId
-      ? { groupId: formData.collectionGroupId as Id<"collectionGroups"> }
-      : "skip",
+  const collectionGroups = useQuery(
+    api.collectionGroups.list,
+    currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
   );
 
   const heroImage =
@@ -837,7 +852,10 @@ export function ObjectRequestFormPage({
     currentLocationPath?.map((location) => location.name).join(" / ") ||
     "No location assigned";
   const collectionSummary =
-    currentCollectionGroup?.name || "Not assigned to a collection";
+    collectionGroups
+      ?.filter((group) => formData.collectionGroupIds?.includes(group._id))
+      .map((group) => group.name)
+      .join(", ") || "Not assigned to a collection";
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col bg-background">
@@ -1188,10 +1206,11 @@ export function ObjectRequestFormPage({
                         <Label htmlFor="collectionGroupId">Collection</Label>
                         <CollectionGroupCombobox
                           organizationId={currentOrganizationId}
-                          value={formData.collectionGroupId}
-                          onValueChange={(value) =>
-                            updateField("collectionGroupId", value)
-                          }
+                          value={formData.collectionGroupIds}
+                          onValueChange={(value) => {
+                            updateField("collectionGroupIds", value);
+                            updateField("collectionGroupId", value[0] || "");
+                          }}
                           placeholder={placeholders("collection")}
                         />
                       </div>

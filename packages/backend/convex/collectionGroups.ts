@@ -662,9 +662,26 @@ export const getGroupsForCollection = query({
       description?: string;
       itemsCount?: number;
     }> = [];
+    const groupIds = new Set<Id<"collectionGroups">>();
 
     for (const groupItem of groupItems) {
       const group = await ctx.db.get(groupItem.collectionGroupId);
+      if (group) {
+        groupIds.add(group._id);
+        groups.push({
+          _id: group._id,
+          name: group.name,
+          description: group.description,
+          itemsCount: group.itemsCount,
+        });
+      }
+    }
+
+    if (
+      collection.collectionGroupId &&
+      !groupIds.has(collection.collectionGroupId)
+    ) {
+      const group = await ctx.db.get(collection.collectionGroupId);
       if (group) {
         groups.push({
           _id: group._id,

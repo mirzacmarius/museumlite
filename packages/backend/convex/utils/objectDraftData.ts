@@ -41,6 +41,7 @@ export const objectDraftDataValidator = v.object({
   parentObjectId: v.optional(v.id("collections")),
   currentLocationId: v.optional(v.id("locations")),
   collectionGroupId: v.optional(v.id("collectionGroups")),
+  collectionGroupIds: v.optional(v.array(v.id("collectionGroups"))),
   alternateAccessionNumbers: v.optional(v.array(v.string())),
   ownershipHistory: v.optional(v.array(objectDraftOwnershipEntryValidator)),
   collectionType: v.optional(

@@ -1726,12 +1726,17 @@ export const createCollectionFromAccession = internalMutation({
 
     // Create collection object
     const draftObjectData = accession.draftObjectData;
+    const collectionGroupIds =
+      draftObjectData?.collectionGroupIds ??
+      (draftObjectData?.collectionGroupId
+        ? [draftObjectData.collectionGroupId]
+        : []);
     const catalogedBy = accession.approvedBy ?? firstUser?._id!;
     const catalogedAt = accession.approvedAt ?? Date.now();
     const collectionId = await ctx.db.insert("collections", {
       organizationId: accession.organizationId,
       accessionNumber: accession.accessionNumber,
-      collectionGroupId: draftObjectData?.collectionGroupId,
+      collectionGroupId: collectionGroupIds[0],
       title:
         draftObjectData?.title?.trim() ||
         `Accession ${accession.accessionNumber}`,
@@ -1776,11 +1781,19 @@ export const createCollectionFromAccession = internalMutation({
       objectCount: 1,
     });
 
-    if (draftObjectData?.collectionGroupId) {
-      const group = await ctx.db.get(draftObjectData.collectionGroupId);
-      if (group) {
-        await ctx.db.patch(draftObjectData.collectionGroupId, {
+    for (const collectionGroupId of [...new Set(collectionGroupIds)]) {
+      const group = await ctx.db.get(collectionGroupId);
+      if (group && group.organizationId === accession.organizationId) {
+        await ctx.db.insert("collectionGroupItems", {
+          collectionGroupId,
+          collectionId,
+          addedAt: catalogedAt,
+          addedBy: catalogedBy,
+        });
+        await ctx.db.patch(collectionGroupId, {
           itemsCount: (group.itemsCount || 0) + 1,
+          lastModifiedAt: catalogedAt,
+          lastModifiedBy: catalogedBy,
         });
       }
     }

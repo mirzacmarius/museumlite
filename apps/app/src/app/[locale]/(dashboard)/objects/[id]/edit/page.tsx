@@ -108,6 +108,7 @@ interface CollectionFormData {
   parentObjectId?: string;
   currentLocationId?: string;
   collectionGroupId?: string;
+  collectionGroupIds?: string[];
   alternateAccessionNumbers?: string[];
   ownershipHistory?: OwnershipEntry[];
   displayStatus?: string;
@@ -152,6 +153,7 @@ const EMPTY_FORM: CollectionFormData = {
   parentObjectId: "",
   currentLocationId: "",
   collectionGroupId: "",
+  collectionGroupIds: [],
   alternateAccessionNumbers: [],
   ownershipHistory: [],
   displayStatus: undefined,
@@ -229,7 +231,10 @@ function withLinkEntryLocalIds(entries?: LinkEntry[]) {
   );
 }
 
-function createInitialFormData(collection: CollectionDoc): CollectionFormData {
+function createInitialFormData(
+  collection: CollectionDoc,
+  collectionGroups: Array<{ _id: Id<"collectionGroups"> }> = [],
+): CollectionFormData {
   let objectTypeArray: string[] = [];
   if (collection.objectType) {
     try {
@@ -241,6 +246,13 @@ function createInitialFormData(collection: CollectionDoc): CollectionFormData {
       objectTypeArray = [collection.objectType];
     }
   }
+
+  const collectionGroupIds =
+    collectionGroups.length > 0
+      ? collectionGroups.map((group) => group._id as string)
+      : collection.collectionGroupId
+        ? [collection.collectionGroupId as string]
+        : [];
 
   return {
     title: collection.title,
@@ -278,7 +290,8 @@ function createInitialFormData(collection: CollectionDoc): CollectionFormData {
         : [{ localId: createLinkEntryLocalId(), url: "", label: "" }],
     parentObjectId: (collection.parentObjectId as string) || "",
     currentLocationId: (collection.currentLocationId as string) || "",
-    collectionGroupId: (collection.collectionGroupId as string) || "",
+    collectionGroupId: collectionGroupIds[0] || "",
+    collectionGroupIds,
     alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
     ownershipHistory: withOwnershipEntryLocalIds(collection.ownershipHistory),
     displayStatus: collection.displayStatus,
@@ -305,6 +318,7 @@ function getFormSignature(formData: CollectionFormData) {
         : [],
     donated_by: formData.donated_by || [],
     previous_owners: formData.previous_owners || [],
+    collectionGroupIds: formData.collectionGroupIds || [],
     alternateAccessionNumbers: formData.alternateAccessionNumbers || [],
     ownershipHistory:
       formData.ownershipHistory?.map(
@@ -384,6 +398,10 @@ export default function CollectionEditPage() {
 
   const collection = useQuery(
     api.collections.get,
+    collectionId ? { collectionId: typedCollectionId } : "skip",
+  );
+  const collectionGroupsForCollection = useQuery(
+    api.collectionGroups.getGroupsForCollection,
     collectionId ? { collectionId: typedCollectionId } : "skip",
   );
   const pendingMoveRequest = useQuery(
@@ -479,11 +497,9 @@ export default function CollectionEditPage() {
       : "skip",
   );
 
-  const currentCollectionGroup = useQuery(
-    api.collectionGroups.get,
-    formData.collectionGroupId
-      ? { groupId: formData.collectionGroupId as Id<"collectionGroups"> }
-      : "skip",
+  const collectionGroups = useQuery(
+    api.collectionGroups.list,
+    collection ? { organizationId: collection.organizationId } : "skip",
   );
 
   const loans = useQuery(
@@ -512,11 +528,14 @@ export default function CollectionEditPage() {
   const canUpdateObject = isFormDirty || hasMediaChanges;
 
   useEffect(() => {
-    if (!collection) {
+    if (!collection || collectionGroupsForCollection === undefined) {
       return;
     }
 
-    const nextFormData = createInitialFormData(collection);
+    const nextFormData = createInitialFormData(
+      collection,
+      collectionGroupsForCollection,
+    );
     const nextSignature = getFormSignature(nextFormData);
 
     if (!isInitialized) {
@@ -530,7 +549,7 @@ export default function CollectionEditPage() {
       setFormData(nextFormData);
       initialFormSignatureRef.current = nextSignature;
     }
-  }, [collection, isFormDirty, isInitialized]);
+  }, [collection, collectionGroupsForCollection, isFormDirty, isInitialized]);
 
   useBeforeUnload(isFormDirty);
 
@@ -903,9 +922,14 @@ export default function CollectionEditPage() {
           formData.currentLocationId !== "__none__"
             ? (formData.currentLocationId as Id<"locations">)
             : undefined,
-        collectionGroupId: formData.collectionGroupId
-          ? (formData.collectionGroupId as Id<"collectionGroups">)
+        collectionGroupId: formData.collectionGroupIds?.[0]
+          ? (formData.collectionGroupIds[0] as Id<"collectionGroups">)
           : undefined,
+        collectionGroupIds: formData.collectionGroupIds
+          ?.filter(Boolean)
+          .map(
+            (collectionGroupId) => collectionGroupId as Id<"collectionGroups">,
+          ),
         conditionChangeNote: hasConditionChanged
           ? conditionChangeNote.trim() || undefined
           : undefined,
@@ -1014,7 +1038,10 @@ export default function CollectionEditPage() {
     currentLocationPath?.map((location) => location.name).join(" / ") ||
     "No location assigned";
   const collectionSummary =
-    currentCollectionGroup?.name || "Not assigned to a collection";
+    collectionGroups
+      ?.filter((group) => formData.collectionGroupIds?.includes(group._id))
+      .map((group) => group.name)
+      .join(", ") || "Not assigned to a collection";
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col bg-background">
@@ -1456,10 +1483,11 @@ export default function CollectionEditPage() {
                         <Label htmlFor="collectionGroupId">Collection</Label>
                         <CollectionGroupCombobox
                           organizationId={collection.organizationId}
-                          value={formData.collectionGroupId}
-                          onValueChange={(value) =>
-                            updateField("collectionGroupId", value)
-                          }
+                          value={formData.collectionGroupIds}
+                          onValueChange={(value) => {
+                            updateField("collectionGroupIds", value);
+                            updateField("collectionGroupId", value[0] || "");
+                          }}
                           placeholder={placeholders("collection")}
                         />
                       </div>

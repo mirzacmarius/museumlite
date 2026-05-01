@@ -363,6 +363,71 @@ async function buildConditionHistoryEntry(
   };
 }
 
+async function syncCollectionGroupMemberships(
+  ctx: MutationCtx,
+  collectionId: Id<"collections">,
+  organizationId: Id<"organizations">,
+  groupIds: Id<"collectionGroups">[],
+  userId: Id<"users">,
+) {
+  const uniqueGroupIds = [...new Set(groupIds)];
+  const existingMemberships = await ctx.db
+    .query("collectionGroupItems")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  const existingGroupIds = new Set(
+    existingMemberships.map((membership) => membership.collectionGroupId),
+  );
+  const nextGroupIds = new Set(uniqueGroupIds);
+
+  for (const groupId of uniqueGroupIds) {
+    const group = await ctx.db.get(groupId);
+    if (!group) {
+      throw new Error("Collection group not found");
+    }
+    if (group.organizationId !== organizationId) {
+      throw new Error("Collection group belongs to a different organization");
+    }
+  }
+
+  for (const groupId of uniqueGroupIds) {
+    if (existingGroupIds.has(groupId)) {
+      continue;
+    }
+
+    const group = await ctx.db.get(groupId);
+    await ctx.db.insert("collectionGroupItems", {
+      collectionGroupId: groupId,
+      collectionId,
+      addedAt: Date.now(),
+      addedBy: userId,
+    });
+    if (group) {
+      await ctx.db.patch(groupId, {
+        itemsCount: (group.itemsCount || 0) + 1,
+        lastModifiedAt: Date.now(),
+        lastModifiedBy: userId,
+      });
+    }
+  }
+
+  for (const membership of existingMemberships) {
+    if (nextGroupIds.has(membership.collectionGroupId)) {
+      continue;
+    }
+
+    const group = await ctx.db.get(membership.collectionGroupId);
+    await ctx.db.delete(membership._id);
+    if (group) {
+      await ctx.db.patch(membership.collectionGroupId, {
+        itemsCount: Math.max(0, (group.itemsCount || 0) - 1),
+        lastModifiedAt: Date.now(),
+        lastModifiedBy: userId,
+      });
+    }
+  }
+}
+
 async function deleteStorageIds(
   ctx: MutationCtx,
   storageIds: Iterable<Id<"_storage"> | undefined>,
@@ -731,6 +796,7 @@ export const create = mutation({
   args: {
     organizationId: v.id("organizations"),
     collectionGroupId: v.optional(v.id("collectionGroups")),
+    collectionGroupIds: v.optional(v.array(v.id("collectionGroups"))),
     accessionNumber: v.optional(v.string()),
     title: v.string(),
     alternativeTitle: v.optional(v.string()),
@@ -916,14 +982,14 @@ export const create = mutation({
       objectCount: 1,
     });
 
-    if (args.collectionGroupId) {
-      const group = await ctx.db.get(args.collectionGroupId);
-      if (group) {
-        await ctx.db.patch(args.collectionGroupId, {
-          itemsCount: (group.itemsCount || 0) + 1,
-        });
-      }
-    }
+    await syncCollectionGroupMemberships(
+      ctx,
+      collectionId,
+      args.organizationId,
+      args.collectionGroupIds ??
+        (args.collectionGroupId ? [args.collectionGroupId] : []),
+      userId,
+    );
 
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: args.organizationId,
@@ -1979,6 +2045,7 @@ export const update = mutation({
   args: {
     collectionId: v.id("collections"),
     collectionGroupId: v.optional(v.id("collectionGroups")),
+    collectionGroupIds: v.optional(v.array(v.id("collectionGroups"))),
     title: v.optional(v.string()),
     alternativeTitle: v.optional(v.string()),
     creator: v.optional(v.string()),
@@ -2074,8 +2141,11 @@ export const update = mutation({
     if (args.title !== undefined) updates.title = args.title;
     if (args.alternativeTitle !== undefined)
       updates.alternativeTitle = args.alternativeTitle;
-    if (args.collectionGroupId !== undefined)
+    if (args.collectionGroupIds !== undefined) {
+      updates.collectionGroupId = args.collectionGroupIds[0];
+    } else if (args.collectionGroupId !== undefined) {
       updates.collectionGroupId = args.collectionGroupId;
+    }
     if (args.creator !== undefined) updates.creator = args.creator;
     if (args.objectType !== undefined) updates.objectType = args.objectType;
     if (args.objectName !== undefined) updates.objectName = args.objectName;
@@ -2169,30 +2239,25 @@ export const update = mutation({
 
     await ctx.db.patch(args.collectionId, updates);
 
-    // Handle moving between groups (update counts)
-    if (
+    if (args.collectionGroupIds !== undefined) {
+      await syncCollectionGroupMemberships(
+        ctx,
+        args.collectionId,
+        collection.organizationId,
+        args.collectionGroupIds,
+        userId,
+      );
+    } else if (
       args.collectionGroupId !== undefined &&
       args.collectionGroupId !== collection.collectionGroupId
     ) {
-      // Decrement old group
-      if (collection.collectionGroupId) {
-        const oldGroup = await ctx.db.get(collection.collectionGroupId);
-        if (oldGroup) {
-          await ctx.db.patch(collection.collectionGroupId, {
-            itemsCount: Math.max(0, (oldGroup.itemsCount || 0) - 1),
-          });
-        }
-      }
-
-      // Increment new group
-      if (args.collectionGroupId) {
-        const newGroup = await ctx.db.get(args.collectionGroupId);
-        if (newGroup) {
-          await ctx.db.patch(args.collectionGroupId, {
-            itemsCount: (newGroup.itemsCount || 0) + 1,
-          });
-        }
-      }
+      await syncCollectionGroupMemberships(
+        ctx,
+        args.collectionId,
+        collection.organizationId,
+        args.collectionGroupId ? [args.collectionGroupId] : [],
+        userId,
+      );
     }
 
     await ctx.runMutation(internal.audit.logAction, {

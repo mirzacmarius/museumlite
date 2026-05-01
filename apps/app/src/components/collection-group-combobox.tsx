@@ -2,7 +2,6 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Button } from "@v1/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -12,14 +11,14 @@ import {
 } from "@v1/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { cn } from "@v1/ui/utils";
-import { useQuery } from "convex/react";
-import { Check, ChevronsUpDown, FolderOpen } from "lucide-react";
+import { useMutation, useQuery } from "convex/react";
+import { Check, ChevronsUpDown, FolderOpen, X } from "lucide-react";
 import * as React from "react";
 
 interface CollectionGroupComboboxProps {
   organizationId?: string;
-  value?: string;
-  onValueChange?: (value: string | undefined) => void;
+  value?: string[];
+  onValueChange?: (value: string[]) => void;
   placeholder?: string;
   disabled?: boolean;
 }
@@ -32,6 +31,8 @@ export function CollectionGroupCombobox({
   disabled = false,
 }: CollectionGroupComboboxProps) {
   const [open, setOpen] = React.useState(false);
+  const [inputValue, setInputValue] = React.useState("");
+  const listId = React.useId();
 
   const collectionGroups = useQuery(
     api.collectionGroups.list,
@@ -39,57 +40,199 @@ export function CollectionGroupCombobox({
       ? { organizationId: organizationId as Id<"organizations"> }
       : "skip",
   );
+  const createCollectionGroup = useMutation(api.collectionGroups.create);
 
-  const selectedGroup = React.useMemo(() => {
-    if (!value || !collectionGroups) return null;
-    return collectionGroups.find((g) => g._id === value);
-  }, [value, collectionGroups]);
+  const selectedValues = React.useMemo(() => {
+    return Array.isArray(value) ? value : [];
+  }, [value]);
+
+  const selectedGroups = React.useMemo(() => {
+    if (!collectionGroups) return [];
+    const groupsById = new Map<string, (typeof collectionGroups)[number]>(
+      collectionGroups.map((group) => [group._id, group]),
+    );
+    return selectedValues
+      .map((selectedValue) => groupsById.get(selectedValue))
+      .filter((group): group is NonNullable<typeof group> => Boolean(group));
+  }, [collectionGroups, selectedValues]);
+
+  const filteredGroups = React.useMemo(() => {
+    const normalizedInput = inputValue.trim().toLowerCase();
+    if (!collectionGroups) return [];
+    if (!normalizedInput) return collectionGroups;
+    return collectionGroups.filter((group) =>
+      group.name.toLowerCase().includes(normalizedInput),
+    );
+  }, [collectionGroups, inputValue]);
 
   const handleSelect = (selectedValue: string) => {
-    if (value === selectedValue) {
-      onValueChange?.(undefined);
+    if (selectedValues.includes(selectedValue)) {
+      onValueChange?.(
+        selectedValues.filter((valueItem) => valueItem !== selectedValue),
+      );
     } else {
-      onValueChange?.(selectedValue);
+      onValueChange?.([...selectedValues, selectedValue]);
     }
-    setOpen(false);
+    setInputValue("");
+  };
+
+  const handleRemove = (selectedValue: string) => {
+    onValueChange?.(
+      selectedValues.filter((valueItem) => valueItem !== selectedValue),
+    );
+  };
+
+  const formatGroupName = (name: string) => {
+    const trimmed = name.trim();
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  };
+
+  const handleCreateAndSelect = async (name: string) => {
+    if (!organizationId || !name.trim()) {
+      return;
+    }
+
+    const formattedName = formatGroupName(name);
+    const existingGroup = collectionGroups?.find(
+      (group) => group.name.toLowerCase() === formattedName.toLowerCase(),
+    );
+
+    if (existingGroup) {
+      handleSelect(existingGroup._id);
+      return;
+    }
+
+    const groupId = await createCollectionGroup({
+      organizationId: organizationId as Id<"organizations">,
+      name: formattedName,
+    });
+
+    onValueChange?.([...selectedValues, groupId]);
+    setInputValue("");
   };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
+        <div
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between"
-          disabled={disabled}
+          aria-controls={listId}
+          tabIndex={disabled ? -1 : 0}
+          className="flex min-h-9 w-full cursor-text flex-wrap items-center gap-1 rounded-md border border-input bg-background px-2 py-1.5 text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
+          onClick={() => !disabled && setOpen(true)}
+          onKeyDown={(event) => {
+            if ((event.key === "Enter" || event.key === " ") && !disabled) {
+              event.preventDefault();
+              setOpen(true);
+            }
+          }}
         >
-          {selectedGroup ? (
-            <span className="truncate flex items-center gap-2">
-              <FolderOpen className="h-4 w-4 text-muted-foreground" />
-              {selectedGroup.name}
-            </span>
-          ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
-          )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
+          {selectedGroups.map((group) => (
+            <div
+              key={group._id}
+              className="inline-flex items-center gap-1 rounded-md border bg-secondary px-1.5 py-0.5 text-xs"
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.stopPropagation();
+                }
+              }}
+            >
+              <FolderOpen className="h-3 w-3 text-muted-foreground" />
+              <span>{group.name}</span>
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleRemove(group._id);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    handleRemove(group._id);
+                  }
+                }}
+                className="cursor-pointer hover:text-destructive"
+                aria-label={`Remove ${group.name}`}
+              >
+                <X className="h-3 w-3" />
+              </span>
+            </div>
+          ))}
+
+          <input
+            type="text"
+            className="min-w-[120px] flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            placeholder={
+              selectedValues.length === 0 ? placeholder : "Search or add..."
+            }
+            value={inputValue}
+            onChange={(event) => setInputValue(event.target.value)}
+            onKeyDown={(event) => {
+              if (
+                event.key === "Enter" &&
+                inputValue.trim() &&
+                filteredGroups.length === 0
+              ) {
+                event.preventDefault();
+                void handleCreateAndSelect(inputValue);
+              }
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+              setOpen(true);
+            }}
+            disabled={disabled}
+          />
+
+          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+        </div>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
-        <Command>
-          <CommandList>
-            <CommandEmpty>No collections found.</CommandEmpty>
-            <CommandGroup>
-              {collectionGroups?.map((group) => (
+      <PopoverContent className="w-[400px] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandList id={listId} className="max-h-[300px]">
+            <CommandEmpty>
+              {inputValue ? (
+                <div className="p-4 text-center text-sm">
+                  <p className="mb-2 text-muted-foreground">
+                    No matching collections found.
+                  </p>
+                  {organizationId ? (
+                    <p className="text-xs text-muted-foreground">
+                      Press{" "}
+                      <kbd className="rounded border bg-muted px-1.5 py-0.5 font-semibold text-xs">
+                        Enter
+                      </kbd>{" "}
+                      to add{" "}
+                      <span className="font-medium text-foreground">
+                        "{formatGroupName(inputValue)}"
+                      </span>
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  Type to search collections
+                </div>
+              )}
+            </CommandEmpty>
+            <CommandGroup heading="Collections">
+              {filteredGroups.map((group) => (
                 <CommandItem
                   key={group._id}
                   value={group._id}
                   onSelect={() => handleSelect(group._id)}
+                  className="px-2 py-1.5"
                 >
                   <Check
                     className={cn(
-                      "mr-2 h-4 w-4",
-                      value === group._id ? "opacity-100" : "opacity-0",
+                      "h-4 w-4 shrink-0",
+                      selectedValues.includes(group._id)
+                        ? "opacity-100"
+                        : "opacity-0",
                     )}
                   />
                   <div className="flex items-center gap-2">
