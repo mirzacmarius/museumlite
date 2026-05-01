@@ -37,6 +37,8 @@ export default function EditAccessionObjectPage() {
 
   const isDraft =
     accession.status === "pending" && accession.workflowStep === 0;
+  const canEditObjectDraft =
+    accession.status === "pending" && Boolean(accession.draftObjectData);
 
   useEffect(() => {
     if (accession && isDraft && !accession.draftObjectData) {
@@ -44,11 +46,11 @@ export default function EditAccessionObjectPage() {
     }
   }, [accession, accessionId, isDraft, router]);
 
-  if (!isDraft || !accession.draftObjectData) {
+  if (!canEditObjectDraft || !accession.draftObjectData) {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <p className="text-muted-foreground">
-          Only accession drafts can be edited from this screen.
+          Only pending accession object drafts can be edited from this screen.
         </p>
       </div>
     );

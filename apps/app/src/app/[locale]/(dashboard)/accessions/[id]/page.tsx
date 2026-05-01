@@ -204,6 +204,7 @@ export default function AccessionDetailPage() {
     (workflowSteps?.requireSourceVerification ?? false);
   const isSourceVerified = accession.sourceVerified ?? false;
   const isObjectDraft = Boolean(accession.draftObjectData);
+  const canEditObjectDraft = accession.status === "pending" && isObjectDraft;
   const draftEditHref = isObjectDraft
     ? `/accessions/${accessionId}/edit-object`
     : `/accessions/${accessionId}/edit`;
@@ -352,7 +353,7 @@ export default function AccessionDetailPage() {
           {accession.status === "pending" && !isDraft ? (
             <PermissionGate permission="collections.update">
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/accessions/${accessionId}/edit`}>
+                <Link href={draftEditHref}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </Link>
@@ -707,31 +708,35 @@ export default function AccessionDetailPage() {
                     </div>
                   ) : null}
 
-                  {isDraft ? (
+                  {canEditObjectDraft ? (
                     <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-border/60 pt-5">
                       <PermissionGate permission="collections.update">
                         <Button variant="outline" size="sm" asChild>
                           <Link href={draftEditHref}>
                             <Edit className="mr-2 h-4 w-4" />
-                            Edit Draft
+                            {isDraft ? "Edit Draft" : "Edit"}
                           </Link>
                         </Button>
                       </PermissionGate>
-                      <PermissionGate permission="collections.update">
-                        <Button
-                          size="sm"
-                          onClick={() => void handleSubmitDraft()}
-                          disabled={isSubmittingDraft}
-                        >
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          {isSubmittingDraft
-                            ? "Submitting..."
-                            : "Submit for Approval"}
-                        </Button>
-                      </PermissionGate>
-                      <p className="text-sm text-muted-foreground">
-                        Drafts must be submitted before approval can begin.
-                      </p>
+                      {isDraft ? (
+                        <>
+                          <PermissionGate permission="collections.update">
+                            <Button
+                              size="sm"
+                              onClick={() => void handleSubmitDraft()}
+                              disabled={isSubmittingDraft}
+                            >
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                              {isSubmittingDraft
+                                ? "Submitting..."
+                                : "Submit for Approval"}
+                            </Button>
+                          </PermissionGate>
+                          <p className="text-sm text-muted-foreground">
+                            Drafts must be submitted before approval can begin.
+                          </p>
+                        </>
+                      ) : null}
                     </div>
                   ) : null}
                 </SectionCard>

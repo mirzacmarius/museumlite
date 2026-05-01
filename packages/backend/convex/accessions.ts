@@ -472,6 +472,11 @@ export const upsertObjectDraft = mutation({
 
       await requirePermission(ctx, args.organizationId, "collections.update");
 
+      const updatedWorkflowStep =
+        existing.workflowStep && existing.workflowStep > 0
+          ? existing.workflowStep
+          : nextWorkflowStep;
+
       const accessionNumber =
         normalizedObjectData.accessionNumber?.trim() ||
         existing.accessionNumber;
@@ -487,7 +492,7 @@ export const upsertObjectDraft = mutation({
         accessionNumber,
         source,
         notes: normalizedObjectData.description?.trim() || existing.notes,
-        workflowStep: nextWorkflowStep,
+        workflowStep: updatedWorkflowStep,
         draftObjectData: {
           ...normalizedObjectData,
           accessionNumber,
@@ -507,17 +512,21 @@ export const upsertObjectDraft = mutation({
         changes: {
           accessionNumber,
           saveMode: args.saveMode,
-          workflowStep: nextWorkflowStep,
+          workflowStep: updatedWorkflowStep,
           title: normalizedObjectData.title,
         },
       });
 
-      if (args.saveMode === "submit" && workflowConfig) {
+      if (
+        args.saveMode === "submit" &&
+        workflowConfig &&
+        updatedWorkflowStep !== existing.workflowStep
+      ) {
         const usersToNotify = await getUsersToNotifyForWorkflowStep(
           ctx,
           args.organizationId,
           "accession",
-          nextWorkflowStep,
+          updatedWorkflowStep,
         );
 
         for (const approverId of usersToNotify) {
