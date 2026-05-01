@@ -9,16 +9,30 @@ interface GalleryObject {
   title: string;
   accessionNumber?: string;
   status?: string;
+  currentLocationId?: string;
   thumbnailUrl?: string | null;
+}
+
+interface DisplayUnitLocation {
+  _id: string;
+  name: string;
+  locationCode: string;
+  type: string;
+  isActive: boolean;
+  descendantLocationIds?: string[];
 }
 
 interface GalleryViewProps {
   objects: GalleryObject[];
   vitrineCount?: number;
+  vitrineLocations?: DisplayUnitLocation[];
   wallCount?: number;
+  wallLocations?: DisplayUnitLocation[];
   wallItemsPerWall?: number;
   cabinetCount?: number;
+  cabinetLocations?: DisplayUnitLocation[];
   shelfCount?: number;
+  shelfLocations?: DisplayUnitLocation[];
   backgroundImageUrl?: string | null;
 }
 
@@ -32,10 +46,14 @@ const VITRINE_TYPES = ["Roman", "Greek", "Busts", "Tools", "Ceramics", "Coins"];
 export function GalleryView({
   objects,
   vitrineCount = DEFAULT_VITRINE_COUNT,
+  vitrineLocations = [],
   wallCount = DEFAULT_WALL_COUNT,
+  wallLocations = [],
   wallItemsPerWall = DEFAULT_WALL_ITEMS_PER_WALL,
   cabinetCount = DEFAULT_CABINET_COUNT,
+  cabinetLocations = [],
   shelfCount = DEFAULT_SHELF_COUNT,
+  shelfLocations = [],
   backgroundImageUrl,
 }: GalleryViewProps) {
   const normalizedVitrineCount = Math.max(0, vitrineCount);
@@ -54,7 +72,7 @@ export function GalleryView({
     vitrineCapacity,
     vitrineCapacity + wallCapacity,
   );
-  const cabinetObjects = objects.slice(
+  const generatedCabinetObjects = objects.slice(
     vitrineCapacity + wallCapacity,
     vitrineCapacity + wallCapacity + cabinetCapacity,
   );
@@ -63,35 +81,74 @@ export function GalleryView({
     vitrineCapacity + wallCapacity + cabinetCapacity + shelfCapacity,
   );
 
-  const vitrines = Array.from(
-    { length: normalizedVitrineCount },
-    (_, index) => ({
-      id: `VIT-${String(index + 1).padStart(2, "0")}`,
-      type: VITRINE_TYPES[index % VITRINE_TYPES.length] ?? "Display",
-      objects: vitrineObjects.slice(index * 2, index * 2 + 2),
-    }),
-  );
+  const vitrines =
+    vitrineLocations.length > 0
+      ? vitrineLocations.map((vitrineLocation) => ({
+          id: vitrineLocation.locationCode,
+          name: vitrineLocation.name,
+          type: vitrineLocation.type,
+          isActive: vitrineLocation.isActive,
+          objects: getObjectsForDisplayUnit(objects, vitrineLocation),
+        }))
+      : Array.from({ length: normalizedVitrineCount }, (_, index) => ({
+          id: `VIT-${String(index + 1).padStart(2, "0")}`,
+          type: VITRINE_TYPES[index % VITRINE_TYPES.length] ?? "Display",
+          isActive: true,
+          objects: vitrineObjects.slice(index * 2, index * 2 + 2),
+        }));
 
-  const wallSlots = Array.from({ length: normalizedWallCount }, (_, index) => ({
-    id: `W${index + 1}`,
-    objects: wallObjects.slice(
-      index * normalizedWallItemsPerWall,
-      index * normalizedWallItemsPerWall + normalizedWallItemsPerWall,
-    ),
-  }));
+  const wallSlots =
+    wallLocations.length > 0
+      ? wallLocations.map((wallLocation) => ({
+          id: wallLocation.locationCode,
+          name: wallLocation.name,
+          type: wallLocation.type,
+          isActive: wallLocation.isActive,
+          objects: getObjectsForDisplayUnit(objects, wallLocation),
+        }))
+      : Array.from({ length: normalizedWallCount }, (_, index) => ({
+          id: `W${index + 1}`,
+          type: "Wall",
+          isActive: true,
+          objects: wallObjects.slice(
+            index * normalizedWallItemsPerWall,
+            index * normalizedWallItemsPerWall + normalizedWallItemsPerWall,
+          ),
+        }));
 
-  const cabinets = Array.from(
-    { length: normalizedCabinetCount },
-    (_, index) => ({
-      id: `CAB-${String(index + 1).padStart(2, "0")}`,
-      objects: cabinetObjects.slice(index * 2, index * 2 + 2),
-    }),
-  );
+  const cabinets =
+    cabinetLocations.length > 0
+      ? cabinetLocations.map((cabinetLocation) => {
+          return {
+            id: cabinetLocation.locationCode,
+            name: cabinetLocation.name,
+            type: cabinetLocation.type,
+            isActive: cabinetLocation.isActive,
+            objects: getObjectsForDisplayUnit(objects, cabinetLocation),
+          };
+        })
+      : Array.from({ length: normalizedCabinetCount }, (_, index) => ({
+          id: `CAB-${String(index + 1).padStart(2, "0")}`,
+          type: "Cabinet",
+          isActive: true,
+          objects: generatedCabinetObjects.slice(index * 2, index * 2 + 2),
+        }));
 
-  const shelves = Array.from({ length: normalizedShelfCount }, (_, index) => ({
-    id: `SH-${String(index + 1).padStart(2, "0")}`,
-    objects: shelfObjects.slice(index * 2, index * 2 + 2),
-  }));
+  const shelves =
+    shelfLocations.length > 0
+      ? shelfLocations.map((shelfLocation) => ({
+          id: shelfLocation.locationCode,
+          name: shelfLocation.name,
+          type: shelfLocation.type,
+          isActive: shelfLocation.isActive,
+          objects: getObjectsForDisplayUnit(objects, shelfLocation),
+        }))
+      : Array.from({ length: normalizedShelfCount }, (_, index) => ({
+          id: `SH-${String(index + 1).padStart(2, "0")}`,
+          type: "Shelf",
+          isActive: true,
+          objects: shelfObjects.slice(index * 2, index * 2 + 2),
+        }));
 
   const occupiedVitrines = vitrines.filter(
     (vitrine) => vitrine.objects.length > 0,
@@ -101,10 +158,10 @@ export function GalleryView({
     (cabinet) => cabinet.objects.length > 0,
   );
   const occupiedShelves = shelves.filter((shelf) => shelf.objects.length > 0);
-  const hasVitrines = normalizedVitrineCount > 0;
-  const hasWalls = normalizedWallCount > 0;
-  const hasCabinets = normalizedCabinetCount > 0;
-  const hasShelves = normalizedShelfCount > 0;
+  const hasVitrines = vitrines.length > 0;
+  const hasWalls = wallSlots.length > 0;
+  const hasCabinets = cabinets.length > 0;
+  const hasShelves = shelves.length > 0;
   const hasConfiguredUnits =
     hasVitrines || hasWalls || hasCabinets || hasShelves;
 
@@ -131,7 +188,7 @@ export function GalleryView({
             <div className="text-xs text-zinc-500">
               In use:{" "}
               <span className="text-zinc-300">
-                {occupiedVitrines.length}/{normalizedVitrineCount} Vitrines
+                {occupiedVitrines.length}/{vitrines.length} Vitrines
               </span>
             </div>
           </div>
@@ -178,7 +235,7 @@ export function GalleryView({
                 </div>
                 <div className="mt-4 flex items-center justify-between text-xs text-zinc-500">
                   <span>
-                    {normalizedWallCount} walls configured ·{" "}
+                    {wallSlots.length} walls configured ·{" "}
                     {normalizedWallItemsPerWall} item
                     {normalizedWallItemsPerWall === 1 ? "" : "s"} per wall
                   </span>
@@ -199,8 +256,7 @@ export function GalleryView({
                 ))}
               </div>
               <div className="mt-3 text-right text-xs text-zinc-500">
-                {occupiedCabinets.length}/{normalizedCabinetCount} cabinets in
-                use
+                {occupiedCabinets.length}/{cabinets.length} cabinets in use
               </div>
             </div>
           ) : null}
@@ -215,7 +271,7 @@ export function GalleryView({
             </h3>
             <div className="text-xs text-zinc-500">
               <span className="text-zinc-300">
-                {occupiedShelves.length}/{normalizedShelfCount} shelves in use
+                {occupiedShelves.length}/{shelves.length} shelves in use
               </span>
             </div>
           </div>
@@ -230,27 +286,55 @@ export function GalleryView({
   );
 }
 
+function getObjectsForDisplayUnit(
+  objects: GalleryObject[],
+  location: DisplayUnitLocation,
+) {
+  const locationIds = new Set([
+    location._id,
+    ...(location.descendantLocationIds ?? []),
+  ]);
+
+  return objects.filter(
+    (object) =>
+      object.currentLocationId !== undefined &&
+      locationIds.has(object.currentLocationId),
+  );
+}
+
 interface VitrineCardProps {
   vitrine: {
     id: string;
+    name?: string;
     type: string;
+    isActive?: boolean;
     objects: GalleryObject[];
   };
 }
 
 function VitrineCard({ vitrine }: VitrineCardProps) {
   const hasObjects = vitrine.objects.length > 0;
-  const statusColor = hasObjects ? "bg-emerald-500" : "bg-zinc-700";
+  const isInactive = vitrine.isActive === false;
+  const statusColor = isInactive
+    ? "bg-zinc-700"
+    : hasObjects
+      ? "bg-emerald-500"
+      : "bg-zinc-700";
 
   if (!hasObjects) {
     return (
       <div className="group relative aspect-[4/5] rounded-xl border border-white/5 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-md shadow-2xl transition-all hover:border-zinc-700/40">
         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-30 pointer-events-none" />
-        <div className="absolute top-0 left-0 right-0 p-3 flex justify-between items-center border-b border-white/5 bg-black/20">
-          <span className="text-[10px] font-mono text-zinc-500">
-            {vitrine.id} ({vitrine.type})
-          </span>
-          <div className={`w-1.5 h-1.5 rounded-full ${statusColor}`} />
+        <div className="absolute left-0 right-0 top-0 flex items-center justify-between gap-3 border-b border-white/5 bg-black/20 p-3">
+          <div className="min-w-0">
+            <div className="truncate font-mono text-[10px] text-zinc-500">
+              {vitrine.name ?? vitrine.id}
+            </div>
+            <div className="mt-0.5 truncate text-[9px] uppercase tracking-[0.16em] text-zinc-600">
+              {vitrine.name ? `${vitrine.id} · ${vitrine.type}` : vitrine.type}
+            </div>
+          </div>
+          <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusColor}`} />
         </div>
         <div className="p-4 pt-12 h-full flex items-center justify-center">
           <span className="text-[9px] text-zinc-600">Empty Slot</span>
@@ -262,11 +346,16 @@ function VitrineCard({ vitrine }: VitrineCardProps) {
   return (
     <div className="group relative aspect-[4/5] rounded-xl border border-white/5 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-md shadow-2xl transition-all hover:border-indigo-500/40 hover:shadow-indigo-500/10">
       <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-30 pointer-events-none" />
-      <div className="absolute top-0 left-0 right-0 p-3 flex justify-between items-center border-b border-white/5 bg-black/20">
-        <span className="text-[10px] font-mono text-zinc-400">
-          {vitrine.id} ({vitrine.type})
-        </span>
-        <div className={`w-1.5 h-1.5 rounded-full ${statusColor}`} />
+      <div className="absolute left-0 right-0 top-0 flex items-center justify-between gap-3 border-b border-white/5 bg-black/20 p-3">
+        <div className="min-w-0">
+          <div className="truncate font-mono text-[10px] text-zinc-400">
+            {vitrine.name ?? vitrine.id}
+          </div>
+          <div className="mt-0.5 truncate text-[9px] uppercase tracking-[0.16em] text-zinc-600">
+            {vitrine.name ? `${vitrine.id} · ${vitrine.type}` : vitrine.type}
+          </div>
+        </div>
+        <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusColor}`} />
       </div>
       <div className="p-4 pt-12 h-full flex flex-col gap-4">
         {vitrine.objects.map((obj, idx) => (
@@ -277,10 +366,10 @@ function VitrineCard({ vitrine }: VitrineCardProps) {
             <LocationObjectThumbnail
               object={obj}
               metadataLabel="Placement"
-              metadataValue={`${vitrine.id} · ${vitrine.type}`}
-              className="h-24 w-24 rounded-2xl border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
+              metadataValue={vitrine.name ?? `${vitrine.id} · ${vitrine.type}`}
+              className="h-16 w-16 rounded-xl border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.35)]"
               imageClassName="aspect-square"
-              titleClassName="text-xs"
+              titleClassName="text-[10px]"
             />
           </div>
         ))}
@@ -292,24 +381,53 @@ function VitrineCard({ vitrine }: VitrineCardProps) {
 interface WallSlotProps {
   slot: {
     id: string;
+    name?: string;
+    type?: string;
+    isActive?: boolean;
     objects: GalleryObject[];
   };
 }
 
 function WallSlot({ slot }: WallSlotProps) {
+  const title = slot.name ?? `Wall ${slot.id}`;
+  const subtitle = slot.name
+    ? `${slot.id} · ${slot.type ?? "Wall"}`
+    : slot.type;
+
   if (slot.objects.length === 0) {
     return (
-      <div className="aspect-[3/4] bg-black/40 border border-zinc-800 rounded flex items-center justify-center">
+      <div className="flex aspect-[3/4] flex-col items-center justify-center rounded border border-zinc-800 bg-black/40 px-3 text-center">
+        <span className="max-w-full truncate font-mono text-[10px] text-zinc-600">
+          {title}
+        </span>
+        <span className="mt-1 max-w-full truncate text-[9px] uppercase tracking-[0.16em] text-zinc-700">
+          {subtitle}
+        </span>
         <span className="text-[9px] text-zinc-700">Empty</span>
       </div>
     );
   }
 
   return (
-    <div className="aspect-[3/4] rounded-2xl border border-white/10 bg-black/30 p-2 shadow-[0_24px_80px_rgba(0,0,0,0.3)]">
+    <div className="flex aspect-[3/4] flex-col rounded-2xl border border-white/10 bg-black/30 p-2 shadow-[0_24px_80px_rgba(0,0,0,0.3)]">
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="truncate font-mono text-[10px] text-zinc-400">
+            {title}
+          </div>
+          <div className="mt-0.5 truncate text-[9px] uppercase tracking-[0.16em] text-zinc-600">
+            {subtitle}
+          </div>
+        </div>
+        {slot.isActive === false ? (
+          <span className="shrink-0 text-[9px] uppercase tracking-[0.14em] text-zinc-600">
+            Inactive
+          </span>
+        ) : null}
+      </div>
       <div
         className={cn(
-          "grid h-full gap-2",
+          "grid min-h-0 flex-1 gap-2",
           slot.objects.length === 1
             ? "grid-cols-1"
             : slot.objects.length === 2
@@ -322,10 +440,10 @@ function WallSlot({ slot }: WallSlotProps) {
             key={object._id}
             object={object}
             metadataLabel="Placement"
-            metadataValue={`Wall ${slot.id}`}
+            metadataValue={title}
             className="h-full rounded-xl border-white/10"
             imageClassName="aspect-auto h-full"
-            titleClassName="text-[11px]"
+            titleClassName="text-[10px]"
           />
         ))}
       </div>
@@ -336,13 +454,21 @@ function WallSlot({ slot }: WallSlotProps) {
 interface UnitStackCardProps {
   unit: {
     id: string;
+    name?: string;
+    type?: string;
+    isActive?: boolean;
     objects: GalleryObject[];
   };
 }
 
 function UnitStackCard({ unit }: UnitStackCardProps) {
   const isEmpty = unit.objects.length === 0;
-  const statusColor = isEmpty ? "bg-zinc-600" : "bg-emerald-500";
+  const isInactive = unit.isActive === false;
+  const statusColor = isInactive
+    ? "bg-zinc-700"
+    : isEmpty
+      ? "bg-zinc-600"
+      : "bg-emerald-500";
 
   return (
     <div
@@ -355,14 +481,21 @@ function UnitStackCard({ unit }: UnitStackCardProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className={`h-1.5 w-1.5 rounded-full ${statusColor}`} />
-          <span
-            className={`font-mono text-xs ${isEmpty ? "text-zinc-500" : "text-zinc-300"}`}
-          >
-            {unit.id}
-          </span>
+          <div className="min-w-0">
+            <div
+              className={`truncate font-mono text-xs ${
+                isEmpty ? "text-zinc-500" : "text-zinc-300"
+              }`}
+            >
+              {unit.name ?? unit.id}
+            </div>
+            <div className="mt-0.5 truncate text-[10px] uppercase tracking-[0.16em] text-zinc-600">
+              {unit.name ? `${unit.id} · ${unit.type ?? "Cabinet"}` : unit.type}
+            </div>
+          </div>
         </div>
-        <span className="text-[10px] text-zinc-500">
-          {unit.objects.length}/2
+        <span className="shrink-0 text-[10px] text-zinc-500">
+          {isInactive ? "Inactive" : `${unit.objects.length}/2`}
         </span>
       </div>
 
@@ -375,7 +508,9 @@ function UnitStackCard({ unit }: UnitStackCardProps) {
           <div
             className={cn(
               "grid gap-2",
-              unit.objects.length === 1 ? "grid-cols-1" : "grid-cols-2",
+              unit.objects.length === 1
+                ? "grid-cols-[minmax(0,5rem)]"
+                : "grid-cols-2",
             )}
           >
             {unit.objects.map((object) => (
@@ -383,10 +518,10 @@ function UnitStackCard({ unit }: UnitStackCardProps) {
                 key={object._id}
                 object={object}
                 metadataLabel="Placement"
-                metadataValue={unit.id}
-                className="rounded-xl border-white/10"
+                metadataValue={unit.name ?? unit.id}
+                className="rounded-lg border-white/10"
                 imageClassName="aspect-square"
-                titleClassName="text-[11px]"
+                titleClassName="text-[10px]"
               />
             ))}
           </div>

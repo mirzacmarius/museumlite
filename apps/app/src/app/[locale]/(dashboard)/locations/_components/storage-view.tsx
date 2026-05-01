@@ -5,6 +5,7 @@ import { LocationObjectThumbnail } from "./location-object-thumbnail";
 interface StorageUnit {
   _id: string;
   name: string;
+  locationCode: string;
   type: string;
   isActive: boolean;
 }
@@ -112,12 +113,12 @@ export function StorageView({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-16 shrink-0">
+                      <div className="w-11 shrink-0">
                         <LocationObjectThumbnail
                           object={object}
                           className="rounded-lg"
                           imageClassName="aspect-square"
-                          titleClassName="text-[11px]"
+                          titleClassName="text-[10px]"
                         />
                       </div>
                       <div className="min-w-0">
@@ -184,8 +185,8 @@ function StorageUnitCard({ unit, objects }: StorageUnitCardProps) {
           <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-zinc-500">
             {unit.name}
           </div>
-          <div className="mt-1 text-sm capitalize text-zinc-200">
-            {unit.type}
+          <div className="mt-1 text-xs uppercase tracking-[0.14em] text-zinc-600">
+            {unit.locationCode} · {unit.type}
           </div>
         </div>
         <div className="text-right">
@@ -204,16 +205,16 @@ function StorageUnitCard({ unit, objects }: StorageUnitCardProps) {
             No assigned objects
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] gap-2">
             {objects.slice(0, 4).map((object) => (
               <LocationObjectThumbnail
                 key={object._id}
                 object={object}
                 metadataLabel="Stored In"
                 metadataValue={unit.name}
-                className="rounded-xl"
+                className="rounded-lg"
                 imageClassName="aspect-square"
-                titleClassName="text-[11px]"
+                titleClassName="text-[10px]"
                 showFooter
               />
             ))}

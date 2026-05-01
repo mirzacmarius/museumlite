@@ -197,6 +197,10 @@ function LocationLayout({
     selectedLocationId && allLocations
       ? buildLocationPath(allLocations, selectedLocationId)
       : [];
+  const displayUnitLocations = getDisplayUnitLocations(
+    descendantLocations,
+    allLocations ?? [],
+  );
 
   return (
     <div className="flex h-full min-h-0 w-full">
@@ -342,6 +346,7 @@ function LocationLayout({
                     title: obj.title,
                     accessionNumber: obj.accessionNumber,
                     status: obj.status,
+                    currentLocationId: obj.currentLocationId,
                     thumbnailUrl: obj.thumbnailUrl,
                   })) ?? []
                 }
@@ -353,6 +358,7 @@ function LocationLayout({
                   ) ||
                   undefined
                 }
+                vitrineLocations={displayUnitLocations.vitrines}
                 wallCount={
                   automaticDisplayUnitCounts?.wallCount ||
                   getNumericCustomFieldNumber(
@@ -361,6 +367,7 @@ function LocationLayout({
                   ) ||
                   undefined
                 }
+                wallLocations={displayUnitLocations.walls}
                 wallItemsPerWall={
                   getNumericCustomFieldNumber(
                     selectedLocation.customFields,
@@ -375,6 +382,7 @@ function LocationLayout({
                   ) ||
                   undefined
                 }
+                cabinetLocations={displayUnitLocations.cabinets}
                 shelfCount={
                   automaticDisplayUnitCounts?.shelfCount ||
                   getNumericCustomFieldNumber(
@@ -383,6 +391,7 @@ function LocationLayout({
                   ) ||
                   undefined
                 }
+                shelfLocations={displayUnitLocations.shelves}
                 backgroundImageUrl={selectedLocation.imageUrl}
               />
             )}
@@ -395,6 +404,7 @@ function LocationLayout({
                 ).map((loc) => ({
                   _id: loc._id,
                   name: loc.name,
+                  locationCode: loc.locationCode,
                   type: loc.type,
                   isActive: loc.isActive,
                 }))}
@@ -456,4 +466,72 @@ function buildLocationPath(
   }
 
   return path;
+}
+
+function getDisplayUnitLocations(
+  descendantLocations: Array<{
+    _id: Id<"locations">;
+    name: string;
+    locationCode: string;
+    type: string;
+    isActive: boolean;
+  }>,
+  allLocations: Array<{
+    _id: Id<"locations">;
+    name: string;
+    locationCode: string;
+    type: string;
+    isActive: boolean;
+    parentLocationId?: Id<"locations">;
+  }>,
+) {
+  const toDisplayUnitLocation = (
+    location: (typeof descendantLocations)[number],
+  ) => ({
+    _id: location._id,
+    name: location.name,
+    locationCode: location.locationCode,
+    type: location.type,
+    isActive: location.isActive,
+    descendantLocationIds: getDescendantLocations(
+      allLocations,
+      location._id,
+    ).map((descendantLocation) => descendantLocation._id),
+  });
+
+  return {
+    vitrines: descendantLocations
+      .filter((location) => isVitrineLocation(location.type))
+      .map(toDisplayUnitLocation),
+    walls: descendantLocations
+      .filter((location) => isWallLocation(location.type))
+      .map(toDisplayUnitLocation),
+    cabinets: descendantLocations
+      .filter((location) => isCabinetLocation(location.type))
+      .map(toDisplayUnitLocation),
+    shelves: descendantLocations
+      .filter((location) => isShelfLocation(location.type))
+      .map(toDisplayUnitLocation),
+  };
+}
+
+function isVitrineLocation(type: string) {
+  const normalizedType = type.toLowerCase();
+  return (
+    normalizedType.includes("vitrine") ||
+    normalizedType.includes("display case") ||
+    normalizedType.includes("displaycase")
+  );
+}
+
+function isWallLocation(type: string) {
+  return type.toLowerCase().includes("wall");
+}
+
+function isCabinetLocation(type: string) {
+  return type.toLowerCase().includes("cabinet");
+}
+
+function isShelfLocation(type: string) {
+  return type.toLowerCase().includes("shelf");
 }

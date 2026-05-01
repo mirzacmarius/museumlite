@@ -5,7 +5,8 @@ import {
   shouldShowInExhibitionSidebar,
 } from "@/app/[locale]/(dashboard)/locations/location-view-helpers";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Lock, Thermometer } from "lucide-react";
+import { ChevronRight, Lock, Thermometer } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 interface SidebarLocation {
   _id: Id<"locations">;
@@ -31,6 +32,10 @@ export function LocationSidebar({
   selectedLocationId,
   onSelectLocation,
 }: LocationSidebarProps) {
+  const [expandedLocationIds, setExpandedLocationIds] = useState(
+    () => new Set<Id<"locations">>(),
+  );
+
   const getChildren = (parentLocationId: Id<"locations">) =>
     allLocations.filter(
       (location) => location.parentLocationId === parentLocationId,
@@ -39,6 +44,46 @@ export function LocationSidebar({
     getChildren(parentLocationId).filter((location) =>
       shouldShowInExhibitionSidebar(location.type),
     );
+
+  const toggleLocation = (locationId: Id<"locations">) => {
+    setExpandedLocationIds((currentLocationIds) => {
+      const nextLocationIds = new Set(currentLocationIds);
+
+      if (nextLocationIds.has(locationId)) {
+        nextLocationIds.delete(locationId);
+      } else {
+        nextLocationIds.add(locationId);
+      }
+
+      return nextLocationIds;
+    });
+  };
+
+  const locationsStructureKey = useMemo(
+    () =>
+      allLocations
+        .map(
+          (location) =>
+            `${location._id}:${location.parentLocationId ?? "root"}:${location.type}`,
+        )
+        .join("|"),
+    [allLocations],
+  );
+
+  const initialExpandedLocationIds = useMemo(
+    () =>
+      getInitialExpandedLocationIds({
+        exhibitionLocations,
+        storageLocations,
+        getExhibitionChildren,
+        getStorageChildren: getChildren,
+      }),
+    [locationsStructureKey],
+  );
+
+  useEffect(() => {
+    setExpandedLocationIds(initialExpandedLocationIds);
+  }, [initialExpandedLocationIds]);
 
   return (
     <div className="h-full min-h-0 w-60 shrink-0 overflow-y-auto border-r border-zinc-800/60 bg-zinc-950 p-4 custom-scrollbar">
@@ -56,6 +101,8 @@ export function LocationSidebar({
                 getChildren={getExhibitionChildren}
                 selectedLocationId={selectedLocationId}
                 onSelectLocation={onSelectLocation}
+                expandedLocationIds={expandedLocationIds}
+                onToggleLocation={toggleLocation}
                 isSecure={false}
               />
             ))}
@@ -77,6 +124,8 @@ export function LocationSidebar({
                 getChildren={getChildren}
                 selectedLocationId={selectedLocationId}
                 onSelectLocation={onSelectLocation}
+                expandedLocationIds={expandedLocationIds}
+                onToggleLocation={toggleLocation}
                 isSecure={true}
               />
             ))}
@@ -99,6 +148,8 @@ interface LocationNavTreeItemProps {
   location: SidebarLocation;
   selectedLocationId: Id<"locations"> | null;
   onSelectLocation: (id: Id<"locations">) => void;
+  expandedLocationIds: Set<Id<"locations">>;
+  onToggleLocation: (id: Id<"locations">) => void;
   isSecure: boolean;
   depth?: number;
 }
@@ -109,10 +160,14 @@ function LocationNavTreeItem({
   location,
   selectedLocationId,
   onSelectLocation,
+  expandedLocationIds,
+  onToggleLocation,
   isSecure,
   depth = 0,
 }: LocationNavTreeItemProps) {
   const isLocationSecure = isSecure || isStorageLocation(location.type);
+  const hasChildren = childLocations.length > 0;
+  const isExpanded = hasChildren && expandedLocationIds.has(location._id);
 
   return (
     <li>
@@ -120,12 +175,15 @@ function LocationNavTreeItem({
         location={location}
         isSelected={selectedLocationId === location._id}
         onSelect={() => onSelectLocation(location._id)}
+        hasChildren={hasChildren}
+        isExpanded={isExpanded}
+        onToggle={() => onToggleLocation(location._id)}
         isSecure={isLocationSecure}
         isColdStorage={location.type.toLowerCase().includes("cold")}
         depth={depth}
       />
-      {childLocations.length > 0 && (
-        <ul className="mt-1 space-y-1">
+      {isExpanded && (
+        <ul className="mt-1 space-y-1" aria-label={`${location.name} children`}>
           {childLocations.map((childLocation) => (
             <LocationNavTreeItem
               key={childLocation._id}
@@ -134,6 +192,8 @@ function LocationNavTreeItem({
               getChildren={getChildren}
               selectedLocationId={selectedLocationId}
               onSelectLocation={onSelectLocation}
+              expandedLocationIds={expandedLocationIds}
+              onToggleLocation={onToggleLocation}
               isSecure={isLocationSecure}
               depth={depth + 1}
             />
@@ -148,6 +208,9 @@ interface LocationNavItemProps {
   location: SidebarLocation;
   isSelected: boolean;
   onSelect: () => void;
+  hasChildren: boolean;
+  isExpanded: boolean;
+  onToggle: () => void;
   isSecure: boolean;
   isColdStorage?: boolean;
   depth: number;
@@ -157,6 +220,9 @@ function LocationNavItem({
   location,
   isSelected,
   onSelect,
+  hasChildren,
+  isExpanded,
+  onToggle,
   isSecure,
   isColdStorage,
   depth,
@@ -170,27 +236,106 @@ function LocationNavItem({
   const statusColor = getStatusColor();
 
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`flex w-full items-center justify-between rounded-r px-3 py-2 transition-all ${
+    <div
+      className={`flex w-full items-center rounded-r transition-all ${
         isSelected
           ? "border-l-2 border-indigo-500 bg-zinc-900 font-medium text-zinc-100 shadow-sm"
           : "border-l-2 border-transparent text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200"
       }`}
       style={{ paddingLeft: `${depth * 14 + 12}px` }}
     >
-      <span className="truncate">{location.name}</span>
-      {isColdStorage ? (
-        <span className="flex items-center gap-0.5 rounded border border-blue-500/20 bg-blue-500/10 px-1 text-[9px] text-blue-400">
-          <Thermometer className="h-2.5 w-2.5" />
-          4°C
-        </span>
-      ) : isSecure ? (
-        <Lock className="h-3 w-3 shrink-0 text-zinc-600" />
+      {hasChildren ? (
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex h-7 w-5 shrink-0 items-center justify-center text-zinc-500 transition-colors hover:text-zinc-200"
+          aria-label={`${isExpanded ? "Collapse" : "Expand"} ${location.name}`}
+          aria-expanded={isExpanded}
+        >
+          <ChevronRight
+            className={`h-3 w-3 transition-transform ${
+              isExpanded ? "rotate-90" : ""
+            }`}
+          />
+        </button>
       ) : (
-        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusColor}`} />
+        <span className="h-7 w-5 shrink-0" />
       )}
-    </button>
+
+      <button
+        type="button"
+        onClick={onSelect}
+        className="flex min-w-0 flex-1 items-center justify-between gap-2 py-2 pr-3 text-left"
+      >
+        <span className="truncate">{location.name}</span>
+        {isColdStorage ? (
+          <span className="flex shrink-0 items-center gap-0.5 rounded border border-blue-500/20 bg-blue-500/10 px-1 text-[9px] text-blue-400">
+            <Thermometer className="h-2.5 w-2.5" />
+            4°C
+          </span>
+        ) : isSecure ? (
+          <Lock className="h-3 w-3 shrink-0 text-zinc-600" />
+        ) : (
+          <span
+            className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusColor}`}
+          />
+        )}
+      </button>
+    </div>
   );
+}
+
+function getInitialExpandedLocationIds({
+  exhibitionLocations,
+  storageLocations,
+  getExhibitionChildren,
+  getStorageChildren,
+}: {
+  exhibitionLocations: SidebarLocation[];
+  storageLocations: SidebarLocation[];
+  getExhibitionChildren: (
+    parentLocationId: Id<"locations">,
+  ) => SidebarLocation[];
+  getStorageChildren: (parentLocationId: Id<"locations">) => SidebarLocation[];
+}) {
+  const firstExhibitionLocation = exhibitionLocations[0];
+  if (firstExhibitionLocation) {
+    return getFirstDeepestPathParentIds(
+      firstExhibitionLocation,
+      getExhibitionChildren,
+    );
+  }
+
+  const firstStorageLocation = storageLocations[0];
+  if (firstStorageLocation) {
+    return getFirstDeepestPathParentIds(
+      firstStorageLocation,
+      getStorageChildren,
+    );
+  }
+
+  return new Set<Id<"locations">>();
+}
+
+function getFirstDeepestPathParentIds(
+  rootLocation: SidebarLocation,
+  getChildren: (parentLocationId: Id<"locations">) => SidebarLocation[],
+) {
+  const expandedLocationIds = new Set<Id<"locations">>();
+  const visitedLocationIds = new Set<Id<"locations">>();
+  let currentLocation: SidebarLocation | undefined = rootLocation;
+
+  while (currentLocation && !visitedLocationIds.has(currentLocation._id)) {
+    visitedLocationIds.add(currentLocation._id);
+
+    const children = getChildren(currentLocation._id);
+    if (children.length === 0) {
+      break;
+    }
+
+    expandedLocationIds.add(currentLocation._id);
+    currentLocation = children[0];
+  }
+
+  return expandedLocationIds;
 }
