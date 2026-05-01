@@ -9,7 +9,6 @@ import {
   FileEdit,
   Search,
   ShieldCheck,
-  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -40,7 +39,6 @@ const stepDotStyles: Record<number, string> = {
   3: "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]",
   4: "bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]",
   [-1]: "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]",
-  [-2]: "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]",
 };
 
 const DEFAULT_DOT_STYLE = "bg-muted-foreground";
@@ -58,7 +56,6 @@ function getStepDotStyle(stepNumber: number): string {
 function getStepIcon(stepNumber: number) {
   if (stepNumber === 0) return <FileEdit className="h-4 w-4" />;
   if (stepNumber === -1) return <CheckCircle className="h-4 w-4" />;
-  if (stepNumber === -2) return <XCircle className="h-4 w-4" />;
   if (stepNumber === 1) return <Clock className="h-4 w-4" />;
   if (stepNumber === 2) return <Search className="h-4 w-4" />;
   return <ShieldCheck className="h-4 w-4" />;
@@ -92,9 +89,7 @@ export function KanbanColumn({
       const matchesStep =
         stepNumber === -1
           ? a.status === "approved"
-          : stepNumber === -2
-            ? a.status === "rejected"
-            : a.status === "pending" && currentStep === stepNumber;
+          : a.status === "pending" && currentStep === stepNumber;
 
       const matchesSearch = searchQuery
         ? a.accessionNumber

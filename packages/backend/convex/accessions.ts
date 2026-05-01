@@ -2,7 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import {
   type MutationCtx,
   internalMutation,
@@ -31,6 +31,7 @@ import {
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
 const MAX_SMALL_IMAGE_SIZE = 50 * 1024 * 1024;
+const REJECTED_OBJECT_DISPLAY_STATUS = "REJECTED";
 
 const accessionDraftMediaWithUrlValidator = v.object({
   storageId: v.id("_storage"),
@@ -68,6 +69,136 @@ function getFileCategory(
     return mediaCategory;
   }
   return mimeType.startsWith("image/") ? "image" : "document";
+}
+
+async function createCollectionObjectFromAccession(
+  ctx: MutationCtx,
+  accession: Doc<"accessions">,
+  options: {
+    catalogedBy: Id<"users">;
+    catalogedAt: number;
+    status: "active" | "deaccessioned";
+    displayStatus?: string;
+  },
+) {
+  const draftObjectData = accession.draftObjectData;
+  const collectionGroupIds =
+    draftObjectData?.collectionGroupIds ??
+    (draftObjectData?.collectionGroupId
+      ? [draftObjectData.collectionGroupId]
+      : []);
+  const collectionId = await ctx.db.insert("collections", {
+    organizationId: accession.organizationId,
+    accessionNumber: accession.accessionNumber,
+    collectionGroupId: collectionGroupIds[0],
+    title:
+      draftObjectData?.title?.trim() ||
+      `Accession ${accession.accessionNumber}`,
+    creator: draftObjectData?.creator,
+    objectType: serializeStringList(draftObjectData?.objectType),
+    objectName: draftObjectData?.objectName,
+    culture: draftObjectData?.culture,
+    period: draftObjectData?.period,
+    dateCreated: draftObjectData?.dateCreated,
+    materials: serializeStringList(draftObjectData?.materials),
+    dimensions: draftObjectData?.dimensions,
+    dimensionDiameter: draftObjectData?.dimensionDiameter,
+    dimensionWeight: draftObjectData?.dimensionWeight,
+    weightUnit: draftObjectData?.weightUnit,
+    description: draftObjectData?.description,
+    condition: draftObjectData?.condition,
+    inscriptions: draftObjectData?.inscriptions,
+    provenance: draftObjectData?.provenance,
+    exhibitionHistory: draftObjectData?.exhibitionHistory,
+    ownershipHistory: draftObjectData?.ownershipHistory,
+    donated_by: draftObjectData?.donated_by,
+    donated_date: draftObjectData?.donated_date,
+    donation_info: draftObjectData?.donation_info,
+    previous_owners: draftObjectData?.previous_owners,
+    links: draftObjectData?.links,
+    parentObjectId: draftObjectData?.parentObjectId,
+    currentLocationId: draftObjectData?.currentLocationId,
+    alternateAccessionNumbers: draftObjectData?.alternateAccessionNumbers,
+    displayStatus: options.displayStatus ?? draftObjectData?.displayStatus,
+    isPubliclyVisible: draftObjectData?.isPubliclyVisible,
+    isHighResDownloadable: draftObjectData?.isHighResDownloadable,
+    isSearchable: draftObjectData?.isSearchable,
+    isValuationVisible: draftObjectData?.isValuationVisible,
+    publicSlug: draftObjectData?.publicSlug,
+    collectionType: draftObjectData?.collectionType,
+    status: options.status,
+    catalogedBy: options.catalogedBy,
+    catalogedAt: options.catalogedAt,
+    lastModifiedBy: options.catalogedBy,
+    lastModifiedAt: options.catalogedAt,
+  });
+
+  await applyUsageCounterDelta(ctx, accession.organizationId, {
+    objectCount: 1,
+  });
+
+  for (const collectionGroupId of [...new Set(collectionGroupIds)]) {
+    const group = await ctx.db.get(collectionGroupId);
+    if (group && group.organizationId === accession.organizationId) {
+      await ctx.db.insert("collectionGroupItems", {
+        collectionGroupId,
+        collectionId,
+        addedAt: options.catalogedAt,
+        addedBy: options.catalogedBy,
+      });
+      await ctx.db.patch(collectionGroupId, {
+        itemsCount: (group.itemsCount || 0) + 1,
+        lastModifiedAt: options.catalogedAt,
+        lastModifiedBy: options.catalogedBy,
+      });
+    }
+  }
+
+  for (const draftMediaItem of accession.draftMedia || []) {
+    const fileType = getFileCategory(
+      draftMediaItem.mimeType,
+      draftMediaItem.mediaCategory,
+    );
+    const mediaId = await ctx.db.insert("mediaFiles", {
+      collectionId,
+      organizationId: accession.organizationId,
+      storageId: draftMediaItem.storageId,
+      fileName: draftMediaItem.fileName,
+      fileType,
+      fileSize: draftMediaItem.fileSize,
+      mimeType: draftMediaItem.mimeType,
+      mediaCategory: draftMediaItem.mediaCategory,
+      isPrimary: draftMediaItem.isPrimary,
+      uploadedBy: options.catalogedBy,
+      uploadedAt: options.catalogedAt,
+      uploadStatus: "completed",
+    });
+
+    const storageBytes = await getStorageBytes(ctx, draftMediaItem.storageId);
+    await applyUsageCounterDelta(ctx, accession.organizationId, {
+      mediaFileCount: 1,
+      mediaTypeDeltas: [
+        {
+          type: fileType,
+          countDelta: 1,
+          bytesDelta: storageBytes,
+        },
+      ],
+      storageBytes,
+    });
+
+    if (
+      draftMediaItem.isPrimary &&
+      fileType === "image" &&
+      draftMediaItem.fileSize < MAX_SMALL_IMAGE_SIZE
+    ) {
+      await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
+        mediaId,
+      });
+    }
+  }
+
+  return collectionId;
 }
 
 async function ensureAccessionNumberAvailable(
@@ -1567,6 +1698,22 @@ export const reject = mutation({
         : accession.notes,
     });
 
+    const collectionId = await ctx.runMutation(
+      internal.accessions.createCollectionFromRejectedAccession,
+      {
+        accessionId: args.accessionId,
+        rejectedBy: userId,
+      },
+    );
+
+    await ctx.runMutation(internal.deaccessions.createRejectedFromAccession, {
+      organizationId: accession.organizationId,
+      collectionId,
+      createdByUserId: userId,
+      accessionNumber: accession.accessionNumber,
+      comment: args.comment,
+    });
+
     // Log audit action
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: accession.organizationId,
@@ -1721,128 +1868,70 @@ export const createCollectionFromAccession = internalMutation({
       return accession.collectionId;
     }
 
-    // Get first user as fallback for catalogedBy
     const firstUser = await ctx.db.query("users").first();
+    const catalogedBy = accession.approvedBy ?? firstUser?._id;
+    if (!catalogedBy) {
+      throw new Error("Could not determine cataloging user");
+    }
 
-    // Create collection object
-    const draftObjectData = accession.draftObjectData;
-    const collectionGroupIds =
-      draftObjectData?.collectionGroupIds ??
-      (draftObjectData?.collectionGroupId
-        ? [draftObjectData.collectionGroupId]
-        : []);
-    const catalogedBy = accession.approvedBy ?? firstUser?._id!;
     const catalogedAt = accession.approvedAt ?? Date.now();
-    const collectionId = await ctx.db.insert("collections", {
-      organizationId: accession.organizationId,
-      accessionNumber: accession.accessionNumber,
-      collectionGroupId: collectionGroupIds[0],
-      title:
-        draftObjectData?.title?.trim() ||
-        `Accession ${accession.accessionNumber}`,
-      creator: draftObjectData?.creator,
-      objectType: serializeStringList(draftObjectData?.objectType),
-      objectName: draftObjectData?.objectName,
-      culture: draftObjectData?.culture,
-      period: draftObjectData?.period,
-      dateCreated: draftObjectData?.dateCreated,
-      materials: serializeStringList(draftObjectData?.materials),
-      dimensions: draftObjectData?.dimensions,
-      dimensionDiameter: draftObjectData?.dimensionDiameter,
-      dimensionWeight: draftObjectData?.dimensionWeight,
-      weightUnit: draftObjectData?.weightUnit,
-      description: draftObjectData?.description,
-      condition: draftObjectData?.condition,
-      inscriptions: draftObjectData?.inscriptions,
-      provenance: draftObjectData?.provenance,
-      exhibitionHistory: draftObjectData?.exhibitionHistory,
-      ownershipHistory: draftObjectData?.ownershipHistory,
-      donated_by: draftObjectData?.donated_by,
-      donated_date: draftObjectData?.donated_date,
-      donation_info: draftObjectData?.donation_info,
-      previous_owners: draftObjectData?.previous_owners,
-      links: draftObjectData?.links,
-      parentObjectId: draftObjectData?.parentObjectId,
-      currentLocationId: draftObjectData?.currentLocationId,
-      alternateAccessionNumbers: draftObjectData?.alternateAccessionNumbers,
-      displayStatus: draftObjectData?.displayStatus,
-      isPubliclyVisible: draftObjectData?.isPubliclyVisible,
-      isHighResDownloadable: draftObjectData?.isHighResDownloadable,
-      isSearchable: draftObjectData?.isSearchable,
-      isValuationVisible: draftObjectData?.isValuationVisible,
-      publicSlug: draftObjectData?.publicSlug,
-      collectionType: draftObjectData?.collectionType,
-      status: "active",
-      catalogedBy,
-      catalogedAt,
+    const collectionId = await createCollectionObjectFromAccession(
+      ctx,
+      accession,
+      {
+        catalogedBy,
+        catalogedAt,
+        status: "active",
+      },
+    );
+
+    await ctx.db.patch(args.accessionId, {
+      collectionId,
     });
 
-    await applyUsageCounterDelta(ctx, accession.organizationId, {
-      objectCount: 1,
-    });
+    return collectionId;
+  },
+});
 
-    for (const collectionGroupId of [...new Set(collectionGroupIds)]) {
-      const group = await ctx.db.get(collectionGroupId);
-      if (group && group.organizationId === accession.organizationId) {
-        await ctx.db.insert("collectionGroupItems", {
-          collectionGroupId,
-          collectionId,
-          addedAt: catalogedAt,
-          addedBy: catalogedBy,
-        });
-        await ctx.db.patch(collectionGroupId, {
-          itemsCount: (group.itemsCount || 0) + 1,
-          lastModifiedAt: catalogedAt,
-          lastModifiedBy: catalogedBy,
-        });
-      }
+export const createCollectionFromRejectedAccession = internalMutation({
+  args: {
+    accessionId: v.id("accessions"),
+    rejectedBy: v.id("users"),
+  },
+  returns: v.id("collections"),
+  handler: async (ctx, args) => {
+    const accession = await ctx.db.get(args.accessionId);
+    if (!accession) {
+      throw new Error("Accession not found");
     }
 
-    for (const draftMediaItem of accession.draftMedia || []) {
-      const fileType = getFileCategory(
-        draftMediaItem.mimeType,
-        draftMediaItem.mediaCategory,
-      );
-      const mediaId = await ctx.db.insert("mediaFiles", {
-        collectionId,
-        organizationId: accession.organizationId,
-        storageId: draftMediaItem.storageId,
-        fileName: draftMediaItem.fileName,
-        fileType,
-        fileSize: draftMediaItem.fileSize,
-        mimeType: draftMediaItem.mimeType,
-        mediaCategory: draftMediaItem.mediaCategory,
-        isPrimary: draftMediaItem.isPrimary,
-        uploadedBy: catalogedBy,
-        uploadedAt: catalogedAt,
-        uploadStatus: "completed",
-      });
-
-      const storageBytes = await getStorageBytes(ctx, draftMediaItem.storageId);
-      await applyUsageCounterDelta(ctx, accession.organizationId, {
-        mediaFileCount: 1,
-        mediaTypeDeltas: [
-          {
-            type: fileType,
-            countDelta: 1,
-            bytesDelta: storageBytes,
-          },
-        ],
-        storageBytes,
-      });
-
-      if (
-        draftMediaItem.isPrimary &&
-        fileType === "image" &&
-        draftMediaItem.fileSize < MAX_SMALL_IMAGE_SIZE
-      ) {
-        await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
-          mediaId,
-        });
-      }
+    if (accession.status !== "rejected") {
+      throw new Error("Accession must be rejected");
     }
 
-    // Link accession to collection
+    const rejectedAt = accession.approvedAt ?? Date.now();
+
+    if (accession.collectionId) {
+      await ctx.db.patch(accession.collectionId, {
+        status: "deaccessioned",
+        displayStatus: REJECTED_OBJECT_DISPLAY_STATUS,
+        lastModifiedBy: args.rejectedBy,
+        lastModifiedAt: rejectedAt,
+      });
+      return accession.collectionId;
+    }
+
+    const collectionId = await createCollectionObjectFromAccession(
+      ctx,
+      accession,
+      {
+        catalogedBy: args.rejectedBy,
+        catalogedAt: rejectedAt,
+        status: "deaccessioned",
+        displayStatus: REJECTED_OBJECT_DISPLAY_STATUS,
+      },
+    );
+
     await ctx.db.patch(args.accessionId, {
       collectionId,
     });
@@ -1896,7 +1985,6 @@ export const getWorkflowSteps = query({
         steps: [
           { stepNumber: 0, name: "Draft" },
           { stepNumber: -1, name: "Approved" },
-          { stepNumber: -2, name: "Rejected" },
         ],
       };
     }
@@ -1919,7 +2007,6 @@ export const getWorkflowSteps = query({
       { stepNumber: 0, name: "Draft" },
       ...stepsWithRoles,
       { stepNumber: -1, name: "Approved" },
-      { stepNumber: -2, name: "Rejected" },
     ].filter(
       (step, index, steps) =>
         steps.findIndex(

@@ -26,6 +26,7 @@ const targetCollectionStatusValidator = v.union(
   v.literal("archived"),
   v.literal("deleted"),
 );
+const REJECTED_ACCESSION_DEACCESSION_REASON = "Accession rejected";
 
 function resolveTargetCollectionStatus(deaccession: {
   targetCollectionStatus?: "deaccessioned" | "archived" | "deleted";
@@ -239,7 +240,7 @@ async function createDeaccessionRecord(
     notes: args.notes,
     status: workflowConfig ? "pending" : "approved",
     targetCollectionStatus: args.targetCollectionStatus ?? "deaccessioned",
-    workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
+    workflowStep: workflowConfig ? workflowState.firstStep ?? 1 : undefined,
     workflowHistory,
     proceedsAmount: args.proceedsAmount,
     proceedsCurrency: args.proceedsCurrency,
@@ -374,6 +375,85 @@ export const createInternal = internalMutation({
       },
       args.createdByUserId,
     );
+  },
+});
+
+export const createRejectedFromAccession = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    collectionId: v.id("collections"),
+    createdByUserId: v.id("users"),
+    accessionNumber: v.string(),
+    comment: v.optional(v.string()),
+  },
+  returns: v.id("deaccessions"),
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      throw new Error("Collection not found");
+    }
+
+    if (collection.organizationId !== args.organizationId) {
+      throw new Error("Collection does not belong to organization");
+    }
+
+    const existingRejectedDeaccession = await ctx.db
+      .query("deaccessions")
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", args.collectionId),
+      )
+      .filter((q) => q.eq(q.field("status"), "rejected"))
+      .first();
+
+    if (existingRejectedDeaccession) {
+      return existingRejectedDeaccession._id;
+    }
+
+    const deaccessionNumber = await generateDeaccessionNumber(
+      ctx,
+      args.organizationId,
+    );
+    const now = Date.now();
+    const notes = args.comment
+      ? `Rejected accession ${args.accessionNumber}: ${args.comment}`
+      : `Rejected accession ${args.accessionNumber}`;
+
+    const deaccessionId = await ctx.db.insert("deaccessions", {
+      organizationId: args.organizationId,
+      collectionId: args.collectionId,
+      deaccessionNumber,
+      dateDeaccessioned: now,
+      reason: REJECTED_ACCESSION_DEACCESSION_REASON,
+      method: "transfer",
+      disposition: "Rejected during accession review",
+      notes,
+      status: "rejected",
+      targetCollectionStatus: "deaccessioned",
+      workflowStep: -2,
+      workflowHistory: [
+        {
+          step: -2,
+          approvedBy: args.createdByUserId,
+          approvedAt: now,
+          comment: args.comment,
+        },
+      ],
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId: args.createdByUserId,
+      action: "rejected",
+      entityType: "deaccession",
+      entityId: deaccessionId,
+      changes: {
+        deaccessionNumber,
+        source: "accession_rejection",
+        accessionNumber: args.accessionNumber,
+      },
+    });
+
+    return deaccessionId;
   },
 });
 
@@ -878,7 +958,8 @@ export const approve = mutation({
       }
 
       // Check if this is the last step
-      const isLastStep = workflowState.isPastLastStep || workflowState.isLastStep;
+      const isLastStep =
+        workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
         // Approve and mark collection as deaccessioned

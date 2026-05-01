@@ -202,6 +202,90 @@ test("getWorkflowSteps returns descriptive workflow metadata", async () => {
   expect("requiredDocuments" in (workflow.steps[1] ?? {})).toBe(false);
 });
 
+test("getWorkflowSteps does not include a rejected accession column", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.read"],
+  );
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [{ stepNumber: 1, roleId, name: "Registrar Review" }],
+      canInitiateRoles: [roleId],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const workflow = await authed.query(api.accessions.getWorkflowSteps, {
+    organizationId,
+  });
+
+  expect(workflow.steps.map((step) => step.name)).not.toContain("Rejected");
+  expect(workflow.steps.map((step) => step.stepNumber)).not.toContain(-2);
+});
+
+test("rejecting an accession moves the object to rejected deaccessions", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    [
+      "collections.create",
+      "collections.read",
+      "collections.update",
+      "collections.approve_accession",
+    ],
+  );
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [{ stepNumber: 1, roleId, name: "Registrar Review" }],
+      canInitiateRoles: [roleId],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const accessionId = await authed.mutation(api.accessions.upsertObjectDraft, {
+    organizationId,
+    saveMode: "submit",
+    objectData: {
+      accessionNumber: "REJECT-001",
+      title: "Rejected Object",
+    },
+  });
+
+  await authed.mutation(api.accessions.reject, {
+    accessionId,
+    comment: "Duplicate request",
+  });
+
+  const result = await t.run(async (ctx) => {
+    const accession = await ctx.db.get(accessionId);
+    const collectionId = accession?.collectionId;
+    const collection = collectionId ? await ctx.db.get(collectionId) : null;
+    const deaccession = collectionId
+      ? await ctx.db
+          .query("deaccessions")
+          .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+          .first()
+      : null;
+
+    return { accession, collection, deaccession };
+  });
+
+  expect(result.accession?.status).toBe("rejected");
+  expect(result.accession?.workflowStep).toBe(-2);
+  expect(result.collection?.status).toBe("deaccessioned");
+  expect(result.collection?.displayStatus).toBe("REJECTED");
+  expect(result.deaccession?.status).toBe("rejected");
+  expect(result.deaccession?.workflowStep).toBe(-2);
+  expect(result.deaccession?.reason).toBe("Accession rejected");
+});
+
 test("getWorkflowSteps does not surface document requirements for accession approvals", async () => {
   const t = convexTest(schema, modules);
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
@@ -943,63 +1027,65 @@ test("organization administrators can approve an accession even when the workflo
   const t = convexTest(schema, modules);
 
   const { organizationId, adminUserId } = await t.run(async (ctx) => {
-      const organizationId = await ctx.db.insert("organizations", {
-        name: "Admin Approval Museum",
-        slug: `admin-approval-${Math.random().toString(36).slice(2, 8)}`,
-        type: "museum",
-      });
-
-      const adminUserId = await ctx.db.insert("users", {
-        email: `admin-${Math.random().toString(36).slice(2, 8)}@example.com`,
-        name: "Administrator",
-      });
-
-      const adminRoleId = await ctx.db.insert("roles", {
-        organizationId,
-        name: "admin",
-        isSystemRole: true,
-      });
-
-      const reviewerRoleId = await ctx.db.insert("roles", {
-        organizationId,
-        name: "Registrar",
-        isSystemRole: false,
-      });
-
-      for (const permissionName of [
-        "organization.manage_settings",
-        "collections.create",
-        "collections.read",
-        "collections.update",
-        "collections.approve_accession",
-      ]) {
-        const permissionId = await ctx.db.insert("permissions", {
-          name: permissionName,
-          category: permissionName.split(".")[0] || "collections",
-        });
-
-        await ctx.db.insert("rolePermissions", {
-          roleId: adminRoleId,
-          permissionId,
-        });
-      }
-
-      await ctx.db.insert("userOrganizations", {
-        userId: adminUserId,
-        organizationId,
-        roleId: adminRoleId,
-        joinedAt: Date.now(),
-      });
-
-      await ctx.db.insert("workflowConfigs", {
-        organizationId,
-        workflowType: "accession",
-        steps: [{ stepNumber: 1, roleId: reviewerRoleId, name: "Registrar Review" }],
-        canInitiateRoles: [adminRoleId],
-      });
-
-      return { organizationId, adminUserId };
+    const organizationId = await ctx.db.insert("organizations", {
+      name: "Admin Approval Museum",
+      slug: `admin-approval-${Math.random().toString(36).slice(2, 8)}`,
+      type: "museum",
     });
+
+    const adminUserId = await ctx.db.insert("users", {
+      email: `admin-${Math.random().toString(36).slice(2, 8)}@example.com`,
+      name: "Administrator",
+    });
+
+    const adminRoleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "admin",
+      isSystemRole: true,
+    });
+
+    const reviewerRoleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "Registrar",
+      isSystemRole: false,
+    });
+
+    for (const permissionName of [
+      "organization.manage_settings",
+      "collections.create",
+      "collections.read",
+      "collections.update",
+      "collections.approve_accession",
+    ]) {
+      const permissionId = await ctx.db.insert("permissions", {
+        name: permissionName,
+        category: permissionName.split(".")[0] || "collections",
+      });
+
+      await ctx.db.insert("rolePermissions", {
+        roleId: adminRoleId,
+        permissionId,
+      });
+    }
+
+    await ctx.db.insert("userOrganizations", {
+      userId: adminUserId,
+      organizationId,
+      roleId: adminRoleId,
+      joinedAt: Date.now(),
+    });
+
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "accession",
+      steps: [
+        { stepNumber: 1, roleId: reviewerRoleId, name: "Registrar Review" },
+      ],
+      canInitiateRoles: [adminRoleId],
+    });
+
+    return { organizationId, adminUserId };
+  });
 
   const admin = authedForUser(t, adminUserId);
 
