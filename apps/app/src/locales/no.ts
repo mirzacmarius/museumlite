@@ -2399,9 +2399,9 @@ export default {
       present: "Nåtid",
     },
     digitalAssetsTab: {
-      title: "Digitale Ressurser",
+      title: "Dokumenter",
       externalLink: "Ekstern Lenke",
-      noAssets: "Ingen digitale ressurser koblet",
+      noAssets: "Ingen dokumenter koblet",
     },
     printPreview: {
       title: "Forhåndsvisning",

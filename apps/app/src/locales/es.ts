@@ -2407,9 +2407,9 @@ export default {
       present: "Presente",
     },
     digitalAssetsTab: {
-      title: "Recursos Digitales",
+      title: "Documentos",
       externalLink: "Enlace Externo",
-      noAssets: "No hay activos digitales vinculados",
+      noAssets: "No hay documentos vinculados",
     },
     printPreview: {
       title: "Vista Previa de Impresión",

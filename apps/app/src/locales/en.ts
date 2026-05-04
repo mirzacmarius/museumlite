@@ -1852,7 +1852,7 @@ export default {
       provenance: "Provenance",
       physical: "Physical Description",
       media: "Media",
-      digital: "Digital Assets",
+      digital: "Visibility",
       conservation: "Conservation",
       exhibitions: "Exhibitions",
       loans: "Loans",
@@ -2021,9 +2021,9 @@ export default {
       present: "Present",
     },
     digitalAssetsTab: {
-      title: "Digital Resources",
+      title: "Documents",
       externalLink: "External Link",
-      noAssets: "No digital assets linked",
+      noAssets: "No documents linked",
     },
     printPreview: {
       title: "Print Preview",

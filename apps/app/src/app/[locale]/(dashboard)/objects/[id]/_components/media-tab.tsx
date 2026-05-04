@@ -1,14 +1,21 @@
 "use client";
 
 import { Image as ImageIcon } from "lucide-react";
+import { DigitalAssetsTab } from "./digital-assets-tab";
 import { MediaGallery } from "./media-gallery";
+import type { CollectionData } from "./types";
 
 interface MediaTabProps {
   collectionId: string;
+  collection: CollectionData;
   onOpenLightbox?: (index: number) => void;
 }
 
-export function MediaTab({ collectionId, onOpenLightbox }: MediaTabProps) {
+export function MediaTab({
+  collectionId,
+  collection,
+  onOpenLightbox,
+}: MediaTabProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -22,6 +29,7 @@ export function MediaTab({ collectionId, onOpenLightbox }: MediaTabProps) {
         mediaType="images"
         onOpenLightbox={onOpenLightbox}
       />
+      <DigitalAssetsTab collection={collection} />
     </div>
   );
 }

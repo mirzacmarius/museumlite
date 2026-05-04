@@ -33,7 +33,6 @@ const viewBaseTabs: ObjectTabDefinition[] = [
   { id: "accession", label: "Accession", editable: true },
   { id: "provenance", label: "Provenance and History", editable: true },
   { id: "placement", label: "Placement and Relationships", editable: true },
-  { id: "digital", label: "Digital Assets", editable: true },
   {
     id: "conservation",
     label: "Conservation",
@@ -58,7 +57,7 @@ const editBaseTabs: ObjectTabDefinition[] = [
   { id: "accession", label: "Accession", editable: true },
   { id: "provenance", label: "Provenance and History", editable: true },
   { id: "placement", label: "Placement and Relationships", editable: true },
-  { id: "digital", label: "Digital Assets", editable: true },
+  { id: "digital", label: "Visibility", editable: true },
 ];
 
 const moduleTabMap: Partial<

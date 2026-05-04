@@ -41,7 +41,12 @@ export function DigitalAssetsTab({ collection }: DigitalAssetsTabProps) {
       : "skip",
   );
 
-  const documents = media?.filter((m) => m.fileType === "document") ?? [];
+  const documents =
+    media?.filter((m) => {
+      const mediaCategory = (m as { mediaCategory?: "image" | "document" })
+        .mediaCategory;
+      return mediaCategory === "document" || m.fileType === "document";
+    }) ?? [];
   const hasLinks = collection.links && collection.links.length > 0;
   const hasDocuments = documents.length > 0;
   const hasContent = hasLinks || hasDocuments;

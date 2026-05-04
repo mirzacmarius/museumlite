@@ -68,13 +68,6 @@ const ConservationTab = dynamic(
     import("./_components/conservation-tab").then((mod) => mod.ConservationTab),
   { loading: LoadingPanel },
 );
-const DigitalAssetsTab = dynamic(
-  () =>
-    import("./_components/digital-assets-tab").then(
-      (mod) => mod.DigitalAssetsTab,
-    ),
-  { loading: LoadingPanel },
-);
 const ExhibitionsTab = dynamic(
   () =>
     import("./_components/exhibitions-tab").then((mod) => mod.ExhibitionsTab),
@@ -569,10 +562,7 @@ function ObjectDetailView({
                 <PhysicalTab collection={collection} />
               )}
               {activeTab === "media" && (
-                <MediaTab collectionId={collectionId} />
-              )}
-              {activeTab === "digital" && (
-                <DigitalAssetsTab collection={collection} />
+                <MediaTab collectionId={collectionId} collection={collection} />
               )}
               {activeTab === "accession" && (
                 <AccessionTab collection={collection} />

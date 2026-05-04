@@ -2253,7 +2253,7 @@ export default {
       provenance: "Provenance",
       physical: "Description Physique",
       media: "Médias",
-      digital: "Actifs Numériques",
+      digital: "Visibilité",
       conservation: "Conservation",
       exhibitions: "Expositions",
       loans: "Prêts",
@@ -2428,9 +2428,9 @@ export default {
       present: "Présent",
     },
     digitalAssetsTab: {
-      title: "Ressources Numériques",
+      title: "Documents",
       externalLink: "Lien Externe",
-      noAssets: "Aucun actif numérique lié",
+      noAssets: "Aucun document lié",
     },
     printPreview: {
       title: "Aperçu Avant Impression",
