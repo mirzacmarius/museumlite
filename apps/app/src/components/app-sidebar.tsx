@@ -17,6 +17,7 @@ import {
   IdCard,
   Image,
   LayoutGrid,
+  Library,
   Lock,
   LogOut,
   MapPin,
@@ -353,7 +354,7 @@ export function AppSidebar({
     (org) => org._id === currentOrganizationId,
   );
 
-  const showLibrarySection = hasModule("library");
+  const isLibraryModuleEnabled = hasModule("library");
 
   const collectionGroups = useQuery(
     api.collectionGroups.list,
@@ -414,11 +415,37 @@ export function AppSidebar({
   ];
 
   const navLibrary = [
-    { title: "Catalog & Search", url: "/library/catalog", icon: BookOpen },
-    { title: "Circulation Desk", url: "/library/circulation", icon: IdCard },
-    { title: "Patron Management", url: "/accounts?type=patron", icon: Users },
-    { title: "Fines & Fees", url: "/library/fines", icon: Ticket },
-    { title: "Acquisitions", url: "/library/acquisitions", icon: ShoppingCart },
+    { title: "Library Dashboard", url: "/library", icon: Library },
+    {
+      title: "Catalog & Search",
+      url: "/library/catalog",
+      icon: BookOpen,
+      locked: !isLibraryModuleEnabled,
+    },
+    {
+      title: "Circulation Desk",
+      url: "/library/circulation",
+      icon: IdCard,
+      locked: !isLibraryModuleEnabled,
+    },
+    {
+      title: "Patron Management",
+      url: "/accounts?type=patron",
+      icon: Users,
+      locked: !isLibraryModuleEnabled,
+    },
+    {
+      title: "Fines & Fees",
+      url: "/library/fines",
+      icon: Ticket,
+      locked: !isLibraryModuleEnabled,
+    },
+    {
+      title: "Acquisitions",
+      url: "/library/acquisitions",
+      icon: ShoppingCart,
+      locked: !isLibraryModuleEnabled,
+    },
   ];
 
   const navAdministration = [
@@ -454,15 +481,11 @@ export function AppSidebar({
       icon: Shield,
       items: navConservation,
     },
-    ...(showLibrarySection
-      ? [
-          {
-            title: "Library & Research",
-            icon: BookOpen,
-            items: navLibrary,
-          },
-        ]
-      : []),
+    {
+      title: "Library",
+      icon: Library,
+      items: navLibrary,
+    },
     {
       title: "Administration",
       icon: Settings2,
