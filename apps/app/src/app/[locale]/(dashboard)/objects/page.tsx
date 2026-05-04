@@ -24,12 +24,10 @@ import {
   Building2,
   LayoutGrid,
   List,
-  Loader2,
   MoreVertical,
   Package,
   Plus,
   Search,
-  Trash2,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -147,19 +145,11 @@ function CollectionFiltersAndList({
   const [showAddToGroupDialog, setShowAddToGroupDialog] = useState(false);
   const [showBulkPrintLabelsDialog, setShowBulkPrintLabelsDialog] =
     useState(false);
-  const [isEmptyingTrash, setIsEmptyingTrash] = useState(false);
 
   const bulkExport = useQuery(
     api.collections.bulkExport,
     selectedIds.size > 0 ? { collectionIds: Array.from(selectedIds) } : "skip",
   );
-  const deletedObjectCount = useQuery(api.collections.countDeletedCollections, {
-    organizationId,
-  });
-  const emptyDeletedCollections = useMutation(
-    api.collections.emptyDeletedCollections,
-  );
-
   const savedViewMode = useQuery(api.userPreferences.get, {
     key: "objects.viewMode",
     organizationId,
@@ -384,30 +374,6 @@ function CollectionFiltersAndList({
     );
   };
 
-  const handleEmptyTrash = async () => {
-    const count = deletedObjectCount ?? 0;
-    if (count === 0) {
-      return;
-    }
-
-    const confirmed = window.confirm(t("actions.emptyTrashConfirm", { count }));
-    if (!confirmed) {
-      return;
-    }
-
-    setIsEmptyingTrash(true);
-    try {
-      const result = await emptyDeletedCollections({ organizationId });
-      setSelectedIds(new Set());
-      toast.success(t("actions.emptyTrashSuccess", result));
-    } catch (error) {
-      console.error("Failed to empty deleted objects:", error);
-      toast.error(t("error.failedToEmptyTrash"));
-    } finally {
-      setIsEmptyingTrash(false);
-    }
-  };
-
   const handleBulkSuccess = () => {
     setSelectedIds(new Set());
   };
@@ -485,30 +451,6 @@ function CollectionFiltersAndList({
                 size="sm"
                 className="h-8 border-input bg-background/60 text-xs hover:bg-accent hover:text-accent-foreground"
               />
-            </PermissionGate>
-
-            <PermissionGate permission="collections.delete">
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                onClick={handleEmptyTrash}
-                disabled={
-                  isEmptyingTrash ||
-                  deletedObjectCount === undefined ||
-                  deletedObjectCount === 0
-                }
-                className="h-8 text-xs"
-              >
-                {isEmptyingTrash ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="h-3.5 w-3.5" />
-                )}
-                {isEmptyingTrash
-                  ? t("actions.emptyingTrash")
-                  : t("actions.emptyTrash")}
-              </Button>
             </PermissionGate>
 
             <PermissionGate permission="collections.create">

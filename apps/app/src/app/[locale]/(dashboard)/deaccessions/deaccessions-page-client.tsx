@@ -6,11 +6,17 @@ import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
+import {
+  type Preloaded,
+  useMutation,
+  usePreloadedQuery,
+  useQuery,
+} from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { Download, Loader2, Plus, Printer, Search } from "lucide-react";
+import { Download, Loader2, Plus, Printer, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useDeferredValue, useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@v1/ui/button";
 import {
@@ -39,11 +45,19 @@ export function DeaccessionsPageClient({
   preloadedDeaccessions,
 }: DeaccessionsPageClientProps) {
   const t = useScopedI18n("deaccessions");
+  const objectsT = useScopedI18n("objects");
   const [searchQuery, setSearchQuery] = useState("");
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isEmptyingTrash, setIsEmptyingTrash] = useState(false);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const deaccessions: DeaccessionsList = usePreloadedQuery(
     preloadedDeaccessions,
+  );
+  const deletedObjectCount = useQuery(api.collections.countDeletedCollections, {
+    organizationId,
+  });
+  const emptyDeletedCollections = useMutation(
+    api.collections.emptyDeletedCollections,
   );
 
   const pending = deaccessions.page.filter(
@@ -52,6 +66,31 @@ export function DeaccessionsPageClient({
   const deaccessioned = deaccessions.page.filter(
     (item: DeaccessionListItem) => item.status === "approved",
   ).length;
+
+  const handleEmptyTrash = async () => {
+    const count = deletedObjectCount ?? 0;
+    if (count === 0) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      objectsT("actions.emptyTrashConfirm", { count }),
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setIsEmptyingTrash(true);
+    try {
+      const result = await emptyDeletedCollections({ organizationId });
+      toast.success(objectsT("actions.emptyTrashSuccess", result));
+    } catch (error) {
+      console.error("Failed to empty deleted objects:", error);
+      toast.error(objectsT("error.failedToEmptyTrash"));
+    } finally {
+      setIsEmptyingTrash(false);
+    }
+  };
 
   return (
     <>
@@ -80,6 +119,30 @@ export function DeaccessionsPageClient({
                 <Download className="h-3.5 w-3.5" />
                 {t("actions.exportReport")}
               </button>
+            </PermissionGate>
+
+            <PermissionGate permission="collections.delete">
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={handleEmptyTrash}
+                disabled={
+                  isEmptyingTrash ||
+                  deletedObjectCount === undefined ||
+                  deletedObjectCount === 0
+                }
+                className="h-8 text-xs"
+              >
+                {isEmptyingTrash ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5" />
+                )}
+                {isEmptyingTrash
+                  ? objectsT("actions.emptyingTrash")
+                  : objectsT("actions.emptyTrash")}
+              </Button>
             </PermissionGate>
 
             <PermissionGate permission="collections.create">
