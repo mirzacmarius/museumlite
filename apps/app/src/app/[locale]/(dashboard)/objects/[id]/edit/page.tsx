@@ -103,6 +103,7 @@ interface CollectionFormData {
   dimensions?: string;
   dimensionDiameter?: string;
   dimensionWeight?: string | number;
+  weightUnit?: string;
   inscriptions?: string;
   description?: string;
   condition?: string;
@@ -166,6 +167,7 @@ const EMPTY_FORM: CollectionFormData = {
   dimensions: "",
   dimensionDiameter: "",
   dimensionWeight: "",
+  weightUnit: "",
   inscriptions: "",
   description: "",
   condition: "",
@@ -199,24 +201,30 @@ function formatMeasurementValue(value?: number, unit?: string) {
   return unit ? `${value} ${unit}` : value.toString();
 }
 
-function parseOptionalNonNegativeNumber(value?: string | number) {
+function parseOptionalWeight(value?: string | number) {
   if (typeof value === "number") {
     return Number.isFinite(value) && value >= 0
-      ? { isValid: true as const, value }
-      : { isValid: false as const, value: undefined };
+      ? { isValid: true as const, value, unit: undefined }
+      : { isValid: false as const, value: undefined, unit: undefined };
   }
 
   const trimmed = value?.trim();
   if (!trimmed) {
-    return { isValid: true as const, value: undefined };
+    return { isValid: true as const, value: undefined, unit: undefined };
   }
 
-  const normalized = trimmed.replace(",", ".");
-  const parsed = Number(normalized);
+  const match = trimmed.match(
+    /^(\d+(?:[,.]\d+)?)(?:\s*([a-zA-Z][a-zA-Z.]*))?$/,
+  );
+  const quantity = match?.[1];
+  if (!quantity) {
+    return { isValid: false as const, value: undefined, unit: undefined };
+  }
 
+  const parsed = Number(quantity.replace(",", "."));
   return Number.isFinite(parsed) && parsed >= 0
-    ? { isValid: true as const, value: parsed }
-    : { isValid: false as const, value: undefined };
+    ? { isValid: true as const, value: parsed, unit: match[2] }
+    : { isValid: false as const, value: undefined, unit: undefined };
 }
 
 function normalizeOptionalString(value?: string | null) {
@@ -301,7 +309,11 @@ function createInitialFormData(
             collection.dimensionUnit,
           )
         : ""),
-    dimensionWeight: collection.dimensionWeight ?? "",
+    dimensionWeight: formatMeasurementValue(
+      collection.dimensionWeight,
+      collection.weightUnit,
+    ),
+    weightUnit: collection.weightUnit || "",
     inscriptions: collection.inscriptions || "",
     description: collection.description || "",
     condition: collection.condition || "",
@@ -905,11 +917,11 @@ export default function CollectionEditPage() {
       return false;
     }
 
-    const parsedDimensionWeight = parseOptionalNonNegativeNumber(
-      formData.dimensionWeight,
-    );
+    const parsedDimensionWeight = parseOptionalWeight(formData.dimensionWeight);
     if (!parsedDimensionWeight.isValid) {
-      setError("Weight must be a valid non-negative number.");
+      setError(
+        "Weight must be a valid non-negative number with an optional unit.",
+      );
       return false;
     }
 
@@ -937,6 +949,10 @@ export default function CollectionEditPage() {
         dimensions: formData.dimensions?.trim() || "",
         dimensionDiameter: formData.dimensionDiameter?.trim() || "",
         dimensionWeight: parsedDimensionWeight.value ?? null,
+        weightUnit:
+          parsedDimensionWeight.value === undefined
+            ? ""
+            : parsedDimensionWeight.unit || formData.weightUnit?.trim() || "",
         links: formData.links
           ?.filter((link) => link.url.trim() !== "")
           .map(({ localId: _localId, ...entry }) => entry),
@@ -2242,10 +2258,7 @@ export default function CollectionEditPage() {
                             <Label htmlFor="dimensionWeight">Weight</Label>
                             <Input
                               id="dimensionWeight"
-                              type="number"
                               inputMode="decimal"
-                              min="0"
-                              step="0.01"
                               value={formData.dimensionWeight ?? ""}
                               onChange={(event) =>
                                 updateField(
@@ -2253,7 +2266,7 @@ export default function CollectionEditPage() {
                                   event.target.value,
                                 )
                               }
-                              placeholder="e.g., 2.5"
+                              placeholder="e.g., 200gram or 2kg"
                             />
                           </div>
                         </div>

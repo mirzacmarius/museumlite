@@ -78,6 +78,7 @@ interface CollectionFormData {
   dimensions?: string;
   dimensionDiameter?: string;
   dimensionWeight?: string | number;
+  weightUnit?: string;
   description?: string;
   condition?: string;
   inscriptions?: string;
@@ -162,6 +163,7 @@ function createEmptyFormData(
     dimensions: "",
     dimensionDiameter: "",
     dimensionWeight: "",
+    weightUnit: "",
     description: "",
     condition: "",
     inscriptions: "",
@@ -191,24 +193,38 @@ function createEmptyFormData(
   };
 }
 
-function parseOptionalNonNegativeNumber(value?: string | number) {
+function formatWeightValue(value?: number, unit?: string) {
+  if (value === undefined) {
+    return "";
+  }
+
+  return unit ? `${value} ${unit}` : value.toString();
+}
+
+function parseOptionalWeight(value?: string | number) {
   if (typeof value === "number") {
     return Number.isFinite(value) && value >= 0
-      ? { isValid: true as const, value }
-      : { isValid: false as const, value: undefined };
+      ? { isValid: true as const, value, unit: undefined }
+      : { isValid: false as const, value: undefined, unit: undefined };
   }
 
   const trimmed = value?.trim();
   if (!trimmed) {
-    return { isValid: true as const, value: undefined };
+    return { isValid: true as const, value: undefined, unit: undefined };
   }
 
-  const normalized = trimmed.replace(",", ".");
-  const parsed = Number(normalized);
+  const match = trimmed.match(
+    /^(\d+(?:[,.]\d+)?)(?:\s*([a-zA-Z][a-zA-Z.]*))?$/,
+  );
+  const quantity = match?.[1];
+  if (!quantity) {
+    return { isValid: false as const, value: undefined, unit: undefined };
+  }
 
+  const parsed = Number(quantity.replace(",", "."));
   return Number.isFinite(parsed) && parsed >= 0
-    ? { isValid: true as const, value: parsed }
-    : { isValid: false as const, value: undefined };
+    ? { isValid: true as const, value: parsed, unit: match[2] }
+    : { isValid: false as const, value: undefined, unit: undefined };
 }
 
 function getFormSignature(formData: CollectionFormData) {
@@ -265,18 +281,22 @@ function createFormDataFromDraftObject(
         : [{ url: "", label: "" }],
     dimensionWeight:
       typeof draftObjectData?.dimensionWeight === "number"
-        ? draftObjectData.dimensionWeight
+        ? formatWeightValue(
+            draftObjectData.dimensionWeight,
+            draftObjectData.weightUnit,
+          )
         : "",
+    weightUnit: draftObjectData?.weightUnit || "",
   };
 }
 
 function buildObjectDraftPayload(formData: CollectionFormData) {
-  const parsedDimensionWeight = parseOptionalNonNegativeNumber(
-    formData.dimensionWeight,
-  );
+  const parsedDimensionWeight = parseOptionalWeight(formData.dimensionWeight);
 
   if (!parsedDimensionWeight.isValid) {
-    throw new Error("Weight must be a valid non-negative number.");
+    throw new Error(
+      "Weight must be a valid non-negative number with an optional unit.",
+    );
   }
 
   return {
@@ -296,6 +316,12 @@ function buildObjectDraftPayload(formData: CollectionFormData) {
     dimensions: formData.dimensions?.trim() || undefined,
     dimensionDiameter: formData.dimensionDiameter?.trim() || undefined,
     dimensionWeight: parsedDimensionWeight.value,
+    weightUnit:
+      parsedDimensionWeight.value === undefined
+        ? undefined
+        : parsedDimensionWeight.unit ||
+          formData.weightUnit?.trim() ||
+          undefined,
     description: formData.description?.trim() || undefined,
     condition: formData.condition?.trim() || undefined,
     inscriptions: formData.inscriptions?.trim() || undefined,
@@ -1827,10 +1853,7 @@ export function ObjectRequestFormPage({
                             <Label htmlFor="dimensionWeight">Weight</Label>
                             <Input
                               id="dimensionWeight"
-                              type="number"
                               inputMode="decimal"
-                              min="0"
-                              step="0.01"
                               value={formData.dimensionWeight ?? ""}
                               onChange={(event) =>
                                 updateField(
@@ -1838,7 +1861,7 @@ export function ObjectRequestFormPage({
                                   event.target.value,
                                 )
                               }
-                              placeholder="e.g., 2.5"
+                              placeholder="e.g., 200gram or 2kg"
                             />
                           </div>
                         </div>
