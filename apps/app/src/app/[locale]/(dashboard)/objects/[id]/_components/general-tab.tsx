@@ -26,7 +26,7 @@ export function GeneralTab({
         </div>
 
         <div className="space-y-6 rounded-xl border border-border/60 bg-secondary/20 p-6">
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
             <div className="grid gap-1">
               <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Object Name or Title
@@ -43,7 +43,7 @@ export function GeneralTab({
               </div>
             </div>
 
-            <div className="grid gap-1 md:col-span-2">
+            <div className="grid gap-1">
               <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Alternate Accession Numbers
               </label>
@@ -64,7 +64,7 @@ export function GeneralTab({
               )}
             </div>
 
-            <div className="grid gap-1 md:col-span-2">
+            <div className="grid gap-1 md:col-span-3">
               <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Description
               </label>
