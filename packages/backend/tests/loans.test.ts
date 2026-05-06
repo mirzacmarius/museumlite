@@ -16,9 +16,125 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
+
+function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
+  return t.withIdentity({
+    subject: `${userId}|session-1`,
+    issuer: "https://example.test",
+  });
+}
+
+async function createOrgUserWithPermissions(
+  t: ReturnType<typeof convexTest>,
+  permissionNames: string[],
+) {
+  return t.run(async (ctx) => {
+    const organizationId = await ctx.db.insert("organizations", {
+      name: "Loan Workflow Museum",
+      slug: `loan-workflow-${Math.random().toString(36).slice(2, 8)}`,
+      type: "museum",
+      subscriptionTier: "pro",
+    });
+
+    const userId = await ctx.db.insert("users", {
+      email: `loan-user-${Math.random().toString(36).slice(2, 8)}@example.com`,
+      name: "Loan Workflow User",
+    });
+
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "Loan Approver",
+      isSystemRole: false,
+    });
+
+    for (const permissionName of permissionNames) {
+      const permissionId = await ctx.db.insert("permissions", {
+        name: permissionName,
+        category: permissionName.split(".")[0] || "loans",
+      });
+
+      await ctx.db.insert("rolePermissions", {
+        roleId,
+        permissionId,
+      });
+    }
+
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+
+    return { organizationId, userId, roleId };
+  });
+}
+
+test("loan workflows advance through configured approval steps before activation", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
+    t,
+    ["loans.create", "loans.read", "loans.approve"],
+  );
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId,
+      workflowType: "loan",
+      steps: [
+        { stepNumber: 1, roleId, name: "Registrar Review" },
+        { stepNumber: 2, roleId, name: "Director Approval" },
+      ],
+      canInitiateRoles: [roleId],
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const loanId = await authed.mutation(api.loans.create, {
+    organizationId,
+    loanNumber: "LOAN-WF-001",
+    type: "outgoing",
+    lenderBorrowerName: "Partner Museum",
+    startDate: Date.now(),
+    endDate: Date.now() + 7 * 24 * 60 * 60 * 1000,
+  });
+
+  let loan = await authed.query(api.loans.get, { loanId });
+
+  expect(loan).not.toBeNull();
+  expect(loan?.status).toBe("pending");
+  expect(loan?.workflowStep).toBe(1);
+  expect(loan?.workflowHistory.map((entry) => entry.step)).toEqual([0]);
+
+  await authed.mutation(api.loans.approve, {
+    loanId,
+    comment: "Registrar approved",
+  });
+
+  loan = await authed.query(api.loans.get, { loanId });
+
+  expect(loan).not.toBeNull();
+  expect(loan?.status).toBe("pending");
+  expect(loan?.workflowStep).toBe(2);
+  expect(loan?.workflowHistory.map((entry) => entry.step)).toEqual([0, 1]);
+
+  await authed.mutation(api.loans.approve, {
+    loanId,
+    comment: "Director approved",
+  });
+
+  loan = await authed.query(api.loans.get, { loanId });
+
+  expect(loan).not.toBeNull();
+  expect(loan?.status).toBe("active");
+  expect(loan?.approvedBy).toBe(userId);
+  expect(loan?.workflowStep).toBe(2);
+  expect(loan?.workflowHistory.map((entry) => entry.step)).toEqual([0, 1, 2]);
+});
 
 test("should approve pending loan and change status to active", async () => {
   const t = convexTest(schema, modules);
