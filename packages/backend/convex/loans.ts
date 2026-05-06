@@ -23,6 +23,10 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import {
+  prepareWorkflowStepAdvance,
+  recordWorkflowStepAdvance,
+} from "./utils/workflowExecution";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
 async function requireLoansAccess(
@@ -160,7 +164,7 @@ export const create = mutation({
       insuranceValue: args.insuranceValue,
       notes: args.notes,
       useDetailedConditionReports: args.useDetailedConditionReports ?? false,
-      workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
+      workflowStep: workflowConfig ? workflowState.firstStep ?? 1 : undefined,
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
     });
 
@@ -895,7 +899,8 @@ export const approve = mutation({
         });
       }
 
-      const isLastStep = workflowState.isPastLastStep || workflowState.isLastStep;
+      const isLastStep =
+        workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
         await ctx.db.patch(args.loanId, {
@@ -969,45 +974,30 @@ export const approve = mutation({
           });
         }
       } else {
-        const nextStep = workflowState.nextStep;
-        if (nextStep === undefined) {
-          throw new Error("Next workflow step is not configured");
-        }
+        const nextStep = await prepareWorkflowStepAdvance(ctx, {
+          organizationId: loan.organizationId,
+          workflowType: "loan",
+          fromStep: currentStep,
+          toStep: workflowState.nextStep,
+        });
 
         await ctx.db.patch(args.loanId, {
           workflowStep: nextStep,
           workflowHistory: history,
         });
 
-        await ctx.runMutation(internal.audit.logAction, {
+        await recordWorkflowStepAdvance(ctx, {
           organizationId: loan.organizationId,
-          userId,
-          action: "step_approved",
-          entityType: "loan",
+          workflowType: "loan",
           entityId: args.loanId,
-          changes: { step: currentStep, nextStep },
+          fromStep: currentStep,
+          toStep: nextStep,
+          performedBy: userId,
+          notification: {
+            title: "Loan Requires Your Approval",
+            message: `Loan ${loan.loanNumber} is pending your approval at step ${nextStep}.`,
+          },
         });
-
-        const usersToNotify = await getUsersToNotifyForWorkflowStep(
-          ctx,
-          loan.organizationId,
-          "loan",
-          nextStep,
-        );
-
-        for (const approverId of usersToNotify) {
-          if (approverId !== userId) {
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: loan.organizationId,
-              userId: approverId,
-              type: "workflow_pending",
-              title: "Loan Requires Your Approval",
-              message: `Loan ${loan.loanNumber} is pending your approval at step ${nextStep}.`,
-              relatedEntityType: "loan",
-              relatedEntityId: args.loanId,
-            });
-          }
-        }
       }
     } else {
       await ctx.db.patch(args.loanId, {
@@ -3214,7 +3204,7 @@ export const resolveConditionDispute = mutation({
         userId: dispute.reportedBy,
         type: "condition_dispute_resolved",
         title: "Dispute Resolved",
-        message: `Your condition dispute has been resolved`,
+        message: "Your condition dispute has been resolved",
         relatedEntityType: "loan",
         relatedEntityId: dispute.loanId,
       });
@@ -3326,37 +3316,40 @@ export const listConditionDisputes = query({
     continueCursor: v.string(),
   }),
   handler: async (ctx, args) => {
-    let query;
-
-    if (args.loanId) {
-      const loan = await ctx.db.get(args.loanId);
-      if (!loan) {
-        throw new Error("Loan not found");
+    const query = await (async () => {
+      if (args.loanId) {
+        const loanId = args.loanId;
+        const loan = await ctx.db.get(loanId);
+        if (!loan) {
+          throw new Error("Loan not found");
+        }
+        await requirePermission(ctx, loan.organizationId, "loans.read");
+        return ctx.db
+          .query("conditionDisputes")
+          .withIndex("by_loan", (q) => q.eq("loanId", loanId));
       }
-      await requirePermission(ctx, loan.organizationId, "loans.read");
-      query = ctx.db
-        .query("conditionDisputes")
-        .withIndex("by_loan", (q) => q.eq("loanId", args.loanId!));
-    } else if (args.organizationId) {
-      await requirePermission(ctx, args.organizationId, "loans.read");
+
+      if (!args.organizationId) {
+        throw new Error("Either loanId or organizationId is required");
+      }
+
+      const organizationId = args.organizationId;
+      await requirePermission(ctx, organizationId, "loans.read");
       if (args.status) {
-        query = ctx.db
+        const status = args.status;
+        return ctx.db
           .query("conditionDisputes")
           .withIndex("by_organization_and_status", (q) =>
-            q
-              .eq("organizationId", args.organizationId!)
-              .eq("status", args.status!),
-          );
-      } else {
-        query = ctx.db
-          .query("conditionDisputes")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId!),
+            q.eq("organizationId", organizationId).eq("status", status),
           );
       }
-    } else {
-      throw new Error("Either loanId or organizationId is required");
-    }
+
+      return ctx.db
+        .query("conditionDisputes")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", organizationId),
+        );
+    })();
 
     const result = await query.paginate(args.paginationOpts);
 

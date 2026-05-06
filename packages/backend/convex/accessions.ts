@@ -29,6 +29,10 @@ import {
   requirePermission,
 } from "./utils/permissions";
 import {
+  prepareWorkflowStepAdvance,
+  recordWorkflowStepAdvance,
+} from "./utils/workflowExecution";
+import {
   resolveWorkflowApprovalDecision,
   resolveWorkflowApprovalPolicy,
   resolveWorkflowStepState,
@@ -1524,25 +1528,13 @@ export const approve = mutation({
           },
         );
       } else {
-        const nextStep = workflowState.nextStep;
-
-        if (nextStep === undefined) {
-          throw new Error("Next workflow step is not configured");
-        }
-
-        const transitionValid = await ctx.runQuery(
-          internal.workflows.validateTransition,
-          {
-            organizationId: accession.organizationId,
-            workflowType: "accession",
-            fromStep: currentStep,
-            toStep: nextStep,
-          },
-        );
-
-        if (!transitionValid.valid) {
-          throw new Error(transitionValid.reason ?? "Invalid transition");
-        }
+        const nextStep = await prepareWorkflowStepAdvance(ctx, {
+          organizationId: accession.organizationId,
+          workflowType: "accession",
+          fromStep: currentStep,
+          toStep: workflowState.nextStep,
+          validateTransition: true,
+        });
 
         await ctx.db.patch(args.accessionId, {
           workflowStep: nextStep,
@@ -1557,46 +1549,20 @@ export const approve = mutation({
           });
         }
 
-        await ctx.runMutation(internal.workflows.recordWorkflowHistory, {
+        await recordWorkflowStepAdvance(ctx, {
           organizationId: accession.organizationId,
           workflowType: "accession",
           entityId: args.accessionId,
           fromStep: currentStep,
           toStep: nextStep,
-          action: "approved",
           performedBy: userId,
           comment: args.comment,
+          recordWorkflowHistory: true,
+          notification: {
+            title: "Accession Requires Your Approval",
+            message: `Accession ${accession.accessionNumber} is pending your approval at step ${nextStep}.`,
+          },
         });
-
-        await ctx.runMutation(internal.audit.logAction, {
-          organizationId: accession.organizationId,
-          userId,
-          action: "step_approved",
-          entityType: "accession",
-          entityId: args.accessionId,
-          changes: { step: currentStep, nextStep },
-        });
-
-        const usersToNotify = await getUsersToNotifyForWorkflowStep(
-          ctx,
-          accession.organizationId,
-          "accession",
-          nextStep,
-        );
-
-        for (const approverId of usersToNotify) {
-          if (approverId !== userId) {
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: accession.organizationId,
-              userId: approverId,
-              type: "workflow_pending",
-              title: "Accession Requires Your Approval",
-              message: `Accession ${accession.accessionNumber} is pending your approval at step ${nextStep}.`,
-              relatedEntityType: "accession",
-              relatedEntityId: args.accessionId,
-            });
-          }
-        }
       }
     } else {
       await ctx.db.patch(args.accessionId, {

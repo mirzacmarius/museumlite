@@ -19,6 +19,10 @@ import {
   getUsersToNotifyForWorkflowStep,
   requirePermission,
 } from "./utils/permissions";
+import {
+  prepareWorkflowStepAdvance,
+  recordWorkflowStepAdvance,
+} from "./utils/workflowExecution";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
 const targetCollectionStatusValidator = v.union(
@@ -1030,48 +1034,30 @@ export const approve = mutation({
 
         await applyApprovedCollectionStatus(ctx, deaccession, userId);
       } else {
-        // Move to next step
-        const nextStep = workflowState.nextStep;
-        if (nextStep === undefined) {
-          throw new Error("Next workflow step is not configured");
-        }
+        const nextStep = await prepareWorkflowStepAdvance(ctx, {
+          organizationId: deaccession.organizationId,
+          workflowType: "deaccession",
+          fromStep: currentStep,
+          toStep: workflowState.nextStep,
+        });
 
         await ctx.db.patch(args.deaccessionId, {
           workflowStep: nextStep,
           workflowHistory: history,
         });
 
-        // Log audit action
-        await ctx.runMutation(internal.audit.logAction, {
+        await recordWorkflowStepAdvance(ctx, {
           organizationId: deaccession.organizationId,
-          userId,
-          action: "step_approved",
-          entityType: "deaccession",
+          workflowType: "deaccession",
           entityId: args.deaccessionId,
-          changes: { step: currentStep, nextStep },
+          fromStep: currentStep,
+          toStep: nextStep,
+          performedBy: userId,
+          notification: {
+            title: "Deaccession Requires Your Approval",
+            message: `Deaccession ${deaccession.deaccessionNumber} is pending your approval at step ${nextStep}.`,
+          },
         });
-
-        // Notify users who can approve the next step
-        const usersToNotify = await getUsersToNotifyForWorkflowStep(
-          ctx,
-          deaccession.organizationId,
-          "deaccession",
-          nextStep,
-        );
-
-        for (const approverId of usersToNotify) {
-          if (approverId !== userId) {
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: deaccession.organizationId,
-              userId: approverId,
-              type: "workflow_pending",
-              title: "Deaccession Requires Your Approval",
-              message: `Deaccession ${deaccession.deaccessionNumber} is pending your approval at step ${nextStep}.`,
-              relatedEntityType: "deaccession",
-              relatedEntityId: args.deaccessionId,
-            });
-          }
-        }
       }
     } else {
       // Single-step approval
