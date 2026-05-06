@@ -28,7 +28,11 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
-import { resolveWorkflowStepState } from "./utils/workflowSteps";
+import {
+  resolveWorkflowApprovalDecision,
+  resolveWorkflowApprovalPolicy,
+  resolveWorkflowStepState,
+} from "./utils/workflowSteps";
 
 const MAX_SMALL_IMAGE_SIZE = 50 * 1024 * 1024;
 const REJECTED_OBJECT_DISPLAY_STATUS = "REJECTED";
@@ -1378,16 +1382,15 @@ export const approve = mutation({
       if (!currentStepConfig) {
         throw new Error("Current workflow step is not configured");
       }
-      const approvalMode = currentStepConfig?.approvalMode ?? "single";
-      const requiredApprovals = currentStepConfig?.requiredApprovals ?? 1;
+      const { approvalMode, requiredApprovals } =
+        resolveWorkflowApprovalPolicy(currentStepConfig);
+      let approvalDecision = resolveWorkflowApprovalDecision({
+        approvalMode,
+        isPastLastStep: workflowState.isPastLastStep,
+        requiredApprovals,
+      });
 
-      let shouldAdvance = workflowState.isPastLastStep;
-
-      if (workflowState.isPastLastStep) {
-        shouldAdvance = true;
-      } else if (approvalMode === "single") {
-        shouldAdvance = true;
-      } else {
+      if (approvalDecision.requiresStoredApproval) {
         const approvalStatus = await ctx.runQuery(
           internal.workflows.checkStepApprovalStatus,
           {
@@ -1399,7 +1402,14 @@ export const approve = mutation({
           },
         );
 
-        if (approvalStatus.userHasApproved) {
+        approvalDecision = resolveWorkflowApprovalDecision({
+          approvalMode,
+          approvalStatus,
+          isPastLastStep: workflowState.isPastLastStep,
+          requiredApprovals,
+        });
+
+        if (approvalDecision.userHasAlreadyApproved) {
           throw new Error("You have already approved this step");
         }
 
@@ -1412,15 +1422,7 @@ export const approve = mutation({
           comment: args.comment,
         });
 
-        const newApprovalCount = approvalStatus.currentApprovals + 1;
-
-        if (approvalMode === "multi") {
-          shouldAdvance = newApprovalCount >= requiredApprovals;
-        } else if (approvalMode === "unanimous") {
-          shouldAdvance = newApprovalCount >= approvalStatus.requiredApprovals;
-        }
-
-        if (!shouldAdvance) {
+        if (!approvalDecision.shouldAdvance) {
           await ctx.runMutation(internal.workflows.recordWorkflowHistory, {
             organizationId: accession.organizationId,
             workflowType: "accession",
@@ -1432,11 +1434,9 @@ export const approve = mutation({
             comment: args.comment,
             metadata: {
               approvalMode,
-              currentApprovals: String(newApprovalCount),
+              currentApprovals: String(approvalDecision.newApprovalCount),
               requiredApprovals: String(
-                approvalMode === "multi"
-                  ? requiredApprovals
-                  : approvalStatus.requiredApprovals,
+                approvalDecision.effectiveRequiredApprovals,
               ),
             },
           });
@@ -1450,11 +1450,8 @@ export const approve = mutation({
             changes: {
               step: currentStep,
               approvalMode,
-              currentApprovals: newApprovalCount,
-              requiredApprovals:
-                approvalMode === "multi"
-                  ? requiredApprovals
-                  : approvalStatus.requiredApprovals,
+              currentApprovals: approvalDecision.newApprovalCount,
+              requiredApprovals: approvalDecision.effectiveRequiredApprovals,
             },
           });
 
