@@ -14,11 +14,7 @@ import {
   canRestoreRejectedDisposition,
   markCollectionActive,
 } from "./utils/collectionLifecycle";
-import {
-  getCurrentYear,
-  getNextYearBasedValue,
-  padNumber,
-} from "./utils/numberGenerator";
+import { generateNextDeaccessionNumber } from "./utils/numberGenerator";
 import {
   canApproveAtStep,
   getUsersToNotifyForWorkflowStep,
@@ -77,38 +73,6 @@ async function applyApprovedCollectionStatus(
     targetStatus: resolveTargetCollectionStatus(deaccession),
     reason: deaccession.reason,
   });
-}
-
-/**
- * Generate deaccession number
- * Format: DA-{ORG}-{YEAR}-{SEQUENCE} e.g. DA-MUS-2025-001
- */
-async function generateDeaccessionNumber(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-): Promise<string> {
-  const org = await ctx.db.get(organizationId);
-  if (!org) {
-    throw new Error("Organization not found");
-  }
-
-  const year = getCurrentYear();
-  const orgSlug = org.slug.toUpperCase().substring(0, 3);
-
-  const counter = await ctx.db
-    .query("deaccessionCounters")
-    .withIndex("by_organization_and_year", (q) =>
-      q.eq("organizationId", organizationId).eq("year", year),
-    )
-    .first();
-
-  const nextValue = await getNextYearBasedValue(ctx, counter, {
-    tableName: "deaccessionCounters",
-    organizationId,
-    year,
-  });
-
-  return `DA-${orgSlug}-${year}-${padNumber(nextValue, 3)}`;
 }
 
 async function canInitiateDeaccessionWorkflowForUser(
@@ -199,7 +163,7 @@ async function createDeaccessionRecord(
 
   const deaccessionNumber = args.deaccessionNumber
     ? args.deaccessionNumber
-    : await generateDeaccessionNumber(ctx, args.organizationId);
+    : await generateNextDeaccessionNumber(ctx, args.organizationId);
 
   const workflowConfig = await ctx.db
     .query("workflowConfigs")
@@ -409,7 +373,7 @@ export const createRejectedFromAccession = internalMutation({
       return existingRejectedDeaccession._id;
     }
 
-    const deaccessionNumber = await generateDeaccessionNumber(
+    const deaccessionNumber = await generateNextDeaccessionNumber(
       ctx,
       args.organizationId,
     );

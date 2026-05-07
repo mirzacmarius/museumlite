@@ -2,37 +2,15 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
-import { type MutationCtx, mutation, query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import {
   buildAccountCreateDocument,
   buildAccountUpdatePatch,
   validateAccountProfileForCreate,
 } from "./utils/accountProfile";
 import { requireModuleEnabled } from "./utils/featureGates";
-import { getNextGlobalValue, padNumber } from "./utils/numberGenerator";
+import { generateNextAccountNumber } from "./utils/numberGenerator";
 import { requirePermission } from "./utils/permissions";
-
-/**
- * Generate account number
- * Format: ACC-XXXXX (5-digit sequential number)
- */
-async function generateAccountNumber(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-): Promise<string> {
-  const counter = await ctx.db
-    .query("accountCounters")
-    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-    .first();
-
-  const nextValue = await getNextGlobalValue(ctx, counter, {
-    tableName: "accountCounters",
-    organizationId,
-  });
-
-  return `ACC-${padNumber(nextValue, 5)}`;
-}
 
 const accountTypeValidator = v.union(
   v.literal("lender"),
@@ -247,7 +225,10 @@ export const create = mutation({
 
     validateAccountProfileForCreate(args);
 
-    const accountNumber = await generateAccountNumber(ctx, args.organizationId);
+    const accountNumber = await generateNextAccountNumber(
+      ctx,
+      args.organizationId,
+    );
     const holderType = args.holderType ?? "organization";
     const now = Date.now();
 

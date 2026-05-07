@@ -10,7 +10,7 @@
  * helpers with their specific counter logic.
  */
 
-import type { GenericQueryCtx, GenericMutationCtx } from "convex/server";
+import type { GenericMutationCtx, GenericQueryCtx } from "convex/server";
 import type { DataModel } from "../_generated/dataModel";
 import type { Id } from "../_generated/dataModel";
 
@@ -38,7 +38,11 @@ export type CounterScope = "global" | "year";
  * @property lastGeneratedAt - Timestamp of last counter increment
  */
 export interface YearBasedCounter {
-  _id: Id<any>;
+  _id:
+    | Id<"claimCounters">
+    | Id<"deaccessionCounters">
+    | Id<"loanCounters">
+    | Id<"transitCounters">;
   _creationTime: number;
   organizationId: Id<"organizations">;
   year: number;
@@ -59,7 +63,7 @@ export interface YearBasedCounter {
  * @property lastGeneratedAt - Timestamp of last counter increment
  */
 export interface GlobalCounter {
-  _id: Id<any>;
+  _id: Id<"accountCounters">;
   _creationTime: number;
   organizationId: Id<"organizations">;
   currentValue: number;
@@ -123,17 +127,17 @@ export async function getNextYearBasedValue<
     });
 
     return nextValue;
-  } else {
-    // Create new counter starting at 1
-    await ctx.db.insert(tableName, {
-      organizationId,
-      year,
-      currentValue: 1,
-      lastGeneratedAt: Date.now(),
-    });
-
-    return 1;
   }
+
+  // Create new counter starting at 1
+  await ctx.db.insert(tableName, {
+    organizationId,
+    year,
+    currentValue: 1,
+    lastGeneratedAt: Date.now(),
+  });
+
+  return 1;
 }
 
 /**
@@ -184,16 +188,16 @@ export async function getNextGlobalValue<
     });
 
     return nextValue;
-  } else {
-    // Create new counter starting at 1
-    await ctx.db.insert(tableName, {
-      organizationId,
-      currentValue: 1,
-      lastGeneratedAt: Date.now(),
-    });
-
-    return 1;
   }
+
+  // Create new counter starting at 1
+  await ctx.db.insert(tableName, {
+    organizationId,
+    currentValue: 1,
+    lastGeneratedAt: Date.now(),
+  });
+
+  return 1;
 }
 
 /**
@@ -242,4 +246,113 @@ export function getCurrentYear(): number {
  */
 export function padNumber(value: number, length: number): string {
   return String(value).padStart(length, "0");
+}
+
+export async function generateNextAccountNumber(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+): Promise<string> {
+  const counter = await ctx.db
+    .query("accountCounters")
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+    .first();
+
+  const nextValue = await getNextGlobalValue(ctx, counter, {
+    tableName: "accountCounters",
+    organizationId,
+  });
+
+  return `ACC-${padNumber(nextValue, 5)}`;
+}
+
+export async function generateNextLoanNumber(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+): Promise<string> {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const counter = await ctx.db
+    .query("loanCounters")
+    .withIndex("by_organization_and_year", (q) =>
+      q.eq("organizationId", organizationId).eq("year", year),
+    )
+    .first();
+
+  const nextValue = await getNextYearBasedValue(ctx, counter, {
+    tableName: "loanCounters",
+    organizationId,
+    year,
+  });
+
+  return `L${year}.${month}.${padNumber(nextValue, 4)}`;
+}
+
+export async function generateNextDeaccessionNumber(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+): Promise<string> {
+  const org = await ctx.db.get(organizationId);
+  if (!org) {
+    throw new Error("Organization not found");
+  }
+
+  const year = getCurrentYear();
+  const orgSlug = org.slug.toUpperCase().substring(0, 3);
+  const counter = await ctx.db
+    .query("deaccessionCounters")
+    .withIndex("by_organization_and_year", (q) =>
+      q.eq("organizationId", organizationId).eq("year", year),
+    )
+    .first();
+
+  const nextValue = await getNextYearBasedValue(ctx, counter, {
+    tableName: "deaccessionCounters",
+    organizationId,
+    year,
+  });
+
+  return `DA-${orgSlug}-${year}-${padNumber(nextValue, 3)}`;
+}
+
+export async function generateNextTransitNumber(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+): Promise<string> {
+  const year = getCurrentYear();
+  const counter = await ctx.db
+    .query("transitCounters")
+    .withIndex("by_organization_and_year", (q) =>
+      q.eq("organizationId", organizationId).eq("year", year),
+    )
+    .first();
+
+  const nextValue = await getNextYearBasedValue(ctx, counter, {
+    tableName: "transitCounters",
+    organizationId,
+    year,
+  });
+
+  return `TRN-${year}-${padNumber(nextValue, 4)}`;
+}
+
+export async function generateNextClaimNumber(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+): Promise<string> {
+  const year = getCurrentYear();
+  const counter = await ctx.db
+    .query("claimCounters")
+    .withIndex("by_organization_and_year", (q) =>
+      q.eq("organizationId", organizationId).eq("year", year),
+    )
+    .first();
+
+  const nextValue = await getNextYearBasedValue(ctx, counter, {
+    tableName: "claimCounters",
+    organizationId,
+    year,
+  });
+
+  return `CLM-${year}-${padNumber(nextValue, 4)}`;
 }

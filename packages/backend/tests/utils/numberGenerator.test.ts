@@ -8,14 +8,17 @@
  */
 
 import { convexTest } from "convex-test";
-import { expect, test, describe } from "vitest";
-import { api } from "../../convex/_generated/api";
+import { describe, expect, test } from "vitest";
 import schema from "../../convex/schema";
-import type { Id } from "../../convex/_generated/dataModel";
 import {
-  getNextYearBasedValue,
-  getNextGlobalValue,
+  generateNextAccountNumber,
+  generateNextClaimNumber,
+  generateNextDeaccessionNumber,
+  generateNextLoanNumber,
+  generateNextTransitNumber,
   getCurrentYear,
+  getNextGlobalValue,
+  getNextYearBasedValue,
   padNumber,
 } from "../../convex/utils/numberGenerator";
 
@@ -44,6 +47,61 @@ describe("Pure utility functions", () => {
   test("padNumber should not truncate numbers larger than padding", () => {
     expect(padNumber(12345, 3)).toBe("12345");
     expect(padNumber(999, 2)).toBe("999");
+  });
+});
+
+describe("Domain number interface", () => {
+  test("should generate account numbers without exposing counter details", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+        settings: {},
+      });
+    });
+
+    const first = await t.run(async (ctx) => {
+      return await generateNextAccountNumber(ctx, orgId);
+    });
+    const second = await t.run(async (ctx) => {
+      return await generateNextAccountNumber(ctx, orgId);
+    });
+
+    expect(first).toBe("ACC-00001");
+    expect(second).toBe("ACC-00002");
+  });
+
+  test("should generate year-based domain numbers without exposing counter details", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Museum Lite",
+        slug: "museum-lite",
+        type: "museum",
+        settings: {},
+      });
+    });
+
+    const year = new Date().getFullYear();
+    const month = String(new Date().getMonth() + 1).padStart(2, "0");
+
+    const numbers = await t.run(async (ctx) => {
+      const loanNumber = await generateNextLoanNumber(ctx, orgId);
+      const deaccessionNumber = await generateNextDeaccessionNumber(ctx, orgId);
+      const transitNumber = await generateNextTransitNumber(ctx, orgId);
+      const claimNumber = await generateNextClaimNumber(ctx, orgId);
+
+      return { claimNumber, deaccessionNumber, loanNumber, transitNumber };
+    });
+
+    expect(numbers.loanNumber).toBe(`L${year}.${month}.0001`);
+    expect(numbers.deaccessionNumber).toBe(`DA-MUS-${year}-001`);
+    expect(numbers.transitNumber).toBe(`TRN-${year}-0001`);
+    expect(numbers.claimNumber).toBe(`CLM-${year}-0001`);
   });
 });
 

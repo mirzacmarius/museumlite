@@ -16,11 +16,7 @@ import {
   markCollectionLoaned,
 } from "./utils/collectionLifecycle";
 import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
-import {
-  getCurrentYear,
-  getNextYearBasedValue,
-  padNumber,
-} from "./utils/numberGenerator";
+import { generateNextLoanNumber } from "./utils/numberGenerator";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
@@ -39,34 +35,6 @@ async function requireLoansAccess(
   organizationId: Id<"organizations">,
 ) {
   await requireFeatureAccess(ctx, organizationId, "loans");
-}
-
-/**
- * Generate loan number
- * Format: L{YEAR}.{MONTH}.{SEQUENCE} e.g. L2025.01.0001
- */
-async function generateLoanNumber(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-): Promise<string> {
-  const now = new Date();
-  const year = getCurrentYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-
-  const counter = await ctx.db
-    .query("loanCounters")
-    .withIndex("by_organization_and_year", (q) =>
-      q.eq("organizationId", organizationId).eq("year", year),
-    )
-    .first();
-
-  const nextValue = await getNextYearBasedValue(ctx, counter, {
-    tableName: "loanCounters",
-    organizationId,
-    year,
-  });
-
-  return `L${year}.${month}.${padNumber(nextValue, 4)}`;
 }
 
 /**
@@ -123,7 +91,7 @@ export const create = mutation({
     if (args.loanNumber) {
       loanNumber = args.loanNumber;
     } else {
-      loanNumber = await generateLoanNumber(ctx, args.organizationId);
+      loanNumber = await generateNextLoanNumber(ctx, args.organizationId);
     }
 
     // Check for workflow config to set up workflow tracking

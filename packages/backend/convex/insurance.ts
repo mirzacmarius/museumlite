@@ -9,11 +9,7 @@ import {
   mutation,
   query,
 } from "./_generated/server";
-import {
-  getCurrentYear,
-  getNextYearBasedValue,
-  padNumber,
-} from "./utils/numberGenerator";
+import { generateNextClaimNumber } from "./utils/numberGenerator";
 import { requirePermission } from "./utils/permissions";
 
 const policyTypeValidator = v.union(
@@ -76,28 +72,6 @@ const payoutMethodValidator = v.union(
   v.literal("replacement"),
 );
 
-async function generateClaimNumber(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-): Promise<string> {
-  const year = getCurrentYear();
-
-  const counter = await ctx.db
-    .query("claimCounters")
-    .withIndex("by_organization_and_year", (q) =>
-      q.eq("organizationId", organizationId).eq("year", year),
-    )
-    .first();
-
-  const nextValue = await getNextYearBasedValue(ctx, counter, {
-    tableName: "claimCounters",
-    organizationId,
-    year,
-  });
-
-  return `CLM-${year}-${padNumber(nextValue, 4)}`;
-}
-
 export const createPolicy = mutation({
   args: {
     organizationId: v.id("organizations"),
@@ -128,7 +102,11 @@ export const createPolicy = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     const existingPolicy = await ctx.db
       .query("insurancePolicies")
@@ -225,7 +203,11 @@ export const updatePolicy = mutation({
       throw new Error("Policy not found");
     }
 
-    await requirePermission(ctx, policy.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      policy.organizationId,
+      "organization.manage_settings",
+    );
 
     if (args.policyNumber && args.policyNumber !== policy.policyNumber) {
       const existingPolicy = await ctx.db
@@ -282,7 +264,11 @@ export const deletePolicy = mutation({
       throw new Error("Policy not found");
     }
 
-    await requirePermission(ctx, policy.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      policy.organizationId,
+      "organization.manage_settings",
+    );
 
     const activeCoverages = await ctx.db
       .query("insuranceCoverages")
@@ -613,7 +599,11 @@ export const addCoverage = mutation({
       throw new Error("Policy not found");
     }
 
-    await requirePermission(ctx, policy.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      policy.organizationId,
+      "organization.manage_settings",
+    );
 
     if (!args.collectionId && !args.exhibitionId && !args.loanId) {
       throw new Error(
@@ -789,14 +779,18 @@ export const createClaim = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     const policy = await ctx.db.get(args.policyId);
     if (!policy || policy.organizationId !== args.organizationId) {
       throw new Error("Policy not found or belongs to different org");
     }
 
-    const claimNumber = await generateClaimNumber(ctx, args.organizationId);
+    const claimNumber = await generateNextClaimNumber(ctx, args.organizationId);
 
     const claimId = await ctx.db.insert("insuranceClaims", {
       organizationId: args.organizationId,
@@ -864,7 +858,11 @@ export const updateClaim = mutation({
       throw new Error("Claim not found");
     }
 
-    await requirePermission(ctx, claim.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      claim.organizationId,
+      "organization.manage_settings",
+    );
 
     const { claimId, status, ...otherUpdates } = args;
     const updates: Record<string, unknown> = Object.fromEntries(
@@ -1404,7 +1402,11 @@ export const uploadPolicyDocument = mutation({
       throw new Error("Policy not found");
     }
 
-    await requirePermission(ctx, policy.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      policy.organizationId,
+      "organization.manage_settings",
+    );
 
     const documentIds = policy.documentIds ?? [];
     documentIds.push(args.storageId);
@@ -1437,7 +1439,11 @@ export const uploadClaimDocument = mutation({
       throw new Error("Claim not found");
     }
 
-    await requirePermission(ctx, claim.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      claim.organizationId,
+      "organization.manage_settings",
+    );
 
     if (args.documentType === "document") {
       const documentIds = claim.documentIds ?? [];
@@ -1651,7 +1657,11 @@ export const openDispute = mutation({
       throw new Error("Claim not found");
     }
 
-    await requirePermission(ctx, claim.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      claim.organizationId,
+      "organization.manage_settings",
+    );
 
     if (
       claim.status !== "denied" &&
@@ -1709,7 +1719,11 @@ export const updateDisputeStatus = mutation({
       throw new Error("Claim not found");
     }
 
-    await requirePermission(ctx, claim.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      claim.organizationId,
+      "organization.manage_settings",
+    );
 
     if (!claim.isDisputed) {
       throw new Error("Claim does not have an open dispute");
@@ -1764,7 +1778,11 @@ export const resolveDispute = mutation({
       throw new Error("Claim not found");
     }
 
-    await requirePermission(ctx, claim.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      claim.organizationId,
+      "organization.manage_settings",
+    );
 
     if (!claim.isDisputed) {
       throw new Error("Claim does not have an open dispute");
@@ -1829,7 +1847,11 @@ export const uploadDisputeDocument = mutation({
       throw new Error("Claim not found");
     }
 
-    await requirePermission(ctx, claim.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      claim.organizationId,
+      "organization.manage_settings",
+    );
 
     if (!claim.isDisputed) {
       throw new Error("Claim does not have an open dispute");
@@ -1901,7 +1923,7 @@ export const createAutoClaimForTransitDamage = internalMutation({
       }
     }
 
-    const claimNumber = await generateClaimNumber(ctx, args.organizationId);
+    const claimNumber = await generateNextClaimNumber(ctx, args.organizationId);
     const now = Date.now();
 
     const claimId = await ctx.db.insert("insuranceClaims", {
@@ -2083,7 +2105,7 @@ export const checkAppraisalForCoverage = query({
       warning = `Appraisal is ${Math.floor(ageDays / 365)} years old and may be stale`;
       appraisalValid = false;
     } else if (ageDays > 2 * 365) {
-      warning = `Appraisal is over 2 years old and should be updated soon`;
+      warning = "Appraisal is over 2 years old and should be updated soon";
     }
 
     return {
@@ -2252,7 +2274,11 @@ export const addCoverageWithAppraisalCheck = mutation({
       throw new Error("Policy not found");
     }
 
-    await requirePermission(ctx, policy.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      policy.organizationId,
+      "organization.manage_settings",
+    );
 
     const collection = await ctx.db.get(args.collectionId);
     if (!collection || collection.organizationId !== policy.organizationId) {
