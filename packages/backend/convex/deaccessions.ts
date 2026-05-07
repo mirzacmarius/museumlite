@@ -20,6 +20,7 @@ import {
   getUsersToNotifyForWorkflowStep,
   requirePermission,
 } from "./utils/permissions";
+import { getWorkflowConfig } from "./utils/workflowConfigs";
 import {
   prepareWorkflowStepAdvance,
   recordWorkflowStepAdvance,
@@ -91,12 +92,11 @@ async function canInitiateDeaccessionWorkflowForUser(
     return false;
   }
 
-  const workflowConfig = await ctx.db
-    .query("workflowConfigs")
-    .withIndex("by_organization_and_workflowType", (q) =>
-      q.eq("organizationId", organizationId).eq("workflowType", "deaccession"),
-    )
-    .first();
+  const workflowConfig = await getWorkflowConfig(
+    ctx,
+    organizationId,
+    "deaccession",
+  );
 
   if (workflowConfig) {
     return workflowConfig.canInitiateRoles.includes(userOrganization.roleId);
@@ -165,14 +165,11 @@ async function createDeaccessionRecord(
     ? args.deaccessionNumber
     : await generateNextDeaccessionNumber(ctx, args.organizationId);
 
-  const workflowConfig = await ctx.db
-    .query("workflowConfigs")
-    .withIndex("by_organization_and_workflowType", (q) =>
-      q
-        .eq("organizationId", args.organizationId)
-        .eq("workflowType", "deaccession"),
-    )
-    .first();
+  const workflowConfig = await getWorkflowConfig(
+    ctx,
+    args.organizationId,
+    "deaccession",
+  );
   const workflowState = resolveWorkflowStepState(
     workflowConfig?.steps,
     undefined,
@@ -566,14 +563,11 @@ export const getWorkflowSteps = query({
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "collections.read");
 
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization_and_workflowType", (q) =>
-        q
-          .eq("organizationId", args.organizationId)
-          .eq("workflowType", "deaccession"),
-      )
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      args.organizationId,
+      "deaccession",
+    );
 
     if (!workflowConfig) {
       return {
@@ -817,13 +811,11 @@ export const submitForApproval = mutation({
       throw new Error("Deaccession is not pending");
     }
 
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", deaccession.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "deaccession"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      deaccession.organizationId,
+      "deaccession",
+    );
 
     const workflowState = resolveWorkflowStepState(
       workflowConfig?.steps,
@@ -875,13 +867,11 @@ export const approve = mutation({
     }
 
     // Get workflow config
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", deaccession.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "deaccession"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      deaccession.organizationId,
+      "deaccession",
+    );
 
     if (workflowConfig) {
       const workflowState = resolveWorkflowStepState(

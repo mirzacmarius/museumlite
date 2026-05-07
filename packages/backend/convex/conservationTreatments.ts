@@ -2,7 +2,13 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { internalMutation, mutation, query } from "./_generated/server";
+import {
+  type MutationCtx,
+  type QueryCtx,
+  internalMutation,
+  mutation,
+  query,
+} from "./_generated/server";
 import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
 import {
   canApproveAtStep,
@@ -11,6 +17,7 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
 const treatmentTypeValidator = v.union(
@@ -24,7 +31,7 @@ const treatmentTypeValidator = v.union(
 );
 
 async function requireConservationAccess(
-  ctx: any,
+  ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
 ) {
   await requireFeatureAccess(ctx, organizationId, "conservation");
@@ -352,13 +359,11 @@ export const create = mutation({
 
     const user = await ctx.db.get(userId);
 
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", collection.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "conservation"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      collection.organizationId,
+      "conservation",
+    );
     const workflowState = resolveWorkflowStepState(
       workflowConfig?.steps,
       undefined,
@@ -390,7 +395,7 @@ export const create = mutation({
       performedAt: args.performedAt ?? Date.now(),
       notes: args.notes,
       status: workflowConfig ? "proposed" : "completed",
-      workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
+      workflowStep: workflowConfig ? workflowState.firstStep ?? 1 : undefined,
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
       createdBy: userId,
     });
@@ -455,13 +460,11 @@ export const approve = mutation({
       throw new Error("Treatment is not pending approval");
     }
 
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", treatment.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "conservation"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      treatment.organizationId,
+      "conservation",
+    );
 
     if (workflowConfig) {
       const workflowState = resolveWorkflowStepState(
@@ -498,7 +501,8 @@ export const approve = mutation({
         });
       }
 
-      const isLastStep = workflowState.isPastLastStep || workflowState.isLastStep;
+      const isLastStep =
+        workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
         await ctx.db.patch(args.treatmentId, {
@@ -619,18 +623,17 @@ export const reject = mutation({
       throw new Error("Treatment is not pending approval");
     }
 
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", treatment.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "conservation"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      treatment.organizationId,
+      "conservation",
+    );
     const workflowState = resolveWorkflowStepState(
       workflowConfig?.steps,
       treatment.workflowStep,
     );
-    const currentStep = workflowState.currentStep ?? treatment.workflowStep ?? 1;
+    const currentStep =
+      workflowState.currentStep ?? treatment.workflowStep ?? 1;
     const canApprove = await canApproveAtStep(
       ctx,
       treatment.organizationId,
@@ -1715,7 +1718,7 @@ export const checkOverdueTreatmentsInternal = internalMutation({
                 organizationId: org._id,
                 userId: userId as typeof treatment.performedBy,
                 type: "conservation_alert",
-                title: `Overdue Treatment Alert`,
+                title: "Overdue Treatment Alert",
                 message: `Treatment "${treatment.title}" is overdue and requires attention.`,
                 relatedEntityType: "conservationAlert",
                 relatedEntityId: alertId,
@@ -1797,7 +1800,7 @@ export const checkAssessmentsDueInternal = internalMutation({
               title: `Assessment Due: ${collection.title}`,
               description: lastAssessment
                 ? `Last assessment was ${daysSinceAssessment} days ago. Periodic assessment recommended.`
-                : `No assessment record found. Initial assessment recommended.`,
+                : "No assessment record found. Initial assessment recommended.",
               priority: rule.priority,
               status: "active",
               createdAt: now,
@@ -1831,7 +1834,7 @@ export const checkAssessmentsDueInternal = internalMutation({
                     organizationId: org._id,
                     userId: notifyUserId as typeof collection.catalogedBy,
                     type: "conservation_alert",
-                    title: `Assessment Due Alert`,
+                    title: "Assessment Due Alert",
                     message: `Object "${collection.title}" requires a conservation assessment.`,
                     relatedEntityType: "conservationAlert",
                     relatedEntityId: alertId,
@@ -2188,30 +2191,25 @@ export const listAssessmentSchedules = query({
     await requireConservationAccess(ctx, args.organizationId);
     await requirePermission(ctx, args.organizationId, "collections.read");
 
-    let schedules;
-
-    if (args.collectionId) {
-      schedules = await ctx.db
-        .query("assessmentSchedules")
-        .withIndex("by_collection", (q) =>
-          q.eq("collectionId", args.collectionId),
-        )
-        .collect();
-    } else if (args.activeOnly) {
-      schedules = await ctx.db
-        .query("assessmentSchedules")
-        .withIndex("by_organization_and_active", (q) =>
-          q.eq("organizationId", args.organizationId).eq("isActive", true),
-        )
-        .collect();
-    } else {
-      schedules = await ctx.db
-        .query("assessmentSchedules")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect();
-    }
+    const collectionId = args.collectionId;
+    const schedules = collectionId
+      ? await ctx.db
+          .query("assessmentSchedules")
+          .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+          .collect()
+      : args.activeOnly
+        ? await ctx.db
+            .query("assessmentSchedules")
+            .withIndex("by_organization_and_active", (q) =>
+              q.eq("organizationId", args.organizationId).eq("isActive", true),
+            )
+            .collect()
+        : await ctx.db
+            .query("assessmentSchedules")
+            .withIndex("by_organization", (q) =>
+              q.eq("organizationId", args.organizationId),
+            )
+            .collect();
 
     const now = Date.now();
     const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;

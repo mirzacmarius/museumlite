@@ -9,6 +9,7 @@ import {
   query,
 } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
+import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { getPositiveWorkflowSteps } from "./utils/workflowSteps";
 
 const workflowTypeValidator = v.union(
@@ -275,13 +276,11 @@ export const validateTransition = internalQuery({
     reason: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
-    const config = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), args.workflowType))
-      .first();
+    const config = await getWorkflowConfig(
+      ctx,
+      args.organizationId,
+      args.workflowType,
+    );
 
     if (!config) {
       return {
@@ -502,24 +501,21 @@ export const getRecentWorkflowActivity = query({
     const limit = args.limit ?? 50;
     const sinceTimestamp = args.sinceTimestamp ?? 0;
 
-    let query;
-    if (args.workflowType) {
-      query = ctx.db
-        .query("workflowHistory")
-        .withIndex("by_organization_and_type", (q) =>
-          q
-            .eq("organizationId", args.organizationId)
-            .eq("workflowType", args.workflowType!),
-        );
-    } else {
-      query = ctx.db
-        .query("workflowHistory")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        );
-    }
-
-    const history = await query.collect();
+    const history = args.workflowType
+      ? await ctx.db
+          .query("workflowHistory")
+          .withIndex("by_organization_and_type", (q) =>
+            q
+              .eq("organizationId", args.organizationId)
+              .eq("workflowType", args.workflowType!),
+          )
+          .collect()
+      : await ctx.db
+          .query("workflowHistory")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .collect();
 
     const filtered = history
       .filter((h) => h.performedAt > sinceTimestamp)
@@ -938,17 +934,14 @@ export const listTemplates = query({
     }),
   ),
   handler: async (ctx, args) => {
-    let templates;
-    if (args.workflowType) {
-      templates = await ctx.db
-        .query("workflowTemplates")
-        .withIndex("by_workflowType", (q) =>
-          q.eq("workflowType", args.workflowType!),
-        )
-        .collect();
-    } else {
-      templates = await ctx.db.query("workflowTemplates").collect();
-    }
+    const templates = args.workflowType
+      ? await ctx.db
+          .query("workflowTemplates")
+          .withIndex("by_workflowType", (q) =>
+            q.eq("workflowType", args.workflowType!),
+          )
+          .collect()
+      : await ctx.db.query("workflowTemplates").collect();
 
     return templates.map((t) => ({
       _id: t._id,
@@ -1025,13 +1018,11 @@ export const createTemplateFromConfig = mutation({
       "organization.manage_settings",
     );
 
-    const config = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), args.workflowType))
-      .first();
+    const config = await getWorkflowConfig(
+      ctx,
+      args.organizationId,
+      args.workflowType,
+    );
 
     if (!config) {
       throw new Error("No workflow config found for this type");
@@ -1136,13 +1127,11 @@ export const applyTemplateToOrganization = mutation({
       });
     }
 
-    const existing = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), template.workflowType))
-      .first();
+    const existing = await getWorkflowConfig(
+      ctx,
+      args.organizationId,
+      template.workflowType,
+    );
 
     const adminRole = roles.find((r) => r.name.toLowerCase() === "admin");
     const canInitiateRoles = adminRole ? [adminRole._id] : [];
@@ -1324,13 +1313,11 @@ export const checkStepApprovalStatus = internalQuery({
     ),
   }),
   handler: async (ctx, args) => {
-    const config = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), args.workflowType))
-      .first();
+    const config = await getWorkflowConfig(
+      ctx,
+      args.organizationId,
+      args.workflowType,
+    );
 
     const stepConfig = config?.steps.find(
       (s) => s.stepNumber === args.stepNumber,

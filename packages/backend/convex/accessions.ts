@@ -29,6 +29,7 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { getWorkflowConfig } from "./utils/workflowConfigs";
 import {
   prepareWorkflowStepAdvance,
   recordWorkflowStepAdvance,
@@ -416,13 +417,11 @@ export const create = mutation({
     }
 
     // Get workflow config
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "accession"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      args.organizationId,
+      "accession",
+    );
     const workflowState = resolveWorkflowStepState(
       workflowConfig?.steps,
       undefined,
@@ -549,13 +548,11 @@ export const upsertObjectDraft = mutation({
       throw new Error("Not authenticated");
     }
 
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "accession"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      args.organizationId,
+      "accession",
+    );
 
     const normalizedObjectData = {
       ...args.objectData,
@@ -1066,13 +1063,11 @@ export const get = query({
 
     let canCurrentUserApprove = false;
     if (accession.status === "pending" && accession.workflowStep !== 0) {
-      const workflowConfig = await ctx.db
-        .query("workflowConfigs")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", accession.organizationId),
-        )
-        .filter((q) => q.eq(q.field("workflowType"), "accession"))
-        .first();
+      const workflowConfig = await getWorkflowConfig(
+        ctx,
+        accession.organizationId,
+        "accession",
+      );
 
       const workflowState = resolveWorkflowStepState(
         workflowConfig?.steps,
@@ -1286,13 +1281,11 @@ export const submitForApproval = mutation({
       throw new Error("Accession is not pending");
     }
 
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", accession.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "accession"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      accession.organizationId,
+      "accession",
+    );
 
     const workflowState = resolveWorkflowStepState(
       workflowConfig?.steps,
@@ -1340,13 +1333,11 @@ export const approve = mutation({
       throw new Error("Accession is not pending");
     }
 
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", accession.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "accession"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      accession.organizationId,
+      "accession",
+    );
 
     if (workflowConfig) {
       const workflowState = resolveWorkflowStepState(
@@ -1934,14 +1925,11 @@ export const getWorkflowSteps = query({
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "collections.read");
 
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization_and_workflowType", (q) =>
-        q
-          .eq("organizationId", args.organizationId)
-          .eq("workflowType", "accession"),
-      )
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      args.organizationId,
+      "accession",
+    );
 
     if (!workflowConfig) {
       return {
@@ -2273,13 +2261,11 @@ export const initializeDocumentChecklist = mutation({
     );
 
     // Get workflow config to determine required documents
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", accession.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "accession"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      accession.organizationId,
+      "accession",
+    );
 
     if (!workflowConfig?.requiredDocuments) {
       return null;
@@ -2737,13 +2723,11 @@ export const processBulkImport = mutation({
     await requirePermission(ctx, args.organizationId, "collections.create");
 
     // Get workflow config
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "accession"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      args.organizationId,
+      "accession",
+    );
 
     const accessionIds: Id<"accessions">[] = [];
     const errors: { row: number; message: string }[] = [];

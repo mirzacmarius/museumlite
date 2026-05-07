@@ -2,7 +2,12 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
+import {
+  type MutationCtx,
+  type QueryCtx,
+  mutation,
+  query,
+} from "./_generated/server";
 import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
 import {
   canApproveAtStep,
@@ -11,10 +16,11 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
 async function requireExhibitionAccess(
-  ctx: any,
+  ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
 ) {
   await requireFeatureAccess(ctx, organizationId, "exhibitions");
@@ -128,13 +134,11 @@ export const get = query({
 
     const collection = await ctx.db.get(exhibition.collectionId);
 
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", exhibition.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "exhibition"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      exhibition.organizationId,
+      "exhibition",
+    );
 
     const approver = exhibition.approvedBy
       ? await ctx.db.get(exhibition.approvedBy)
@@ -160,8 +164,8 @@ export const get = query({
       status: exhibition.status,
       workflowStep: exhibition.workflowStep,
       totalWorkflowSteps: workflowConfig
-        ? resolveWorkflowStepState(workflowConfig.steps, undefined).approvalSteps
-            .length
+        ? resolveWorkflowStepState(workflowConfig.steps, undefined)
+            .approvalSteps.length
         : undefined,
       approvedBy: exhibition.approvedBy,
       approvedAt: exhibition.approvedAt,
@@ -409,13 +413,11 @@ export const create = mutation({
       }
     }
 
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", collection.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "exhibition"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      collection.organizationId,
+      "exhibition",
+    );
     const workflowState = resolveWorkflowStepState(
       workflowConfig?.steps,
       undefined,
@@ -448,7 +450,7 @@ export const create = mutation({
       loanVenue: args.loanVenue,
       notes: args.notes,
       status: workflowConfig ? "proposed" : "active",
-      workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
+      workflowStep: workflowConfig ? workflowState.firstStep ?? 1 : undefined,
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
       createdBy: userId,
     });
@@ -515,13 +517,11 @@ export const approve = mutation({
       throw new Error("Exhibition is not pending approval");
     }
 
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", exhibition.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "exhibition"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      exhibition.organizationId,
+      "exhibition",
+    );
 
     if (workflowConfig) {
       const workflowState = resolveWorkflowStepState(
@@ -558,7 +558,8 @@ export const approve = mutation({
         });
       }
 
-      const isLastStep = workflowState.isPastLastStep || workflowState.isLastStep;
+      const isLastStep =
+        workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
         await ctx.db.patch(args.exhibitionId, {
@@ -681,18 +682,17 @@ export const reject = mutation({
       throw new Error("Exhibition is not pending approval");
     }
 
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", exhibition.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "exhibition"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      exhibition.organizationId,
+      "exhibition",
+    );
     const workflowState = resolveWorkflowStepState(
       workflowConfig?.steps,
       exhibition.workflowStep,
     );
-    const currentStep = workflowState.currentStep ?? exhibition.workflowStep ?? 1;
+    const currentStep =
+      workflowState.currentStep ?? exhibition.workflowStep ?? 1;
     const canApprove = await canApproveAtStep(
       ctx,
       exhibition.organizationId,

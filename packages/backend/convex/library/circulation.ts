@@ -4,6 +4,15 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { mutation, query } from "../_generated/server";
 import { requireModuleEnabled } from "../utils/featureGates";
+import {
+  assertBorrowingLimitAllowsCheckout,
+  assertCopyAvailable,
+  assertFineThresholdAllowsCheckout,
+  assertItemCanCirculate,
+  assertPatronAccountCanCheckout,
+  calculateOverdueFine,
+  resolveCheckoutDueDate,
+} from "./utils/circulationRules";
 
 export const checkout = mutation({
   args: {
@@ -23,13 +32,7 @@ export const checkout = mutation({
       throw new Error("Account not found");
     }
 
-    if (account.accountType !== "patron") {
-      throw new Error("Only patron accounts can checkout library items");
-    }
-
-    if (account.status !== "active") {
-      throw new Error(`Cannot checkout: Account status is ${account.status}`);
-    }
+    assertPatronAccountCanCheckout(account);
 
     await requireModuleEnabled(ctx, account.organizationId, "library");
 
@@ -40,15 +43,7 @@ export const checkout = mutation({
       )
       .first();
 
-    if (
-      settings?.fineThresholdForBlock &&
-      account.fineBalance &&
-      account.fineBalance >= settings.fineThresholdForBlock
-    ) {
-      throw new Error(
-        `Cannot checkout: Account has outstanding fines of $${account.fineBalance.toFixed(2)}`,
-      );
-    }
+    assertFineThresholdAllowsCheckout({ account, settings });
 
     const activeCheckouts = await ctx.db
       .query("circulations")
@@ -57,52 +52,37 @@ export const checkout = mutation({
       )
       .collect();
 
-    const borrowingLimit = account.borrowingLimit ?? 10;
-    if (activeCheckouts.length >= borrowingLimit) {
-      throw new Error(
-        `Account has reached borrowing limit of ${borrowingLimit}`,
-      );
-    }
+    assertBorrowingLimitAllowsCheckout({
+      account,
+      activeCheckoutCount: activeCheckouts.length,
+    });
 
     const copy = await ctx.db.get(args.copyId);
     if (!copy) {
       throw new Error("Copy not found");
     }
 
-    if (copy.status !== "available") {
-      throw new Error(`Copy is not available (status: ${copy.status})`);
-    }
+    assertCopyAvailable(copy);
 
     const item = await ctx.db.get(copy.itemId);
     if (!item) {
       throw new Error("Library item not found");
     }
 
-    if (!item.isCirculating) {
-      throw new Error(
-        "This item is for reference only and cannot be checked out",
-      );
-    }
+    assertItemCanCirculate(item);
+
+    const membershipType = account.membershipTypeId
+      ? await ctx.db.get(account.membershipTypeId)
+      : null;
 
     const now = Date.now();
-    let dueDate = args.dueDate;
-
-    if (!dueDate) {
-      let loanPeriodDays = item.loanPeriodDays;
-
-      if (!loanPeriodDays && account.membershipTypeId) {
-        const membershipType = await ctx.db.get(account.membershipTypeId);
-        if (membershipType) {
-          loanPeriodDays = membershipType.loanPeriodDays;
-        }
-      }
-
-      if (!loanPeriodDays) {
-        loanPeriodDays = settings?.defaultLoanPeriodDays || 14;
-      }
-
-      dueDate = now + loanPeriodDays * 24 * 60 * 60 * 1000;
-    }
+    const dueDate = resolveCheckoutDueDate({
+      requestedDueDate: args.dueDate,
+      now,
+      item,
+      membershipType,
+      settings,
+    });
 
     const circulationId = await ctx.db.insert("circulations", {
       organizationId: account.organizationId,
@@ -193,17 +173,12 @@ export const checkin = mutation({
       membershipType?.gracePeriodDays ?? settings?.gracePeriodDays ?? 0;
 
     const now = Date.now();
-    let fineAmount: number | undefined;
-
-    if (now > circulation.dueDate && finePerDay > 0) {
-      const overdueDays = Math.ceil(
-        (now - circulation.dueDate) / (24 * 60 * 60 * 1000),
-      );
-      const billableDays = Math.max(0, overdueDays - gracePeriodDays);
-      if (billableDays > 0) {
-        fineAmount = billableDays * finePerDay;
-      }
-    }
+    const fineAmount = calculateOverdueFine({
+      now,
+      dueDate: circulation.dueDate,
+      finePerDay,
+      gracePeriodDays,
+    });
 
     await ctx.db.patch(args.circulationId, {
       status: "returned",
@@ -947,7 +922,7 @@ export const checkPatronBlocks = query({
     ) {
       blocks.push({
         type: "fine_threshold",
-        reason: `Outstanding fines exceed limit`,
+        reason: "Outstanding fines exceed limit",
         threshold: settings.fineThresholdForBlock,
         current: account.fineBalance,
       });
@@ -967,7 +942,7 @@ export const checkPatronBlocks = query({
       if (overdueItems.length >= settings.overdueItemsThresholdForBlock) {
         blocks.push({
           type: "overdue_threshold",
-          reason: `Too many overdue items`,
+          reason: "Too many overdue items",
           threshold: settings.overdueItemsThresholdForBlock,
           current: overdueItems.length,
         });

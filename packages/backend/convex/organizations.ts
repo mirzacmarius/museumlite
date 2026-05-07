@@ -24,6 +24,7 @@ import {
   getUsageCounter,
 } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
+import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { getPositiveWorkflowSteps } from "./utils/workflowSteps";
 
 type EnabledModule =
@@ -815,13 +816,11 @@ export const updateWorkflowConfig = mutation({
       );
     }
 
-    const existing = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), args.workflowType))
-      .first();
+    const existing = await getWorkflowConfig(
+      ctx,
+      args.organizationId,
+      args.workflowType,
+    );
 
     if (existing) {
       await ctx.db.patch(existing._id, {
