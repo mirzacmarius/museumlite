@@ -1,95 +1,54 @@
-import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
-import schema from "../convex/schema";
-
-import { modules } from "./testSetup";
-
-function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
-  return t.withIdentity({
-    subject: `${userId}|session-1`,
-    issuer: "https://example.test",
-  });
-}
+import {
+  type ConvexTest,
+  authedForUser,
+  createConvexTest,
+  createOrgUserWithPermissions as createOrgUserWithBasePermissions,
+} from "./testHarness";
 
 async function createOrgUserWithPermissions(
-  t: ReturnType<typeof convexTest>,
+  t: ConvexTest,
   permissionNames: string[],
 ) {
-  return t.run(async (ctx) => {
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Test Museum",
-      slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-    });
-
-    const userId = await ctx.db.insert("users", {
-      email: `user-${Math.random().toString(36).slice(2, 8)}@example.com`,
-      name: "Test User",
-    });
-
-    const roleId = await ctx.db.insert("roles", {
-      organizationId,
-      name: "Registrar",
-      isSystemRole: false,
-    });
-
-    for (const permissionName of permissionNames) {
-      const permissionId = await ctx.db.insert("permissions", {
-        name: permissionName,
-        category: permissionName.split(".")[0] || "collections",
-      });
-
-      await ctx.db.insert("rolePermissions", {
-        roleId,
-        permissionId,
-      });
-    }
-
-    await ctx.db.insert("userOrganizations", {
-      userId,
-      organizationId,
-      roleId,
-      joinedAt: Date.now(),
-    });
-
-    return { organizationId, userId, roleId };
+  return await createOrgUserWithBasePermissions(t, permissionNames, {
+    roleName: "Registrar",
   });
 }
 
 test("should create accession record", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   expect(true).toBe(true);
 });
 
 test("should generate accession number", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   expect(true).toBe(true);
 });
 
 test("should link accession to collection object", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   expect(true).toBe(true);
 });
 
 test("should track accession workflow status", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   expect(true).toBe(true);
 });
 
 test("should attach donor information", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   expect(true).toBe(true);
 });
 
 test("should complete accession process", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   expect(true).toBe(true);
 });
 
 test("object draft save keeps the accession at workflow step 0", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
     t,
     ["collections.create", "collections.read", "collections.update"],
@@ -125,7 +84,7 @@ test("object draft save keeps the accession at workflow step 0", async () => {
 });
 
 test("submitForApproval moves object drafts from step 0 to step 1", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
     t,
     ["collections.create", "collections.read", "collections.update"],
@@ -164,7 +123,7 @@ test("submitForApproval moves object drafts from step 0 to step 1", async () => 
 });
 
 test("getWorkflowSteps returns descriptive workflow metadata", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
     t,
     ["collections.read"],
@@ -203,7 +162,7 @@ test("getWorkflowSteps returns descriptive workflow metadata", async () => {
 });
 
 test("getWorkflowSteps does not include a rejected accession column", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
     t,
     ["collections.read"],
@@ -228,7 +187,7 @@ test("getWorkflowSteps does not include a rejected accession column", async () =
 });
 
 test("rejecting an accession moves the object to rejected deaccessions", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
     t,
     [
@@ -287,7 +246,7 @@ test("rejecting an accession moves the object to rejected deaccessions", async (
 });
 
 test("getWorkflowSteps does not surface document requirements for accession approvals", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
     t,
     ["collections.read"],
@@ -318,7 +277,7 @@ test("getWorkflowSteps does not surface document requirements for accession appr
 });
 
 test("draft save does not require workflow initiation permission", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId } = await createOrgUserWithPermissions(t, [
     "collections.create",
     "collections.read",
@@ -374,7 +333,7 @@ test("draft save does not require workflow initiation permission", async () => {
 });
 
 test("accession approval still requires the configured step role for non-admin users", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId } = await createOrgUserWithPermissions(t, [
     "collections.create",
     "collections.read",
@@ -430,7 +389,7 @@ test("accession approval still requires the configured step role for non-admin u
 });
 
 test("object draft approvals bypass source verification requirements", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
     t,
     [
@@ -477,7 +436,7 @@ test("object draft approvals bypass source verification requirements", async () 
 });
 
 test("standard accessions still require source verification when configured", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
     t,
     [
@@ -520,7 +479,7 @@ test("standard accessions still require source verification when configured", as
 });
 
 test("get returns source verification state after verifySource", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
     t,
     [
@@ -571,7 +530,7 @@ test("get returns source verification state after verifySource", async () => {
 });
 
 test("object draft approvals bypass required document checks", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
     t,
     [
@@ -630,7 +589,7 @@ test("object draft approvals bypass required document checks", async () => {
 });
 
 test("standard accessions ignore configured checklist documents during approval", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
     t,
     [
@@ -695,7 +654,7 @@ test("standard accessions ignore configured checklist documents during approval"
 });
 
 test("multi-step accessions advance and finish without document blockers", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
     t,
     [
@@ -774,7 +733,7 @@ test("multi-step accessions advance and finish without document blockers", async
 });
 
 test("accession workflows with config step 0 still complete on the last real approval step", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
     t,
     [
@@ -835,7 +794,7 @@ test("accession workflows with config step 0 still complete on the last real app
 });
 
 test("stale accessions past the last approval step are finalized on approve", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
     t,
     [
@@ -898,7 +857,7 @@ test("stale accessions past the last approval step are finalized on approve", as
 });
 
 test("stale accessions past the last approval step still require source verification", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
     t,
     [
@@ -956,7 +915,7 @@ test("stale accessions past the last approval step still require source verifica
 });
 
 test("stale accessions past the last approval step still require the last step role", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId } = await createOrgUserWithPermissions(t, [
     "collections.create",
     "collections.read",
@@ -1024,7 +983,7 @@ test("stale accessions past the last approval step still require the last step r
 });
 
 test("organization administrators can approve an accession even when the workflow step belongs to another role", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
 
   const { organizationId, adminUserId } = await t.run(async (ctx) => {
     const organizationId = await ctx.db.insert("organizations", {
@@ -1143,7 +1102,7 @@ test("organization administrators can approve an accession even when the workflo
  * Reduction: ~95% fewer database queries (61 → 3)
  */
 test("should batch lookup collections and assignees for list query", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
 
   const { orgId, userId } = await t.run(async (ctx) => {
     const orgId = await ctx.db.insert("organizations", {

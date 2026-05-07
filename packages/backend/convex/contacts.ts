@@ -1,10 +1,11 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, query } from "./_generated/server";
-import { requireModuleEnabled } from "./utils/featureGates";
-import { requirePermission } from "./utils/permissions";
+import {
+  requireAuthenticatedUser,
+  requireAuthorizedOrganization,
+} from "./utils/authorizationContext";
 
 const roleValidator = v.union(
   v.literal("primary"),
@@ -54,8 +55,11 @@ export const list = query({
       throw new Error("Account not found");
     }
 
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.read");
+    await requireAuthorizedOrganization(ctx, {
+      organizationId: account.organizationId,
+      moduleId: "accounts",
+      permission: "accounts.read",
+    });
 
     const contacts = await ctx.db
       .query("contacts")
@@ -97,8 +101,11 @@ export const listByOrganization = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "accounts");
-    await requirePermission(ctx, args.organizationId, "accounts.read");
+    await requireAuthorizedOrganization(ctx, {
+      organizationId: args.organizationId,
+      moduleId: "accounts",
+      permission: "accounts.read",
+    });
 
     let contacts = await ctx.db
       .query("contacts")
@@ -173,8 +180,11 @@ export const get = query({
       return null;
     }
 
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.read");
+    await requireAuthorizedOrganization(ctx, {
+      organizationId: account.organizationId,
+      moduleId: "accounts",
+      permission: "accounts.read",
+    });
 
     return contact;
   },
@@ -200,10 +210,7 @@ export const create = mutation({
   },
   returns: v.id("contacts"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
+    const userId = await requireAuthenticatedUser(ctx);
 
     // Get account to check organization
     const account = await ctx.db.get(args.accountId);
@@ -211,8 +218,11 @@ export const create = mutation({
       throw new Error("Account not found");
     }
 
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.write");
+    await requireAuthorizedOrganization(ctx, {
+      organizationId: account.organizationId,
+      moduleId: "accounts",
+      permission: "accounts.write",
+    });
 
     // If setting this contact as primary, unset other primary contacts for this account
     if (args.isPrimary) {
@@ -287,10 +297,7 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
+    const userId = await requireAuthenticatedUser(ctx);
 
     const contact = await ctx.db.get(args.contactId);
     if (!contact) {
@@ -303,8 +310,11 @@ export const update = mutation({
       throw new Error("Account not found");
     }
 
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.write");
+    await requireAuthorizedOrganization(ctx, {
+      organizationId: account.organizationId,
+      moduleId: "accounts",
+      permission: "accounts.write",
+    });
 
     // If setting this contact as primary, unset other primary contacts for this account
     if (args.isPrimary === true) {
@@ -367,10 +377,7 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
+    const userId = await requireAuthenticatedUser(ctx);
 
     const contact = await ctx.db.get(args.contactId);
     if (!contact) {
@@ -383,8 +390,11 @@ export const remove = mutation({
       throw new Error("Account not found");
     }
 
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.delete");
+    await requireAuthorizedOrganization(ctx, {
+      organizationId: account.organizationId,
+      moduleId: "accounts",
+      permission: "accounts.delete",
+    });
 
     await ctx.db.delete(args.contactId);
 
@@ -414,10 +424,7 @@ export const setPrimary = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
+    const userId = await requireAuthenticatedUser(ctx);
 
     const contact = await ctx.db.get(args.contactId);
     if (!contact) {
@@ -430,8 +437,11 @@ export const setPrimary = mutation({
       throw new Error("Account not found");
     }
 
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.write");
+    await requireAuthorizedOrganization(ctx, {
+      organizationId: account.organizationId,
+      moduleId: "accounts",
+      permission: "accounts.write",
+    });
 
     // Unset all other primary contacts for this account
     const existingPrimaryContacts = await ctx.db

@@ -14,6 +14,11 @@ import {
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
 import {
+  applyCollectionDisposition,
+  markCollectionActive,
+  markCollectionDeaccessioned,
+} from "./utils/collectionLifecycle";
+import {
   enforceObjectQuota,
   hasFeatureAccess,
   hasModuleEnabled,
@@ -2300,10 +2305,9 @@ export const deleteCollection = mutation({
     );
 
     // Soft delete - mark as deaccessioned
-    await ctx.db.patch(args.collectionId, {
-      status: "deaccessioned",
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
+    await markCollectionDeaccessioned(ctx, {
+      collectionId: args.collectionId,
+      changedBy: userId,
     });
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -2353,13 +2357,11 @@ export const archiveCollection = mutation({
       throw new Error("Cannot archive an object that is currently on loan");
     }
 
-    await ctx.db.patch(args.collectionId, {
-      status: "archived",
-      archivedAt: Date.now(),
-      archivedBy: userId,
-      archivedReason: args.reason,
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
+    await applyCollectionDisposition(ctx, {
+      collectionId: args.collectionId,
+      changedBy: userId,
+      targetStatus: "archived",
+      reason: args.reason,
     });
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -2409,13 +2411,11 @@ export const softDeleteCollection = mutation({
       throw new Error("Cannot delete an object that is currently on loan");
     }
 
-    await ctx.db.patch(args.collectionId, {
-      status: "deleted",
-      deletedAt: Date.now(),
-      deletedBy: userId,
-      deletedReason: args.reason,
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
+    await applyCollectionDisposition(ctx, {
+      collectionId: args.collectionId,
+      changedBy: userId,
+      targetStatus: "deleted",
+      reason: args.reason,
     });
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -2526,16 +2526,10 @@ export const restoreCollection = mutation({
       throw new Error("Can only restore archived or deleted objects");
     }
 
-    await ctx.db.patch(args.collectionId, {
-      status: "active",
-      archivedAt: undefined,
-      archivedBy: undefined,
-      archivedReason: undefined,
-      deletedAt: undefined,
-      deletedBy: undefined,
-      deletedReason: undefined,
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
+    await markCollectionActive(ctx, {
+      collectionId: args.collectionId,
+      changedBy: userId,
+      clearDisposition: true,
     });
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -3132,10 +3126,9 @@ export const bulkDeaccession = mutation({
           "collections.delete",
         );
 
-        await ctx.db.patch(collectionId, {
-          status: "deaccessioned",
-          lastModifiedBy: userId,
-          lastModifiedAt: Date.now(),
+        await markCollectionDeaccessioned(ctx, {
+          collectionId,
+          changedBy: userId,
         });
 
         await ctx.db.insert("auditLog", {

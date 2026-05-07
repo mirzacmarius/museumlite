@@ -2,6 +2,12 @@ import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import schema from "../convex/schema";
+import {
+  MODULE_IDS,
+  getFeatureRequiredTier,
+  getTierLimits,
+  hasFeatureTierAccess,
+} from "../convex/utils/featurePolicy";
 
 import { modules } from "./testSetup";
 
@@ -14,6 +20,28 @@ const createOrg = (
   slug,
   type: "museum" as const,
   subscriptionTier: tier,
+});
+
+describe("Feature Gates - Shared Policy", () => {
+  test("feature tier checks match the billing matrix", () => {
+    expect(hasFeatureTierAccess("free", "loans")).toBe(false);
+    expect(hasFeatureTierAccess("pro", "loans")).toBe(true);
+    expect(hasFeatureTierAccess("pro", "compliance")).toBe(false);
+    expect(hasFeatureTierAccess("enterprise", "compliance")).toBe(true);
+    expect(hasFeatureTierAccess(undefined, "loans")).toBe(false);
+    expect(getFeatureRequiredTier("public_portal")).toBe("pro");
+  });
+
+  test("shared module ids include backend-only and app-visible modules", () => {
+    expect(MODULE_IDS).toContain("accounts");
+    expect(MODULE_IDS).toContain("library");
+  });
+
+  test("tier limits are centralized with unlimited enterprise quotas", () => {
+    expect(getTierLimits("free").objects).toBe(100);
+    expect(getTierLimits("pro").mediaBytes).toBe(10 * 1024 * 1024 * 1024);
+    expect(getTierLimits("enterprise").exportsPerMonth).toBeNull();
+  });
 });
 
 describe("Feature Gates - Tier Access", () => {

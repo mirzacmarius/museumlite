@@ -1,80 +1,24 @@
-import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
-import type { Id } from "../convex/_generated/dataModel";
-import schema from "../convex/schema";
-
-import { modules } from "./testSetup";
-
-function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
-  return t.withIdentity({
-    subject: `${userId}|session-1`,
-    issuer: "https://example.test",
-  });
-}
-
-async function createOrgUserWithPermissions(
-  t: ReturnType<typeof convexTest>,
-  permissionNames: string[],
-) {
-  return t.run(async (ctx) => {
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Test Museum",
-      slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-    });
-
-    const userId = await ctx.db.insert("users", {
-      email: `user-${Math.random().toString(36).slice(2, 8)}@example.com`,
-      name: "Test User",
-    });
-
-    const roleId = await ctx.db.insert("roles", {
-      organizationId,
-      name: "Collections Admin",
-      isSystemRole: false,
-    });
-
-    for (const permissionName of permissionNames) {
-      const permissionId = await ctx.db.insert("permissions", {
-        name: permissionName,
-        category: permissionName.split(".")[0] || "collections",
-      });
-
-      await ctx.db.insert("rolePermissions", {
-        roleId,
-        permissionId,
-      });
-    }
-
-    await ctx.db.insert("userOrganizations", {
-      userId,
-      organizationId,
-      roleId,
-      joinedAt: Date.now(),
-    });
-
-    const collectionId = await ctx.db.insert("collections", {
-      organizationId,
-      accessionNumber: `OBJ-${Math.random().toString(36).slice(2, 8)}`,
-      title: "Collection Object",
-      status: "active",
-      catalogedBy: userId,
-      catalogedAt: Date.now(),
-    });
-
-    return { organizationId, userId, roleId, collectionId };
-  });
-}
+import {
+  authedForUser,
+  createConvexTest,
+  createOrgUserCollectionWithPermissions,
+  createOrgUserWithPermissions,
+} from "./testHarness";
 
 test("delete requests create pending deaccessions instead of deleting immediately", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId, collectionId } =
-    await createOrgUserWithPermissions(t, [
-      "collections.create",
-      "collections.read",
-      "collections.approve_deaccession",
-    ]);
+    await createOrgUserCollectionWithPermissions(
+      t,
+      [
+        "collections.create",
+        "collections.read",
+        "collections.approve_deaccession",
+      ],
+      { roleName: "Collections Admin" },
+    );
 
   await t.run(async (ctx) => {
     await ctx.db.insert("workflowConfigs", {
@@ -110,13 +54,17 @@ test("delete requests create pending deaccessions instead of deleting immediatel
 });
 
 test("approving an archive request marks the collection as archived", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId, collectionId } =
-    await createOrgUserWithPermissions(t, [
-      "collections.create",
-      "collections.read",
-      "collections.approve_deaccession",
-    ]);
+    await createOrgUserCollectionWithPermissions(
+      t,
+      [
+        "collections.create",
+        "collections.read",
+        "collections.approve_deaccession",
+      ],
+      { roleName: "Collections Admin" },
+    );
 
   await t.run(async (ctx) => {
     await ctx.db.insert("workflowConfigs", {
@@ -150,13 +98,17 @@ test("approving an archive request marks the collection as archived", async () =
 });
 
 test("deaccession workflows with config step 0 still complete on the last real approval step", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId, collectionId } =
-    await createOrgUserWithPermissions(t, [
-      "collections.create",
-      "collections.read",
-      "collections.approve_deaccession",
-    ]);
+    await createOrgUserCollectionWithPermissions(
+      t,
+      [
+        "collections.create",
+        "collections.read",
+        "collections.approve_deaccession",
+      ],
+      { roleName: "Collections Admin" },
+    );
 
   await t.run(async (ctx) => {
     await ctx.db.insert("workflowConfigs", {
@@ -213,10 +165,11 @@ test("deaccession workflows with config step 0 still complete on the last real a
 });
 
 test("getWorkflowSteps returns deaccessions terminal column without rejected column", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
     t,
     ["collections.create", "collections.read"],
+    { roleName: "Collections Admin" },
   );
 
   await t.run(async (ctx) => {
@@ -245,13 +198,17 @@ test("getWorkflowSteps returns deaccessions terminal column without rejected col
 });
 
 test("rejecting a deaccession restores prematurely removed objects to active catalog", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   const { organizationId, userId, roleId, collectionId } =
-    await createOrgUserWithPermissions(t, [
-      "collections.create",
-      "collections.read",
-      "collections.approve_deaccession",
-    ]);
+    await createOrgUserCollectionWithPermissions(
+      t,
+      [
+        "collections.create",
+        "collections.read",
+        "collections.approve_deaccession",
+      ],
+      { roleName: "Collections Admin" },
+    );
 
   await t.run(async (ctx) => {
     await ctx.db.insert("workflowConfigs", {

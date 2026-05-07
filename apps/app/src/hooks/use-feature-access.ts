@@ -1,42 +1,14 @@
 import { useOrganization } from "@/components/organization-provider";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  type FeatureId,
+  type IntegrationId,
+  type ModuleId,
+  type SubscriptionTier,
+  hasFeatureTierAccess,
+} from "@v1/backend/convex/utils/featurePolicy";
 
-export type SubscriptionTier = "free" | "pro" | "enterprise";
-
-export type FeatureId =
-  | "loans"
-  | "exhibitions"
-  | "conservation"
-  | "reporting"
-  | "compliance"
-  | "public_portal"
-  | "installations";
-
-export type ModuleId =
-  | "library"
-  | "fine_art"
-  | "wine"
-  | "automotive"
-  | "natural_history"
-  | "archive";
-
-export type IntegrationId = "library";
-
-const TIER_ORDER: Record<SubscriptionTier, number> = {
-  free: 0,
-  pro: 1,
-  enterprise: 2,
-};
-
-const FEATURE_REQUIREMENTS: Record<FeatureId, SubscriptionTier> = {
-  loans: "pro",
-  exhibitions: "pro",
-  conservation: "pro",
-  reporting: "pro",
-  public_portal: "pro",
-  installations: "pro",
-  compliance: "enterprise",
-};
+export type { FeatureId, IntegrationId, ModuleId, SubscriptionTier };
 
 export function useFeatureAccess() {
   const { currentOrganization, organizations } = useOrganization();
@@ -54,8 +26,7 @@ export function useFeatureAccess() {
         ? organizations.find((org) => org._id === organizationId)
             ?.subscriptionTier
         : currentOrganization?.subscriptionTier) ?? "free";
-    const requiredTier = FEATURE_REQUIREMENTS[featureId];
-    return TIER_ORDER[scopedTier] >= TIER_ORDER[requiredTier];
+    return hasFeatureTierAccess(scopedTier, featureId);
   };
 
   const hasModule = (moduleId: ModuleId) => {

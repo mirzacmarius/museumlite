@@ -3,62 +3,28 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
+  type QueryCtx,
   internalMutation,
   mutation,
   query,
-  type QueryCtx,
 } from "./_generated/server";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { enforceMediaQuota } from "./utils/featureGates";
 import {
+  MAX_SMALL_MEDIA_FILE_SIZE,
+  getDefaultMediaCategory,
+  getMediaFileType,
+  insertCompletedMediaAsset,
+  isSupportedMediaMimeType,
+  shouldGenerateMediaThumbnail,
+} from "./utils/mediaAssets";
+import {
   applyUsageCounterDelta,
   createEmptyUsageCounter,
   getMediaStorageBytes,
-  getStorageBytes,
   getUsageCounter,
 } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
-
-const MAX_SMALL_FILE_SIZE = 50 * 1024 * 1024; // 50MB
-
-/**
- * Valid file types by category
- */
-const FILE_TYPES = {
-  images: ["image/jpeg", "image/png", "image/webp", "image/tiff"],
-  documents: [
-    "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  ],
-  videos: ["video/mp4", "video/webm"],
-  "3d": [
-    "model/obj",
-    "model/gltf+json",
-    "application/x-fbx",
-    "model/gltf-binary",
-  ],
-} as const;
-
-/**
- * Validate file type
- */
-function validateFileType(mimeType: string): boolean {
-  return Object.values(FILE_TYPES)
-    .flat()
-    .includes(mimeType as any);
-}
-
-/**
- * Get file category from mime type
- */
-function getFileCategory(mimeType: string): string {
-  if (FILE_TYPES.images.includes(mimeType as any)) return "image";
-  if (FILE_TYPES.documents.includes(mimeType as any)) return "document";
-  if (FILE_TYPES.videos.includes(mimeType as any)) return "video";
-  if (FILE_TYPES["3d"].includes(mimeType as any)) return "3d";
-  return "other";
-}
 
 function isImageMedia(media: {
   fileType?: string;
@@ -114,12 +80,11 @@ export const generateUploadUrl = mutation({
     await enforceMediaQuota(ctx, args.organizationId, args.fileSize);
 
     // Validate file type
-    if (!validateFileType(args.mimeType)) {
+    if (!isSupportedMediaMimeType(args.mimeType)) {
       throw new Error(`Unsupported file type: ${args.mimeType}`);
     }
 
-    const isLargeFile = args.fileSize > MAX_SMALL_FILE_SIZE;
-    const fileCategory = getFileCategory(args.mimeType);
+    const isLargeFile = args.fileSize > MAX_SMALL_MEDIA_FILE_SIZE;
 
     if (isLargeFile) {
       // For large files, generate upload URL
@@ -133,14 +98,14 @@ export const generateUploadUrl = mutation({
         isChunked: true,
         chunkId,
       };
-    } else {
-      // Small files - direct upload
-      const uploadUrl = await ctx.storage.generateUploadUrl();
-      return {
-        uploadUrl,
-        isChunked: false,
-      };
     }
+
+    // Small files - direct upload
+    const uploadUrl = await ctx.storage.generateUploadUrl();
+    return {
+      uploadUrl,
+      isChunked: false,
+    };
   },
 });
 
@@ -176,10 +141,12 @@ export const create = mutation({
 
     await enforceMediaQuota(ctx, args.organizationId, args.fileSize);
 
-    const fileCategory = getFileCategory(args.mimeType);
+    const fileCategory = getMediaFileType(args.mimeType);
     // Use explicit mediaCategory if provided, otherwise default to "image" for images, "document" for others
-    const mediaCategory =
-      args.mediaCategory || (fileCategory === "image" ? "image" : "document");
+    const mediaCategory = getDefaultMediaCategory(
+      fileCategory,
+      args.mediaCategory,
+    );
 
     // If this is a chunked upload, update existing record
     if (args.chunkId) {
@@ -201,7 +168,7 @@ export const create = mutation({
         // If it's a primary image and <50MB, schedule thumbnail generation
         if (
           existing.isPrimary &&
-          args.fileSize < MAX_SMALL_FILE_SIZE &&
+          args.fileSize < MAX_SMALL_MEDIA_FILE_SIZE &&
           fileCategory === "image"
         ) {
           await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
@@ -213,13 +180,11 @@ export const create = mutation({
       }
     }
 
-    // Create new media record
-    const mediaId = await ctx.db.insert("mediaFiles", {
+    const { mediaId } = await insertCompletedMediaAsset(ctx, {
       collectionId: args.collectionId,
       organizationId: args.organizationId,
       storageId: args.storageId,
       fileName: args.fileName,
-      fileType: fileCategory,
       fileSize: args.fileSize,
       mimeType: args.mimeType,
       mediaCategory,
@@ -228,46 +193,6 @@ export const create = mutation({
       photographer: args.photographer,
       copyright: args.copyright,
       uploadedBy: userId,
-      uploadedAt: Date.now(),
-      uploadStatus: "completed",
-    });
-
-    const storageBytes = await getStorageBytes(ctx, args.storageId);
-    await applyUsageCounterDelta(ctx, args.organizationId, {
-      mediaFileCount: 1,
-      mediaTypeDeltas: [
-        {
-          type: fileCategory,
-          countDelta: 1,
-          bytesDelta: storageBytes,
-        },
-      ],
-      storageBytes,
-    });
-
-    // If it's a primary image and <50MB, schedule thumbnail generation
-    if (
-      args.isPrimary &&
-      args.fileSize < MAX_SMALL_FILE_SIZE &&
-      fileCategory === "image"
-    ) {
-      await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
-        mediaId,
-      });
-    }
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: args.organizationId,
-      userId,
-      action: "uploaded_media",
-      entityType: "media",
-      entityId: mediaId,
-      changes: {
-        fileName: args.fileName,
-        fileType: fileCategory,
-        fileSize: args.fileSize,
-        collectionId: args.collectionId,
-      },
     });
 
     return mediaId;
@@ -411,7 +336,7 @@ export const update = mutation({
       if (
         args.isPrimary &&
         media.fileType === "image" &&
-        media.fileSize < MAX_SMALL_FILE_SIZE
+        media.fileSize < MAX_SMALL_MEDIA_FILE_SIZE
       ) {
         await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
           mediaId: args.mediaId,
@@ -537,7 +462,13 @@ export const setPrimary = mutation({
     await ctx.db.patch(args.mediaId, { isPrimary: true });
 
     // Generate thumbnail if image <50MB
-    if (media.fileType === "image" && media.fileSize < MAX_SMALL_FILE_SIZE) {
+    if (
+      shouldGenerateMediaThumbnail({
+        fileType: media.fileType,
+        fileSize: media.fileSize,
+        isPrimary: true,
+      })
+    ) {
       await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
         mediaId: args.mediaId,
       });
@@ -810,7 +741,9 @@ export const listByOrganization = query({
         ? await ctx.db
             .query("mediaFiles")
             .withIndex("by_organization_and_fileType_and_uploadedAt", (q) =>
-              q.eq("organizationId", args.organizationId).eq("fileType", fileType),
+              q
+                .eq("organizationId", args.organizationId)
+                .eq("fileType", fileType),
             )
             .order("desc")
             .paginate(args.paginationOpts)
@@ -910,7 +843,8 @@ export const getStorageStats = query({
         .collect(),
     ]);
 
-    const counter = usageCounter ?? createEmptyUsageCounter(args.organizationId);
+    const counter =
+      usageCounter ?? createEmptyUsageCounter(args.organizationId);
     const byType = Object.entries(counter.mediaByType).map(([type, usage]) => ({
       type,
       count: usage.count,
@@ -932,7 +866,7 @@ export const checkFileType = query({
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
-    return validateFileType(args.mimeType);
+    return isSupportedMediaMimeType(args.mimeType);
   },
 });
 
@@ -997,7 +931,10 @@ export const generateThumbnail = internalMutation({
     }
 
     // Only generate thumbnails for images <50MB
-    if (media.fileType !== "image" || media.fileSize >= MAX_SMALL_FILE_SIZE) {
+    if (
+      media.fileType !== "image" ||
+      media.fileSize >= MAX_SMALL_MEDIA_FILE_SIZE
+    ) {
       return null;
     }
 

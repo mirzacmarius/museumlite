@@ -1,8 +1,13 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { mutation, query } from "./_generated/server";
+import {
+  MAX_SMALL_MEDIA_FILE_SIZE,
+  getMediaFileType,
+  insertCompletedMediaAsset,
+  isSupportedMediaMimeType,
+} from "./utils/mediaAssets";
 import { requirePermission } from "./utils/permissions";
 
 const mappingTypeValidator = v.union(
@@ -10,18 +15,6 @@ const mappingTypeValidator = v.union(
   v.literal("filename"),
   v.literal("manual"),
 );
-
-const VALID_MIME_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/tiff",
-  "application/pdf",
-];
-
-function validateMimeType(mimeType: string): boolean {
-  return VALID_MIME_TYPES.includes(mimeType);
-}
 
 /**
  * Extracts accession number from filename patterns:
@@ -184,7 +177,7 @@ export const generateBulkUploadUrl = mutation({
 
     await requirePermission(ctx, args.organizationId, "media.upload");
 
-    if (!validateMimeType(args.mimeType)) {
+    if (!isSupportedMediaMimeType(args.mimeType)) {
       throw new Error(`Unsupported file type: ${args.mimeType}`);
     }
 
@@ -264,30 +257,20 @@ export const recordUploadedFile = mutation({
     let error: string | undefined;
 
     if (collectionId) {
-      const fileType = args.mimeType.startsWith("image/")
-        ? "image"
-        : "document";
-
-      mediaFileId = await ctx.db.insert("mediaFiles", {
+      const fileType = getMediaFileType(args.mimeType);
+      const mediaAsset = await insertCompletedMediaAsset(ctx, {
         collectionId,
         organizationId: args.organizationId,
         storageId: args.storageId,
         fileName: args.fileName,
-        fileType,
         fileSize: args.fileSize,
         mimeType: args.mimeType,
-        mediaCategory: fileType === "image" ? "image" : "document",
         isPrimary: false,
         uploadedBy: userId,
-        uploadedAt: Date.now(),
-        uploadStatus: "completed",
+        forceThumbnail:
+          fileType === "image" && args.fileSize < MAX_SMALL_MEDIA_FILE_SIZE,
       });
-
-      if (fileType === "image" && args.fileSize < 50 * 1024 * 1024) {
-        await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
-          mediaId: mediaFileId,
-        });
-      }
+      mediaFileId = mediaAsset.mediaId;
     } else {
       error = accessionNumber
         ? `No collection found for accession number: ${accessionNumber}`
@@ -434,30 +417,20 @@ export const mapFileToCollection = mutation({
       };
     }
 
-    const mimeType = file.mimeType;
-    const fileSize = file.fileSize;
-    const fileType = mimeType.startsWith("image/") ? "image" : "document";
-
-    const mediaFileId = await ctx.db.insert("mediaFiles", {
+    const fileType = getMediaFileType(file.mimeType);
+    const mediaAsset = await insertCompletedMediaAsset(ctx, {
       collectionId: args.collectionId,
       organizationId: job.organizationId,
       storageId: args.storageId,
       fileName: file.fileName,
-      fileType,
-      fileSize,
-      mimeType,
-      mediaCategory: fileType === "image" ? "image" : "document",
+      fileSize: file.fileSize,
+      mimeType: file.mimeType,
       isPrimary: false,
       uploadedBy: userId,
-      uploadedAt: Date.now(),
-      uploadStatus: "completed",
+      forceThumbnail:
+        fileType === "image" && file.fileSize < MAX_SMALL_MEDIA_FILE_SIZE,
     });
-
-    if (fileType === "image" && fileSize < 50 * 1024 * 1024) {
-      await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
-        mediaId: mediaFileId,
-      });
-    }
+    const mediaFileId = mediaAsset.mediaId;
 
     const updatedFiles = [...mediaData.uploadedFiles];
     updatedFiles[fileIndex] = {

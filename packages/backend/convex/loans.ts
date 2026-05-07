@@ -10,6 +10,11 @@ import {
   mutation,
   query,
 } from "./_generated/server";
+import {
+  markCollectionActive,
+  markCollectionDeaccessioned,
+  markCollectionLoaned,
+} from "./utils/collectionLifecycle";
 import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
 import {
   getCurrentYear,
@@ -227,10 +232,9 @@ export const create = mutation({
           conditionOut: item.conditionOut,
         });
 
-        await ctx.db.patch(item.collectionId, {
-          status: "loaned",
-          lastModifiedBy: userId,
-          lastModifiedAt: Date.now(),
+        await markCollectionLoaned(ctx, {
+          collectionId: item.collectionId,
+          changedBy: userId,
         });
       }
     }
@@ -388,11 +392,9 @@ export const addItems = mutation({
         conditionOut: args.conditionOut,
       });
 
-      // Update collection status to loaned
-      await ctx.db.patch(collectionId, {
-        status: "loaned",
-        lastModifiedBy: userId,
-        lastModifiedAt: Date.now(),
+      await markCollectionLoaned(ctx, {
+        collectionId,
+        changedBy: userId,
       });
     }
 
@@ -434,10 +436,9 @@ export const removeItems = mutation({
       }
 
       // Update collection status back to active
-      await ctx.db.patch(loanItem.collectionId, {
-        status: "active",
-        lastModifiedBy: userId,
-        lastModifiedAt: Date.now(),
+      await markCollectionActive(ctx, {
+        collectionId: loanItem.collectionId,
+        changedBy: userId,
       });
 
       // Delete loan item
@@ -1252,10 +1253,9 @@ export const returnLoan = mutation({
     // Return each selected item
     const returnedItemIds: Id<"loanItems">[] = [];
     for (const item of itemsToReturn) {
-      await ctx.db.patch(item.collectionId, {
-        status: "active",
-        lastModifiedBy: userId,
-        lastModifiedAt: Date.now(),
+      await markCollectionActive(ctx, {
+        collectionId: item.collectionId,
+        changedBy: userId,
       });
 
       // Update condition in - always set it to mark item as returned
@@ -1411,11 +1411,10 @@ export const dispatch = mutation({
       .collect();
 
     for (const item of loanItems) {
-      await ctx.db.patch(item.collectionId, {
-        status: "loaned",
-        currentLocationId: undefined,
-        lastModifiedBy: userId,
-        lastModifiedAt: Date.now(),
+      await markCollectionLoaned(ctx, {
+        collectionId: item.collectionId,
+        changedBy: userId,
+        clearLocation: true,
       });
     }
 
@@ -1511,10 +1510,9 @@ export const cancel = mutation({
       .collect();
 
     for (const item of loanItems) {
-      await ctx.db.patch(item.collectionId, {
-        status: "active",
-        lastModifiedBy: userId,
-        lastModifiedAt: Date.now(),
+      await markCollectionActive(ctx, {
+        collectionId: item.collectionId,
+        changedBy: userId,
       });
     }
 
@@ -1621,20 +1619,18 @@ export const returnItem = mutation({
           });
 
           // Update collection status
-          await ctx.db.patch(args.collectionId, {
-            status: "deaccessioned",
-            lastModifiedBy: userId,
-            lastModifiedAt: Date.now(),
+          await markCollectionDeaccessioned(ctx, {
+            collectionId: args.collectionId,
+            changedBy: userId,
           });
         }
       }
     } else {
       // Outgoing loan being returned TO US.
       // Status should go back to "active".
-      await ctx.db.patch(args.collectionId, {
-        status: "active",
-        lastModifiedBy: userId,
-        lastModifiedAt: Date.now(),
+      await markCollectionActive(ctx, {
+        collectionId: args.collectionId,
+        changedBy: userId,
       });
     }
 
@@ -2019,10 +2015,9 @@ export const deleteAllLoans = mutation({
 
       for (const item of loanItems) {
         // Update collection status back to active
-        await ctx.db.patch(item.collectionId, {
-          status: "active",
-          lastModifiedBy: userId,
-          lastModifiedAt: Date.now(),
+        await markCollectionActive(ctx, {
+          collectionId: item.collectionId,
+          changedBy: userId,
         });
         updatedCollections++;
 
@@ -2462,10 +2457,9 @@ export const bulkCancel = mutation({
         .collect();
 
       for (const item of loanItems) {
-        await ctx.db.patch(item.collectionId, {
-          status: "active",
-          lastModifiedBy: userId,
-          lastModifiedAt: Date.now(),
+        await markCollectionActive(ctx, {
+          collectionId: item.collectionId,
+          changedBy: userId,
         });
       }
 

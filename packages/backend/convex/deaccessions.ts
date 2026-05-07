@@ -10,6 +10,11 @@ import {
   query,
 } from "./_generated/server";
 import {
+  applyCollectionDisposition,
+  canRestoreRejectedDisposition,
+  markCollectionActive,
+} from "./utils/collectionLifecycle";
+import {
   getCurrentYear,
   getNextYearBasedValue,
   padNumber,
@@ -48,28 +53,16 @@ async function restoreRejectedCollectionStatus(
     return;
   }
 
-  const rejectedAt = Date.now();
   const targetCollectionStatus = resolveTargetCollectionStatus(deaccession);
 
-  if (
-    collection.status !== targetCollectionStatus &&
-    collection.status !== "archived" &&
-    collection.status !== "deleted" &&
-    collection.status !== "deaccessioned"
-  ) {
+  if (!canRestoreRejectedDisposition(collection, targetCollectionStatus)) {
     return;
   }
 
-  await ctx.db.patch(deaccession.collectionId, {
-    status: "active",
-    archivedAt: undefined,
-    archivedBy: undefined,
-    archivedReason: undefined,
-    deletedAt: undefined,
-    deletedBy: undefined,
-    deletedReason: undefined,
-    lastModifiedBy: userId,
-    lastModifiedAt: rejectedAt,
+  await markCollectionActive(ctx, {
+    collectionId: deaccession.collectionId,
+    changedBy: userId,
+    clearDisposition: true,
   });
 }
 
@@ -78,43 +71,11 @@ async function applyApprovedCollectionStatus(
   deaccession: Doc<"deaccessions">,
   userId: Id<"users">,
 ) {
-  const approvedAt = Date.now();
-  const targetCollectionStatus = resolveTargetCollectionStatus(deaccession);
-
-  if (targetCollectionStatus === "archived") {
-    await ctx.db.patch(deaccession.collectionId, {
-      status: "archived",
-      archivedAt: approvedAt,
-      archivedBy: userId,
-      archivedReason: deaccession.reason,
-      deletedAt: undefined,
-      deletedBy: undefined,
-      deletedReason: undefined,
-      lastModifiedBy: userId,
-      lastModifiedAt: approvedAt,
-    });
-    return;
-  }
-
-  if (targetCollectionStatus === "deleted") {
-    await ctx.db.patch(deaccession.collectionId, {
-      status: "deleted",
-      deletedAt: approvedAt,
-      deletedBy: userId,
-      deletedReason: deaccession.reason,
-      archivedAt: undefined,
-      archivedBy: undefined,
-      archivedReason: undefined,
-      lastModifiedBy: userId,
-      lastModifiedAt: approvedAt,
-    });
-    return;
-  }
-
-  await ctx.db.patch(deaccession.collectionId, {
-    status: "deaccessioned",
-    lastModifiedBy: userId,
-    lastModifiedAt: approvedAt,
+  await applyCollectionDisposition(ctx, {
+    collectionId: deaccession.collectionId,
+    changedBy: userId,
+    targetStatus: resolveTargetCollectionStatus(deaccession),
+    reason: deaccession.reason,
   });
 }
 

@@ -1,53 +1,231 @@
-import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
-import type { Id } from "../convex/_generated/dataModel";
-import schema from "../convex/schema";
-
-import { modules } from "./testSetup";
-
-function authedForUser(
-  t: ReturnType<typeof convexTest>,
-  userId: Id<"users">,
-) {
-  return t.withIdentity({
-    subject: `${userId}|session-1`,
-    issuer: "https://example.test",
-  });
-}
+import {
+  authedForUser,
+  createConvexTest,
+  createOrgUserWithPermissions,
+} from "./testHarness";
 
 test("should create import job from CSV", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   expect(true).toBe(true);
 });
 
 test("should validate import field mapping", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   expect(true).toBe(true);
 });
 
 test("should process import batch", async () => {
-  const t = convexTest(schema, modules);
-  expect(true).toBe(true);
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.create"],
+    {
+      organizationName: "Import Test Museum",
+      slugPrefix: "import-test",
+      userEmailPrefix: "import-user",
+      userName: "Import Test User",
+      roleName: "Import Manager",
+      subscriptionTier: "pro",
+    },
+  );
+  const authed = authedForUser(t, userId);
+
+  const jobId = await authed.mutation(api.imports.createImportJob, {
+    organizationId,
+    type: "csv",
+    totalItems: 1,
+  });
+
+  const result = await authed.mutation(api.imports.importAccessionsBatch, {
+    organizationId,
+    jobId,
+    batchIndex: 0,
+    rows: [
+      {
+        accessionNumber: "IMP-001",
+        dateReceived: "2024-01-15",
+        source: "Donor",
+        method: "gift",
+        cost: "$1,250.50",
+        notes: "Imported row",
+      },
+    ],
+  });
+
+  expect(result).toEqual({ processed: 1, errors: [] });
+
+  const accessions = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("accessions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect();
+  });
+
+  expect(accessions).toHaveLength(1);
+  expect(accessions[0]?.method).toBe("gift");
+  expect(accessions[0]?.cost).toBe(1250.5);
 });
 
 test("should handle import errors gracefully", async () => {
-  const t = convexTest(schema, modules);
-  expect(true).toBe(true);
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.create"],
+    {
+      organizationName: "Import Test Museum",
+      slugPrefix: "import-test",
+      userEmailPrefix: "import-user",
+      userName: "Import Test User",
+      roleName: "Import Manager",
+      subscriptionTier: "pro",
+    },
+  );
+  const authed = authedForUser(t, userId);
+
+  const validation = await authed.mutation(
+    api.importValidation.validateAccessionImport,
+    {
+      organizationId,
+      rows: [
+        {
+          accessionNumber: "BAD-DATE",
+          dateReceived: "not-a-date",
+          source: "Donor",
+          method: "gift",
+        },
+      ],
+    },
+  );
+
+  expect(validation.isValid).toBe(false);
+  expect(validation.errors).toContainEqual(
+    expect.objectContaining({
+      field: "dateReceived",
+      message: "Invalid date format",
+      severity: "error",
+    }),
+  );
+
+  const jobId = await authed.mutation(api.imports.createImportJob, {
+    organizationId,
+    type: "csv",
+    totalItems: 1,
+  });
+
+  const result = await authed.mutation(api.imports.importAccessionsBatch, {
+    organizationId,
+    jobId,
+    batchIndex: 0,
+    rows: [
+      {
+        accessionNumber: "BAD-DATE",
+        dateReceived: "not-a-date",
+        source: "Donor",
+        method: "gift",
+      },
+    ],
+  });
+
+  expect(result.processed).toBe(0);
+  expect(result.errors).toEqual(["Row 2: Invalid date format"]);
+
+  const accessions = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("accessions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect();
+  });
+
+  expect(accessions).toHaveLength(0);
+});
+
+test("should import warning-only accession rows with normalized values", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.create"],
+    {
+      organizationName: "Import Test Museum",
+      slugPrefix: "import-test",
+      userEmailPrefix: "import-user",
+      userName: "Import Test User",
+      roleName: "Import Manager",
+      subscriptionTier: "pro",
+    },
+  );
+  const authed = authedForUser(t, userId);
+
+  const validation = await authed.mutation(
+    api.importValidation.validateAccessionImport,
+    {
+      organizationId,
+      rows: [
+        {
+          accessionNumber: "WARN-METHOD",
+          dateReceived: "2024-01-15",
+          source: "Donor",
+          method: "unexpected acquisition method",
+        },
+      ],
+    },
+  );
+
+  expect(validation.isValid).toBe(true);
+  expect(validation.warningCount).toBe(1);
+
+  const jobId = await authed.mutation(api.imports.createImportJob, {
+    organizationId,
+    type: "csv",
+    totalItems: 1,
+  });
+
+  const result = await authed.mutation(api.imports.importAccessionsBatch, {
+    organizationId,
+    jobId,
+    batchIndex: 0,
+    rows: [
+      {
+        accessionNumber: "WARN-METHOD",
+        dateReceived: "2024-01-15",
+        source: "Donor",
+        method: "unexpected acquisition method",
+      },
+    ],
+  });
+
+  expect(result).toEqual({ processed: 1, errors: [] });
+
+  const accessions = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("accessions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect();
+  });
+
+  expect(accessions).toHaveLength(1);
+  expect(accessions[0]?.method).toBe("other");
 });
 
 test("should track import progress", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   expect(true).toBe(true);
 });
 
 test("should rollback failed import", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
   expect(true).toBe(true);
 });
 
 test("getImportTemplate returns PastPerfect template", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
 
   const userId = await t.run(async (ctx) => {
     return await ctx.db.insert("users", {
@@ -71,7 +249,7 @@ test("getImportTemplate returns PastPerfect template", async () => {
 });
 
 test("getImportTemplate returns TMS template", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
 
   const userId = await t.run(async (ctx) => {
     return await ctx.db.insert("users", {
@@ -95,7 +273,7 @@ test("getImportTemplate returns TMS template", async () => {
 });
 
 test("listImportTemplates returns both PastPerfect and TMS templates", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
 
   const userId = await t.run(async (ctx) => {
     return await ctx.db.insert("users", {

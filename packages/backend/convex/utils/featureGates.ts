@@ -1,82 +1,27 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import {
+  type FeatureId,
+  type IntegrationId,
+  type ModuleId,
+  type SubscriptionTier,
+  getFeatureRequiredTier,
+  getTierLimits as getPolicyTierLimits,
+  hasFeatureTierAccess,
+  normalizeSubscriptionTier,
+} from "./featurePolicy";
 
-export type SubscriptionTier = "free" | "pro" | "enterprise";
-export type FeatureId =
-  | "loans"
-  | "exhibitions"
-  | "conservation"
-  | "reporting"
-  | "compliance"
-  | "public_portal"
-  | "installations";
-
-export type ModuleId =
-  | "library"
-  | "fine_art"
-  | "wine"
-  | "automotive"
-  | "natural_history"
-  | "archive"
-  | "accounts";
-
-export type IntegrationId = "library";
-
-type TierLimits = {
-  objects: number | null;
-  mediaBytes: number | null;
-  users: number | null;
-  exportsPerMonth: number | null;
-};
-
-const TIER_ORDER: Record<SubscriptionTier, number> = {
-  free: 0,
-  pro: 1,
-  enterprise: 2,
-};
-
-const FEATURE_REQUIREMENTS: Record<FeatureId, SubscriptionTier> = {
-  loans: "pro",
-  exhibitions: "pro",
-  conservation: "pro",
-  reporting: "pro",
-  public_portal: "pro",
-  installations: "pro",
-  compliance: "enterprise",
-};
-
-const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
-  free: {
-    objects: 100,
-    mediaBytes: 1 * 1024 * 1024 * 1024,
-    users: 3,
-    exportsPerMonth: 10,
-  },
-  pro: {
-    objects: 500,
-    mediaBytes: 10 * 1024 * 1024 * 1024,
-    users: 10,
-    exportsPerMonth: 100,
-  },
-  enterprise: {
-    objects: null,
-    mediaBytes: null,
-    users: null,
-    exportsPerMonth: null,
-  },
-};
+export type { FeatureId, IntegrationId, ModuleId, SubscriptionTier };
 
 function getTier(org: Doc<"organizations">): SubscriptionTier {
-  return org.subscriptionTier ?? "free";
+  return normalizeSubscriptionTier(org.subscriptionTier);
 }
 
-function hasTierAccess(
+function hasOrganizationFeatureAccess(
   org: Doc<"organizations">,
   featureId: FeatureId,
 ): boolean {
-  const tier = getTier(org);
-  const requiredTier = FEATURE_REQUIREMENTS[featureId];
-  return TIER_ORDER[tier] >= TIER_ORDER[requiredTier];
+  return hasFeatureTierAccess(getTier(org), featureId);
 }
 
 async function getOrganization(
@@ -96,7 +41,7 @@ export async function hasFeatureAccess(
   featureId: FeatureId,
 ) {
   const org = await getOrganization(ctx, organizationId);
-  return hasTierAccess(org, featureId);
+  return hasOrganizationFeatureAccess(org, featureId);
 }
 
 export async function requireFeatureAccess(
@@ -105,8 +50,8 @@ export async function requireFeatureAccess(
   featureId: FeatureId,
 ) {
   const org = await getOrganization(ctx, organizationId);
-  if (!hasTierAccess(org, featureId)) {
-    const requiredTier = FEATURE_REQUIREMENTS[featureId];
+  if (!hasOrganizationFeatureAccess(org, featureId)) {
+    const requiredTier = getFeatureRequiredTier(featureId);
     throw new Error(`Feature requires ${requiredTier} tier`);
   }
 }
@@ -160,7 +105,7 @@ export async function enforceObjectQuota(
   organizationId: Id<"organizations">,
 ) {
   const org = await getOrganization(ctx, organizationId);
-  const { objects } = TIER_LIMITS[getTier(org)];
+  const { objects } = getPolicyTierLimits(getTier(org));
   if (objects === null) return;
 
   const existing = await ctx.db
@@ -179,7 +124,7 @@ export async function enforceMediaQuota(
   incomingBytes: number,
 ) {
   const org = await getOrganization(ctx, organizationId);
-  const { mediaBytes } = TIER_LIMITS[getTier(org)];
+  const { mediaBytes } = getPolicyTierLimits(getTier(org));
   if (mediaBytes === null) return;
 
   const mediaFiles = await ctx.db
@@ -201,7 +146,7 @@ export async function enforceUserQuota(
   organizationId: Id<"organizations">,
 ) {
   const org = await getOrganization(ctx, organizationId);
-  const { users } = TIER_LIMITS[getTier(org)];
+  const { users } = getPolicyTierLimits(getTier(org));
   if (users === null) return;
 
   const members = await ctx.db
@@ -224,7 +169,7 @@ export async function enforceExportQuota(
   organizationId: Id<"organizations">,
 ) {
   const org = await getOrganization(ctx, organizationId);
-  const { exportsPerMonth } = TIER_LIMITS[getTier(org)];
+  const { exportsPerMonth } = getPolicyTierLimits(getTier(org));
   if (exportsPerMonth === null) return;
 
   const periodStart = getMonthStart(Date.now());
@@ -266,5 +211,5 @@ export async function recordExportUsage(
 }
 
 export function getTierLimits(tier: SubscriptionTier) {
-  return TIER_LIMITS[tier];
+  return getPolicyTierLimits(tier);
 }

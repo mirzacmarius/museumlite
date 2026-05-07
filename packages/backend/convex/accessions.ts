@@ -12,6 +12,7 @@ import {
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
 import { batchLookup } from "./utils/batchLookup";
+import { markCollectionDeaccessioned } from "./utils/collectionLifecycle";
 import { enforceMediaQuota } from "./utils/featureGates";
 import {
   accessionDraftMediaValidator,
@@ -1876,11 +1877,11 @@ export const createCollectionFromRejectedAccession = internalMutation({
     const rejectedAt = accession.approvedAt ?? Date.now();
 
     if (accession.collectionId) {
-      await ctx.db.patch(accession.collectionId, {
-        status: "deaccessioned",
+      await markCollectionDeaccessioned(ctx, {
+        collectionId: accession.collectionId,
+        changedBy: args.rejectedBy,
+        changedAt: rejectedAt,
         displayStatus: REJECTED_OBJECT_DISPLAY_STATUS,
-        lastModifiedBy: args.rejectedBy,
-        lastModifiedAt: rejectedAt,
       });
       return accession.collectionId;
     }

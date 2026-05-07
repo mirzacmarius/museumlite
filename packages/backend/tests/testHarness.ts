@@ -1,0 +1,119 @@
+import { convexTest } from "convex-test";
+import type { Id } from "../convex/_generated/dataModel";
+import schema from "../convex/schema";
+
+import { modules } from "./testSetup";
+
+export type ConvexTest = ReturnType<typeof convexTest>;
+
+export type SubscriptionTier = "free" | "pro" | "enterprise";
+
+export interface TestOrgUserOptions {
+  organizationName?: string;
+  slugPrefix?: string;
+  userName?: string;
+  userEmailPrefix?: string;
+  roleName?: string;
+  subscriptionTier?: SubscriptionTier;
+  enabledModules?: Array<
+    | "library"
+    | "fine_art"
+    | "wine"
+    | "automotive"
+    | "natural_history"
+    | "archive"
+    | "accounts"
+  >;
+  permissionCategoryFallback?: string;
+}
+
+export function createConvexTest() {
+  return convexTest(schema, modules);
+}
+
+export function authedForUser(
+  t: ConvexTest,
+  userId: Id<"users">,
+  sessionId = "session-1",
+) {
+  return t.withIdentity({
+    subject: `${userId}|${sessionId}`,
+    issuer: "https://example.test",
+  });
+}
+
+export async function createOrgUserWithPermissions(
+  t: ConvexTest,
+  permissionNames: string[],
+  options: TestOrgUserOptions = {},
+) {
+  return t.run(async (ctx) => {
+    const slugPrefix = options.slugPrefix ?? "test-museum";
+    const organizationId = await ctx.db.insert("organizations", {
+      name: options.organizationName ?? "Test Museum",
+      slug: `${slugPrefix}-${Math.random().toString(36).slice(2, 8)}`,
+      type: "museum",
+      subscriptionTier: options.subscriptionTier,
+      settings:
+        options.enabledModules !== undefined
+          ? { enabledModules: options.enabledModules }
+          : undefined,
+    });
+
+    const userEmailPrefix = options.userEmailPrefix ?? "user";
+    const userId = await ctx.db.insert("users", {
+      email: `${userEmailPrefix}-${Math.random().toString(36).slice(2, 8)}@example.com`,
+      name: options.userName ?? "Test User",
+    });
+
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: options.roleName ?? "Test Role",
+      isSystemRole: false,
+    });
+
+    for (const permissionName of permissionNames) {
+      const permissionId = await ctx.db.insert("permissions", {
+        name: permissionName,
+        category:
+          permissionName.split(".")[0] ??
+          options.permissionCategoryFallback ??
+          "collections",
+      });
+
+      await ctx.db.insert("rolePermissions", {
+        roleId,
+        permissionId,
+      });
+    }
+
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+
+    return { organizationId, userId, roleId };
+  });
+}
+
+export async function createOrgUserCollectionWithPermissions(
+  t: ConvexTest,
+  permissionNames: string[],
+  options: TestOrgUserOptions = {},
+) {
+  const setup = await createOrgUserWithPermissions(t, permissionNames, options);
+  const collectionId = await t.run(async (ctx) => {
+    return await ctx.db.insert("collections", {
+      organizationId: setup.organizationId,
+      accessionNumber: `OBJ-${Math.random().toString(36).slice(2, 8)}`,
+      title: "Collection Object",
+      status: "active",
+      catalogedBy: setup.userId,
+      catalogedAt: Date.now(),
+    });
+  });
+
+  return { ...setup, collectionId };
+}

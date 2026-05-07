@@ -4,6 +4,11 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, query } from "./_generated/server";
+import {
+  buildAccountCreateDocument,
+  buildAccountUpdatePatch,
+  validateAccountProfileForCreate,
+} from "./utils/accountProfile";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { getNextGlobalValue, padNumber } from "./utils/numberGenerator";
 import { requirePermission } from "./utils/permissions";
@@ -240,71 +245,20 @@ export const create = mutation({
     await requireModuleEnabled(ctx, args.organizationId, "accounts");
     await requirePermission(ctx, args.organizationId, "accounts.write");
 
-    // Validation based on account type
-    if (args.accountType === "patron") {
-      if (!args.firstName?.trim() || !args.lastName?.trim()) {
-        throw new Error(
-          "First name and last name are required for patron accounts",
-        );
-      }
-    } else {
-      if (!args.businessName?.trim()) {
-        throw new Error("Business name is required for non-patron accounts");
-      }
-    }
+    validateAccountProfileForCreate(args);
 
     const accountNumber = await generateAccountNumber(ctx, args.organizationId);
     const holderType = args.holderType ?? "organization";
+    const now = Date.now();
 
-    const accountId = await ctx.db.insert("accounts", {
-      organizationId: args.organizationId,
-      accountNumber,
-      accountType: args.accountType,
-      holderType,
-
-      // Business/Organization info
-      businessName: args.businessName?.trim() || undefined,
-      taxId: args.taxId?.trim() || undefined,
-      contactPerson: args.contactPerson?.trim() || undefined,
-      contactPhone: args.contactPhone?.trim() || undefined,
-      contactEmail: args.contactEmail?.trim() || undefined,
-
-      // Personal info
-      firstName: args.firstName?.trim() || undefined,
-      lastName: args.lastName?.trim() || undefined,
-      dateOfBirth: args.dateOfBirth,
-
-      // Contact info
-      phone: args.phone?.trim() || undefined,
-      email: args.email?.trim() || undefined,
-
-      // Address fields
-      address: args.address?.trim() || undefined,
-      address2: args.address2?.trim() || undefined,
-      zipCode: args.zipCode?.trim() || undefined,
-      city: args.city?.trim() || undefined,
-      country: args.country?.trim() || undefined,
-      structuredAddress: args.structuredAddress,
-
-      // Library-specific fields
-      cardNumber: args.cardNumber?.trim() || undefined,
-      pin: args.pin,
-      membershipTypeId: args.membershipTypeId,
-      membershipType: args.membershipType?.trim() || undefined,
-      registrationDate: args.registrationDate,
-      expirationDate: args.expirationDate,
-      status: args.status,
-      borrowingLimit: args.borrowingLimit,
-      holdLimit: args.holdLimit,
-      fineBalance: args.accountType === "patron" ? 0 : undefined,
-      preferredBranch: args.preferredBranch,
-      notificationPreferences: args.notificationPreferences,
-      totalCheckouts: args.accountType === "patron" ? 0 : undefined,
-
-      notes: args.notes?.trim() || undefined,
-      createdBy: userId,
-      createdAt: Date.now(),
-    });
+    const accountId = await ctx.db.insert(
+      "accounts",
+      buildAccountCreateDocument(args, {
+        accountNumber,
+        createdBy: userId,
+        createdAt: now,
+      }),
+    );
 
     // Associate roles with account if provided
     if (args.roleIds && args.roleIds.length > 0) {
@@ -312,7 +266,7 @@ export const create = mutation({
         await ctx.db.insert("accountRoles", {
           accountId,
           roleId,
-          addedAt: Date.now(),
+          addedAt: now,
           addedBy: userId,
         });
       }
@@ -392,66 +346,11 @@ export const update = mutation({
     await requireModuleEnabled(ctx, account.organizationId, "accounts");
     await requirePermission(ctx, account.organizationId, "accounts.write");
 
-    const updates: Record<string, unknown> = {
+    const now = Date.now();
+    const updates = buildAccountUpdatePatch(args, {
       lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
-    };
-
-    if (args.accountType !== undefined) updates.accountType = args.accountType;
-    if (args.holderType !== undefined) updates.holderType = args.holderType;
-    if (args.businessName !== undefined)
-      updates.businessName = args.businessName.trim() || undefined;
-    if (args.taxId !== undefined)
-      updates.taxId = args.taxId.trim() || undefined;
-    if (args.contactPerson !== undefined)
-      updates.contactPerson = args.contactPerson.trim() || undefined;
-    if (args.contactPhone !== undefined)
-      updates.contactPhone = args.contactPhone.trim() || undefined;
-    if (args.contactEmail !== undefined)
-      updates.contactEmail = args.contactEmail.trim() || undefined;
-    if (args.firstName !== undefined)
-      updates.firstName = args.firstName.trim() || undefined;
-    if (args.lastName !== undefined)
-      updates.lastName = args.lastName.trim() || undefined;
-    if (args.dateOfBirth !== undefined) updates.dateOfBirth = args.dateOfBirth;
-    if (args.phone !== undefined)
-      updates.phone = args.phone.trim() || undefined;
-    if (args.email !== undefined)
-      updates.email = args.email.trim() || undefined;
-    if (args.address !== undefined)
-      updates.address = args.address.trim() || undefined;
-    if (args.address2 !== undefined)
-      updates.address2 = args.address2.trim() || undefined;
-    if (args.zipCode !== undefined)
-      updates.zipCode = args.zipCode.trim() || undefined;
-    if (args.city !== undefined) updates.city = args.city.trim() || undefined;
-    if (args.country !== undefined)
-      updates.country = args.country.trim() || undefined;
-    if (args.structuredAddress !== undefined)
-      updates.structuredAddress = args.structuredAddress;
-    if (args.cardNumber !== undefined)
-      updates.cardNumber = args.cardNumber.trim() || undefined;
-    if (args.pin !== undefined) updates.pin = args.pin;
-    if (args.membershipTypeId !== undefined)
-      updates.membershipTypeId = args.membershipTypeId;
-    if (args.membershipType !== undefined)
-      updates.membershipType = args.membershipType.trim() || undefined;
-    if (args.registrationDate !== undefined)
-      updates.registrationDate = args.registrationDate;
-    if (args.expirationDate !== undefined)
-      updates.expirationDate = args.expirationDate;
-    if (args.status !== undefined) updates.status = args.status;
-    if (args.blockReason !== undefined)
-      updates.blockReason = args.blockReason.trim() || undefined;
-    if (args.borrowingLimit !== undefined)
-      updates.borrowingLimit = args.borrowingLimit;
-    if (args.holdLimit !== undefined) updates.holdLimit = args.holdLimit;
-    if (args.preferredBranch !== undefined)
-      updates.preferredBranch = args.preferredBranch;
-    if (args.notificationPreferences !== undefined)
-      updates.notificationPreferences = args.notificationPreferences;
-    if (args.notes !== undefined)
-      updates.notes = args.notes.trim() || undefined;
+      lastModifiedAt: now,
+    });
 
     await ctx.db.patch(args.accountId, updates);
 
@@ -469,7 +368,7 @@ export const update = mutation({
         await ctx.db.insert("accountRoles", {
           accountId: args.accountId,
           roleId,
-          addedAt: Date.now(),
+          addedAt: now,
           addedBy: userId,
         });
       }

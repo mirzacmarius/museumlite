@@ -5,6 +5,7 @@ import { mutation, query } from "./_generated/server";
 import { collectionsToDublinCore, toDublinCoreXML } from "./utils/dublinCore";
 import { enforceExportQuota, recordExportUsage } from "./utils/featureGates";
 import { toJSON, toXML } from "./utils/formatConverters";
+import { normalizeAccessionImportRow } from "./utils/importRows";
 import {
   type FieldMapping,
   type ImportTemplate,
@@ -19,34 +20,7 @@ import {
   toSpectrumXML,
 } from "./utils/spectrum";
 
-type AccessionMethod =
-  | "purchase"
-  | "gift"
-  | "loan"
-  | "transfer"
-  | "donation"
-  | "other"
-  | "bequest";
-
-const VALID_METHODS: AccessionMethod[] = [
-  "purchase",
-  "gift",
-  "loan",
-  "transfer",
-  "donation",
-  "other",
-  "bequest",
-];
-
 const MAX_LOCATION_CODE_LENGTH = 50;
-
-function parseMethod(value: string): AccessionMethod {
-  const normalized = value.toLowerCase().trim();
-  if (VALID_METHODS.includes(normalized as AccessionMethod)) {
-    return normalized as AccessionMethod;
-  }
-  return "other";
-}
 
 function parseDate(value: string): number {
   const parsed = Date.parse(value);
@@ -258,23 +232,28 @@ export const importAccessionsBatch = mutation({
       const rowNum = args.batchIndex * 50 + i + 2;
 
       try {
-        if (!row.source || row.source.trim() === "") {
-          errors.push(`Row ${rowNum}: Source is required`);
+        const normalizedRow = normalizeAccessionImportRow(row, rowNum);
+        const rowErrors = normalizedRow.issues.filter(
+          (issue) => issue.severity === "error",
+        );
+
+        if (rowErrors.length > 0 || normalizedRow.normalized === null) {
+          errors.push(
+            ...rowErrors.map((issue) => `Row ${rowNum}: ${issue.message}`),
+          );
           continue;
         }
 
-        const dateReceived = parseDate(row.dateReceived);
-        const method = parseMethod(row.method);
-        const cost = parseCost(row.cost || "");
-
         await ctx.db.insert("accessions", {
           organizationId: args.organizationId,
-          accessionNumber: row.accessionNumber || `IMP-${Date.now()}-${i}`,
-          dateReceived,
-          source: row.source.trim(),
-          method,
-          cost,
-          notes: row.notes?.trim() || undefined,
+          accessionNumber:
+            normalizedRow.normalized.accessionNumber ??
+            `IMP-${Date.now()}-${i}`,
+          dateReceived: normalizedRow.normalized.dateReceived,
+          source: normalizedRow.normalized.source,
+          method: normalizedRow.normalized.method,
+          cost: normalizedRow.normalized.cost,
+          notes: normalizedRow.normalized.notes,
           status: "pending",
           workflowStep: 0,
           workflowHistory: [

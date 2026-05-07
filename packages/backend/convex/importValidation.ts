@@ -1,24 +1,18 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
+import {
+  type AccessionImportRow,
+  type ValidationIssue,
+  type ValidationSeverity,
+  normalizeAccessionImportRow,
+} from "./utils/importRows";
 import { requirePermission } from "./utils/permissions";
-
-/**
- * Validation error severity levels
- */
-type ValidationSeverity = "error" | "warning" | "info";
 
 /**
  * Validation error structure
  */
-interface ValidationError {
-  row: number;
-  field: string;
-  message: string;
-  severity: ValidationSeverity;
-  value?: string;
-}
+type ValidationError = ValidationIssue;
 
 /**
  * Validation report structure
@@ -36,15 +30,6 @@ interface ValidationReport {
 /**
  * Accession import row structure
  */
-interface AccessionImportRow {
-  accessionNumber?: string;
-  dateReceived: string;
-  source: string;
-  method: string;
-  cost?: string;
-  notes?: string;
-}
-
 /**
  * Collection import row structure
  */
@@ -61,128 +46,13 @@ interface CollectionImportRow {
 }
 
 /**
- * Valid accession methods
- */
-const VALID_METHODS = [
-  "purchase",
-  "gift",
-  "loan",
-  "transfer",
-  "donation",
-  "other",
-  "bequest",
-];
-
-/**
  * Validate a single accession row
  */
 function validateAccessionRow(
   row: AccessionImportRow,
   rowNumber: number,
 ): ValidationError[] {
-  const errors: ValidationError[] = [];
-
-  // Required field: source
-  if (!row.source || row.source.trim() === "") {
-    errors.push({
-      row: rowNumber,
-      field: "source",
-      message: "Source is required",
-      severity: "error",
-      value: row.source,
-    });
-  }
-
-  // Required field: dateReceived
-  if (!row.dateReceived || row.dateReceived.trim() === "") {
-    errors.push({
-      row: rowNumber,
-      field: "dateReceived",
-      message: "Date received is required",
-      severity: "error",
-      value: row.dateReceived,
-    });
-  } else {
-    // Validate date format
-    const parsed = Date.parse(row.dateReceived);
-    if (Number.isNaN(parsed)) {
-      errors.push({
-        row: rowNumber,
-        field: "dateReceived",
-        message: "Invalid date format",
-        severity: "error",
-        value: row.dateReceived,
-      });
-    } else {
-      // Warn about future dates
-      if (parsed > Date.now()) {
-        errors.push({
-          row: rowNumber,
-          field: "dateReceived",
-          message: "Date is in the future",
-          severity: "warning",
-          value: row.dateReceived,
-        });
-      }
-    }
-  }
-
-  // Validate method
-  if (!row.method || row.method.trim() === "") {
-    errors.push({
-      row: rowNumber,
-      field: "method",
-      message: "Method is required",
-      severity: "error",
-      value: row.method,
-    });
-  } else {
-    const normalized = row.method.toLowerCase().trim();
-    if (!VALID_METHODS.includes(normalized)) {
-      errors.push({
-        row: rowNumber,
-        field: "method",
-        message: `Invalid method. Must be one of: ${VALID_METHODS.join(", ")}`,
-        severity: "warning",
-        value: row.method,
-      });
-    }
-  }
-
-  // Validate cost (optional but must be valid number if provided)
-  if (row.cost && row.cost.trim() !== "") {
-    const cleaned = row.cost.replace(/[^0-9.-]/g, "");
-    const num = Number.parseFloat(cleaned);
-    if (Number.isNaN(num)) {
-      errors.push({
-        row: rowNumber,
-        field: "cost",
-        message: "Cost must be a valid number",
-        severity: "error",
-        value: row.cost,
-      });
-    } else if (num < 0) {
-      errors.push({
-        row: rowNumber,
-        field: "cost",
-        message: "Cost cannot be negative",
-        severity: "warning",
-        value: row.cost,
-      });
-    }
-  }
-
-  // Info: suggest accession number format if not provided
-  if (!row.accessionNumber || row.accessionNumber.trim() === "") {
-    errors.push({
-      row: rowNumber,
-      field: "accessionNumber",
-      message: "Accession number will be auto-generated",
-      severity: "info",
-    });
-  }
-
-  return errors;
+  return normalizeAccessionImportRow(row, rowNumber).issues;
 }
 
 /**
