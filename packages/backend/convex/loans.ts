@@ -24,6 +24,7 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { getWorkflowConfig } from "./utils/workflowConfigs";
 import {
   prepareWorkflowStepAdvance,
   recordWorkflowStepAdvance,
@@ -95,13 +96,11 @@ export const create = mutation({
     }
 
     // Check for workflow config to set up workflow tracking
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "loan"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      args.organizationId,
+      "loan",
+    );
     const workflowState = resolveWorkflowStepState(
       workflowConfig?.steps,
       undefined,
@@ -825,13 +824,11 @@ export const approve = mutation({
       throw new Error("Loan is not pending");
     }
 
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", loan.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "loan"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      loan.organizationId,
+      "loan",
+    );
 
     if (workflowConfig) {
       const workflowState = resolveWorkflowStepState(
@@ -1074,13 +1071,11 @@ export const reject = mutation({
       throw new Error("Loan is not pending approval");
     }
 
-    const workflowConfig = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", loan.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), "loan"))
-      .first();
+    const workflowConfig = await getWorkflowConfig(
+      ctx,
+      loan.organizationId,
+      "loan",
+    );
     const workflowState = resolveWorkflowStepState(
       workflowConfig?.steps,
       loan.workflowStep,
@@ -2251,13 +2246,11 @@ export const bulkApprove = mutation({
       }
 
       // Check workflow config
-      const workflowConfig = await ctx.db
-        .query("workflowConfigs")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", loan.organizationId),
-        )
-        .filter((q) => q.eq(q.field("workflowType"), "loan"))
-        .first();
+      const workflowConfig = await getWorkflowConfig(
+        ctx,
+        loan.organizationId,
+        "loan",
+      );
 
       if (workflowConfig) {
         const workflowState = resolveWorkflowStepState(
