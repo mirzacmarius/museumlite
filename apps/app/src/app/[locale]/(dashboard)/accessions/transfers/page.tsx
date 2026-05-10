@@ -2,6 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { usePermissions } from "@/components/permission-gate";
+import { AccessionsPageSkeleton } from "../accessions-page-skeleton";
 import { TransfersBoard } from "../transfers-board";
 
 export default function AccessionTransfersPage() {
@@ -10,9 +11,11 @@ export default function AccessionTransfersPage() {
 
   if (isLoading || permissionsLoading) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading transfers...</p>
-      </div>
+      <AccessionsPageSkeleton
+        actionsCount={1}
+        showWorkbenchNav={true}
+        statsCount={5}
+      />
     );
   }
 

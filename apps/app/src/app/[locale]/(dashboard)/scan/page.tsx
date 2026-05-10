@@ -21,6 +21,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ScanPageSkeleton } from "./scan-page-skeleton";
 
 interface ScanHistoryItem {
   id: string;
@@ -149,11 +150,7 @@ export default function ScanPage() {
   }, [currentScan]);
 
   if (isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">{common("loading")}</p>
-      </div>
-    );
+    return <ScanPageSkeleton />;
   }
 
   if (!organizations || organizations.length === 0) {

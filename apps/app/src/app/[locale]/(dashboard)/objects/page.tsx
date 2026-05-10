@@ -47,6 +47,7 @@ import { ObjectAppliedFilters } from "./_components/object-applied-filters";
 import { ObjectFiltersDropdown } from "./_components/object-filters-dropdown";
 import { ObjectGridView } from "./_components/object-grid-view";
 import type { ViewMode } from "./_components/view-toggle";
+import { ObjectCatalogSkeleton, ObjectCatalogTableSkeleton } from "./loading";
 
 type CollectionListItem = FunctionReturnType<
   typeof api.collections.list
@@ -69,11 +70,7 @@ export default function CollectionsPage() {
   }, [currentOrganizationId, exportObjects]);
 
   if (isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">{common("loading")}</p>
-      </div>
-    );
+    return <ObjectCatalogSkeleton />;
   }
 
   if (!organizations || organizations.length === 0) {
@@ -626,11 +623,7 @@ function CollectionList({
   }, [collectionsStatus, onLoadMore]);
 
   if (collectionsStatus === "LoadingFirstPage" && collections.length === 0) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">{common("loading")}</p>
-      </div>
-    );
+    return <ObjectCatalogTableSkeleton />;
   }
 
   if (collections.length === 0) {

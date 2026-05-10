@@ -31,7 +31,7 @@ export function AccessionsPageSkeleton({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="h-8 w-56 animate-pulse rounded-full bg-muted/60" />
+          <div className="h-8 w-64 animate-pulse rounded-md bg-muted/60" />
           {actionPlaceholders.slice(0, actionsCount).map((id) => (
             <div
               key={id}
