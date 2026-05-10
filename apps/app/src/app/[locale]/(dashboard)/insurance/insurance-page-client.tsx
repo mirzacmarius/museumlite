@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  DashboardListPageSkeleton,
+  TableRowsSkeleton,
+} from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
@@ -10,7 +14,13 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@v1/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@v1/ui/dialog";
 import { EmptyState } from "@v1/ui/empty-state";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Input } from "@v1/ui/input";
@@ -37,8 +47,20 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-type PolicyStatus = "all" | "active" | "pending" | "expired" | "cancelled" | "suspended";
-type PolicyType = "all" | "blanket" | "scheduled" | "exhibition" | "transit" | "loan";
+type PolicyStatus =
+  | "all"
+  | "active"
+  | "pending"
+  | "expired"
+  | "cancelled"
+  | "suspended";
+type PolicyType =
+  | "all"
+  | "blanket"
+  | "scheduled"
+  | "exhibition"
+  | "transit"
+  | "loan";
 type ClaimStatus =
   | "all"
   | "draft"
@@ -144,15 +166,21 @@ export function InsurancePageClient() {
   const claims = listClaims?.page ?? [];
 
   const policyOptions = useMemo(
-    () => policies.map((p) => ({ label: `${p.policyNumber} · ${p.carrier}`, value: p._id })),
+    () =>
+      policies.map((p) => ({
+        label: `${p.policyNumber} · ${p.carrier}`,
+        value: p._id,
+      })),
     [policies],
   );
 
   if (isLoading) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
+      <DashboardListPageSkeleton
+        actionsCount={2}
+        filtersCount={2}
+        layout="list"
+      />
     );
   }
 
@@ -196,7 +224,10 @@ export function InsurancePageClient() {
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <PermissionGate permission="organization.manage_settings">
-                  <Dialog open={policyDialogOpen} onOpenChange={setPolicyDialogOpen}>
+                  <Dialog
+                    open={policyDialogOpen}
+                    onOpenChange={setPolicyDialogOpen}
+                  >
                     <DialogTrigger asChild>
                       <Button variant="outline">
                         <Plus className="mr-2 h-4 w-4" />
@@ -208,14 +239,20 @@ export function InsurancePageClient() {
                         <DialogTitle>New Insurance Policy</DialogTitle>
                       </DialogHeader>
                       <PolicyForm
-                        organizationId={currentOrganizationId as Id<"organizations">}
+                        organizationId={
+                          currentOrganizationId as Id<"organizations">
+                        }
                         onSubmit={async (payload) => {
                           try {
                             await createPolicy(payload);
                             toast.success("Policy created");
                             setPolicyDialogOpen(false);
                           } catch (err) {
-                            toast.error(err instanceof Error ? err.message : "Failed to create policy");
+                            toast.error(
+                              err instanceof Error
+                                ? err.message
+                                : "Failed to create policy",
+                            );
                           }
                         }}
                       />
@@ -223,7 +260,10 @@ export function InsurancePageClient() {
                   </Dialog>
                 </PermissionGate>
                 <PermissionGate permission="organization.manage_settings">
-                  <Dialog open={claimDialogOpen} onOpenChange={setClaimDialogOpen}>
+                  <Dialog
+                    open={claimDialogOpen}
+                    onOpenChange={setClaimDialogOpen}
+                  >
                     <DialogTrigger asChild>
                       <Button>
                         <Shield className="mr-2 h-4 w-4" />
@@ -235,7 +275,9 @@ export function InsurancePageClient() {
                         <DialogTitle>New Insurance Claim</DialogTitle>
                       </DialogHeader>
                       <ClaimForm
-                        organizationId={currentOrganizationId as Id<"organizations">}
+                        organizationId={
+                          currentOrganizationId as Id<"organizations">
+                        }
                         policyOptions={policyOptions}
                         onSubmit={async (payload) => {
                           try {
@@ -243,7 +285,11 @@ export function InsurancePageClient() {
                             toast.success("Claim created");
                             setClaimDialogOpen(false);
                           } catch (err) {
-                            toast.error(err instanceof Error ? err.message : "Failed to create claim");
+                            toast.error(
+                              err instanceof Error
+                                ? err.message
+                                : "Failed to create claim",
+                            );
                           }
                         }}
                       />
@@ -258,7 +304,12 @@ export function InsurancePageClient() {
             </div>
 
             <div className="p-6">
-              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "policies" | "claims")}>
+              <Tabs
+                value={activeTab}
+                onValueChange={(value) =>
+                  setActiveTab(value as "policies" | "claims")
+                }
+              >
                 <TabsList className="mb-6">
                   <TabsTrigger value="policies">Policies</TabsTrigger>
                   <TabsTrigger value="claims">Claims</TabsTrigger>
@@ -278,7 +329,9 @@ export function InsurancePageClient() {
                     <div className="flex gap-2">
                       <Select
                         value={policyStatus}
-                        onValueChange={(value) => setPolicyStatus(value as PolicyStatus)}
+                        onValueChange={(value) =>
+                          setPolicyStatus(value as PolicyStatus)
+                        }
                       >
                         <SelectTrigger className="w-[160px]">
                           <SelectValue placeholder="Status" />
@@ -293,7 +346,9 @@ export function InsurancePageClient() {
                       </Select>
                       <Select
                         value={policyType}
-                        onValueChange={(value) => setPolicyType(value as PolicyType)}
+                        onValueChange={(value) =>
+                          setPolicyType(value as PolicyType)
+                        }
                       >
                         <SelectTrigger className="w-[160px]">
                           <SelectValue placeholder="Type" />
@@ -310,9 +365,7 @@ export function InsurancePageClient() {
                   </div>
 
                   {listPolicies === undefined ? (
-                    <div className="flex h-48 items-center justify-center">
-                      <p className="text-muted-foreground">Loading policies...</p>
-                    </div>
+                    <TableRowsSkeleton count={6} />
                   ) : policies.length === 0 ? (
                     <EmptyState
                       title="No policies yet"
@@ -330,7 +383,9 @@ export function InsurancePageClient() {
                           <TableHead>Effective</TableHead>
                           <TableHead>Expires</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Coverages</TableHead>
+                          <TableHead className="text-right">
+                            Coverages
+                          </TableHead>
                           <TableHead className="text-right">Claims</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -341,22 +396,45 @@ export function InsurancePageClient() {
                               {policy.policyNumber}
                             </TableCell>
                             <TableCell>{policy.carrier}</TableCell>
-                            <TableCell className="capitalize">{policy.policyType}</TableCell>
-                            <TableCell>
-                              {formatCurrency(policy.coverageAmount, locale, "USD")}
+                            <TableCell className="capitalize">
+                              {policy.policyType}
                             </TableCell>
-                            <TableCell>{formatDate(new Date(policy.effectiveDate), locale)}</TableCell>
-                            <TableCell>{formatDate(new Date(policy.expirationDate), locale)}</TableCell>
+                            <TableCell>
+                              {formatCurrency(
+                                policy.coverageAmount,
+                                locale,
+                                "USD",
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {formatDate(
+                                new Date(policy.effectiveDate),
+                                locale,
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {formatDate(
+                                new Date(policy.expirationDate),
+                                locale,
+                              )}
+                            </TableCell>
                             <TableCell>
                               <Badge
                                 variant="outline"
-                                className={policyStatusColor[policy.status] ?? "border-border text-muted-foreground"}
+                                className={
+                                  policyStatusColor[policy.status] ??
+                                  "border-border text-muted-foreground"
+                                }
                               >
                                 {policy.status.replace("_", " ")}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right">{policy.coverageCount}</TableCell>
-                            <TableCell className="text-right">{policy.claimsCount}</TableCell>
+                            <TableCell className="text-right">
+                              {policy.coverageCount}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {policy.claimsCount}
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -377,7 +455,9 @@ export function InsurancePageClient() {
                     </div>
                     <Select
                       value={claimStatus}
-                      onValueChange={(value) => setClaimStatus(value as ClaimStatus)}
+                      onValueChange={(value) =>
+                        setClaimStatus(value as ClaimStatus)
+                      }
                     >
                       <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Status" />
@@ -393,9 +473,7 @@ export function InsurancePageClient() {
                   </div>
 
                   {listClaims === undefined ? (
-                    <div className="flex h-48 items-center justify-center">
-                      <p className="text-muted-foreground">Loading claims...</p>
-                    </div>
+                    <TableRowsSkeleton count={6} />
                   ) : claims.length === 0 ? (
                     <EmptyState
                       title="No claims yet"
@@ -417,22 +495,35 @@ export function InsurancePageClient() {
                       <TableBody>
                         {claims.map((claim) => (
                           <TableRow key={claim._id}>
-                            <TableCell className="font-medium">{claim.claimNumber}</TableCell>
+                            <TableCell className="font-medium">
+                              {claim.claimNumber}
+                            </TableCell>
                             <TableCell>
-                              <div className="text-xs text-muted-foreground">{claim.carrier}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {claim.carrier}
+                              </div>
                               <div>{claim.policyNumber}</div>
                             </TableCell>
                             <TableCell className="capitalize">
                               {claim.incidentType.replace("_", " ")}
                             </TableCell>
-                            <TableCell>{formatDate(new Date(claim.incidentDate), locale)}</TableCell>
                             <TableCell>
-                              {formatCurrency(claim.claimedAmount, locale, "USD")}
+                              {formatDate(new Date(claim.incidentDate), locale)}
+                            </TableCell>
+                            <TableCell>
+                              {formatCurrency(
+                                claim.claimedAmount,
+                                locale,
+                                "USD",
+                              )}
                             </TableCell>
                             <TableCell>
                               <Badge
                                 variant="outline"
-                                className={claimStatusColor[claim.status] ?? "border-border text-muted-foreground"}
+                                className={
+                                  claimStatusColor[claim.status] ??
+                                  "border-border text-muted-foreground"
+                                }
                               >
                                 {claim.status.replace("_", " ")}
                               </Badge>
@@ -472,7 +563,12 @@ function PolicyForm({
   const [form, setForm] = useState({
     policyNumber: "",
     carrier: "",
-    policyType: "blanket" as "blanket" | "scheduled" | "exhibition" | "transit" | "loan",
+    policyType: "blanket" as
+      | "blanket"
+      | "scheduled"
+      | "exhibition"
+      | "transit"
+      | "loan",
     coverageAmount: "",
     deductible: "",
     premiumAmount: "",
@@ -483,7 +579,13 @@ function PolicyForm({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!form.policyNumber || !form.carrier || !form.coverageAmount || !form.effectiveDate || !form.expirationDate) {
+    if (
+      !form.policyNumber ||
+      !form.carrier ||
+      !form.coverageAmount ||
+      !form.effectiveDate ||
+      !form.expirationDate
+    ) {
       toast.error("Please fill all required fields.");
       return;
     }
@@ -503,8 +605,12 @@ function PolicyForm({
         carrier: form.carrier.trim(),
         policyType: form.policyType,
         coverageAmount: Number.parseFloat(form.coverageAmount),
-        deductible: form.deductible ? Number.parseFloat(form.deductible) : undefined,
-        premiumAmount: form.premiumAmount ? Number.parseFloat(form.premiumAmount) : undefined,
+        deductible: form.deductible
+          ? Number.parseFloat(form.deductible)
+          : undefined,
+        premiumAmount: form.premiumAmount
+          ? Number.parseFloat(form.premiumAmount)
+          : undefined,
         effectiveDate,
         expirationDate,
       });
@@ -531,7 +637,9 @@ function PolicyForm({
           <Input
             id="policyNumber"
             value={form.policyNumber}
-            onChange={(event) => setForm({ ...form, policyNumber: event.target.value })}
+            onChange={(event) =>
+              setForm({ ...form, policyNumber: event.target.value })
+            }
             placeholder="POL-2024-001"
             required
           />
@@ -541,7 +649,9 @@ function PolicyForm({
           <Input
             id="carrier"
             value={form.carrier}
-            onChange={(event) => setForm({ ...form, carrier: event.target.value })}
+            onChange={(event) =>
+              setForm({ ...form, carrier: event.target.value })
+            }
             placeholder="Chubb Insurance"
             required
           />
@@ -576,7 +686,9 @@ function PolicyForm({
             type="number"
             min="0"
             value={form.coverageAmount}
-            onChange={(event) => setForm({ ...form, coverageAmount: event.target.value })}
+            onChange={(event) =>
+              setForm({ ...form, coverageAmount: event.target.value })
+            }
             placeholder="500000"
             required
           />
@@ -590,7 +702,9 @@ function PolicyForm({
             id="effectiveDate"
             type="date"
             value={form.effectiveDate}
-            onChange={(event) => setForm({ ...form, effectiveDate: event.target.value })}
+            onChange={(event) =>
+              setForm({ ...form, effectiveDate: event.target.value })
+            }
             required
           />
         </div>
@@ -600,7 +714,9 @@ function PolicyForm({
             id="expirationDate"
             type="date"
             value={form.expirationDate}
-            onChange={(event) => setForm({ ...form, expirationDate: event.target.value })}
+            onChange={(event) =>
+              setForm({ ...form, expirationDate: event.target.value })
+            }
             required
           />
         </div>
@@ -614,7 +730,9 @@ function PolicyForm({
             type="number"
             min="0"
             value={form.deductible}
-            onChange={(event) => setForm({ ...form, deductible: event.target.value })}
+            onChange={(event) =>
+              setForm({ ...form, deductible: event.target.value })
+            }
             placeholder="500"
           />
         </div>
@@ -625,7 +743,9 @@ function PolicyForm({
             type="number"
             min="0"
             value={form.premiumAmount}
-            onChange={(event) => setForm({ ...form, premiumAmount: event.target.value })}
+            onChange={(event) =>
+              setForm({ ...form, premiumAmount: event.target.value })
+            }
             placeholder="1500"
           />
         </div>
@@ -687,7 +807,12 @@ function ClaimForm({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!form.policyId || !form.incidentDate || !form.incidentDescription || !form.claimedAmount) {
+    if (
+      !form.policyId ||
+      !form.incidentDate ||
+      !form.incidentDescription ||
+      !form.claimedAmount
+    ) {
       toast.error("Please fill all required fields.");
       return;
     }
@@ -755,7 +880,9 @@ function ClaimForm({
             id="incidentDate"
             type="date"
             value={form.incidentDate}
-            onChange={(event) => setForm({ ...form, incidentDate: event.target.value })}
+            onChange={(event) =>
+              setForm({ ...form, incidentDate: event.target.value })
+            }
             required
           />
         </div>
@@ -793,7 +920,9 @@ function ClaimForm({
         <Input
           id="incidentLocation"
           value={form.incidentLocation}
-          onChange={(event) => setForm({ ...form, incidentLocation: event.target.value })}
+          onChange={(event) =>
+            setForm({ ...form, incidentLocation: event.target.value })
+          }
           placeholder="Gallery A, Storage, etc."
         />
       </div>
@@ -803,7 +932,9 @@ function ClaimForm({
         <Input
           id="incidentDescription"
           value={form.incidentDescription}
-          onChange={(event) => setForm({ ...form, incidentDescription: event.target.value })}
+          onChange={(event) =>
+            setForm({ ...form, incidentDescription: event.target.value })
+          }
           placeholder="Describe the incident..."
           required
         />
@@ -816,14 +947,19 @@ function ClaimForm({
           type="number"
           min="0"
           value={form.claimedAmount}
-          onChange={(event) => setForm({ ...form, claimedAmount: event.target.value })}
+          onChange={(event) =>
+            setForm({ ...form, claimedAmount: event.target.value })
+          }
           placeholder="25000"
           required
         />
       </div>
 
       <div className="flex justify-end">
-        <Button type="submit" disabled={isSubmitting || policyOptions.length === 0}>
+        <Button
+          type="submit"
+          disabled={isSubmitting || policyOptions.length === 0}
+        >
           {isSubmitting ? "Creating..." : "Create Claim"}
         </Button>
       </div>

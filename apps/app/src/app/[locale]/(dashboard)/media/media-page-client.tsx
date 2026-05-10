@@ -9,11 +9,12 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { CursorPagination } from "@v1/ui/cursor-pagination";
 import { EmptyState } from "@v1/ui/empty-state";
 import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
-import { Image as ImageIcon, Loader2, Search, Star } from "lucide-react";
+import { Image as ImageIcon, Search, Star } from "lucide-react";
 import dynamic from "next/dynamic";
 import NextImage from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { MediaAppliedFilters } from "./_components/media-applied-filters";
+import { MediaGridSkeleton } from "./media-skeletons";
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -178,11 +179,7 @@ export function MediaPageClient({
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
-        {media === undefined && (
-          <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
-          </div>
-        )}
+        {media === undefined && <MediaGridSkeleton />}
 
         {media && media.page.length === 0 && (
           <EmptyState

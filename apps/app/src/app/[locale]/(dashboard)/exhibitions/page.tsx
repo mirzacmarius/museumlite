@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  DashboardListPageSkeleton,
+  GridCardsSkeleton,
+} from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
@@ -74,11 +78,7 @@ export default function ExhibitionsPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center bg-background">
-        <p className="text-muted-foreground">{t("loading")}</p>
-      </div>
-    );
+    return <DashboardListPageSkeleton actionsCount={1} filtersCount={2} />;
   }
 
   if (!currentOrganizationId) {
@@ -247,11 +247,7 @@ function ExhibitionList({
   });
 
   if (exhibitions === undefined) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">{t("loadingExhibitions")}</p>
-      </div>
-    );
+    return <GridCardsSkeleton count={6} />;
   }
 
   const filteredExhibitions = exhibitions.filter((ex) => {
@@ -303,12 +299,8 @@ function ExhibitionList({
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:gap-4 p-4 sm:p-6 sm:grid-cols-2 lg:grid-cols-3">
-      {filteredExhibitions.map((ex, index) => (
-        <div
-          key={ex._id}
-          className="animate-enter"
-          style={{ animationDelay: `${Math.min(index * 100, 500)}ms` }}
-        >
+      {filteredExhibitions.map((ex) => (
+        <div key={ex._id}>
           <ExhibitionCard exhibition={ex} />
         </div>
       ))}

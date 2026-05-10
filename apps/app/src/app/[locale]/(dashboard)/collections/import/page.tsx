@@ -1,8 +1,8 @@
 "use client";
 
 import {
-  ImportFieldMapper,
   type FieldMapping,
+  ImportFieldMapper,
 } from "@/components/import-field-mapper";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";

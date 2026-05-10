@@ -1,6 +1,10 @@
 "use client";
 
 import {
+  DashboardListPageSkeleton,
+  GridCardsSkeleton,
+} from "@/components/dashboard-list-page-skeleton";
+import {
   ExportButtonWithFormat,
   type ExportFormat,
 } from "@/components/export-button-with-format";
@@ -27,7 +31,6 @@ import { useCallback, useState } from "react";
 
 export default function CollectionsPage() {
   const t = useScopedI18n("collections");
-  const common = useScopedI18n("common");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const [search, setSearch] = useState("");
 
@@ -54,11 +57,7 @@ export default function CollectionsPage() {
   );
 
   if (isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">{common("loading")}</p>
-      </div>
-    );
+    return <DashboardListPageSkeleton actionsCount={3} />;
   }
 
   if (!organizations || organizations.length === 0) {
@@ -174,19 +173,13 @@ function CollectionGroupsList({
 }) {
   const locale = useCurrentLocale();
   const t = useScopedI18n("collections");
-  const common = useScopedI18n("common");
-
   const groups = useQuery(api.collectionGroups.list, {
     organizationId,
     search: search || undefined,
   });
 
   if (groups === undefined) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">{common("loading")}</p>
-      </div>
-    );
+    return <GridCardsSkeleton count={6} />;
   }
 
   if (groups.length === 0) {
@@ -207,12 +200,11 @@ function CollectionGroupsList({
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {groups.map((group, index) => (
+      {groups.map((group) => (
         <Link
           key={group._id}
           href={`/collections/${group._id}`}
-          className="group animate-enter flex flex-col rounded-xl border border-border/60 bg-card p-4 transition-all duration-300 hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/30 hover:shadow-xl hover:shadow-indigo-900/10"
-          style={{ animationDelay: `${Math.min(index * 100, 500)}ms` }}
+          className="group flex flex-col rounded-xl border border-border/60 bg-card p-4 transition-all duration-300 hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/30 hover:shadow-xl hover:shadow-indigo-900/10"
         >
           <div className="flex items-start justify-between mb-2">
             <div className="flex items-center gap-2">

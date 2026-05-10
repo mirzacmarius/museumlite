@@ -13,8 +13,8 @@ import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
 import {
   AlertTriangle,
-  ArrowRightLeft,
   ArrowRight,
+  ArrowRightLeft,
   Bell,
   CalendarClock,
   Check,
@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { NotificationsPageSkeleton } from "./notifications-page-skeleton";
 
 type FilterType = "all" | "unread";
 type CategoryType =
@@ -132,13 +133,7 @@ export default function NotificationsPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">
-          {t("notificationsPage.loading")}
-        </p>
-      </div>
-    );
+    return <NotificationsPageSkeleton />;
   }
 
   if (!currentOrganizationId) {
@@ -295,11 +290,7 @@ export default function NotificationsPage() {
 
       <div className="flex-1">
         {notificationCenter === undefined ? (
-          <div className="flex h-64 items-center justify-center">
-            <p className="text-muted-foreground">
-              {t("notificationsPage.loadingNotifications")}
-            </p>
-          </div>
+          <NotificationsPageSkeleton />
         ) : notifications.length === 0 ? (
           <EmptyState
             icon={Inbox}

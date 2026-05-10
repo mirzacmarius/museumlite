@@ -201,7 +201,11 @@ export default function EditAccessionPage() {
         </div>
 
         <PermissionGate permission="collections.update">
-          <Button type="submit" form="accession-edit-form" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            form="accession-edit-form"
+            disabled={isSubmitting}
+          >
             <Save className="mr-2 h-4 w-4" />
             {isSubmitting ? t("form.updating") : t("form.updateAccession")}
           </Button>
@@ -238,15 +242,17 @@ export default function EditAccessionPage() {
               </h1>
 
               <p className="max-w-3xl text-sm text-muted-foreground">
-                Update the intake record while it is still pending. Once approved,
-                the accession should be treated as a finalized workflow record.
+                Update the intake record while it is still pending. Once
+                approved, the accession should be treated as a finalized
+                workflow record.
               </p>
 
               <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   <span>
-                    Received {formatDate(new Date(accession.dateReceived), locale)}
+                    Received{" "}
+                    {formatDate(new Date(accession.dateReceived), locale)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -296,7 +302,10 @@ export default function EditAccessionPage() {
                     <div className="space-y-2">
                       <Label>{t("form.dateReceived")}</Label>
                       <Input
-                        value={formatDate(new Date(accession.dateReceived), locale)}
+                        value={formatDate(
+                          new Date(accession.dateReceived),
+                          locale,
+                        )}
                         disabled
                         className="bg-muted"
                       />
@@ -326,7 +335,8 @@ export default function EditAccessionPage() {
                         required
                       />
                       <p className="text-xs text-muted-foreground">
-                        Use the person, estate, dealer, institution, or source reference the approver will recognize.
+                        Use the person, estate, dealer, institution, or source
+                        reference the approver will recognize.
                       </p>
                     </div>
 
@@ -375,7 +385,8 @@ export default function EditAccessionPage() {
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">
-                        This affects how the accession will be interpreted in review and reporting.
+                        This affects how the accession will be interpreted in
+                        review and reporting.
                       </p>
                     </div>
 
@@ -408,7 +419,8 @@ export default function EditAccessionPage() {
                         rows={4}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Add review context, provenance caveats, or handling notes that should travel with the approval decision.
+                        Add review context, provenance caveats, or handling
+                        notes that should travel with the approval decision.
                       </p>
                     </div>
                   </div>
@@ -441,8 +453,13 @@ export default function EditAccessionPage() {
               >
                 <div className="space-y-3 text-sm leading-6 text-muted-foreground">
                   <p>Use the exact source name reviewers expect to validate.</p>
-                  <p>Choose the acquisition method that matches accounting and workflow expectations.</p>
-                  <p>Use notes for context, not duplication of the source field.</p>
+                  <p>
+                    Choose the acquisition method that matches accounting and
+                    workflow expectations.
+                  </p>
+                  <p>
+                    Use notes for context, not duplication of the source field.
+                  </p>
                 </div>
               </GuideCard>
 

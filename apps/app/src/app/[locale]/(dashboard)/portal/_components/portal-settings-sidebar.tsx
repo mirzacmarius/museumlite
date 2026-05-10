@@ -189,10 +189,7 @@ export function PortalSettingsSidebar() {
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label
-                htmlFor="valuations-visible"
-                className="field-label"
-              >
+              <Label htmlFor="valuations-visible" className="field-label">
                 Show Valuations
               </Label>
               <p className="caption text-muted-foreground">

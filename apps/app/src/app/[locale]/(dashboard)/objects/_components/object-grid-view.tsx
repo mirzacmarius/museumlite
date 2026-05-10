@@ -228,11 +228,7 @@ export function ObjectGridView({
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
       {items.map((item, index) => (
-        <div
-          key={item._id}
-          className="animate-enter"
-          style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
-        >
+        <div key={item._id}>
           <ObjectGridItem
             item={item}
             organizationId={organizationId}

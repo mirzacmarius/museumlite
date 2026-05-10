@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  DashboardListPageSkeleton,
+  TableRowsSkeleton,
+} from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
@@ -9,7 +13,13 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@v1/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@v1/ui/dialog";
 import { EmptyState } from "@v1/ui/empty-state";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Input } from "@v1/ui/input";
@@ -108,9 +118,11 @@ export function TransitPageClient() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
+      <DashboardListPageSkeleton
+        actionsCount={1}
+        filtersCount={2}
+        layout="list"
+      />
     );
   }
 
@@ -147,7 +159,9 @@ export function TransitPageClient() {
           <div className="flex w-full flex-col rounded-lg border border-border/60 bg-card">
             <div className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg p-4 sm:p-6">
               <div className="flex flex-col gap-2">
-                <h2 className="text-xl font-medium text-primary">Transit Log</h2>
+                <h2 className="text-xl font-medium text-primary">
+                  Transit Log
+                </h2>
                 <p className="text-sm font-normal text-primary/60">
                   Track object movements and shipments
                 </p>
@@ -166,7 +180,9 @@ export function TransitPageClient() {
                         <DialogTitle>New Transit Record</DialogTitle>
                       </DialogHeader>
                       <TransitForm
-                        organizationId={currentOrganizationId as Id<"organizations">}
+                        organizationId={
+                          currentOrganizationId as Id<"organizations">
+                        }
                         onSubmit={async (payload) => {
                           try {
                             await createTransit(payload);
@@ -205,7 +221,9 @@ export function TransitPageClient() {
                 <div className="flex gap-2">
                   <Select
                     value={statusFilter}
-                    onValueChange={(value) => setStatusFilter(value as TransitStatus)}
+                    onValueChange={(value) =>
+                      setStatusFilter(value as TransitStatus)
+                    }
                   >
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Status" />
@@ -220,7 +238,9 @@ export function TransitPageClient() {
                   </Select>
                   <Select
                     value={typeFilter}
-                    onValueChange={(value) => setTypeFilter(value as TransitType)}
+                    onValueChange={(value) =>
+                      setTypeFilter(value as TransitType)
+                    }
                   >
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Type" />
@@ -237,9 +257,7 @@ export function TransitPageClient() {
               </div>
 
               {transitRecords === undefined ? (
-                <div className="flex h-48 items-center justify-center">
-                  <p className="text-muted-foreground">Loading records...</p>
-                </div>
+                <TableRowsSkeleton count={6} />
               ) : transitRecords.page.length === 0 ? (
                 <EmptyState
                   title="No transit records yet"
@@ -263,10 +281,16 @@ export function TransitPageClient() {
                   <TableBody>
                     {transitRecords.page.map((record) => (
                       <TableRow key={record._id}>
-                        <TableCell className="font-medium">{record.transitNumber}</TableCell>
-                        <TableCell className="capitalize">{record.transitType}</TableCell>
+                        <TableCell className="font-medium">
+                          {record.transitNumber}
+                        </TableCell>
+                        <TableCell className="capitalize">
+                          {record.transitType}
+                        </TableCell>
                         <TableCell>
-                          <div className="text-xs text-muted-foreground">{record.originName}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {record.originName}
+                          </div>
                           <div>{record.destinationName}</div>
                         </TableCell>
                         <TableCell>
@@ -274,24 +298,35 @@ export function TransitPageClient() {
                             {record.carrier}
                           </div>
                           {record.trackingNumber && (
-                            <div className="text-xs">{record.trackingNumber}</div>
+                            <div className="text-xs">
+                              {record.trackingNumber}
+                            </div>
                           )}
                         </TableCell>
                         <TableCell>
                           {record.scheduledPickupDate
-                            ? formatDate(new Date(record.scheduledPickupDate), locale)
+                            ? formatDate(
+                                new Date(record.scheduledPickupDate),
+                                locale,
+                              )
                             : "—"}
                         </TableCell>
                         <TableCell>
                           {record.estimatedDeliveryDate
-                            ? formatDate(new Date(record.estimatedDeliveryDate), locale)
+                            ? formatDate(
+                                new Date(record.estimatedDeliveryDate),
+                                locale,
+                              )
                             : "—"}
                         </TableCell>
                         <TableCell>{record.itemCount}</TableCell>
                         <TableCell>
                           <Badge
                             variant="outline"
-                            className={statusColor[record.status] ?? "border-border text-muted-foreground"}
+                            className={
+                              statusColor[record.status] ??
+                              "border-border text-muted-foreground"
+                            }
                           >
                             {record.status.replace("_", " ")}
                           </Badge>
@@ -412,7 +447,9 @@ function TransitForm({
           <Input
             id="originName"
             value={form.originName}
-            onChange={(event) => setForm({ ...form, originName: event.target.value })}
+            onChange={(event) =>
+              setForm({ ...form, originName: event.target.value })
+            }
             placeholder="Main Museum"
             required
           />
@@ -422,7 +459,9 @@ function TransitForm({
           <Input
             id="destinationName"
             value={form.destinationName}
-            onChange={(event) => setForm({ ...form, destinationName: event.target.value })}
+            onChange={(event) =>
+              setForm({ ...form, destinationName: event.target.value })
+            }
             placeholder="Storage Facility"
             required
           />
@@ -434,7 +473,9 @@ function TransitForm({
         <Input
           id="carrier"
           value={form.carrier}
-          onChange={(event) => setForm({ ...form, carrier: event.target.value })}
+          onChange={(event) =>
+            setForm({ ...form, carrier: event.target.value })
+          }
           placeholder="FedEx, DHL, Internal Courier"
           required
         />

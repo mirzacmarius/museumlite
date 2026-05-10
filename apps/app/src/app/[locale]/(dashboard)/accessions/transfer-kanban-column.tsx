@@ -162,12 +162,11 @@ export function TransferKanbanColumn({
                 </p>
               </div>
             ) : (
-              filteredRequests.map((request, index) => (
+              filteredRequests.map((request) => (
                 <Link
                   key={request._id}
                   href={`/objects/move-requests/${request._id}`}
-                  className={`group block animate-enter rounded-xl border p-3 transition-colors ${style.card}`}
-                  style={{ animationDelay: `${Math.min(index * 50, 300)}ms` }}
+                  className={`group block rounded-xl border p-3 transition-colors ${style.card}`}
                 >
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div>

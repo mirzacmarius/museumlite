@@ -38,10 +38,7 @@ function SelectedCollectionItem({
   issueMessage,
   conditionPlaceholder,
 }: {
-  collection: Pick<
-    Doc<"collections">,
-    "_id" | "accessionNumber" | "title"
-  > & {
+  collection: Pick<Doc<"collections">, "_id" | "accessionNumber" | "title"> & {
     primaryImageUrl?: string;
   };
   condition: string;

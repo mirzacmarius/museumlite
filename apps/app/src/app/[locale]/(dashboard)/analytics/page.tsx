@@ -49,9 +49,7 @@ const ComplianceReportCard = dynamic(
 
 const AuditTrailCard = dynamic(
   () =>
-    import("./_components/audit-trail-card").then(
-      (mod) => mod.AuditTrailCard,
-    ),
+    import("./_components/audit-trail-card").then((mod) => mod.AuditTrailCard),
   { loading: chartFallback },
 );
 
@@ -68,7 +66,11 @@ const ReportExportsCard = dynamic(
     import("./_components/report-exports-card").then(
       (mod) => mod.ReportExportsCard,
     ),
-  { loading: () => <Skeleton className="h-[350px] w-full rounded-xl bg-muted/20" /> },
+  {
+    loading: () => (
+      <Skeleton className="h-[350px] w-full rounded-xl bg-muted/20" />
+    ),
+  },
 );
 
 export default function AnalyticsPage() {

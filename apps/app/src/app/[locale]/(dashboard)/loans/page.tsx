@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import { AdminOverview } from "./_components/admin-overview";
 import { LoanStatusChart } from "./_components/loan-status-chart";
 import { LoansBulkActionsBar } from "./_components/loans-bulk-actions-bar";
+import { LoansPageSkeleton } from "./loans-page-skeleton";
 
 type LoanStatus =
   | "pending"
@@ -47,7 +48,6 @@ type LoanType = "incoming" | "outgoing" | "all";
 
 export default function LoansPage() {
   const t = useScopedI18n("loans");
-  const tCommon = useScopedI18n("common");
   const tToast = useScopedI18n("common.toast");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
@@ -63,11 +63,7 @@ export default function LoansPage() {
   }, [currentOrganizationId, exportLoans]);
 
   if (isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">{tCommon("loading")}</p>
-      </div>
-    );
+    return <LoansPageSkeleton />;
   }
 
   if (!organizations || organizations.length === 0) {
@@ -402,7 +398,7 @@ function LoanList({
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <div className="animate-enter rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/30">
+        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/30">
           <div className="mb-4 flex items-start justify-between">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               <ArrowRightLeft className="h-4 w-4" />
@@ -419,10 +415,7 @@ function LoanList({
           </p>
         </div>
 
-        <div
-          className="animate-enter rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-emerald-500/30 hover:ring-1 hover:ring-emerald-500/30"
-          style={{ animationDelay: "100ms" }}
-        >
+        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-emerald-500/30 hover:ring-1 hover:ring-emerald-500/30">
           <div className="mb-4 flex items-start justify-between">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <Boxes className="h-4 w-4" />
@@ -436,10 +429,7 @@ function LoanList({
           </p>
         </div>
 
-        <div
-          className="animate-enter rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-blue-500/30 hover:ring-1 hover:ring-blue-500/30"
-          style={{ animationDelay: "200ms" }}
-        >
+        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-blue-500/30 hover:ring-1 hover:ring-blue-500/30">
           <div className="mb-4 flex items-start justify-between">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
               <ShieldCheck className="h-4 w-4" />
@@ -451,10 +441,7 @@ function LoanList({
           <p className="mt-1 text-2xl font-bold tracking-tight">—</p>
         </div>
 
-        <div
-          className="animate-enter relative overflow-hidden rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-rose-500/30 hover:ring-1 hover:ring-rose-500/30"
-          style={{ animationDelay: "300ms" }}
-        >
+        <div className="relative overflow-hidden rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-rose-500/30 hover:ring-1 hover:ring-rose-500/30">
           <div className="absolute right-0 top-0 h-16 w-16 rounded-full bg-rose-500/10 blur-2xl" />
           <div className="mb-4 flex items-start justify-between">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">

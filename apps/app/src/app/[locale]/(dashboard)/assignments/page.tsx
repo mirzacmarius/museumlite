@@ -6,6 +6,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { AssignmentsPageClient } from "./_components/assignments-page-client";
+import { AssignmentsPageSkeleton } from "./assignments-page-skeleton";
 
 export default function AssignmentsPage() {
   const t = useI18n();
@@ -22,11 +23,7 @@ export default function AssignmentsPage() {
   );
 
   if (orgLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center bg-black">
-        <p className="text-white/60">{t("assignmentsPage.loading")}</p>
-      </div>
-    );
+    return <AssignmentsPageSkeleton />;
   }
 
   if (!currentOrganizationId) {
@@ -47,13 +44,7 @@ export default function AssignmentsPage() {
   }
 
   if (assignments === undefined) {
-    return (
-      <div className="flex h-full w-full items-center justify-center bg-black">
-        <p className="text-white/60">
-          {t("assignmentsPage.loadingAssignments")}
-        </p>
-      </div>
-    );
+    return <AssignmentsPageSkeleton />;
   }
 
   return (

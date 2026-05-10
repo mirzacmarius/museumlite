@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  DashboardListPageSkeleton,
+  ListRowsSkeleton,
+} from "@/components/dashboard-list-page-skeleton";
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
@@ -55,11 +59,11 @@ export default function AccountsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">
-          {t("emptyState.noAccountsFound")}
-        </p>
-      </div>
+      <DashboardListPageSkeleton
+        actionsCount={3}
+        filtersCount={isPatronView ? 0 : 1}
+        layout="list"
+      />
     );
   }
 
@@ -256,13 +260,7 @@ function AccountList({
   });
 
   if (accounts === undefined) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">
-          {t("emptyState.noAccountsFound")}
-        </p>
-      </div>
-    );
+    return <ListRowsSkeleton count={8} />;
   }
 
   if (accounts.accounts.length === 0) {

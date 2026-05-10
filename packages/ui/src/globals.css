@@ -58,7 +58,6 @@
     --radius-4xl: calc(var(--radius) * 2.6);
     --font-sans: var(--font-sans);
     --font-departure: var(--font-geist-sans), Inter, -apple-system, system-ui, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-    --animate-enter: enter 0.4s ease-out forwards;
 }
 
 :root {
@@ -189,13 +188,6 @@
 .hover-trigger:hover .hover-target {
   opacity: 1;
   transform: translateY(0);
-}
-
-@keyframes enter {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .animate-delay-100 { animation-delay: 100ms; }

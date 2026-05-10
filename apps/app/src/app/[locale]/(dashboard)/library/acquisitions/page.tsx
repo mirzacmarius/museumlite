@@ -1,5 +1,6 @@
 "use client";
 
+import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatDate as formatDateUtil } from "@/lib/format-date";
@@ -212,9 +213,7 @@ export default function LibraryAcquisitionsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      <DashboardListPageSkeleton actionsCount={1} filtersCount={2} showStats />
     );
   }
 

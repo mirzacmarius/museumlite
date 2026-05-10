@@ -24,19 +24,16 @@ export function AccessionsPageSkeleton({
         <div className="flex gap-4">
           {statPlaceholders.slice(0, statsCount).map((id) => (
             <div key={id} className="flex min-w-20 flex-col gap-2">
-              <div className="h-3 w-20 animate-pulse rounded bg-muted/60" />
-              <div className="h-7 w-8 animate-pulse rounded bg-muted/60" />
+              <div className="h-3 w-20 rounded bg-muted/60" />
+              <div className="h-7 w-8 rounded bg-muted/60" />
             </div>
           ))}
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="h-8 w-64 animate-pulse rounded-md bg-muted/60" />
+          <div className="h-8 w-64 rounded-md bg-muted/60" />
           {actionPlaceholders.slice(0, actionsCount).map((id) => (
-            <div
-              key={id}
-              className="h-8 w-24 animate-pulse rounded-md bg-muted/60"
-            />
+            <div key={id} className="h-8 w-24 rounded-md bg-muted/60" />
           ))}
         </div>
       </div>
@@ -50,13 +47,13 @@ export function AccessionsPageSkeleton({
                 className="flex items-center justify-between gap-4 rounded-xl border border-transparent bg-background/40 px-4 py-3"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="h-9 w-9 shrink-0 animate-pulse rounded-lg bg-muted/60" />
+                  <div className="h-9 w-9 shrink-0 rounded-lg bg-muted/60" />
                   <div className="space-y-2">
-                    <div className="h-4 w-24 animate-pulse rounded bg-muted/60" />
-                    <div className="h-3 w-64 animate-pulse rounded bg-muted/50" />
+                    <div className="h-4 w-24 rounded bg-muted/60" />
+                    <div className="h-3 w-64 rounded bg-muted/50" />
                   </div>
                 </div>
-                <div className="h-6 w-9 shrink-0 animate-pulse rounded-full bg-muted/60" />
+                <div className="h-6 w-9 shrink-0 rounded-full bg-muted/60" />
               </div>
             ))}
           </div>
@@ -68,8 +65,8 @@ export function AccessionsPageSkeleton({
           {["col-1", "col-2", "col-3"].map((colId) => (
             <div key={colId} className="flex w-72 flex-col gap-3">
               <div className="mb-2 flex items-center justify-between">
-                <div className="h-4 w-20 animate-pulse rounded bg-muted/60" />
-                <div className="h-5 w-6 animate-pulse rounded bg-muted/60" />
+                <div className="h-4 w-20 rounded bg-muted/60" />
+                <div className="h-5 w-6 rounded bg-muted/60" />
               </div>
 
               <div className="flex-1 rounded-lg border-2 border-dashed border-border/60">
@@ -77,7 +74,7 @@ export function AccessionsPageSkeleton({
                   {["card-1", "card-2", "card-3"].map((cardId) => (
                     <div
                       key={`${colId}-${cardId}`}
-                      className="h-24 animate-pulse rounded-lg border border-border/60 bg-muted/40"
+                      className="h-24 rounded-lg border border-border/60 bg-muted/40"
                     />
                   ))}
                 </div>

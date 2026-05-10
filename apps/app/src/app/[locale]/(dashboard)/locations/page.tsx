@@ -18,6 +18,10 @@ import { LocationSidebar } from "./_components/location-sidebar";
 import { StorageView } from "./_components/storage-view";
 import { getNumericCustomFieldNumber } from "./location-custom-fields";
 import {
+  LocationContentSkeleton,
+  LocationsPageSkeleton,
+} from "./location-page-skeleton";
+import {
   getAutomaticDisplayUnitCounts,
   getDefaultLocationId,
   getDescendantLocations,
@@ -30,11 +34,7 @@ export default function LocationsPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
 
   if (isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    );
+    return <LocationsPageSkeleton />;
   }
 
   if (!organizations || organizations.length === 0) {
@@ -243,11 +243,7 @@ function LocationLayout({
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-br from-zinc-950 to-zinc-900/50 px-6 pb-6 pt-0 custom-scrollbar">
         {allLocations === undefined && !selectedLocationId && (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-muted-foreground">
-              Loading locations...
-            </p>
-          </div>
+          <LocationContentSkeleton />
         )}
 
         {allLocations && allLocations.length === 0 && (
@@ -269,9 +265,7 @@ function LocationLayout({
         )}
 
         {allLocations && allLocations.length > 0 && !selectedLocationId && (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-muted-foreground">Loading location...</p>
-          </div>
+          <LocationContentSkeleton />
         )}
 
         {selectedLocationId && selectedLocation && (
@@ -427,13 +421,7 @@ function LocationLayout({
         {allLocations &&
           allLocations.length > 0 &&
           selectedLocationId &&
-          !selectedLocation && (
-            <div className="flex h-full items-center justify-center">
-              <p className="text-sm text-muted-foreground">
-                Loading location details...
-              </p>
-            </div>
-          )}
+          !selectedLocation && <LocationContentSkeleton />}
       </div>
     </div>
   );

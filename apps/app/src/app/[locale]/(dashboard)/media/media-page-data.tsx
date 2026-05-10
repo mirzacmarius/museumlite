@@ -10,7 +10,12 @@ function parseFileTypeParam(
   value: string | Array<string> | undefined,
 ): MediaFileTypeParam {
   if (typeof value !== "string") return "all";
-  if (value === "all" || value === "image" || value === "document" || value === "3d") {
+  if (
+    value === "all" ||
+    value === "image" ||
+    value === "document" ||
+    value === "3d"
+  ) {
     return value;
   }
   return "all";

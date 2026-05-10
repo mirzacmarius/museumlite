@@ -14,12 +14,12 @@ import {
   Building2,
   DollarSign,
   Library,
-  Loader2,
   RefreshCw,
   ShoppingCart,
   TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
+import { LibraryPageSkeleton } from "./library-page-skeleton";
 
 export default function LibraryDashboardPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
@@ -43,11 +43,7 @@ export default function LibraryDashboardPage() {
   );
 
   if (isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <LibraryPageSkeleton />;
   }
 
   if (!organizations || organizations.length === 0) {

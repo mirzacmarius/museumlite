@@ -20,6 +20,7 @@ import {
   Warehouse,
 } from "lucide-react";
 import Link from "next/link";
+import { DashboardPageSkeleton } from "./dashboard-page-skeleton";
 
 export default function DashboardPage() {
   const {
@@ -31,7 +32,6 @@ export default function DashboardPage() {
   const locale = useCurrentLocale();
   const t = useScopedI18n("dashboard");
   const kpi = useScopedI18n("kpi");
-  const common = useScopedI18n("common");
 
   const hasAnalyticsPermission = usePermission(
     currentOrganizationId,
@@ -46,11 +46,7 @@ export default function DashboardPage() {
   );
 
   if (isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center bg-background">
-        <p className="text-muted-foreground">{common("loading")}</p>
-      </div>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   if (!organizations || organizations.length === 0) {

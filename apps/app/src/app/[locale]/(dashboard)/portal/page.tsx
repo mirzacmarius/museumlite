@@ -8,10 +8,11 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { useQuery } from "convex/react";
-import { Building2, Loader2, Plus } from "lucide-react";
+import { Building2, Plus } from "lucide-react";
 import Link from "next/link";
 import { PortalPreview } from "./_components/portal-preview";
 import { PortalSettingsSidebar } from "./_components/portal-settings-sidebar";
+import { PortalPageSkeleton } from "./portal-page-skeleton";
 
 export default function PublicPortalPage() {
   const common = useScopedI18n("common");
@@ -27,11 +28,7 @@ export default function PublicPortalPage() {
   );
 
   if (isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">{common("loading")}</p>
-      </div>
-    );
+    return <PortalPageSkeleton />;
   }
 
   if (!organizations || organizations.length === 0 || !currentOrganizationId) {
@@ -59,22 +56,14 @@ export default function PublicPortalPage() {
 
   if (isPortalLocked) {
     return (
-      <FeatureGuard
-        featureName="Public Portal"
-        isLocked
-        tierNeeded="pro"
-      >
+      <FeatureGuard featureName="Public Portal" isLocked tierNeeded="pro">
         <div className="min-h-[400px]" />
       </FeatureGuard>
     );
   }
 
   if (portalSettings === undefined) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <PortalPageSkeleton />;
   }
 
   return (

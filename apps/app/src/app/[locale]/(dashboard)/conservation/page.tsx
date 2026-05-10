@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  DashboardListPageSkeleton,
+  GridCardsSkeleton,
+} from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
@@ -30,11 +34,7 @@ export default function ConservationPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   if (isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center bg-background">
-        <p className="text-muted-foreground">{t("loading")}</p>
-      </div>
-    );
+    return <DashboardListPageSkeleton actionsCount={1} />;
   }
 
   if (!currentOrganizationId) {
@@ -125,11 +125,7 @@ function TreatmentList({
   });
 
   if (treatments === undefined) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">{t("loadingTreatments")}</p>
-      </div>
-    );
+    return <GridCardsSkeleton count={6} />;
   }
 
   const filteredTreatments = treatments.filter((treatment) => {

@@ -2,8 +2,8 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import {
-  DEFAULT_ACCOUNT_HOLDER_TYPE,
   type AccountHolderType,
+  DEFAULT_ACCOUNT_HOLDER_TYPE,
   parseDateInputValue,
 } from "@/lib/account-holder";
 import { useScopedI18n } from "@/locales/client";

@@ -125,12 +125,11 @@ export function DeaccessionKanbanColumn({
                 </p>
               </div>
             ) : (
-              filteredDeaccessions.map((item, index) => (
+              filteredDeaccessions.map((item) => (
                 <Link
                   key={item._id}
                   href={`/deaccessions/${item._id}`}
-                  className="group block animate-enter cursor-pointer rounded-lg border border-border bg-background/70 p-3 transition-colors hover:border-ring/60 hover:bg-accent/50"
-                  style={{ animationDelay: `${Math.min(index * 50, 300)}ms` }}
+                  className="group block cursor-pointer rounded-lg border border-border bg-background/70 p-3 transition-colors hover:border-ring/60 hover:bg-accent/50"
                 >
                   <div className="mb-2 flex items-start justify-between">
                     <div className="min-w-0">

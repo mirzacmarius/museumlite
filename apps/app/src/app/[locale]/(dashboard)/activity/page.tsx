@@ -5,10 +5,10 @@ import { useScopedI18n } from "@/locales/client";
 import { useState } from "react";
 import { ActivityFilters } from "./_components/activity-filters";
 import { ActivityList } from "./_components/activity-list";
+import { ActivityPageSkeleton } from "./activity-page-skeleton";
 
 export default function ActivityPage() {
   const t = useScopedI18n("activity");
-  const common = useScopedI18n("common");
   const { currentOrganizationId, isLoading } = useOrganization();
   const [selectedEntityType, setSelectedEntityType] = useState<
     string | undefined
@@ -18,11 +18,7 @@ export default function ActivityPage() {
   );
 
   if (isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center bg-black">
-        <p className="text-white/60">{common("loading")}</p>
-      </div>
-    );
+    return <ActivityPageSkeleton />;
   }
 
   if (!currentOrganizationId) {

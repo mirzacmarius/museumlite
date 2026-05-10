@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  DashboardListPageSkeleton,
+  GridCardsSkeleton,
+} from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
@@ -9,7 +13,13 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@v1/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@v1/ui/dialog";
 import { EmptyState } from "@v1/ui/empty-state";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Input } from "@v1/ui/input";
@@ -106,9 +116,11 @@ export function InstallationsPageClient() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
+      <DashboardListPageSkeleton
+        actionsCount={1}
+        filtersCount={1}
+        gridColumns="lg:grid-cols-4"
+      />
     );
   }
 
@@ -145,14 +157,19 @@ export function InstallationsPageClient() {
           <div className="flex w-full flex-col rounded-lg border border-border/60 bg-card">
             <div className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg p-4 sm:p-6">
               <div className="flex flex-col gap-2">
-                <h2 className="text-xl font-medium text-primary">Installations</h2>
+                <h2 className="text-xl font-medium text-primary">
+                  Installations
+                </h2>
                 <p className="text-sm font-normal text-primary/60">
                   Track installation tasks by exhibition
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <PermissionGate permission="collections.create">
-                  <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                  <Dialog
+                    open={createDialogOpen}
+                    onOpenChange={setCreateDialogOpen}
+                  >
                     <DialogTrigger asChild>
                       <Button>
                         <Plus className="mr-2 h-4 w-4" />
@@ -164,7 +181,9 @@ export function InstallationsPageClient() {
                         <DialogTitle>New Installation Task</DialogTitle>
                       </DialogHeader>
                       <TaskForm
-                        organizationId={currentOrganizationId as Id<"organizations">}
+                        organizationId={
+                          currentOrganizationId as Id<"organizations">
+                        }
                         exhibitionId={selectedExhibitionId as Id<"exhibitions">}
                         onSubmit={async (payload) => {
                           try {
@@ -173,7 +192,9 @@ export function InstallationsPageClient() {
                             setCreateDialogOpen(false);
                           } catch (err) {
                             toast.error(
-                              err instanceof Error ? err.message : "Failed to create task",
+                              err instanceof Error
+                                ? err.message
+                                : "Failed to create task",
                             );
                           }
                         }}
@@ -224,9 +245,7 @@ export function InstallationsPageClient() {
               </div>
 
               {selectedExhibitionId && tasks === undefined && (
-                <div className="flex h-48 items-center justify-center">
-                  <p className="text-muted-foreground">Loading tasks...</p>
-                </div>
+                <GridCardsSkeleton count={8} gridColumns="lg:grid-cols-4" />
               )}
 
               {selectedExhibitionId && tasks && tasks.length === 0 && (
@@ -278,7 +297,8 @@ export function InstallationsPageClient() {
                               )}
                               {task.dueDate && (
                                 <span>
-                                  Due {formatDate(new Date(task.dueDate), locale)}
+                                  Due{" "}
+                                  {formatDate(new Date(task.dueDate), locale)}
                                 </span>
                               )}
                             </div>
@@ -294,7 +314,10 @@ export function InstallationsPageClient() {
                                         "Reason for blocking this task?",
                                       );
                                       if (!reason) return;
-                                      await blockTask({ taskId: task._id, reason });
+                                      await blockTask({
+                                        taskId: task._id,
+                                        reason,
+                                      });
                                     } else {
                                       await moveTask({
                                         taskId: task._id,
@@ -304,7 +327,9 @@ export function InstallationsPageClient() {
                                     toast.success("Task updated");
                                   } catch (err) {
                                     toast.error(
-                                      err instanceof Error ? err.message : "Failed to update task",
+                                      err instanceof Error
+                                        ? err.message
+                                        : "Failed to update task",
                                     );
                                   }
                                 }}
@@ -317,8 +342,12 @@ export function InstallationsPageClient() {
                                   <SelectItem value="in_progress">
                                     In Progress
                                   </SelectItem>
-                                  <SelectItem value="blocked">Blocked</SelectItem>
-                                  <SelectItem value="completed">Completed</SelectItem>
+                                  <SelectItem value="blocked">
+                                    Blocked
+                                  </SelectItem>
+                                  <SelectItem value="completed">
+                                    Completed
+                                  </SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -475,7 +504,9 @@ function TaskForm({
             id="dueDate"
             type="date"
             value={form.dueDate}
-            onChange={(event) => setForm({ ...form, dueDate: event.target.value })}
+            onChange={(event) =>
+              setForm({ ...form, dueDate: event.target.value })
+            }
           />
         </div>
       </div>

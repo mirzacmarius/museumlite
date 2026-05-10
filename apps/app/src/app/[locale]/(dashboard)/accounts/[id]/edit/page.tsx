@@ -97,7 +97,10 @@ export default function EditAccountPage() {
   });
 
   const groupedPermissions = permissions?.reduce(
-    (acc: Partial<Record<PermissionCategory, Permission[]>>, perm: Permission) => {
+    (
+      acc: Partial<Record<PermissionCategory, Permission[]>>,
+      perm: Permission,
+    ) => {
       const category = perm.category;
       const existing = acc[category] ?? [];
       acc[category] = [...existing, perm];
@@ -490,37 +493,37 @@ export default function EditAccountPage() {
 
               {/* Permissions Details */}
               {groupedPermissionEntries.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      Available Permissions
-                    </h3>
-                    <div className="space-y-4 rounded-lg border border-border p-4">
-                      {groupedPermissionEntries.map(([category, perms]) => (
-                        <div key={category} className="space-y-2">
-                          <h4 className="text-sm font-medium capitalize">
-                            {category}
-                          </h4>
-                          <div className="space-y-1 pl-4">
-                            {perms.map((perm) => (
-                              <div
-                                key={perm._id}
-                                className="text-xs text-muted-foreground"
-                              >
-                                • {perm.name}
-                                {perm.description && (
-                                  <span className="ml-2">
-                                    - {perm.description}
-                                  </span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Available Permissions
+                  </h3>
+                  <div className="space-y-4 rounded-lg border border-border p-4">
+                    {groupedPermissionEntries.map(([category, perms]) => (
+                      <div key={category} className="space-y-2">
+                        <h4 className="text-sm font-medium capitalize">
+                          {category}
+                        </h4>
+                        <div className="space-y-1 pl-4">
+                          {perms.map((perm) => (
+                            <div
+                              key={perm._id}
+                              className="text-xs text-muted-foreground"
+                            >
+                              • {perm.name}
+                              {perm.description && (
+                                <span className="ml-2">
+                                  - {perm.description}
+                                </span>
+                              )}
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
               <div className="flex justify-end gap-4">
                 <Button
