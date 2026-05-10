@@ -2086,7 +2086,7 @@ export default function CollectionEditPage() {
                           onValueChange={(value) => {
                             updateField("currentLocationId", value);
                             if (!value) {
-                              updateField("displayStatus", undefined);
+                              updateField("displayStatus", "");
                             }
                           }}
                           placeholder={placeholders("location")}
@@ -2144,7 +2144,7 @@ export default function CollectionEditPage() {
                             onCheckedChange={(checked) =>
                               updateField(
                                 "displayStatus",
-                                checked ? "on_display" : undefined,
+                                checked ? "on_display" : "",
                               )
                             }
                           />

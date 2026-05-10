@@ -2236,8 +2236,10 @@ export const update = mutation({
     if (args.isValuationVisible !== undefined)
       updates.isValuationVisible = args.isValuationVisible;
     if (args.publicSlug !== undefined) updates.publicSlug = args.publicSlug;
-    if (args.displayStatus !== undefined)
-      updates.displayStatus = args.displayStatus;
+    if (args.displayStatus !== undefined) {
+      updates.displayStatus =
+        normalizeOptionalString(args.displayStatus) || undefined;
+    }
 
     updates.lastModifiedBy = userId;
     updates.lastModifiedAt = Date.now();
