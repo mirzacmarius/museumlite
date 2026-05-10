@@ -10,7 +10,6 @@ import { MediaEditorDialog } from "@/components/media-editor-dialog";
 import { ObjectCombobox } from "@/components/object-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { TypeCombobox } from "@/components/type-combobox";
 import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 import { useBeforeUnload } from "@/hooks/use-before-unload";
@@ -1577,21 +1576,6 @@ export default function CollectionEditPage() {
                         }
                       />
                     </div>
-                  </EditSection>
-
-                  <EditSection
-                    title="Previous owners"
-                    description="Capture known previous owners as simple accession context."
-                  >
-                    <RepeatableTextField
-                      id="previous_owners"
-                      label="Previous Owner"
-                      value={formData.previous_owners || []}
-                      onChange={(value) =>
-                        updateField("previous_owners", value)
-                      }
-                      placeholder="Owner name"
-                    />
                   </EditSection>
                 </div>
               ) : null}
