@@ -51,24 +51,24 @@ export function PlanUsageStats({
     return (
       <div
         className={cn(
-          "rounded-lg border border-zinc-800/60 bg-zinc-950 px-4 py-3",
+          "rounded-lg border border-zinc-800/60 bg-zinc-950 p-5",
           className,
         )}
       >
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-zinc-800" />
-            <div className="h-3 w-16 animate-pulse rounded bg-zinc-800" />
+            <div className="h-4 w-20 animate-pulse rounded bg-zinc-800" />
           </div>
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i}>
               <div className="mb-1 flex items-end justify-between">
-                <div className="h-2 w-12 animate-pulse rounded bg-zinc-800" />
-                <div className="h-2 w-16 animate-pulse rounded bg-zinc-800" />
+                <div className="h-3 w-16 animate-pulse rounded bg-zinc-800" />
+                <div className="h-3 w-20 animate-pulse rounded bg-zinc-800" />
               </div>
-              <div className="h-1 w-full rounded-full bg-zinc-900" />
+              <div className="h-1.5 w-full rounded-full bg-zinc-900" />
             </div>
           ))}
         </div>
@@ -81,21 +81,21 @@ export function PlanUsageStats({
   return (
     <div
       className={cn(
-        "rounded-lg border border-zinc-800/60 bg-zinc-950 px-4 py-3",
+        "rounded-lg border border-zinc-800/60 bg-zinc-950 p-5",
         className,
       )}
     >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <div className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500" />
-          <span className="text-xs font-semibold text-zinc-200">
+          <span className="text-sm font-semibold text-zinc-200">
             {getTierDisplayName(stats.tier)}
           </span>
         </div>
         {showUpgradeLink && !isEnterprise ? (
           <Link
             href="/settings/billing"
-            className="text-[9px] font-medium uppercase tracking-wide text-zinc-500 transition-colors hover:text-indigo-400"
+            className="text-xs font-medium uppercase tracking-wide text-zinc-500 transition-colors hover:text-indigo-400"
           >
             Upgrade
           </Link>
@@ -107,11 +107,9 @@ export function PlanUsageStats({
           label="Storage"
           value={
             stats.storage.limit === null ? (
-              <span className="text-[10px] font-mono text-zinc-400">
-                Unlimited
-              </span>
+              <span className="text-xs font-mono text-zinc-400">Unlimited</span>
             ) : (
-              <span className="text-[10px] font-mono text-zinc-400">
+              <span className="text-xs font-mono text-zinc-400">
                 {formatBytes(stats.storage.used)}{" "}
                 <span className="text-zinc-600">
                   / {formatBytes(stats.storage.limit)}
@@ -130,11 +128,9 @@ export function PlanUsageStats({
           label="Object Records"
           value={
             stats.objects.limit === null ? (
-              <span className="text-[10px] font-mono text-zinc-400">
-                Unlimited
-              </span>
+              <span className="text-xs font-mono text-zinc-400">Unlimited</span>
             ) : (
-              <span className="text-[10px] font-mono text-zinc-400">
+              <span className="text-xs font-mono text-zinc-400">
                 {formatNumber(stats.objects.used)}{" "}
                 <span className="text-zinc-600">
                   / {formatNumber(stats.objects.limit)}
@@ -153,11 +149,9 @@ export function PlanUsageStats({
           label="Monthly Exports"
           value={
             stats.exports.limit === null ? (
-              <span className="text-[10px] font-mono text-zinc-400">
-                Unlimited
-              </span>
+              <span className="text-xs font-mono text-zinc-400">Unlimited</span>
             ) : (
-              <span className="text-[10px] font-mono text-zinc-400">
+              <span className="text-xs font-mono text-zinc-400">
                 {formatNumber(stats.exports.used)}{" "}
                 <span className="text-zinc-600">
                   / {formatNumber(stats.exports.limit)}
@@ -193,14 +187,14 @@ function UsageRow({
   return (
     <div>
       <div className="mb-1 flex items-end justify-between">
-        <span className="text-[10px] font-medium text-zinc-500">{label}</span>
+        <span className="text-xs font-medium text-zinc-500">{label}</span>
         {value}
       </div>
       {showProgress ? (
-        <div className="h-1 w-full overflow-hidden rounded-full bg-zinc-900">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-900">
           <div
             className={cn(
-              "h-1 rounded-full transition-all duration-300",
+              "h-1.5 rounded-full transition-all duration-300",
               progressClassName,
             )}
             style={{ width: `${percentage}%` }}

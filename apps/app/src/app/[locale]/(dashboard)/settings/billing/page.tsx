@@ -69,17 +69,21 @@ function PlanCard({
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-base font-medium text-primary">{name}</span>
+            <span className="text-base font-medium text-primary-foreground">
+              {name}
+            </span>
             {Boolean(amount) && intervalLabel ? (
-              <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-sm font-medium text-primary/80">
+              <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-sm font-medium text-primary-foreground">
                 ${amount / 100} / {intervalLabel}
               </span>
             ) : null}
           </div>
-          <p className="text-sm font-normal text-primary/60">{description}</p>
+          <p className="text-sm font-normal text-primary-foreground/80">
+            {description}
+          </p>
         </div>
         {isCurrent ? (
-          <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary/80">
+          <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary-foreground">
             {currentLabel}
           </span>
         ) : null}
@@ -275,11 +279,11 @@ export default function BillingSettings() {
 
   return (
     <div className="flex h-full w-full flex-col gap-6">
-      <div className="flex w-full flex-col gap-2 p-6 py-2">
+      <div className="flex w-full flex-col gap-2">
         <h2 className="text-xl font-medium text-foreground">
           Billing overview
         </h2>
-        <p className="text-sm font-normal text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Review your current plan, compare available tiers, and manage billing
           for your organization. For test purchases, you can use the card
           numbers listed in this{" "}
@@ -295,12 +299,10 @@ export default function BillingSettings() {
         </p>
       </div>
 
-      <div className="px-6">
-        <PlanUsageStats
-          organizationId={currentOrganizationId}
-          showUpgradeLink={false}
-        />
-      </div>
+      <PlanUsageStats
+        organizationId={currentOrganizationId}
+        showUpgradeLink={false}
+      />
 
       <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
         <div className="flex w-full flex-col gap-4 p-6">
@@ -310,7 +312,7 @@ export default function BillingSettings() {
             </h2>
             <p className="flex items-start gap-1 text-sm font-normal text-muted-foreground">
               {t("currentPlan")}{" "}
-              <span className="flex h-[18px] items-center rounded-md bg-primary/10 px-1.5 text-sm font-medium text-primary/80">
+              <span className="flex h-[18px] items-center rounded-md bg-primary/10 px-1.5 text-sm font-medium text-primary-foreground">
                 {organizationSubscription?.productName ??
                   (currentTier === "free" ? t("free") : currentTier)}
               </span>

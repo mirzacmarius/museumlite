@@ -129,16 +129,15 @@ export default function LibrarySettingsPage() {
 
   return (
     <div className="flex h-full w-full flex-col gap-6">
-      {/* Header */}
-      <div className="flex w-full items-center justify-between rounded-lg border border-border bg-card p-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
+      <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-3">
+          <Button variant="ghost" size="sm" className="w-fit" asChild>
             <Link href="/settings/integrations">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Link>
           </Button>
-          <div>
+          <div className="flex flex-col gap-2">
             <h2 className="text-xl font-medium text-foreground">
               Library Settings
             </h2>

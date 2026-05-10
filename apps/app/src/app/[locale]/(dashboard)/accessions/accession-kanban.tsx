@@ -2,7 +2,8 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { Suspense } from "react";
 import { KanbanColumn } from "./kanban-column";
 import { KanbanColumnSkeleton } from "./kanban-column-skeleton";
@@ -14,20 +15,19 @@ type WorkflowStep = {
 };
 
 type AccessionKanbanProps = {
+  accessions: FunctionReturnType<typeof api.accessions.list>;
   organizationId: Id<"organizations">;
   searchQuery: string;
-  preloadedAccessions: Preloaded<typeof api.accessions.list>;
 };
 
 export function AccessionKanban({
+  accessions,
   organizationId,
   searchQuery,
-  preloadedAccessions,
 }: AccessionKanbanProps) {
   const workflowSteps = useQuery(api.accessions.getWorkflowSteps, {
     organizationId,
   });
-  const accessions = usePreloadedQuery(preloadedAccessions);
 
   if (workflowSteps === undefined) {
     return (

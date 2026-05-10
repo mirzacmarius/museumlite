@@ -2,14 +2,9 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import {
-  type Preloaded,
-  useMutation,
-  usePreloadedQuery,
-  useQuery,
-} from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { useCallback, useDeferredValue, useState } from "react";
+import { useDeferredValue, useState } from "react";
 
 import {
   ExportButtonWithFormat,
@@ -21,12 +16,12 @@ import { Button } from "@v1/ui/button";
 import { FileUp, Loader2, Plus, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { AccessionKanban } from "./accession-kanban";
+import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
 import { AccessionsStats } from "./accessions-stats";
 import { AccessionsWorkbenchNav } from "./accessions-workbench-nav";
 
 type AccessionsPageClientProps = {
   organizationId: Id<"organizations">;
-  preloadedAccessions: Preloaded<typeof api.accessions.list>;
 };
 
 type AccessionListItem = FunctionReturnType<
@@ -35,14 +30,16 @@ type AccessionListItem = FunctionReturnType<
 
 export function AccessionsPageClient({
   organizationId,
-  preloadedAccessions,
 }: AccessionsPageClientProps) {
   const t = useScopedI18n("accessions");
   const [searchQuery, setSearchQuery] = useState("");
   const [isEmptyingTrash, setIsEmptyingTrash] = useState(false);
   const [bulkActionError, setBulkActionError] = useState<string | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
-  const accessions = usePreloadedQuery(preloadedAccessions);
+  const accessions = useQuery(api.accessions.list, {
+    organizationId,
+    paginationOpts: { numItems: 100, cursor: null },
+  });
   const { hasPermission, isLoading: permissionsLoading } = usePermissions();
   const canReviewTransfers =
     !permissionsLoading && hasPermission("organization.manage_settings");
@@ -55,6 +52,10 @@ export function AccessionsPageClient({
     api.imports.exportAccessionsWithFormat,
   );
   const emptyRejectedAccessions = useMutation(api.accessions.emptyRejected);
+
+  if (accessions === undefined) {
+    return <AccessionsPageSkeleton />;
+  }
 
   const pending = accessions.page.filter(
     (item: AccessionListItem) => item.status === "pending",
@@ -69,19 +70,16 @@ export function AccessionsPageClient({
     transferRequests?.filter((request) => request.status === "pending")
       .length ?? "-";
 
-  const handleExport = useCallback(
-    async (format: ExportFormat) => {
-      // Accessions don't support Dublin Core
-      if (format === "dublin-core") return undefined;
-      return exportAccessionsWithFormat({
-        organizationId,
-        format: format as "csv" | "json" | "xml" | "spectrum",
-      });
-    },
-    [exportAccessionsWithFormat, organizationId],
-  );
+  const handleExport = async (format: ExportFormat) => {
+    // Accessions don't support Dublin Core
+    if (format === "dublin-core") return undefined;
+    return exportAccessionsWithFormat({
+      organizationId,
+      format: format as "csv" | "json" | "xml" | "spectrum",
+    });
+  };
 
-  const handleEmptyTrash = useCallback(async () => {
+  const handleEmptyTrash = async () => {
     if (rejected === 0) {
       return;
     }
@@ -104,7 +102,7 @@ export function AccessionsPageClient({
     } finally {
       setIsEmptyingTrash(false);
     }
-  }, [emptyRejectedAccessions, organizationId, rejected, t]);
+  };
 
   return (
     <div className="flex h-full flex-col p-6">
@@ -186,9 +184,9 @@ export function AccessionsPageClient({
       />
 
       <AccessionKanban
+        accessions={accessions}
         organizationId={organizationId}
         searchQuery={deferredSearchQuery}
-        preloadedAccessions={preloadedAccessions}
       />
     </div>
   );

@@ -1,76 +1,36 @@
-import { getScopedI18n } from "@/locales/server";
-import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
-import { api } from "@v1/backend/convex/_generated/api";
-import { fetchQuery, preloadQuery } from "convex/nextjs";
-import type { FunctionReturnType } from "convex/server";
+"use client";
+
+import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { Archive, Plus } from "lucide-react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { Suspense } from "react";
 import { AccessionsPageSkeleton } from "../accessions/accessions-page-skeleton";
 import { DeaccessionsPageClient } from "./deaccessions-page-client";
 
-export const dynamic = "force-dynamic";
+export default function DeaccessionsPage() {
+  const { currentOrganizationId, organizations, isLoading } = useOrganization();
 
-type Organization = FunctionReturnType<
-  typeof api.organizations.listUserOrganizations
->[number];
-
-export default async function DeaccessionsPage() {
-  const token = await convexAuthNextjsToken();
-
-  const [user, organizations, preferredOrgId] = await Promise.all([
-    fetchQuery(api.users.getUser, {}, { token }),
-    fetchQuery(api.organizations.listUserOrganizations, {}, { token }),
-    fetchQuery(
-      api.userPreferences.get,
-      { key: "organization.activeOrgId" },
-      { token },
-    ),
-  ]);
-
-  if (!user?.username) {
-    redirect("/onboarding");
+  if (isLoading) {
+    return <AccessionsPageSkeleton />;
   }
 
   if (!organizations || organizations.length === 0) {
     return <NoOrganizationState />;
   }
 
-  const selectedOrg =
-    (preferredOrgId
-      ? organizations.find(
-          (organization: Organization) => organization._id === preferredOrgId,
-        )
-      : null) ?? organizations[0];
-
-  if (!selectedOrg) {
-    return <NoOrganizationState />;
+  if (!currentOrganizationId) {
+    return <AccessionsPageSkeleton />;
   }
-
-  const preloadedDeaccessions = await preloadQuery(
-    api.deaccessions.list,
-    {
-      organizationId: selectedOrg._id,
-      paginationOpts: { numItems: 100, cursor: null },
-    },
-    { token },
-  );
 
   return (
     <div className="flex h-full w-full flex-col bg-background">
-      <Suspense fallback={<AccessionsPageSkeleton />}>
-        <DeaccessionsPageClient
-          organizationId={selectedOrg._id}
-          preloadedDeaccessions={preloadedDeaccessions}
-        />
-      </Suspense>
+      <DeaccessionsPageClient organizationId={currentOrganizationId} />
     </div>
   );
 }
 
-async function NoOrganizationState() {
-  const t = await getScopedI18n("deaccessions");
+function NoOrganizationState() {
+  const t = useScopedI18n("deaccessions");
 
   return (
     <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">

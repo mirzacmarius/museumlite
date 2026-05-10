@@ -204,17 +204,11 @@ export default function IntegrationsSettingsPage() {
 
   return (
     <div className="flex h-full w-full flex-col gap-6">
-      {/* Header */}
-      <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
-        <div className="flex w-full flex-col gap-2 p-6">
-          <h2 className="text-xl font-medium text-foreground">{t("title")}</h2>
-          <p className="text-sm font-normal text-muted-foreground">
-            {t("description")}
-          </p>
-        </div>
+      <div className="flex w-full flex-col gap-2">
+        <h2 className="text-xl font-medium text-foreground">{t("title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("description")}</p>
       </div>
 
-      {/* Integrations List */}
       <div className="flex w-full flex-col gap-4">
         {availableIntegrations.map((integration) => {
           const isEnabled = enabledIntegrations.includes(integration.id);
@@ -278,7 +272,7 @@ export default function IntegrationsSettingsPage() {
                   {integration.features.map((feature) => (
                     <div
                       key={feature}
-                      className="flex items-center gap-2 text-sm text-primary/80"
+                      className="flex items-center gap-2 text-sm text-primary-foreground"
                     >
                       <Check className="h-4 w-4 text-green-500" />
                       {feature}

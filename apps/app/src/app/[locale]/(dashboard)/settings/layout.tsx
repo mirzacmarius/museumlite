@@ -68,8 +68,8 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
         </div>
       </div>
 
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-screen-xl gap-12 overflow-hidden">
-        <div className="hidden w-full max-w-64 shrink-0 flex-col gap-0.5 lg:flex">
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-screen-xl gap-10 overflow-hidden">
+        <div className="hidden w-full max-w-48 shrink-0 flex-col gap-0.5 lg:flex">
           <Link
             href="/settings/organization"
             className={cn(

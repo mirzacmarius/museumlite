@@ -71,6 +71,81 @@ function getDraftDisplaySource(
   );
 }
 
+function buildSearchText(values: Array<string | null | undefined>) {
+  return values
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value))
+    .join(" ");
+}
+
+async function buildAccessionSearchText(
+  ctx: MutationCtx,
+  accession: Doc<"accessions">,
+) {
+  const collection = accession.collectionId
+    ? await ctx.db.get(accession.collectionId)
+    : null;
+
+  return buildSearchText([
+    accession.accessionNumber,
+    accession.draftObjectData?.title,
+    accession.source,
+    accession.notes,
+    collection?.title,
+    accession.method,
+  ]);
+}
+
+async function upsertAccessionSearchDocument(
+  ctx: MutationCtx,
+  accession: Doc<"accessions">,
+) {
+  const searchText = await buildAccessionSearchText(ctx, accession);
+  const existing = await ctx.db
+    .query("accessionSearchDocuments")
+    .withIndex("by_accession", (q) => q.eq("accessionId", accession._id))
+    .first();
+
+  const fields = {
+    organizationId: accession.organizationId,
+    accessionId: accession._id,
+    status: accession.status,
+    searchText,
+    dateReceived: accession.dateReceived,
+  };
+
+  if (existing) {
+    await ctx.db.patch(existing._id, fields);
+    return;
+  }
+
+  await ctx.db.insert("accessionSearchDocuments", fields);
+}
+
+async function syncAccessionSearchDocument(
+  ctx: MutationCtx,
+  accessionId: Id<"accessions">,
+) {
+  const accession = await ctx.db.get(accessionId);
+  if (accession) {
+    await upsertAccessionSearchDocument(ctx, accession);
+  }
+}
+
+async function deleteAccessionSearchDocument(
+  ctx: MutationCtx,
+  accessionId: Id<"accessions">,
+) {
+  const existing = await ctx.db
+    .query("accessionSearchDocuments")
+    .withIndex("by_accession", (q) => q.eq("accessionId", accessionId))
+    .first();
+
+  if (existing) {
+    await ctx.db.delete(existing._id);
+  }
+}
+
 function getFileCategory(
   mimeType: string,
   mediaCategory?: "image" | "document",
@@ -458,6 +533,8 @@ export const create = mutation({
       workflowHistory,
     });
 
+    await syncAccessionSearchDocument(ctx, accessionId);
+
     // Log audit action
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: args.organizationId,
@@ -637,6 +714,7 @@ export const upsertObjectDraft = mutation({
         },
         draftMedia: args.draftMedia ?? existing.draftMedia,
       });
+      await syncAccessionSearchDocument(ctx, existing._id);
 
       await ctx.runMutation(internal.audit.logAction, {
         organizationId: args.organizationId,
@@ -712,6 +790,7 @@ export const upsertObjectDraft = mutation({
         },
         draftMedia: args.draftMedia ?? reusableDraft.draftMedia,
       });
+      await syncAccessionSearchDocument(ctx, reusableDraft._id);
 
       await ctx.runMutation(internal.audit.logAction, {
         organizationId: args.organizationId,
@@ -807,6 +886,7 @@ export const upsertObjectDraft = mutation({
       },
       draftMedia: args.draftMedia,
     });
+    await syncAccessionSearchDocument(ctx, accessionId);
 
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: args.organizationId,
@@ -901,56 +981,166 @@ export const list = query({
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "collections.read");
 
-    let query = ctx.db
-      .query("accessions")
+    const search = args.search?.trim();
+
+    const addAssigneeNames = async (page: Doc<"accessions">[]) => {
+      const assigneeIds = page.flatMap((item) =>
+        item.assignedTo ? [item.assignedTo] : [],
+      );
+      const usersMap = await batchLookup(ctx, assigneeIds, "users");
+
+      return page.map((item) => {
+        let assigneeName: string | undefined;
+        if (item.assignedTo) {
+          const user = usersMap.get(item.assignedTo);
+          assigneeName = user?.name || user?.email || undefined;
+        }
+
+        return {
+          _id: item._id,
+          accessionNumber: item.accessionNumber,
+          dateReceived: item.dateReceived,
+          source: item.source,
+          draftTitle: item.draftObjectData?.title,
+          method: item.method,
+          status: item.status,
+          workflowStep: item.workflowStep,
+          assignedTo: item.assignedTo,
+          assigneeName,
+        };
+      });
+    };
+
+    if (!search) {
+      if (args.status) {
+        const status = args.status;
+        const paginationResult = await ctx.db
+          .query("accessions")
+          .withIndex("by_organization_and_status_and_dateReceived", (q) =>
+            q.eq("organizationId", args.organizationId).eq("status", status),
+          )
+          .order("desc")
+          .paginate(args.paginationOpts);
+
+        return {
+          page: await addAssigneeNames(paginationResult.page),
+          isDone: paginationResult.isDone,
+          continueCursor: paginationResult.continueCursor,
+        };
+      }
+
+      const paginationResult = await ctx.db
+        .query("accessions")
+        .withIndex("by_organization_and_dateReceived", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .order("desc")
+        .paginate(args.paginationOpts);
+
+      return {
+        page: await addAssigneeNames(paginationResult.page),
+        isDone: paginationResult.isDone,
+        continueCursor: paginationResult.continueCursor,
+      };
+    }
+
+    const hasSearchDocuments = await ctx.db
+      .query("accessionSearchDocuments")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
-      );
+      )
+      .first();
 
-    if (args.status) {
-      query = query.filter((q) => q.eq(q.field("status"), args.status));
-    }
+    if (hasSearchDocuments) {
+      const paginationResult = args.status
+        ? await (() => {
+            const status = args.status;
+            return ctx.db
+              .query("accessionSearchDocuments")
+              .withSearchIndex("search_text", (q) =>
+                q
+                  .search("searchText", search)
+                  .eq("organizationId", args.organizationId)
+                  .eq("status", status),
+              )
+              .paginate(args.paginationOpts);
+          })()
+        : await ctx.db
+            .query("accessionSearchDocuments")
+            .withSearchIndex("search_text", (q) =>
+              q
+                .search("searchText", search)
+                .eq("organizationId", args.organizationId),
+            )
+            .paginate(args.paginationOpts);
 
-    // Collect all results for search filtering
-    let allResults = await query.collect();
-
-    // Apply search filter if provided
-    if (args.search && args.search.trim().length > 0) {
-      const searchLower = args.search.toLowerCase();
-      // Batch fetch collections to avoid N+1 queries
-      const collectionIds = allResults
-        .map((a) => a.collectionId)
-        .filter(Boolean) as Id<"collections">[];
-      const collectionMap = await batchLookup(
+      const accessionsMap = await batchLookup(
         ctx,
-        collectionIds,
-        "collections",
+        paginationResult.page.map(
+          (searchDocument) => searchDocument.accessionId,
+        ),
+        "accessions",
       );
-
-      // Get collection titles for accessions to include in search
-      const accessionsWithCollectionInfo = allResults.map((accession) => {
-        const collectionTitle = accession.collectionId
-          ? collectionMap.get(accession.collectionId)?.title || ""
-          : "";
-        return { ...accession, collectionTitle };
+      const page = paginationResult.page.flatMap((searchDocument) => {
+        const accession = accessionsMap.get(searchDocument.accessionId);
+        return accession ? [accession] : [];
       });
 
-      allResults = accessionsWithCollectionInfo
-        .filter((accession) => {
-          return (
-            accession.accessionNumber?.toLowerCase().includes(searchLower) ||
-            accession.draftObjectData?.title
-              ?.toLowerCase()
-              .includes(searchLower) ||
-            accession.source?.toLowerCase().includes(searchLower) ||
-            accession.notes?.toLowerCase().includes(searchLower) ||
-            accession.collectionTitle?.toLowerCase().includes(searchLower) ||
-            accession.method?.toLowerCase().includes(searchLower) ||
-            false
-          );
-        })
-        .map(({ collectionTitle, ...accession }) => accession); // Remove temporary field
+      return {
+        page: await addAssigneeNames(page),
+        isDone: paginationResult.isDone,
+        continueCursor: paginationResult.continueCursor,
+      };
     }
+
+    let allResults: Doc<"accessions">[];
+    if (args.status) {
+      const status = args.status;
+      allResults = await ctx.db
+        .query("accessions")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", args.organizationId).eq("status", status),
+        )
+        .collect();
+    } else {
+      allResults = await ctx.db
+        .query("accessions")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect();
+    }
+
+    const searchLower = search.toLowerCase();
+    // Batch fetch collections to avoid N+1 queries
+    const collectionIds = allResults.flatMap((accession) =>
+      accession.collectionId ? [accession.collectionId] : [],
+    );
+    const collectionMap = await batchLookup(ctx, collectionIds, "collections");
+
+    // Get collection titles for accessions to include in search
+    const accessionsWithCollectionInfo = allResults.map((accession) => {
+      const collectionTitle = accession.collectionId
+        ? collectionMap.get(accession.collectionId)?.title || ""
+        : "";
+      return { ...accession, collectionTitle };
+    });
+
+    allResults = accessionsWithCollectionInfo
+      .filter((accession) => {
+        return (
+          accession.accessionNumber?.toLowerCase().includes(searchLower) ||
+          accession.draftObjectData?.title
+            ?.toLowerCase()
+            .includes(searchLower) ||
+          accession.source?.toLowerCase().includes(searchLower) ||
+          accession.notes?.toLowerCase().includes(searchLower) ||
+          accession.collectionTitle?.toLowerCase().includes(searchLower) ||
+          accession.method?.toLowerCase().includes(searchLower) ||
+          false
+        );
+      })
+      .map(({ collectionTitle, ...accession }) => accession); // Remove temporary field
 
     // Sort by date received (newest first)
     allResults.sort((a, b) => b.dateReceived - a.dateReceived);
@@ -966,37 +1156,36 @@ export const list = query({
     );
     const page = allResults.slice(startIndex, endIndex);
 
-    // Batch fetch users for assignees
-    const assigneeIds = page
-      .map((item) => item.assignedTo)
-      .filter((id) => id !== undefined) as Id<"users">[];
-    const usersMap = await batchLookup(ctx, assigneeIds, "users");
-
-    const pageWithAssignees = page.map((item) => {
-      let assigneeName: string | undefined;
-      if (item.assignedTo) {
-        const user = usersMap.get(item.assignedTo);
-        assigneeName = user?.name || user?.email || undefined;
-      }
-      return {
-        _id: item._id,
-        accessionNumber: item.accessionNumber,
-        dateReceived: item.dateReceived,
-        source: item.source,
-        draftTitle: item.draftObjectData?.title,
-        method: item.method,
-        status: item.status,
-        workflowStep: item.workflowStep,
-        assignedTo: item.assignedTo,
-        assigneeName,
-      };
-    });
-
     return {
-      page: pageWithAssignees,
+      page: await addAssigneeNames(page),
       isDone: endIndex >= allResults.length,
       continueCursor: endIndex.toString(),
     };
+  },
+});
+
+export const backfillSearchDocuments = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    updatedCount: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
+    const accessions = await ctx.db
+      .query("accessions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    for (const accession of accessions) {
+      await upsertAccessionSearchDocument(ctx, accession);
+    }
+
+    return { updatedCount: accessions.length };
   },
 });
 
@@ -1204,6 +1393,7 @@ export const update = mutation({
     if (args.notes !== undefined) updates.notes = args.notes;
 
     await ctx.db.patch(args.accessionId, updates);
+    await syncAccessionSearchDocument(ctx, args.accessionId);
 
     return null;
   },
@@ -1475,6 +1665,7 @@ export const approve = mutation({
           approvedAt: Date.now(),
           workflowHistory: history,
         });
+        await syncAccessionSearchDocument(ctx, args.accessionId);
 
         await ctx.runMutation(internal.workflows.recordWorkflowHistory, {
           organizationId: accession.organizationId,
@@ -1562,6 +1753,7 @@ export const approve = mutation({
         approvedBy: userId,
         approvedAt: Date.now(),
       });
+      await syncAccessionSearchDocument(ctx, args.accessionId);
 
       await ctx.runMutation(internal.workflows.recordWorkflowHistory, {
         organizationId: accession.organizationId,
@@ -1653,6 +1845,7 @@ export const reject = mutation({
         ? `${accession.notes || ""}\nRejected: ${args.comment}`.trim()
         : accession.notes,
     });
+    await syncAccessionSearchDocument(ctx, args.accessionId);
 
     const collectionId = await ctx.runMutation(
       internal.accessions.createCollectionFromRejectedAccession,
@@ -1751,6 +1944,7 @@ export const emptyRejected = mutation({
       }
 
       await ctx.db.delete(accession._id);
+      await deleteAccessionSearchDocument(ctx, accession._id);
       deletedCount += 1;
     }
 
@@ -1844,6 +2038,7 @@ export const createCollectionFromAccession = internalMutation({
     await ctx.db.patch(args.accessionId, {
       collectionId,
     });
+    await syncAccessionSearchDocument(ctx, args.accessionId);
 
     return collectionId;
   },
@@ -1874,6 +2069,7 @@ export const createCollectionFromRejectedAccession = internalMutation({
         changedAt: rejectedAt,
         displayStatus: REJECTED_OBJECT_DISPLAY_STATUS,
       });
+      await syncAccessionSearchDocument(ctx, args.accessionId);
       return accession.collectionId;
     }
 
@@ -1891,6 +2087,7 @@ export const createCollectionFromRejectedAccession = internalMutation({
     await ctx.db.patch(args.accessionId, {
       collectionId,
     });
+    await syncAccessionSearchDocument(ctx, args.accessionId);
 
     return collectionId;
   },
@@ -2786,6 +2983,8 @@ export const processBulkImport = mutation({
           workflowHistory,
         });
 
+        await syncAccessionSearchDocument(ctx, accessionId);
+
         accessionIds.push(accessionId);
         imported++;
 
@@ -2900,7 +3099,7 @@ export const bulkExport = query({
     );
 
     // Filter out null accessions and check permissions
-    const validAccessions = [];
+    const validAccessions: Doc<"accessions">[] = [];
     for (const accession of accessions) {
       if (accession) {
         await requirePermission(
@@ -2913,9 +3112,9 @@ export const bulkExport = query({
     }
 
     // Batch fetch collections to avoid N+1 queries
-    const collectionIds = validAccessions
-      .map((a) => a.collectionId)
-      .filter(Boolean) as Id<"collections">[];
+    const collectionIds = validAccessions.flatMap((accession) =>
+      accession.collectionId ? [accession.collectionId] : [],
+    );
     const collectionMap = await batchLookup(ctx, collectionIds, "collections");
 
     const results: Array<{

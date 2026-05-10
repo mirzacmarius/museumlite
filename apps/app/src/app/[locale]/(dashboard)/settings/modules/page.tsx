@@ -129,13 +129,9 @@ export default function ModulesSettingsPage() {
 
   return (
     <div className="flex h-full w-full flex-col gap-6">
-      <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
-        <div className="flex w-full flex-col gap-2 p-6">
-          <h2 className="text-xl font-medium text-foreground">{t("title")}</h2>
-          <p className="text-sm font-normal text-muted-foreground">
-            {t("description")}
-          </p>
-        </div>
+      <div className="flex w-full flex-col gap-2">
+        <h2 className="text-xl font-medium text-foreground">{t("title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("description")}</p>
       </div>
       <div className="flex w-full flex-col gap-4">
         {MODULE_IDS.map((moduleId) => {

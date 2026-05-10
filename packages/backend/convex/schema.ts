@@ -1144,10 +1144,37 @@ export default defineSchema({
     .index("by_collection", ["collectionId"])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_organization_and_dateReceived", [
+      "organizationId",
+      "dateReceived",
+    ])
+    .index("by_organization_and_status_and_dateReceived", [
+      "organizationId",
+      "status",
+      "dateReceived",
+    ])
     .index("by_donor_account", ["donorAccountId"])
     .index("by_assigned_to", ["assignedTo"])
     .searchIndex("search_accessions", {
       searchField: "accessionNumber",
+      filterFields: ["organizationId", "status"],
+    }),
+
+  accessionSearchDocuments: defineTable({
+    organizationId: v.id("organizations"),
+    accessionId: v.id("accessions"),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected"),
+    ),
+    searchText: v.string(),
+    dateReceived: v.number(),
+  })
+    .index("by_accession", ["accessionId"])
+    .index("by_organization", ["organizationId"])
+    .searchIndex("search_text", {
+      searchField: "searchText",
       filterFields: ["organizationId", "status"],
     }),
 
@@ -1231,8 +1258,35 @@ export default defineSchema({
     .index("by_collection", ["collectionId"])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_organization_and_dateDeaccessioned", [
+      "organizationId",
+      "dateDeaccessioned",
+    ])
+    .index("by_organization_and_status_and_dateDeaccessioned", [
+      "organizationId",
+      "status",
+      "dateDeaccessioned",
+    ])
     .index("by_regulatory_token", ["regulatoryApprovalToken"])
     .index("by_assigned_to", ["assignedTo"]),
+
+  deaccessionSearchDocuments: defineTable({
+    organizationId: v.id("organizations"),
+    deaccessionId: v.id("deaccessions"),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected"),
+    ),
+    searchText: v.string(),
+    dateDeaccessioned: v.number(),
+  })
+    .index("by_deaccession", ["deaccessionId"])
+    .index("by_organization", ["organizationId"])
+    .searchIndex("search_text", {
+      searchField: "searchText",
+      filterFields: ["organizationId", "status"],
+    }),
 
   // Appraisals for collection items
   appraisals: defineTable({

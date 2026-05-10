@@ -9,6 +9,7 @@ import {
   mutation,
   query,
 } from "./_generated/server";
+import { batchLookup } from "./utils/batchLookup";
 import {
   applyCollectionDisposition,
   canRestoreRejectedDisposition,
@@ -38,6 +39,66 @@ function resolveTargetCollectionStatus(deaccession: {
   targetCollectionStatus?: "deaccessioned" | "archived" | "deleted";
 }) {
   return deaccession.targetCollectionStatus ?? "deaccessioned";
+}
+
+function buildSearchText(values: Array<string | null | undefined>) {
+  return values
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value))
+    .join(" ");
+}
+
+async function buildDeaccessionSearchText(
+  ctx: MutationCtx,
+  deaccession: Doc<"deaccessions">,
+) {
+  const collection = await ctx.db.get(deaccession.collectionId);
+
+  return buildSearchText([
+    deaccession.deaccessionNumber,
+    deaccession.reason,
+    deaccession.disposition,
+    deaccession.notes,
+    collection?.title,
+    collection?.accessionNumber,
+    deaccession.method,
+  ]);
+}
+
+async function upsertDeaccessionSearchDocument(
+  ctx: MutationCtx,
+  deaccession: Doc<"deaccessions">,
+) {
+  const searchText = await buildDeaccessionSearchText(ctx, deaccession);
+  const existing = await ctx.db
+    .query("deaccessionSearchDocuments")
+    .withIndex("by_deaccession", (q) => q.eq("deaccessionId", deaccession._id))
+    .first();
+
+  const fields = {
+    organizationId: deaccession.organizationId,
+    deaccessionId: deaccession._id,
+    status: deaccession.status,
+    searchText,
+    dateDeaccessioned: deaccession.dateDeaccessioned,
+  };
+
+  if (existing) {
+    await ctx.db.patch(existing._id, fields);
+    return;
+  }
+
+  await ctx.db.insert("deaccessionSearchDocuments", fields);
+}
+
+async function syncDeaccessionSearchDocument(
+  ctx: MutationCtx,
+  deaccessionId: Id<"deaccessions">,
+) {
+  const deaccession = await ctx.db.get(deaccessionId);
+  if (deaccession) {
+    await upsertDeaccessionSearchDocument(ctx, deaccession);
+  }
 }
 
 async function restoreRejectedCollectionStatus(
@@ -209,6 +270,7 @@ async function createDeaccessionRecord(
     proceedsDate: args.proceedsDate,
     proceedsNotes: args.proceedsNotes,
   });
+  await syncDeaccessionSearchDocument(ctx, deaccessionId);
 
   await ctx.runMutation(internal.audit.logAction, {
     organizationId: args.organizationId,
@@ -367,6 +429,7 @@ export const createRejectedFromAccession = internalMutation({
       .first();
 
     if (existingRejectedDeaccession) {
+      await syncDeaccessionSearchDocument(ctx, existingRejectedDeaccession._id);
       return existingRejectedDeaccession._id;
     }
 
@@ -400,6 +463,7 @@ export const createRejectedFromAccession = internalMutation({
         },
       ],
     });
+    await syncDeaccessionSearchDocument(ctx, deaccessionId);
 
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: args.organizationId,
@@ -465,10 +529,133 @@ export const list = query({
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "collections.read");
 
-    let allResults: Doc<"deaccessions">[];
+    const addCollectionInfo = async (page: Doc<"deaccessions">[]) => {
+      const collectionMap = await batchLookup(
+        ctx,
+        page.map((deaccession) => deaccession.collectionId),
+        "collections",
+      );
 
-    const status = args.status;
-    if (status) {
+      return page.map((deaccession) => {
+        const collection = collectionMap.get(deaccession.collectionId);
+
+        return {
+          ...deaccession,
+          collectionTitle: collection?.title || "",
+          accessionNumber: collection?.accessionNumber,
+        };
+      });
+    };
+
+    const serializePage = (
+      page: Awaited<ReturnType<typeof addCollectionInfo>>,
+    ) =>
+      page.map((item) => ({
+        _id: item._id,
+        deaccessionNumber: item.deaccessionNumber,
+        collectionId: item.collectionId,
+        collectionTitle: item.collectionTitle || "Unknown object",
+        accessionNumber: item.accessionNumber,
+        dateDeaccessioned: item.dateDeaccessioned,
+        reason: item.reason,
+        method: item.method,
+        targetCollectionStatus: resolveTargetCollectionStatus(item),
+        status: item.status,
+        workflowStep: item.workflowStep,
+      }));
+
+    const searchLower = args.search?.trim().toLowerCase();
+
+    if (!searchLower) {
+      if (args.status) {
+        const status = args.status;
+        const paginationResult = await ctx.db
+          .query("deaccessions")
+          .withIndex("by_organization_and_status_and_dateDeaccessioned", (q) =>
+            q.eq("organizationId", args.organizationId).eq("status", status),
+          )
+          .order("desc")
+          .paginate(args.paginationOpts);
+
+        const page = await addCollectionInfo(paginationResult.page);
+
+        return {
+          page: serializePage(page),
+          isDone: paginationResult.isDone,
+          continueCursor: paginationResult.continueCursor,
+        };
+      }
+
+      const paginationResult = await ctx.db
+        .query("deaccessions")
+        .withIndex("by_organization_and_dateDeaccessioned", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .order("desc")
+        .paginate(args.paginationOpts);
+
+      const page = await addCollectionInfo(paginationResult.page);
+
+      return {
+        page: serializePage(page),
+        isDone: paginationResult.isDone,
+        continueCursor: paginationResult.continueCursor,
+      };
+    }
+
+    const hasSearchDocuments = await ctx.db
+      .query("deaccessionSearchDocuments")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .first();
+
+    if (hasSearchDocuments) {
+      const paginationResult = args.status
+        ? await (() => {
+            const status = args.status;
+            return ctx.db
+              .query("deaccessionSearchDocuments")
+              .withSearchIndex("search_text", (q) =>
+                q
+                  .search("searchText", searchLower)
+                  .eq("organizationId", args.organizationId)
+                  .eq("status", status),
+              )
+              .paginate(args.paginationOpts);
+          })()
+        : await ctx.db
+            .query("deaccessionSearchDocuments")
+            .withSearchIndex("search_text", (q) =>
+              q
+                .search("searchText", searchLower)
+                .eq("organizationId", args.organizationId),
+            )
+            .paginate(args.paginationOpts);
+
+      const deaccessionsMap = await batchLookup(
+        ctx,
+        paginationResult.page.map(
+          (searchDocument) => searchDocument.deaccessionId,
+        ),
+        "deaccessions",
+      );
+      const deaccessions = paginationResult.page.flatMap((searchDocument) => {
+        const deaccession = deaccessionsMap.get(searchDocument.deaccessionId);
+        return deaccession ? [deaccession] : [];
+      });
+      const page = await addCollectionInfo(deaccessions);
+
+      return {
+        page: serializePage(page),
+        isDone: paginationResult.isDone,
+        continueCursor: paginationResult.continueCursor,
+      };
+    }
+
+    let allResults: Doc<"deaccessions">[];
+    if (args.status) {
+      const status = args.status;
       allResults = await ctx.db
         .query("deaccessions")
         .withIndex("by_organization_and_status", (q) =>
@@ -484,33 +671,23 @@ export const list = query({
         .collect();
     }
 
-    const deaccessionsWithCollectionInfo = await Promise.all(
-      allResults.map(async (deaccession) => {
-        const collection = await ctx.db.get(deaccession.collectionId);
-        return {
-          ...deaccession,
-          collectionTitle: collection?.title || "",
-          accessionNumber: collection?.accessionNumber,
-        };
-      }),
-    );
+    const deaccessionsWithCollectionInfo = await addCollectionInfo(allResults);
 
     // Apply search filter if provided
-    const searchLower = args.search?.trim().toLowerCase();
-    const filteredResults = searchLower
-      ? deaccessionsWithCollectionInfo.filter((deaccession) => {
-          return (
-            deaccession.deaccessionNumber.toLowerCase().includes(searchLower) ||
-            deaccession.reason.toLowerCase().includes(searchLower) ||
-            deaccession.disposition?.toLowerCase().includes(searchLower) ||
-            deaccession.notes?.toLowerCase().includes(searchLower) ||
-            deaccession.collectionTitle.toLowerCase().includes(searchLower) ||
-            deaccession.accessionNumber?.toLowerCase().includes(searchLower) ||
-            deaccession.method.toLowerCase().includes(searchLower) ||
-            false
-          );
-        })
-      : deaccessionsWithCollectionInfo;
+    const filteredResults = deaccessionsWithCollectionInfo.filter(
+      (deaccession) => {
+        return (
+          deaccession.deaccessionNumber.toLowerCase().includes(searchLower) ||
+          deaccession.reason.toLowerCase().includes(searchLower) ||
+          deaccession.disposition?.toLowerCase().includes(searchLower) ||
+          deaccession.notes?.toLowerCase().includes(searchLower) ||
+          deaccession.collectionTitle.toLowerCase().includes(searchLower) ||
+          deaccession.accessionNumber?.toLowerCase().includes(searchLower) ||
+          deaccession.method.toLowerCase().includes(searchLower) ||
+          false
+        );
+      },
+    );
 
     // Sort by date deaccessioned (newest first)
     filteredResults.sort((a, b) => b.dateDeaccessioned - a.dateDeaccessioned);
@@ -527,22 +704,35 @@ export const list = query({
     const page = filteredResults.slice(startIndex, endIndex);
 
     return {
-      page: page.map((item) => ({
-        _id: item._id,
-        deaccessionNumber: item.deaccessionNumber,
-        collectionId: item.collectionId,
-        collectionTitle: item.collectionTitle || "Unknown object",
-        accessionNumber: item.accessionNumber,
-        dateDeaccessioned: item.dateDeaccessioned,
-        reason: item.reason,
-        method: item.method,
-        targetCollectionStatus: resolveTargetCollectionStatus(item),
-        status: item.status,
-        workflowStep: item.workflowStep,
-      })),
+      page: serializePage(page),
       isDone: endIndex >= filteredResults.length,
       continueCursor: endIndex.toString(),
     };
+  },
+});
+
+export const backfillSearchDocuments = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.object({
+    updatedCount: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
+    const deaccessions = await ctx.db
+      .query("deaccessions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    for (const deaccession of deaccessions) {
+      await upsertDeaccessionSearchDocument(ctx, deaccession);
+    }
+
+    return { updatedCount: deaccessions.length };
   },
 });
 
@@ -776,6 +966,7 @@ export const update = mutation({
       updates.proceedsNotes = args.proceedsNotes;
 
     await ctx.db.patch(args.deaccessionId, updates);
+    await syncDeaccessionSearchDocument(ctx, args.deaccessionId);
 
     return null;
   },
@@ -921,6 +1112,7 @@ export const approve = mutation({
           approvedAt: Date.now(),
           workflowHistory: history,
         });
+        await syncDeaccessionSearchDocument(ctx, args.deaccessionId);
 
         // Log audit action
         await ctx.runMutation(internal.audit.logAction, {
@@ -981,6 +1173,7 @@ export const approve = mutation({
         approvedBy: userId,
         approvedAt: Date.now(),
       });
+      await syncDeaccessionSearchDocument(ctx, args.deaccessionId);
 
       // Log audit action
       await ctx.runMutation(internal.audit.logAction, {
@@ -1060,6 +1253,7 @@ export const reject = mutation({
         ? `${deaccession.notes || ""}\nRejected: ${args.comment}`.trim()
         : deaccession.notes,
     });
+    await syncDeaccessionSearchDocument(ctx, args.deaccessionId);
 
     // Log audit action
     await ctx.runMutation(internal.audit.logAction, {

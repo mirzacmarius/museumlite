@@ -386,7 +386,9 @@ export default function DataPage() {
   return (
     <div className="flex h-full w-full flex-col gap-6">
       <div className="flex w-full flex-col gap-2">
-        <h2 className="text-xl font-medium text-foreground">Data Import/Export</h2>
+        <h2 className="text-xl font-medium text-foreground">
+          Data Import/Export
+        </h2>
         <p className="text-sm text-muted-foreground">
           Import data from CSV files or export your data for backup and
           analysis.
@@ -394,7 +396,7 @@ export default function DataPage() {
       </div>
 
       <Tabs defaultValue="import" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList>
           <TabsTrigger value="import" className="gap-2">
             <Upload className="h-4 w-4" />
             Import

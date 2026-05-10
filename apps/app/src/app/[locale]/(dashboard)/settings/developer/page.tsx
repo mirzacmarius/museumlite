@@ -77,10 +77,10 @@ export default function DeveloperPage() {
   }
 
   return (
-    <div className="w-full space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
-        <p className="text-muted-foreground mt-2">{t("description")}</p>
+    <div className="flex w-full flex-col gap-6">
+      <div className="flex w-full flex-col gap-2">
+        <h2 className="text-xl font-medium text-foreground">{t("title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("description")}</p>
       </div>
 
       <Tabs defaultValue="api-keys" className="w-full">

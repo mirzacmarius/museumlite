@@ -170,13 +170,12 @@ export default function SitesSettingsPage() {
   return (
     <PermissionGate permission="sites.read">
       <div className="flex flex-col gap-8">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
+        <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-xl font-medium text-foreground">
               Site Management
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            </h2>
+            <p className="text-sm text-muted-foreground">
               Manage physical locations and branches for your organization
             </p>
           </div>

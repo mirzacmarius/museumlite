@@ -6,12 +6,7 @@ import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import {
-  type Preloaded,
-  useMutation,
-  usePreloadedQuery,
-  useQuery,
-} from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { Download, Loader2, Plus, Printer, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -25,12 +20,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
+import { AccessionsPageSkeleton } from "../accessions/accessions-page-skeleton";
 import { DeaccessionKanban } from "./deaccession-kanban";
 import { DeaccessionsStats } from "./deaccessions-stats";
 
 type DeaccessionsPageClientProps = {
   organizationId: Id<"organizations">;
-  preloadedDeaccessions: Preloaded<typeof api.deaccessions.list>;
 };
 
 type DeaccessionsList = FunctionReturnType<typeof api.deaccessions.list>;
@@ -42,7 +37,6 @@ type DeaccessionsExportItem = DeaccessionsExportData["items"][number];
 
 export function DeaccessionsPageClient({
   organizationId,
-  preloadedDeaccessions,
 }: DeaccessionsPageClientProps) {
   const t = useScopedI18n("deaccessions");
   const objectsT = useScopedI18n("objects");
@@ -50,15 +44,20 @@ export function DeaccessionsPageClient({
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isEmptyingTrash, setIsEmptyingTrash] = useState(false);
   const deferredSearchQuery = useDeferredValue(searchQuery);
-  const deaccessions: DeaccessionsList = usePreloadedQuery(
-    preloadedDeaccessions,
-  );
+  const deaccessions = useQuery(api.deaccessions.list, {
+    organizationId,
+    paginationOpts: { numItems: 100, cursor: null },
+  });
   const deletedObjectCount = useQuery(api.collections.countDeletedCollections, {
     organizationId,
   });
   const emptyDeletedCollections = useMutation(
     api.collections.emptyDeletedCollections,
   );
+
+  if (deaccessions === undefined) {
+    return <AccessionsPageSkeleton />;
+  }
 
   const pending = deaccessions.page.filter(
     (item: DeaccessionListItem) => item.status === "pending",
