@@ -6,6 +6,7 @@ import { Input } from "@v1/ui/input";
 import { useQuery } from "convex/react";
 import { Search } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
+import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
 import { AccessionsWorkbenchNav } from "./accessions-workbench-nav";
 import { TransferKanbanColumn } from "./transfer-kanban-column";
 
@@ -67,34 +68,35 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
 
   if (transferRequests === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center px-6">
-        <p className="text-muted-foreground">Loading transfers...</p>
-      </div>
+      <AccessionsPageSkeleton
+        actionsCount={1}
+        showWorkbenchNav={true}
+        statsCount={5}
+      />
     );
   }
 
   return (
     <div className="flex h-full w-full flex-col bg-background p-6">
-      <div className="mb-6 flex items-end justify-between gap-6">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500">
-            Accessions workbench
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white">
-            Transfer review
-          </h1>
-          <p className="mt-1 max-w-2xl text-sm text-zinc-500">
-            Track incoming and outgoing custody movement before final
-            accessioning adds objects to the catalog/archive.
-          </p>
-        </div>
-
+      <div className="mb-6 flex min-h-[52px] items-center justify-between gap-6">
         <div className="flex gap-4">
           <TransferStat label="Pending" value={stats.pending} />
           <TransferStat label="Incoming" value={stats.incoming} />
           <TransferStat label="Executed" value={stats.executed} />
           <TransferStat label="Rejected" value={stats.rejected} />
           <TransferStat label="Cancelled" value={stats.cancelled} />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="group relative">
+            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground transition-colors group-focus-within:text-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search transfers"
+              className="w-64 rounded-md border-input bg-background/60 py-1.5 pl-8 pr-3 text-xs text-foreground transition-all placeholder:text-muted-foreground focus:border-ring focus:bg-background"
+            />
+          </div>
         </div>
       </div>
 
@@ -103,18 +105,6 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
         pendingAccessions={pendingAccessions}
         pendingTransfers={stats.pending}
       />
-
-      <div className="mb-6 flex items-center gap-3">
-        <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-          <Input
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search transfers"
-            className="h-8 rounded-full border-zinc-800 bg-zinc-900 pl-9 text-xs text-zinc-200 placeholder:text-zinc-500"
-          />
-        </div>
-      </div>
 
       <div className="flex-1 overflow-x-auto custom-scrollbar">
         <div className="flex h-full min-w-max gap-6 pb-4">
@@ -168,10 +158,10 @@ function TransferStat({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </span>
-      <span className="text-2xl font-semibold tracking-tight text-white">
+      <span className="text-2xl font-semibold tracking-tight text-foreground">
         {value}
       </span>
     </div>

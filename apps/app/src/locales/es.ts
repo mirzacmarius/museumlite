@@ -3538,6 +3538,7 @@ export default {
     stats: {
       pending: "Pendiente",
       approved: "Aprobado",
+      deaccessions: "Desaccesiones",
     },
     actions: {
       emptyTrash: "Vaciar papelera",

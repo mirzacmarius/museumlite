@@ -106,7 +106,7 @@ export function AccessionsPageClient({
 
   return (
     <div className="flex h-full flex-col p-6">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex min-h-[52px] items-center justify-between gap-6">
         <div className="space-y-2">
           <AccessionsStats
             stats={{
@@ -121,46 +121,69 @@ export function AccessionsPageClient({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="group relative">
+            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground transition-colors group-focus-within:text-foreground" />
             <input
               type="text"
               placeholder={t("searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 w-56 rounded-full border border-input bg-background/60 pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-ring focus:bg-background focus:outline-none"
+              className="w-64 rounded-md border border-input bg-background/60 py-1.5 pl-8 pr-3 text-xs text-foreground transition-all placeholder:text-muted-foreground focus:border-ring focus:bg-background focus:outline-none"
             />
           </div>
-          <PermissionGate permission="collections.read">
+          <PermissionGate
+            loadingFallback={
+              <div className="h-8 w-20 animate-pulse rounded-md bg-muted/60" />
+            }
+            permission="collections.read"
+          >
             <ExportButtonWithFormat
+              buttonClassName="h-8 px-2.5 text-xs"
+              buttonSize="sm"
               onExport={handleExport}
               filename="accessions"
               supportedFormats={["csv", "json", "xml", "spectrum"]}
             />
           </PermissionGate>
-          <PermissionGate permission="collections.create">
+          <PermissionGate
+            loadingFallback={
+              <div className="h-8 w-20 animate-pulse rounded-md bg-muted/60" />
+            }
+            permission="collections.create"
+          >
             <Link
               href="/accessions/import"
-              className="flex items-center gap-1.5 rounded-md border border-input bg-background/60 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              className="flex h-8 items-center gap-1.5 rounded-md border border-input bg-background/60 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             >
               <FileUp className="h-3.5 w-3.5" />
-              {t("importCSV")}
+              Import
             </Link>
           </PermissionGate>
-          <PermissionGate permission="collections.create">
+          <PermissionGate
+            loadingFallback={
+              <div className="h-8 w-24 animate-pulse rounded-md bg-muted/60" />
+            }
+            permission="collections.create"
+          >
             <Link
               href="/objects/new"
-              className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)] transition-colors hover:bg-primary/90"
+              className="flex h-8 items-center gap-1.5 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)] transition-colors hover:bg-primary/90"
             >
               <Plus className="h-3.5 w-3.5" />
               {t("addObject")}
             </Link>
           </PermissionGate>
-          <PermissionGate permission="collections.delete">
+          <PermissionGate
+            loadingFallback={
+              <div className="h-8 w-24 animate-pulse rounded-md bg-muted/60" />
+            }
+            permission="collections.delete"
+          >
             <Button
               type="button"
               variant="destructive"
               size="sm"
+              className="h-8 px-2.5 text-xs"
               onClick={handleEmptyTrash}
               disabled={rejected === 0 || isEmptyingTrash}
             >

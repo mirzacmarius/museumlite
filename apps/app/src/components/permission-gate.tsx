@@ -93,6 +93,7 @@ interface PermissionGateProps {
   permission: string;
   children: ReactNode;
   fallback?: ReactNode;
+  loadingFallback?: ReactNode;
 }
 
 /**
@@ -103,12 +104,12 @@ export function PermissionGate({
   permission,
   children,
   fallback = null,
+  loadingFallback = null,
 }: PermissionGateProps) {
   const { hasPermission, isLoading } = usePermissions();
 
   if (isLoading) {
-    // Loading state
-    return null;
+    return <>{loadingFallback}</>;
   }
 
   if (!hasPermission(permission)) {
@@ -123,6 +124,7 @@ interface MultiPermissionGateProps {
   mode?: "any" | "all";
   children: ReactNode;
   fallback?: ReactNode;
+  loadingFallback?: ReactNode;
 }
 
 /**
@@ -133,11 +135,12 @@ export function MultiPermissionGate({
   mode = "any",
   children,
   fallback = null,
+  loadingFallback = null,
 }: MultiPermissionGateProps) {
   const { hasAnyPermission, hasAllPermissions, isLoading } = usePermissions();
 
   if (isLoading) {
-    return null;
+    return <>{loadingFallback}</>;
   }
 
   const hasAccess =

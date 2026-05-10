@@ -11,7 +11,13 @@ export default function DeaccessionsPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
 
   if (isLoading) {
-    return <AccessionsPageSkeleton />;
+    return (
+      <AccessionsPageSkeleton
+        actionsCount={3}
+        showWorkbenchNav={false}
+        statsCount={2}
+      />
+    );
   }
 
   if (!organizations || organizations.length === 0) {
@@ -19,7 +25,13 @@ export default function DeaccessionsPage() {
   }
 
   if (!currentOrganizationId) {
-    return <AccessionsPageSkeleton />;
+    return (
+      <AccessionsPageSkeleton
+        actionsCount={3}
+        showWorkbenchNav={false}
+        statsCount={2}
+      />
+    );
   }
 
   return (

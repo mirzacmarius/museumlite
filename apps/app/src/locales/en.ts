@@ -3800,6 +3800,7 @@ export default {
     stats: {
       pending: "Pending",
       approved: "Approved",
+      deaccessions: "Deaccessions",
     },
     actions: {
       exportReport: "Export Report",

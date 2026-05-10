@@ -1,7 +1,7 @@
 "use client";
 
 import { useI18n } from "@/locales/client";
-import { Button } from "@v1/ui/button";
+import { Button, type ButtonProps } from "@v1/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,6 +53,8 @@ interface ExportButtonWithFormatProps {
   filename: string;
   disabled?: boolean;
   supportedFormats?: ExportFormat[];
+  buttonSize?: ButtonProps["size"];
+  buttonClassName?: string;
 }
 
 export function ExportButtonWithFormat({
@@ -60,6 +62,8 @@ export function ExportButtonWithFormat({
   filename,
   disabled,
   supportedFormats = ["csv", "json", "xml", "dublin-core", "spectrum"],
+  buttonSize,
+  buttonClassName,
 }: ExportButtonWithFormatProps) {
   const t = useI18n();
   const [isExporting, setIsExporting] = useState(false);
@@ -125,7 +129,12 @@ export function ExportButtonWithFormat({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" disabled={disabled || isExporting}>
+        <Button
+          className={buttonClassName}
+          disabled={disabled || isExporting}
+          size={buttonSize}
+          variant="outline"
+        >
           {isExporting ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (

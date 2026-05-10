@@ -3728,6 +3728,7 @@ export default {
     stats: {
       pending: "En Attente",
       approved: "Approuvé",
+      deaccessions: "Désaccessions",
     },
     actions: {
       exportReport: "Exporter le Rapport",
