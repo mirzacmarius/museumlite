@@ -363,7 +363,9 @@ export function CommandPalette() {
               <span>Library</span>
             </CommandItem>
             <CommandItem
-              onSelect={() => runCommand(() => router.push("/settings"))}
+              onSelect={() =>
+                runCommand(() => router.push("/settings/organization"))
+              }
             >
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>

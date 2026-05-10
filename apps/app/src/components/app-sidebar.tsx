@@ -456,7 +456,7 @@ export function AppSidebar({
       locked: !hasFeature("public_portal"),
     },
     { title: "Digital Assets", url: "/media", icon: Image },
-    { title: "Settings", url: "/settings", icon: Settings2 },
+    { title: "Settings", url: "/settings/organization", icon: Settings2 },
   ];
 
   const isPathActive = (url: string) => {
@@ -621,7 +621,10 @@ export function AppSidebar({
                 sideOffset={4}
               >
                 <DropdownMenuLabel className="p-0 font-normal">
-                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                  <Link
+                    href="/settings"
+                    className="flex items-center gap-2 rounded-sm px-1 py-1.5 text-left text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                  >
                     <Avatar className="h-8 w-8 rounded-lg">
                       <AvatarImage
                         src={user?.avatarUrl ?? undefined}
@@ -637,7 +640,7 @@ export function AppSidebar({
                         {user?.email ?? undefined}
                       </span>
                     </div>
-                  </div>
+                  </Link>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {currentOrganizationId ? (

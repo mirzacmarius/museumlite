@@ -8,7 +8,6 @@ import { usePathname } from "next/navigation";
 const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const t = useScopedI18n("settings.sidebar");
   const pathname = usePathname();
-  const isSettingsPath = pathname === "/settings";
   const isBillingPath = pathname === "/settings/billing";
   const isUsersPath = pathname === "/settings/users";
   const isRolesPath = pathname === "/settings/roles";
@@ -20,7 +19,6 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const isDeveloperPath = pathname === "/settings/developer";
   const isDataPath = pathname === "/settings/data";
   const navItems = [
-    { href: "/settings", label: t("general"), active: isSettingsPath },
     {
       href: "/settings/organization",
       label: t("organization"),
@@ -72,21 +70,6 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
 
       <div className="mx-auto flex h-full min-h-0 w-full max-w-screen-xl gap-12 overflow-hidden">
         <div className="hidden w-full max-w-64 shrink-0 flex-col gap-0.5 lg:flex">
-          <Link
-            href="/settings"
-            className={cn(
-              `${buttonVariants({ variant: "ghost" })} ${isSettingsPath && "bg-muted"}`,
-              "justify-start rounded-md",
-            )}
-          >
-            <span
-              className={cn(
-                `text-sm text-foreground/80 ${isSettingsPath && "font-medium text-foreground"}`,
-              )}
-            >
-              {t("general")}
-            </span>
-          </Link>
           <Link
             href="/settings/organization"
             className={cn(
