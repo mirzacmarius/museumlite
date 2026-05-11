@@ -12,6 +12,7 @@ import {
 } from "@v1/ui/dialog";
 import { cn } from "@v1/ui/utils";
 import { Printer } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { formatOwnershipDateRange } from "./format-ownership-date-range";
 import type { CollectionData, HeroImageData, LocationPathItem } from "./types";
 
@@ -22,6 +23,8 @@ interface PrintPreviewModalProps {
   heroImage: HeroImageData | null;
   locationPath: LocationPathItem[] | undefined;
   locale: string;
+  printOnOpen?: boolean;
+  onPrintOnOpenComplete?: () => void;
 }
 
 export function PrintPreviewModal({
@@ -31,10 +34,33 @@ export function PrintPreviewModal({
   heroImage,
   locationPath,
   locale,
+  printOnOpen = false,
+  onPrintOnOpenComplete,
 }: PrintPreviewModalProps) {
   const t = useScopedI18n("objects.printPreview");
   const tCommon = useScopedI18n("common");
   const materials = formatStringListField(collection.materials);
+  const hasPrintedOnOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (!printOnOpen) {
+      hasPrintedOnOpenRef.current = false;
+      return;
+    }
+
+    if (!isOpen || hasPrintedOnOpenRef.current) {
+      return;
+    }
+
+    hasPrintedOnOpenRef.current = true;
+    const printTimeout = window.setTimeout(() => {
+      window.print();
+      onPrintOnOpenComplete?.();
+    }, 100);
+
+    return () => window.clearTimeout(printTimeout);
+  }, [isOpen, onPrintOnOpenComplete, printOnOpen]);
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="flex flex-col max-w-[210mm] w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0">

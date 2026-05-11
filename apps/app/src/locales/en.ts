@@ -1833,7 +1833,7 @@ export default {
       printLabel: "Print QR Label",
       printPreview: "Print Preview",
       viewFullSize: "View full size image",
-      copyObjectLink: "Copy Object Link",
+      copyObjectLink: "Copy Link",
       linkCopied: "Link Copied!",
       exportToPdf: "Export to PDF",
       requestLoan: "Request Loan",

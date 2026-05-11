@@ -1,7 +1,13 @@
 "use client";
 
-import { DeaccessionDialog } from "@/components/deaccession-dialog";
+import {
+  DeaccessionDialog,
+  type RemovalType,
+} from "@/components/deaccession-dialog";
 import { PermissionGate } from "@/components/permission-gate";
+import { writeTextToClipboard } from "@/lib/clipboard";
+import { useCurrentLocale } from "@/locales/client";
+import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
@@ -9,12 +15,38 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
-import { Archive, Building2, MoreVertical } from "lucide-react";
+import { useQuery } from "convex/react";
+import {
+  Archive,
+  ArrowRightLeft,
+  Building2,
+  Check,
+  DollarSign,
+  FileDown,
+  Link2,
+  MoreVertical,
+  Printer,
+  Trash2,
+} from "lucide-react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+
+const LoadingPanel = () => (
+  <div className="h-32 w-full animate-pulse rounded-xl bg-card/40" />
+);
+
+const PrintPreviewModal = dynamic(
+  () =>
+    import("../[id]/_components/print-preview-modal").then(
+      (mod) => mod.PrintPreviewModal,
+    ),
+  { loading: LoadingPanel },
+);
 
 interface ObjectGridItemProps {
   item: {
@@ -39,7 +71,52 @@ function ObjectGridItem({
   shouldEagerLoad = false,
 }: ObjectGridItemProps) {
   const [isDeaccessionDialogOpen, setIsDeaccessionDialogOpen] = useState(false);
+  const [selectedRemovalType, setSelectedRemovalType] =
+    useState<RemovalType | null>(null);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [shouldPrintWhenReady, setShouldPrintWhenReady] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const locale = useCurrentLocale();
   const canDeaccession = item.status !== "deaccessioned";
+  const objectDetail = useQuery(
+    api.collections.getObjectDetail,
+    isPrintModalOpen ? { collectionId: item._id } : "skip",
+  );
+  const heroImageForPrint = objectDetail?.heroImage?.url
+    ? {
+        url: objectDetail.heroImage.url,
+        thumbnailUrl: objectDetail.heroImage.thumbnailUrl,
+      }
+    : null;
+
+  const handleCopyLink = async () => {
+    const objectUrl = new URL(
+      `/${locale}/objects/${item._id}`,
+      window.location.origin,
+    ).toString();
+    const didCopy = await writeTextToClipboard(objectUrl);
+    if (!didCopy) {
+      return;
+    }
+
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
+
+  const handleOpenPrintPreview = () => {
+    setShouldPrintWhenReady(false);
+    setIsPrintModalOpen(true);
+  };
+
+  const handleExportToPdf = () => {
+    setShouldPrintWhenReady(true);
+    setIsPrintModalOpen(true);
+  };
+
+  const handleOpenRemovalFlow = (removalType: RemovalType) => {
+    setSelectedRemovalType(removalType);
+    setIsDeaccessionDialogOpen(true);
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -154,53 +231,147 @@ function ObjectGridItem({
           </div>
         </Link>
 
-        {canDeaccession && (
-          <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 rounded-full border border-border bg-background/80 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                >
-                  <MoreVertical className="h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                onClick={(e) => e.stopPropagation()}
-                className="border-border bg-popover text-popover-foreground"
+        <div className="absolute bottom-3 right-3 z-20 opacity-0 transition-opacity group-hover:opacity-100">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 rounded-full border border-border bg-background/80 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
               >
-                <PermissionGate permission="collections.update">
-                  <DropdownMenuItem
-                    className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsDeaccessionDialogOpen(true);
-                    }}
-                  >
-                    <Archive className="mr-2 h-4 w-4" />
-                    Remove / Transfer
-                  </DropdownMenuItem>
-                </PermissionGate>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
+                <MoreVertical className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              onClick={(e) => e.stopPropagation()}
+              className="w-44 border-border bg-popover text-popover-foreground"
+            >
+              <DropdownMenuItem
+                className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleCopyLink();
+                }}
+              >
+                {linkCopied ? (
+                  <Check className="mr-2 h-4 w-4 text-green-500" />
+                ) : (
+                  <Link2 className="mr-2 h-4 w-4" />
+                )}
+                {linkCopied ? "Link copied" : "Copy Link"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleOpenPrintPreview();
+                }}
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                Print
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleExportToPdf();
+                }}
+              >
+                <FileDown className="mr-2 h-4 w-4" />
+                Export to PDF
+              </DropdownMenuItem>
+              {canDeaccession && (
+                <>
+                  <DropdownMenuSeparator />
+                  <PermissionGate permission="collections.update">
+                    <DropdownMenuItem
+                      className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleOpenRemovalFlow("sold");
+                      }}
+                    >
+                      <DollarSign className="mr-2 h-4 w-4 text-green-500" />
+                      Sold
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleOpenRemovalFlow("move");
+                      }}
+                    >
+                      <ArrowRightLeft className="mr-2 h-4 w-4 text-blue-500" />
+                      Transfer
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleOpenRemovalFlow("archived");
+                      }}
+                    >
+                      <Archive className="mr-2 h-4 w-4 text-amber-500" />
+                      Archive
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleOpenRemovalFlow("deleted");
+                      }}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  </PermissionGate>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       <DeaccessionDialog
         open={isDeaccessionDialogOpen}
-        onOpenChange={setIsDeaccessionDialogOpen}
+        onOpenChange={(open) => {
+          setIsDeaccessionDialogOpen(open);
+          if (!open) {
+            setSelectedRemovalType(null);
+          }
+        }}
         collectionId={item._id as Id<"collections">}
         collectionTitle={item.title}
         organizationId={organizationId}
+        initialRemovalType={selectedRemovalType}
       />
+      {objectDetail?.collection ? (
+        <PrintPreviewModal
+          isOpen={isPrintModalOpen}
+          onClose={() => {
+            setIsPrintModalOpen(false);
+            setShouldPrintWhenReady(false);
+          }}
+          collection={objectDetail.collection}
+          heroImage={heroImageForPrint}
+          locationPath={objectDetail.locationPath}
+          locale={locale}
+          printOnOpen={shouldPrintWhenReady}
+          onPrintOnOpenComplete={() => setShouldPrintWhenReady(false)}
+        />
+      ) : null}
     </>
   );
 }

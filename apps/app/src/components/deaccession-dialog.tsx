@@ -37,9 +37,9 @@ import {
   Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-type RemovalType = "sold" | "archived" | "deleted" | "move";
+export type RemovalType = "sold" | "archived" | "deleted" | "move";
 type AccessionMode = "keep" | "auto" | "manual";
 
 interface DeaccessionDialogProps {
@@ -48,6 +48,7 @@ interface DeaccessionDialogProps {
   collectionId: Id<"collections">;
   collectionTitle: string;
   organizationId: Id<"organizations">;
+  initialRemovalType?: RemovalType | null;
 }
 
 export function DeaccessionDialog({
@@ -56,6 +57,7 @@ export function DeaccessionDialog({
   collectionId,
   collectionTitle,
   organizationId,
+  initialRemovalType = null,
 }: DeaccessionDialogProps) {
   const [removalType, setRemovalType] = useState<RemovalType | null>(null);
   const [date, setDate] = useState<Date>(new Date());
@@ -76,6 +78,12 @@ export function DeaccessionDialog({
   const router = useRouter();
   const createDeaccession = useMutation(api.deaccessions.create);
   const createMoveRequest = useMutation(api.objectMoves.createRequest);
+
+  useEffect(() => {
+    if (open) {
+      setRemovalType(initialRemovalType);
+    }
+  }, [initialRemovalType, open]);
 
   const workflowConfigs = useQuery(
     api.organizations.getWorkflowConfigs,
@@ -220,15 +228,36 @@ export function DeaccessionDialog({
   };
 
   const blockers = moveEligibility?.blockers ?? [];
+  const isDirectRemovalFlow = initialRemovalType !== null;
+  const dialogTitle = (() => {
+    if (removalType === "sold") return "Record sale";
+    if (removalType === "move") return "Move to another organization";
+    if (removalType === "archived") return "Archive";
+    if (removalType === "deleted") return "Delete";
+    return "Remove or transfer";
+  })();
+  const dialogDescription = (() => {
+    if (removalType === "sold") {
+      return `Record sale details for ${collectionTitle}.`;
+    }
+    if (removalType === "move") {
+      return `Request a move for ${collectionTitle}.`;
+    }
+    if (removalType === "archived") {
+      return `Submit an archive request for ${collectionTitle}.`;
+    }
+    if (removalType === "deleted") {
+      return `Submit a delete request for ${collectionTitle}.`;
+    }
+    return `Choose how to remove or transfer ${collectionTitle}.`;
+  })();
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Deaccession Object</DialogTitle>
-          <DialogDescription>
-            Choose how to deaccession {collectionTitle}.
-          </DialogDescription>
+          <DialogTitle>{dialogTitle}</DialogTitle>
+          <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
 
         {!removalType && (
@@ -321,14 +350,16 @@ export function DeaccessionDialog({
 
         {removalType === "sold" && (
           <div className="space-y-4 py-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setRemovalType(null)}
-              className="mb-2"
-            >
-              ← Back to options
-            </Button>
+            {!isDirectRemovalFlow && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setRemovalType(null)}
+                className="mb-2"
+              >
+                ← Back to options
+              </Button>
+            )}
 
             {deaccessionWorkflow && (
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
@@ -458,14 +489,16 @@ export function DeaccessionDialog({
 
         {removalType === "move" && (
           <div className="space-y-4 py-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setRemovalType(null)}
-              className="mb-2"
-            >
-              ← Back to options
-            </Button>
+            {!isDirectRemovalFlow && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setRemovalType(null)}
+                className="mb-2"
+              >
+                ← Back to options
+              </Button>
+            )}
 
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
               <div className="flex items-start gap-3">
@@ -604,14 +637,16 @@ export function DeaccessionDialog({
 
         {removalType === "archived" && (
           <div className="space-y-4 py-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setRemovalType(null)}
-              className="mb-2"
-            >
-              ← Back to options
-            </Button>
+            {!isDirectRemovalFlow && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setRemovalType(null)}
+                className="mb-2"
+              >
+                ← Back to options
+              </Button>
+            )}
 
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
               <div className="flex items-start gap-3">
@@ -647,14 +682,16 @@ export function DeaccessionDialog({
 
         {removalType === "deleted" && (
           <div className="space-y-4 py-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setRemovalType(null)}
-              className="mb-2"
-            >
-              ← Back to options
-            </Button>
+            {!isDirectRemovalFlow && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setRemovalType(null)}
+                className="mb-2"
+              >
+                ← Back to options
+              </Button>
+            )}
 
             <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
               <div className="flex items-start gap-3">
