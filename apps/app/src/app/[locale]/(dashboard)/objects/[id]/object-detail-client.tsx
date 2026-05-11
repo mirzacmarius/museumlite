@@ -507,6 +507,15 @@ function ObjectDetailView({
                   <div className="rounded bg-secondary/60 px-2 py-1 text-[10px] font-mono text-muted-foreground">
                     {collection.accessionNumber}
                   </div>
+
+                  {collection.alternateAccessionNumbers?.map((number) => (
+                    <div
+                      key={number}
+                      className="rounded border border-border/60 bg-background/60 px-2 py-1 text-[10px] font-mono text-muted-foreground"
+                    >
+                      {number}
+                    </div>
+                  ))}
                 </div>
 
                 <h1 className="text-2xl font-semibold tracking-tight">

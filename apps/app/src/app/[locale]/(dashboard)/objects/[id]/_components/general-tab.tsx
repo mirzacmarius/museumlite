@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, Hash, Tag } from "lucide-react";
+import { CheckCircle, Tag } from "lucide-react";
 import type { CollectionData } from "./types";
 
 interface GeneralTabProps {
@@ -16,66 +16,7 @@ export function GeneralTab({
     collection.collectionType?.replace(/_/g, " ") || "General";
 
   return (
-    <div className="space-y-8">
-      <div>
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
-            <Hash className="h-4 w-4 text-accent" />
-            Object identity
-          </h3>
-        </div>
-
-        <div className="space-y-6 rounded-xl border border-border/60 bg-secondary/20 p-6">
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-            <div className="grid gap-1">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Object Name or Title
-              </label>
-              <div className="text-sm text-foreground">{collection.title}</div>
-            </div>
-
-            <div className="grid gap-1">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Accession Number
-              </label>
-              <div className="font-mono text-sm text-foreground">
-                {collection.accessionNumber}
-              </div>
-            </div>
-
-            <div className="grid gap-1">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Alternate Accession Numbers
-              </label>
-              {collection.alternateAccessionNumbers &&
-              collection.alternateAccessionNumbers.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {collection.alternateAccessionNumbers.map((number) => (
-                    <span
-                      key={number}
-                      className="rounded border border-border/60 bg-background/70 px-2 py-1 font-mono text-xs text-muted-foreground"
-                    >
-                      {number}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground">-</div>
-              )}
-            </div>
-
-            <div className="grid gap-1 md:col-span-3">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Description
-              </label>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-                {collection.description || "-"}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <div>
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
