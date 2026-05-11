@@ -309,6 +309,35 @@ export default {
       description:
         "Catalogage des beaux-arts avec suivi de provenance et flux de curation.",
     },
+    coins_stamps: {
+      name: "Monnaies et timbres",
+      description:
+        "Catalogage numismatique et philatélique avec émission, grade, rareté et valorisation.",
+      moduleName: "Module Monnaies et timbres",
+      moduleDescription:
+        "Activez le module Monnaies et timbres pour suivre les monnaies, timbres, numéros de catalogue, certifications, rareté et valorisations.",
+      itemCategory: "Catégorie",
+      issuer: "Émetteur",
+      catalogNumber: "Numéro de catalogue",
+      grade: "Grade",
+      classification: "Classification",
+      conditionAndValue: "État et valeur",
+      denomination: "Dénomination",
+      currency: "Devise",
+      mintOrPrinter: "Atelier ou imprimeur",
+      rarity: "Rareté",
+      estimatedValue: "Valeur estimée",
+      acquisitionPrice: "Prix d'acquisition",
+      certificationNumber: "Numéro de certification",
+      storageLocation: "Emplacement de stockage",
+      technicalDetails: "Détails techniques",
+      composition: "Composition",
+      diameter: "Diamètre",
+      weight: "Poids",
+      perforation: "Dentelure",
+      watermark: "Filigrane",
+      color: "Couleur",
+    },
     wine: {
       name: "Vin",
       description:

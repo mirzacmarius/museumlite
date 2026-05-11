@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { Gem, Wine, Car, Leaf, Archive, Package } from "lucide-react";
+import { Archive, Car, Coins, Gem, Leaf, Package, Wine } from "lucide-react";
 
 export type CollectionType =
   | "fine_art"
@@ -16,6 +16,7 @@ export type CollectionType =
   | "automotive"
   | "natural_history"
   | "archive"
+  | "coins_stamps"
   | "general";
 
 interface CollectionTypeSelectorProps {
@@ -65,6 +66,12 @@ const collectionTypes: {
     label: "Corporate Archive",
     description: "Documents, records, DAM",
     icon: <Archive className="h-4 w-4" />,
+  },
+  {
+    value: "coins_stamps",
+    label: "Coins and Stamps",
+    description: "Numismatic and philatelic records",
+    icon: <Coins className="h-4 w-4" />,
   },
 ];
 

@@ -34,7 +34,8 @@ type EnabledModule =
   | "automotive"
   | "natural_history"
   | "archive"
-  | "accounts";
+  | "accounts"
+  | "coins_stamps";
 
 type OrganizationSettings = Doc<"organizations">["settings"];
 type PermissionCategory = Doc<"permissions">["category"];
@@ -47,6 +48,7 @@ const enabledModuleValidator = v.union(
   v.literal("natural_history"),
   v.literal("archive"),
   v.literal("accounts"),
+  v.literal("coins_stamps"),
 );
 
 function getEffectiveRootOrganizationId(

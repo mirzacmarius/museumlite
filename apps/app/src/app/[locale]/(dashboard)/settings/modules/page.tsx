@@ -14,6 +14,7 @@ import {
   BookOpen,
   Car,
   Check,
+  Coins,
   Leaf,
   Loader2,
   Palette,
@@ -32,6 +33,7 @@ const MODULE_IDS = [
   "natural_history",
   "archive",
   "library",
+  "coins_stamps",
 ] as const;
 
 type ModuleId = (typeof MODULE_IDS)[number];
@@ -44,6 +46,7 @@ const MODULE_ICONS: Record<ModuleId, typeof Users> = {
   natural_history: Leaf,
   archive: Archive,
   library: BookOpen,
+  coins_stamps: Coins,
 };
 
 const MODULE_INTEGRATIONS: Partial<Record<ModuleId, string>> = {

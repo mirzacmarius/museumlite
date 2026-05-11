@@ -40,6 +40,7 @@ interface OrganizationContextType {
         | "natural_history"
         | "archive"
         | "accounts"
+        | "coins_stamps"
       >;
     };
     subscriptionTier?: "free" | "pro" | "enterprise";
@@ -69,6 +70,7 @@ interface OrganizationContextType {
         | "natural_history"
         | "archive"
         | "accounts"
+        | "coins_stamps"
       >;
     };
     subscriptionTier?: "free" | "pro" | "enterprise";

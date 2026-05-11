@@ -23,6 +23,7 @@ import type * as auditLog from "../auditLog.js";
 import type * as auth from "../auth.js";
 import type * as authLookup from "../authLookup.js";
 import type * as batchOperations from "../batchOperations.js";
+import type * as coinsStampsDetails from "../coinsStampsDetails.js";
 import type * as collectionGroups from "../collectionGroups.js";
 import type * as collections from "../collections.js";
 import type * as conditionOptions from "../conditionOptions.js";
@@ -146,6 +147,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   authLookup: typeof authLookup;
   batchOperations: typeof batchOperations;
+  coinsStampsDetails: typeof coinsStampsDetails;
   collectionGroups: typeof collectionGroups;
   collections: typeof collections;
   conditionOptions: typeof conditionOptions;

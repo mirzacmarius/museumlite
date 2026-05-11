@@ -17,7 +17,8 @@ export type ObjectTabId =
   | "wine"
   | "automotive"
   | "natural_history"
-  | "archive";
+  | "archive"
+  | "coins_stamps";
 
 export interface ObjectTabDefinition {
   id: ObjectTabId;
@@ -62,7 +63,12 @@ const editBaseTabs: ObjectTabDefinition[] = [
 
 const moduleTabMap: Partial<
   Record<
-    "fine_art" | "wine" | "automotive" | "natural_history" | "archive",
+    | "fine_art"
+    | "wine"
+    | "automotive"
+    | "natural_history"
+    | "archive"
+    | "coins_stamps",
     ObjectTabDefinition
   >
 > = {
@@ -75,6 +81,11 @@ const moduleTabMap: Partial<
     editable: false,
   },
   archive: { id: "archive", label: "Archive Details", editable: false },
+  coins_stamps: {
+    id: "coins_stamps",
+    label: "Coins and Stamps",
+    editable: false,
+  },
 };
 
 export function getObjectViewTabs(options: {

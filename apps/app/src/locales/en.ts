@@ -361,6 +361,35 @@ export default {
       description:
         "Fine art cataloging with provenance tracking and curation workflows.",
     },
+    coins_stamps: {
+      name: "Coins and Stamps",
+      description:
+        "Numismatic and philatelic cataloging with issue, grade, rarity, and valuation fields.",
+      moduleName: "Coins and Stamps Module",
+      moduleDescription:
+        "Enable the Coins and Stamps module to track coins, stamps, catalog numbers, certification, rarity, and valuations.",
+      itemCategory: "Category",
+      issuer: "Issuer",
+      catalogNumber: "Catalog Number",
+      grade: "Grade",
+      classification: "Classification",
+      conditionAndValue: "Condition and Value",
+      denomination: "Denomination",
+      currency: "Currency",
+      mintOrPrinter: "Mint or Printer",
+      rarity: "Rarity",
+      estimatedValue: "Estimated Value",
+      acquisitionPrice: "Acquisition Price",
+      certificationNumber: "Certification Number",
+      storageLocation: "Storage Location",
+      technicalDetails: "Technical Details",
+      composition: "Composition",
+      diameter: "Diameter",
+      weight: "Weight",
+      perforation: "Perforation",
+      watermark: "Watermark",
+      color: "Color",
+    },
     wine: {
       name: "Wine",
       description:

@@ -156,6 +156,7 @@ export default defineSchema({
               v.literal("archive"),
               v.literal("library"),
               v.literal("accounts"),
+              v.literal("coins_stamps"),
             ),
           ),
         ),
@@ -166,6 +167,7 @@ export default defineSchema({
             v.literal("automotive"),
             v.literal("natural_history"),
             v.literal("archive"),
+            v.literal("coins_stamps"),
             v.literal("general"),
           ),
         ),
@@ -484,6 +486,7 @@ export default defineSchema({
         v.literal("automotive"),
         v.literal("natural_history"),
         v.literal("archive"),
+        v.literal("coins_stamps"),
         v.literal("general"),
       ),
     ),
@@ -1081,6 +1084,54 @@ export default defineSchema({
     .index("by_organization_and_destruction_flag", [
       "organizationId",
       "flaggedForDestruction",
+    ]),
+
+  // Coins and stamps module details
+  coinsStampsDetails: defineTable({
+    collectionId: v.id("collections"),
+    organizationId: v.id("organizations"),
+    itemCategory: v.optional(v.union(v.literal("coin"), v.literal("stamp"))),
+    issuingAuthority: v.optional(v.string()),
+    countryOrRegion: v.optional(v.string()),
+    denomination: v.optional(v.string()),
+    currency: v.optional(v.string()),
+    issueYear: v.optional(v.number()),
+    issuePeriod: v.optional(v.string()),
+    mintOrPrinter: v.optional(v.string()),
+    series: v.optional(v.string()),
+    catalogNumber: v.optional(v.string()),
+    grade: v.optional(v.string()),
+    certificationNumber: v.optional(v.string()),
+    certifyingAuthority: v.optional(v.string()),
+    conditionNotes: v.optional(v.string()),
+    composition: v.optional(v.string()),
+    diameterMm: v.optional(v.number()),
+    weightGrams: v.optional(v.number()),
+    perforation: v.optional(v.string()),
+    watermark: v.optional(v.string()),
+    color: v.optional(v.string()),
+    rarity: v.optional(
+      v.union(
+        v.literal("common"),
+        v.literal("scarce"),
+        v.literal("rare"),
+        v.literal("very_rare"),
+        v.literal("unique"),
+      ),
+    ),
+    acquisitionPrice: v.optional(v.number()),
+    estimatedValue: v.optional(v.number()),
+    storageLocation: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+    lastModifiedAt: v.optional(v.number()),
+  })
+    .index("by_collection", ["collectionId"])
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_category", ["organizationId", "itemCategory"])
+    .index("by_organization_and_catalog_number", [
+      "organizationId",
+      "catalogNumber",
     ]),
 
   // Accession workflow records

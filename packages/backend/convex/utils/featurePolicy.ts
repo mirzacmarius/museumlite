@@ -22,6 +22,7 @@ export const MODULE_IDS = [
   "natural_history",
   "archive",
   "accounts",
+  "coins_stamps",
 ] as const;
 
 export type ModuleId = (typeof MODULE_IDS)[number];

@@ -52,6 +52,7 @@ export const objectDraftDataValidator = v.object({
       v.literal("automotive"),
       v.literal("natural_history"),
       v.literal("archive"),
+      v.literal("coins_stamps"),
       v.literal("general"),
     ),
   ),

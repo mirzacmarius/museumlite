@@ -307,6 +307,35 @@ export default {
       description:
         "Catalogación de bellas artes con seguimiento de procedencia y flujos de curación.",
     },
+    coins_stamps: {
+      name: "Monedas y sellos",
+      description:
+        "Catalogación numismática y filatélica con emisión, grado, rareza y valoración.",
+      moduleName: "Módulo de Monedas y sellos",
+      moduleDescription:
+        "Active el módulo de Monedas y sellos para rastrear monedas, sellos, números de catálogo, certificación, rareza y valoraciones.",
+      itemCategory: "Categoría",
+      issuer: "Emisor",
+      catalogNumber: "Número de catálogo",
+      grade: "Grado",
+      classification: "Clasificación",
+      conditionAndValue: "Condición y valor",
+      denomination: "Denominación",
+      currency: "Moneda",
+      mintOrPrinter: "Casa de moneda o impresor",
+      rarity: "Rareza",
+      estimatedValue: "Valor estimado",
+      acquisitionPrice: "Precio de adquisición",
+      certificationNumber: "Número de certificación",
+      storageLocation: "Ubicación de almacenamiento",
+      technicalDetails: "Detalles técnicos",
+      composition: "Composición",
+      diameter: "Diámetro",
+      weight: "Peso",
+      perforation: "Perforación",
+      watermark: "Marca de agua",
+      color: "Color",
+    },
     wine: {
       name: "Vino",
       description:

@@ -63,6 +63,13 @@ const CommentsTab = dynamic(
   () => import("./_components/comments-tab").then((mod) => mod.CommentsTab),
   { loading: LoadingPanel },
 );
+const CoinsStampsDetailsTab = dynamic(
+  () =>
+    import("./_components/coins-stamps-details-tab").then(
+      (mod) => mod.CoinsStampsDetailsTab,
+    ),
+  { loading: LoadingPanel },
+);
 const ConservationTab = dynamic(
   () =>
     import("./_components/conservation-tab").then((mod) => mod.ConservationTab),
@@ -642,6 +649,12 @@ function ObjectDetailView({
               )}
               {activeTab === "archive" && (
                 <ArchiveDetailsTab
+                  collectionId={collectionId}
+                  organizationId={organizationId}
+                />
+              )}
+              {activeTab === "coins_stamps" && (
+                <CoinsStampsDetailsTab
                   collectionId={collectionId}
                   organizationId={organizationId}
                 />

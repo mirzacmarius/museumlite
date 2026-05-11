@@ -12,13 +12,13 @@ export function AccessionTab({ collection }: AccessionTabProps) {
     <div>
       <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
         <Building2 className="h-4 w-4 text-emerald-500" />
-        Acquisition Information
+        Acquisition information
       </h3>
       <div className="rounded-xl border border-border/60 bg-secondary/20 p-6">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div>
             <span className="mb-1 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Method
+              Acquisition Type
             </span>
             {collection.acquisitionMethod ? (
               <span className="inline-flex items-center rounded border border-emerald-500/30 bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
@@ -31,7 +31,7 @@ export function AccessionTab({ collection }: AccessionTabProps) {
 
           <div>
             <span className="mb-1 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Source / Donor
+              Donated by
             </span>
             {collection.donated_by && collection.donated_by.length > 0 ? (
               <div className="flex items-center gap-2">
@@ -46,38 +46,20 @@ export function AccessionTab({ collection }: AccessionTabProps) {
               <span className="text-sm text-muted-foreground">-</span>
             )}
           </div>
-
-          <div>
-            <span className="mb-1 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Date
-            </span>
-            <span className="text-sm text-muted-foreground">
-              {collection.donated_date || "-"}
-            </span>
-          </div>
         </div>
 
-        {collection.donation_info ? (
-          <div className="mt-4 border-t border-border/50 pt-4">
-            <span className="mb-1 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Acquisition Notes
-            </span>
+        <div className="mt-4 border-t border-border/50 pt-4">
+          <span className="mb-1 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            Donation details
+          </span>
+          {collection.donation_info ? (
             <p className="whitespace-pre-wrap text-sm text-muted-foreground">
               {collection.donation_info}
             </p>
-          </div>
-        ) : null}
-
-        {collection.creditLine ? (
-          <div className="mt-4 border-t border-border/50 pt-4">
-            <span className="mb-1 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Credit Line
-            </span>
-            <p className="font-serif text-sm italic text-muted-foreground">
-              "{collection.creditLine}"
-            </p>
-          </div>
-        ) : null}
+          ) : (
+            <span className="text-sm text-muted-foreground">-</span>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -141,6 +141,7 @@ const objectDetailCollectionValidator = v.object({
       v.literal("automotive"),
       v.literal("natural_history"),
       v.literal("archive"),
+      v.literal("coins_stamps"),
       v.literal("general"),
     ),
   ),
@@ -878,6 +879,7 @@ export const create = mutation({
         v.literal("automotive"),
         v.literal("natural_history"),
         v.literal("archive"),
+        v.literal("coins_stamps"),
         v.literal("general"),
       ),
     ),
@@ -1161,6 +1163,7 @@ export const get = query({
           v.literal("automotive"),
           v.literal("natural_history"),
           v.literal("archive"),
+          v.literal("coins_stamps"),
           v.literal("general"),
         ),
       ),
@@ -1278,6 +1281,7 @@ export const getWithModuleDetails = query({
             v.literal("automotive"),
             v.literal("natural_history"),
             v.literal("archive"),
+            v.literal("coins_stamps"),
             v.literal("general"),
           ),
         ),
@@ -1350,6 +1354,20 @@ export const getWithModuleDetails = query({
             flaggedForDestruction: v.optional(v.boolean()),
             legalHold: v.optional(v.boolean()),
             confidentialityLevel: v.optional(v.string()),
+          }),
+        }),
+        v.object({
+          type: v.literal("coins_stamps"),
+          data: v.object({
+            _id: v.id("coinsStampsDetails"),
+            itemCategory: v.optional(v.string()),
+            issuingAuthority: v.optional(v.string()),
+            countryOrRegion: v.optional(v.string()),
+            denomination: v.optional(v.string()),
+            issueYear: v.optional(v.number()),
+            catalogNumber: v.optional(v.string()),
+            grade: v.optional(v.string()),
+            estimatedValue: v.optional(v.number()),
           }),
         }),
         v.null(),
@@ -1430,6 +1448,20 @@ export const getWithModuleDetails = query({
             flaggedForDestruction?: boolean;
             legalHold?: boolean;
             confidentialityLevel?: string;
+          };
+        }
+      | {
+          type: "coins_stamps";
+          data: {
+            _id: Id<"coinsStampsDetails">;
+            itemCategory?: string;
+            issuingAuthority?: string;
+            countryOrRegion?: string;
+            denomination?: string;
+            issueYear?: number;
+            catalogNumber?: string;
+            grade?: string;
+            estimatedValue?: number;
           };
         }
       | null;
@@ -1556,6 +1588,32 @@ export const getWithModuleDetails = query({
             flaggedForDestruction: details.flaggedForDestruction,
             legalHold: details.legalHold,
             confidentialityLevel: details.confidentialityLevel,
+          },
+        };
+      }
+    } else if (
+      collectionType === "coins_stamps" &&
+      (await hasModuleEnabled(ctx, collection.organizationId, "coins_stamps"))
+    ) {
+      const details = await ctx.db
+        .query("coinsStampsDetails")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .unique();
+      if (details) {
+        moduleDetails = {
+          type: "coins_stamps",
+          data: {
+            _id: details._id,
+            itemCategory: details.itemCategory,
+            issuingAuthority: details.issuingAuthority,
+            countryOrRegion: details.countryOrRegion,
+            denomination: details.denomination,
+            issueYear: details.issueYear,
+            catalogNumber: details.catalogNumber,
+            grade: details.grade,
+            estimatedValue: details.estimatedValue,
           },
         };
       }
