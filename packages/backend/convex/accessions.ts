@@ -71,6 +71,14 @@ function getDraftDisplaySource(
   );
 }
 
+async function isAccessionWorkflowEnabled(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+) {
+  const organization = await ctx.db.get(organizationId);
+  return organization?.settings?.accessionWorkflowEnabled ?? true;
+}
+
 function buildSearchText(values: Array<string | null | undefined>) {
   return values
     .map((value) => value?.trim())
@@ -472,15 +480,25 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Check if user can initiate workflow
-    const canInitiate = await canInitiateWorkflow(
+    const accessionWorkflowEnabled = await isAccessionWorkflowEnabled(
       ctx,
       args.organizationId,
-      "accession",
     );
 
-    if (!canInitiate) {
-      throw new Error("Permission denied: cannot initiate accession workflow");
+    if (accessionWorkflowEnabled) {
+      const canInitiate = await canInitiateWorkflow(
+        ctx,
+        args.organizationId,
+        "accession",
+      );
+
+      if (!canInitiate) {
+        throw new Error(
+          "Permission denied: cannot initiate accession workflow",
+        );
+      }
+    } else {
+      await requirePermission(ctx, args.organizationId, "collections.create");
     }
 
     // Generate or use provided accession number
@@ -492,11 +510,9 @@ export const create = mutation({
     }
 
     // Get workflow config
-    const workflowConfig = await getWorkflowConfig(
-      ctx,
-      args.organizationId,
-      "accession",
-    );
+    const workflowConfig = accessionWorkflowEnabled
+      ? await getWorkflowConfig(ctx, args.organizationId, "accession")
+      : null;
     const workflowState = resolveWorkflowStepState(
       workflowConfig?.steps,
       undefined,
@@ -625,11 +641,13 @@ export const upsertObjectDraft = mutation({
       throw new Error("Not authenticated");
     }
 
-    const workflowConfig = await getWorkflowConfig(
+    const accessionWorkflowEnabled = await isAccessionWorkflowEnabled(
       ctx,
       args.organizationId,
-      "accession",
     );
+    const workflowConfig = accessionWorkflowEnabled
+      ? await getWorkflowConfig(ctx, args.organizationId, "accession")
+      : null;
 
     const normalizedObjectData = {
       ...args.objectData,
@@ -640,7 +658,7 @@ export const upsertObjectDraft = mutation({
       throw new Error("Title is required");
     }
 
-    if (args.saveMode === "submit") {
+    if (args.saveMode === "submit" && accessionWorkflowEnabled) {
       const canInitiate = await canInitiateWorkflow(
         ctx,
         args.organizationId,
@@ -652,6 +670,8 @@ export const upsertObjectDraft = mutation({
           "Permission denied: cannot initiate accession workflow",
         );
       }
+    } else if (args.saveMode === "submit") {
+      await requirePermission(ctx, args.organizationId, "collections.create");
     }
 
     const source = getDraftDisplaySource(normalizedObjectData);
@@ -672,6 +692,8 @@ export const upsertObjectDraft = mutation({
       args.saveMode === "submit" && workflowConfig
         ? workflowState.firstStep ?? 1
         : 0;
+    const shouldAutoApproveSubmit =
+      args.saveMode === "submit" && !workflowConfig;
 
     if (args.accessionId) {
       const existing = await ctx.db.get(args.accessionId);
@@ -687,8 +709,9 @@ export const upsertObjectDraft = mutation({
 
       await requirePermission(ctx, args.organizationId, "collections.update");
 
-      const updatedWorkflowStep =
-        existing.workflowStep && existing.workflowStep > 0
+      const updatedWorkflowStep = shouldAutoApproveSubmit
+        ? undefined
+        : existing.workflowStep && existing.workflowStep > 0
           ? existing.workflowStep
           : nextWorkflowStep;
 
@@ -703,10 +726,14 @@ export const upsertObjectDraft = mutation({
         existing._id,
       );
 
+      const submittedAt = Date.now();
       await ctx.db.patch(existing._id, {
         accessionNumber,
         source,
         notes: normalizedObjectData.description?.trim() || existing.notes,
+        status: shouldAutoApproveSubmit ? "approved" : existing.status,
+        approvedBy: shouldAutoApproveSubmit ? userId : existing.approvedBy,
+        approvedAt: shouldAutoApproveSubmit ? submittedAt : existing.approvedAt,
         workflowStep: updatedWorkflowStep,
         draftObjectData: {
           ...normalizedObjectData,
@@ -729,15 +756,28 @@ export const upsertObjectDraft = mutation({
           accessionNumber,
           saveMode: args.saveMode,
           workflowStep: updatedWorkflowStep,
+          status: shouldAutoApproveSubmit ? "approved" : existing.status,
           title: normalizedObjectData.title,
         },
       });
 
-      if (
-        args.saveMode === "submit" &&
-        workflowConfig &&
-        updatedWorkflowStep !== existing.workflowStep
-      ) {
+      if (shouldAutoApproveSubmit) {
+        await ctx.runMutation(
+          internal.accessions.createCollectionFromAccession,
+          {
+            accessionId: existing._id,
+          },
+        );
+      }
+
+      if (args.saveMode === "submit" && workflowConfig) {
+        if (updatedWorkflowStep === undefined) {
+          throw new Error("Workflow step is required for accession workflow");
+        }
+        if (updatedWorkflowStep === existing.workflowStep) {
+          return existing._id;
+        }
+
         const usersToNotify = await getUsersToNotifyForWorkflowStep(
           ctx,
           args.organizationId,
@@ -780,10 +820,16 @@ export const upsertObjectDraft = mutation({
     );
 
     if (reusableDraft) {
+      const submittedAt = Date.now();
       await ctx.db.patch(reusableDraft._id, {
         source,
         notes: normalizedObjectData.description?.trim() || reusableDraft.notes,
-        workflowStep: nextWorkflowStep,
+        status: shouldAutoApproveSubmit ? "approved" : reusableDraft.status,
+        approvedBy: shouldAutoApproveSubmit ? userId : reusableDraft.approvedBy,
+        approvedAt: shouldAutoApproveSubmit
+          ? submittedAt
+          : reusableDraft.approvedAt,
+        workflowStep: shouldAutoApproveSubmit ? undefined : nextWorkflowStep,
         draftObjectData: {
           ...normalizedObjectData,
           accessionNumber,
@@ -804,11 +850,21 @@ export const upsertObjectDraft = mutation({
         changes: {
           accessionNumber,
           saveMode: args.saveMode,
-          workflowStep: nextWorkflowStep,
+          workflowStep: shouldAutoApproveSubmit ? undefined : nextWorkflowStep,
+          status: shouldAutoApproveSubmit ? "approved" : reusableDraft.status,
           title: normalizedObjectData.title,
           recoveredDraft: true,
         },
       });
+
+      if (shouldAutoApproveSubmit) {
+        await ctx.runMutation(
+          internal.accessions.createCollectionFromAccession,
+          {
+            accessionId: reusableDraft._id,
+          },
+        );
+      }
 
       if (args.saveMode === "submit" && workflowConfig) {
         const usersToNotify = await getUsersToNotifyForWorkflowStep(
@@ -877,8 +933,10 @@ export const upsertObjectDraft = mutation({
       source,
       method: "other",
       notes: normalizedObjectData.description?.trim() || undefined,
-      status: "pending",
-      workflowStep: nextWorkflowStep,
+      status: shouldAutoApproveSubmit ? "approved" : "pending",
+      approvedBy: shouldAutoApproveSubmit ? userId : undefined,
+      approvedAt: shouldAutoApproveSubmit ? now : undefined,
+      workflowStep: shouldAutoApproveSubmit ? undefined : nextWorkflowStep,
       workflowHistory,
       draftObjectData: {
         ...normalizedObjectData,
@@ -900,10 +958,17 @@ export const upsertObjectDraft = mutation({
       changes: {
         accessionNumber,
         saveMode: args.saveMode,
-        workflowStep: nextWorkflowStep,
+        workflowStep: shouldAutoApproveSubmit ? undefined : nextWorkflowStep,
+        status: shouldAutoApproveSubmit ? "approved" : "pending",
         title: normalizedObjectData.title,
       },
     });
+
+    if (shouldAutoApproveSubmit) {
+      await ctx.runMutation(internal.accessions.createCollectionFromAccession, {
+        accessionId,
+      });
+    }
 
     if (args.saveMode === "submit" && workflowConfig) {
       const usersToNotify = await getUsersToNotifyForWorkflowStep(
@@ -2919,12 +2984,13 @@ export const processBulkImport = mutation({
 
     await requirePermission(ctx, args.organizationId, "collections.create");
 
-    // Get workflow config
-    const workflowConfig = await getWorkflowConfig(
+    const accessionWorkflowEnabled = await isAccessionWorkflowEnabled(
       ctx,
       args.organizationId,
-      "accession",
     );
+    const workflowConfig = accessionWorkflowEnabled
+      ? await getWorkflowConfig(ctx, args.organizationId, "accession")
+      : null;
 
     const accessionIds: Id<"accessions">[] = [];
     const errors: { row: number; message: string }[] = [];

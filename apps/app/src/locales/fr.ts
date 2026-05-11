@@ -70,6 +70,7 @@ export default {
     sidebar: {
       general: "Personnel",
       organization: "Organisation",
+      preferences: "Préférences",
       users: "Utilisateurs",
       roles: "Rôles",
       sites: "Sites",

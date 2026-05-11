@@ -30,6 +30,7 @@ interface OrganizationContextType {
       isSystemRole: boolean;
     };
     settings?: {
+      locationTrackingEnabled?: boolean;
       enabledIntegrations?: string[];
       enabledModules?: Array<
         | "library"
@@ -58,6 +59,7 @@ interface OrganizationContextType {
       isSystemRole: boolean;
     };
     settings?: {
+      locationTrackingEnabled?: boolean;
       enabledIntegrations?: string[];
       enabledModules?: Array<
         | "library"

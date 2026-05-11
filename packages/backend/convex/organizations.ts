@@ -107,6 +107,9 @@ export const create = mutation({
       v.object({
         accessionNumberFormat: v.optional(v.string()),
         autoGenerateAccessionNumbers: v.optional(v.boolean()),
+        accessionWorkflowEnabled: v.optional(v.boolean()),
+        deaccessionWorkflowEnabled: v.optional(v.boolean()),
+        locationTrackingEnabled: v.optional(v.boolean()),
         locationTypes: v.optional(v.array(v.string())),
         enableDetailedConditionReports: v.optional(v.boolean()),
       }),
@@ -157,6 +160,9 @@ export const create = mutation({
     const defaultSettings = {
       autoGenerateAccessionNumbers: true,
       accessionNumberFormat: defaultAccessionFormat,
+      accessionWorkflowEnabled: true,
+      deaccessionWorkflowEnabled: true,
+      locationTrackingEnabled: true,
     };
 
     const mergedSettings = args.settings
@@ -167,6 +173,12 @@ export const create = mutation({
             args.settings.autoGenerateAccessionNumbers ?? true,
           accessionNumberFormat:
             args.settings.accessionNumberFormat || defaultAccessionFormat,
+          accessionWorkflowEnabled:
+            args.settings.accessionWorkflowEnabled ?? true,
+          deaccessionWorkflowEnabled:
+            args.settings.deaccessionWorkflowEnabled ?? true,
+          locationTrackingEnabled:
+            args.settings.locationTrackingEnabled ?? true,
         }
       : defaultSettings;
 
@@ -376,6 +388,9 @@ export const get = query({
             ),
           ),
           autoGenerateAccessionNumbers: v.optional(v.boolean()),
+          accessionWorkflowEnabled: v.optional(v.boolean()),
+          deaccessionWorkflowEnabled: v.optional(v.boolean()),
+          locationTrackingEnabled: v.optional(v.boolean()),
           locationTypes: v.optional(v.array(v.string())),
           enableDetailedConditionReports: v.optional(v.boolean()),
           enabledIntegrations: v.optional(v.array(v.string())),
@@ -453,6 +468,9 @@ export const getBySlug = query({
             ),
           ),
           autoGenerateAccessionNumbers: v.optional(v.boolean()),
+          accessionWorkflowEnabled: v.optional(v.boolean()),
+          deaccessionWorkflowEnabled: v.optional(v.boolean()),
+          locationTrackingEnabled: v.optional(v.boolean()),
           locationTypes: v.optional(v.array(v.string())),
           enableDetailedConditionReports: v.optional(v.boolean()),
           enabledIntegrations: v.optional(v.array(v.string())),
@@ -516,6 +534,9 @@ export const update = mutation({
           ),
         ),
         autoGenerateAccessionNumbers: v.optional(v.boolean()),
+        accessionWorkflowEnabled: v.optional(v.boolean()),
+        deaccessionWorkflowEnabled: v.optional(v.boolean()),
+        locationTrackingEnabled: v.optional(v.boolean()),
         locationTypes: v.optional(v.array(v.string())),
         enableDetailedConditionReports: v.optional(v.boolean()),
         enabledIntegrations: v.optional(v.array(v.string())),
@@ -551,6 +572,9 @@ export const update = mutation({
         accessionNumberFormat?: string;
         accessionCounterScope?: "global" | "year" | "month" | "day";
         autoGenerateAccessionNumbers?: boolean;
+        accessionWorkflowEnabled?: boolean;
+        deaccessionWorkflowEnabled?: boolean;
+        locationTrackingEnabled?: boolean;
         locationTypes?: string[];
         enableDetailedConditionReports?: boolean;
         enabledIntegrations?: string[];
@@ -607,6 +631,9 @@ export const getSettings = query({
         ),
       ),
       autoGenerateAccessionNumbers: v.optional(v.boolean()),
+      accessionWorkflowEnabled: v.optional(v.boolean()),
+      deaccessionWorkflowEnabled: v.optional(v.boolean()),
+      locationTrackingEnabled: v.optional(v.boolean()),
       locationTypes: v.optional(v.array(v.string())),
       enableDetailedConditionReports: v.optional(v.boolean()),
       enabledIntegrations: v.optional(v.array(v.string())),
@@ -1088,6 +1115,7 @@ export const listUserOrganizations = query({
       }),
       settings: v.optional(
         v.object({
+          locationTrackingEnabled: v.optional(v.boolean()),
           enabledIntegrations: v.optional(v.array(v.string())),
           enabledModules: v.optional(v.array(enabledModuleValidator)),
         }),
@@ -1131,6 +1159,7 @@ export const listUserOrganizations = query({
           },
           settings: org.settings
             ? {
+                locationTrackingEnabled: org.settings.locationTrackingEnabled,
                 enabledIntegrations: org.settings.enabledIntegrations,
                 enabledModules: org.settings.enabledModules,
               }

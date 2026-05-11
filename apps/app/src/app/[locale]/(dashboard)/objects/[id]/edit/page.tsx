@@ -428,7 +428,9 @@ export default function CollectionEditPage() {
   const router = useRouter();
   const collectionId = params.id as string;
   const typedCollectionId = collectionId as Id<"collections">;
-  const { currentOrganizationId } = useOrganization();
+  const { currentOrganization, currentOrganizationId } = useOrganization();
+  const isLocationTrackingEnabled =
+    currentOrganization?.settings?.locationTrackingEnabled ?? true;
   const updateCollection = useMutation(api.collections.update);
   const generateUploadUrl = useMutation(api.media.generateUploadUrl);
   const createMedia = useMutation(api.media.create);
@@ -481,8 +483,10 @@ export default function CollectionEditPage() {
 
   const tabs = useMemo(
     () =>
-      getObjectEditTabs().map((tab) => ({ ...tab, id: tab.id as EditTabId })),
-    [],
+      getObjectEditTabs({
+        locationTrackingEnabled: isLocationTrackingEnabled,
+      }).map((tab) => ({ ...tab, id: tab.id as EditTabId })),
+    [isLocationTrackingEnabled],
   );
 
   useEffect(() => {
@@ -529,7 +533,9 @@ export default function CollectionEditPage() {
 
   const currentLocationPath = useQuery(
     api.locations.getLocationPath,
-    resolvedCurrentLocationId && resolvedCurrentLocationId !== "__none__"
+    isLocationTrackingEnabled &&
+      resolvedCurrentLocationId &&
+      resolvedCurrentLocationId !== "__none__"
       ? { locationId: resolvedCurrentLocationId as Id<"locations"> }
       : "skip",
   );
@@ -1265,32 +1271,36 @@ export default function CollectionEditPage() {
                       {formData.dateCreated || common("unknown")}
                     </div>
                   </button>
-                  <button
-                    type="button"
-                    className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
-                    onClick={() => setActiveTab("placement")}
-                  >
-                    <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                      <MapPin className="h-3.5 w-3.5" />
-                      Location
-                    </div>
-                    <div className="truncate text-sm text-foreground">
-                      {locationSummary}
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
-                    onClick={() => setActiveTab("placement")}
-                  >
-                    <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                      <Info className="h-3.5 w-3.5" />
-                      Collection
-                    </div>
-                    <div className="truncate text-sm text-foreground">
-                      {collectionSummary}
-                    </div>
-                  </button>
+                  {isLocationTrackingEnabled ? (
+                    <>
+                      <button
+                        type="button"
+                        className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
+                        onClick={() => setActiveTab("placement")}
+                      >
+                        <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                          <MapPin className="h-3.5 w-3.5" />
+                          Location
+                        </div>
+                        <div className="truncate text-sm text-foreground">
+                          {locationSummary}
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
+                        onClick={() => setActiveTab("placement")}
+                      >
+                        <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                          <Info className="h-3.5 w-3.5" />
+                          Collection
+                        </div>
+                        <div className="truncate text-sm text-foreground">
+                          {collectionSummary}
+                        </div>
+                      </button>
+                    </>
+                  ) : null}
                 </div>
 
                 <p className="text-sm text-muted-foreground">

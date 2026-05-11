@@ -199,7 +199,7 @@ function ObjectDetailView({
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const locale = useCurrentLocale();
-  const { currentOrganizationId } = useOrganization();
+  const { currentOrganization, currentOrganizationId } = useOrganization();
   const { hasFeature } = useFeatureAccess();
   const collection = objectDetail?.collection ?? null;
   const collectionGroup = objectDetail?.collectionGroup ?? null;
@@ -217,6 +217,8 @@ function ObjectDetailView({
   const hasLoansFeature = featureOrganizationId
     ? hasFeature("loans", featureOrganizationId)
     : false;
+  const isLocationTrackingEnabled =
+    currentOrganization?.settings?.locationTrackingEnabled ?? true;
   const pendingMoveRequest = useQuery(
     api.objectMoves.getPendingForCollection,
     collection ? { collectionId } : "skip",
@@ -225,6 +227,7 @@ function ObjectDetailView({
   const tabs = useMemo(() => {
     return getObjectViewTabs({
       collectionType: collection?.collectionType,
+      locationTrackingEnabled: isLocationTrackingEnabled,
       features: {
         conservation: hasConservationFeature,
         exhibitions: hasExhibitionsFeature,
@@ -236,6 +239,7 @@ function ObjectDetailView({
     hasConservationFeature,
     hasExhibitionsFeature,
     hasLoansFeature,
+    isLocationTrackingEnabled,
   ]);
 
   useEffect(() => {
@@ -303,8 +307,9 @@ function ObjectDetailView({
     );
   }
 
-  const locationString =
-    locationPath?.map((loc) => loc.name).join(", ") || null;
+  const locationString = isLocationTrackingEnabled
+    ? locationPath?.map((loc) => loc.name).join(", ") || null
+    : null;
   const organizationId = currentOrganizationId as Id<"organizations">;
   const heroImageForPrint = heroImage?.url
     ? { url: heroImage.url, thumbnailUrl: heroImage.thumbnailUrl }

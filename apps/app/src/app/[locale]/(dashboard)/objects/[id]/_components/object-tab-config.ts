@@ -79,6 +79,7 @@ const moduleTabMap: Partial<
 
 export function getObjectViewTabs(options: {
   collectionType?: string;
+  locationTrackingEnabled?: boolean;
   features: {
     conservation: boolean;
     exhibitions: boolean;
@@ -98,11 +99,21 @@ export function getObjectViewTabs(options: {
 
   return orderedTabs.filter((tab): tab is ObjectTabDefinition => {
     if (!tab) return false;
+    if (tab.id === "placement" && options.locationTrackingEnabled === false) {
+      return false;
+    }
     if (!tab.featureKey) return true;
     return options.features[tab.featureKey];
   });
 }
 
-export function getObjectEditTabs() {
-  return editBaseTabs.filter((tab) => tab.editable);
+export function getObjectEditTabs(options?: {
+  locationTrackingEnabled?: boolean;
+}) {
+  return editBaseTabs.filter((tab) => {
+    if (tab.id === "placement" && options?.locationTrackingEnabled === false) {
+      return false;
+    }
+    return tab.editable;
+  });
 }

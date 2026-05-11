@@ -26,6 +26,7 @@ import {
   Search,
   Settings2,
   Shield,
+  SlidersHorizontal,
   ShoppingCart,
   Ticket,
   Truck,
@@ -373,6 +374,8 @@ export function AppSidebar({
   );
 
   const isLibraryModuleEnabled = hasModule("library");
+  const isLocationTrackingEnabled =
+    currentOrg?.settings?.locationTrackingEnabled ?? true;
 
   const collectionGroups = useQuery(
     api.collectionGroups.list,
@@ -387,7 +390,9 @@ export function AppSidebar({
     { title: "Scan", url: "/scan", icon: QrCode },
     { title: "Accessions", url: "/accessions", icon: FileCheck },
     { title: "Deaccessions", url: "/deaccessions", icon: FileX },
-    { title: "Location & Tracking", url: "/locations", icon: MapPin },
+    ...(isLocationTrackingEnabled
+      ? [{ title: "Location & Tracking", url: "/locations", icon: MapPin }]
+      : []),
   ];
 
   const navExhibitionsLoans = [
@@ -474,6 +479,11 @@ export function AppSidebar({
       locked: !hasFeature("public_portal"),
     },
     { title: "Digital Assets", url: "/media", icon: Image },
+    {
+      title: "Preferences",
+      url: "/settings/preferences",
+      icon: SlidersHorizontal,
+    },
     { title: "Settings", url: "/settings/organization", icon: Settings2 },
   ];
 

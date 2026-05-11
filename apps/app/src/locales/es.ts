@@ -71,6 +71,7 @@ export default {
     sidebar: {
       general: "Personal",
       organization: "Organización",
+      preferences: "Preferencias",
       users: "Usuarios",
       roles: "Roles",
       sites: "Sitios",

@@ -13,6 +13,7 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const isRolesPath = pathname === "/settings/roles";
   const isSitesPath = pathname === "/settings/sites";
   const isOrganizationPath = pathname?.startsWith("/settings/organization");
+  const isPreferencesPath = pathname === "/settings/preferences";
   const isIntegrationsPath = pathname?.startsWith("/settings/integrations");
   const isModulesPath = pathname === "/settings/modules";
   const isActivityPath = pathname === "/settings/activity";
@@ -23,6 +24,11 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
       href: "/settings/organization",
       label: t("organization"),
       active: isOrganizationPath,
+    },
+    {
+      href: "/settings/preferences",
+      label: t("preferences"),
+      active: isPreferencesPath,
     },
     { href: "/settings/users", label: t("users"), active: isUsersPath },
     { href: "/settings/roles", label: t("roles"), active: isRolesPath },
@@ -82,6 +88,20 @@ const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
               )}
             >
               {t("organization")}
+            </span>
+          </Link>
+          <Link
+            href="/settings/preferences"
+            className={cn(
+              `${buttonVariants({ variant: "ghost" })} ${isPreferencesPath && "bg-muted"} justify-start rounded-md`,
+            )}
+          >
+            <span
+              className={cn(
+                `text-sm text-foreground/80 ${isPreferencesPath && "font-medium text-foreground"}`,
+              )}
+            >
+              {t("preferences")}
             </span>
           </Link>
           <Link

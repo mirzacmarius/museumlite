@@ -141,6 +141,7 @@ async function canInitiateDeaccessionWorkflowForUser(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
   userId: Id<"users">,
+  workflowEnabled: boolean,
 ) {
   const userOrganization = await ctx.db
     .query("userOrganizations")
@@ -153,11 +154,9 @@ async function canInitiateDeaccessionWorkflowForUser(
     return false;
   }
 
-  const workflowConfig = await getWorkflowConfig(
-    ctx,
-    organizationId,
-    "deaccession",
-  );
+  const workflowConfig = workflowEnabled
+    ? await getWorkflowConfig(ctx, organizationId, "deaccession")
+    : null;
 
   if (workflowConfig) {
     return workflowConfig.canInitiateRoles.includes(userOrganization.roleId);
@@ -177,6 +176,14 @@ async function canInitiateDeaccessionWorkflowForUser(
   return permissions.some(
     (permission) => permission?.name === "collections.create",
   );
+}
+
+async function isDeaccessionWorkflowEnabled(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+) {
+  const organization = await ctx.db.get(organizationId);
+  return organization?.settings?.deaccessionWorkflowEnabled ?? true;
 }
 
 async function createDeaccessionRecord(
@@ -212,10 +219,15 @@ async function createDeaccessionRecord(
     throw new Error("Cannot remove an object that is currently on loan");
   }
 
+  const deaccessionWorkflowEnabled = await isDeaccessionWorkflowEnabled(
+    ctx,
+    args.organizationId,
+  );
   const canInitiate = await canInitiateDeaccessionWorkflowForUser(
     ctx,
     args.organizationId,
     userId,
+    deaccessionWorkflowEnabled,
   );
 
   if (!canInitiate) {
@@ -226,11 +238,9 @@ async function createDeaccessionRecord(
     ? args.deaccessionNumber
     : await generateNextDeaccessionNumber(ctx, args.organizationId);
 
-  const workflowConfig = await getWorkflowConfig(
-    ctx,
-    args.organizationId,
-    "deaccession",
-  );
+  const workflowConfig = deaccessionWorkflowEnabled
+    ? await getWorkflowConfig(ctx, args.organizationId, "deaccession")
+    : null;
   const workflowState = resolveWorkflowStepState(
     workflowConfig?.steps,
     undefined,

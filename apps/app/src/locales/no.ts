@@ -68,6 +68,7 @@ export default {
     sidebar: {
       general: "Personlig",
       organization: "Organisasjon",
+      preferences: "Preferanser",
       users: "Brukere",
       roles: "Roller",
       sites: "Steder",

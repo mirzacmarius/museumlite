@@ -23,7 +23,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
-import { Check, ChevronsUpDown, Trash2, X } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Trash2, X } from "lucide-react";
 import * as React from "react";
 
 interface MaterialsComboboxProps {
@@ -45,10 +45,17 @@ export function MaterialsCombobox({
 }: MaterialsComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
+  const inputRef = React.useRef<HTMLInputElement>(null);
   const [materialToDelete, setMaterialToDelete] = React.useState<{
     id: string;
     name: string;
   } | null>(null);
+
+  const openAndFocusInput = () => {
+    if (disabled) return;
+    setOpen(true);
+    window.requestAnimationFrame(() => inputRef.current?.focus());
+  };
 
   // Ensure value is always an array
   const selectedValues = React.useMemo(() => {
@@ -116,6 +123,10 @@ export function MaterialsCombobox({
   const filteredMaterials = materialOptions.filter((material) =>
     material.label.toLowerCase().includes(inputValue.toLowerCase()),
   );
+  const canCreateMaterial =
+    !!organizationId &&
+    inputValue.trim().length > 0 &&
+    filteredMaterials.length === 0;
 
   // Format material name with first letter uppercase
   const formatMaterialName = (name: string): string => {
@@ -186,11 +197,11 @@ export function MaterialsCombobox({
         <PopoverTrigger asChild>
           <div
             className="flex flex-wrap items-center gap-1 w-full min-h-[2.25rem] rounded-md border border-input bg-background px-2 py-1.5 text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-text"
-            onClick={() => !disabled && setOpen(true)}
+            onClick={openAndFocusInput}
             onKeyDown={(e) => {
               if ((e.key === "Enter" || e.key === " ") && !disabled) {
                 e.preventDefault();
-                setOpen(true);
+                openAndFocusInput();
               }
             }}
           >
@@ -233,6 +244,7 @@ export function MaterialsCombobox({
 
             {/* Inline input for searching/adding */}
             <input
+              ref={inputRef}
               type="text"
               className="flex-1 min-w-[120px] outline-none bg-transparent text-sm placeholder:text-muted-foreground"
               placeholder={
@@ -244,7 +256,7 @@ export function MaterialsCombobox({
                 if (
                   e.key === "Enter" &&
                   inputValue.trim() &&
-                  filteredMaterials.length === 0
+                  canCreateMaterial
                 ) {
                   e.preventDefault();
                   handleCreateAndSelectMaterial(inputValue);
@@ -252,15 +264,40 @@ export function MaterialsCombobox({
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                setOpen(true);
+                openAndFocusInput();
               }}
               disabled={disabled}
             />
 
+            {canCreateMaterial ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="h-7 shrink-0 gap-1.5 border border-border px-2 text-xs font-medium shadow-sm"
+                aria-label={`Add ${formatMaterialName(inputValue)}`}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  handleCreateAndSelectMaterial(inputValue);
+                }}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add
+              </Button>
+            ) : null}
             <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
           </div>
         </PopoverTrigger>
-        <PopoverContent className="w-[400px] p-0" align="start">
+        <PopoverContent
+          className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] p-0"
+          align="start"
+          onOpenAutoFocus={(event) => event.preventDefault()}
+        >
           <Command shouldFilter={false}>
             <CommandList className="max-h-[300px]">
               <CommandEmpty>

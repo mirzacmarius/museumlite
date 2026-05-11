@@ -156,6 +156,7 @@ export default {
     sidebar: {
       general: "General",
       organization: "Organizație",
+      preferences: "Preferințe",
       users: "Utilizatori",
       roles: "Roluri",
       sites: "Locații",
