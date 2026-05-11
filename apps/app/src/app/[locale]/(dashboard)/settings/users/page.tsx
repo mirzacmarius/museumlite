@@ -279,7 +279,9 @@ export default function UsersSettingsPage() {
               >
                 <div className="flex items-center gap-4">
                   <Avatar>
-                    <AvatarImage src={user.image || undefined} />
+                    <AvatarImage
+                      src={user.avatarUrl ?? user.image ?? undefined}
+                    />
                     <AvatarFallback>
                       {user.name
                         ?.split(" ")

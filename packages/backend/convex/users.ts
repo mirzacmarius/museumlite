@@ -142,7 +142,7 @@ export const removeUserImage = mutation({
     if (!userId) {
       return null;
     }
-    await ctx.db.patch(userId, { imageId: undefined, image: undefined });
+    await ctx.db.patch(userId, { imageId: undefined });
     return null;
   },
 });

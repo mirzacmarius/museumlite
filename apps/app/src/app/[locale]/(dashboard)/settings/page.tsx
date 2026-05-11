@@ -67,6 +67,10 @@ export default function DashboardSettings() {
     return null;
   }
 
+  const avatarUrl = user.avatarUrl ?? user.image;
+  const avatarAlt = user.name ?? user.username ?? user.email ?? "User avatar";
+  const hasCustomAvatar = Boolean(user.imageId);
+
   return (
     <div className="flex h-full w-full flex-col gap-4 sm:gap-6">
       {/* Avatar */}
@@ -84,11 +88,11 @@ export default function DashboardSettings() {
             htmlFor="avatar_field"
             className="group relative flex cursor-pointer overflow-hidden rounded-full transition active:scale-95"
           >
-            {user.avatarUrl ? (
+            {avatarUrl ? (
               <img
-                src={user.avatarUrl}
+                src={avatarUrl}
                 className="h-20 w-20 rounded-full object-cover"
-                alt={user.username ?? user.email}
+                alt={avatarAlt}
               />
             ) : (
               <div className="h-20 w-20 rounded-full bg-gradient-to-br from-lime-400 from-10% via-cyan-300 to-blue-500" />
@@ -112,7 +116,7 @@ export default function DashboardSettings() {
           <p className="text-sm font-normal text-muted-foreground">
             {t("avatar.uploadHint")}
           </p>
-          {user.avatarUrl && (
+          {hasCustomAvatar && (
             <Button
               type="button"
               size="sm"

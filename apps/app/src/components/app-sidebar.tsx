@@ -81,6 +81,22 @@ import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+function getUserInitials(user: {
+  name?: string | null;
+  email?: string | null;
+}) {
+  const initials =
+    user.name
+      ?.trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((word) => word[0]?.toUpperCase() ?? "")
+      .join("") ?? "";
+
+  return initials || user.email?.[0]?.toUpperCase() || "U";
+}
+
 const COLLECTION_COLORS = [
   "#d97706",
   "#059669",
@@ -326,6 +342,8 @@ export function AppSidebar({
   const { setOpen } = useCommandPalette();
   const { isMobile } = useSidebar();
   const user = usePreloadedQuery(preloadedUser);
+  const userAvatarUrl = user?.avatarUrl ?? user?.image ?? undefined;
+  const userInitials = getUserInitials(user ?? {});
   const { signOut } = useAuthActions();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -598,10 +616,12 @@ export function AppSidebar({
                 >
                   <Avatar className="size-8 rounded-lg">
                     <AvatarImage
-                      src={user?.avatarUrl ?? undefined}
+                      src={userAvatarUrl}
                       alt={user?.name ?? undefined}
                     />
-                    <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                    <AvatarFallback className="rounded-lg">
+                      {userInitials}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left leading-tight">
                     <span className="truncate font-medium">
@@ -627,10 +647,12 @@ export function AppSidebar({
                   >
                     <Avatar className="h-8 w-8 rounded-lg">
                       <AvatarImage
-                        src={user?.avatarUrl ?? undefined}
+                        src={userAvatarUrl}
                         alt={user?.name ?? undefined}
                       />
-                      <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                      <AvatarFallback className="rounded-lg">
+                        {userInitials}
+                      </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
                       <span className="truncate font-medium">

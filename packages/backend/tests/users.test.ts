@@ -125,4 +125,25 @@ describe("user avatar upload validation", () => {
       }),
     ).rejects.toThrow("User not found");
   });
+
+  test("should preserve provider image when removing custom avatar", async () => {
+    const providerImage = "https://lh3.googleusercontent.com/avatar.jpg";
+    await t.run(async (ctx) => {
+      await ctx.db.patch(userId, { image: providerImage });
+    });
+
+    const authed = t.withIdentity({
+      subject: `${userId}|session-setup`,
+      issuer: "https://example.test",
+    });
+
+    await authed.mutation(api.users.removeUserImage, {});
+
+    const user = await t.run(async (ctx) => {
+      return await ctx.db.get(userId);
+    });
+
+    expect(user?.image).toBe(providerImage);
+    expect(user?.imageId).toBeUndefined();
+  });
 });

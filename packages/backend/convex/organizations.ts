@@ -1403,6 +1403,7 @@ export const listOrganizationUsers = query({
       name: v.optional(v.string()),
       email: v.optional(v.string()),
       image: v.optional(v.string()),
+      avatarUrl: v.optional(v.string()),
       userOrganizationId: v.id("userOrganizations"),
       role: v.object({
         _id: v.id("roles"),
@@ -1429,11 +1430,15 @@ export const listOrganizationUsers = query({
         if (!user || !role) {
           return null;
         }
+        const avatarUrl = user.imageId
+          ? await ctx.storage.getUrl(user.imageId)
+          : null;
         return {
           _id: user._id,
           name: user.name,
           email: user.email,
           image: user.image,
+          avatarUrl: avatarUrl ?? undefined,
           userOrganizationId: uo._id,
           role: {
             _id: role._id,
