@@ -1,6 +1,5 @@
 "use client";
 
-import { DeaccessionDialog } from "@/components/deaccession-dialog";
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
@@ -10,21 +9,14 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@v1/ui/dropdown-menu";
 import { EmptyState } from "@v1/ui/empty-state";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@v1/ui/tooltip";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
-  Archive,
   Building2,
   LayoutGrid,
   List,
-  MoreVertical,
   Package,
   Plus,
   Search,
@@ -45,7 +37,10 @@ import {
 } from "./_components/column-config";
 import { ObjectAppliedFilters } from "./_components/object-applied-filters";
 import { ObjectFiltersDropdown } from "./_components/object-filters-dropdown";
-import { ObjectGridView } from "./_components/object-grid-view";
+import {
+  ObjectActionsMenu,
+  ObjectGridView,
+} from "./_components/object-grid-view";
 import type { ViewMode } from "./_components/view-toggle";
 import { ObjectCatalogSkeleton, ObjectCatalogTableSkeleton } from "./loading";
 
@@ -409,28 +404,40 @@ function CollectionFiltersAndList({
           </div>
           <div className="flex items-center gap-3">
             <div className="flex rounded-md border border-border bg-muted p-0.5">
-              <button
-                type="button"
-                onClick={() => handleViewModeChange("list")}
-                className={`p-1.5 rounded shadow-sm transition-all ${
-                  viewMode === "list"
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <List className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleViewModeChange("grid")}
-                className={`p-1.5 rounded shadow-sm transition-all ${
-                  viewMode === "grid"
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <LayoutGrid className="h-3.5 w-3.5" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="List view"
+                    onClick={() => handleViewModeChange("list")}
+                    className={`p-1.5 rounded shadow-sm transition-all ${
+                      viewMode === "list"
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <List className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>List view</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Grid view"
+                    onClick={() => handleViewModeChange("grid")}
+                    className={`p-1.5 rounded shadow-sm transition-all ${
+                      viewMode === "grid"
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <LayoutGrid className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Grid view</TooltipContent>
+              </Tooltip>
             </div>
 
             {viewMode === "list" && (
@@ -781,9 +788,6 @@ function CollectionTableRow({
 }) {
   const isColumnVisible = (columnId: string) =>
     columns.find((c) => c.id === columnId)?.visible ?? true;
-  const [isDeaccessionDialogOpen, setIsDeaccessionDialogOpen] = useState(false);
-
-  const canDeaccession = item.status !== "deaccessioned";
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -884,53 +888,14 @@ function CollectionTableRow({
         </td>
         <td className="px-4 py-3 text-right">{getStatusBadge(item.status)}</td>
         <td className="px-4 py-3 text-right">
-          {canDeaccession && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                >
-                  <MoreVertical className="h-4 w-4" />
-                  <span className="sr-only">Actions</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                onClick={(e) => e.stopPropagation()}
-                className="border-border bg-popover text-popover-foreground"
-              >
-                <PermissionGate permission="collections.update">
-                  <DropdownMenuItem
-                    className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsDeaccessionDialogOpen(true);
-                    }}
-                  >
-                    <Archive className="mr-2 h-4 w-4" />
-                    Remove / Transfer
-                  </DropdownMenuItem>
-                </PermissionGate>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <ObjectActionsMenu
+            item={item}
+            organizationId={organizationId}
+            triggerClassName="h-8 w-8 border-none bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground"
+            iconClassName="h-4 w-4"
+          />
         </td>
       </tr>
-
-      <DeaccessionDialog
-        open={isDeaccessionDialogOpen}
-        onOpenChange={setIsDeaccessionDialogOpen}
-        collectionId={item._id}
-        collectionTitle={item.title}
-        organizationId={organizationId}
-      />
     </>
   );
 }

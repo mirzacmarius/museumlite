@@ -18,6 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
+import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import {
   Archive,
@@ -48,28 +49,23 @@ const PrintPreviewModal = dynamic(
   { loading: LoadingPanel },
 );
 
-interface ObjectGridItemProps {
+interface ObjectActionsMenuProps {
   item: {
     _id: Id<"collections">;
-    accessionNumber: string;
     title: string;
-    objectType?: string;
-    primaryImageUrl?: string;
     status: string;
   };
   organizationId: Id<"organizations">;
-  isSelected?: boolean;
-  onSelect?: (selected: boolean) => void;
-  shouldEagerLoad?: boolean;
+  triggerClassName?: string;
+  iconClassName?: string;
 }
 
-function ObjectGridItem({
+export function ObjectActionsMenu({
   item,
   organizationId,
-  isSelected = false,
-  onSelect,
-  shouldEagerLoad = false,
-}: ObjectGridItemProps) {
+  triggerClassName,
+  iconClassName,
+}: ObjectActionsMenuProps) {
   const [isDeaccessionDialogOpen, setIsDeaccessionDialogOpen] = useState(false);
   const [selectedRemovalType, setSelectedRemovalType] =
     useState<RemovalType | null>(null);
@@ -118,6 +114,176 @@ function ObjectGridItem({
     setIsDeaccessionDialogOpen(true);
   };
 
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "h-6 w-6 rounded-full border border-border bg-background/80 text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+              triggerClassName,
+            )}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+          >
+            <MoreVertical className={cn("h-3 w-3", iconClassName)} />
+            <span className="sr-only">Actions</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          onClick={(event) => event.stopPropagation()}
+          className="w-44 border-border bg-popover text-popover-foreground"
+        >
+          <DropdownMenuItem
+            className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              handleCopyLink();
+            }}
+          >
+            {linkCopied ? (
+              <Check className="mr-2 h-4 w-4 text-green-500" />
+            ) : (
+              <Link2 className="mr-2 h-4 w-4" />
+            )}
+            {linkCopied ? "Link copied" : "Copy Link"}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              handleOpenPrintPreview();
+            }}
+          >
+            <Printer className="mr-2 h-4 w-4" />
+            Print
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              handleExportToPdf();
+            }}
+          >
+            <FileDown className="mr-2 h-4 w-4" />
+            Export to PDF
+          </DropdownMenuItem>
+          {canDeaccession && (
+            <>
+              <DropdownMenuSeparator />
+              <PermissionGate permission="collections.update">
+                <DropdownMenuItem
+                  className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleOpenRemovalFlow("sold");
+                  }}
+                >
+                  <DollarSign className="mr-2 h-4 w-4 text-green-500" />
+                  Sold
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleOpenRemovalFlow("move");
+                  }}
+                >
+                  <ArrowRightLeft className="mr-2 h-4 w-4 text-blue-500" />
+                  Transfer
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleOpenRemovalFlow("archived");
+                  }}
+                >
+                  <Archive className="mr-2 h-4 w-4 text-amber-500" />
+                  Archive
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleOpenRemovalFlow("deleted");
+                  }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </PermissionGate>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <DeaccessionDialog
+        open={isDeaccessionDialogOpen}
+        onOpenChange={(open) => {
+          setIsDeaccessionDialogOpen(open);
+          if (!open) {
+            setSelectedRemovalType(null);
+          }
+        }}
+        collectionId={item._id}
+        collectionTitle={item.title}
+        organizationId={organizationId}
+        initialRemovalType={selectedRemovalType}
+      />
+      {objectDetail?.collection ? (
+        <PrintPreviewModal
+          isOpen={isPrintModalOpen}
+          onClose={() => {
+            setIsPrintModalOpen(false);
+            setShouldPrintWhenReady(false);
+          }}
+          collection={objectDetail.collection}
+          heroImage={heroImageForPrint}
+          locationPath={objectDetail.locationPath}
+          locale={locale}
+          printOnOpen={shouldPrintWhenReady}
+          onPrintOnOpenComplete={() => setShouldPrintWhenReady(false)}
+        />
+      ) : null}
+    </>
+  );
+}
+
+interface ObjectGridItemProps {
+  item: {
+    _id: Id<"collections">;
+    accessionNumber: string;
+    title: string;
+    objectType?: string;
+    primaryImageUrl?: string;
+    status: string;
+  };
+  organizationId: Id<"organizations">;
+  isSelected?: boolean;
+  onSelect?: (selected: boolean) => void;
+  shouldEagerLoad?: boolean;
+}
+
+function ObjectGridItem({
+  item,
+  organizationId,
+  isSelected = false,
+  onSelect,
+  shouldEagerLoad = false,
+}: ObjectGridItemProps) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
@@ -232,146 +398,9 @@ function ObjectGridItem({
         </Link>
 
         <div className="absolute bottom-3 right-3 z-20 opacity-0 transition-opacity group-hover:opacity-100">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 rounded-full border border-border bg-background/80 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-              >
-                <MoreVertical className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              onClick={(e) => e.stopPropagation()}
-              className="w-44 border-border bg-popover text-popover-foreground"
-            >
-              <DropdownMenuItem
-                className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleCopyLink();
-                }}
-              >
-                {linkCopied ? (
-                  <Check className="mr-2 h-4 w-4 text-green-500" />
-                ) : (
-                  <Link2 className="mr-2 h-4 w-4" />
-                )}
-                {linkCopied ? "Link copied" : "Copy Link"}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleOpenPrintPreview();
-                }}
-              >
-                <Printer className="mr-2 h-4 w-4" />
-                Print
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleExportToPdf();
-                }}
-              >
-                <FileDown className="mr-2 h-4 w-4" />
-                Export to PDF
-              </DropdownMenuItem>
-              {canDeaccession && (
-                <>
-                  <DropdownMenuSeparator />
-                  <PermissionGate permission="collections.update">
-                    <DropdownMenuItem
-                      className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleOpenRemovalFlow("sold");
-                      }}
-                    >
-                      <DollarSign className="mr-2 h-4 w-4 text-green-500" />
-                      Sold
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleOpenRemovalFlow("move");
-                      }}
-                    >
-                      <ArrowRightLeft className="mr-2 h-4 w-4 text-blue-500" />
-                      Transfer
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleOpenRemovalFlow("archived");
-                      }}
-                    >
-                      <Archive className="mr-2 h-4 w-4 text-amber-500" />
-                      Archive
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleOpenRemovalFlow("deleted");
-                      }}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </PermissionGate>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ObjectActionsMenu item={item} organizationId={organizationId} />
         </div>
       </div>
-
-      <DeaccessionDialog
-        open={isDeaccessionDialogOpen}
-        onOpenChange={(open) => {
-          setIsDeaccessionDialogOpen(open);
-          if (!open) {
-            setSelectedRemovalType(null);
-          }
-        }}
-        collectionId={item._id as Id<"collections">}
-        collectionTitle={item.title}
-        organizationId={organizationId}
-        initialRemovalType={selectedRemovalType}
-      />
-      {objectDetail?.collection ? (
-        <PrintPreviewModal
-          isOpen={isPrintModalOpen}
-          onClose={() => {
-            setIsPrintModalOpen(false);
-            setShouldPrintWhenReady(false);
-          }}
-          collection={objectDetail.collection}
-          heroImage={heroImageForPrint}
-          locationPath={objectDetail.locationPath}
-          locale={locale}
-          printOnOpen={shouldPrintWhenReady}
-          onPrintOnOpenComplete={() => setShouldPrintWhenReady(false)}
-        />
-      ) : null}
     </>
   );
 }
