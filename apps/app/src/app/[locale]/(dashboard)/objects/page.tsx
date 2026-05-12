@@ -1,6 +1,5 @@
 "use client";
 
-import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useObjectFilters } from "@/hooks/use-url-filters";
@@ -23,7 +22,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { BulkActionsBar } from "./_components/bulk-actions-bar";
 import { BulkAddToGroupDialog } from "./_components/bulk-add-to-group-dialog";
@@ -56,13 +55,6 @@ export default function CollectionsPage() {
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
-
-  const exportObjects = useMutation(api.imports.exportObjects);
-
-  const handleExport = useCallback(async () => {
-    if (!currentOrganizationId) return [];
-    return exportObjects({ organizationId: currentOrganizationId });
-  }, [currentOrganizationId, exportObjects]);
 
   if (isLoading) {
     return <ObjectCatalogSkeleton />;
@@ -110,20 +102,15 @@ export default function CollectionsPage() {
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-background">
-      <CollectionFiltersAndList
-        organizationId={currentOrganizationId}
-        onExport={handleExport}
-      />
+      <CollectionFiltersAndList organizationId={currentOrganizationId} />
     </div>
   );
 }
 
 function CollectionFiltersAndList({
   organizationId,
-  onExport,
 }: {
   organizationId: Id<"organizations">;
-  onExport: () => Promise<Record<string, unknown>[] | undefined>;
 }) {
   const t = useScopedI18n("objects");
   const { filters, setFilters, resetFilters } = useObjectFilters();
@@ -291,10 +278,7 @@ function CollectionFiltersAndList({
 
   const handleBulkExport = () => {
     if (!bulkExport || bulkExport.length === 0) {
-      if (selectedIds.size === 0) {
-        onExport();
-        return;
-      }
+      return;
     }
 
     const headers = [
@@ -446,16 +430,6 @@ function CollectionFiltersAndList({
                 onColumnToggle={handleColumnToggle}
               />
             )}
-
-            <PermissionGate permission="collections.read">
-              <ExportCSVButton
-                onExport={onExport}
-                filename="objects"
-                variant="outline"
-                size="sm"
-                className="h-8 border-input bg-background/60 text-xs hover:bg-accent hover:text-accent-foreground"
-              />
-            </PermissionGate>
 
             <PermissionGate permission="collections.create">
               <Button
