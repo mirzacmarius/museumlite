@@ -1179,6 +1179,7 @@ export function ObjectRequestFormPage({
                         <Label htmlFor="objectType">Object Type</Label>
                         <TypeCombobox
                           organizationId={currentOrganizationId}
+                          canDeleteTypes={false}
                           value={
                             Array.isArray(formData.objectType)
                               ? formData.objectType

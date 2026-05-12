@@ -560,12 +560,13 @@ function ObjectDetailView({
           {/* Tabs + Content */}
           <div className="mx-auto w-full max-w-6xl px-6 py-8">
             <div className="w-full">
-              <div className="mb-6 flex flex-wrap items-center gap-2">
+              <div className="mb-6 flex flex-wrap items-center gap-x-1 gap-y-2">
                 {tabs.map((tab) => (
                   <Button
                     key={tab.id}
                     variant={activeTab === tab.id ? "default" : "ghost"}
                     size="sm"
+                    className="px-2"
                     onClick={() => setActiveTab(tab.id)}
                   >
                     {tab.label}

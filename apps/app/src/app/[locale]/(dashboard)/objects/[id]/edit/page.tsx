@@ -1452,6 +1452,7 @@ export default function CollectionEditPage() {
                         <TypeCombobox
                           organizationId={collection.organizationId}
                           collectionId={collectionId}
+                          canDeleteTypes={false}
                           value={
                             Array.isArray(formData.objectType)
                               ? formData.objectType

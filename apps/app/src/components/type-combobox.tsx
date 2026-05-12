@@ -33,6 +33,7 @@ interface TypeComboboxProps {
   onValueChange?: (value: string[]) => void;
   placeholder?: string;
   disabled?: boolean;
+  canDeleteTypes?: boolean;
 }
 
 export function TypeCombobox({
@@ -42,6 +43,7 @@ export function TypeCombobox({
   onValueChange,
   placeholder = "Select or add types...",
   disabled = false,
+  canDeleteTypes = true,
 }: TypeComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
@@ -342,7 +344,7 @@ export function TypeCombobox({
                           )}
                         />
                         <span className="flex-1 text-sm">{type.label}</span>
-                        {type.id && (
+                        {canDeleteTypes && type.id ? (
                           <Button
                             type="button"
                             variant="ghost"
@@ -355,12 +357,12 @@ export function TypeCombobox({
                             onClick={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
-                              handleDeleteType(type.id!, type.label);
+                              handleDeleteType(type.id, type.label);
                             }}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
-                        )}
+                        ) : null}
                       </div>
                     </CommandItem>
                   ))}

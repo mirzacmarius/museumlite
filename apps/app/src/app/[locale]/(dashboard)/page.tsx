@@ -191,36 +191,6 @@ export default function DashboardPage() {
     );
   }
 
-  const objectOverviewCard = {
-    href: "/objects",
-    title: "Objects",
-    description: "Browse and search object records.",
-    eyebrow: "Collection workspace",
-    icon: Package,
-    stats: [
-      {
-        label: "In catalog",
-        value: formatNumber(analytics.objects.total, locale),
-      },
-      {
-        label: "Active records",
-        value: formatNumber(analytics.objects.active, locale),
-      },
-      {
-        label: "On display",
-        value: formatNumber(analytics.objects.onDisplay, locale),
-      },
-      {
-        label: "On loan",
-        value: formatNumber(analytics.loans.active, locale),
-      },
-      {
-        label: "Deaccessioned",
-        value: formatNumber(analytics.objects.deaccessioned, locale),
-      },
-    ],
-  };
-
   const commandQuickActions = [
     {
       href: "/objects/new",
@@ -247,7 +217,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto bg-background p-4 sm:p-6 custom-scrollbar">
-      <section className="mt-6">
+      <section>
         <div className="flex flex-wrap items-start justify-start gap-3 sm:gap-4 [&>*]:shrink-0">
           <KpiCard
             title={kpi("totalObjects")}
@@ -261,15 +231,6 @@ export default function DashboardPage() {
             icon={Eye}
             accentColor="emerald"
           />
-          <Link href="/collections">
-            <KpiCard
-              title="Collections"
-              value={`${formatNumber(analytics.collections.total, locale)} Groups`}
-              icon={FolderKanban}
-              accentColor="indigo"
-              className="transition-[transform,border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:border-white/20 hover:bg-white/[0.03] active:translate-y-px"
-            />
-          </Link>
           <Link href="/accessions">
             <KpiCard
               title="Pending Accessions"
@@ -285,15 +246,6 @@ export default function DashboardPage() {
               value={formatNumber(analytics.loans.active, locale)}
               icon={ArrowLeftRight}
               accentColor="blue"
-              className="transition-[transform,border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:border-white/20 hover:bg-white/[0.03] active:translate-y-px"
-            />
-          </Link>
-          <Link href="/locations">
-            <KpiCard
-              title="Locations"
-              value={formatNumber(analytics.locations.total, locale)}
-              icon={MapPin}
-              accentColor="emerald"
               className="transition-[transform,border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:border-white/20 hover:bg-white/[0.03] active:translate-y-px"
             />
           </Link>
@@ -319,107 +271,68 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Link
-          href={objectOverviewCard.href}
-          className="group flex min-h-[14.5rem] flex-col rounded-[1.5rem] border border-white/10 bg-[linear-gradient(160deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-[transform,border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:border-white/20 hover:bg-[linear-gradient(160deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] active:translate-y-px"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-2.5 text-emerald-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-              <objectOverviewCard.icon className="h-4.5 w-4.5" />
-            </div>
-            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-white/45">
-              {objectOverviewCard.eyebrow}
-            </span>
-          </div>
-
-          <div className="mt-6 max-w-md">
-            <h3 className="text-xl font-semibold tracking-tight text-foreground">
-              {objectOverviewCard.title}
-            </h3>
-            <p className="mt-2 text-sm leading-relaxed text-white/55">
-              {objectOverviewCard.description}
-            </p>
-          </div>
-
-          <div className="mt-auto grid gap-2 pt-5 sm:grid-cols-2 xl:grid-cols-3">
-            {objectOverviewCard.stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
-              >
-                <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">
-                  {stat.label}
-                </p>
-                <p className="mt-1.5 text-base font-semibold text-foreground">
-                  {stat.value}
-                </p>
-              </div>
-            ))}
-          </div>
-        </Link>
-
+      <section className="mt-6">
         <div className="flex min-h-[14.5rem] flex-col rounded-[1.5rem] border border-white/10 bg-[linear-gradient(160deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
           <div className="flex items-start justify-between gap-4">
-            <div className="rounded-xl border border-amber-400/20 bg-amber-400/10 p-2.5 text-amber-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-              <FileClock className="h-4.5 w-4.5" />
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl border border-amber-400/20 bg-amber-400/10 p-2.5 text-amber-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                <FileClock className="h-4.5 w-4.5" />
+              </div>
+              <h3 className="text-xl font-semibold tracking-tight text-foreground">
+                Workflow queues
+              </h3>
             </div>
             <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-white/45">
               Operational flow
             </span>
           </div>
 
-          <div className="mt-6 max-w-sm">
-            <h3 className="text-xl font-semibold tracking-tight text-foreground">
-              Workflow queues
-            </h3>
-            <p className="mt-2 text-sm leading-relaxed text-white/55">
-              Review pending approvals and active circulation from the same
-              overview panel.
-            </p>
-          </div>
+          <p className="mt-6 text-sm leading-relaxed text-white/55">
+            Review pending approvals and active circulation from the same
+            overview panel.
+          </p>
 
-          <div className="mt-auto grid gap-2 pt-5 sm:grid-cols-2">
+          <div className="mt-auto grid gap-2 pt-5 sm:grid-cols-2 xl:grid-cols-5">
             <Link
               href="/accessions/transfers"
-              className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-colors hover:border-white/20"
+              className="flex min-w-0 flex-col rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-colors hover:border-white/20"
             >
-              <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">
+              <span className="min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">
                 Pending transfer approvals
               </span>
-              <span className="text-base font-semibold text-foreground">
+              <span className="mt-1.5 text-base font-semibold text-foreground">
                 {formatNumber(analytics.transfers.pending, locale)}
               </span>
             </Link>
-            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-              <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">
+            <div className="flex min-w-0 flex-col rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+              <span className="min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">
                 Pending accessions
               </span>
-              <span className="text-base font-semibold text-foreground">
+              <span className="mt-1.5 text-base font-semibold text-foreground">
                 {formatNumber(analytics.accessions.pending, locale)}
               </span>
             </div>
-            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-              <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">
+            <div className="flex min-w-0 flex-col rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+              <span className="min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">
                 Pending deaccessions
               </span>
-              <span className="text-base font-semibold text-foreground">
+              <span className="mt-1.5 text-base font-semibold text-foreground">
                 {formatNumber(analytics.deaccessions.pending, locale)}
               </span>
             </div>
-            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-              <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">
+            <div className="flex min-w-0 flex-col rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+              <span className="min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">
                 Pending loans
               </span>
-              <span className="text-base font-semibold text-foreground">
+              <span className="mt-1.5 text-base font-semibold text-foreground">
                 {formatNumber(analytics.loans.pending, locale)}
               </span>
             </div>
-            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-              <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">
+            <div className="flex min-w-0 flex-col rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+              <span className="min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">
                 Active loans
               </span>
-              <span className="text-base font-semibold text-foreground">
+              <span className="mt-1.5 text-base font-semibold text-foreground">
                 {formatNumber(analytics.loans.active, locale)}
               </span>
             </div>
