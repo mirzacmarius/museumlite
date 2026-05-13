@@ -130,6 +130,153 @@ test("collections.list hides deleted and deaccession workflow objects by default
   expect(onlyActive.page.map((c) => c.title)).toEqual(["Active item"]);
 });
 
+test("collections.list paginates newest objects and enriches visible rows", async () => {
+  const t = convexTest(schema, modules);
+
+  const { organizationId, userId } = await t.run(async (ctx) => {
+    const userId = await ctx.db.insert("users", { name: "Test User" });
+    const organizationId = await ctx.db.insert("organizations", {
+      name: "Paged Org",
+      slug: "paged-org",
+      type: "museum",
+    });
+
+    const collectionsReadPermissionId = await ctx.db.insert("permissions", {
+      name: "collections.read",
+      category: "collections",
+      description: "Read collections",
+    });
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "Reader",
+      description: "Test role",
+      isSystemRole: false,
+    });
+    await ctx.db.insert("rolePermissions", {
+      roleId,
+      permissionId: collectionsReadPermissionId,
+    });
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+
+    const buildingId = await ctx.db.insert("locations", {
+      organizationId,
+      name: "Building A",
+      type: "building",
+      sortOrder: 0,
+      isActive: true,
+    });
+    const shelfId = await ctx.db.insert("locations", {
+      organizationId,
+      name: "Shelf 1",
+      type: "shelf",
+      parentLocationId: buildingId,
+      sortOrder: 0,
+      isActive: true,
+    });
+
+    await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "A-0001",
+      title: "Old item",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: 1,
+      currentLocationId: shelfId,
+    });
+    await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "A-0002",
+      title: "Middle item",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: 2,
+      objectType: "Painting",
+    });
+    const newestCollectionId = await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "A-0003",
+      title: "Newest item",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: 3,
+      objectType: "Sculpture",
+      currentLocationId: shelfId,
+    });
+
+    const storageId = await ctx.storage.store(
+      new Blob([new Uint8Array([0xff])], { type: "image/jpeg" }),
+    );
+    await ctx.db.insert("mediaFiles", {
+      collectionId: newestCollectionId,
+      organizationId,
+      storageId,
+      fileName: "newest.jpg",
+      fileType: "image",
+      fileSize: 1,
+      mimeType: "image/jpeg",
+      mediaCategory: "image",
+      isPrimary: true,
+      uploadedBy: userId,
+      uploadedAt: Date.now(),
+      uploadStatus: "completed",
+    });
+
+    return { organizationId, userId };
+  });
+
+  const asUser = t.withIdentity({ subject: userId });
+
+  const firstPage = await asUser.query(api.collections.list, {
+    organizationId,
+    paginationOpts: { numItems: 2, cursor: null },
+  });
+  expect(firstPage.page.map((c) => c.title)).toEqual([
+    "Newest item",
+    "Middle item",
+  ]);
+  expect(Object.keys(firstPage).sort()).toEqual([
+    "continueCursor",
+    "isDone",
+    "page",
+  ]);
+  expect(firstPage.isDone).toBe(false);
+  expect(firstPage.page[0]?.locationPath).toBe("Building A > Shelf 1");
+  expect(firstPage.page[0]?.primaryImageUrl).toEqual(expect.any(String));
+
+  const secondPage = await asUser.query(api.collections.list, {
+    organizationId,
+    paginationOpts: {
+      numItems: 2,
+      cursor: firstPage.continueCursor,
+    },
+  });
+  expect(secondPage.page.map((c) => c.title)).toEqual(["Old item"]);
+  expect(secondPage.isDone).toBe(true);
+
+  const statusFiltered = await asUser.query(api.collections.list, {
+    organizationId,
+    status: "active",
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+  expect(statusFiltered.page.map((c) => c.status)).toEqual([
+    "active",
+    "active",
+    "active",
+  ]);
+
+  const typeFiltered = await asUser.query(api.collections.list, {
+    organizationId,
+    objectType: "Painting",
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+  expect(typeFiltered.page.map((c) => c.title)).toEqual(["Middle item"]);
+});
+
 test("collections.emptyDeletedCollections permanently deletes deleted objects", async () => {
   const t = convexTest(schema, modules);
 

@@ -51,6 +51,10 @@ type BulkExportItem = FunctionReturnType<
   typeof api.collections.bulkExport
 >[number];
 
+const INITIAL_OBJECTS_PAGE_SIZE = 20;
+const NEXT_OBJECTS_PAGE_SIZE = 40;
+const OBJECTS_SCROLL_PRELOAD_MARGIN = "1200px 0px";
+
 export default function CollectionsPage() {
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
@@ -114,6 +118,7 @@ function CollectionFiltersAndList({
 }) {
   const t = useScopedI18n("objects");
   const { filters, setFilters, resetFilters } = useObjectFilters();
+  const [searchInput, setSearchInput] = useState(filters.search);
 
   const [selectedIds, setSelectedIds] = useState<Set<Id<"collections">>>(
     new Set(),
@@ -142,14 +147,6 @@ function CollectionFiltersAndList({
   const defaultColumns = useDefaultColumns();
   const [columns, setColumns] = useState<ColumnConfig[] | null>(null);
 
-  const collectionGroups = useQuery(api.collectionGroups.list, {
-    organizationId,
-  });
-  const locations = useQuery(api.locations.listAllWithPaths, {
-    organizationId,
-  });
-  const typeOptions = useQuery(api.typeOptions.list, { organizationId });
-
   useEffect(() => {
     if (savedViewMode) {
       setViewMode(savedViewMode as ViewMode);
@@ -173,6 +170,22 @@ function CollectionFiltersAndList({
       setColumns(defaultColumns);
     }
   }, [savedColumns, defaultColumns]);
+
+  useEffect(() => {
+    setSearchInput(filters.search);
+  }, [filters.search]);
+
+  useEffect(() => {
+    if (searchInput === filters.search) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setFilters({ search: searchInput });
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [filters.search, searchInput, setFilters]);
 
   const handleViewModeChange = (mode: ViewMode) => {
     setViewMode(mode);
@@ -236,7 +249,25 @@ function CollectionFiltersAndList({
             : undefined,
         }
       : "skip",
-    { initialNumItems: 20 },
+    { initialNumItems: INITIAL_OBJECTS_PAGE_SIZE },
+  );
+
+  const shouldLoadFilterMetadata =
+    collectionsStatus !== "LoadingFirstPage" ||
+    filters.objectType !== "" ||
+    filters.locationId !== "" ||
+    filters.collectionGroupId !== "";
+  const collectionGroups = useQuery(
+    api.collectionGroups.list,
+    shouldLoadFilterMetadata ? { organizationId } : "skip",
+  );
+  const locations = useQuery(
+    api.locations.listAllWithPaths,
+    shouldLoadFilterMetadata ? { organizationId } : "skip",
+  );
+  const typeOptions = useQuery(
+    api.typeOptions.list,
+    shouldLoadFilterMetadata ? { organizationId } : "skip",
   );
 
   const objectTypeOptions = useMemo(() => {
@@ -368,8 +399,8 @@ function CollectionFiltersAndList({
               <input
                 type="text"
                 placeholder={t("searchPlaceholder")}
-                value={filters.search || ""}
-                onChange={(e) => setFilters({ search: e.target.value })}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="w-64 rounded-md border border-input bg-background/60 py-1.5 pl-8 pr-3 text-xs text-foreground transition-all placeholder:text-muted-foreground focus:border-ring focus:bg-background focus:outline-none"
               />
             </div>
@@ -478,7 +509,7 @@ function CollectionFiltersAndList({
           selectedIds={selectedIds}
           onSelectItem={handleSelectItem}
           onSelectAll={handleSelectAll}
-          onLoadMore={() => loadMore(20)}
+          onLoadMore={() => loadMore(NEXT_OBJECTS_PAGE_SIZE)}
         />
       </div>
 
@@ -594,7 +625,7 @@ function CollectionList({
       },
       {
         root,
-        rootMargin: "240px 0px",
+        rootMargin: OBJECTS_SCROLL_PRELOAD_MARGIN,
       },
     );
 

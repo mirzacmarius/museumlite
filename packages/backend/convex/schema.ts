@@ -482,6 +482,11 @@ export default defineSchema({
     .index("by_currentLocation", ["currentLocationId"])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_organization_and_location", [
+      "organizationId",
+      "currentLocationId",
+    ])
+    .index("by_organization_and_objectType", ["organizationId", "objectType"])
     .index("by_organization_status_public", [
       "organizationId",
       "status",

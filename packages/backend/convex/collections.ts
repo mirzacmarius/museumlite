@@ -245,34 +245,90 @@ async function generateAccessionNumber(
   return accessionNumber;
 }
 
-async function getCollectionPrimaryImageUrl(
+async function getCollectionPrimaryImageUrls(
   ctx: QueryCtx,
-  collectionId: Id<"collections">,
+  collectionIds: Id<"collections">[],
 ) {
-  const mediaFiles = await ctx.db
-    .query("mediaFiles")
-    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-    .collect();
+  const entries = await Promise.all(
+    collectionIds.map(async (collectionId) => {
+      const mediaFiles = await ctx.db
+        .query("mediaFiles")
+        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+        .collect();
 
-  const imageMedia = mediaFiles.filter((media) => isImageMedia(media));
-  const preferredMedia =
-    imageMedia.find((media) => media.isPrimary) ?? imageMedia[0];
+      const imageMedia = mediaFiles.filter((media) => isImageMedia(media));
+      const preferredMedia =
+        imageMedia.find((media) => media.isPrimary) ?? imageMedia[0];
 
-  if (!preferredMedia) {
-    return undefined;
+      if (!preferredMedia) {
+        return [collectionId, undefined] as const;
+      }
+
+      const storageId =
+        preferredMedia.thumbnailStorageId ??
+        (isImageMedia(preferredMedia) ? preferredMedia.storageId : undefined);
+      const url = storageId
+        ? ((await ctx.storage.getUrl(storageId)) ?? undefined)
+        : undefined;
+
+      return [collectionId, url] as const;
+    }),
+  );
+
+  return new Map(entries);
+}
+
+async function getLocationPathStrings(
+  ctx: QueryCtx,
+  locationIds: Id<"locations">[],
+) {
+  const uniqueLocationIds = [...new Set(locationIds)];
+  const locationMap = new Map<Id<"locations">, Doc<"locations">>();
+  const pendingIds = new Set(uniqueLocationIds);
+
+  while (pendingIds.size > 0) {
+    const ids = [...pendingIds];
+    pendingIds.clear();
+
+    const locations = await Promise.all(ids.map((id) => ctx.db.get(id)));
+    for (const location of locations) {
+      if (!location || locationMap.has(location._id)) {
+        continue;
+      }
+
+      locationMap.set(location._id, location);
+      if (
+        location.parentLocationId &&
+        !locationMap.has(location.parentLocationId)
+      ) {
+        pendingIds.add(location.parentLocationId);
+      }
+    }
   }
 
-  if (preferredMedia.thumbnailStorageId) {
-    return (
-      (await ctx.storage.getUrl(preferredMedia.thumbnailStorageId)) ?? undefined
+  const pathMap = new Map<Id<"locations">, string | undefined>();
+
+  for (const locationId of uniqueLocationIds) {
+    const pathSegments: string[] = [];
+    let currentId: Id<"locations"> | undefined = locationId;
+
+    while (currentId) {
+      const location = locationMap.get(currentId);
+      if (!location) {
+        break;
+      }
+
+      pathSegments.unshift(location.name);
+      currentId = location.parentLocationId;
+    }
+
+    pathMap.set(
+      locationId,
+      pathSegments.length > 0 ? pathSegments.join(" > ") : undefined,
     );
   }
 
-  if (isImageMedia(preferredMedia)) {
-    return (await ctx.storage.getUrl(preferredMedia.storageId)) ?? undefined;
-  }
-
-  return undefined;
+  return pathMap;
 }
 
 async function getObjectDetailHeroImage(
@@ -702,6 +758,82 @@ async function getCollectionsWithOpenDeaccessions(
     [...pendingDeaccessions, ...approvedDeaccessions].map(
       (deaccession) => deaccession.collectionId,
     ),
+  );
+}
+
+type CollectionListPageItem = {
+  _id: Id<"collections">;
+  accessionNumber: string;
+  title: string;
+  collectionGroupId?: Id<"collectionGroups">;
+  objectType?: string;
+  currentLocationId?: Id<"locations">;
+  status: Doc<"collections">["status"];
+  _creationTime: number;
+};
+
+async function enrichCollectionListPage(
+  ctx: QueryCtx,
+  page: CollectionListPageItem[],
+) {
+  const collectionIds = page.map((item) => item._id);
+  const locationIds = page
+    .map((item) => item.currentLocationId)
+    .filter((id): id is Id<"locations"> => id !== undefined);
+
+  const [locationPathById, primaryImageUrlByCollectionId] = await Promise.all([
+    getLocationPathStrings(ctx, locationIds),
+    getCollectionPrimaryImageUrls(ctx, collectionIds),
+  ]);
+
+  return page.map((item) => ({
+    _id: item._id,
+    accessionNumber: item.accessionNumber,
+    title: item.title,
+    collectionGroupId: item.collectionGroupId,
+    objectType: item.objectType,
+    currentLocationId: item.currentLocationId,
+    locationPath: item.currentLocationId
+      ? locationPathById.get(item.currentLocationId)
+      : undefined,
+    primaryImageUrl: primaryImageUrlByCollectionId.get(item._id),
+    status: item.status,
+    _creationTime: item._creationTime,
+  }));
+}
+
+async function toCollectionListPaginationResult(
+  ctx: QueryCtx,
+  paginationResult: {
+    page: CollectionListPageItem[];
+    isDone: boolean;
+    continueCursor: string;
+  },
+) {
+  return {
+    page: await enrichCollectionListPage(ctx, paginationResult.page),
+    isDone: paginationResult.isDone,
+    continueCursor: paginationResult.continueCursor,
+  };
+}
+
+function shouldUseIndexedCollectionsPagination(args: {
+  collectionGroupId?: Id<"collectionGroups">;
+  culture?: string;
+  period?: string;
+  materials?: string;
+  search?: string;
+  catalogedFrom?: number;
+  catalogedTo?: number;
+}) {
+  return (
+    !args.collectionGroupId &&
+    !args.culture &&
+    !args.period &&
+    !args.materials &&
+    !args.search?.trim() &&
+    !args.catalogedFrom &&
+    !args.catalogedTo
   );
 }
 
@@ -1655,6 +1787,108 @@ export const list = query({
       );
     }
 
+    if (shouldUseIndexedCollectionsPagination(args)) {
+      const filterOpenDeaccessions = (page: Doc<"collections">[]) =>
+        page.filter(
+          (collection) =>
+            !collectionIdsWithOpenDeaccessions?.has(collection._id) ||
+            collection.status === "deaccessioned",
+        );
+
+      if (args.status && !args.locationId && !args.objectType) {
+        const status = args.status;
+        const paginationResult = await ctx.db
+          .query("collections")
+          .withIndex("by_organization_and_status", (q) =>
+            q.eq("organizationId", args.organizationId).eq("status", status),
+          )
+          .order("desc")
+          .paginate(args.paginationOpts);
+
+        return await toCollectionListPaginationResult(ctx, {
+          page: filterOpenDeaccessions(paginationResult.page),
+          isDone: paginationResult.isDone,
+          continueCursor: paginationResult.continueCursor,
+        });
+      }
+
+      if (args.locationId && !args.status && !args.objectType) {
+        const paginationResult = await ctx.db
+          .query("collections")
+          .withIndex("by_organization_and_location", (q) =>
+            q
+              .eq("organizationId", args.organizationId)
+              .eq("currentLocationId", args.locationId),
+          )
+          .filter((q) =>
+            args.includeDeaccessioned
+              ? q.neq(q.field("status"), "deleted")
+              : q.and(
+                  q.neq(q.field("status"), "deleted"),
+                  q.neq(q.field("status"), "deaccessioned"),
+                ),
+          )
+          .order("desc")
+          .paginate(args.paginationOpts);
+
+        return await toCollectionListPaginationResult(ctx, {
+          page: filterOpenDeaccessions(paginationResult.page),
+          isDone: paginationResult.isDone,
+          continueCursor: paginationResult.continueCursor,
+        });
+      }
+
+      if (args.objectType && !args.status && !args.locationId) {
+        const paginationResult = await ctx.db
+          .query("collections")
+          .withIndex("by_organization_and_objectType", (q) =>
+            q
+              .eq("organizationId", args.organizationId)
+              .eq("objectType", args.objectType),
+          )
+          .filter((q) =>
+            args.includeDeaccessioned
+              ? q.neq(q.field("status"), "deleted")
+              : q.and(
+                  q.neq(q.field("status"), "deleted"),
+                  q.neq(q.field("status"), "deaccessioned"),
+                ),
+          )
+          .order("desc")
+          .paginate(args.paginationOpts);
+
+        return await toCollectionListPaginationResult(ctx, {
+          page: filterOpenDeaccessions(paginationResult.page),
+          isDone: paginationResult.isDone,
+          continueCursor: paginationResult.continueCursor,
+        });
+      }
+
+      if (!args.status && !args.locationId && !args.objectType) {
+        const paginationResult = await ctx.db
+          .query("collections")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .filter((q) =>
+            args.includeDeaccessioned
+              ? q.neq(q.field("status"), "deleted")
+              : q.and(
+                  q.neq(q.field("status"), "deleted"),
+                  q.neq(q.field("status"), "deaccessioned"),
+                ),
+          )
+          .order("desc")
+          .paginate(args.paginationOpts);
+
+        return await toCollectionListPaginationResult(ctx, {
+          page: filterOpenDeaccessions(paginationResult.page),
+          isDone: paginationResult.isDone,
+          continueCursor: paginationResult.continueCursor,
+        });
+      }
+    }
+
     let allResults: Array<{
       _id: Id<"collections">;
       title: string;
@@ -1865,22 +2099,7 @@ export const list = query({
       allResults.length,
     );
     const page = allResults.slice(startIndex, endIndex);
-    const enrichedPage = await Promise.all(
-      page.map(async (item) => ({
-        _id: item._id,
-        accessionNumber: item.accessionNumber,
-        title: item.title,
-        collectionGroupId: item.collectionGroupId,
-        objectType: item.objectType,
-        currentLocationId: item.currentLocationId,
-        locationPath: item.currentLocationId
-          ? await getLocationPathString(ctx, item.currentLocationId)
-          : undefined,
-        primaryImageUrl: await getCollectionPrimaryImageUrl(ctx, item._id),
-        status: item.status,
-        _creationTime: item._creationTime,
-      })),
-    );
+    const enrichedPage = await enrichCollectionListPage(ctx, page);
 
     return {
       page: enrichedPage,
