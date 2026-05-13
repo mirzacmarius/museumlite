@@ -2,10 +2,20 @@ import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { getUsersToNotifyForWorkflowStep } from "./permissions";
+import {
+  resolveWorkflowApprovalDecision,
+  resolveWorkflowApprovalPolicy,
+} from "./workflowSteps";
 
 type ExecutableWorkflowType = "accession" | "deaccession" | "loan";
 
 type WorkflowEntityId = Id<"accessions"> | Id<"deaccessions"> | Id<"loans">;
+
+type WorkflowApprovalStep = {
+  stepNumber: number;
+  approvalMode?: "single" | "multi" | "unanimous";
+  requiredApprovals?: number;
+};
 
 type WorkflowAdvanceNotification = {
   title: string;
@@ -30,6 +40,17 @@ type WorkflowStepAdvanceArgs = {
   comment?: string;
   notification: WorkflowAdvanceNotification;
   recordWorkflowHistory?: boolean;
+};
+
+type WorkflowStepApprovalArgs = {
+  organizationId: Id<"organizations">;
+  workflowType: ExecutableWorkflowType;
+  entityId: WorkflowEntityId;
+  stepNumber: number;
+  step: WorkflowApprovalStep;
+  performedBy: Id<"users">;
+  comment?: string;
+  isPastLastStep: boolean;
 };
 
 function resolveNextWorkflowStep(toStep: number | undefined) {
@@ -91,6 +112,103 @@ export async function prepareWorkflowStepAdvance(
   }
 
   return nextStep;
+}
+
+export async function recordWorkflowStepApproval(
+  ctx: MutationCtx,
+  {
+    comment,
+    entityId,
+    isPastLastStep,
+    organizationId,
+    performedBy,
+    step,
+    stepNumber,
+    workflowType,
+  }: WorkflowStepApprovalArgs,
+) {
+  const { approvalMode, requiredApprovals } =
+    resolveWorkflowApprovalPolicy(step);
+  let approvalDecision = resolveWorkflowApprovalDecision({
+    approvalMode,
+    isPastLastStep,
+    requiredApprovals,
+  });
+
+  if (!approvalDecision.requiresStoredApproval) {
+    return {
+      approvalDecision,
+      approvalMode,
+    };
+  }
+
+  const approvalStatus = await ctx.runQuery(
+    internal.workflows.checkStepApprovalStatus,
+    {
+      organizationId,
+      workflowType,
+      entityId,
+      stepNumber,
+      userId: performedBy,
+    },
+  );
+
+  approvalDecision = resolveWorkflowApprovalDecision({
+    approvalMode,
+    approvalStatus,
+    isPastLastStep,
+    requiredApprovals,
+  });
+
+  if (approvalDecision.userHasAlreadyApproved) {
+    throw new Error("You have already approved this step");
+  }
+
+  await ctx.runMutation(internal.workflows.recordStepApproval, {
+    organizationId,
+    workflowType,
+    entityId,
+    stepNumber,
+    approvedBy: performedBy,
+    comment,
+  });
+
+  if (!approvalDecision.shouldAdvance) {
+    await ctx.runMutation(internal.workflows.recordWorkflowHistory, {
+      organizationId,
+      workflowType,
+      entityId,
+      fromStep: stepNumber,
+      toStep: stepNumber,
+      action: "approved",
+      performedBy,
+      comment,
+      metadata: {
+        approvalMode,
+        currentApprovals: String(approvalDecision.newApprovalCount),
+        requiredApprovals: String(approvalDecision.effectiveRequiredApprovals),
+      },
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId,
+      userId: performedBy,
+      action: "partial_approval",
+      entityType: workflowType,
+      entityId,
+      changes: {
+        step: stepNumber,
+        approvalMode,
+        currentApprovals: approvalDecision.newApprovalCount,
+        requiredApprovals: approvalDecision.effectiveRequiredApprovals,
+      },
+    });
+  }
+
+  return {
+    approvalDecision,
+    approvalMode,
+  };
 }
 
 export async function recordWorkflowStepAdvance(

@@ -14,14 +14,12 @@ import { accessionParser } from "./utils/accessionNumberParser";
 import { batchLookup } from "./utils/batchLookup";
 import { markCollectionDeaccessioned } from "./utils/collectionLifecycle";
 import { enforceMediaQuota } from "./utils/featureGates";
+import { insertCompletedMediaAsset } from "./utils/mediaAssets";
 import {
   accessionDraftMediaValidator,
   objectDraftDataValidator,
 } from "./utils/objectDraftData";
-import {
-  applyUsageCounterDelta,
-  getStorageBytes,
-} from "./utils/organizationUsageCounters";
+import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
@@ -33,14 +31,10 @@ import { getWorkflowConfig } from "./utils/workflowConfigs";
 import {
   prepareWorkflowStepAdvance,
   recordWorkflowStepAdvance,
+  recordWorkflowStepApproval,
 } from "./utils/workflowExecution";
-import {
-  resolveWorkflowApprovalDecision,
-  resolveWorkflowApprovalPolicy,
-  resolveWorkflowStepState,
-} from "./utils/workflowSteps";
+import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
-const MAX_SMALL_IMAGE_SIZE = 50 * 1024 * 1024;
 const REJECTED_OBJECT_DISPLAY_STATUS = "REJECTED";
 
 const accessionDraftMediaWithUrlValidator = v.object({
@@ -154,16 +148,6 @@ async function deleteAccessionSearchDocument(
   }
 }
 
-function getFileCategory(
-  mimeType: string,
-  mediaCategory?: "image" | "document",
-) {
-  if (mediaCategory) {
-    return mediaCategory;
-  }
-  return mimeType.startsWith("image/") ? "image" : "document";
-}
-
 async function createCollectionObjectFromAccession(
   ctx: MutationCtx,
   accession: Doc<"accessions">,
@@ -249,47 +233,18 @@ async function createCollectionObjectFromAccession(
   }
 
   for (const draftMediaItem of accession.draftMedia || []) {
-    const fileType = getFileCategory(
-      draftMediaItem.mimeType,
-      draftMediaItem.mediaCategory,
-    );
-    const mediaId = await ctx.db.insert("mediaFiles", {
+    await insertCompletedMediaAsset(ctx, {
       collectionId,
       organizationId: accession.organizationId,
       storageId: draftMediaItem.storageId,
       fileName: draftMediaItem.fileName,
-      fileType,
       fileSize: draftMediaItem.fileSize,
       mimeType: draftMediaItem.mimeType,
       mediaCategory: draftMediaItem.mediaCategory,
       isPrimary: draftMediaItem.isPrimary,
       uploadedBy: options.catalogedBy,
       uploadedAt: options.catalogedAt,
-      uploadStatus: "completed",
     });
-
-    const storageBytes = await getStorageBytes(ctx, draftMediaItem.storageId);
-    await applyUsageCounterDelta(ctx, accession.organizationId, {
-      mediaFileCount: 1,
-      mediaTypeDeltas: [
-        {
-          type: fileType,
-          countDelta: 1,
-          bytesDelta: storageBytes,
-        },
-      ],
-      storageBytes,
-    });
-
-    if (
-      draftMediaItem.isPrimary &&
-      fileType === "image" &&
-      draftMediaItem.fileSize < MAX_SMALL_IMAGE_SIZE
-    ) {
-      await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
-        mediaId,
-      });
-    }
   }
 
   return collectionId;
@@ -1633,81 +1588,21 @@ export const approve = mutation({
       if (!currentStepConfig) {
         throw new Error("Current workflow step is not configured");
       }
-      const { approvalMode, requiredApprovals } =
-        resolveWorkflowApprovalPolicy(currentStepConfig);
-      let approvalDecision = resolveWorkflowApprovalDecision({
-        approvalMode,
-        isPastLastStep: workflowState.isPastLastStep,
-        requiredApprovals,
-      });
 
-      if (approvalDecision.requiresStoredApproval) {
-        const approvalStatus = await ctx.runQuery(
-          internal.workflows.checkStepApprovalStatus,
-          {
-            organizationId: accession.organizationId,
-            workflowType: "accession",
-            entityId: args.accessionId,
-            stepNumber: currentStep,
-            userId,
-          },
-        );
-
-        approvalDecision = resolveWorkflowApprovalDecision({
-          approvalMode,
-          approvalStatus,
-          isPastLastStep: workflowState.isPastLastStep,
-          requiredApprovals,
-        });
-
-        if (approvalDecision.userHasAlreadyApproved) {
-          throw new Error("You have already approved this step");
-        }
-
-        await ctx.runMutation(internal.workflows.recordStepApproval, {
+      const { approvalDecision, approvalMode } =
+        await recordWorkflowStepApproval(ctx, {
           organizationId: accession.organizationId,
           workflowType: "accession",
           entityId: args.accessionId,
           stepNumber: currentStep,
-          approvedBy: userId,
+          step: currentStepConfig,
+          performedBy: userId,
           comment: args.comment,
+          isPastLastStep: workflowState.isPastLastStep,
         });
 
-        if (!approvalDecision.shouldAdvance) {
-          await ctx.runMutation(internal.workflows.recordWorkflowHistory, {
-            organizationId: accession.organizationId,
-            workflowType: "accession",
-            entityId: args.accessionId,
-            fromStep: currentStep,
-            toStep: currentStep,
-            action: "approved",
-            performedBy: userId,
-            comment: args.comment,
-            metadata: {
-              approvalMode,
-              currentApprovals: String(approvalDecision.newApprovalCount),
-              requiredApprovals: String(
-                approvalDecision.effectiveRequiredApprovals,
-              ),
-            },
-          });
-
-          await ctx.runMutation(internal.audit.logAction, {
-            organizationId: accession.organizationId,
-            userId,
-            action: "partial_approval",
-            entityType: "accession",
-            entityId: args.accessionId,
-            changes: {
-              step: currentStep,
-              approvalMode,
-              currentApprovals: approvalDecision.newApprovalCount,
-              requiredApprovals: approvalDecision.effectiveRequiredApprovals,
-            },
-          });
-
-          return null;
-        }
+      if (!approvalDecision.shouldAdvance) {
+        return null;
       }
 
       const history = accession.workflowHistory ?? [];

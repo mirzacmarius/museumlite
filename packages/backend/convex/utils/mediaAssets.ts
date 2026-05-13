@@ -80,6 +80,7 @@ export async function insertCompletedMediaAsset(
     organizationId,
     photographer,
     storageId,
+    uploadedAt = Date.now(),
     uploadedBy,
   }: {
     collectionId: Id<"collections">;
@@ -95,6 +96,7 @@ export async function insertCompletedMediaAsset(
     photographer?: string;
     copyright?: string;
     forceThumbnail?: boolean;
+    uploadedAt?: number;
   },
 ) {
   const fileType = getMediaFileType(mimeType);
@@ -117,7 +119,7 @@ export async function insertCompletedMediaAsset(
     photographer,
     copyright,
     uploadedBy,
-    uploadedAt: Date.now(),
+    uploadedAt,
     uploadStatus: "completed",
   });
 
