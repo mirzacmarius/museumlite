@@ -207,7 +207,7 @@ function ObjectDetailView({
   const common = useScopedI18n("common");
   const locale = useCurrentLocale();
   const { currentOrganization, currentOrganizationId } = useOrganization();
-  const { hasFeature } = useFeatureAccess();
+  const { enabledModules, hasFeature } = useFeatureAccess();
   const collection = objectDetail?.collection ?? null;
   const collectionGroup = objectDetail?.collectionGroup ?? null;
   const locationPath = objectDetail?.locationPath ?? [];
@@ -234,6 +234,7 @@ function ObjectDetailView({
   const tabs = useMemo(() => {
     return getObjectViewTabs({
       collectionType: collection?.collectionType,
+      enabledModules,
       locationTrackingEnabled: isLocationTrackingEnabled,
       features: {
         conservation: hasConservationFeature,
@@ -243,6 +244,7 @@ function ObjectDetailView({
     });
   }, [
     collection?.collectionType,
+    enabledModules,
     hasConservationFeature,
     hasExhibitionsFeature,
     hasLoansFeature,

@@ -1,8 +1,9 @@
 "use client";
 
 import {
-  COLLECTION_TYPE_OPTIONS,
   type CollectionType,
+  type ModuleId,
+  getAvailableCollectionTypeOptions,
   isCollectionType,
 } from "@v1/backend/convex/utils/moduleCatalog";
 import { Label } from "@v1/ui/label";
@@ -13,13 +14,14 @@ import {
   SelectTrigger,
 } from "@v1/ui/select";
 import { Archive, Car, Coins, Gem, Leaf, Package, Wine } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 
 export type { CollectionType };
 
 interface CollectionTypeSelectorProps {
   value?: CollectionType;
   onValueChange: (value: CollectionType) => void;
+  enabledModules?: ReadonlyArray<ModuleId>;
   disabled?: boolean;
 }
 
@@ -33,28 +35,52 @@ const collectionTypeIcons: Record<CollectionType, ReactNode> = {
   coins_stamps: <Coins className="h-4 w-4" />,
 };
 
-const collectionTypes: Array<{
+function getCollectionTypes(enabledModules: ReadonlyArray<ModuleId>) {
+  return getAvailableCollectionTypeOptions(enabledModules).map((option) => ({
+    value: option.value,
+    label: option.label,
+    description: option.description,
+    icon: collectionTypeIcons[option.value],
+  }));
+}
+
+const allCollectionTypes: Array<{
   value: CollectionType;
   label: string;
   description: string;
   icon: ReactNode;
-}> = COLLECTION_TYPE_OPTIONS.map((option) => ({
-  value: option.value,
-  label: option.label,
-  description: option.description,
-  icon: collectionTypeIcons[option.value],
-}));
+}> = getCollectionTypes([
+  "fine_art",
+  "wine",
+  "automotive",
+  "natural_history",
+  "archive",
+  "coins_stamps",
+]);
 
 export function CollectionTypeSelector({
   value,
   onValueChange,
+  enabledModules = [],
   disabled,
 }: CollectionTypeSelectorProps) {
+  const collectionTypes = getCollectionTypes(enabledModules);
+  const selectedType: CollectionType =
+    value && collectionTypes.some((type) => type.value === value)
+      ? value
+      : "general";
+
+  useEffect(() => {
+    if ((value ?? "general") !== selectedType) {
+      onValueChange(selectedType);
+    }
+  }, [onValueChange, selectedType, value]);
+
   return (
     <div className="space-y-2">
       <Label htmlFor="collectionType">Collection Type</Label>
       <Select
-        value={value || "general"}
+        value={selectedType}
         onValueChange={(val) => {
           if (isCollectionType(val)) {
             onValueChange(val);
@@ -64,7 +90,7 @@ export function CollectionTypeSelector({
       >
         <SelectTrigger id="collectionType" className="w-full">
           <span className="truncate">
-            {getCollectionTypeLabel(value || "general")}
+            {getCollectionTypeLabel(selectedType)}
           </span>
         </SelectTrigger>
         <SelectContent>
@@ -95,12 +121,12 @@ export function CollectionTypeSelector({
 }
 
 export function getCollectionTypeLabel(type?: CollectionType): string {
-  return collectionTypes.find((t) => t.value === type)?.label ?? "General";
+  return allCollectionTypes.find((t) => t.value === type)?.label ?? "General";
 }
 
 export function getCollectionTypeIcon(type?: CollectionType): ReactNode {
   return (
-    collectionTypes.find((t) => t.value === type)?.icon ?? (
+    allCollectionTypes.find((t) => t.value === type)?.icon ?? (
       <Package className="h-4 w-4" />
     )
   );

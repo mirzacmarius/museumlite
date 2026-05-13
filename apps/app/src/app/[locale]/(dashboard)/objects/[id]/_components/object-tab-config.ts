@@ -3,7 +3,9 @@
 import {
   COLLECTION_MODULE_TAB_LABELS,
   type CollectionModuleId,
+  type ModuleId,
   isCollectionModuleId,
+  isCollectionTypeEnabled,
 } from "@v1/backend/convex/utils/moduleCatalog";
 
 export type ObjectTabId =
@@ -97,6 +99,7 @@ const moduleTabMap: Record<CollectionModuleId, ObjectTabDefinition> = {
 
 export function getObjectViewTabs(options: {
   collectionType?: string;
+  enabledModules?: ReadonlyArray<ModuleId>;
   locationTrackingEnabled?: boolean;
   features: {
     conservation: boolean;
@@ -104,9 +107,14 @@ export function getObjectViewTabs(options: {
     loans: boolean;
   };
 }) {
-  const moduleTab = isCollectionModuleId(options.collectionType)
-    ? moduleTabMap[options.collectionType]
-    : undefined;
+  const moduleTab =
+    isCollectionModuleId(options.collectionType) &&
+    isCollectionTypeEnabled(
+      options.collectionType,
+      options.enabledModules ?? [],
+    )
+      ? moduleTabMap[options.collectionType]
+      : undefined;
 
   const orderedTabs = moduleTab
     ? [viewBaseTabs[0], moduleTab, ...viewBaseTabs.slice(1)]

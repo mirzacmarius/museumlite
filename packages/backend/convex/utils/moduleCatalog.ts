@@ -40,6 +40,17 @@ export const COLLECTION_TYPE_IDS = [
 
 export type CollectionType = (typeof COLLECTION_TYPE_IDS)[number];
 
+export const COLLECTION_TYPE_MODULE_REQUIREMENTS: Partial<
+  Record<CollectionType, CollectionModuleId>
+> = {
+  fine_art: "fine_art",
+  wine: "wine",
+  automotive: "automotive",
+  natural_history: "natural_history",
+  archive: "archive",
+  coins_stamps: "coins_stamps",
+};
+
 export const MODULE_INTEGRATION_REQUIREMENTS: Partial<
   Record<ModuleId, string>
 > = {
@@ -116,4 +127,27 @@ export function isCollectionType(
   value: string | undefined,
 ): value is CollectionType {
   return COLLECTION_TYPE_IDS.some((collectionType) => collectionType === value);
+}
+
+export function getCollectionTypeModuleRequirement(
+  collectionType: CollectionType | undefined,
+): CollectionModuleId | null {
+  if (!collectionType) return null;
+  return COLLECTION_TYPE_MODULE_REQUIREMENTS[collectionType] ?? null;
+}
+
+export function isCollectionTypeEnabled(
+  collectionType: CollectionType | undefined,
+  enabledModules: ReadonlyArray<ModuleId>,
+) {
+  const requiredModule = getCollectionTypeModuleRequirement(collectionType);
+  return requiredModule ? enabledModules.includes(requiredModule) : true;
+}
+
+export function getAvailableCollectionTypeOptions(
+  enabledModules: ReadonlyArray<ModuleId>,
+) {
+  return COLLECTION_TYPE_OPTIONS.filter((option) =>
+    isCollectionTypeEnabled(option.value, enabledModules),
+  );
 }

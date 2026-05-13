@@ -24,6 +24,10 @@ import {
   hasFeatureAccess,
   hasModuleEnabled,
 } from "./utils/featureGates";
+import {
+  type CollectionType,
+  getCollectionTypeModuleRequirement,
+} from "./utils/moduleCatalog";
 import { collectionTypeValidator } from "./utils/moduleValidators";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
@@ -32,6 +36,19 @@ const PUBLIC_CATALOG_STATUSES = ["active", "loaned"] as const;
 
 function isPublicCatalogStatus(status: Doc<"collections">["status"]) {
   return status === "active" || status === "loaned";
+}
+
+async function requireCollectionTypeModuleEnabled(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  collectionType: CollectionType | undefined,
+) {
+  const requiredModule = getCollectionTypeModuleRequirement(collectionType);
+  if (!requiredModule) return;
+
+  if (!(await hasModuleEnabled(ctx, organizationId, requiredModule))) {
+    throw new Error("Collection type requires enabled module");
+  }
 }
 
 const conditionHistoryEntryValidator = v.object({
@@ -832,6 +849,12 @@ export const create = mutation({
 
     // Check permission
     await requirePermission(ctx, args.organizationId, "collections.create");
+
+    await requireCollectionTypeModuleEnabled(
+      ctx,
+      args.organizationId,
+      args.collectionType,
+    );
 
     await enforceObjectQuota(ctx, args.organizationId);
 

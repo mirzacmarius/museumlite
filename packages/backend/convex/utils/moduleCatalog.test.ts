@@ -3,11 +3,14 @@ import {
   COLLECTION_MODULE_IDS,
   COLLECTION_MODULE_TAB_LABELS,
   COLLECTION_TYPE_IDS,
+  COLLECTION_TYPE_MODULE_REQUIREMENTS,
   COLLECTION_TYPE_OPTIONS,
   MODULE_IDS,
   SETTINGS_MODULE_IDS,
+  getAvailableCollectionTypeOptions,
   isCollectionModuleId,
   isCollectionType,
+  isCollectionTypeEnabled,
 } from "./moduleCatalog";
 import {
   COLLECTION_TYPE_VALIDATOR_IDS,
@@ -33,6 +36,12 @@ describe("module catalog", () => {
     );
   });
 
+  test("keeps collection module access requirements aligned with collection modules", () => {
+    expect(Object.keys(COLLECTION_TYPE_MODULE_REQUIREMENTS).sort()).toEqual(
+      [...COLLECTION_MODULE_IDS].sort(),
+    );
+  });
+
   test("keeps Convex validators aligned with module ids", () => {
     expect(ENABLED_MODULE_VALIDATOR_IDS).toEqual(MODULE_IDS);
     expect(COLLECTION_TYPE_VALIDATOR_IDS).toEqual(COLLECTION_TYPE_IDS);
@@ -45,5 +54,14 @@ describe("module catalog", () => {
     expect(isCollectionModuleId("general")).toBe(false);
     expect(isCollectionModuleId("coins_stamps")).toBe(true);
     expect(isCollectionType("unknown")).toBe(false);
+  });
+
+  test("filters collection type options by enabled modules", () => {
+    expect(
+      getAvailableCollectionTypeOptions([]).map((option) => option.value),
+    ).toEqual(["general"]);
+    expect(isCollectionTypeEnabled("wine", [])).toBe(false);
+    expect(isCollectionTypeEnabled("wine", ["wine"])).toBe(true);
+    expect(isCollectionTypeEnabled("general", [])).toBe(true);
   });
 });

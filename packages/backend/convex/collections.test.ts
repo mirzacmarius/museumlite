@@ -266,7 +266,7 @@ test("collections.emptyDeletedCollections permanently deletes deleted objects", 
   });
 });
 
-test("collections.create allows module collection types when module is disabled", async () => {
+test("collections.create rejects module collection types when module is disabled", async () => {
   const t = convexTest(schema, modules);
 
   const { organizationId, userId } = await t.run(async (ctx) => {
@@ -317,21 +317,14 @@ test("collections.create allows module collection types when module is disabled"
 
   const asUser = t.withIdentity({ subject: userId });
 
-  const collectionId = await asUser.mutation(api.collections.create, {
-    organizationId,
-    accessionNumber: "W-0001",
-    title: "Wine Object",
-    collectionType: "wine",
-  });
-
-  const collection = await asUser.query(api.collections.get, { collectionId });
-  expect(collection?._id).toEqual(collectionId);
-  expect(collection?.collectionType).toBe("wine");
-
-  const withDetails = await asUser.query(api.collections.getWithModuleDetails, {
-    collectionId,
-  });
-  expect(withDetails?.moduleDetails).toBeNull();
+  await expect(
+    asUser.mutation(api.collections.create, {
+      organizationId,
+      accessionNumber: "W-0001",
+      title: "Wine Object",
+      collectionType: "wine",
+    }),
+  ).rejects.toThrow("Collection type requires enabled module");
 });
 
 test("coins and stamps details require enabled module and surface in module details", async () => {

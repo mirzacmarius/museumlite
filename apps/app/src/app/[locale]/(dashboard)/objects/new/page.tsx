@@ -15,6 +15,7 @@ import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { TypeCombobox } from "@/components/type-combobox";
 import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 import { useBeforeUnload } from "@/hooks/use-before-unload";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -404,6 +405,7 @@ export function ObjectRequestFormPage({
   const collectionGroupId =
     prefilledCollectionGroupId || searchParams.get("collectionGroupId");
   const { currentOrganization, currentOrganizationId } = useOrganization();
+  const { enabledModules } = useFeatureAccess();
   const isLocationTrackingEnabled =
     currentOrganization?.settings?.locationTrackingEnabled ?? true;
   const upsertObjectDraft = useMutation(api.accessions.upsertObjectDraft);
@@ -1048,6 +1050,7 @@ export function ObjectRequestFormPage({
                       <div className="space-y-2">
                         <CollectionTypeSelector
                           value={formData.collectionType}
+                          enabledModules={enabledModules}
                           onValueChange={(value) =>
                             updateField("collectionType", value)
                           }
