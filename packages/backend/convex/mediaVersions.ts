@@ -2,10 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
-import {
-  applyUsageCounterDelta,
-  getMediaVersionStorageBytes,
-} from "./utils/organizationUsageCounters";
+import { recordMediaVersionUsage } from "./utils/mediaAssets";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -62,12 +59,9 @@ export const createVersion = mutation({
       versionCount: newVersionNumber,
     });
 
-    const versionStorageBytes = await getMediaVersionStorageBytes(ctx, {
+    await recordMediaVersionUsage(ctx, {
+      organizationId: media.organizationId,
       storageId: args.storageId,
-    });
-    await applyUsageCounterDelta(ctx, media.organizationId, {
-      mediaVersionCount: 1,
-      storageBytes: versionStorageBytes,
     });
 
     return versionId;

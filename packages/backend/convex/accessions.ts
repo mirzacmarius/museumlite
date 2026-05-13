@@ -11,15 +11,15 @@ import {
 } from "./_generated/server";
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
+import { publishAccessionObjectDraft } from "./utils/accessionObjectDraftPublication";
 import { batchLookup } from "./utils/batchLookup";
 import { markCollectionDeaccessioned } from "./utils/collectionLifecycle";
 import { enforceMediaQuota } from "./utils/featureGates";
-import { insertCompletedMediaAsset } from "./utils/mediaAssets";
+import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import {
   accessionDraftMediaValidator,
   objectDraftDataValidator,
 } from "./utils/objectDraftData";
-import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
@@ -46,10 +46,6 @@ const accessionDraftMediaWithUrlValidator = v.object({
   isPrimary: v.boolean(),
   url: v.union(v.string(), v.null()),
 });
-
-function serializeStringList(values?: string[]) {
-  return values && values.length > 0 ? JSON.stringify(values) : undefined;
-}
 
 function getDraftDisplaySource(
   objectData:
@@ -146,108 +142,6 @@ async function deleteAccessionSearchDocument(
   if (existing) {
     await ctx.db.delete(existing._id);
   }
-}
-
-async function createCollectionObjectFromAccession(
-  ctx: MutationCtx,
-  accession: Doc<"accessions">,
-  options: {
-    catalogedBy: Id<"users">;
-    catalogedAt: number;
-    status: "active" | "deaccessioned";
-    displayStatus?: string;
-  },
-) {
-  const draftObjectData = accession.draftObjectData;
-  const collectionGroupIds =
-    draftObjectData?.collectionGroupIds ??
-    (draftObjectData?.collectionGroupId
-      ? [draftObjectData.collectionGroupId]
-      : []);
-  const collectionId = await ctx.db.insert("collections", {
-    organizationId: accession.organizationId,
-    accessionNumber: accession.accessionNumber,
-    collectionGroupId: collectionGroupIds[0],
-    title:
-      draftObjectData?.title?.trim() ||
-      `Accession ${accession.accessionNumber}`,
-    creator: draftObjectData?.creator,
-    objectType: serializeStringList(draftObjectData?.objectType),
-    objectName: draftObjectData?.objectName,
-    culture: draftObjectData?.culture,
-    period: draftObjectData?.period,
-    dateCreated: draftObjectData?.dateCreated,
-    materials: serializeStringList(draftObjectData?.materials),
-    dimensions: draftObjectData?.dimensions,
-    dimensionDiameter: draftObjectData?.dimensionDiameter,
-    dimensionWeight: draftObjectData?.dimensionWeight,
-    weightUnit: draftObjectData?.weightUnit,
-    description: draftObjectData?.description,
-    condition: draftObjectData?.condition,
-    inscriptions: draftObjectData?.inscriptions,
-    provenance: draftObjectData?.provenance,
-    exhibitionHistory: draftObjectData?.exhibitionHistory,
-    ownershipHistory: draftObjectData?.ownershipHistory,
-    donated_by: draftObjectData?.donated_by,
-    donated_date: draftObjectData?.donated_date,
-    donation_info: draftObjectData?.donation_info,
-    acquisitionMethod: draftObjectData?.acquisitionMethod,
-    previous_owners: draftObjectData?.previous_owners,
-    links: draftObjectData?.links,
-    parentObjectId: draftObjectData?.parentObjectId,
-    currentLocationId: draftObjectData?.currentLocationId,
-    alternateAccessionNumbers: draftObjectData?.alternateAccessionNumbers,
-    displayStatus: options.displayStatus ?? draftObjectData?.displayStatus,
-    isPubliclyVisible: draftObjectData?.isPubliclyVisible,
-    isHighResDownloadable: draftObjectData?.isHighResDownloadable,
-    isSearchable: draftObjectData?.isSearchable,
-    isValuationVisible: draftObjectData?.isValuationVisible,
-    publicSlug: draftObjectData?.publicSlug,
-    collectionType: draftObjectData?.collectionType,
-    status: options.status,
-    catalogedBy: options.catalogedBy,
-    catalogedAt: options.catalogedAt,
-    lastModifiedBy: options.catalogedBy,
-    lastModifiedAt: options.catalogedAt,
-  });
-
-  await applyUsageCounterDelta(ctx, accession.organizationId, {
-    objectCount: 1,
-  });
-
-  for (const collectionGroupId of [...new Set(collectionGroupIds)]) {
-    const group = await ctx.db.get(collectionGroupId);
-    if (group && group.organizationId === accession.organizationId) {
-      await ctx.db.insert("collectionGroupItems", {
-        collectionGroupId,
-        collectionId,
-        addedAt: options.catalogedAt,
-        addedBy: options.catalogedBy,
-      });
-      await ctx.db.patch(collectionGroupId, {
-        itemsCount: (group.itemsCount || 0) + 1,
-        lastModifiedAt: options.catalogedAt,
-        lastModifiedBy: options.catalogedBy,
-      });
-    }
-  }
-
-  for (const draftMediaItem of accession.draftMedia || []) {
-    await insertCompletedMediaAsset(ctx, {
-      collectionId,
-      organizationId: accession.organizationId,
-      storageId: draftMediaItem.storageId,
-      fileName: draftMediaItem.fileName,
-      fileSize: draftMediaItem.fileSize,
-      mimeType: draftMediaItem.mimeType,
-      mediaCategory: draftMediaItem.mediaCategory,
-      isPrimary: draftMediaItem.isPrimary,
-      uploadedBy: options.catalogedBy,
-      uploadedAt: options.catalogedAt,
-    });
-  }
-
-  return collectionId;
 }
 
 async function ensureAccessionNumberAvailable(
@@ -1650,8 +1544,7 @@ export const approve = mutation({
           },
         });
 
-        const creatorEntry = history.find((h) => h.step === 0);
-        const creatorId = creatorEntry?.approvedBy;
+        const creatorId = getWorkflowCreatorRecipient(history, userId);
         if (creatorId && creatorId !== userId) {
           await ctx.runMutation(internal.audit.createNotificationInternal, {
             organizationId: accession.organizationId,
@@ -1985,15 +1878,12 @@ export const createCollectionFromAccession = internalMutation({
     }
 
     const catalogedAt = accession.approvedAt ?? Date.now();
-    const collectionId = await createCollectionObjectFromAccession(
-      ctx,
+    const collectionId = await publishAccessionObjectDraft(ctx, {
       accession,
-      {
-        catalogedBy,
-        catalogedAt,
-        status: "active",
-      },
-    );
+      catalogedBy,
+      catalogedAt,
+      status: "active",
+    });
 
     await ctx.db.patch(args.accessionId, {
       collectionId,
@@ -2033,16 +1923,13 @@ export const createCollectionFromRejectedAccession = internalMutation({
       return accession.collectionId;
     }
 
-    const collectionId = await createCollectionObjectFromAccession(
-      ctx,
+    const collectionId = await publishAccessionObjectDraft(ctx, {
       accession,
-      {
-        catalogedBy: args.rejectedBy,
-        catalogedAt: rejectedAt,
-        status: "deaccessioned",
-        displayStatus: REJECTED_OBJECT_DISPLAY_STATUS,
-      },
-    );
+      catalogedBy: args.rejectedBy,
+      catalogedAt: rejectedAt,
+      status: "deaccessioned",
+      displayStatus: REJECTED_OBJECT_DISPLAY_STATUS,
+    });
 
     await ctx.db.patch(args.accessionId, {
       collectionId,

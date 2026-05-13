@@ -1,6 +1,8 @@
 import { describe, expect, test } from "vitest";
-import { COLLECTION_DETAIL_LIFECYCLE_MODULES } from "./collectionDetailLifecycle";
-import { COLLECTION_MODULE_IDS } from "./moduleCatalog";
+import {
+  COLLECTION_DETAIL_LIFECYCLE_MODULES,
+  COLLECTION_MODULE_IDS,
+} from "./moduleCatalog";
 
 describe("collection detail lifecycle", () => {
   test("covers every specialized collection module", () => {

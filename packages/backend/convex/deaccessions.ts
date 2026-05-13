@@ -15,6 +15,7 @@ import {
   canRestoreRejectedDisposition,
   markCollectionActive,
 } from "./utils/collectionLifecycle";
+import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import { generateNextDeaccessionNumber } from "./utils/numberGenerator";
 import {
   canApproveAtStep,
@@ -25,6 +26,7 @@ import { getWorkflowConfig } from "./utils/workflowConfigs";
 import {
   prepareWorkflowStepAdvance,
   recordWorkflowStepAdvance,
+  recordWorkflowStepApproval,
 } from "./utils/workflowExecution";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
@@ -1099,6 +1101,29 @@ export const approve = mutation({
         throw new Error("Permission denied: cannot approve at this step");
       }
 
+      const currentStepConfig = workflowConfig.steps.find(
+        (step) => step.stepNumber === currentStep,
+      );
+      if (!currentStepConfig) {
+        throw new Error("Current workflow step is not configured");
+      }
+
+      const { approvalDecision, approvalMode } =
+        await recordWorkflowStepApproval(ctx, {
+          organizationId: deaccession.organizationId,
+          workflowType: "deaccession",
+          entityId: args.deaccessionId,
+          stepNumber: currentStep,
+          step: currentStepConfig,
+          performedBy: userId,
+          comment: args.comment,
+          isPastLastStep: workflowState.isPastLastStep,
+        });
+
+      if (!approvalDecision.shouldAdvance) {
+        return null;
+      }
+
       // Add to workflow history
       const history = deaccession.workflowHistory ?? [];
       if (!workflowState.isPastLastStep) {
@@ -1135,8 +1160,7 @@ export const approve = mutation({
         });
 
         // Notify users who were involved in the workflow (from history)
-        const creatorEntry = history.find((h) => h.step === 0);
-        const creatorId = creatorEntry?.approvedBy;
+        const creatorId = getWorkflowCreatorRecipient(history, userId);
         if (creatorId && creatorId !== userId) {
           await ctx.runMutation(internal.audit.createNotificationInternal, {
             organizationId: deaccession.organizationId,
@@ -1162,6 +1186,14 @@ export const approve = mutation({
           workflowStep: nextStep,
           workflowHistory: history,
         });
+
+        if (approvalMode !== "single") {
+          await ctx.runMutation(internal.workflows.clearStepApprovals, {
+            workflowType: "deaccession",
+            entityId: args.deaccessionId,
+            stepNumber: currentStep,
+          });
+        }
 
         await recordWorkflowStepAdvance(ctx, {
           organizationId: deaccession.organizationId,

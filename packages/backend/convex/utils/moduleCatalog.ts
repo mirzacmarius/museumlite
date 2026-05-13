@@ -69,42 +69,49 @@ export const COLLECTION_TYPE_OPTIONS = [
     label: "Fine Art",
     description: "Paintings, sculptures, artworks",
     tabLabel: "Fine Art Details",
+    hasDetailLifecycle: true,
   },
   {
     value: "wine",
     label: "Wine & Spirits",
     description: "Wine cellar management",
     tabLabel: "Wine & Spirits",
+    hasDetailLifecycle: true,
   },
   {
     value: "automotive",
     label: "Automotive",
     description: "Classic cars, motorcycles",
     tabLabel: "Vehicle Details",
+    hasDetailLifecycle: true,
   },
   {
     value: "natural_history",
     label: "Natural History",
     description: "Specimens, fossils, minerals",
     tabLabel: "Natural History",
+    hasDetailLifecycle: true,
   },
   {
     value: "archive",
     label: "Corporate Archive",
     description: "Documents, records, DAM",
     tabLabel: "Archive Details",
+    hasDetailLifecycle: true,
   },
   {
     value: "coins_stamps",
     label: "Coins and Stamps",
     description: "Numismatic and philatelic records",
     tabLabel: "Coins and Stamps",
+    hasDetailLifecycle: true,
   },
 ] as const satisfies ReadonlyArray<{
   value: CollectionType;
   label: string;
   description: string;
   tabLabel: string;
+  hasDetailLifecycle?: boolean;
 }>;
 
 export const COLLECTION_MODULE_TAB_LABELS = Object.fromEntries(
@@ -116,6 +123,16 @@ export const COLLECTION_MODULE_TAB_LABELS = Object.fromEntries(
     } => option.value !== "general",
   ).map((option) => [option.value, option.tabLabel]),
 ) as Record<CollectionModuleId, string>;
+
+export const COLLECTION_DETAIL_LIFECYCLE_MODULES =
+  COLLECTION_TYPE_OPTIONS.filter(
+    (
+      option,
+    ): option is (typeof COLLECTION_TYPE_OPTIONS)[number] & {
+      value: CollectionModuleId;
+      hasDetailLifecycle: true;
+    } => option.value !== "general" && option.hasDetailLifecycle === true,
+  ).map((option) => option.value);
 
 export function isCollectionModuleId(
   value: string | undefined,

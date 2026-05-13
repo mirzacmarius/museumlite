@@ -3,6 +3,8 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import {
   applyUsageCounterDelta,
+  getMediaStorageBytes,
+  getMediaVersionStorageBytes,
   getStorageBytes,
 } from "./organizationUsageCounters";
 
@@ -164,4 +166,125 @@ export async function insertCompletedMediaAsset(
     mediaCategory: resolvedMediaCategory,
     mediaId,
   };
+}
+
+export async function completeChunkedMediaAsset(
+  ctx: MutationCtx,
+  {
+    chunkId,
+    fileSize,
+    mimeType,
+    organizationId,
+    storageId,
+  }: {
+    organizationId: Id<"organizations">;
+    chunkId: string;
+    storageId: Id<"_storage">;
+    fileSize: number;
+    mimeType: string;
+  },
+) {
+  const fileType = getMediaFileType(mimeType);
+  const existing = await ctx.db
+    .query("mediaFiles")
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+    .filter((q) => q.eq(q.field("chunkedUploadId"), chunkId))
+    .first();
+
+  if (!existing) {
+    return null;
+  }
+
+  await ctx.db.patch(existing._id, {
+    storageId,
+    uploadStatus: "completed",
+    mediaCategory: getDefaultMediaCategory(fileType, existing.mediaCategory),
+  });
+
+  if (
+    shouldGenerateMediaThumbnail({
+      fileType,
+      fileSize,
+      isPrimary: existing.isPrimary,
+    })
+  ) {
+    await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
+      mediaId: existing._id,
+    });
+  }
+
+  return existing._id;
+}
+
+export async function deleteMediaAsset(
+  ctx: MutationCtx,
+  {
+    deletedBy,
+    media,
+  }: {
+    media: {
+      _id: Id<"mediaFiles">;
+      collectionId: Id<"collections">;
+      fileName: string;
+      fileType: string;
+      organizationId: Id<"organizations">;
+      storageId: Id<"_storage">;
+      thumbnailStorageId?: Id<"_storage">;
+    };
+    deletedBy: Id<"users">;
+  },
+) {
+  const storageBytes = await getMediaStorageBytes(ctx, media);
+
+  await ctx.storage.delete(media.storageId);
+  if (media.thumbnailStorageId) {
+    await ctx.storage.delete(media.thumbnailStorageId);
+  }
+
+  await ctx.db.delete(media._id);
+
+  await applyUsageCounterDelta(ctx, media.organizationId, {
+    mediaFileCount: -1,
+    mediaTypeDeltas: [
+      {
+        type: media.fileType,
+        countDelta: -1,
+        bytesDelta: -storageBytes,
+      },
+    ],
+    storageBytes: -storageBytes,
+  });
+
+  await ctx.runMutation(internal.audit.logAction, {
+    organizationId: media.organizationId,
+    userId: deletedBy,
+    action: "deleted_media",
+    entityType: "media",
+    entityId: media._id,
+    changes: {
+      fileName: media.fileName,
+      fileType: media.fileType,
+      collectionId: media.collectionId,
+    },
+  });
+}
+
+export async function recordMediaVersionUsage(
+  ctx: MutationCtx,
+  {
+    organizationId,
+    storageId,
+  }: {
+    organizationId: Id<"organizations">;
+    storageId: Id<"_storage">;
+  },
+) {
+  const versionStorageBytes = await getMediaVersionStorageBytes(ctx, {
+    storageId,
+  });
+
+  await applyUsageCounterDelta(ctx, organizationId, {
+    mediaVersionCount: 1,
+    storageBytes: versionStorageBytes,
+  });
 }

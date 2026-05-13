@@ -37,6 +37,54 @@ async function createOrgUserWithPermissions(
   });
 }
 
+async function createActiveLoanWithCollection(
+  t: ConvexTest,
+  {
+    loanNumber,
+  }: {
+    loanNumber: string;
+  },
+) {
+  const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+    "loans.create",
+    "loans.read",
+    "loans.approve",
+    "loans.update",
+  ]);
+  const collectionId = await t.run(async (ctx) => {
+    return await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: `${loanNumber}-OBJ`,
+      title: `${loanNumber} object`,
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+      currentLocationId: await ctx.db.insert("locations", {
+        organizationId,
+        name: `${loanNumber} gallery`,
+        type: "gallery",
+        sortOrder: 0,
+        isActive: true,
+      }),
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const loanId = await authed.mutation(api.loans.create, {
+    organizationId,
+    loanNumber,
+    type: "outgoing",
+    lenderBorrowerName: "Partner Museum",
+    startDate: Date.now(),
+    collectionIds: [collectionId],
+    conditionOut: "Stable",
+  });
+
+  await authed.mutation(api.loans.approve, { loanId });
+
+  return { authed, collectionId, loanId, organizationId, userId };
+}
+
 test("loan workflows advance through configured approval steps before activation", async () => {
   const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
@@ -126,54 +174,74 @@ test("should approve pending loan and change status to active", async () => {
 
 test("should dispatch active loan and change status to dispatched", async () => {
   const t = createConvexTest();
+  const { authed, collectionId, loanId } = await createActiveLoanWithCollection(
+    t,
+    { loanNumber: "LOAN-DISPATCH-001" },
+  );
 
-  // 1. Create and approve loan (setup)
-  // const loanId = await t.mutation(api.loans.create, { /* ... */ });
-  // await t.mutation(api.loans.approve, { loanId });
+  await authed.mutation(api.loans.dispatch, { loanId });
 
-  // 2. Dispatch the loan
-  // await t.mutation(api.loans.dispatch, { loanId });
+  const result = await t.run(async (ctx) => {
+    const loan = await ctx.db.get(loanId);
+    const collection = await ctx.db.get(collectionId);
+    return { collection, loan };
+  });
 
-  // 3. Verify status changed to dispatched
-  // const dispatchedLoan = await t.query(api.loans.get, { loanId });
-  // expect(dispatchedLoan?.status).toBe("dispatched");
-
-  expect(true).toBe(true);
+  expect(result.loan?.status).toBe("dispatched");
+  expect(result.collection?.status).toBe("loaned");
+  expect(result.collection?.currentLocationId).toBeUndefined();
 });
 
 test("should return dispatched loan and change status to returned", async () => {
   const t = createConvexTest();
+  const { authed, collectionId, loanId } = await createActiveLoanWithCollection(
+    t,
+    { loanNumber: "LOAN-RETURN-001" },
+  );
 
-  // 1. Create, approve, and dispatch loan (setup)
-  // const loanId = await t.mutation(api.loans.create, { /* ... */ });
-  // await t.mutation(api.loans.approve, { loanId });
-  // await t.mutation(api.loans.dispatch, { loanId });
+  await authed.mutation(api.loans.dispatch, { loanId });
+  await authed.mutation(api.loans.returnLoan, {
+    loanId,
+    conditionIn: "Returned stable",
+  });
 
-  // 2. Return the loan
-  // await t.mutation(api.loans.returnLoan, { loanId });
+  const result = await t.run(async (ctx) => {
+    const loan = await ctx.db.get(loanId);
+    const collection = await ctx.db.get(collectionId);
+    const loanItem = await ctx.db
+      .query("loanItems")
+      .withIndex("by_loan", (q) => q.eq("loanId", loanId))
+      .first();
+    return { collection, loan, loanItem };
+  });
 
-  // 3. Verify status changed to returned
-  // const returnedLoan = await t.query(api.loans.get, { loanId });
-  // expect(returnedLoan?.status).toBe("returned");
-
-  expect(true).toBe(true);
+  expect(result.loan?.status).toBe("returned");
+  expect(result.collection?.status).toBe("active");
+  expect(result.loanItem?.conditionIn).toBe("Returned stable");
 });
 
 test("should return active loan directly (without dispatch)", async () => {
   const t = createConvexTest();
+  const { authed, collectionId, loanId } = await createActiveLoanWithCollection(
+    t,
+    { loanNumber: "LOAN-RETURN-002" },
+  );
 
-  // 1. Create and approve loan
-  // const loanId = await t.mutation(api.loans.create, { /* ... */ });
-  // await t.mutation(api.loans.approve, { loanId });
+  await authed.mutation(api.loans.returnLoan, { loanId });
 
-  // 2. Return directly from active state
-  // await t.mutation(api.loans.returnLoan, { loanId });
+  const result = await t.run(async (ctx) => {
+    const loan = await ctx.db.get(loanId);
+    const collection = await ctx.db.get(collectionId);
+    const loanItem = await ctx.db
+      .query("loanItems")
+      .withIndex("by_loan", (q) => q.eq("loanId", loanId))
+      .first();
+    return { collection, loan, loanItem };
+  });
 
-  // 3. Verify status changed to returned
-  // const returnedLoan = await t.query(api.loans.get, { loanId });
-  // expect(returnedLoan?.status).toBe("returned");
-
-  expect(true).toBe(true);
+  expect(result.loan?.status).toBe("returned");
+  expect(result.collection?.status).toBe("active");
+  expect(result.loanItem?.conditionIn).toBe("Returned");
 });
 
 test("should prevent invalid status transitions", async () => {

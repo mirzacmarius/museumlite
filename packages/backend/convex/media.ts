@@ -12,6 +12,8 @@ import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { enforceMediaQuota } from "./utils/featureGates";
 import {
   MAX_SMALL_MEDIA_FILE_SIZE,
+  completeChunkedMediaAsset,
+  deleteMediaAsset,
   getDefaultMediaCategory,
   getMediaFileType,
   insertCompletedMediaAsset,
@@ -19,9 +21,7 @@ import {
   shouldGenerateMediaThumbnail,
 } from "./utils/mediaAssets";
 import {
-  applyUsageCounterDelta,
   createEmptyUsageCounter,
-  getMediaStorageBytes,
   getUsageCounter,
 } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
@@ -142,41 +142,22 @@ export const create = mutation({
     await enforceMediaQuota(ctx, args.organizationId, args.fileSize);
 
     const fileCategory = getMediaFileType(args.mimeType);
-    // Use explicit mediaCategory if provided, otherwise default to "image" for images, "document" for others
     const mediaCategory = getDefaultMediaCategory(
       fileCategory,
       args.mediaCategory,
     );
 
-    // If this is a chunked upload, update existing record
     if (args.chunkId) {
-      const existing = await ctx.db
-        .query("mediaFiles")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .filter((q) => q.eq(q.field("chunkedUploadId"), args.chunkId))
-        .first();
+      const mediaId = await completeChunkedMediaAsset(ctx, {
+        organizationId: args.organizationId,
+        chunkId: args.chunkId,
+        storageId: args.storageId,
+        fileSize: args.fileSize,
+        mimeType: args.mimeType,
+      });
 
-      if (existing) {
-        await ctx.db.patch(existing._id, {
-          storageId: args.storageId,
-          uploadStatus: "completed",
-          mediaCategory,
-        });
-
-        // If it's a primary image and <50MB, schedule thumbnail generation
-        if (
-          existing.isPrimary &&
-          args.fileSize < MAX_SMALL_MEDIA_FILE_SIZE &&
-          fileCategory === "image"
-        ) {
-          await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
-            mediaId: existing._id,
-          });
-        }
-
-        return existing._id;
+      if (mediaId) {
+        return mediaId;
       }
     }
 
@@ -381,40 +362,9 @@ export const deleteMedia = mutation({
     // Check permission
     await requirePermission(ctx, media.organizationId, "media.delete");
 
-    const storageBytes = await getMediaStorageBytes(ctx, media);
-
-    // Delete from storage
-    await ctx.storage.delete(media.storageId);
-    if (media.thumbnailStorageId) {
-      await ctx.storage.delete(media.thumbnailStorageId);
-    }
-
-    // Delete record
-    await ctx.db.delete(args.mediaId);
-
-    await applyUsageCounterDelta(ctx, media.organizationId, {
-      mediaFileCount: -1,
-      mediaTypeDeltas: [
-        {
-          type: media.fileType,
-          countDelta: -1,
-          bytesDelta: -storageBytes,
-        },
-      ],
-      storageBytes: -storageBytes,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: media.organizationId,
-      userId,
-      action: "deleted_media",
-      entityType: "media",
-      entityId: args.mediaId,
-      changes: {
-        fileName: media.fileName,
-        fileType: media.fileType,
-        collectionId: media.collectionId,
-      },
+    await deleteMediaAsset(ctx, {
+      media,
+      deletedBy: userId,
     });
 
     return null;

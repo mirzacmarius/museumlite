@@ -16,6 +16,15 @@ import {
   markCollectionLoaned,
 } from "./utils/collectionLifecycle";
 import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
+import {
+  dispatchLoanItems,
+  restoreLoanCollections,
+  returnLoanItems,
+} from "./utils/loanMovement";
+import {
+  getOrganizationNotificationRecipients,
+  getWorkflowCreatorRecipient,
+} from "./utils/notificationRecipients";
 import { generateNextLoanNumber } from "./utils/numberGenerator";
 import {
   canApproveAtStep,
@@ -28,6 +37,7 @@ import { getWorkflowConfig } from "./utils/workflowConfigs";
 import {
   prepareWorkflowStepAdvance,
   recordWorkflowStepAdvance,
+  recordWorkflowStepApproval,
 } from "./utils/workflowExecution";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
@@ -855,6 +865,29 @@ export const approve = mutation({
         throw new Error("Permission denied: cannot approve at this step");
       }
 
+      const currentStepConfig = workflowConfig.steps.find(
+        (step) => step.stepNumber === currentStep,
+      );
+      if (!currentStepConfig) {
+        throw new Error("Current workflow step is not configured");
+      }
+
+      const { approvalDecision, approvalMode } =
+        await recordWorkflowStepApproval(ctx, {
+          organizationId: loan.organizationId,
+          workflowType: "loan",
+          entityId: args.loanId,
+          stepNumber: currentStep,
+          step: currentStepConfig,
+          performedBy: userId,
+          comment: args.comment,
+          isPastLastStep: workflowState.isPastLastStep,
+        });
+
+      if (!approvalDecision.shouldAdvance) {
+        return null;
+      }
+
       const history = loan.workflowHistory ?? [];
       if (!workflowState.isPastLastStep) {
         history.push({
@@ -918,8 +951,7 @@ export const approve = mutation({
         const siteUrl = process.env.SITE_URL;
         const loanUrl = siteUrl ? `${siteUrl}/loans/${args.loanId}` : undefined;
 
-        const creatorEntry = history.find((h) => h.step === 0);
-        const creatorId = creatorEntry?.approvedBy;
+        const creatorId = getWorkflowCreatorRecipient(history, userId);
         if (creatorId && creatorId !== userId) {
           await ctx.runMutation(internal.notifications.sendNotification, {
             organizationId: loan.organizationId,
@@ -952,6 +984,14 @@ export const approve = mutation({
           workflowHistory: history,
         });
 
+        if (approvalMode !== "single") {
+          await ctx.runMutation(internal.workflows.clearStepApprovals, {
+            workflowType: "loan",
+            entityId: args.loanId,
+            stepNumber: currentStep,
+          });
+        }
+
         await recordWorkflowStepAdvance(ctx, {
           organizationId: loan.organizationId,
           workflowType: "loan",
@@ -981,12 +1021,11 @@ export const approve = mutation({
         changes: { status: "active" },
       });
 
-      const userOrgs = await ctx.db
-        .query("userOrganizations")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", loan.organizationId),
-        )
-        .collect();
+      const recipients = await getOrganizationNotificationRecipients(
+        ctx,
+        loan.organizationId,
+        userId,
+      );
 
       // Get loan items to include in email
       const loanItems = await ctx.db
@@ -1021,26 +1060,24 @@ export const approve = mutation({
       const siteUrl = process.env.SITE_URL;
       const loanUrl = siteUrl ? `${siteUrl}/loans/${args.loanId}` : undefined;
 
-      for (const userOrg of userOrgs) {
-        if (userOrg.userId !== userId) {
-          await ctx.runMutation(internal.notifications.sendNotification, {
-            organizationId: loan.organizationId,
-            userId: userOrg.userId,
-            type: "loan_approved",
-            title: "Loan Approved",
-            message: `Loan ${loan.loanNumber} has been approved and is now active.`,
-            relatedEntityType: "loan",
-            relatedEntityId: args.loanId,
-            emailData: {
-              loanId: args.loanId,
-              itemName,
-              borrowerName: loan.lenderBorrowerName,
-              startDate,
-              endDate,
-              loanUrl,
-            },
-          });
-        }
+      for (const recipientId of recipients) {
+        await ctx.runMutation(internal.notifications.sendNotification, {
+          organizationId: loan.organizationId,
+          userId: recipientId,
+          type: "loan_approved",
+          title: "Loan Approved",
+          message: `Loan ${loan.loanNumber} has been approved and is now active.`,
+          relatedEntityType: "loan",
+          relatedEntityId: args.loanId,
+          emailData: {
+            loanId: args.loanId,
+            itemName,
+            borrowerName: loan.lenderBorrowerName,
+            startDate,
+            endDate,
+            loanUrl,
+          },
+        });
       }
     }
 
@@ -1147,8 +1184,7 @@ export const reject = mutation({
     const siteUrl = process.env.SITE_URL;
     const loanUrl = siteUrl ? `${siteUrl}/loans/${args.loanId}` : undefined;
 
-    const creatorEntry = history.find((h) => h.step === 0);
-    const creatorId = creatorEntry?.approvedBy;
+    const creatorId = getWorkflowCreatorRecipient(history, userId);
     if (creatorId && creatorId !== userId) {
       await ctx.runMutation(internal.notifications.sendNotification, {
         organizationId: loan.organizationId,
@@ -1198,69 +1234,16 @@ export const returnLoan = mutation({
       throw new Error("Loan must be active or dispatched to return");
     }
 
-    // Get all loan items
-    const allLoanItems = await ctx.db
-      .query("loanItems")
-      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
-      .collect();
-
-    // Determine which items to return
-    const itemsToReturn = args.loanItemIds
-      ? allLoanItems.filter((item) => args.loanItemIds!.includes(item._id))
-      : allLoanItems; // If no specific items, return all
-
-    if (itemsToReturn.length === 0) {
-      throw new Error("No items selected to return");
-    }
-
-    // Return each selected item
-    const returnedItemIds: Id<"loanItems">[] = [];
-    for (const item of itemsToReturn) {
-      await markCollectionActive(ctx, {
-        collectionId: item.collectionId,
-        changedBy: userId,
-      });
-
-      // Update condition in - always set it to mark item as returned
-      // Use provided value, existing value, or default to "Returned"
-      const conditionInValue =
-        args.conditionIn || item.conditionIn || "Returned";
-      await ctx.db.patch(item._id, {
-        conditionIn: conditionInValue,
-      });
-
-      returnedItemIds.push(item._id);
-
-      // Log activity for each returned item
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: loan.organizationId,
-        userId,
-        action: "item_returned",
-        entityType: "loanItem",
-        entityId: item._id,
-        changes: {
-          loanId: args.loanId,
-          collectionId: item.collectionId,
-          conditionIn: args.conditionIn || item.conditionIn || "Returned",
-        },
-      });
-    }
-
-    // After returning items, check if ALL items in the loan are now returned
-    // This handles the case where a partial return results in all items being returned
-    const updatedLoanItems = await ctx.db
-      .query("loanItems")
-      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
-      .collect();
-
-    // Check if all items now have conditionIn set (meaning all are returned)
-    const allItemsNowReturned = updatedLoanItems.every(
-      (item) =>
-        item.conditionIn != null && String(item.conditionIn).trim().length > 0,
-    );
+    const movement = await returnLoanItems(ctx, {
+      loanId: args.loanId,
+      organizationId: loan.organizationId,
+      changedBy: userId,
+      conditionIn: args.conditionIn,
+      selectedLoanItemIds: args.loanItemIds,
+    });
 
     // Update loan status only if all items are now returned (either in this operation or after it)
-    if (allItemsNowReturned) {
+    if (movement.allItemsNowReturned) {
       await ctx.db.patch(args.loanId, {
         status: "returned",
       });
@@ -1274,31 +1257,28 @@ export const returnLoan = mutation({
         entityId: args.loanId,
         changes: {
           status: "returned",
-          itemsReturned: returnedItemIds.length,
-          returnedItemIds: returnedItemIds,
+          itemsReturned: movement.returnedItemCount,
+          returnedItemIds: movement.returnedItemIds,
         },
       });
 
       // Notify all users about full loan return
-      const userOrgs = await ctx.db
-        .query("userOrganizations")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", loan.organizationId),
-        )
-        .collect();
+      const recipients = await getOrganizationNotificationRecipients(
+        ctx,
+        loan.organizationId,
+        userId,
+      );
 
-      for (const userOrg of userOrgs) {
-        if (userOrg.userId !== userId) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: loan.organizationId,
-            userId: userOrg.userId,
-            type: "loan_returned",
-            title: "Loan Returned",
-            message: `Loan ${loan.loanNumber} has been returned.`,
-            relatedEntityType: "loan",
-            relatedEntityId: args.loanId,
-          });
-        }
+      for (const recipientId of recipients) {
+        await ctx.runMutation(internal.audit.createNotificationInternal, {
+          organizationId: loan.organizationId,
+          userId: recipientId,
+          type: "loan_returned",
+          title: "Loan Returned",
+          message: `Loan ${loan.loanNumber} has been returned.`,
+          relatedEntityType: "loan",
+          relatedEntityId: args.loanId,
+        });
       }
     } else {
       // Partial return - log action but don't change loan status
@@ -1309,32 +1289,29 @@ export const returnLoan = mutation({
         entityType: "loan",
         entityId: args.loanId,
         changes: {
-          itemsReturned: itemsToReturn.length,
-          totalItems: allLoanItems.length,
-          returnedItemIds: returnedItemIds,
+          itemsReturned: movement.returnedItemCount,
+          totalItems: movement.totalItemCount,
+          returnedItemIds: movement.returnedItemIds,
         },
       });
 
       // Notify about partial return
-      const userOrgs = await ctx.db
-        .query("userOrganizations")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", loan.organizationId),
-        )
-        .collect();
+      const recipients = await getOrganizationNotificationRecipients(
+        ctx,
+        loan.organizationId,
+        userId,
+      );
 
-      for (const userOrg of userOrgs) {
-        if (userOrg.userId !== userId) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: loan.organizationId,
-            userId: userOrg.userId,
-            type: "loan_partial_return",
-            title: "Loan Items Returned",
-            message: `${itemsToReturn.length} of ${allLoanItems.length} items from loan ${loan.loanNumber} have been returned.`,
-            relatedEntityType: "loan",
-            relatedEntityId: args.loanId,
-          });
-        }
+      for (const recipientId of recipients) {
+        await ctx.runMutation(internal.audit.createNotificationInternal, {
+          organizationId: loan.organizationId,
+          userId: recipientId,
+          type: "loan_partial_return",
+          title: "Loan Items Returned",
+          message: `${movement.returnedItemCount} of ${movement.totalItemCount} items from loan ${loan.loanNumber} have been returned.`,
+          relatedEntityType: "loan",
+          relatedEntityId: args.loanId,
+        });
       }
     }
 
@@ -1368,18 +1345,10 @@ export const dispatch = mutation({
       throw new Error("Loan must be active to dispatch");
     }
 
-    const loanItems = await ctx.db
-      .query("loanItems")
-      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
-      .collect();
-
-    for (const item of loanItems) {
-      await markCollectionLoaned(ctx, {
-        collectionId: item.collectionId,
-        changedBy: userId,
-        clearLocation: true,
-      });
-    }
+    await dispatchLoanItems(ctx, {
+      loanId: args.loanId,
+      changedBy: userId,
+    });
 
     await ctx.db.patch(args.loanId, {
       status: "dispatched",
@@ -1396,25 +1365,22 @@ export const dispatch = mutation({
     });
 
     // Notify all users in organization about loan dispatch (except the dispatcher)
-    const userOrgs = await ctx.db
-      .query("userOrganizations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", loan.organizationId),
-      )
-      .collect();
+    const recipients = await getOrganizationNotificationRecipients(
+      ctx,
+      loan.organizationId,
+      userId,
+    );
 
-    for (const userOrg of userOrgs) {
-      if (userOrg.userId !== userId) {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
-          organizationId: loan.organizationId,
-          userId: userOrg.userId,
-          type: "loan_dispatched",
-          title: "Loan Dispatched",
-          message: `Loan ${loan.loanNumber} has been dispatched.`,
-          relatedEntityType: "loan",
-          relatedEntityId: args.loanId,
-        });
-      }
+    for (const recipientId of recipients) {
+      await ctx.runMutation(internal.audit.createNotificationInternal, {
+        organizationId: loan.organizationId,
+        userId: recipientId,
+        type: "loan_dispatched",
+        title: "Loan Dispatched",
+        message: `Loan ${loan.loanNumber} has been dispatched.`,
+        relatedEntityType: "loan",
+        relatedEntityId: args.loanId,
+      });
     }
 
     return null;
@@ -1466,39 +1432,28 @@ export const cancel = mutation({
       changes: { status: "cancelled" },
     });
 
-    // Update collection statuses back to active
-    const loanItems = await ctx.db
-      .query("loanItems")
-      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
-      .collect();
-
-    for (const item of loanItems) {
-      await markCollectionActive(ctx, {
-        collectionId: item.collectionId,
-        changedBy: userId,
-      });
-    }
+    await restoreLoanCollections(ctx, {
+      loanId: args.loanId,
+      changedBy: userId,
+    });
 
     // Notify all users in organization about loan cancellation (except the user who cancelled it)
-    const userOrgs = await ctx.db
-      .query("userOrganizations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", loan.organizationId),
-      )
-      .collect();
+    const recipients = await getOrganizationNotificationRecipients(
+      ctx,
+      loan.organizationId,
+      userId,
+    );
 
-    for (const userOrg of userOrgs) {
-      if (userOrg.userId !== userId) {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
-          organizationId: loan.organizationId,
-          userId: userOrg.userId,
-          type: "loan_cancelled",
-          title: "Loan Cancelled",
-          message: `Loan ${loan.loanNumber} has been cancelled.`,
-          relatedEntityType: "loan",
-          relatedEntityId: args.loanId,
-        });
-      }
+    for (const recipientId of recipients) {
+      await ctx.runMutation(internal.audit.createNotificationInternal, {
+        organizationId: loan.organizationId,
+        userId: recipientId,
+        type: "loan_cancelled",
+        title: "Loan Cancelled",
+        message: `Loan ${loan.loanNumber} has been cancelled.`,
+        relatedEntityType: "loan",
+        relatedEntityId: args.loanId,
+      });
     }
 
     return null;
@@ -2289,6 +2244,34 @@ export const bulkApprove = mutation({
           continue;
         }
 
+        const currentStepConfig = workflowConfig.steps.find(
+          (step) => step.stepNumber === currentStep,
+        );
+        if (!currentStepConfig) {
+          errors.push(
+            `Loan ${loan.loanNumber} current workflow step is not configured`,
+          );
+          skipped++;
+          continue;
+        }
+
+        const { approvalDecision, approvalMode } =
+          await recordWorkflowStepApproval(ctx, {
+            organizationId: loan.organizationId,
+            workflowType: "loan",
+            entityId: loanId,
+            stepNumber: currentStep,
+            step: currentStepConfig,
+            performedBy: userId,
+            comment: "Bulk approved",
+            isPastLastStep: workflowState.isPastLastStep,
+          });
+
+        if (!approvalDecision.shouldAdvance) {
+          approved++;
+          continue;
+        }
+
         const history = loan.workflowHistory ?? [];
         if (!workflowState.isPastLastStep) {
           history.push({
@@ -2323,6 +2306,14 @@ export const bulkApprove = mutation({
             workflowStep: nextStep,
             workflowHistory: history,
           });
+
+          if (approvalMode !== "single") {
+            await ctx.runMutation(internal.workflows.clearStepApprovals, {
+              workflowType: "loan",
+              entityId: loanId,
+              stepNumber: currentStep,
+            });
+          }
         }
       } else {
         // No workflow, direct approval

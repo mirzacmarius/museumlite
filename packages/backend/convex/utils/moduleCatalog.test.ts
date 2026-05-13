@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import {
+  COLLECTION_DETAIL_LIFECYCLE_MODULES,
   COLLECTION_MODULE_IDS,
   COLLECTION_MODULE_TAB_LABELS,
   COLLECTION_TYPE_IDS,
@@ -39,6 +40,12 @@ describe("module catalog", () => {
   test("keeps collection module access requirements aligned with collection modules", () => {
     expect(Object.keys(COLLECTION_TYPE_MODULE_REQUIREMENTS).sort()).toEqual(
       [...COLLECTION_MODULE_IDS].sort(),
+    );
+  });
+
+  test("keeps collection detail lifecycle aligned with collection modules", () => {
+    expect(new Set(COLLECTION_DETAIL_LIFECYCLE_MODULES)).toEqual(
+      new Set(COLLECTION_MODULE_IDS),
     );
   });
 

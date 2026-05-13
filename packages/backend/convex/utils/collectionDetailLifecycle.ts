@@ -1,6 +1,9 @@
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
-import type { CollectionModuleId } from "./moduleCatalog";
+import {
+  COLLECTION_DETAIL_LIFECYCLE_MODULES,
+  type CollectionModuleId,
+} from "./moduleCatalog";
 
 interface CollectionDetailLifecycleAdapter {
   moduleId: CollectionModuleId;
@@ -194,42 +197,43 @@ async function moveCoinsStampsDetails(
   }
 }
 
-const collectionDetailLifecycleAdapters: ReadonlyArray<CollectionDetailLifecycleAdapter> =
-  [
-    {
-      moduleId: "fine_art",
-      deleteRecords: deleteFineArtDetails,
-      moveRecords: moveFineArtDetails,
-    },
-    {
-      moduleId: "wine",
-      deleteRecords: deleteWineDetails,
-      moveRecords: moveWineDetails,
-    },
-    {
-      moduleId: "automotive",
-      deleteRecords: deleteVehicleDetails,
-      moveRecords: moveVehicleDetails,
-    },
-    {
-      moduleId: "natural_history",
-      deleteRecords: deleteNaturalHistoryDetails,
-      moveRecords: moveNaturalHistoryDetails,
-    },
-    {
-      moduleId: "archive",
-      deleteRecords: deleteArchiveDetails,
-      moveRecords: moveArchiveDetails,
-    },
-    {
-      moduleId: "coins_stamps",
-      deleteRecords: deleteCoinsStampsDetails,
-      moveRecords: moveCoinsStampsDetails,
-    },
-  ];
+const collectionDetailLifecycleAdapterByModule = {
+  fine_art: {
+    moduleId: "fine_art",
+    deleteRecords: deleteFineArtDetails,
+    moveRecords: moveFineArtDetails,
+  },
+  wine: {
+    moduleId: "wine",
+    deleteRecords: deleteWineDetails,
+    moveRecords: moveWineDetails,
+  },
+  automotive: {
+    moduleId: "automotive",
+    deleteRecords: deleteVehicleDetails,
+    moveRecords: moveVehicleDetails,
+  },
+  natural_history: {
+    moduleId: "natural_history",
+    deleteRecords: deleteNaturalHistoryDetails,
+    moveRecords: moveNaturalHistoryDetails,
+  },
+  archive: {
+    moduleId: "archive",
+    deleteRecords: deleteArchiveDetails,
+    moveRecords: moveArchiveDetails,
+  },
+  coins_stamps: {
+    moduleId: "coins_stamps",
+    deleteRecords: deleteCoinsStampsDetails,
+    moveRecords: moveCoinsStampsDetails,
+  },
+} satisfies Record<CollectionModuleId, CollectionDetailLifecycleAdapter>;
 
-export const COLLECTION_DETAIL_LIFECYCLE_MODULES =
-  collectionDetailLifecycleAdapters.map((adapter) => adapter.moduleId);
+const collectionDetailLifecycleAdapters =
+  COLLECTION_DETAIL_LIFECYCLE_MODULES.map(
+    (moduleId) => collectionDetailLifecycleAdapterByModule[moduleId],
+  );
 
 export async function deleteCollectionDetailRecords(
   ctx: MutationCtx,
