@@ -10,6 +10,8 @@ import {
   isCollectionType,
 } from "./moduleCatalog";
 import {
+  COLLECTION_TYPE_VALIDATOR_IDS,
+  ENABLED_MODULE_VALIDATOR_IDS,
   collectionTypeValidator,
   enabledModuleValidator,
 } from "./moduleValidators";
@@ -32,15 +34,10 @@ describe("module catalog", () => {
   });
 
   test("keeps Convex validators aligned with module ids", () => {
-    expect(enabledModuleValidator.json).toEqual({
-      type: "union",
-      value: MODULE_IDS.map((value) => ({ type: "literal", value })),
-    });
-
-    expect(collectionTypeValidator.json).toEqual({
-      type: "union",
-      value: COLLECTION_TYPE_IDS.map((value) => ({ type: "literal", value })),
-    });
+    expect(ENABLED_MODULE_VALIDATOR_IDS).toEqual(MODULE_IDS);
+    expect(COLLECTION_TYPE_VALIDATOR_IDS).toEqual(COLLECTION_TYPE_IDS);
+    expect(enabledModuleValidator.isOptional).toBe("required");
+    expect(collectionTypeValidator.isOptional).toBe("required");
   });
 
   test("distinguishes specialized modules from general collection type", () => {

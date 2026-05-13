@@ -1,4 +1,8 @@
 import { v } from "convex/values";
+import { COLLECTION_TYPE_IDS, MODULE_IDS } from "./moduleCatalog";
+
+export const ENABLED_MODULE_VALIDATOR_IDS = MODULE_IDS;
+export const COLLECTION_TYPE_VALIDATOR_IDS = COLLECTION_TYPE_IDS;
 
 export const enabledModuleValidator = v.union(
   v.literal("library"),
