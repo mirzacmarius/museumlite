@@ -5,6 +5,11 @@ import { usePermission } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  MODULE_INTEGRATION_REQUIREMENTS,
+  type ModuleId,
+  SETTINGS_MODULE_IDS,
+} from "@v1/backend/convex/utils/moduleCatalog";
 import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
 import { Switch } from "@v1/ui/switch";
@@ -25,32 +30,15 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-const MODULE_IDS = [
-  "accounts",
-  "fine_art",
-  "wine",
-  "automotive",
-  "natural_history",
-  "archive",
-  "library",
-  "coins_stamps",
-] as const;
-
-type ModuleId = (typeof MODULE_IDS)[number];
-
 const MODULE_ICONS: Record<ModuleId, typeof Users> = {
-  accounts: Users,
+  library: BookOpen,
   fine_art: Palette,
   wine: Wine,
   automotive: Car,
   natural_history: Leaf,
   archive: Archive,
-  library: BookOpen,
+  accounts: Users,
   coins_stamps: Coins,
-};
-
-const MODULE_INTEGRATIONS: Partial<Record<ModuleId, string>> = {
-  library: "library",
 };
 
 export default function ModulesSettingsPage() {
@@ -137,10 +125,11 @@ export default function ModulesSettingsPage() {
         <p className="text-sm text-muted-foreground">{t("description")}</p>
       </div>
       <div className="flex w-full flex-col gap-4">
-        {MODULE_IDS.map((moduleId) => {
+        {SETTINGS_MODULE_IDS.map((moduleId) => {
           const isEnabled = enabledModules.includes(moduleId);
           const isLoading = isSaving === moduleId;
-          const requiredIntegration = MODULE_INTEGRATIONS[moduleId] ?? null;
+          const requiredIntegration =
+            MODULE_INTEGRATION_REQUIREMENTS[moduleId] ?? null;
           const integrationLocked =
             requiredIntegration &&
             !enabledIntegrations.includes(requiredIntegration);

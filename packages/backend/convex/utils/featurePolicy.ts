@@ -14,18 +14,8 @@ export const FEATURE_IDS = [
 
 export type FeatureId = (typeof FEATURE_IDS)[number];
 
-export const MODULE_IDS = [
-  "library",
-  "fine_art",
-  "wine",
-  "automotive",
-  "natural_history",
-  "archive",
-  "accounts",
-  "coins_stamps",
-] as const;
-
-export type ModuleId = (typeof MODULE_IDS)[number];
+export { MODULE_IDS } from "./moduleCatalog";
+export type { ModuleId } from "./moduleCatalog";
 
 export const INTEGRATION_IDS = ["library"] as const;
 

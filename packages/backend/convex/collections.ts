@@ -24,6 +24,7 @@ import {
   hasFeatureAccess,
   hasModuleEnabled,
 } from "./utils/featureGates";
+import { collectionTypeValidator } from "./utils/moduleValidators";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
 
@@ -135,17 +136,7 @@ const objectDetailCollectionValidator = v.object({
   catalogedAt: v.number(),
   lastModifiedBy: v.optional(v.id("users")),
   lastModifiedAt: v.optional(v.number()),
-  collectionType: v.optional(
-    v.union(
-      v.literal("fine_art"),
-      v.literal("wine"),
-      v.literal("automotive"),
-      v.literal("natural_history"),
-      v.literal("archive"),
-      v.literal("coins_stamps"),
-      v.literal("general"),
-    ),
-  ),
+  collectionType: v.optional(collectionTypeValidator),
   customFields: v.optional(v.record(v.string(), v.any())),
   verified: v.optional(v.boolean()),
   verifiedBy: v.optional(v.id("users")),
@@ -830,17 +821,7 @@ export const create = mutation({
     isValuationVisible: v.optional(v.boolean()),
     publicSlug: v.optional(v.string()),
     displayStatus: v.optional(v.string()),
-    collectionType: v.optional(
-      v.union(
-        v.literal("fine_art"),
-        v.literal("wine"),
-        v.literal("automotive"),
-        v.literal("natural_history"),
-        v.literal("archive"),
-        v.literal("coins_stamps"),
-        v.literal("general"),
-      ),
-    ),
+    collectionType: v.optional(collectionTypeValidator),
   },
   returns: v.id("collections"),
   handler: async (ctx, args) => {
@@ -1114,17 +1095,7 @@ export const get = query({
       catalogedAt: v.number(),
       lastModifiedBy: v.optional(v.id("users")),
       lastModifiedAt: v.optional(v.number()),
-      collectionType: v.optional(
-        v.union(
-          v.literal("fine_art"),
-          v.literal("wine"),
-          v.literal("automotive"),
-          v.literal("natural_history"),
-          v.literal("archive"),
-          v.literal("coins_stamps"),
-          v.literal("general"),
-        ),
-      ),
+      collectionType: v.optional(collectionTypeValidator),
       customFields: v.optional(v.record(v.string(), v.any())),
       verified: v.optional(v.boolean()),
       verifiedBy: v.optional(v.id("users")),
@@ -1232,17 +1203,7 @@ export const getWithModuleDetails = query({
         organizationId: v.id("organizations"),
         accessionNumber: v.string(),
         title: v.string(),
-        collectionType: v.optional(
-          v.union(
-            v.literal("fine_art"),
-            v.literal("wine"),
-            v.literal("automotive"),
-            v.literal("natural_history"),
-            v.literal("archive"),
-            v.literal("coins_stamps"),
-            v.literal("general"),
-          ),
-        ),
+        collectionType: v.optional(collectionTypeValidator),
         customFields: v.optional(v.record(v.string(), v.any())),
         status: v.union(
           v.literal("active"),

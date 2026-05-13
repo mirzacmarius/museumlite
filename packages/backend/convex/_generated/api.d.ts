@@ -107,6 +107,8 @@ import type * as utils_formatConverters from "../utils/formatConverters.js";
 import type * as utils_importRows from "../utils/importRows.js";
 import type * as utils_legacyTemplates from "../utils/legacyTemplates.js";
 import type * as utils_mediaAssets from "../utils/mediaAssets.js";
+import type * as utils_moduleCatalog from "../utils/moduleCatalog.js";
+import type * as utils_moduleValidators from "../utils/moduleValidators.js";
 import type * as utils_numberGenerator from "../utils/numberGenerator.js";
 import type * as utils_objectDraftData from "../utils/objectDraftData.js";
 import type * as utils_organizationUsageCounters from "../utils/organizationUsageCounters.js";
@@ -232,6 +234,8 @@ declare const fullApi: ApiFromModules<{
   "utils/importRows": typeof utils_importRows;
   "utils/legacyTemplates": typeof utils_legacyTemplates;
   "utils/mediaAssets": typeof utils_mediaAssets;
+  "utils/moduleCatalog": typeof utils_moduleCatalog;
+  "utils/moduleValidators": typeof utils_moduleValidators;
   "utils/numberGenerator": typeof utils_numberGenerator;
   "utils/objectDraftData": typeof utils_objectDraftData;
   "utils/organizationUsageCounters": typeof utils_organizationUsageCounters;

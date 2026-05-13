@@ -2,6 +2,10 @@ import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import {
+  collectionTypeValidator,
+  enabledModuleValidator,
+} from "./utils/moduleValidators";
+import {
   accessionDraftMediaValidator,
   objectDraftDataValidator,
 } from "./utils/objectDraftData";
@@ -146,31 +150,8 @@ export default defineSchema({
         locationTypes: v.optional(v.array(v.string())),
         enableDetailedConditionReports: v.optional(v.boolean()),
         enabledIntegrations: v.optional(v.array(v.string())),
-        enabledModules: v.optional(
-          v.array(
-            v.union(
-              v.literal("fine_art"),
-              v.literal("wine"),
-              v.literal("automotive"),
-              v.literal("natural_history"),
-              v.literal("archive"),
-              v.literal("library"),
-              v.literal("accounts"),
-              v.literal("coins_stamps"),
-            ),
-          ),
-        ),
-        defaultCollectionType: v.optional(
-          v.union(
-            v.literal("fine_art"),
-            v.literal("wine"),
-            v.literal("automotive"),
-            v.literal("natural_history"),
-            v.literal("archive"),
-            v.literal("coins_stamps"),
-            v.literal("general"),
-          ),
-        ),
+        enabledModules: v.optional(v.array(enabledModuleValidator)),
+        defaultCollectionType: v.optional(collectionTypeValidator),
         portalSettings: v.optional(
           v.object({
             isEnabled: v.optional(v.boolean()),
@@ -479,17 +460,7 @@ export default defineSchema({
     deletedBy: v.optional(v.id("users")),
     deletedReason: v.optional(v.string()),
     displayStatus: v.optional(v.string()),
-    collectionType: v.optional(
-      v.union(
-        v.literal("fine_art"),
-        v.literal("wine"),
-        v.literal("automotive"),
-        v.literal("natural_history"),
-        v.literal("archive"),
-        v.literal("coins_stamps"),
-        v.literal("general"),
-      ),
-    ),
+    collectionType: v.optional(collectionTypeValidator),
     customFields: v.optional(v.record(v.string(), customFieldValue)),
     catalogedBy: v.id("users"),
     catalogedAt: v.number(),

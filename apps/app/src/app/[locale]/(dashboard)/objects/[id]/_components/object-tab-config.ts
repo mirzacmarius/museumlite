@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  COLLECTION_MODULE_TAB_LABELS,
+  type CollectionModuleId,
+  isCollectionModuleId,
+} from "@v1/backend/convex/utils/moduleCatalog";
+
 export type ObjectTabId =
   | "general"
   | "physical"
@@ -13,12 +19,7 @@ export type ObjectTabId =
   | "loans"
   | "logs"
   | "comments"
-  | "fine_art"
-  | "wine"
-  | "automotive"
-  | "natural_history"
-  | "archive"
-  | "coins_stamps";
+  | CollectionModuleId;
 
 export interface ObjectTabDefinition {
   id: ObjectTabId;
@@ -61,29 +62,35 @@ const editBaseTabs: ObjectTabDefinition[] = [
   { id: "digital", label: "Visibility", editable: true },
 ];
 
-const moduleTabMap: Partial<
-  Record<
-    | "fine_art"
-    | "wine"
-    | "automotive"
-    | "natural_history"
-    | "archive"
-    | "coins_stamps",
-    ObjectTabDefinition
-  >
-> = {
-  fine_art: { id: "fine_art", label: "Fine Art Details", editable: false },
-  wine: { id: "wine", label: "Wine & Spirits", editable: false },
-  automotive: { id: "automotive", label: "Vehicle Details", editable: false },
-  natural_history: {
-    id: "natural_history",
-    label: "Natural History",
+const moduleTabMap: Record<CollectionModuleId, ObjectTabDefinition> = {
+  fine_art: {
+    id: "fine_art",
+    label: COLLECTION_MODULE_TAB_LABELS.fine_art,
     editable: false,
   },
-  archive: { id: "archive", label: "Archive Details", editable: false },
+  wine: {
+    id: "wine",
+    label: COLLECTION_MODULE_TAB_LABELS.wine,
+    editable: false,
+  },
+  automotive: {
+    id: "automotive",
+    label: COLLECTION_MODULE_TAB_LABELS.automotive,
+    editable: false,
+  },
+  natural_history: {
+    id: "natural_history",
+    label: COLLECTION_MODULE_TAB_LABELS.natural_history,
+    editable: false,
+  },
+  archive: {
+    id: "archive",
+    label: COLLECTION_MODULE_TAB_LABELS.archive,
+    editable: false,
+  },
   coins_stamps: {
     id: "coins_stamps",
-    label: "Coins and Stamps",
+    label: COLLECTION_MODULE_TAB_LABELS.coins_stamps,
     editable: false,
   },
 };
@@ -97,12 +104,9 @@ export function getObjectViewTabs(options: {
     loans: boolean;
   };
 }) {
-  const moduleTab =
-    options.collectionType &&
-    options.collectionType !== "general" &&
-    options.collectionType in moduleTabMap
-      ? moduleTabMap[options.collectionType as keyof typeof moduleTabMap]
-      : undefined;
+  const moduleTab = isCollectionModuleId(options.collectionType)
+    ? moduleTabMap[options.collectionType]
+    : undefined;
 
   const orderedTabs = moduleTab
     ? [viewBaseTabs[0], moduleTab, ...viewBaseTabs.slice(1)]

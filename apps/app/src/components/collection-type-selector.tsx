@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  COLLECTION_TYPE_OPTIONS,
+  type CollectionType,
+  isCollectionType,
+} from "@v1/backend/convex/utils/moduleCatalog";
 import { Label } from "@v1/ui/label";
 import {
   Select,
@@ -8,15 +13,9 @@ import {
   SelectTrigger,
 } from "@v1/ui/select";
 import { Archive, Car, Coins, Gem, Leaf, Package, Wine } from "lucide-react";
+import type { ReactNode } from "react";
 
-export type CollectionType =
-  | "fine_art"
-  | "wine"
-  | "automotive"
-  | "natural_history"
-  | "archive"
-  | "coins_stamps"
-  | "general";
+export type { CollectionType };
 
 interface CollectionTypeSelectorProps {
   value?: CollectionType;
@@ -24,55 +23,27 @@ interface CollectionTypeSelectorProps {
   disabled?: boolean;
 }
 
-const collectionTypes: {
+const collectionTypeIcons: Record<CollectionType, ReactNode> = {
+  general: <Package className="h-4 w-4" />,
+  fine_art: <Gem className="h-4 w-4" />,
+  wine: <Wine className="h-4 w-4" />,
+  automotive: <Car className="h-4 w-4" />,
+  natural_history: <Leaf className="h-4 w-4" />,
+  archive: <Archive className="h-4 w-4" />,
+  coins_stamps: <Coins className="h-4 w-4" />,
+};
+
+const collectionTypes: Array<{
   value: CollectionType;
   label: string;
   description: string;
-  icon: React.ReactNode;
-}[] = [
-  {
-    value: "general",
-    label: "General",
-    description: "Standard collection item",
-    icon: <Package className="h-4 w-4" />,
-  },
-  {
-    value: "fine_art",
-    label: "Fine Art",
-    description: "Paintings, sculptures, artworks",
-    icon: <Gem className="h-4 w-4" />,
-  },
-  {
-    value: "wine",
-    label: "Wine & Spirits",
-    description: "Wine cellar management",
-    icon: <Wine className="h-4 w-4" />,
-  },
-  {
-    value: "automotive",
-    label: "Automotive",
-    description: "Classic cars, motorcycles",
-    icon: <Car className="h-4 w-4" />,
-  },
-  {
-    value: "natural_history",
-    label: "Natural History",
-    description: "Specimens, fossils, minerals",
-    icon: <Leaf className="h-4 w-4" />,
-  },
-  {
-    value: "archive",
-    label: "Corporate Archive",
-    description: "Documents, records, DAM",
-    icon: <Archive className="h-4 w-4" />,
-  },
-  {
-    value: "coins_stamps",
-    label: "Coins and Stamps",
-    description: "Numismatic and philatelic records",
-    icon: <Coins className="h-4 w-4" />,
-  },
-];
+  icon: ReactNode;
+}> = COLLECTION_TYPE_OPTIONS.map((option) => ({
+  value: option.value,
+  label: option.label,
+  description: option.description,
+  icon: collectionTypeIcons[option.value],
+}));
 
 export function CollectionTypeSelector({
   value,
@@ -84,7 +55,11 @@ export function CollectionTypeSelector({
       <Label htmlFor="collectionType">Collection Type</Label>
       <Select
         value={value || "general"}
-        onValueChange={(val) => onValueChange(val as CollectionType)}
+        onValueChange={(val) => {
+          if (isCollectionType(val)) {
+            onValueChange(val);
+          }
+        }}
         disabled={disabled}
       >
         <SelectTrigger id="collectionType" className="w-full">
@@ -123,7 +98,7 @@ export function getCollectionTypeLabel(type?: CollectionType): string {
   return collectionTypes.find((t) => t.value === type)?.label ?? "General";
 }
 
-export function getCollectionTypeIcon(type?: CollectionType): React.ReactNode {
+export function getCollectionTypeIcon(type?: CollectionType): ReactNode {
   return (
     collectionTypes.find((t) => t.value === type)?.icon ?? (
       <Package className="h-4 w-4" />

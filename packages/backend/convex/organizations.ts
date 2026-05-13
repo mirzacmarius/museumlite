@@ -19,6 +19,8 @@ import {
   getTierLimits,
   requireFeatureAccess,
 } from "./utils/featureGates";
+import type { ModuleId } from "./utils/moduleCatalog";
+import { enabledModuleValidator } from "./utils/moduleValidators";
 import {
   createEmptyUsageCounter,
   getUsageCounter,
@@ -27,29 +29,10 @@ import { requirePermission } from "./utils/permissions";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { getPositiveWorkflowSteps } from "./utils/workflowSteps";
 
-type EnabledModule =
-  | "library"
-  | "fine_art"
-  | "wine"
-  | "automotive"
-  | "natural_history"
-  | "archive"
-  | "accounts"
-  | "coins_stamps";
+type EnabledModule = ModuleId;
 
 type OrganizationSettings = Doc<"organizations">["settings"];
 type PermissionCategory = Doc<"permissions">["category"];
-
-const enabledModuleValidator = v.union(
-  v.literal("library"),
-  v.literal("fine_art"),
-  v.literal("wine"),
-  v.literal("automotive"),
-  v.literal("natural_history"),
-  v.literal("archive"),
-  v.literal("accounts"),
-  v.literal("coins_stamps"),
-);
 
 function getEffectiveRootOrganizationId(
   organization: Doc<"organizations">,
