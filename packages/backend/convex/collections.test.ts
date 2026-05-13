@@ -210,6 +210,13 @@ test("collections.emptyDeletedCollections permanently deletes deleted objects", 
         content: "Delete with object",
         createdAt: Date.now(),
       });
+      await ctx.db.insert("coinsStampsDetails", {
+        organizationId,
+        collectionId: deletedCollectionId,
+        itemCategory: "coin",
+        catalogNumber: "CS-TRASH-001",
+        createdAt: Date.now(),
+      });
 
       return {
         organizationId,
@@ -248,6 +255,14 @@ test("collections.emptyDeletedCollections permanently deletes deleted objects", 
       .withIndex("by_object", (q) => q.eq("objectId", deletedCollectionId))
       .collect();
     expect(comments).toEqual([]);
+
+    const coinsStampsDetails = await ctx.db
+      .query("coinsStampsDetails")
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", deletedCollectionId),
+      )
+      .collect();
+    expect(coinsStampsDetails).toEqual([]);
   });
 });
 

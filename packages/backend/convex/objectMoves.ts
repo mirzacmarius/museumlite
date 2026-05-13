@@ -11,6 +11,7 @@ import {
 import { NOTIFICATION_TYPES } from "./notifications";
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
+import { moveCollectionDetailRecords } from "./utils/collectionDetailLifecycle";
 import {
   getCurrentUserOrganization,
   hasPermission,
@@ -616,29 +617,6 @@ async function moveMediaRecords(
   }
 }
 
-async function moveSingleDetailRecord(
-  ctx: MutationCtx,
-  table:
-    | "fineArtDetails"
-    | "wineDetails"
-    | "vehicleDetails"
-    | "naturalHistoryDetails"
-    | "archiveDetails",
-  collectionId: Id<"collections">,
-  targetOrganizationId: Id<"organizations">,
-) {
-  const detailRecord = await ctx.db
-    .query(table)
-    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-    .unique();
-
-  if (detailRecord) {
-    await ctx.db.patch(detailRecord._id, {
-      organizationId: targetOrganizationId,
-    });
-  }
-}
-
 async function moveConservationRecords(
   ctx: MutationCtx,
   collectionId: Id<"collections">,
@@ -717,36 +695,7 @@ async function executeMove(
 
   await moveCollectionGroupLinks(ctx, collection._id);
   await moveMediaRecords(ctx, collection._id, targetOrganizationId);
-  await moveSingleDetailRecord(
-    ctx,
-    "fineArtDetails",
-    collection._id,
-    targetOrganizationId,
-  );
-  await moveSingleDetailRecord(
-    ctx,
-    "wineDetails",
-    collection._id,
-    targetOrganizationId,
-  );
-  await moveSingleDetailRecord(
-    ctx,
-    "vehicleDetails",
-    collection._id,
-    targetOrganizationId,
-  );
-  await moveSingleDetailRecord(
-    ctx,
-    "naturalHistoryDetails",
-    collection._id,
-    targetOrganizationId,
-  );
-  await moveSingleDetailRecord(
-    ctx,
-    "archiveDetails",
-    collection._id,
-    targetOrganizationId,
-  );
+  await moveCollectionDetailRecords(ctx, collection._id, targetOrganizationId);
   await moveConservationRecords(ctx, collection._id, targetOrganizationId);
 
   const comments = await ctx.db

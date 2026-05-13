@@ -80,6 +80,7 @@ const organizationScopedTables = [
   "vehicleDetails",
   "naturalHistoryDetails",
   "archiveDetails",
+  "coinsStampsDetails",
   "accessions",
   "deaccessions",
   "appraisals",

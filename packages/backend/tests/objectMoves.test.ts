@@ -652,6 +652,16 @@ describe("objectMoves", () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
 
+    await t.run(async (ctx) => {
+      await ctx.db.insert("coinsStampsDetails", {
+        organizationId: fixture.sourceOrganizationId,
+        collectionId: fixture.collectionId,
+        itemCategory: "stamp",
+        catalogNumber: "MOVE-CS-001",
+        createdAt: Date.now(),
+      });
+    });
+
     const requestId = await fixture.requester.mutation(
       api.objectMoves.createRequest,
       {
@@ -699,6 +709,14 @@ describe("objectMoves", () => {
         )
         .collect();
     });
+    const movedCoinsStampsDetails = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("coinsStampsDetails")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", fixture.collectionId),
+        )
+        .collect();
+    });
     const requesterNotifications = await t.run(async (ctx) => {
       return await ctx.db
         .query("notifications")
@@ -732,6 +750,9 @@ describe("objectMoves", () => {
     expect(remainingGroupLinks).toHaveLength(0);
     expect(movedComments[0]?.organizationId).toBe(fixture.targetOrganizationId);
     expect(movedAppraisals[0]?.organizationId).toBe(
+      fixture.targetOrganizationId,
+    );
+    expect(movedCoinsStampsDetails[0]?.organizationId).toBe(
       fixture.targetOrganizationId,
     );
     expect(

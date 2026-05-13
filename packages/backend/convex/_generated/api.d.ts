@@ -98,6 +98,7 @@ import type * as utils_accessionNumberParser from "../utils/accessionNumberParse
 import type * as utils_accountProfile from "../utils/accountProfile.js";
 import type * as utils_authorizationContext from "../utils/authorizationContext.js";
 import type * as utils_batchLookup from "../utils/batchLookup.js";
+import type * as utils_collectionDetailLifecycle from "../utils/collectionDetailLifecycle.js";
 import type * as utils_collectionLifecycle from "../utils/collectionLifecycle.js";
 import type * as utils_dublinCore from "../utils/dublinCore.js";
 import type * as utils_featureGates from "../utils/featureGates.js";
@@ -222,6 +223,7 @@ declare const fullApi: ApiFromModules<{
   "utils/accountProfile": typeof utils_accountProfile;
   "utils/authorizationContext": typeof utils_authorizationContext;
   "utils/batchLookup": typeof utils_batchLookup;
+  "utils/collectionDetailLifecycle": typeof utils_collectionDetailLifecycle;
   "utils/collectionLifecycle": typeof utils_collectionLifecycle;
   "utils/dublinCore": typeof utils_dublinCore;
   "utils/featureGates": typeof utils_featureGates;

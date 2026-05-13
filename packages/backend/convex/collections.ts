@@ -13,6 +13,7 @@ import {
 // but return validators use v.any() to allow for existing data that may not match strict types
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
+import { deleteCollectionDetailRecords } from "./utils/collectionDetailLifecycle";
 import {
   applyCollectionDisposition,
   markCollectionActive,
@@ -512,51 +513,7 @@ async function deleteCollectionDependents(
     await ctx.db.delete(comment._id);
   }
 
-  const fineArtDetails = await ctx.db
-    .query("fineArtDetails")
-    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-    .collect();
-  for (const detail of fineArtDetails) {
-    const provenanceDocumentIds =
-      detail.provenanceChain?.flatMap((entry) => entry.documentIds ?? []) ?? [];
-    await deleteStorageIds(ctx, provenanceDocumentIds);
-    await ctx.db.delete(detail._id);
-  }
-
-  const wineDetails = await ctx.db
-    .query("wineDetails")
-    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-    .collect();
-  for (const detail of wineDetails) {
-    await ctx.db.delete(detail._id);
-  }
-
-  const vehicleDetails = await ctx.db
-    .query("vehicleDetails")
-    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-    .collect();
-  for (const detail of vehicleDetails) {
-    const serviceDocumentIds =
-      detail.serviceLog?.flatMap((entry) => entry.documentIds ?? []) ?? [];
-    await deleteStorageIds(ctx, serviceDocumentIds);
-    await ctx.db.delete(detail._id);
-  }
-
-  const naturalHistoryDetails = await ctx.db
-    .query("naturalHistoryDetails")
-    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-    .collect();
-  for (const detail of naturalHistoryDetails) {
-    await ctx.db.delete(detail._id);
-  }
-
-  const archiveDetails = await ctx.db
-    .query("archiveDetails")
-    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-    .collect();
-  for (const detail of archiveDetails) {
-    await ctx.db.delete(detail._id);
-  }
+  await deleteCollectionDetailRecords(ctx, collectionId);
 
   const accessions = await ctx.db
     .query("accessions")
