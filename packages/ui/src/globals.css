@@ -175,8 +175,8 @@
 }
 
 ::selection {
-  background: color-mix(in oklab, var(--accent) 30%, transparent);
-  color: var(--accent-foreground);
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .hover-trigger .hover-target {
