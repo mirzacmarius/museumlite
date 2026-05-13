@@ -26,8 +26,8 @@ import {
   Search,
   Settings2,
   Shield,
-  SlidersHorizontal,
   ShoppingCart,
+  SlidersHorizontal,
   Ticket,
   Truck,
   Users,
@@ -530,10 +530,10 @@ export function AppSidebar({
               <DropdownMenuTrigger asChild id="org-menu-trigger">
                 <SidebarMenuButton
                   size="lg"
-                  className="h-10 text-xs data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                  className="h-10 text-xs text-sidebar-foreground hover:bg-transparent hover:text-sidebar-foreground data-[state=open]:bg-transparent data-[state=open]:text-sidebar-foreground"
                 >
-                  <div className="flex aspect-square size-7 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-                    <Logo className="size-4" />
+                  <div className="flex aspect-square size-7 items-center justify-center rounded-md bg-background text-foreground shadow-sm ring-1 ring-sidebar-border/80">
+                    <Logo className="size-5 text-foreground" />
                   </div>
                   <div className="grid flex-1 text-left leading-tight">
                     <span className="truncate font-medium">

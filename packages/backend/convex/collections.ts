@@ -764,7 +764,8 @@ async function getPublicCatalogCollections(
 function isLibraryCatalogPubliclyVisible(organization: Doc<"organizations">) {
   return (
     organization.type === "library" ||
-    organization.settings?.enabledModules?.includes("library") === true
+    organization.settings?.enabledModules?.includes("library") === true ||
+    organization.settings?.enabledIntegrations?.includes("library") === true
   );
 }
 

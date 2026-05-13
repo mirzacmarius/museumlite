@@ -30,7 +30,10 @@ export function useFeatureAccess() {
   };
 
   const hasModule = (moduleId: ModuleId) => {
-    return enabledModules.includes(moduleId);
+    return (
+      enabledModules.includes(moduleId) ||
+      (moduleId === "library" && enabledIntegrations.includes("library"))
+    );
   };
 
   const hasIntegration = (integrationId: IntegrationId) => {

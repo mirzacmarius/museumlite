@@ -37,7 +37,11 @@ async function requireLibraryModule(
   }
 
   const enabledModules = org.settings?.enabledModules ?? [];
-  if (!enabledModules.includes("library")) {
+  const enabledIntegrations = org.settings?.enabledIntegrations ?? [];
+  if (
+    !enabledModules.includes("library") &&
+    !enabledIntegrations.includes("library")
+  ) {
     throw new Error("Module not enabled: library");
   }
 }

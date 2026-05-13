@@ -144,15 +144,22 @@ export const enable = mutation({
 
     const currentSettings = org.settings ?? {};
     const enabledIntegrations = currentSettings.enabledIntegrations ?? [];
+    const enabledModules = currentSettings.enabledModules ?? [];
 
     if (enabledIntegrations.includes(args.integrationId)) {
       return { ok: false as const, reason: "already_enabled" as const };
     }
 
+    const nextEnabledModules =
+      args.integrationId === "library" && !enabledModules.includes("library")
+        ? [...enabledModules, "library" as const]
+        : enabledModules;
+
     await ctx.db.patch(args.organizationId, {
       settings: {
         ...currentSettings,
         enabledIntegrations: [...enabledIntegrations, args.integrationId],
+        enabledModules: nextEnabledModules,
       },
     });
 
@@ -192,16 +199,22 @@ export const disable = mutation({
 
     const currentSettings = org.settings ?? {};
     const enabledIntegrations = currentSettings.enabledIntegrations ?? [];
+    const enabledModules = currentSettings.enabledModules ?? [];
 
     // Remove from enabled integrations
     const updatedIntegrations = enabledIntegrations.filter(
       (id) => id !== args.integrationId,
     );
+    const updatedModules =
+      args.integrationId === "library"
+        ? enabledModules.filter((id) => id !== "library")
+        : enabledModules;
 
     await ctx.db.patch(args.organizationId, {
       settings: {
         ...currentSettings,
         enabledIntegrations: updatedIntegrations,
+        enabledModules: updatedModules,
       },
     });
 

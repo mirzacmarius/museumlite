@@ -24,6 +24,19 @@ function hasOrganizationFeatureAccess(
   return hasFeatureTierAccess(getTier(org), featureId);
 }
 
+function hasOrganizationModuleEnabled(
+  org: Doc<"organizations">,
+  moduleId: ModuleId,
+): boolean {
+  const enabledModules = org.settings?.enabledModules ?? [];
+  if (enabledModules.includes(moduleId)) {
+    return true;
+  }
+
+  const enabledIntegrations = org.settings?.enabledIntegrations ?? [];
+  return moduleId === "library" && enabledIntegrations.includes("library");
+}
+
 async function getOrganization(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
@@ -62,8 +75,7 @@ export async function hasModuleEnabled(
   moduleId: ModuleId,
 ) {
   const org = await getOrganization(ctx, organizationId);
-  const enabledModules = org.settings?.enabledModules ?? [];
-  return enabledModules.includes(moduleId);
+  return hasOrganizationModuleEnabled(org, moduleId);
 }
 
 export async function requireModuleEnabled(
@@ -72,8 +84,7 @@ export async function requireModuleEnabled(
   moduleId: ModuleId,
 ) {
   const org = await getOrganization(ctx, organizationId);
-  const enabledModules = org.settings?.enabledModules ?? [];
-  if (!enabledModules.includes(moduleId)) {
+  if (!hasOrganizationModuleEnabled(org, moduleId)) {
     throw new Error(`Module not enabled: ${moduleId}`);
   }
 }
