@@ -256,7 +256,7 @@ export default function MediaImportPage() {
                     className="rounded-lg border border-border bg-card text-card-foreground shadow-sm cursor-pointer p-6 transition-all hover:border-primary/50 hover:bg-muted/30 text-left"
                     onClick={() => handleMappingSelect("csv")}
                   >
-                    <FileSpreadsheet className="mb-4 h-10 w-10 text-indigo-500" />
+                    <FileSpreadsheet className="mb-4 size-10 text-indigo-500" />
                     <h3 className="mb-2 font-medium">
                       {t("mediaImport.csvMapping")}
                     </h3>
@@ -270,7 +270,7 @@ export default function MediaImportPage() {
                     className="rounded-lg border border-border bg-card text-card-foreground shadow-sm cursor-pointer p-6 transition-all hover:border-primary/50 hover:bg-muted/30 text-left"
                     onClick={() => handleMappingSelect("filename")}
                   >
-                    <FileImage className="mb-4 h-10 w-10 text-indigo-500" />
+                    <FileImage className="mb-4 size-10 text-indigo-500" />
                     <h3 className="mb-2 font-medium">
                       {t("mediaImport.filenameExtraction")}
                     </h3>
@@ -284,7 +284,7 @@ export default function MediaImportPage() {
                     className="rounded-lg border border-border bg-card text-card-foreground shadow-sm cursor-pointer p-6 transition-all hover:border-primary/50 hover:bg-muted/30 text-left"
                     onClick={() => handleMappingSelect("manual")}
                   >
-                    <LinkIcon className="mb-4 h-10 w-10 text-indigo-500" />
+                    <LinkIcon className="mb-4 size-10 text-indigo-500" />
                     <h3 className="mb-2 font-medium">
                       {t("mediaImport.manualMapping")}
                     </h3>
@@ -343,7 +343,7 @@ export default function MediaImportPage() {
                         </div>
                       ) : (
                         <>
-                          <Upload className="mb-2 h-6 w-6 text-muted-foreground" />
+                          <Upload className="mb-2 size-6 text-muted-foreground" />
                           <p className="text-sm font-medium">
                             Drop CSV file here
                           </p>
@@ -371,7 +371,7 @@ export default function MediaImportPage() {
                     onClick={() => mediaInputRef.current?.click()}
                     className="flex w-full min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 transition-all hover:border-primary/50 hover:bg-muted/30"
                   >
-                    <Upload className="mb-4 h-10 w-10 text-muted-foreground" />
+                    <Upload className="mb-4 size-10 text-muted-foreground" />
                     <p className="font-medium">Drop media files here</p>
                     <p className="mt-1 text-sm text-muted-foreground">
                       Images and PDFs supported
@@ -455,7 +455,7 @@ export default function MediaImportPage() {
 
             {state.step === "importing" && (
               <div className="mx-auto max-w-md text-center pt-12">
-                <Loader2 className="mx-auto mb-6 h-12 w-12 animate-spin text-primary" />
+                <Loader2 className="mx-auto mb-6 size-12 animate-spin text-primary" />
                 <h2 className="text-xl font-semibold mb-2">
                   {t("mediaImport.importing")}
                 </h2>
@@ -479,7 +479,7 @@ export default function MediaImportPage() {
 
             {state.step === "complete" && (
               <div className="mx-auto max-w-md text-center pt-8">
-                <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-green-500" />
+                <CheckCircle2 className="mx-auto mb-4 size-12 text-green-500" />
                 <h2 className="text-xl font-semibold">
                   {t("mediaImport.complete")}
                 </h2>
@@ -587,7 +587,7 @@ function UnmappedFilesReview({
   if (remainingFiles.length === 0) {
     return (
       <div className="text-center py-12">
-        <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-green-500" />
+        <CheckCircle2 className="mx-auto mb-4 size-12 text-green-500" />
         <h3 className="text-lg font-medium">
           {t("mediaImport.allFilesHandled")}
         </h3>

@@ -125,7 +125,7 @@ export function PricingSection() {
                       className="flex items-start gap-3 text-gray-300"
                     >
                       <div
-                        className={`mt-1 w-5 h-5 rounded-full flex items-center justify-center ${plan.popular ? "bg-neon-blue/20 text-neon-blue" : "bg-white/10 text-white"}`}
+                        className={`mt-1 size-5 rounded-full flex items-center justify-center ${plan.popular ? "bg-neon-blue/20 text-neon-blue" : "bg-white/10 text-white"}`}
                       >
                         <Check className="w-3 h-3" />
                       </div>

@@ -159,7 +159,7 @@ export function MediaPageClient({
             ))}
           </div>
           <div className="relative">
-            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-zinc-500" />
+            <Search className="absolute left-2.5 top-2 size-3.5 text-zinc-500" />
             <input
               type="text"
               placeholder="Search files..."

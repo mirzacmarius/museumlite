@@ -163,7 +163,7 @@ export function RecordContextSidebar({
                     >
                       <div
                         className={cn(
-                          "mt-1.5 h-1.5 w-1.5 rounded-full shrink-0",
+                          "mt-1.5 size-1.5 rounded-full shrink-0",
                           entry.verified
                             ? "bg-emerald-500"
                             : "bg-muted-foreground/50",
@@ -275,7 +275,7 @@ export function RecordContextSidebar({
                   <div key={activity._id} className="group relative">
                     <div
                       className={cn(
-                        "absolute -left-[17px] top-1 h-2 w-2 rounded-full ring-4 ring-background transition-colors",
+                        "absolute -left-[17px] top-1 size-2 rounded-full ring-4 ring-background transition-colors",
                         index === 0
                           ? "bg-accent"
                           : "bg-muted-foreground/50 group-hover:bg-muted-foreground",

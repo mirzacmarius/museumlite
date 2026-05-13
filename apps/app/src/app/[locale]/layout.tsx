@@ -1,6 +1,7 @@
 import "../globals.css";
 import { I18nProviderClient } from "@/locales/client";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
+import { MotionProvider } from "@v1/ui/motion-provider";
 import { Toaster } from "@v1/ui/sonner";
 import { TooltipProvider } from "@v1/ui/tooltip";
 import { cn } from "@v1/ui/utils";
@@ -264,11 +265,13 @@ export default async function RootLayout({
             disableTransitionOnChange
           >
             <TooltipProvider delayDuration={0}>
-              <ConvexClientProvider>
-                <I18nProviderClient locale={locale}>
-                  {children}
-                </I18nProviderClient>
-              </ConvexClientProvider>
+              <MotionProvider>
+                <ConvexClientProvider>
+                  <I18nProviderClient locale={locale}>
+                    {children}
+                  </I18nProviderClient>
+                </ConvexClientProvider>
+              </MotionProvider>
             </TooltipProvider>
             <Toaster />
           </ThemeProvider>

@@ -152,7 +152,6 @@ export function AuthPasswordForm({
         <div className="relative flex items-center rounded-md">
           <Input
             autoComplete={isSignUp ? "new-password" : "current-password"}
-            autoFocus
             className="h-10 border-white/10 bg-background pr-10"
             id="auth-password"
             onChange={(event) => setPassword(event.target.value)}

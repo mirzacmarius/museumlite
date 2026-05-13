@@ -108,6 +108,7 @@ export function ConditionCombobox({
   disabled = false,
 }: ConditionComboboxProps) {
   const [open, setOpen] = React.useState(false);
+  const listId = React.useId();
   const [inputValue, setInputValue] = React.useState("");
   const [conditionToDelete, setConditionToDelete] = React.useState<{
     id: string;
@@ -246,13 +247,14 @@ export function ConditionCombobox({
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            aria-controls={listId}
             className="w-full justify-between h-9"
             disabled={disabled}
           >
             <span className="truncate text-left flex-1 text-sm">
               {selectedOption?.label || value || placeholder}
             </span>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[500px] p-0" align="start">
@@ -268,7 +270,7 @@ export function ConditionCombobox({
                 }
               }}
             />
-            <CommandList className="max-h-[300px]">
+            <CommandList id={listId} className="max-h-[300px]">
               <CommandEmpty>
                 {inputValue ? (
                   <div className="p-4 text-sm text-center">

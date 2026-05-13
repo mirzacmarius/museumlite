@@ -43,6 +43,7 @@
     "./kpi-card": "./src/components/kpi-card.tsx",
     "./loading-button": "./src/components/loading-button.tsx",
     "./logo": "./src/components/logo.tsx",
+    "./motion-provider": "./src/components/motion-provider.tsx",
     "./popover": "./src/components/popover.tsx",
     "./postcss": "./postcss.config.js",
     "./progress": "./src/components/progress.tsx",

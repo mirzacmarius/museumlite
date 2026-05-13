@@ -35,7 +35,7 @@ export function AccessionTab({ collection }: AccessionTabProps) {
             </span>
             {collection.donated_by && collection.donated_by.length > 0 ? (
               <div className="flex items-center gap-2">
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-white">
+                <div className="flex size-5 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-white">
                   {collection.donated_by[0]?.charAt(0) ?? "?"}
                 </div>
                 <span className="text-sm text-muted-foreground">

@@ -89,6 +89,7 @@ export default function PublicObjectPage() {
                   src={currentImage.url}
                   alt={object.title}
                   fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="object-contain"
                   priority
                 />
@@ -106,7 +107,7 @@ export default function PublicObjectPage() {
                     type="button"
                     key={img._id}
                     onClick={() => setSelectedImageIndex(index)}
-                    className={`relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-colors ${
+                    className={`relative size-20 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-colors ${
                       selectedImageIndex === index
                         ? "border-white"
                         : "border-transparent opacity-60 hover:opacity-100"
@@ -116,6 +117,7 @@ export default function PublicObjectPage() {
                       src={img.url}
                       alt={`${object.title} - Image ${index + 1}`}
                       fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       className="object-cover"
                     />
                   </button>

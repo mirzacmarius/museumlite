@@ -43,7 +43,7 @@ async function upsertPolarProduct(ctx: ActionCtx, product: Product) {
     },
   );
   const matchingProducts = existingProducts.filter(
-    (item) => item.id === product.id,
+    (item: (typeof existingProducts)[number]) => item.id === product.id,
   );
   const nextProduct = toDatabaseProduct(product);
 
@@ -77,7 +77,8 @@ async function upsertPolarSubscription(
     },
   );
   const existing = customerSubscriptions.find(
-    (item) => item.id === subscription.id,
+    (item: (typeof customerSubscriptions)[number]) =>
+      item.id === subscription.id,
   );
   const nextSubscription = toDatabaseSubscription(subscription);
 

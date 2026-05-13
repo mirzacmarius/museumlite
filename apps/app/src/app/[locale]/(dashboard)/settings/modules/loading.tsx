@@ -18,7 +18,7 @@ export default function ModulesSettingsLoading() {
           >
             <div className="flex w-full items-start justify-between p-6">
               <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/5" />
+                <div className="flex size-12 items-center justify-center rounded-lg bg-primary/5" />
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
                     <div className="h-5 w-28 rounded bg-muted/60" />

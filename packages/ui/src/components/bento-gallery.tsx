@@ -130,16 +130,12 @@ export const InteractiveImageBentoGallery: React.FC<
     target: compact ? undefined : targetRef,
     offset: ["start end", "end start"],
   });
-  const opacity = compact
-    ? 1
-    : useTransform(
-        scrollResult.scrollYProgress,
-        [0, 0.2, 0.8, 1],
-        [0, 1, 1, 0],
-      );
-  const y = compact
-    ? 0
-    : useTransform(scrollResult.scrollYProgress, [0, 0.2], [30, 0]);
+  const opacity = useTransform(
+    scrollResult.scrollYProgress,
+    [0, 0.2, 0.8, 1],
+    [0, 1, 1, 0],
+  );
+  const y = useTransform(scrollResult.scrollYProgress, [0, 0.2], [30, 0]);
 
   // Compact mode rendering
   if (compact) {

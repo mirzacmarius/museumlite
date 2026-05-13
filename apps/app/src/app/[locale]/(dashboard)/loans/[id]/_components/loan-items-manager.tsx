@@ -218,7 +218,7 @@ export function LoanItemsManager({
                   <div className="space-y-2">
                     <Label>Search and Select Collections *</Label>
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         placeholder={t("searchCollections")}
                         value={searchQuery}

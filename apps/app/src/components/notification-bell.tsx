@@ -103,10 +103,10 @@ export function NotificationBell() {
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
+        <Button variant="ghost" className="relative size-8 rounded-full p-0">
           <Bell className="h-4 w-4" />
           {unreadCountValue > 0 && (
-            <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+            <span className="absolute right-0 top-0 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
               {unreadCountValue > 9 ? "9+" : unreadCountValue}
             </span>
           )}
@@ -147,7 +147,7 @@ export function NotificationBell() {
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
-                <Bell className="mb-2 h-8 w-8 text-muted-foreground" />
+                <Bell className="mb-2 size-8 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
                   No notifications
                 </p>

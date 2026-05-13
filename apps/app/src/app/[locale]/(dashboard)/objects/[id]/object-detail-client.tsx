@@ -368,7 +368,7 @@ function ObjectDetailView({
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={handleCopyLink}>
                   {linkCopied ? (
-                    <Check className="mr-2 h-4 w-4 text-green-500" />
+                    <Check className="mr-2 size-4 text-green-500" />
                   ) : (
                     <Link2 className="mr-2 h-4 w-4" />
                   )}
@@ -436,7 +436,7 @@ function ObjectDetailView({
                     className="h-48 w-48 rounded-xl border border-border/60 bg-secondary object-cover shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
                   />
                 ) : (
-                  <div className="flex h-48 w-48 items-center justify-center rounded-xl border border-border/60 bg-secondary">
+                  <div className="flex size-48 items-center justify-center rounded-xl border border-border/60 bg-secondary">
                     <ImageIcon className="h-12 w-12 text-muted-foreground" />
                   </div>
                 )}

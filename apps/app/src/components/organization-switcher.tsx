@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
 import { Building2, Check, ChevronDown, Plus } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useOrganization } from "./organization-provider";
 
@@ -45,10 +46,10 @@ export function OrganizationSwitcher() {
   if (organizations.length === 0) {
     return (
       <Button variant="ghost" className="gap-2 px-2" asChild>
-        <a href="/settings/organization/new">
+        <Link href="/settings/organization/new">
           <Plus className="h-4 w-4" />
           <span className="text-sm font-medium">Create Organization</span>
-        </a>
+        </Link>
       </Button>
     );
   }

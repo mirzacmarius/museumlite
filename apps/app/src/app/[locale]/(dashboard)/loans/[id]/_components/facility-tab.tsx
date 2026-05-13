@@ -10,7 +10,7 @@ export function FacilityTab() {
   return (
     <div className="space-y-6">
       <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-xl p-4 flex gap-4 items-start">
-        <AlertCircle className="shrink-0 text-amber-600 dark:text-amber-500 w-5 h-5 mt-0.5" />
+        <AlertCircle className="shrink-0 text-amber-600 dark:text-amber-500 size-5 mt-0.5" />
         <div>
           <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-500">
             {t("reviewRequired")}

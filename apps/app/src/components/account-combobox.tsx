@@ -109,6 +109,7 @@ export function AccountCombobox({
 }: AccountComboboxProps) {
   const tToast = useScopedI18n("common.toast");
   const [open, setOpen] = React.useState(false);
+  const listId = React.useId();
   const [searchQuery, setSearchQuery] = React.useState("");
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [formData, setFormData] =
@@ -220,6 +221,7 @@ export function AccountCombobox({
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            aria-controls={listId}
             className="w-full justify-between"
             disabled={disabled}
           >
@@ -234,7 +236,7 @@ export function AccountCombobox({
             ) : (
               <span className="text-muted-foreground">{placeholder}</span>
             )}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[400px] p-0" align="start">
@@ -244,7 +246,7 @@ export function AccountCombobox({
               value={searchQuery}
               onValueChange={setSearchQuery}
             />
-            <CommandList className="max-h-[300px]">
+            <CommandList id={listId} className="max-h-[300px]">
               <CommandEmpty>
                 <div className="p-4 text-sm text-center">
                   <p className="text-muted-foreground mb-2">
@@ -446,7 +448,6 @@ export function AccountCombobox({
                         ? "Enter business or organization name"
                         : "Enter full name"
                     }
-                    autoFocus
                   />
                 </div>
                 {formData.holderType === "organization" ? (

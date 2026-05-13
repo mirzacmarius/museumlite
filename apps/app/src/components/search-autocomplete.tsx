@@ -126,7 +126,7 @@ export function SearchAutocomplete({
     <Popover open={showDropdown} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <div className={cn("relative w-full", className)}>
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
             value={inputValue}

@@ -546,7 +546,6 @@ export function DonorCombobox({
                   }))
                 }
                 placeholder="Enter donor name"
-                autoFocus
               />
             </div>
             <div>

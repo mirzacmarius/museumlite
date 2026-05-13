@@ -55,7 +55,7 @@ const CommandObjectItem = React.memo(
         className="flex items-center gap-2"
       >
         {imageUrl ? (
-          <div className="relative h-7 w-7 overflow-hidden rounded-[4px] border border-border/50 shrink-0 bg-muted/20">
+          <div className="relative size-7 overflow-hidden rounded-[4px] border border-border/50 shrink-0 bg-muted/20">
             <img
               src={imageUrl}
               alt={obj.title}
@@ -63,7 +63,7 @@ const CommandObjectItem = React.memo(
             />
           </div>
         ) : (
-          <div className="flex h-7 w-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
+          <div className="flex size-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
             <Box className="h-3.5 w-3.5 text-muted-foreground" />
           </div>
         )}
@@ -209,7 +209,7 @@ export function CommandPalette() {
                         )
                       }
                     >
-                      <div className="mr-2 flex h-7 w-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
+                      <div className="mr-2 flex size-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
                         <Archive className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                       <span>{group.name}</span>
@@ -228,7 +228,7 @@ export function CommandPalette() {
                         runCommand(() => router.push(`/loans/${loan._id}`))
                       }
                     >
-                      <div className="mr-2 flex h-7 w-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
+                      <div className="mr-2 flex size-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
                         <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                       <div className="flex flex-col overflow-hidden gap-0.5">
@@ -254,7 +254,7 @@ export function CommandPalette() {
                         runCommand(() => router.push(`/accessions/${acc._id}`))
                       }
                     >
-                      <div className="mr-2 flex h-7 w-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
+                      <div className="mr-2 flex size-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
                         <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                       <div className="flex flex-col overflow-hidden gap-0.5">
@@ -280,7 +280,7 @@ export function CommandPalette() {
                         runCommand(() => router.push(`/locations/${loc._id}`))
                       }
                     >
-                      <div className="mr-2 flex h-7 w-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
+                      <div className="mr-2 flex size-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
                         <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                       <span>{loc.name}</span>

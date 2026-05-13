@@ -222,7 +222,7 @@ export function DropzoneUploader({
         />
 
         {hasActiveUploads ? (
-          <Loader2 className="mb-2 h-8 w-8 animate-spin text-muted-foreground" />
+          <Loader2 className="mb-2 size-8 animate-spin text-muted-foreground" />
         ) : (
           <Upload
             className={cn(

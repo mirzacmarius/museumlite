@@ -237,9 +237,7 @@ export default function NewTreatmentPage() {
               disabled={isSubmitting}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {isSubmitting && <Loader2 className="mr-2 size-4 animate-spin" />}
               {t("form.createRecord")}
             </Button>
           </div>

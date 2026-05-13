@@ -36,9 +36,9 @@ export function ProvenanceHistoryTab({
               <div className="grid grid-cols-1 gap-6 rounded-xl border border-border/60 bg-secondary/20 p-6 md:grid-cols-2">
                 {collection.provenance && (
                   <div className="grid gap-2">
-                    <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                       Provenance
-                    </label>
+                    </div>
                     <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
                       {collection.provenance}
                     </p>
@@ -47,9 +47,9 @@ export function ProvenanceHistoryTab({
 
                 {collection.exhibitionHistory && (
                   <div className="grid gap-2">
-                    <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                       Exhibition History
-                    </label>
+                    </div>
                     <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
                       {collection.exhibitionHistory}
                     </p>
@@ -60,9 +60,9 @@ export function ProvenanceHistoryTab({
 
             {collection.links && collection.links.length > 0 ? (
               <div className="space-y-3 rounded-xl border border-border/60 bg-secondary/20 p-6">
-                <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Links
-                </label>
+                </div>
                 <div className="space-y-1">
                   {collection.links.map((link) => (
                     <a
@@ -92,7 +92,7 @@ export function ProvenanceHistoryTab({
                     <div key={`${entry.owner}-${index}`} className="relative">
                       <div
                         className={cn(
-                          "absolute -left-[39px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-background",
+                          "absolute -left-[39px] top-1.5 flex size-4 items-center justify-center rounded-full bg-background",
                           index === 0
                             ? "border-2 border-accent"
                             : "border-2 border-muted-foreground/50",

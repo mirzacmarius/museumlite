@@ -148,7 +148,7 @@ export function ObjectActionsMenu({
             }}
           >
             {linkCopied ? (
-              <Check className="mr-2 h-4 w-4 text-green-500" />
+              <Check className="mr-2 size-4 text-green-500" />
             ) : (
               <Link2 className="mr-2 h-4 w-4" />
             )}
@@ -188,7 +188,7 @@ export function ObjectActionsMenu({
                     handleOpenRemovalFlow("sold");
                   }}
                 >
-                  <DollarSign className="mr-2 h-4 w-4 text-green-500" />
+                  <DollarSign className="mr-2 size-4 text-green-500" />
                   Sold
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -199,7 +199,7 @@ export function ObjectActionsMenu({
                     handleOpenRemovalFlow("move");
                   }}
                 >
-                  <ArrowRightLeft className="mr-2 h-4 w-4 text-blue-500" />
+                  <ArrowRightLeft className="mr-2 size-4 text-blue-500" />
                   Transfer
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -210,7 +210,7 @@ export function ObjectActionsMenu({
                     handleOpenRemovalFlow("archived");
                   }}
                 >
-                  <Archive className="mr-2 h-4 w-4 text-amber-500" />
+                  <Archive className="mr-2 size-4 text-amber-500" />
                   Archive
                 </DropdownMenuItem>
                 <DropdownMenuItem

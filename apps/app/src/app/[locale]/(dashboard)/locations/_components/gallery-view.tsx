@@ -480,7 +480,7 @@ function UnitStackCard({ unit }: UnitStackCardProps) {
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-2.5">
-          <div className={`mt-1.5 h-1.5 w-1.5 rounded-full ${statusColor}`} />
+          <div className={`mt-1.5 size-1.5 rounded-full ${statusColor}`} />
           <div className="min-w-0">
             <div
               className={`truncate font-mono text-xs ${

@@ -155,7 +155,7 @@ export function FilterSection({
             {title}
             {countLabel}
           </div>
-          <span className="grid h-6 w-6 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+          <span className="grid size-6 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground">
             {open ? (
               <ChevronUp className="h-4 w-4" />
             ) : (
@@ -210,7 +210,7 @@ export function FilterOptionRow({
     >
       <div
         className={cn(
-          "grid h-4 w-4 flex-shrink-0 place-items-center border border-border bg-background/60",
+          "grid size-4 flex-shrink-0 place-items-center border border-border bg-background/60",
           indicatorShape,
           isChecked && "border-primary bg-primary text-primary-foreground",
         )}
@@ -277,7 +277,7 @@ export function AppliedFilterChip({
         {value ? <span className="text-muted-foreground">: </span> : null}
         {value ? <span className="text-foreground">{value}</span> : null}
       </span>
-      <span className="grid h-4 w-4 place-items-center rounded text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+      <span className="grid size-4 place-items-center rounded text-muted-foreground hover:bg-accent hover:text-accent-foreground">
         <X className="h-3.5 w-3.5" />
       </span>
     </Comp>

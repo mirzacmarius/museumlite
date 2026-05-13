@@ -2,6 +2,7 @@ import "@v1/ui/globals.css";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { Provider as AnalyticsProvider } from "@v1/analytics/client";
+import { MotionProvider } from "@v1/ui/motion-provider";
 import { cn } from "@v1/ui/utils";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
@@ -60,13 +61,15 @@ export default function RootLayout({
           "antialiased dark min-h-screen bg-black text-white selection:bg-neon-purple/30",
         )}
       >
-        <ConvexClientProvider>
-          <Header />
-          {children}
-          <Footer />
-          <SpeedInsights />
-          <Analytics />
-        </ConvexClientProvider>
+        <MotionProvider>
+          <ConvexClientProvider>
+            <Header />
+            {children}
+            <Footer />
+            <SpeedInsights />
+            <Analytics />
+          </ConvexClientProvider>
+        </MotionProvider>
 
         <AnalyticsProvider />
       </body>

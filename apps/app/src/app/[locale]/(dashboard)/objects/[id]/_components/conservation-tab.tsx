@@ -85,7 +85,7 @@ export function ConservationTab({
                 </p>
                 {treatment.performedByName && (
                   <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-[8px]">
+                    <div className="flex size-5 items-center justify-center rounded-full bg-secondary text-[8px]">
                       {treatment.performedByName.charAt(0)}
                     </div>
                     <span>

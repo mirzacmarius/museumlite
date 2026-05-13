@@ -54,8 +54,8 @@ export function HeroSection() {
       </div>
 
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[20%] w-[500px] h-[500px] bg-neon-blue/20 rounded-full blur-[120px] animate-pulse-slow" />
-        <div className="absolute bottom-[-10%] right-[20%] w-[600px] h-[600px] bg-neon-purple/20 rounded-full blur-[120px] animate-pulse-slow delay-1000" />
+        <div className="absolute top-[-10%] left-[20%] size-[500px] bg-neon-blue/20 rounded-full blur-[120px] animate-pulse-slow" />
+        <div className="absolute bottom-[-10%] right-[20%] size-[600px] bg-neon-purple/20 rounded-full blur-[120px] animate-pulse-slow delay-1000" />
       </div>
 
       {/* Content */}
@@ -123,7 +123,7 @@ export function HeroSection() {
             <Button className="relative overflow-hidden h-14 px-8 rounded-full bg-white text-black hover:bg-gray-200 text-lg font-semibold transition-all hover:scale-105 group">
               <span className="relative z-10 flex items-center">
                 Start Free Trial
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="ml-2 size-5 group-hover:translate-x-1 transition-transform" />
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full animate-shimmer group-hover:animate-none" />
             </Button>

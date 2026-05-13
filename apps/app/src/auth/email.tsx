@@ -52,7 +52,6 @@ export function AuthEmailForm({ defaultEmail, onSubmit }: AuthEmailFormProps) {
         <div>
           <Input
             autoComplete="email"
-            autoFocus
             id="auth-email"
             onChange={(event) => setEmail(event.target.value)}
             placeholder="name@company.com"

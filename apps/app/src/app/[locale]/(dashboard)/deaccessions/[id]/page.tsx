@@ -336,9 +336,9 @@ export default function DeaccessionDetailPage() {
                         </div>
                         <Link
                           href={`/collections/${collection._id}`}
-                          className="mt-3 flex items-center gap-3 rounded-xl border border-border/60 bg-background/60 px-3 py-3 transition-colors hover:bg-accent/60"
+                          className="mt-3 flex items-center gap-3 rounded-xl border border-border/60 bg-background/60 p-3 transition-colors hover:bg-accent/60"
                         >
-                          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/60 bg-background">
+                          <div className="flex size-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/60 bg-background">
                             {collectionThumbnail?.thumbnailUrl ? (
                               <img
                                 src={collectionThumbnail.thumbnailUrl}
@@ -396,7 +396,7 @@ export default function DeaccessionDetailPage() {
                                 className="w-full"
                               >
                                 {isApproving && (
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  <Loader2 className="mr-2 size-4 animate-spin" />
                                 )}
                                 {!isApproving && (
                                   <CheckCircle className="mr-2 h-4 w-4" />
@@ -410,7 +410,7 @@ export default function DeaccessionDetailPage() {
                                 className="w-full"
                               >
                                 {isRejecting && (
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  <Loader2 className="mr-2 size-4 animate-spin" />
                                 )}
                                 {!isRejecting && (
                                   <XCircle className="mr-2 h-4 w-4" />
@@ -446,9 +446,9 @@ export default function DeaccessionDetailPage() {
                     {workflowHistory.map((entry) => (
                       <div
                         key={`${entry.step}-${entry.approvedAt}`}
-                        className="grid gap-3 rounded-xl border border-border/60 bg-background/40 px-3 py-3 sm:grid-cols-[44px_minmax(0,1fr)] sm:items-start"
+                        className="grid gap-3 rounded-xl border border-border/60 bg-background/40 p-3 sm:grid-cols-[44px_minmax(0,1fr)] sm:items-start"
                       >
-                        <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-border/60 bg-background text-sm font-semibold">
+                        <div className="flex size-11 items-center justify-center rounded-xl border border-border/60 bg-background text-sm font-semibold">
                           {entry.step}
                         </div>
                         <div className="min-w-0">
@@ -627,7 +627,7 @@ export default function DeaccessionDetailPage() {
                   exportData.deaccession.proceedsRecipient) && (
                   <div className="print:break-inside-avoid">
                     <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
-                      <DollarSign className="inline h-3 w-3 mr-1" />
+                      <DollarSign className="inline size-3 mr-1" />
                       Proceeds Information
                     </h2>
                     <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
@@ -694,7 +694,7 @@ export default function DeaccessionDetailPage() {
                           key={`${entry.step}-${entry.approvedAt}`}
                           className="flex items-start gap-3 text-sm print:text-xs"
                         >
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-xs font-medium flex-shrink-0">
+                          <div className="flex size-6 items-center justify-center rounded-full bg-gray-100 text-xs font-medium flex-shrink-0">
                             {entry.step}
                           </div>
                           <div className="flex-1">

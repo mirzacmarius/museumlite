@@ -364,7 +364,7 @@ export function DeaccessionDialog({
             {deaccessionWorkflow && (
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                  <CheckCircle className="mt-0.5 size-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
                   <div className="text-sm">
                     <p className="font-medium text-blue-900 dark:text-blue-100">
                       Approval Required
@@ -384,7 +384,7 @@ export function DeaccessionDialog({
             {!deaccessionWorkflow && workflowConfigs !== undefined && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                  <AlertTriangle className="mt-0.5 size-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
                   <div className="text-sm">
                     <p className="font-medium text-amber-900 dark:text-amber-100">
                       No Approval Workflow
@@ -502,7 +502,7 @@ export function DeaccessionDialog({
 
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
               <div className="flex items-start gap-3">
-                <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                <CheckCircle className="mt-0.5 size-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
                 <div className="text-sm">
                   <p className="font-medium text-blue-900 dark:text-blue-100">
                     Administrator Approval Required
@@ -618,7 +618,7 @@ export function DeaccessionDialog({
             {blockers.length > 0 && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                  <AlertTriangle className="mt-0.5 size-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
                   <div className="space-y-2 text-sm">
                     <p className="font-medium text-amber-900 dark:text-amber-100">
                       This object cannot be moved yet
@@ -650,7 +650,7 @@ export function DeaccessionDialog({
 
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
               <div className="flex items-start gap-3">
-                <Archive className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                <Archive className="mt-0.5 size-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
                 <div className="text-sm">
                   <p className="font-medium text-amber-900 dark:text-amber-100">
                     Archiving Object
@@ -695,7 +695,7 @@ export function DeaccessionDialog({
 
             <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
               <div className="flex items-start gap-3">
-                <Trash2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600 dark:text-red-400" />
+                <Trash2 className="mt-0.5 size-5 flex-shrink-0 text-red-600 dark:text-red-400" />
                 <div className="text-sm">
                   <p className="font-medium text-red-900 dark:text-red-100">
                     Deleting Object
@@ -755,9 +755,7 @@ export function DeaccessionDialog({
               }
               variant={removalType === "deleted" ? "destructive" : "default"}
             >
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {isSubmitting && <Loader2 className="mr-2 size-4 animate-spin" />}
               {removalType === "sold" && "Submit for Approval"}
               {removalType === "move" && "Submit Move Request"}
               {removalType === "archived" && "Submit Archive Request"}

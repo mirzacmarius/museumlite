@@ -166,24 +166,24 @@ export function usePermission(
   // For backwards compatibility, try to use context first
   const context = useContext(PermissionContext);
 
-  // If context is available and org matches, use cached permissions
-  // Note: We can't check org match here since context doesn't expose orgId
-  // but in practice the PermissionProvider uses the same org from useOrganization
-  if (context) {
-    return context.hasPermission(permission);
-  }
-
   // Fallback to individual query for backwards compatibility
   // This path should be avoided as it causes N+1 queries
   const hasPermission = useQuery(
     api.roles.checkPermission,
-    organizationId
+    !context && organizationId
       ? {
           organizationId: organizationId as Id<"organizations">,
           permissionName: permission,
         }
       : "skip",
   );
+
+  // If context is available and org matches, use cached permissions
+  // Note: We can't check org match here since context doesn't expose orgId
+  // but in practice the PermissionProvider uses the same org from useOrganization
+  if (context) {
+    return context.hasPermission(permission);
+  }
 
   return hasPermission ?? false;
 }
@@ -196,19 +196,19 @@ export function useUserPermissions(organizationId: string | null): string[] {
   // For backwards compatibility, try to use context first
   const context = useContext(PermissionContext);
 
-  if (context) {
-    return context.permissions;
-  }
-
   // Fallback to individual query for backwards compatibility
   const permissions = useQuery(
     api.roles.getUserPermissions,
-    organizationId
+    !context && organizationId
       ? {
           organizationId: organizationId as Id<"organizations">,
         }
       : "skip",
   );
+
+  if (context) {
+    return context.permissions;
+  }
 
   return permissions ?? [];
 }

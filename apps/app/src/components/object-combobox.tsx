@@ -34,6 +34,7 @@ export function ObjectCombobox({
   disabled = false,
 }: ObjectComboboxProps) {
   const [open, setOpen] = React.useState(false);
+  const listId = React.useId();
   const [inputValue, setInputValue] = React.useState("");
 
   // Fetch collections for the organization
@@ -97,6 +98,7 @@ export function ObjectCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-controls={listId}
           className="w-full justify-between"
           disabled={disabled}
         >
@@ -107,12 +109,12 @@ export function ObjectCombobox({
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
           )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
         <Command>
-          <CommandList>
+          <CommandList id={listId}>
             <CommandEmpty>No objects found.</CommandEmpty>
             <CommandGroup>
               {filteredObjects.map(

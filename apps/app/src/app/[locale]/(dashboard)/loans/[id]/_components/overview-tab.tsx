@@ -120,9 +120,9 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
           </div>
           <div className="grid grid-cols-2 gap-y-6 gap-x-12">
             <div>
-              <label className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
+              <div className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
                 Institution
-              </label>
+              </div>
               <p className="text-sm text-foreground mt-1">
                 {loan.lenderBorrowerName}
               </p>
@@ -131,9 +131,9 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
               </p>
             </div>
             <div>
-              <label className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
+              <div className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
                 Exhibition Space
-              </label>
+              </div>
               <p className="text-sm text-foreground mt-1">
                 The Robert B. Menschel Galleries
               </p>
@@ -142,9 +142,9 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
               </p>
             </div>
             <div>
-              <label className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
+              <div className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
                 Loan Agreement
-              </label>
+              </div>
               <div className="flex items-center gap-2 mt-1">
                 <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-900">
                   <Check className="w-3 h-3" />
@@ -156,9 +156,9 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
               </div>
             </div>
             <div>
-              <label className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
+              <div className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide">
                 Costs
-              </label>
+              </div>
               <p className="text-sm text-foreground mt-1">
                 All costs to be borne by Borrower
               </p>

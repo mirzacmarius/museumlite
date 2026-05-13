@@ -38,7 +38,7 @@ export function DashboardListPageSkeleton({
             <div className="w-full border-b border-border" />
           </div>
 
-          <div className="border-b border-border px-4 py-4 sm:px-6">
+          <div className="border-b border-border p-4 sm:px-6">
             <div className="flex flex-col gap-2 sm:flex-row">
               <div className="h-10 min-w-0 flex-1 rounded-md bg-muted/60" />
               {skeletonKeys("filter", filtersCount).map((key) => (

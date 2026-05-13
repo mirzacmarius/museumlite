@@ -380,7 +380,7 @@ export default function ImportAccessionsPage() {
             {state.step === "upload" && (
               <div className="mx-auto max-w-2xl">
                 <div className="mb-8 text-center">
-                  <FileSpreadsheet className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                  <FileSpreadsheet className="mx-auto mb-4 size-12 text-muted-foreground" />
                   <h2 className="text-xl font-semibold">{t("import.title")}</h2>
                   <p className="mt-2 text-sm text-muted-foreground">
                     {t("import.description")}
@@ -404,7 +404,7 @@ export default function ImportAccessionsPage() {
                   tabIndex={0}
                   className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 transition-all hover:border-primary/50 hover:bg-muted/30"
                 >
-                  <Upload className="mb-4 h-10 w-10 text-muted-foreground" />
+                  <Upload className="mb-4 size-10 text-muted-foreground" />
                   <p className="font-medium">{t("import.dropZone")}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {t("import.maxRows")}
@@ -644,7 +644,7 @@ export default function ImportAccessionsPage() {
 
             {state.step === "importing" && (
               <div className="mx-auto max-w-md text-center">
-                <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-primary" />
+                <Loader2 className="mx-auto mb-4 size-12 animate-spin text-primary" />
                 <h2 className="text-xl font-semibold">
                   {t("import.importing")}
                 </h2>
@@ -665,7 +665,7 @@ export default function ImportAccessionsPage() {
 
             {state.step === "complete" && (
               <div className="mx-auto max-w-md text-center">
-                <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-green-500" />
+                <CheckCircle2 className="mx-auto mb-4 size-12 text-green-500" />
                 <h2 className="text-xl font-semibold">
                   {t("import.complete")}
                 </h2>

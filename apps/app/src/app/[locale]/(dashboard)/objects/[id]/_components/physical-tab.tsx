@@ -65,7 +65,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                 Object Type
               </span>
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
+                <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
                   <Shapes className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
                 <span className="text-sm font-medium text-foreground">
@@ -79,7 +79,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                 Materials
               </span>
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
+                <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
                   <span className="font-serif text-xs text-foreground">M</span>
                 </div>
                 <span className="text-sm font-medium text-foreground">
@@ -93,7 +93,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                 Technique
               </span>
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
+                <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
                   <Hammer className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
                 <span className="text-sm font-medium text-foreground">
@@ -107,7 +107,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                 Dimensions
               </span>
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
+                <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
                   <Ruler className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
                 <span className="text-sm font-medium text-foreground">
@@ -122,7 +122,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                   Diameter
                 </span>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
+                  <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
                     <span className="text-xs font-medium text-foreground">
                       D
                     </span>
@@ -137,7 +137,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                   Weight
                 </span>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
+                  <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
                     <span className="text-xs font-medium text-foreground">
                       W
                     </span>
@@ -178,7 +178,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                     >
                       <div
                         className={cn(
-                          "absolute left-0 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full",
+                          "absolute left-0 top-1 z-10 flex size-6 items-center justify-center rounded-full",
                           index === 0
                             ? "border border-indigo-500 bg-indigo-500/20 text-indigo-400 shadow-[0_0_10px_rgba(99,102,241,0.3)]"
                             : "border border-zinc-700 bg-zinc-900",
@@ -227,7 +227,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-100 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                <div className="flex size-8 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-100 dark:border-emerald-500/20 dark:bg-emerald-500/10">
                   <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                 </div>
                 <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">

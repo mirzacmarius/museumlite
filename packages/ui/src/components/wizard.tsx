@@ -141,7 +141,7 @@ function WizardSteps({ className }: WizardStepsProps) {
                   onClick={() => isClickable && goToStep(index)}
                   disabled={!isClickable}
                   className={cn(
-                    "relative flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-medium transition-colors",
+                    "relative flex size-8 items-center justify-center rounded-full border-2 text-sm font-medium transition-colors",
                     isCompleted
                       ? "border-emerald-500 bg-emerald-500 text-white"
                       : isCurrent

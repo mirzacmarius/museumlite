@@ -418,7 +418,7 @@ function CollectionObjectsList({
             <div className="space-y-2">
               <Label>{t("importDialog.searchLabel")}</Label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder={t("importDialog.searchPlaceholder")}
                   value={searchQuery}
@@ -593,7 +593,7 @@ function CollectionListItem({
         href={`/objects/${item.collectionId}`}
         className="flex flex-1 items-center gap-4"
       >
-        <div className="flex h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+        <div className="flex size-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
           {imageUrl ? (
             <img
               src={imageUrl}

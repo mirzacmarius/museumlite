@@ -198,7 +198,7 @@ export function BarcodeScanner({
 
         {status === "idle" && (
           <div className="flex flex-col items-center justify-center p-8 text-center">
-            <Camera className="mb-4 h-12 w-12 text-muted-foreground" />
+            <Camera className="mb-4 size-12 text-muted-foreground" />
             <p className="mb-2 text-sm font-medium text-foreground">
               Ready to scan
             </p>
@@ -214,7 +214,7 @@ export function BarcodeScanner({
 
         {status === "initializing" && (
           <div className="flex flex-col items-center justify-center p-8">
-            <Loader2 className="mb-4 h-12 w-12 animate-spin text-primary" />
+            <Loader2 className="mb-4 size-12 animate-spin text-primary" />
             <p className="text-sm font-medium text-foreground">
               Initializing camera...
             </p>
@@ -223,7 +223,7 @@ export function BarcodeScanner({
 
         {status === "permission-denied" && (
           <div className="flex flex-col items-center justify-center p-8 text-center">
-            <CameraOff className="mb-4 h-12 w-12 text-yellow-500" />
+            <CameraOff className="mb-4 size-12 text-yellow-500" />
             <p className="mb-2 text-sm font-medium text-foreground">
               Camera Access Required
             </p>
@@ -236,7 +236,7 @@ export function BarcodeScanner({
 
         {status === "error" && errorMessage && (
           <div className="flex flex-col items-center justify-center p-8 text-center">
-            <AlertCircle className="mb-4 h-12 w-12 text-destructive" />
+            <AlertCircle className="mb-4 size-12 text-destructive" />
             <p className="mb-2 text-sm font-medium text-foreground">
               Scanner Error
             </p>
@@ -251,7 +251,7 @@ export function BarcodeScanner({
         {status === "success" && (
           <div className="absolute inset-0 flex items-center justify-center bg-green-500/10">
             <div className="flex flex-col items-center rounded-lg bg-background/90 p-6 shadow-lg">
-              <CheckCircle2 className="mb-2 h-12 w-12 text-green-500" />
+              <CheckCircle2 className="mb-2 size-12 text-green-500" />
               <p className="text-sm font-medium text-foreground">
                 Code scanned successfully!
               </p>

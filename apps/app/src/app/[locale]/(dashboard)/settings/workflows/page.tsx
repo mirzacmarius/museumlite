@@ -265,7 +265,7 @@ export default function WorkflowsSettingsPage() {
                       key={`${step.stepNumber}-${step.roleId}`}
                       className="flex items-center gap-4 rounded-lg border border-border bg-background/50 p-3"
                     >
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                      <div className="flex size-6 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
                         {index + 1}
                       </div>
                       <div className="flex-1">
@@ -368,7 +368,7 @@ export default function WorkflowsSettingsPage() {
                       key={`form-step-${index}-${step.roleId}`}
                       className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-4"
                     >
-                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground mt-2.5">
+                      <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground mt-2.5">
                         {index + 1}
                       </div>
 

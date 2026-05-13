@@ -222,7 +222,7 @@ export default function IntegrationsSettingsPage() {
             >
               <div className="flex w-full items-start justify-between p-6">
                 <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/5 text-primary">
+                  <div className="flex size-12 items-center justify-center rounded-lg bg-primary/5 text-primary">
                     {INTEGRATION_ICONS[integration.id] || (
                       <Settings className="h-6 w-6" />
                     )}
@@ -340,7 +340,7 @@ export default function IntegrationsSettingsPage() {
             <Button onClick={handleSubscribe} disabled={isCreatingCheckout}>
               {isCreatingCheckout ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 size-4 animate-spin" />
                   {t("redirecting")}
                 </>
               ) : (

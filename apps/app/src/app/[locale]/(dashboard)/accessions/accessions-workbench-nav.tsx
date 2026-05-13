@@ -60,7 +60,7 @@ export function AccessionsWorkbenchNav({
               <div className="flex min-w-0 items-center gap-3">
                 <div
                   className={cn(
-                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border",
+                    "flex size-9 shrink-0 items-center justify-center rounded-lg border",
                     isActive
                       ? "border-primary/30 bg-primary/15 text-primary"
                       : "border-border/60 bg-background text-muted-foreground",

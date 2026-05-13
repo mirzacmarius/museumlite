@@ -74,7 +74,7 @@ export function DigitalAssetsTab({ collection }: DigitalAssetsTabProps) {
                   rel="noopener noreferrer"
                   className="group flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-secondary/50"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded border border-border/50 bg-secondary text-muted-foreground group-hover:text-foreground">
+                  <div className="flex size-8 items-center justify-center rounded border border-border/50 bg-secondary text-muted-foreground group-hover:text-foreground">
                     {link.url.includes("sketchfab") ? (
                       <Box className="h-4 w-4" />
                     ) : (
@@ -105,7 +105,7 @@ export function DigitalAssetsTab({ collection }: DigitalAssetsTabProps) {
                   rel="noopener noreferrer"
                   className="group flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-secondary/50"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded border border-border/50 bg-secondary text-muted-foreground group-hover:text-foreground">
+                  <div className="flex size-8 items-center justify-center rounded border border-border/50 bg-secondary text-muted-foreground group-hover:text-foreground">
                     {doc.fileName?.toLowerCase().endsWith(".glb") ||
                     doc.fileName?.toLowerCase().endsWith(".gltf") ? (
                       <Box className="h-4 w-4" />

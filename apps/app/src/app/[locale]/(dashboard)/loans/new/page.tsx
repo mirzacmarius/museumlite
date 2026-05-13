@@ -341,7 +341,7 @@ export default function NewLoanPage() {
               {/* 1. Basic Information */}
               <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
                 <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] text-foreground">
+                  <span className="flex size-5 items-center justify-center rounded-full bg-muted text-[10px] text-foreground">
                     1
                   </span>
                   Basic Information
@@ -482,7 +482,7 @@ export default function NewLoanPage() {
               {/* 2. Schedule & Terms */}
               <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
                 <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] text-foreground">
+                  <span className="flex size-5 items-center justify-center rounded-full bg-muted text-[10px] text-foreground">
                     2
                   </span>
                   Schedule & Terms
@@ -572,7 +572,7 @@ export default function NewLoanPage() {
               {/* 3. Items Selection */}
               <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
                 <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] text-foreground">
+                  <span className="flex size-5 items-center justify-center rounded-full bg-muted text-[10px] text-foreground">
                     3
                   </span>
                   Loan Items
@@ -775,7 +775,7 @@ export default function NewLoanPage() {
                           {selectedCollectionsList.slice(0, 5).map((c) => (
                             <Avatar
                               key={c._id}
-                              className="inline-block h-8 w-8 rounded-full ring-2 ring-background"
+                              className="inline-block size-8 rounded-full ring-2 ring-background"
                             >
                               <AvatarFallback className="bg-secondary text-[8px]">
                                 {c.accessionNumber.slice(0, 2)}
@@ -783,7 +783,7 @@ export default function NewLoanPage() {
                             </Avatar>
                           ))}
                           {selectedCollectionsList.length > 5 && (
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary ring-2 ring-background text-[10px] font-medium text-muted-foreground">
+                            <div className="flex size-8 items-center justify-center rounded-full bg-secondary ring-2 ring-background text-[10px] font-medium text-muted-foreground">
                               +{selectedCollectionsList.length - 5}
                             </div>
                           )}

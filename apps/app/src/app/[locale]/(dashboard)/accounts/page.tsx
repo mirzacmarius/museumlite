@@ -183,7 +183,7 @@ export default function AccountsPage() {
           <div className="border-b border-border px-4 sm:px-6 py-4">
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder={
                     isPatronView
@@ -326,7 +326,7 @@ function AccountList({
             className="group flex items-center justify-between rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent hover:border-primary/50"
           >
             <div className="flex flex-1 items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+              <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
                 {account.accountType === "patron" ? (
                   <User className="h-5 w-5 text-primary" />
                 ) : (

@@ -374,7 +374,7 @@ function OverviewTab({ account }: { account: Account }) {
             </h3>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
-                <Building2 className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                <Building2 className="mt-0.5 size-4 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">{account.businessName}</p>
                   <p className="text-xs text-muted-foreground">
@@ -384,7 +384,7 @@ function OverviewTab({ account }: { account: Account }) {
               </div>
               {account.phone && (
                 <div className="flex items-start gap-3">
-                  <Phone className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                  <Phone className="mt-0.5 size-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm">{account.phone}</p>
                     <p className="text-xs text-muted-foreground">
@@ -395,7 +395,7 @@ function OverviewTab({ account }: { account: Account }) {
               )}
               {account.email && (
                 <div className="flex items-start gap-3">
-                  <Mail className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                  <Mail className="mt-0.5 size-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm">{account.email}</p>
                     <p className="text-xs text-muted-foreground">
@@ -419,7 +419,7 @@ function OverviewTab({ account }: { account: Account }) {
                 {t("detail.address")}
               </h3>
               <div className="flex items-start gap-3">
-                <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                <MapPin className="mt-0.5 size-4 text-muted-foreground" />
                 <div className="space-y-1">
                   {account.address && (
                     <p className="text-sm">{account.address}</p>
@@ -1094,7 +1094,7 @@ function ActivityTab({ timeline }: { timeline: TimelineEvent[] | undefined }) {
           {timeline.map((event, index) => (
             <div key={`${event.timestamp}-${index}`} className="flex gap-4">
               <div className="flex flex-col items-center">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                <div className="flex size-8 items-center justify-center rounded-full bg-primary/10">
                   <History className="h-4 w-4 text-primary" />
                 </div>
                 {index < timeline.length - 1 && (

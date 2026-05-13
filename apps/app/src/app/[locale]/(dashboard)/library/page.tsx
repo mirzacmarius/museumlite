@@ -146,7 +146,7 @@ export default function LibraryDashboardPage() {
         {/* Header */}
         <div className="flex w-full flex-col rounded-lg border border-border bg-card p-6">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10">
               <Library className="h-6 w-6 text-primary" />
             </div>
             <div>
@@ -233,7 +233,7 @@ export default function LibraryDashboardPage() {
                 className="flex items-start gap-4 rounded-lg border border-border p-4 transition-colors hover:bg-accent"
               >
                 <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-lg bg-muted ${action.color}`}
+                  className={`flex size-10 items-center justify-center rounded-lg bg-muted ${action.color}`}
                 >
                   <action.icon className="h-5 w-5" />
                 </div>

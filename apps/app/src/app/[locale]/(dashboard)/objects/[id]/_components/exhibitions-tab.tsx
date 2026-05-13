@@ -70,7 +70,7 @@ export function ExhibitionsTab({
                   : "border-border/60 bg-secondary/20 opacity-75 hover:opacity-100",
               )}
             >
-              <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border border-border/60 bg-secondary text-center">
+              <div className="flex size-14 shrink-0 flex-col items-center justify-center rounded-lg border border-border/60 bg-secondary text-center">
                 <span className="text-[10px] font-bold uppercase text-muted-foreground">
                   {exhibition.isCurrent
                     ? t("status.now")

@@ -180,7 +180,7 @@ export function FineArtDetailsTab({
               <div key={`${entry.owner}-${index}`} className="relative">
                 <div
                   className={cn(
-                    "absolute -left-[39px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-background",
+                    "absolute -left-[39px] top-1.5 flex size-4 items-center justify-center rounded-full bg-background",
                     index === 0
                       ? "border-2 border-accent"
                       : "border-2 border-muted-foreground/50",

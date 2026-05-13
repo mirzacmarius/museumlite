@@ -62,7 +62,7 @@ export function LocationObjectThumbnail({
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-background/70 shadow-sm">
+            <div className="flex size-14 items-center justify-center rounded-2xl border border-border bg-background/70 shadow-sm">
               <Package className="h-7 w-7 text-muted-foreground" />
             </div>
           </div>

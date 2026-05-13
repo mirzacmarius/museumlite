@@ -47,7 +47,7 @@ function NoOrganizationState() {
   return (
     <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
       <div className="flex flex-col items-center gap-4 rounded-xl border border-border/60 bg-card p-8">
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+        <div className="flex size-12 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           <Archive className="h-6 w-6" />
         </div>
         <div className="text-center">

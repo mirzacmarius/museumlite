@@ -35,7 +35,7 @@ export default function WorkflowsSettingsLoading() {
                         key={stepKey}
                         className="flex items-center gap-4 rounded-lg border border-border bg-background/50 p-3"
                       >
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted/50" />
+                        <div className="flex size-6 items-center justify-center rounded-full bg-muted/50" />
                         <div className="flex-1">
                           <div className="h-4 w-24 rounded bg-muted/50" />
                           <div className="mt-1 h-3 w-32 rounded bg-muted/30" />

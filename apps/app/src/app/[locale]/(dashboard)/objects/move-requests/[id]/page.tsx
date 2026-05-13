@@ -439,7 +439,7 @@ export default function MoveRequestDetailPage() {
                       disabled={isSubmitting !== null}
                     >
                       {isSubmitting === "approve" && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 size-4 animate-spin" />
                       )}
                       Approve for transfer
                     </Button>
@@ -450,7 +450,7 @@ export default function MoveRequestDetailPage() {
                       disabled={isSubmitting !== null}
                     >
                       {isSubmitting === "accept" && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 size-4 animate-spin" />
                       )}
                       Accept and complete transfer
                     </Button>
@@ -462,7 +462,7 @@ export default function MoveRequestDetailPage() {
                       disabled={isSubmitting !== null}
                     >
                       {isSubmitting === "reject" && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 size-4 animate-spin" />
                       )}
                       Reject request
                     </Button>
@@ -474,7 +474,7 @@ export default function MoveRequestDetailPage() {
                       disabled={isSubmitting !== null}
                     >
                       {isSubmitting === "cancel" && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 size-4 animate-spin" />
                       )}
                       Cancel request
                     </Button>

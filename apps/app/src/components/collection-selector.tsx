@@ -116,7 +116,7 @@ export function CollectionSelector({
           {/* Search input */}
           <div className="sticky top-0 z-10 border-b border-border bg-background p-2">
             <div className="relative">
-              <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search by accession number or title..."
                 value={searchQuery}

@@ -472,7 +472,7 @@ export default function DataPage() {
                 >
                   {importing ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 size-4 animate-spin" />
                       Importing...
                     </>
                   ) : (
@@ -572,7 +572,7 @@ export default function DataPage() {
                 <Button onClick={handleExport} disabled={exporting}>
                   {exporting ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 size-4 animate-spin" />
                       {t("exporting")}
                     </>
                   ) : (

@@ -637,7 +637,6 @@ export default function PreferencesSettingsPage() {
                 placeholder={t(
                   "organization.templateDialog.templateNamePlaceholder",
                 )}
-                autoFocus
               />
             </div>
             <div className="space-y-2">

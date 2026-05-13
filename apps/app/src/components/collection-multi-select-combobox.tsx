@@ -35,6 +35,7 @@ export function CollectionMultiSelectCombobox({
   disabled = false,
 }: CollectionMultiSelectComboboxProps) {
   const [open, setOpen] = React.useState(false);
+  const listId = React.useId();
   const [searchQuery, setSearchQuery] = React.useState("");
   const [cursor, setCursor] = React.useState<string | null>(null);
   const [allCollections, setAllCollections] = React.useState<
@@ -137,6 +138,7 @@ export function CollectionMultiSelectCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-controls={listId}
           className="w-full justify-between"
           disabled={disabled}
         >
@@ -148,7 +150,7 @@ export function CollectionMultiSelectCombobox({
                 : placeholder}
             </span>
           </div>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[500px] p-0" align="start">
@@ -159,6 +161,7 @@ export function CollectionMultiSelectCombobox({
             onValueChange={setSearchQuery}
           />
           <CommandList
+            id={listId}
             ref={listRef}
             className="max-h-[400px] overflow-y-auto"
             onScroll={handleScroll}

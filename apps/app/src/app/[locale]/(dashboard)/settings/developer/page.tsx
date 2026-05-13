@@ -386,7 +386,7 @@ function ApiKeysTab({
                     disabled={!newKeyName.trim() || isCreating}
                   >
                     {isCreating ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 size-4 animate-spin" />
                     ) : null}
                     {t("apiKeys.createDialog.create")}
                   </Button>
@@ -576,7 +576,7 @@ function WebhooksTab({
                         disabled={testingId === webhook._id}
                       >
                         {testingId === webhook._id ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          <Loader2 className="mr-2 size-4 animate-spin" />
                         ) : (
                           <Send className="mr-2 h-4 w-4" />
                         )}
@@ -776,7 +776,7 @@ function WebhooksTab({
                     }
                   >
                     {isCreating ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 size-4 animate-spin" />
                     ) : null}
                     {t("webhooks.createWebhook")}
                   </Button>

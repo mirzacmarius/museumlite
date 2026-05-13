@@ -206,7 +206,7 @@ export default function TreatmentDetailPage({
 
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <Box className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                  <Box className="mt-0.5 size-4 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">
                       {t("detail.collectionObject")}
@@ -221,7 +221,7 @@ export default function TreatmentDetailPage({
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <Calendar className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                  <Calendar className="mt-0.5 size-4 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">
                       {t("detail.datePerformed")}
@@ -233,7 +233,7 @@ export default function TreatmentDetailPage({
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <User className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                  <User className="mt-0.5 size-4 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">
                       {t("detail.performedBy")}

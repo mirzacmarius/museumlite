@@ -18,7 +18,7 @@ export default function CollectionsError({ error, reset }: ErrorProps) {
   return (
     <div className="flex h-full w-full items-center justify-center bg-background px-6">
       <div className="flex flex-col items-center gap-6 rounded-lg border border-border bg-card p-8 max-w-md text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+        <div className="flex size-16 items-center justify-center rounded-full bg-destructive/10">
           <AlertCircle className="h-8 w-8 text-destructive" />
         </div>
 

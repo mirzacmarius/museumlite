@@ -211,11 +211,11 @@ function LoanList({
 
   const getTypeIcon = (type: string) => {
     return type === "incoming" ? (
-      <div className="flex h-6 w-6 items-center justify-center rounded bg-muted text-foreground/80">
+      <div className="flex size-6 items-center justify-center rounded bg-muted text-foreground/80">
         <ArrowDownLeft className="h-3 w-3" strokeWidth={3} />
       </div>
     ) : (
-      <div className="flex h-6 w-6 items-center justify-center rounded bg-muted text-foreground/80">
+      <div className="flex size-6 items-center justify-center rounded bg-muted text-foreground/80">
         <ArrowUpRight className="h-3 w-3" strokeWidth={3} />
       </div>
     );
@@ -355,7 +355,7 @@ function LoanList({
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/30">
           <div className="mb-4 flex items-start justify-between">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               <ArrowRightLeft className="h-4 w-4" />
             </div>
             <span className="rounded border border-emerald-500/30 bg-emerald-500/20 px-1.5 py-0.5 text-xs font-medium text-emerald-400">
@@ -372,7 +372,7 @@ function LoanList({
 
         <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-emerald-500/30 hover:ring-1 hover:ring-emerald-500/30">
           <div className="mb-4 flex items-start justify-between">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <Boxes className="h-4 w-4" />
             </div>
           </div>
@@ -386,7 +386,7 @@ function LoanList({
 
         <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-blue-500/30 hover:ring-1 hover:ring-blue-500/30">
           <div className="mb-4 flex items-start justify-between">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
               <ShieldCheck className="h-4 w-4" />
             </div>
           </div>
@@ -397,9 +397,9 @@ function LoanList({
         </div>
 
         <div className="relative overflow-hidden rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-rose-500/30 hover:ring-1 hover:ring-rose-500/30">
-          <div className="absolute right-0 top-0 h-16 w-16 rounded-full bg-rose-500/10 blur-2xl" />
+          <div className="absolute right-0 top-0 size-16 rounded-full bg-rose-500/10 blur-2xl" />
           <div className="mb-4 flex items-start justify-between">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
               <AlertCircle className="h-4 w-4" />
             </div>
             <span className="rounded border border-rose-500/30 bg-rose-500/20 px-1.5 py-0.5 text-xs font-medium text-rose-400">
@@ -536,7 +536,7 @@ function LoanList({
               className: "min-w-0 flex-[1.25]",
               render: (loan) => (
                 <div className="flex min-w-0 items-center gap-2">
-                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-muted text-[9px] font-bold text-muted-foreground">
+                  <div className="flex size-5 shrink-0 items-center justify-center rounded bg-muted text-[9px] font-bold text-muted-foreground">
                     {getInitial(loan.lenderBorrowerName)}
                   </div>
                   <span className="min-w-0 truncate text-xs">
@@ -570,7 +570,7 @@ function LoanList({
               label: "",
               className: "w-12 flex-none justify-center px-3 text-right",
               render: () => (
-                <ChevronRight className="inline-block h-4 w-4 text-foreground/80" />
+                <ChevronRight className="inline-block size-4 text-foreground/80" />
               ),
             },
           ]}

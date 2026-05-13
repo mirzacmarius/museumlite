@@ -41,10 +41,15 @@ export default function EditAccessionObjectPage() {
     accession.status === "pending" && Boolean(accession.draftObjectData);
 
   useEffect(() => {
-    if (accession && isDraft && !accession.draftObjectData) {
+    if (
+      accession &&
+      accession.status === "pending" &&
+      accession.workflowStep === 0 &&
+      !accession.draftObjectData
+    ) {
       router.replace(`/accessions/${accessionId}/edit`);
     }
-  }, [accession, accessionId, isDraft, router]);
+  }, [accession, accessionId, router]);
 
   if (!canEditObjectDraft || !accession.draftObjectData) {
     return (

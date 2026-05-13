@@ -650,7 +650,7 @@ export default function ExhibitionDetailPage() {
                     </h3>
                     <div className="mt-2 flex items-center text-xs text-muted-foreground group-hover:text-muted-foreground">
                       {t("detail.viewObjectDetails")}{" "}
-                      <ArrowLeft className="ml-1 h-3 w-3 rotate-180" />
+                      <ArrowLeft className="ml-1 size-3 rotate-180" />
                     </div>
                   </div>
                 )}
@@ -669,7 +669,7 @@ export default function ExhibitionDetailPage() {
                         key={`${item.step}-${item.approvedAt}`}
                         className="relative pl-4 border-l-2 border-border"
                       >
-                        <div className="absolute -left-1.5 top-0.5 h-2.5 w-2.5 rounded-full bg-primary" />
+                        <div className="absolute -left-1.5 top-0.5 size-2.5 rounded-full bg-primary" />
                         <div className="text-sm">
                           <p className="font-medium text-foreground">
                             {item.step === 0

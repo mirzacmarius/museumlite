@@ -197,7 +197,7 @@ export default function ScanPage() {
         {/* Header */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
               <ScanLine className="h-5 w-5 text-primary" />
             </div>
             <div>
@@ -276,7 +276,7 @@ export default function ScanPage() {
                       </Button>
                     )}
                     {!item.found && (
-                      <div className="flex h-7 w-7 items-center justify-center">
+                      <div className="flex size-7 items-center justify-center">
                         <AlertCircle className="h-3.5 w-3.5 text-destructive" />
                       </div>
                     )}
@@ -291,7 +291,7 @@ export default function ScanPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <div className="flex size-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
                 <Camera className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1">
@@ -307,7 +307,7 @@ export default function ScanPage() {
 
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <div className="flex size-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
                 <ScanLine className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1">

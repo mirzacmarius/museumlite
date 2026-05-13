@@ -138,7 +138,7 @@ export function DeleteLocationDialog({
 
         {location === undefined || objects === undefined ? (
           <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 size-4 animate-spin" />
             {t("loading")}
           </div>
         ) : (
@@ -146,7 +146,7 @@ export function DeleteLocationDialog({
             {hasActiveChildren ? (
               <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-400" />
                   <p>{t("deleteBlockedByChildren")}</p>
                 </div>
               </div>
@@ -156,7 +156,7 @@ export function DeleteLocationDialog({
               <div className="space-y-4">
                 <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
                   <div className="flex items-start gap-3">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+                    <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-400" />
                     <p>
                       {t("deleteRequiresDeaccession", {
                         count: blockingObjects.length,
@@ -244,7 +244,7 @@ export function DeleteLocationDialog({
             }
           >
             {isSubmitting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-2 size-4 animate-spin" />
             ) : (
               <Trash2 className="mr-2 h-4 w-4" />
             )}

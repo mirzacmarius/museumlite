@@ -224,7 +224,7 @@ export function MediaGallery({
         <div className="space-y-3">
           {images.length === 0 ? (
             <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed">
-              <ImageIcon className="mb-2 h-8 w-8 text-muted-foreground" />
+              <ImageIcon className="mb-2 size-8 text-muted-foreground" />
               <p className="text-xs text-muted-foreground">
                 No images or videos uploaded
               </p>
@@ -319,7 +319,7 @@ export function MediaGallery({
 
                           {editable && !file.isPrimary && (
                             <div className="absolute left-2 top-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                              <div className="flex h-7 w-7 items-center justify-center rounded bg-black/50 cursor-grab active:cursor-grabbing">
+                              <div className="flex size-7 items-center justify-center rounded bg-black/50 cursor-grab active:cursor-grabbing">
                                 <GripVertical className="h-3.5 w-3.5 text-white" />
                               </div>
                             </div>

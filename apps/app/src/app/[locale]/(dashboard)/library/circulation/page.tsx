@@ -361,14 +361,13 @@ export default function LibraryCirculationPage() {
             </Label>
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder={t("scanPatronOrBarcode")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
                   className="pl-9"
-                  autoFocus
                 />
               </div>
               <Button onClick={handleScan} disabled={!searchQuery.trim()}>
@@ -579,7 +578,7 @@ export default function LibraryCirculationPage() {
                 }
               >
                 {isProcessing && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 size-4 animate-spin" />
                 )}
                 {tCirc("actions.confirmCheckout")}
               </Button>
@@ -677,7 +676,7 @@ export default function LibraryCirculationPage() {
                     disabled={isProcessing}
                   >
                     {isProcessing && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 size-4 animate-spin" />
                     )}
                     {tCirc("actions.confirmCheckin")}
                   </Button>

@@ -180,8 +180,12 @@ export function NewOrganizationForm() {
           {currentOrganization &&
             (currentOrganization.subscriptionTier === "pro" ||
               currentOrganization.subscriptionTier === "enterprise") && (
-              <label className="flex items-start gap-3 rounded-lg border border-border p-3">
+              <label
+                htmlFor="create-as-sub-organization"
+                className="flex items-start gap-3 rounded-lg border border-border p-3"
+              >
                 <Checkbox
+                  id="create-as-sub-organization"
                   checked={createAsSubOrganization}
                   onCheckedChange={(checked) =>
                     setCreateAsSubOrganization(checked === true)

@@ -90,7 +90,7 @@ export function AssignmentsPageClient({
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-6 text-xs">
             <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500/10 text-amber-400">
+              <div className="flex size-6 items-center justify-center rounded-full bg-amber-500/10 text-amber-400">
                 <Clock className="h-3.5 w-3.5" />
               </div>
               <span className="text-muted-foreground">
@@ -99,7 +99,7 @@ export function AssignmentsPageClient({
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
+              <div className="flex size-6 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
                 <CheckCircle2 className="h-3.5 w-3.5" />
               </div>
               <span className="text-muted-foreground">
@@ -108,7 +108,7 @@ export function AssignmentsPageClient({
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/10 text-blue-400">
+              <div className="flex size-6 items-center justify-center rounded-full bg-blue-500/10 text-blue-400">
                 <History className="h-3.5 w-3.5" />
               </div>
               <span className="text-muted-foreground">
@@ -292,7 +292,7 @@ function PendingApprovalCard({ item }: { item: PendingApproval }) {
         <div className="flex items-start gap-3">
           <div
             className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border",
+              "flex size-10 shrink-0 items-center justify-center rounded-lg border",
               item.type === "accession" &&
                 "bg-indigo-500/10 border-indigo-500/30 text-indigo-400",
               item.type === "loan" &&

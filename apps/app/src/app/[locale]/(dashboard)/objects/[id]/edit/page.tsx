@@ -1171,7 +1171,7 @@ export default function CollectionEditPage() {
                     className="h-48 w-48 object-cover"
                   />
                 ) : (
-                  <div className="flex h-48 w-48 items-center justify-center">
+                  <div className="flex size-48 items-center justify-center">
                     <ImageIcon className="h-12 w-12 text-muted-foreground" />
                   </div>
                 )}
@@ -1784,7 +1784,7 @@ export default function CollectionEditPage() {
                                         setEditingOwnershipEntryId(null)
                                       }
                                     >
-                                      Done
+                                      Finish editing
                                     </Button>
                                   </div>
 
@@ -2404,7 +2404,7 @@ export default function CollectionEditPage() {
                       </div>
                     ) : (
                       <div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-border/60">
-                        <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
+                        <Upload className="mb-2 size-8 text-muted-foreground" />
                         <p className="text-sm text-muted-foreground">
                           No images uploaded yet.
                         </p>

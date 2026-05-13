@@ -148,7 +148,7 @@ export function KanbanColumn({
                   </p>
                   {accession.assigneeName && (
                     <div className="flex items-center gap-2">
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[9px] text-primary">
+                      <div className="flex size-5 items-center justify-center rounded-full bg-primary/20 text-[9px] text-primary">
                         {getInitials(accession.assigneeName)}
                       </div>
                       <span className="text-[10px] text-muted-foreground">

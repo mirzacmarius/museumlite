@@ -71,6 +71,7 @@ export function TemplateCombobox({
   onDeleteTemplate,
 }: TemplateComboboxProps) {
   const [open, setOpen] = React.useState(false);
+  const listId = React.useId();
   const [inputValue, setInputValue] = React.useState("");
   const [showQuickInsert, setShowQuickInsert] = React.useState(false);
   const [editValue, setEditValue] = React.useState(value || "");
@@ -147,13 +148,14 @@ export function TemplateCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-controls={listId}
           className="w-full justify-between h-9"
           disabled={disabled}
         >
           <span className="truncate text-left flex-1 text-sm">
             {selectedOption?.label || value || placeholder}
           </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[600px] p-0" align="start">
@@ -163,7 +165,7 @@ export function TemplateCombobox({
             value={inputValue}
             onValueChange={setInputValue}
           />
-          <CommandList className="max-h-[400px]">
+          <CommandList id={listId} className="max-h-[400px]">
             <CommandEmpty>
               {inputValue ? (
                 <div className="p-4 text-sm">
@@ -343,9 +345,9 @@ export function TemplateCombobox({
           <div className="border-t border-border bg-muted/30">
             <div className="p-3 space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-muted-foreground">
+                <div className="text-xs font-medium text-muted-foreground">
                   Format Modifier
-                </label>
+                </div>
                 <div className="flex items-center gap-1">
                   <Button
                     type="button"

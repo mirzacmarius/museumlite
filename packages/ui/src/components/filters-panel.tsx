@@ -46,7 +46,7 @@ export function FiltersPanel({
           {hasActiveFilters &&
             activeFilterCount !== undefined &&
             activeFilterCount > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+              <span className="flex size-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
                 {activeFilterCount}
               </span>
             )}

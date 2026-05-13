@@ -89,7 +89,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
 
         <div className="flex items-center gap-3">
           <div className="group relative">
-            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground transition-colors group-focus-within:text-foreground" />
+            <Search className="absolute left-2.5 top-2 size-3.5 text-muted-foreground transition-colors group-focus-within:text-foreground" />
             <Input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}

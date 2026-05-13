@@ -395,7 +395,7 @@ function CollectionFiltersAndList({
             </h2>
             <div className="h-4 w-px bg-border" />
             <div className="relative group">
-              <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground transition-colors group-focus-within:text-foreground" />
+              <Search className="absolute left-2.5 top-2 size-3.5 text-muted-foreground transition-colors group-focus-within:text-foreground" />
               <input
                 type="text"
                 placeholder={t("searchPlaceholder")}
@@ -838,7 +838,7 @@ function CollectionTableRow({
           />
         </td>
         <td className="px-4 py-3">
-          <div className="relative h-10 w-10 overflow-hidden rounded-lg border border-border bg-muted">
+          <div className="relative size-10 overflow-hidden rounded-lg border border-border bg-muted">
             {item.primaryImageUrl ? (
               <Image
                 src={item.primaryImageUrl}

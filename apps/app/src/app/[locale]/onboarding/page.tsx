@@ -233,7 +233,7 @@ export default function OnboardingPage() {
       {currentStep === "organization" && (
         <div className="flex w-full flex-col items-center gap-6">
           <div className="flex flex-col items-center gap-2">
-            <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <div className="mb-2 flex size-16 items-center justify-center rounded-full bg-primary/10">
               <Building2 className="h-8 w-8 text-primary" />
             </div>
             <h3 className="text-center text-2xl font-medium text-primary">
@@ -336,7 +336,7 @@ export default function OnboardingPage() {
       {currentStep === "firstData" && (
         <div className="flex w-full flex-col items-center gap-6">
           <div className="flex flex-col items-center gap-2">
-            <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <div className="mb-2 flex size-16 items-center justify-center rounded-full bg-primary/10">
               <Database className="h-8 w-8 text-primary" />
             </div>
             <h3 className="text-center text-2xl font-medium text-primary">
@@ -395,7 +395,7 @@ function StepIndicator({ currentStep }: { currentStep: Step }) {
         return (
           <div key={step.id} className="flex items-center gap-3">
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+              className={`flex size-10 items-center justify-center rounded-full transition-colors ${
                 isActive
                   ? "bg-primary text-primary-foreground"
                   : isPast

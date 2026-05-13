@@ -60,7 +60,7 @@ export default internalAction(async (ctx) => {
 
   for (const product of items) {
     const matchingProducts = componentProducts.filter(
-      (item) => item.id === product.id,
+      (item: (typeof componentProducts)[number]) => item.id === product.id,
     );
     const nextProduct = toDatabaseProduct(product);
 

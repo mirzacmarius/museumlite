@@ -112,7 +112,8 @@ async function upsertComponentSubscription(
     },
   );
   const existing = existingSubscriptions.find(
-    (item) => item.id === subscription.id,
+    (item: (typeof existingSubscriptions)[number]) =>
+      item.id === subscription.id,
   );
   const nextSubscription = toDatabaseSubscription(subscription);
 
@@ -139,7 +140,7 @@ async function upsertComponentProduct(
     },
   );
   const matchingProducts = existingProducts.filter(
-    (item) => item.id === product.id,
+    (item: (typeof existingProducts)[number]) => item.id === product.id,
   );
   const nextProduct = toDatabaseProduct(product);
 

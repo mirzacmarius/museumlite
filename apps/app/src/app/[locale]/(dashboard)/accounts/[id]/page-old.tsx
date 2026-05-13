@@ -182,7 +182,7 @@ export default function AccountDetailPage() {
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
-                    <Building2 className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                    <Building2 className="mt-0.5 size-4 text-muted-foreground" />
                     <div>
                       <p className="text-sm font-medium">
                         {account.businessName}
@@ -194,7 +194,7 @@ export default function AccountDetailPage() {
                   </div>
                   {account.phone && (
                     <div className="flex items-start gap-3">
-                      <Phone className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                      <Phone className="mt-0.5 size-4 text-muted-foreground" />
                       <div>
                         <p className="text-sm">{account.phone}</p>
                         <p className="text-xs text-muted-foreground">Phone</p>
@@ -203,7 +203,7 @@ export default function AccountDetailPage() {
                   )}
                   {account.email && (
                     <div className="flex items-start gap-3">
-                      <Mail className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                      <Mail className="mt-0.5 size-4 text-muted-foreground" />
                       <div>
                         <p className="text-sm">{account.email}</p>
                         <p className="text-xs text-muted-foreground">Email</p>
@@ -226,7 +226,7 @@ export default function AccountDetailPage() {
                     Address
                   </h3>
                   <div className="flex items-start gap-3">
-                    <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                    <MapPin className="mt-0.5 size-4 text-muted-foreground" />
                     <div className="space-y-1">
                       {account.address && (
                         <p className="text-sm">{account.address}</p>
@@ -262,7 +262,7 @@ export default function AccountDetailPage() {
                   <div className="space-y-3">
                     {account.contactPerson && (
                       <div className="flex items-start gap-3">
-                        <User className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                        <User className="mt-0.5 size-4 text-muted-foreground" />
                         <div>
                           <p className="text-sm">{account.contactPerson}</p>
                           <p className="text-xs text-muted-foreground">
@@ -273,7 +273,7 @@ export default function AccountDetailPage() {
                     )}
                     {account.contactPhone && (
                       <div className="flex items-start gap-3">
-                        <Phone className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                        <Phone className="mt-0.5 size-4 text-muted-foreground" />
                         <div>
                           <p className="text-sm">{account.contactPhone}</p>
                           <p className="text-xs text-muted-foreground">
@@ -284,7 +284,7 @@ export default function AccountDetailPage() {
                     )}
                     {account.contactEmail && (
                       <div className="flex items-start gap-3">
-                        <Mail className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                        <Mail className="mt-0.5 size-4 text-muted-foreground" />
                         <div>
                           <p className="text-sm">{account.contactEmail}</p>
                           <p className="text-xs text-muted-foreground">

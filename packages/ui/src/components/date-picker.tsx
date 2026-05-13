@@ -43,7 +43,7 @@ export function DatePicker({
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {date ? format(date, "PPP") : <span>{placeholder}</span>}
-          <ChevronDownIcon className="ml-auto h-4 w-4 opacity-50" />
+          <ChevronDownIcon className="ml-auto size-4 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">

@@ -177,7 +177,7 @@ export default function LoanDetailPage() {
           {/* Main Scrollable Area */}
           <div className="flex-1 overflow-y-auto scroll-smooth">
             {/* Hero Section */}
-            <div className="border-b border-border/60 bg-secondary/10 px-8 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="border-b border-border/60 bg-secondary/10 p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="mx-auto flex max-w-7xl items-start gap-8">
                 <div className="shrink-0 relative group">
                   {/* Borrower Logo Mockup */}

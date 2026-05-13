@@ -39,7 +39,7 @@ export function PortalPreview({
           />
         ) : (
           <div className="flex h-full flex-col items-center justify-center p-8 text-center">
-            <Globe className="mb-4 h-12 w-12 text-muted-foreground/40" />
+            <Globe className="mb-4 size-12 text-muted-foreground/40" />
             <p className="section-title mb-2 text-muted-foreground">
               Enable portal to preview
             </p>

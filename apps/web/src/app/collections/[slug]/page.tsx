@@ -89,7 +89,7 @@ export default function PublicCollectionPage() {
         <div className="mb-8 space-y-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-white/40" />
               <Input
                 placeholder="Search by title, artist, or accession number..."
                 value={search}
@@ -217,6 +217,7 @@ export default function PublicCollectionPage() {
                         src={item.primaryImageUrl}
                         alt={item.title}
                         fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className="object-cover transition-transform group-hover:scale-105"
                       />
                     ) : (
@@ -262,6 +263,7 @@ export default function PublicCollectionPage() {
                         src={item.primaryImageUrl}
                         alt={item.title}
                         fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className="object-cover"
                       />
                     ) : (
