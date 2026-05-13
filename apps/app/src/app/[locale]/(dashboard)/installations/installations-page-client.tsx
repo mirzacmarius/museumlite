@@ -152,213 +152,202 @@ export function InstallationsPageClient() {
       isLocked={!hasFeature("installations")}
       tierNeeded="pro"
     >
-      <div className="flex h-full w-full bg-background px-4 sm:px-6">
-        <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-          <div className="flex w-full flex-col rounded-lg border border-border/60 bg-card">
-            <div className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg p-4 sm:p-6">
-              <div className="flex flex-col gap-2">
-                <h2 className="text-xl font-medium text-primary">
-                  Installations
-                </h2>
-                <p className="text-sm font-normal text-primary/60">
-                  Track installation tasks by exhibition
-                </p>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <PermissionGate permission="collections.create">
-                  <Dialog
-                    open={createDialogOpen}
-                    onOpenChange={setCreateDialogOpen}
-                  >
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Plus className="mr-2 h-4 w-4" />
-                        New Task
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[520px]">
-                      <DialogHeader>
-                        <DialogTitle>New Installation Task</DialogTitle>
-                      </DialogHeader>
-                      <TaskForm
-                        organizationId={
-                          currentOrganizationId as Id<"organizations">
+      <div className="flex h-full w-full flex-col overflow-y-auto bg-background">
+        <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-6">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-2">
+              <h2 className="page-title">Installations</h2>
+              <p className="page-description">
+                Track installation tasks by exhibition
+              </p>
+            </div>
+            <div className="flex flex-shrink-0 items-center gap-2">
+              <PermissionGate permission="collections.create">
+                <Dialog
+                  open={createDialogOpen}
+                  onOpenChange={setCreateDialogOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      New Task
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[520px]">
+                    <DialogHeader>
+                      <DialogTitle>New Installation Task</DialogTitle>
+                    </DialogHeader>
+                    <TaskForm
+                      organizationId={
+                        currentOrganizationId as Id<"organizations">
+                      }
+                      exhibitionId={selectedExhibitionId as Id<"exhibitions">}
+                      onSubmit={async (payload) => {
+                        try {
+                          await createTask(payload);
+                          toast.success("Task created");
+                          setCreateDialogOpen(false);
+                        } catch (err) {
+                          toast.error(
+                            err instanceof Error
+                              ? err.message
+                              : "Failed to create task",
+                          );
                         }
-                        exhibitionId={selectedExhibitionId as Id<"exhibitions">}
-                        onSubmit={async (payload) => {
-                          try {
-                            await createTask(payload);
-                            toast.success("Task created");
-                            setCreateDialogOpen(false);
-                          } catch (err) {
-                            toast.error(
-                              err instanceof Error
-                                ? err.message
-                                : "Failed to create task",
-                            );
-                          }
-                        }}
-                      />
-                    </DialogContent>
-                  </Dialog>
-                </PermissionGate>
-              </div>
+                      }}
+                    />
+                  </DialogContent>
+                </Dialog>
+              </PermissionGate>
             </div>
+          </div>
 
-            <div className="flex w-full px-6">
-              <div className="w-full border-b border-border/60" />
-            </div>
-
-            <div className="p-6 space-y-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div className="min-w-[240px]">
-                  <Label>Exhibition</Label>
-                  <Select
-                    value={selectedExhibitionId}
-                    onValueChange={(value) =>
-                      setSelectedExhibitionId(value as Id<"exhibitions">)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select exhibition" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {exhibitions?.map((exhibition) => (
-                        <SelectItem key={exhibition._id} value={exhibition._id}>
-                          {exhibition.title}
+          <div className="space-y-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="min-w-[240px]">
+                <Label>Exhibition</Label>
+                <Select
+                  value={selectedExhibitionId}
+                  onValueChange={(value) =>
+                    setSelectedExhibitionId(value as Id<"exhibitions">)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select exhibition" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {exhibitions?.map((exhibition) => (
+                      <SelectItem key={exhibition._id} value={exhibition._id}>
+                        {exhibition.title}
+                      </SelectItem>
+                    ))}
+                    {!exhibitions ||
+                      (exhibitions.length === 0 && (
+                        <SelectItem value="none" disabled>
+                          No exhibitions available
                         </SelectItem>
                       ))}
-                      {!exhibitions ||
-                        (exhibitions.length === 0 && (
-                          <SelectItem value="none" disabled>
-                            No exhibitions available
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {selectedExhibitionId
-                    ? "Tasks update in real time for the selected exhibition."
-                    : "Select an exhibition to view installation tasks."}
-                </div>
+                  </SelectContent>
+                </Select>
               </div>
-
-              {selectedExhibitionId && tasks === undefined && (
-                <GridCardsSkeleton count={8} gridColumns="lg:grid-cols-4" />
-              )}
-
-              {selectedExhibitionId && tasks && tasks.length === 0 && (
-                <EmptyState
-                  title="No installation tasks yet"
-                  description="Create the first task to start tracking installation work."
-                  icon={Hammer}
-                />
-              )}
-
-              {selectedExhibitionId && tasks && tasks.length > 0 && (
-                <div className="grid gap-4 lg:grid-cols-4">
-                  {statusColumns.map((column) => (
-                    <div key={column.status} className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-semibold text-foreground">
-                          {column.label}
-                        </h3>
-                        <Badge variant="outline" className="text-[10px]">
-                          {groupedTasks[column.status]?.length ?? 0}
-                        </Badge>
-                      </div>
-                      <div className="space-y-3">
-                        {groupedTasks[column.status]?.map((task) => (
-                          <div
-                            key={task._id}
-                            className="rounded-lg border border-border/60 bg-background/50 p-3 shadow-sm"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <p className="text-sm font-medium text-foreground">
-                                  {task.title}
-                                </p>
-                                <p className="text-xs text-muted-foreground capitalize">
-                                  {task.taskType.replace("_", " ")}
-                                </p>
-                              </div>
-                              <Badge
-                                variant="outline"
-                                className={priorityColor[task.priority]}
-                              >
-                                {task.priority}
-                              </Badge>
-                            </div>
-
-                            <div className="mt-3 flex flex-col gap-2 text-xs text-muted-foreground">
-                              {task.assigneeName && (
-                                <span>Assignee: {task.assigneeName}</span>
-                              )}
-                              {task.dueDate && (
-                                <span>
-                                  Due{" "}
-                                  {formatDate(new Date(task.dueDate), locale)}
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="mt-3">
-                              <Select
-                                value={task.status}
-                                onValueChange={async (value) => {
-                                  if (value === task.status) return;
-                                  try {
-                                    if (value === "blocked") {
-                                      const reason = window.prompt(
-                                        "Reason for blocking this task?",
-                                      );
-                                      if (!reason) return;
-                                      await blockTask({
-                                        taskId: task._id,
-                                        reason,
-                                      });
-                                    } else {
-                                      await moveTask({
-                                        taskId: task._id,
-                                        status: value as TaskStatus,
-                                      });
-                                    }
-                                    toast.success("Task updated");
-                                  } catch (err) {
-                                    toast.error(
-                                      err instanceof Error
-                                        ? err.message
-                                        : "Failed to update task",
-                                    );
-                                  }
-                                }}
-                              >
-                                <SelectTrigger className="h-8 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="todo">To Do</SelectItem>
-                                  <SelectItem value="in_progress">
-                                    In Progress
-                                  </SelectItem>
-                                  <SelectItem value="blocked">
-                                    Blocked
-                                  </SelectItem>
-                                  <SelectItem value="completed">
-                                    Completed
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="text-xs text-muted-foreground">
+                {selectedExhibitionId
+                  ? "Tasks update in real time for the selected exhibition."
+                  : "Select an exhibition to view installation tasks."}
+              </div>
             </div>
+
+            {selectedExhibitionId && tasks === undefined && (
+              <GridCardsSkeleton count={8} gridColumns="lg:grid-cols-4" />
+            )}
+
+            {selectedExhibitionId && tasks && tasks.length === 0 && (
+              <EmptyState
+                title="No installation tasks yet"
+                description="Create the first task to start tracking installation work."
+                icon={Hammer}
+              />
+            )}
+
+            {selectedExhibitionId && tasks && tasks.length > 0 && (
+              <div className="grid gap-4 lg:grid-cols-4">
+                {statusColumns.map((column) => (
+                  <div key={column.status} className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-foreground">
+                        {column.label}
+                      </h3>
+                      <Badge variant="outline" className="text-[10px]">
+                        {groupedTasks[column.status]?.length ?? 0}
+                      </Badge>
+                    </div>
+                    <div className="space-y-3">
+                      {groupedTasks[column.status]?.map((task) => (
+                        <div
+                          key={task._id}
+                          className="rounded-lg border border-border/60 bg-background/50 p-3 shadow-sm"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-sm font-medium text-foreground">
+                                {task.title}
+                              </p>
+                              <p className="text-xs text-muted-foreground capitalize">
+                                {task.taskType.replace("_", " ")}
+                              </p>
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={priorityColor[task.priority]}
+                            >
+                              {task.priority}
+                            </Badge>
+                          </div>
+
+                          <div className="mt-3 flex flex-col gap-2 text-xs text-muted-foreground">
+                            {task.assigneeName && (
+                              <span>Assignee: {task.assigneeName}</span>
+                            )}
+                            {task.dueDate && (
+                              <span>
+                                Due {formatDate(new Date(task.dueDate), locale)}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="mt-3">
+                            <Select
+                              value={task.status}
+                              onValueChange={async (value) => {
+                                if (value === task.status) return;
+                                try {
+                                  if (value === "blocked") {
+                                    const reason = window.prompt(
+                                      "Reason for blocking this task?",
+                                    );
+                                    if (!reason) return;
+                                    await blockTask({
+                                      taskId: task._id,
+                                      reason,
+                                    });
+                                  } else {
+                                    await moveTask({
+                                      taskId: task._id,
+                                      status: value as TaskStatus,
+                                    });
+                                  }
+                                  toast.success("Task updated");
+                                } catch (err) {
+                                  toast.error(
+                                    err instanceof Error
+                                      ? err.message
+                                      : "Failed to update task",
+                                  );
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="todo">To Do</SelectItem>
+                                <SelectItem value="in_progress">
+                                  In Progress
+                                </SelectItem>
+                                <SelectItem value="blocked">Blocked</SelectItem>
+                                <SelectItem value="completed">
+                                  Completed
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

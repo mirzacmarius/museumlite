@@ -61,42 +61,32 @@ export default function ConservationPage() {
       isLocked={!hasFeature("conservation")}
       tierNeeded="pro"
     >
-      <div className="flex h-full w-full bg-background px-6">
-        <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-          <div className="flex w-full flex-col rounded-lg border border-border bg-muted/20">
-            <div className="flex w-full items-center justify-between rounded-lg p-6">
-              <div className="flex flex-col gap-2">
-                <h2 className="text-xl font-medium text-foreground">
-                  {t("title")}
-                </h2>
-                <p className="text-sm font-normal text-muted-foreground">
-                  {t("description")}
-                </p>
-              </div>
-              <PermissionGate permission="collections.update">
-                <Button
-                  asChild
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  <Link href="/conservation/new">
-                    <Plus className="mr-2 h-4 w-4" />
-                    {t("newTreatment")}
-                  </Link>
-                </Button>
-              </PermissionGate>
+      <div className="flex h-full w-full flex-col overflow-y-auto bg-background">
+        <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-6">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-2">
+              <h2 className="page-title">{t("title")}</h2>
+              <p className="page-description">{t("description")}</p>
             </div>
-            <div className="flex w-full px-6">
-              <div className="w-full border-b border-border" />
-            </div>
+            <PermissionGate permission="collections.update">
+              <Button asChild>
+                <Link href="/conservation/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("newTreatment")}
+                </Link>
+              </Button>
+            </PermissionGate>
+          </div>
 
-            <div className="border-b border-border px-6 py-4">
+          <div className="space-y-6">
+            <div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder={t("searchPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 bg-muted/50 border-border text-foreground/80 placeholder:text-muted-foreground focus-visible:ring-ring"
+                  className="rounded-lg border-border/60 bg-card pl-9 text-xs transition-all focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                 />
               </div>
             </div>
@@ -154,7 +144,7 @@ function TreatmentList({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {filteredTreatments.map((treatment) => (
         <TreatmentCard key={treatment._id} treatment={treatment} />
       ))}

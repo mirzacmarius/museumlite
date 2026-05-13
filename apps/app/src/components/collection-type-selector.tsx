@@ -6,7 +6,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@v1/ui/select";
 import { Archive, Car, Coins, Gem, Leaf, Package, Wine } from "lucide-react";
 
@@ -89,11 +88,17 @@ export function CollectionTypeSelector({
         disabled={disabled}
       >
         <SelectTrigger id="collectionType" className="w-full">
-          <SelectValue placeholder="Select collection type" />
+          <span className="truncate">
+            {getCollectionTypeLabel(value || "general")}
+          </span>
         </SelectTrigger>
         <SelectContent>
           {collectionTypes.map((type) => (
-            <SelectItem key={type.value} value={type.value}>
+            <SelectItem
+              key={type.value}
+              value={type.value}
+              textValue={type.label}
+            >
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">{type.icon}</span>
                 <div>

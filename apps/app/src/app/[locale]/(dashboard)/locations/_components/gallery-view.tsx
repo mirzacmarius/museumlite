@@ -168,11 +168,11 @@ export function GalleryView({
   return (
     <div className="space-y-8">
       {!hasConfiguredUnits ? (
-        <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-900/20 px-4 py-10 text-center">
-          <div className="text-sm font-medium text-zinc-300">
+        <div className="rounded-xl border border-dashed border-border bg-card px-4 py-10 text-center">
+          <div className="text-sm font-medium text-foreground">
             No display units configured
           </div>
-          <p className="mt-2 text-xs text-zinc-500">
+          <p className="mt-2 text-xs text-muted-foreground">
             Add vitrines, walls, cabinets, or shelves in the location settings
             to visualize object placement here.
           </p>
@@ -182,12 +182,12 @@ export function GalleryView({
       {hasVitrines ? (
         <div>
           <div className="mb-4 flex items-end justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-300">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
               Freestanding Vitrines
             </h3>
-            <div className="text-xs text-zinc-500">
+            <div className="text-xs text-muted-foreground">
               In use:{" "}
-              <span className="text-zinc-300">
+              <span className="text-foreground">
                 {occupiedVitrines.length}/{vitrines.length} Vitrines
               </span>
             </div>
@@ -204,10 +204,10 @@ export function GalleryView({
         <div className="grid grid-cols-1 gap-8 2xl:grid-cols-2">
           {hasWalls ? (
             <div>
-              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-300">
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-foreground">
                 Wall Mounted Display
               </h3>
-              <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+              <div className="relative overflow-hidden rounded-xl border border-border bg-card p-6">
                 {backgroundImageUrl ? (
                   <>
                     <img
@@ -216,7 +216,7 @@ export function GalleryView({
                       aria-hidden="true"
                       className="absolute inset-0 h-full w-full object-cover opacity-15"
                     />
-                    <div className="absolute inset-0 bg-black/70" />
+                    <div className="absolute inset-0 bg-background/80" />
                   </>
                 ) : null}
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
@@ -233,7 +233,7 @@ export function GalleryView({
                     <WallSlot key={slot.id} slot={slot} />
                   ))}
                 </div>
-                <div className="mt-4 flex items-center justify-between text-xs text-zinc-500">
+                <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
                   <span>
                     {wallSlots.length} walls configured ·{" "}
                     {normalizedWallItemsPerWall} item
@@ -246,16 +246,16 @@ export function GalleryView({
           ) : null}
 
           {hasCabinets ? (
-            <div>
-              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-300">
+            <div className={cn(!hasWalls && "2xl:col-span-2")}>
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-foreground">
                 Cabinets
               </h3>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-4 xl:grid-cols-2">
                 {cabinets.map((cabinet) => (
                   <UnitStackCard key={cabinet.id} unit={cabinet} />
                 ))}
               </div>
-              <div className="mt-3 text-right text-xs text-zinc-500">
+              <div className="mt-3 text-right text-xs text-muted-foreground">
                 {occupiedCabinets.length}/{cabinets.length} cabinets in use
               </div>
             </div>
@@ -266,11 +266,11 @@ export function GalleryView({
       {hasShelves ? (
         <div>
           <div className="mb-4 flex items-end justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-300">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
               Shelves
             </h3>
-            <div className="text-xs text-zinc-500">
-              <span className="text-zinc-300">
+            <div className="text-xs text-muted-foreground">
+              <span className="text-foreground">
                 {occupiedShelves.length}/{shelves.length} shelves in use
               </span>
             </div>
@@ -316,42 +316,40 @@ function VitrineCard({ vitrine }: VitrineCardProps) {
   const hasObjects = vitrine.objects.length > 0;
   const isInactive = vitrine.isActive === false;
   const statusColor = isInactive
-    ? "bg-zinc-700"
+    ? "bg-muted-foreground"
     : hasObjects
       ? "bg-emerald-500"
-      : "bg-zinc-700";
+      : "bg-muted-foreground";
 
   if (!hasObjects) {
     return (
-      <div className="group relative aspect-[4/5] rounded-xl border border-white/5 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-md shadow-2xl transition-all hover:border-zinc-700/40">
-        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-30 pointer-events-none" />
-        <div className="absolute left-0 right-0 top-0 flex items-center justify-between gap-3 border-b border-white/5 bg-black/20 p-3">
+      <div className="group relative aspect-[4/5] rounded-xl border border-border bg-card shadow-sm transition-all hover:border-border/80">
+        <div className="absolute left-0 right-0 top-0 flex items-center justify-between gap-3 border-b border-border bg-muted/30 p-3">
           <div className="min-w-0">
-            <div className="truncate font-mono text-[10px] text-zinc-500">
+            <div className="truncate font-mono text-[10px] text-muted-foreground">
               {vitrine.name ?? vitrine.id}
             </div>
-            <div className="mt-0.5 truncate text-[9px] uppercase tracking-[0.16em] text-zinc-600">
+            <div className="mt-0.5 truncate text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
               {vitrine.name ? `${vitrine.id} · ${vitrine.type}` : vitrine.type}
             </div>
           </div>
           <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusColor}`} />
         </div>
         <div className="p-4 pt-12 h-full flex items-center justify-center">
-          <span className="text-[9px] text-zinc-600">Empty Slot</span>
+          <span className="text-[9px] text-muted-foreground">Empty Slot</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="group relative aspect-[4/5] rounded-xl border border-white/5 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-md shadow-2xl transition-all hover:border-indigo-500/40 hover:shadow-indigo-500/10">
-      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-30 pointer-events-none" />
-      <div className="absolute left-0 right-0 top-0 flex items-center justify-between gap-3 border-b border-white/5 bg-black/20 p-3">
+    <div className="group relative aspect-[4/5] rounded-xl border border-border bg-card shadow-sm transition-all hover:border-primary/40">
+      <div className="absolute left-0 right-0 top-0 flex items-center justify-between gap-3 border-b border-border bg-muted/30 p-3">
         <div className="min-w-0">
-          <div className="truncate font-mono text-[10px] text-zinc-400">
+          <div className="truncate font-mono text-[10px] text-muted-foreground">
             {vitrine.name ?? vitrine.id}
           </div>
-          <div className="mt-0.5 truncate text-[9px] uppercase tracking-[0.16em] text-zinc-600">
+          <div className="mt-0.5 truncate text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
             {vitrine.name ? `${vitrine.id} · ${vitrine.type}` : vitrine.type}
           </div>
         </div>
@@ -361,15 +359,16 @@ function VitrineCard({ vitrine }: VitrineCardProps) {
         {vitrine.objects.map((obj, idx) => (
           <div
             key={obj._id}
-            className={`flex-1 ${idx === 0 ? "border-b border-white/5" : ""} flex items-end justify-center pb-2 relative`}
+            className={`flex-1 ${idx === 0 ? "border-b border-border" : ""} flex items-end justify-center pb-2 relative`}
           >
             <LocationObjectThumbnail
               object={obj}
               metadataLabel="Placement"
               metadataValue={vitrine.name ?? `${vitrine.id} · ${vitrine.type}`}
-              className="h-16 w-16 rounded-xl border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.35)]"
+              className="h-16 w-16 rounded-xl border-border shadow-sm"
               imageClassName="aspect-square"
               titleClassName="text-[10px]"
+              textPlacement="overlay"
             />
           </div>
         ))}
@@ -396,31 +395,31 @@ function WallSlot({ slot }: WallSlotProps) {
 
   if (slot.objects.length === 0) {
     return (
-      <div className="flex aspect-[3/4] flex-col items-center justify-center rounded border border-zinc-800 bg-black/40 px-3 text-center">
-        <span className="max-w-full truncate font-mono text-[10px] text-zinc-600">
+      <div className="flex aspect-[3/4] flex-col items-center justify-center rounded border border-border bg-muted/40 px-3 text-center">
+        <span className="max-w-full truncate font-mono text-[10px] text-muted-foreground">
           {title}
         </span>
-        <span className="mt-1 max-w-full truncate text-[9px] uppercase tracking-[0.16em] text-zinc-700">
+        <span className="mt-1 max-w-full truncate text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
           {subtitle}
         </span>
-        <span className="text-[9px] text-zinc-700">Empty</span>
+        <span className="text-[9px] text-muted-foreground">Empty</span>
       </div>
     );
   }
 
   return (
-    <div className="flex aspect-[3/4] flex-col rounded-2xl border border-white/10 bg-black/30 p-2 shadow-[0_24px_80px_rgba(0,0,0,0.3)]">
+    <div className="flex aspect-[3/4] flex-col rounded-2xl border border-border bg-card p-2 shadow-sm">
       <div className="mb-2 flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="truncate font-mono text-[10px] text-zinc-400">
+          <div className="truncate font-mono text-[10px] text-muted-foreground">
             {title}
           </div>
-          <div className="mt-0.5 truncate text-[9px] uppercase tracking-[0.16em] text-zinc-600">
+          <div className="mt-0.5 truncate text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
             {subtitle}
           </div>
         </div>
         {slot.isActive === false ? (
-          <span className="shrink-0 text-[9px] uppercase tracking-[0.14em] text-zinc-600">
+          <span className="shrink-0 text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
             Inactive
           </span>
         ) : null}
@@ -441,9 +440,10 @@ function WallSlot({ slot }: WallSlotProps) {
             object={object}
             metadataLabel="Placement"
             metadataValue={title}
-            className="h-full rounded-xl border-white/10"
+            className="h-full rounded-xl border-border"
             imageClassName="aspect-auto h-full"
             titleClassName="text-[10px]"
+            textPlacement="overlay"
           />
         ))}
       </div>
@@ -465,62 +465,60 @@ function UnitStackCard({ unit }: UnitStackCardProps) {
   const isEmpty = unit.objects.length === 0;
   const isInactive = unit.isActive === false;
   const statusColor = isInactive
-    ? "bg-zinc-700"
+    ? "bg-muted-foreground"
     : isEmpty
-      ? "bg-zinc-600"
+      ? "bg-muted-foreground"
       : "bg-emerald-500";
 
   return (
     <div
-      className={`rounded-xl border p-3 transition-colors ${
+      className={`rounded-2xl border p-4 transition-colors ${
         isEmpty
-          ? "border-zinc-800/50 bg-zinc-900/40 opacity-70"
-          : "border-zinc-700/50 bg-zinc-900/70"
+          ? "border-border/50 bg-card opacity-70"
+          : "border-border bg-card"
       }`}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className={`h-1.5 w-1.5 rounded-full ${statusColor}`} />
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-2.5">
+          <div className={`mt-1.5 h-1.5 w-1.5 rounded-full ${statusColor}`} />
           <div className="min-w-0">
             <div
               className={`truncate font-mono text-xs ${
-                isEmpty ? "text-zinc-500" : "text-zinc-300"
+                isEmpty ? "text-muted-foreground" : "text-foreground"
               }`}
             >
               {unit.name ?? unit.id}
             </div>
-            <div className="mt-0.5 truncate text-[10px] uppercase tracking-[0.16em] text-zinc-600">
+            <div className="mt-0.5 truncate text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
               {unit.name ? `${unit.id} · ${unit.type ?? "Cabinet"}` : unit.type}
             </div>
           </div>
         </div>
-        <span className="shrink-0 text-[10px] text-zinc-500">
+        <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
           {isInactive ? "Inactive" : `${unit.objects.length}/2`}
         </span>
       </div>
 
-      <div className="mt-3 space-y-2">
+      <div className="mt-4 space-y-2">
         {unit.objects.length === 0 ? (
-          <div className="rounded border border-dashed border-zinc-800 px-2 py-3 text-center text-[10px] text-zinc-600">
+          <div className="rounded-xl border border-dashed border-border px-3 py-8 text-center text-[11px] text-muted-foreground">
             Empty
           </div>
         ) : (
           <div
             className={cn(
-              "grid gap-2",
+              "grid gap-3",
               unit.objects.length === 1
-                ? "grid-cols-[minmax(0,5rem)]"
-                : "grid-cols-2",
+                ? "grid-cols-[minmax(0,12rem)]"
+                : "grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(8rem,1fr))]",
             )}
           >
             {unit.objects.map((object) => (
               <LocationObjectThumbnail
                 key={object._id}
                 object={object}
-                metadataLabel="Placement"
-                metadataValue={unit.name ?? unit.id}
-                className="rounded-lg border-white/10"
-                imageClassName="aspect-square"
+                className="rounded-xl border-border"
+                imageClassName="aspect-[4/3]"
                 titleClassName="text-[10px]"
               />
             ))}

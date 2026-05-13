@@ -237,7 +237,7 @@ export default function DashboardPage() {
               value={formatNumber(analytics.accessions.pending, locale)}
               icon={FileClock}
               accentColor="amber"
-              className="transition-[transform,border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:border-white/20 hover:bg-white/[0.03] active:translate-y-px"
+              className="transition-[transform,border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:border-border/80 hover:bg-muted/40 active:translate-y-px"
             />
           </Link>
           <Link href="/loans">
@@ -246,7 +246,7 @@ export default function DashboardPage() {
               value={formatNumber(analytics.loans.active, locale)}
               icon={ArrowLeftRight}
               accentColor="blue"
-              className="transition-[transform,border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:border-white/20 hover:bg-white/[0.03] active:translate-y-px"
+              className="transition-[transform,border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:border-border/80 hover:bg-muted/40 active:translate-y-px"
             />
           </Link>
         </div>
@@ -295,41 +295,41 @@ export default function DashboardPage() {
           <div className="mt-auto grid gap-2 pt-5 sm:grid-cols-2 xl:grid-cols-5">
             <Link
               href="/accessions/transfers"
-              className="flex min-w-0 flex-col rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-colors hover:border-white/20"
+              className="flex min-w-0 flex-col rounded-xl border border-border bg-card px-3.5 py-2.5 transition-colors hover:border-border/80 hover:bg-muted/40"
             >
-              <span className="min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">
+              <span className="min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
                 Pending transfer approvals
               </span>
               <span className="mt-1.5 text-base font-semibold text-foreground">
                 {formatNumber(analytics.transfers.pending, locale)}
               </span>
             </Link>
-            <div className="flex min-w-0 flex-col rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-              <span className="min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">
+            <div className="flex min-w-0 flex-col rounded-xl border border-border bg-card px-3.5 py-2.5">
+              <span className="min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
                 Pending accessions
               </span>
               <span className="mt-1.5 text-base font-semibold text-foreground">
                 {formatNumber(analytics.accessions.pending, locale)}
               </span>
             </div>
-            <div className="flex min-w-0 flex-col rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-              <span className="min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">
+            <div className="flex min-w-0 flex-col rounded-xl border border-border bg-card px-3.5 py-2.5">
+              <span className="min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
                 Pending deaccessions
               </span>
               <span className="mt-1.5 text-base font-semibold text-foreground">
                 {formatNumber(analytics.deaccessions.pending, locale)}
               </span>
             </div>
-            <div className="flex min-w-0 flex-col rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-              <span className="min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">
+            <div className="flex min-w-0 flex-col rounded-xl border border-border bg-card px-3.5 py-2.5">
+              <span className="min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
                 Pending loans
               </span>
               <span className="mt-1.5 text-base font-semibold text-foreground">
                 {formatNumber(analytics.loans.pending, locale)}
               </span>
             </div>
-            <div className="flex min-w-0 flex-col rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-              <span className="min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">
+            <div className="flex min-w-0 flex-col rounded-xl border border-border bg-card px-3.5 py-2.5">
+              <span className="min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
                 Active loans
               </span>
               <span className="mt-1.5 text-base font-semibold text-foreground">

@@ -13,8 +13,6 @@ import { Checkbox } from "@v1/ui/checkbox";
 import { DataTable } from "@v1/ui/data-table";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { Input } from "@v1/ui/input";
-import { StatusBadge } from "@v1/ui/status-badge";
-import type { Status } from "@v1/ui/status-badge";
 import { useMutation, useQuery } from "convex/react";
 import {
   AlertCircle,
@@ -30,10 +28,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
-import { Suspense, useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import { AdminOverview } from "./_components/admin-overview";
-import { LoanStatusChart } from "./_components/loan-status-chart";
 import { LoansBulkActionsBar } from "./_components/loans-bulk-actions-bar";
 import { LoansPageSkeleton } from "./loans-page-skeleton";
 
@@ -114,12 +110,8 @@ export default function LoansPage() {
         <div className="mx-auto w-full max-w-7xl space-y-6 sm:space-y-8 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
-                {t("title")}
-              </h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {t("description")}
-              </p>
+              <h1 className="page-title">{t("title")}</h1>
+              <p className="page-description mt-1">{t("description")}</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <PermissionGate permission="loans.read">
@@ -133,27 +125,6 @@ export default function LoansPage() {
                   </Link>
                 </Button>
               </PermissionGate>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-            <div className="lg:col-span-3">
-              <Suspense
-                fallback={
-                  <div className="h-24 animate-pulse rounded-xl bg-card/40" />
-                }
-              >
-                <AdminOverview />
-              </Suspense>
-            </div>
-            <div className="lg:col-span-1">
-              <Suspense
-                fallback={
-                  <div className="h-[250px] animate-pulse rounded-xl bg-card/40" />
-                }
-              >
-                <LoanStatusChart />
-              </Suspense>
             </div>
           </div>
 
@@ -221,22 +192,6 @@ function LoanList({
     0,
   );
 
-  const mapLoanStatus = (status: string): Status => {
-    switch (status) {
-      case "pending":
-        return "pending";
-      case "active":
-      case "dispatched":
-        return "active";
-      case "returned":
-        return "completed";
-      case "cancelled":
-        return "draft";
-      default:
-        return "draft";
-    }
-  };
-
   const getStatusLabel = (status: string): string => {
     switch (status) {
       case "pending":
@@ -256,11 +211,11 @@ function LoanList({
 
   const getTypeIcon = (type: string) => {
     return type === "incoming" ? (
-      <div className="flex h-6 w-6 items-center justify-center rounded bg-purple-500/20 text-purple-400">
+      <div className="flex h-6 w-6 items-center justify-center rounded bg-muted text-foreground/80">
         <ArrowDownLeft className="h-3 w-3" strokeWidth={3} />
       </div>
     ) : (
-      <div className="flex h-6 w-6 items-center justify-center rounded bg-cyan-500/20 text-cyan-400">
+      <div className="flex h-6 w-6 items-center justify-center rounded bg-muted text-foreground/80">
         <ArrowUpRight className="h-3 w-3" strokeWidth={3} />
       </div>
     );
@@ -532,7 +487,7 @@ function LoanList({
             {
               key: "checkbox",
               label: "",
-              className: "w-12",
+              className: "w-12 flex-none justify-center px-3",
               render: (loan) => {
                 const loanId = loan._id as Id<"loans">;
                 const isSelected = selectedIds.has(loanId);
@@ -554,18 +509,19 @@ function LoanList({
             {
               key: "type",
               label: t("table.type"),
-              className: "w-12",
+              className: "w-20 flex-none justify-center px-3",
               render: (loan) => getTypeIcon(loan.type),
             },
             {
               key: "loanNumber",
               label: t("table.loanIdTitle"),
+              className: "min-w-0 flex-[1.45]",
               render: (loan) => (
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold">
+                <div className="flex min-w-0 flex-col">
+                  <span className="truncate text-xs font-semibold">
                     {loan.loanNumber}
                   </span>
-                  <span className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+                  <span className="mt-0.5 truncate text-xs text-foreground/80">
                     {loan.itemCount}{" "}
                     {loan.itemCount !== 1
                       ? t("table.itemsPlural")
@@ -577,18 +533,22 @@ function LoanList({
             {
               key: "lenderBorrowerName",
               label: t("table.partnerInstitution"),
+              className: "min-w-0 flex-[1.25]",
               render: (loan) => (
-                <div className="flex items-center gap-2">
-                  <div className="flex h-5 w-5 items-center justify-center rounded bg-muted text-[9px] font-bold text-muted-foreground">
+                <div className="flex min-w-0 items-center gap-2">
+                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-muted text-[9px] font-bold text-muted-foreground">
                     {getInitial(loan.lenderBorrowerName)}
                   </div>
-                  <span className="text-xs">{loan.lenderBorrowerName}</span>
+                  <span className="min-w-0 truncate text-xs">
+                    {loan.lenderBorrowerName}
+                  </span>
                 </div>
               ),
             },
             {
               key: "duration",
               label: t("table.duration"),
+              className: "w-40 flex-none",
               render: (loan) => (
                 <div className="text-xs text-foreground/80">
                   {formatDateRange(loan.startDate, loan.endDate)}
@@ -598,22 +558,19 @@ function LoanList({
             {
               key: "status",
               label: t("table.status"),
+              className: "w-40 flex-none",
               render: (loan) => (
-                <StatusBadge
-                  status={mapLoanStatus(loan.status)}
-                  size="sm"
-                  showDot
-                >
+                <span className="truncate text-xs text-foreground/80">
                   {getStatusLabel(loan.status)}
-                </StatusBadge>
+                </span>
               ),
             },
             {
               key: "action",
               label: "",
-              className: "text-right w-12",
+              className: "w-12 flex-none justify-center px-3 text-right",
               render: () => (
-                <ChevronRight className="inline-block h-4 w-4 text-muted-foreground/50" />
+                <ChevronRight className="inline-block h-4 w-4 text-foreground/80" />
               ),
             },
           ]}

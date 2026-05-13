@@ -241,7 +241,7 @@ function LocationLayout({
         }}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-br from-zinc-950 to-zinc-900/50 px-6 pb-6 pt-0 custom-scrollbar">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-background px-6 pb-6 pt-0 custom-scrollbar">
         {allLocations === undefined && !selectedLocationId && (
           <LocationContentSkeleton />
         )}
@@ -270,7 +270,7 @@ function LocationLayout({
 
         {selectedLocationId && selectedLocation && (
           <>
-            <header className="-mx-6 sticky top-0 z-20 mb-8 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
+            <header className="-mx-6 sticky top-0 z-20 mb-8 flex h-14 items-center justify-between border-b border-border/60 bg-card/95 px-6 backdrop-blur-xl">
               <div className="flex min-w-0 items-center gap-2 text-xs">
                 <span className="shrink-0 text-muted-foreground">
                   Locations

@@ -82,11 +82,11 @@
     --sidebar-ring: oklch(0.705 0.015 286.067);
     --background: oklch(1 0 0);
     --foreground: oklch(0.141 0.005 285.823);
-    --page-title-size: 1.125rem;
-    --page-title-line-height: 1.75rem;
+    --page-title-size: 1.5rem;
+    --page-title-line-height: 2rem;
     --page-title-weight: 600;
-    --page-description-size: 0.75rem;
-    --page-description-line-height: 1rem;
+    --page-description-size: 0.875rem;
+    --page-description-line-height: 1.25rem;
     --section-title-size: 0.875rem;
     --section-title-line-height: 1.25rem;
     --section-title-weight: 500;

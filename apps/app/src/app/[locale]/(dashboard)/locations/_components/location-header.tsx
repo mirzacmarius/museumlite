@@ -49,7 +49,7 @@ export function LocationHeader({
     if (!location.isActive) {
       return {
         text: "Inactive",
-        className: "text-zinc-500 bg-zinc-500/10 border-zinc-500/20",
+        className: "text-muted-foreground bg-muted border-muted-foreground/20",
       };
     }
 
@@ -78,7 +78,7 @@ export function LocationHeader({
 
   return (
     <div className="mb-8 grid gap-6 xl:grid-cols-[176px_minmax(0,1fr)] xl:items-start">
-      <div className="relative order-2 aspect-square w-44 max-w-full overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-900/70 shadow-[0_24px_80px_rgba(0,0,0,0.35)] xl:order-1">
+      <div className="relative order-2 aspect-square w-44 max-w-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm xl:order-1">
         {location.imageUrl ? (
           <>
             <img
@@ -89,9 +89,9 @@ export function LocationHeader({
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-black/20" />
           </>
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.28),_transparent_35%),linear-gradient(135deg,rgba(24,24,27,0.98),rgba(10,10,10,1))]">
-            <div className="flex flex-col items-center gap-3 text-zinc-500">
-              <div className="rounded-full border border-zinc-700 bg-zinc-900/80 p-3">
+          <div className="flex h-full w-full items-center justify-center bg-muted/40">
+            <div className="flex flex-col items-center gap-3 text-muted-foreground">
+              <div className="rounded-full border border-border bg-background/80 p-3">
                 <ImageIcon className="h-6 w-6" />
               </div>
               <span className="text-sm font-medium">No location photo</span>
@@ -99,29 +99,31 @@ export function LocationHeader({
           </div>
         )}
 
-        <div className="absolute right-3 top-3 flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/45 px-3 py-1.5 backdrop-blur-md">
-            <Thermometer className="h-4 w-4 text-blue-300" />
-            <span className="text-sm font-semibold text-white">
-              {displayTemperature !== undefined
-                ? `${displayTemperature.toFixed(1)}°C`
-                : "N/A"}
-            </span>
-          </div>
+        {displayTemperature !== undefined || displayHumidity !== undefined ? (
+          <div className="absolute right-2 top-2 flex flex-wrap items-center gap-1.5">
+            {displayTemperature !== undefined ? (
+              <div className="flex items-center gap-1.5 rounded-full border border-border bg-background/90 px-2 py-1 backdrop-blur-md">
+                <Thermometer className="h-3 w-3 text-blue-300" />
+                <span className="text-xs font-semibold text-foreground">
+                  {displayTemperature.toFixed(1)}°C
+                </span>
+              </div>
+            ) : null}
 
-          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/45 px-3 py-1.5 backdrop-blur-md">
-            <Droplets className="h-4 w-4 text-cyan-300" />
-            <span className="text-sm font-semibold text-white">
-              {displayHumidity !== undefined
-                ? `${displayHumidity.toFixed(0)}%`
-                : "N/A"}
-            </span>
+            {displayHumidity !== undefined ? (
+              <div className="flex items-center gap-1.5 rounded-full border border-border bg-background/90 px-2 py-1 backdrop-blur-md">
+                <Droplets className="h-3 w-3 text-cyan-300" />
+                <span className="text-xs font-semibold text-foreground">
+                  {displayHumidity.toFixed(0)}%
+                </span>
+              </div>
+            ) : null}
           </div>
-        </div>
+        ) : null}
       </div>
 
       <div className="order-1 min-w-0 xl:order-2">
-        <h2 className="flex flex-wrap items-center gap-3 text-2xl font-bold tracking-tight text-zinc-100">
+        <h2 className="flex flex-wrap items-center gap-3 text-2xl font-bold tracking-tight text-foreground">
           <span>{location.name}</span>
           <span
             className={`rounded-full border px-2 py-0.5 text-xs font-normal ${statusBadge.className}`}
@@ -129,23 +131,23 @@ export function LocationHeader({
             {statusBadge.text}
           </span>
         </h2>
-        <div className="mt-2 text-sm text-zinc-400">
-          <span className="text-zinc-500">Location ID</span>
-          <span className="mx-2 text-zinc-700">•</span>
-          <span className="font-medium text-zinc-200">
+        <div className="mt-2 text-sm text-muted-foreground">
+          <span className="text-muted-foreground">Location ID</span>
+          <span className="mx-2 text-muted-foreground/60">•</span>
+          <span className="font-medium text-foreground">
             {location.locationCode}
           </span>
         </div>
 
         <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
-            <div className="mb-1 text-[10px] font-bold uppercase text-zinc-500">
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="mb-1 text-[10px] font-bold uppercase text-muted-foreground">
               Capacity
             </div>
-            <div className="text-xl font-semibold text-zinc-200">
+            <div className="text-xl font-semibold text-foreground">
               {occupancyPercent}% Full
             </div>
-            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-900">
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
               <div
                 className="h-full bg-indigo-500"
                 style={{ width: `${Math.min(occupancyPercent, 100)}%` }}
@@ -153,20 +155,20 @@ export function LocationHeader({
             </div>
           </div>
 
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
-            <div className="mb-1 text-[10px] font-bold uppercase text-zinc-500">
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="mb-1 text-[10px] font-bold uppercase text-muted-foreground">
               Total Items
             </div>
-            <div className="text-xl font-semibold text-zinc-200">
+            <div className="text-xl font-semibold text-foreground">
               {totalObjects.toLocaleString()} Objects
             </div>
           </div>
 
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
-            <div className="mb-1 text-[10px] font-bold uppercase text-zinc-500">
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="mb-1 text-[10px] font-bold uppercase text-muted-foreground">
               Last Audit
             </div>
-            <div className="text-xl font-semibold text-zinc-200">
+            <div className="text-xl font-semibold text-foreground">
               {lastAuditDate
                 ? new Intl.DateTimeFormat("en-US", {
                     month: "short",

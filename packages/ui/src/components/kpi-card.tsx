@@ -34,15 +34,15 @@ const KpiCard = React.forwardRef<HTMLDivElement, KpiCardProps>(
         <div
           ref={ref}
           className={cn(
-            "bg-zinc-900/30 border border-zinc-800/50 rounded-lg p-3 flex items-center gap-3",
+            "flex items-center gap-3 rounded-lg border border-border bg-card p-3",
             className,
           )}
           {...props}
         >
-          <div className="h-8 w-8 bg-zinc-800/50 rounded-md animate-pulse" />
+          <div className="h-8 w-8 animate-pulse rounded-md bg-muted/70" />
           <div className="space-y-1">
-            <div className="h-2 w-16 bg-zinc-800/50 rounded animate-pulse" />
-            <div className="h-5 w-24 bg-zinc-800/50 rounded animate-pulse" />
+            <div className="h-2 w-16 animate-pulse rounded bg-muted/70" />
+            <div className="h-5 w-24 animate-pulse rounded bg-muted/70" />
           </div>
         </div>
       );
@@ -52,7 +52,7 @@ const KpiCard = React.forwardRef<HTMLDivElement, KpiCardProps>(
       <div
         ref={ref}
         className={cn(
-          "bg-zinc-900/30 border border-zinc-800/50 rounded-lg p-3 flex items-center gap-3",
+          "flex items-center gap-3 rounded-lg border border-border bg-card p-3",
           className,
         )}
         {...props}
@@ -83,10 +83,10 @@ const KpiCard = React.forwardRef<HTMLDivElement, KpiCardProps>(
           </div>
         )}
         <div>
-          <div className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">
+          <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
             {title}
           </div>
-          <div className="text-lg font-semibold text-zinc-200">{value}</div>
+          <div className="text-lg font-semibold text-foreground">{value}</div>
         </div>
       </div>
     );

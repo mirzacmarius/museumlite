@@ -86,10 +86,10 @@ export function LocationSidebar({
   }, [initialExpandedLocationIds]);
 
   return (
-    <div className="h-full min-h-0 w-60 shrink-0 overflow-y-auto border-r border-zinc-800/60 bg-zinc-950 p-4 custom-scrollbar">
+    <div className="h-full min-h-0 w-60 shrink-0 overflow-y-auto border-r border-border bg-card p-4 custom-scrollbar">
       {exhibitionLocations.length > 0 && (
         <>
-          <div className="mb-4 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+          <div className="mb-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
             Exhibition Spaces
           </div>
           <ul className="mb-6 space-y-1 text-xs">
@@ -112,7 +112,7 @@ export function LocationSidebar({
 
       {storageLocations.length > 0 && (
         <>
-          <div className="mb-4 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+          <div className="mb-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
             Secure Storage
           </div>
           <ul className="space-y-1 text-xs">
@@ -135,7 +135,7 @@ export function LocationSidebar({
 
       {exhibitionLocations.length === 0 && storageLocations.length === 0 && (
         <div className="flex flex-col items-center gap-2 py-8 text-center">
-          <p className="text-xs text-zinc-600">No locations yet</p>
+          <p className="text-xs text-muted-foreground">No locations yet</p>
         </div>
       )}
     </div>
@@ -228,7 +228,7 @@ function LocationNavItem({
   depth,
 }: LocationNavItemProps) {
   const getStatusColor = () => {
-    if (!location.isActive) return "bg-zinc-700";
+    if (!location.isActive) return "bg-muted-foreground";
     if (isSecure) return "bg-amber-500";
     return "bg-emerald-500";
   };
@@ -239,8 +239,8 @@ function LocationNavItem({
     <div
       className={`flex w-full items-center rounded-r transition-all ${
         isSelected
-          ? "border-l-2 border-indigo-500 bg-zinc-900 font-medium text-zinc-100 shadow-sm"
-          : "border-l-2 border-transparent text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200"
+          ? "border-l-2 border-primary bg-muted font-medium text-foreground shadow-sm"
+          : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
       }`}
       style={{ paddingLeft: `${depth * 14 + 12}px` }}
     >
@@ -248,7 +248,7 @@ function LocationNavItem({
         <button
           type="button"
           onClick={onToggle}
-          className="flex h-7 w-5 shrink-0 items-center justify-center text-zinc-500 transition-colors hover:text-zinc-200"
+          className="flex h-7 w-5 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
           aria-label={`${isExpanded ? "Collapse" : "Expand"} ${location.name}`}
           aria-expanded={isExpanded}
         >
@@ -274,7 +274,7 @@ function LocationNavItem({
             4°C
           </span>
         ) : isSecure ? (
-          <Lock className="h-3 w-3 shrink-0 text-zinc-600" />
+          <Lock className="h-3 w-3 shrink-0 text-muted-foreground" />
         ) : (
           <span
             className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusColor}`}

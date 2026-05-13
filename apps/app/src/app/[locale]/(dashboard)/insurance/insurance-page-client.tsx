@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  DashboardListPageSkeleton,
-  TableRowsSkeleton,
-} from "@/components/dashboard-list-page-skeleton";
+import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
@@ -14,6 +11,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
+import { DataTable } from "@v1/ui/data-table";
 import {
   Dialog,
   DialogContent,
@@ -32,14 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@v1/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@v1/ui/tabs";
 import { useMutation, useQuery } from "convex/react";
 import { Building2, Plus, Search, Shield } from "lucide-react";
@@ -212,258 +202,144 @@ export function InsurancePageClient() {
       isLocked={!hasFeature("conservation")}
       tierNeeded="pro"
     >
-      <div className="flex h-full w-full bg-background px-4 sm:px-6">
-        <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-          <div className="flex w-full flex-col rounded-lg border border-border/60 bg-card">
-            <div className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg p-4 sm:p-6">
-              <div className="flex flex-col gap-2">
-                <h2 className="text-xl font-medium text-primary">Insurance</h2>
-                <p className="text-sm font-normal text-primary/60">
-                  Manage insurance policies, coverages, and claims
-                </p>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <PermissionGate permission="organization.manage_settings">
-                  <Dialog
-                    open={policyDialogOpen}
-                    onOpenChange={setPolicyDialogOpen}
-                  >
-                    <DialogTrigger asChild>
-                      <Button variant="outline">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Policy
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[540px]">
-                      <DialogHeader>
-                        <DialogTitle>New Insurance Policy</DialogTitle>
-                      </DialogHeader>
-                      <PolicyForm
-                        organizationId={
-                          currentOrganizationId as Id<"organizations">
-                        }
-                        onSubmit={async (payload) => {
-                          try {
-                            await createPolicy(payload);
-                            toast.success("Policy created");
-                            setPolicyDialogOpen(false);
-                          } catch (err) {
-                            toast.error(
-                              err instanceof Error
-                                ? err.message
-                                : "Failed to create policy",
-                            );
-                          }
-                        }}
-                      />
-                    </DialogContent>
-                  </Dialog>
-                </PermissionGate>
-                <PermissionGate permission="organization.manage_settings">
-                  <Dialog
-                    open={claimDialogOpen}
-                    onOpenChange={setClaimDialogOpen}
-                  >
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Shield className="mr-2 h-4 w-4" />
-                        New Claim
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[540px]">
-                      <DialogHeader>
-                        <DialogTitle>New Insurance Claim</DialogTitle>
-                      </DialogHeader>
-                      <ClaimForm
-                        organizationId={
-                          currentOrganizationId as Id<"organizations">
-                        }
-                        policyOptions={policyOptions}
-                        onSubmit={async (payload) => {
-                          try {
-                            await createClaim(payload);
-                            toast.success("Claim created");
-                            setClaimDialogOpen(false);
-                          } catch (err) {
-                            toast.error(
-                              err instanceof Error
-                                ? err.message
-                                : "Failed to create claim",
-                            );
-                          }
-                        }}
-                      />
-                    </DialogContent>
-                  </Dialog>
-                </PermissionGate>
-              </div>
+      <div className="flex h-full w-full flex-col overflow-y-auto bg-background">
+        <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-6">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-2">
+              <h2 className="page-title">Insurance</h2>
+              <p className="page-description">
+                Manage insurance policies, coverages, and claims
+              </p>
             </div>
-
-            <div className="flex w-full px-6">
-              <div className="w-full border-b border-border/60" />
-            </div>
-
-            <div className="p-6">
-              <Tabs
-                value={activeTab}
-                onValueChange={(value) =>
-                  setActiveTab(value as "policies" | "claims")
-                }
-              >
-                <TabsList className="mb-6">
-                  <TabsTrigger value="policies">Policies</TabsTrigger>
-                  <TabsTrigger value="claims">Claims</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="policies">
-                  <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        placeholder="Search policies..."
-                        value={searchPolicies}
-                        onChange={(e) => setSearchPolicies(e.target.value)}
-                        className="pl-9"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Select
-                        value={policyStatus}
-                        onValueChange={(value) =>
-                          setPolicyStatus(value as PolicyStatus)
+            <div className="flex flex-shrink-0 items-center gap-2">
+              <PermissionGate permission="organization.manage_settings">
+                <Dialog
+                  open={policyDialogOpen}
+                  onOpenChange={setPolicyDialogOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Policy
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[540px]">
+                    <DialogHeader>
+                      <DialogTitle>New Insurance Policy</DialogTitle>
+                    </DialogHeader>
+                    <PolicyForm
+                      organizationId={
+                        currentOrganizationId as Id<"organizations">
+                      }
+                      onSubmit={async (payload) => {
+                        try {
+                          await createPolicy(payload);
+                          toast.success("Policy created");
+                          setPolicyDialogOpen(false);
+                        } catch (err) {
+                          toast.error(
+                            err instanceof Error
+                              ? err.message
+                              : "Failed to create policy",
+                          );
                         }
-                      >
-                        <SelectTrigger className="w-[160px]">
-                          <SelectValue placeholder="Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {policyStatusOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={policyType}
-                        onValueChange={(value) =>
-                          setPolicyType(value as PolicyType)
-                        }
-                      >
-                        <SelectTrigger className="w-[160px]">
-                          <SelectValue placeholder="Type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {policyTypeOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {listPolicies === undefined ? (
-                    <TableRowsSkeleton count={6} />
-                  ) : policies.length === 0 ? (
-                    <EmptyState
-                      title="No policies yet"
-                      description="Create your first policy to start tracking coverage."
-                      icon={Shield}
+                      }}
                     />
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Policy</TableHead>
-                          <TableHead>Carrier</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Coverage</TableHead>
-                          <TableHead>Effective</TableHead>
-                          <TableHead>Expires</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">
-                            Coverages
-                          </TableHead>
-                          <TableHead className="text-right">Claims</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {policies.map((policy) => (
-                          <TableRow key={policy._id}>
-                            <TableCell className="font-medium">
-                              {policy.policyNumber}
-                            </TableCell>
-                            <TableCell>{policy.carrier}</TableCell>
-                            <TableCell className="capitalize">
-                              {policy.policyType}
-                            </TableCell>
-                            <TableCell>
-                              {formatCurrency(
-                                policy.coverageAmount,
-                                locale,
-                                "USD",
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {formatDate(
-                                new Date(policy.effectiveDate),
-                                locale,
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {formatDate(
-                                new Date(policy.expirationDate),
-                                locale,
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={
-                                  policyStatusColor[policy.status] ??
-                                  "border-border text-muted-foreground"
-                                }
-                              >
-                                {policy.status.replace("_", " ")}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {policy.coverageCount}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {policy.claimsCount}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </TabsContent>
+                  </DialogContent>
+                </Dialog>
+              </PermissionGate>
+              <PermissionGate permission="organization.manage_settings">
+                <Dialog
+                  open={claimDialogOpen}
+                  onOpenChange={setClaimDialogOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Shield className="mr-2 h-4 w-4" />
+                      New Claim
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[540px]">
+                    <DialogHeader>
+                      <DialogTitle>New Insurance Claim</DialogTitle>
+                    </DialogHeader>
+                    <ClaimForm
+                      organizationId={
+                        currentOrganizationId as Id<"organizations">
+                      }
+                      policyOptions={policyOptions}
+                      onSubmit={async (payload) => {
+                        try {
+                          await createClaim(payload);
+                          toast.success("Claim created");
+                          setClaimDialogOpen(false);
+                        } catch (err) {
+                          toast.error(
+                            err instanceof Error
+                              ? err.message
+                              : "Failed to create claim",
+                          );
+                        }
+                      }}
+                    />
+                  </DialogContent>
+                </Dialog>
+              </PermissionGate>
+            </div>
+          </div>
 
-                <TabsContent value="claims">
-                  <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        placeholder="Search claims..."
-                        value={searchClaims}
-                        onChange={(e) => setSearchClaims(e.target.value)}
-                        className="pl-9"
-                      />
-                    </div>
+          <div>
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) =>
+                setActiveTab(value as "policies" | "claims")
+              }
+            >
+              <TabsList className="mb-6 rounded-lg bg-muted p-1">
+                <TabsTrigger value="policies">Policies</TabsTrigger>
+                <TabsTrigger value="claims">Claims</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="policies">
+                <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Search policies..."
+                      value={searchPolicies}
+                      onChange={(e) => setSearchPolicies(e.target.value)}
+                      className="rounded-lg border-border/60 bg-card pl-9 text-xs transition-all focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                    />
+                  </div>
+                  <div className="flex gap-2">
                     <Select
-                      value={claimStatus}
+                      value={policyStatus}
                       onValueChange={(value) =>
-                        setClaimStatus(value as ClaimStatus)
+                        setPolicyStatus(value as PolicyStatus)
                       }
                     >
-                      <SelectTrigger className="w-[180px]">
+                      <SelectTrigger className="w-[160px] border-border/60 bg-card text-xs">
                         <SelectValue placeholder="Status" />
                       </SelectTrigger>
                       <SelectContent>
-                        {claimStatusOptions.map((option) => (
+                        {policyStatusOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={policyType}
+                      onValueChange={(value) =>
+                        setPolicyType(value as PolicyType)
+                      }
+                    >
+                      <SelectTrigger className="w-[160px] border-border/60 bg-card text-xs">
+                        <SelectValue placeholder="Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {policyTypeOptions.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
                           </SelectItem>
@@ -471,71 +347,206 @@ export function InsurancePageClient() {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
 
-                  {listClaims === undefined ? (
-                    <TableRowsSkeleton count={6} />
-                  ) : claims.length === 0 ? (
+                <DataTable
+                  loading={listPolicies === undefined}
+                  data={policies}
+                  columns={[
+                    {
+                      key: "policyNumber",
+                      label: "Policy",
+                      className: "min-w-0 flex-[1.35]",
+                      render: (policy) => (
+                        <span className="truncate font-semibold text-foreground">
+                          {policy.policyNumber}
+                        </span>
+                      ),
+                    },
+                    {
+                      key: "carrier",
+                      label: "Carrier",
+                      className: "min-w-0 flex-[1.5]",
+                      render: (policy) => (
+                        <span className="truncate">{policy.carrier}</span>
+                      ),
+                    },
+                    {
+                      key: "policyType",
+                      label: "Type",
+                      className: "w-28 flex-none",
+                      render: (policy) => (
+                        <span className="capitalize">{policy.policyType}</span>
+                      ),
+                    },
+                    {
+                      key: "coverageAmount",
+                      label: "Coverage",
+                      className: "w-36 flex-none",
+                      render: (policy) =>
+                        formatCurrency(policy.coverageAmount, locale, "USD"),
+                    },
+                    {
+                      key: "effectiveDate",
+                      label: "Effective",
+                      className: "w-28 flex-none",
+                      render: (policy) =>
+                        formatDate(new Date(policy.effectiveDate), locale),
+                    },
+                    {
+                      key: "expirationDate",
+                      label: "Expires",
+                      className: "w-28 flex-none",
+                      render: (policy) =>
+                        formatDate(new Date(policy.expirationDate), locale),
+                    },
+                    {
+                      key: "status",
+                      label: "Status",
+                      className: "w-32 flex-none",
+                      render: (policy) => (
+                        <Badge
+                          variant="outline"
+                          className={
+                            policyStatusColor[policy.status] ??
+                            "border-border text-muted-foreground"
+                          }
+                        >
+                          {policy.status.replace("_", " ")}
+                        </Badge>
+                      ),
+                    },
+                    {
+                      key: "coverageCount",
+                      label: "Coverages",
+                      className: "w-24 flex-none justify-end text-right",
+                    },
+                    {
+                      key: "claimsCount",
+                      label: "Claims",
+                      className: "w-20 flex-none justify-end text-right",
+                    },
+                  ]}
+                  emptyState={
+                    <EmptyState
+                      title="No policies yet"
+                      description="Create your first policy to start tracking coverage."
+                      icon={Shield}
+                    />
+                  }
+                />
+              </TabsContent>
+
+              <TabsContent value="claims">
+                <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Search claims..."
+                      value={searchClaims}
+                      onChange={(e) => setSearchClaims(e.target.value)}
+                      className="rounded-lg border-border/60 bg-card pl-9 text-xs transition-all focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                    />
+                  </div>
+                  <Select
+                    value={claimStatus}
+                    onValueChange={(value) =>
+                      setClaimStatus(value as ClaimStatus)
+                    }
+                  >
+                    <SelectTrigger className="w-[180px] border-border/60 bg-card text-xs">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {claimStatusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <DataTable
+                  loading={listClaims === undefined}
+                  data={claims}
+                  columns={[
+                    {
+                      key: "claimNumber",
+                      label: "Claim",
+                      className: "min-w-0 flex-[1.25]",
+                      render: (claim) => (
+                        <span className="truncate font-semibold text-foreground">
+                          {claim.claimNumber}
+                        </span>
+                      ),
+                    },
+                    {
+                      key: "policyNumber",
+                      label: "Policy",
+                      className: "min-w-0 flex-[1.5]",
+                      render: (claim) => (
+                        <div className="flex min-w-0 flex-col">
+                          <span className="truncate text-muted-foreground">
+                            {claim.carrier}
+                          </span>
+                          <span className="truncate font-medium">
+                            {claim.policyNumber}
+                          </span>
+                        </div>
+                      ),
+                    },
+                    {
+                      key: "incidentType",
+                      label: "Incident",
+                      className: "min-w-0 flex-[1.1]",
+                      render: (claim) => (
+                        <span className="truncate capitalize">
+                          {claim.incidentType.replace("_", " ")}
+                        </span>
+                      ),
+                    },
+                    {
+                      key: "incidentDate",
+                      label: "Date",
+                      className: "w-32 flex-none",
+                      render: (claim) =>
+                        formatDate(new Date(claim.incidentDate), locale),
+                    },
+                    {
+                      key: "claimedAmount",
+                      label: "Claimed",
+                      className: "w-36 flex-none",
+                      render: (claim) =>
+                        formatCurrency(claim.claimedAmount, locale, "USD"),
+                    },
+                    {
+                      key: "status",
+                      label: "Status",
+                      className: "w-36 flex-none",
+                      render: (claim) => (
+                        <Badge
+                          variant="outline"
+                          className={
+                            claimStatusColor[claim.status] ??
+                            "border-border text-muted-foreground"
+                          }
+                        >
+                          {claim.status.replace("_", " ")}
+                        </Badge>
+                      ),
+                    },
+                  ]}
+                  emptyState={
                     <EmptyState
                       title="No claims yet"
                       description="Create a claim to track incidents and reimbursements."
                       icon={Shield}
                     />
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Claim</TableHead>
-                          <TableHead>Policy</TableHead>
-                          <TableHead>Incident</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Claimed</TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {claims.map((claim) => (
-                          <TableRow key={claim._id}>
-                            <TableCell className="font-medium">
-                              {claim.claimNumber}
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-xs text-muted-foreground">
-                                {claim.carrier}
-                              </div>
-                              <div>{claim.policyNumber}</div>
-                            </TableCell>
-                            <TableCell className="capitalize">
-                              {claim.incidentType.replace("_", " ")}
-                            </TableCell>
-                            <TableCell>
-                              {formatDate(new Date(claim.incidentDate), locale)}
-                            </TableCell>
-                            <TableCell>
-                              {formatCurrency(
-                                claim.claimedAmount,
-                                locale,
-                                "USD",
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={
-                                  claimStatusColor[claim.status] ??
-                                  "border-border text-muted-foreground"
-                                }
-                              >
-                                {claim.status.replace("_", " ")}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </TabsContent>
-              </Tabs>
-            </div>
+                  }
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>

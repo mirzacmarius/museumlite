@@ -35,12 +35,9 @@ import { useMutation, useQuery } from "convex/react";
 import {
   Archive,
   ArrowLeft,
-  Calendar,
   Camera,
   CheckCircle,
   Image as ImageIcon,
-  Info,
-  MapPin,
   Plus,
   Save,
   Star,
@@ -504,18 +501,6 @@ export function ObjectRequestFormPage({
     };
   }, [selectedFiles]);
 
-  const currentLocationPath = useQuery(
-    api.locations.getLocationPath,
-    isLocationTrackingEnabled && formData.currentLocationId
-      ? { locationId: formData.currentLocationId as Id<"locations"> }
-      : "skip",
-  );
-
-  const collectionGroups = useQuery(
-    api.collectionGroups.list,
-    currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
-  );
-
   const heroImage =
     selectedFiles.find((file) => file.isPrimary) ?? selectedFiles[0];
   const isFormDirty =
@@ -905,15 +890,6 @@ export function ObjectRequestFormPage({
     );
   }
 
-  const locationSummary =
-    currentLocationPath?.map((location) => location.name).join(" / ") ||
-    "No location assigned";
-  const collectionSummary =
-    collectionGroups
-      ?.filter((group) => formData.collectionGroupIds?.includes(group._id))
-      .map((group) => group.name)
-      .join(", ") || "Not assigned to a collection";
-
   return (
     <div className="flex h-full min-h-0 w-full flex-col bg-background">
       <header className="z-20 flex h-14 shrink-0 items-center justify-between border-b border-border/60 bg-background/90 px-6 backdrop-blur-xl">
@@ -1027,65 +1003,6 @@ export function ObjectRequestFormPage({
                     className="h-14 border-border/60 bg-background/90 text-xl font-semibold sm:text-2xl"
                     required
                   />
-                </div>
-
-                <div className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-2 xl:grid-cols-4">
-                  <button
-                    type="button"
-                    className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
-                    onClick={() => setActiveTab("general")}
-                  >
-                    <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                      <Info className="h-3.5 w-3.5" />
-                      Creator
-                    </div>
-                    <div className="truncate text-sm text-foreground">
-                      {formData.creator || "Not set"}
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
-                    onClick={() => setActiveTab("general")}
-                  >
-                    <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                      <Calendar className="h-3.5 w-3.5" />
-                      Date created
-                    </div>
-                    <div className="truncate text-sm text-foreground">
-                      {formData.dateCreated || common("unknown")}
-                    </div>
-                  </button>
-                  {isLocationTrackingEnabled ? (
-                    <>
-                      <button
-                        type="button"
-                        className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
-                        onClick={() => setActiveTab("placement")}
-                      >
-                        <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                          <MapPin className="h-3.5 w-3.5" />
-                          Location
-                        </div>
-                        <div className="truncate text-sm text-foreground">
-                          {locationSummary}
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
-                        onClick={() => setActiveTab("placement")}
-                      >
-                        <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                          <Info className="h-3.5 w-3.5" />
-                          Collection
-                        </div>
-                        <div className="truncate text-sm text-foreground">
-                          {collectionSummary}
-                        </div>
-                      </button>
-                    </>
-                  ) : null}
                 </div>
 
                 <p className="text-sm text-muted-foreground">
@@ -1237,6 +1154,40 @@ export function ObjectRequestFormPage({
                             updateField("dateCreated", event.target.value)
                           }
                           placeholder={placeholders("dateCreated")}
+                        />
+                      </div>
+
+                      {isLocationTrackingEnabled ? (
+                        <div className="space-y-2">
+                          <Label htmlFor="generalCurrentLocationId">
+                            Location
+                          </Label>
+                          <LocationSelector
+                            organizationId={currentOrganizationId}
+                            value={formData.currentLocationId}
+                            onValueChange={(value) => {
+                              updateField("currentLocationId", value);
+                              if (!value) {
+                                updateField("displayStatus", undefined);
+                              }
+                            }}
+                            placeholder={placeholders("location")}
+                          />
+                        </div>
+                      ) : null}
+
+                      <div className="space-y-2">
+                        <Label htmlFor="generalCollectionGroupId">
+                          Collection
+                        </Label>
+                        <CollectionGroupCombobox
+                          organizationId={currentOrganizationId}
+                          value={formData.collectionGroupIds}
+                          onValueChange={(value) => {
+                            updateField("collectionGroupIds", value);
+                            updateField("collectionGroupId", value[0] || "");
+                          }}
+                          placeholder={placeholders("collection")}
                         />
                       </div>
                     </div>

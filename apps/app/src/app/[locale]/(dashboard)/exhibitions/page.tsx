@@ -112,37 +112,25 @@ export default function ExhibitionsPage() {
       isLocked={!hasFeature("exhibitions")}
       tierNeeded="pro"
     >
-      <div className="flex h-full w-full bg-background px-4 sm:px-6">
-        <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
-          <div className="flex w-full flex-col rounded-lg border border-border bg-muted/20">
-            <div className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg p-4 sm:p-6">
-              <div className="flex flex-col gap-2">
-                <h2 className="text-lg sm:text-xl font-medium text-foreground">
-                  {t("title")}
-                </h2>
-                <p className="text-sm font-normal text-muted-foreground">
-                  {t("description")}
-                </p>
-              </div>
-              <PermissionGate permission="collections.update">
-                <Button
-                  asChild
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 flex-shrink-0"
-                >
-                  <Link href="/exhibitions/new">
-                    <Plus className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">
-                      {t("newExhibition")}
-                    </span>
-                  </Link>
-                </Button>
-              </PermissionGate>
+      <div className="flex h-full w-full flex-col overflow-y-auto bg-background">
+        <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-6">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-2">
+              <h2 className="page-title">{t("title")}</h2>
+              <p className="page-description">{t("description")}</p>
             </div>
-            <div className="flex w-full px-4 sm:px-6">
-              <div className="w-full border-b border-border" />
-            </div>
+            <PermissionGate permission="collections.update">
+              <Button asChild className="flex-shrink-0">
+                <Link href="/exhibitions/new">
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t("newExhibition")}</span>
+                </Link>
+              </Button>
+            </PermissionGate>
+          </div>
 
-            <div className="border-b border-border px-4 sm:px-6 py-4">
+          <div className="space-y-6">
+            <div>
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row gap-2">
                   <div className="relative flex-1">
@@ -151,7 +139,7 @@ export default function ExhibitionsPage() {
                       placeholder={t("searchPlaceholder")}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9 bg-muted/50 border-border text-foreground/80 placeholder:text-muted-foreground focus-visible:ring-ring"
+                      className="rounded-lg border-border/60 bg-card pl-9 text-xs transition-all focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                     />
                   </div>
                   <div className="flex items-center gap-2">
@@ -290,15 +278,11 @@ function ExhibitionList({
   }
 
   if (viewMode === "timeline") {
-    return (
-      <div className="p-6">
-        <ExhibitionTimeline exhibitions={filteredExhibitions} />
-      </div>
-    );
+    return <ExhibitionTimeline exhibitions={filteredExhibitions} />;
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:gap-4 p-4 sm:p-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
       {filteredExhibitions.map((ex) => (
         <div key={ex._id}>
           <ExhibitionCard exhibition={ex} />
