@@ -28,38 +28,64 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+type AccountType = "lender" | "borrower" | "both" | "institution";
+
+interface AccountFormData {
+  holderType: AccountHolderType;
+  businessName: string;
+  taxId: string;
+  dateOfBirth: string;
+  phone: string;
+  email: string;
+  address: string;
+  address2: string;
+  zipCode: string;
+  city: string;
+  country: string;
+  contactPerson: string;
+  contactPhone: string;
+  contactEmail: string;
+  notes: string;
+  accountType: AccountType;
+  selectedRoles: Id<"roles">[];
+}
+
+interface RoleWithPermissions {
+  _id: Id<"roles">;
+  name: string;
+  description?: string;
+  permissions: Array<{ category: string }>;
+}
+
+const initialFormData: AccountFormData = {
+  holderType: DEFAULT_ACCOUNT_HOLDER_TYPE,
+  businessName: "",
+  taxId: "",
+  dateOfBirth: "",
+  phone: "",
+  email: "",
+  address: "",
+  address2: "",
+  zipCode: "",
+  city: "",
+  country: "",
+  contactPerson: "",
+  contactPhone: "",
+  contactEmail: "",
+  notes: "",
+  accountType: "institution",
+  selectedRoles: [],
+};
+
 export default function NewAccountPage() {
   const t = useScopedI18n("accounts");
   const tCommon = useScopedI18n("common");
-  const router = useRouter();
+  const { push } = useRouter();
   const { currentOrganizationId } = useOrganization();
   const createAccount = useMutation(api.accounts.create);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    holderType: DEFAULT_ACCOUNT_HOLDER_TYPE as AccountHolderType,
-    businessName: "",
-    taxId: "",
-    dateOfBirth: "",
-    phone: "",
-    email: "",
-    address: "",
-    address2: "",
-    zipCode: "",
-    city: "",
-    country: "",
-    contactPerson: "",
-    contactPhone: "",
-    contactEmail: "",
-    notes: "",
-    accountType: "institution" as
-      | "lender"
-      | "borrower"
-      | "both"
-      | "institution",
-    selectedRoles: [] as Id<"roles">[],
-  });
+  const [formData, setFormData] = useState<AccountFormData>(initialFormData);
 
   const roles = useQuery(
     api.roles.listRoles,
@@ -67,12 +93,24 @@ export default function NewAccountPage() {
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
       : "skip",
   );
-  type Role = NonNullable<typeof roles>[number];
+  const rolesWithLoansPermissions = roles?.filter((role) =>
+    role.permissions.some((permission) => permission.category === "loans"),
+  );
 
-  // Get roles that have loans permissions
-  const rolesWithLoansPermissions = roles?.filter((role: Role) => {
-    return role.permissions.some((perm) => perm.category === "loans");
-  });
+  if (!currentOrganizationId) {
+    return (
+      <div className="flex size-full items-center justify-center">
+        <p className="text-muted-foreground">{t("selectOrganizationCreate")}</p>
+      </div>
+    );
+  }
+
+  const updateFormData = <Key extends keyof AccountFormData>(
+    key: Key,
+    value: AccountFormData[Key],
+  ) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+  };
 
   const toggleRole = (roleId: Id<"roles">) => {
     setFormData((prev) => ({
@@ -82,14 +120,6 @@ export default function NewAccountPage() {
         : [...prev.selectedRoles, roleId],
     }));
   };
-
-  if (!currentOrganizationId) {
-    return (
-      <div className="flex size-full items-center justify-center">
-        <p className="text-muted-foreground">{t("selectOrganizationCreate")}</p>
-      </div>
-    );
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,7 +164,7 @@ export default function NewAccountPage() {
             ? formData.selectedRoles
             : undefined,
       });
-      router.push("/accounts");
+      push("/accounts");
     } catch (err) {
       console.error("Error creating account:", err);
       setError(
@@ -148,412 +178,470 @@ export default function NewAccountPage() {
     <div className="flex size-full bg-background px-6">
       <div className="z-10 mx-auto flex size-full max-w-screen-md gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
-          <div className="flex w-full items-center justify-between rounded-lg p-6">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/accounts">
-                  <ArrowLeft className="mr-2 size-4" />
-                  {t("back")}
-                </Link>
-              </Button>
-              <h2 className="text-xl font-medium text-primary">
-                {t("newAccount")}
-              </h2>
-            </div>
-          </div>
-
+          <NewAccountHeader title={t("newAccount")} backLabel={t("back")} />
           <div className="flex w-full px-6">
             <div className="w-full border-b border-border" />
           </div>
-
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6 p-6">
             {error && (
               <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
-
-            {/* Account Holder */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Account Holder
-              </h3>
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  <Label>Holder Type</Label>
-                  <RadioGroup
-                    className="grid gap-3 md:grid-cols-2"
-                    value={formData.holderType}
-                    onValueChange={(value) =>
-                      setFormData({
-                        ...formData,
-                        holderType: value as AccountHolderType,
-                      })
-                    }
-                  >
-                    <Label
-                      htmlFor="holder-type-organization"
-                      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 ${
-                        formData.holderType === "organization"
-                          ? "border-primary bg-primary/5"
-                          : "border-border"
-                      }`}
-                    >
-                      <RadioGroupItem
-                        id="holder-type-organization"
-                        value="organization"
-                        className="mt-0.5"
-                      />
-                      <div className="space-y-1">
-                        <div className="font-medium">
-                          Business / Organization
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Companies, museums, galleries, and institutions.
-                        </p>
-                      </div>
-                    </Label>
-                    <Label
-                      htmlFor="holder-type-privatePerson"
-                      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 ${
-                        formData.holderType === "privatePerson"
-                          ? "border-primary bg-primary/5"
-                          : "border-border"
-                      }`}
-                    >
-                      <RadioGroupItem
-                        id="holder-type-privatePerson"
-                        value="privatePerson"
-                        className="mt-0.5"
-                      />
-                      <div className="space-y-1">
-                        <div className="font-medium">Private Person</div>
-                        <p className="text-sm text-muted-foreground">
-                          Individuals acting in their own name.
-                        </p>
-                      </div>
-                    </Label>
-                  </RadioGroup>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="businessName">
-                    {formData.holderType === "organization"
-                      ? t("form.businessName")
-                      : "Full Name"}{" "}
-                    <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="businessName"
-                    value={formData.businessName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, businessName: e.target.value })
-                    }
-                    placeholder={
-                      formData.holderType === "organization"
-                        ? t("form.placeholders.businessName")
-                        : "e.g., Jane Doe"
-                    }
-                    required
-                  />
-                </div>
-
-                {formData.holderType === "organization" ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="taxId">Organization Number</Label>
-                    <Input
-                      id="taxId"
-                      value={formData.taxId}
-                      onChange={(e) =>
-                        setFormData({ ...formData, taxId: e.target.value })
-                      }
-                      placeholder="e.g., 987 654 321"
-                    />
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                    <Input
-                      id="dateOfBirth"
-                      type="date"
-                      value={formData.dateOfBirth}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          dateOfBirth: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                )}
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">{t("form.phone")}</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) =>
-                        setFormData({ ...formData, phone: e.target.value })
-                      }
-                      placeholder={t("form.placeholders.phone")}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">{t("form.email")}</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                      }
-                      placeholder={t("form.placeholders.email")}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Address */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                {t("form.address")}
-              </h3>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="address">{t("form.streetAddress")}</Label>
-                  <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) =>
-                      setFormData({ ...formData, address: e.target.value })
-                    }
-                    placeholder={t("form.placeholders.streetAddress")}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address2">{t("form.addressLine2")}</Label>
-                  <Input
-                    id="address2"
-                    value={formData.address2}
-                    onChange={(e) =>
-                      setFormData({ ...formData, address2: e.target.value })
-                    }
-                    placeholder={t("form.placeholders.addressLine2")}
-                  />
-                </div>
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="city">{t("form.city")}</Label>
-                    <Input
-                      id="city"
-                      value={formData.city}
-                      onChange={(e) =>
-                        setFormData({ ...formData, city: e.target.value })
-                      }
-                      placeholder={t("form.placeholders.city")}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="zipCode">{t("form.zipCode")}</Label>
-                    <Input
-                      id="zipCode"
-                      value={formData.zipCode}
-                      onChange={(e) =>
-                        setFormData({ ...formData, zipCode: e.target.value })
-                      }
-                      placeholder={t("form.placeholders.zipCode")}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="country">{t("form.country")}</Label>
-                    <Input
-                      id="country"
-                      value={formData.country}
-                      onChange={(e) =>
-                        setFormData({ ...formData, country: e.target.value })
-                      }
-                      placeholder={t("form.placeholders.country")}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Contact Person */}
+            <AccountHolderSection
+              formData={formData}
+              t={t}
+              onChange={updateFormData}
+            />
+            <AddressSection
+              formData={formData}
+              t={t}
+              onChange={updateFormData}
+            />
             {formData.holderType === "organization" && (
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  {t("form.contactPerson")}
-                </h3>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="contactPerson">
-                      {t("form.contactName")}
-                    </Label>
-                    <Input
-                      id="contactPerson"
-                      value={formData.contactPerson}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          contactPerson: e.target.value,
-                        })
-                      }
-                      placeholder={t("form.placeholders.contactName")}
-                    />
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="contactPhone">
-                        {t("form.contactPhone")}
-                      </Label>
-                      <Input
-                        id="contactPhone"
-                        value={formData.contactPhone}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            contactPhone: e.target.value,
-                          })
-                        }
-                        placeholder={t("form.placeholders.phone")}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="contactEmail">
-                        {t("form.contactEmail")}
-                      </Label>
-                      <Input
-                        id="contactEmail"
-                        type="email"
-                        value={formData.contactEmail}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            contactEmail: e.target.value,
-                          })
-                        }
-                        placeholder={t("form.placeholders.contactEmail")}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Notes */}
-            <div className="space-y-2">
-              <Label htmlFor="notes">Additional Information / Notes</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) =>
-                  setFormData({ ...formData, notes: e.target.value })
-                }
-                placeholder={t("form.placeholders.notes")}
-                rows={4}
+              <ContactPersonSection
+                formData={formData}
+                t={t}
+                onChange={updateFormData}
               />
-            </div>
-
-            {/* Account Type / Role */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <UserCog className="size-4" />
-                {t("form.accountTypeRole")}
-              </h3>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="accountType">{t("form.accountType")}</Label>
-                  <Select
-                    value={formData.accountType}
-                    onValueChange={(
-                      value: "lender" | "borrower" | "both" | "institution",
-                    ) => setFormData({ ...formData, accountType: value })}
-                  >
-                    <SelectTrigger id="accountType">
-                      <SelectValue
-                        placeholder={t("form.placeholders.accountType")}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="lender">
-                        {t("types.lender")}
-                      </SelectItem>
-                      <SelectItem value="borrower">
-                        {t("types.borrower")}
-                      </SelectItem>
-                      <SelectItem value="both">{t("types.both")}</SelectItem>
-                      <SelectItem value="institution">
-                        {t("types.institution")}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    {t("form.accountTypeDescription")}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Permissions */}
-            {rolesWithLoansPermissions &&
-              rolesWithLoansPermissions.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Shield className="size-4" />
-                    {t("form.rolesWithAccess")}
-                  </h3>
-                  <div className="space-y-4 rounded-lg border border-border p-4">
-                    <p className="text-sm text-muted-foreground">
-                      {t("form.rolesDescription")}
-                    </p>
-                    <div className="space-y-3">
-                      {rolesWithLoansPermissions.map((role) => (
-                        <div
-                          key={role._id}
-                          className="flex items-center space-x-2"
-                        >
-                          <Checkbox
-                            id={`role-${role._id}`}
-                            checked={formData.selectedRoles.includes(role._id)}
-                            onCheckedChange={() => toggleRole(role._id)}
-                          />
-                          <Label
-                            htmlFor={`role-${role._id}`}
-                            className="text-sm font-normal cursor-pointer flex-1"
-                          >
-                            {role.name}
-                            {role.description && (
-                              <span className="ml-2 text-xs text-muted-foreground">
-                                - {role.description}
-                              </span>
-                            )}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-            <div className="flex justify-end gap-4 pt-4">
-              <Button type="button" variant="outline" asChild>
-                <Link href="/accounts">{tCommon("cancel")}</Link>
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 size-4" />
-                )}
-                {isSubmitting ? t("form.creating") : t("form.createButton")}
-              </Button>
-            </div>
+            )}
+            <NotesSection
+              notes={formData.notes}
+              t={t}
+              onChange={updateFormData}
+            />
+            <AccountTypeSection
+              accountType={formData.accountType}
+              t={t}
+              onChange={updateFormData}
+            />
+            <RolesSection
+              roles={rolesWithLoansPermissions}
+              selectedRoles={formData.selectedRoles}
+              t={t}
+              onToggleRole={toggleRole}
+            />
+            <FormActions
+              cancelLabel={tCommon("cancel")}
+              createLabel={t("form.createButton")}
+              creatingLabel={t("form.creating")}
+              isSubmitting={isSubmitting}
+            />
           </form>
         </div>
       </div>
+    </div>
+  );
+}
+
+function NewAccountHeader({
+  title,
+  backLabel,
+}: {
+  title: string;
+  backLabel: string;
+}) {
+  return (
+    <div className="flex w-full items-center justify-between rounded-lg p-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/accounts">
+            <ArrowLeft className="mr-2 size-4" />
+            {backLabel}
+          </Link>
+        </Button>
+        <h2 className="text-xl font-medium text-primary">{title}</h2>
+      </div>
+    </div>
+  );
+}
+
+interface FormSectionProps {
+  formData: AccountFormData;
+  t: ReturnType<typeof useScopedI18n>;
+  onChange: <Key extends keyof AccountFormData>(
+    key: Key,
+    value: AccountFormData[Key],
+  ) => void;
+}
+
+function AccountHolderSection({ formData, t, onChange }: FormSectionProps) {
+  const isOrganization = formData.holderType === "organization";
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-sm font-medium text-muted-foreground">
+        Account Holder
+      </h3>
+      <div className="space-y-4">
+        <div className="space-y-3">
+          <Label>Holder Type</Label>
+          <RadioGroup
+            className="grid gap-3 md:grid-cols-2"
+            value={formData.holderType}
+            onValueChange={(value) =>
+              onChange("holderType", value as AccountHolderType)
+            }
+          >
+            <HolderTypeOption
+              checked={isOrganization}
+              description="Companies, museums, galleries, and institutions."
+              id="holder-type-organization"
+              label="Business / Organization"
+              value="organization"
+            />
+            <HolderTypeOption
+              checked={formData.holderType === "privatePerson"}
+              description="Individuals acting in their own name."
+              id="holder-type-privatePerson"
+              label="Private Person"
+              value="privatePerson"
+            />
+          </RadioGroup>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="businessName">
+            {isOrganization ? t("form.businessName") : "Full Name"}{" "}
+            <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="businessName"
+            value={formData.businessName}
+            onChange={(e) => onChange("businessName", e.target.value)}
+            placeholder={
+              isOrganization
+                ? t("form.placeholders.businessName")
+                : "e.g., Jane Doe"
+            }
+            required
+          />
+        </div>
+        {isOrganization ? (
+          <TextInput
+            id="taxId"
+            label="Organization Number"
+            placeholder="e.g., 987 654 321"
+            value={formData.taxId}
+            onChange={(value) => onChange("taxId", value)}
+          />
+        ) : (
+          <TextInput
+            id="dateOfBirth"
+            label="Date of Birth"
+            type="date"
+            value={formData.dateOfBirth}
+            onChange={(value) => onChange("dateOfBirth", value)}
+          />
+        )}
+        <div className="grid gap-4 md:grid-cols-2">
+          <TextInput
+            id="phone"
+            label={t("form.phone")}
+            placeholder={t("form.placeholders.phone")}
+            value={formData.phone}
+            onChange={(value) => onChange("phone", value)}
+          />
+          <TextInput
+            id="email"
+            label={t("form.email")}
+            placeholder={t("form.placeholders.email")}
+            type="email"
+            value={formData.email}
+            onChange={(value) => onChange("email", value)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HolderTypeOption({
+  checked,
+  description,
+  id,
+  label,
+  value,
+}: {
+  checked: boolean;
+  description: string;
+  id: string;
+  label: string;
+  value: AccountHolderType;
+}) {
+  return (
+    <Label
+      htmlFor={id}
+      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 ${
+        checked ? "border-primary bg-primary/5" : "border-border"
+      }`}
+    >
+      <RadioGroupItem id={id} value={value} className="mt-0.5" />
+      <div className="space-y-1">
+        <div className="font-medium">{label}</div>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+    </Label>
+  );
+}
+
+function AddressSection({ formData, t, onChange }: FormSectionProps) {
+  return (
+    <div className="space-y-4">
+      <h3 className="text-sm font-medium text-muted-foreground">
+        {t("form.address")}
+      </h3>
+      <div className="space-y-4">
+        <TextInput
+          id="address"
+          label={t("form.streetAddress")}
+          placeholder={t("form.placeholders.streetAddress")}
+          value={formData.address}
+          onChange={(value) => onChange("address", value)}
+        />
+        <TextInput
+          id="address2"
+          label={t("form.addressLine2")}
+          placeholder={t("form.placeholders.addressLine2")}
+          value={formData.address2}
+          onChange={(value) => onChange("address2", value)}
+        />
+        <div className="grid gap-4 md:grid-cols-3">
+          <TextInput
+            id="city"
+            label={t("form.city")}
+            placeholder={t("form.placeholders.city")}
+            value={formData.city}
+            onChange={(value) => onChange("city", value)}
+          />
+          <TextInput
+            id="zipCode"
+            label={t("form.zipCode")}
+            placeholder={t("form.placeholders.zipCode")}
+            value={formData.zipCode}
+            onChange={(value) => onChange("zipCode", value)}
+          />
+          <TextInput
+            id="country"
+            label={t("form.country")}
+            placeholder={t("form.placeholders.country")}
+            value={formData.country}
+            onChange={(value) => onChange("country", value)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ContactPersonSection({ formData, t, onChange }: FormSectionProps) {
+  return (
+    <div className="space-y-4">
+      <h3 className="text-sm font-medium text-muted-foreground">
+        {t("form.contactPerson")}
+      </h3>
+      <div className="space-y-4">
+        <TextInput
+          id="contactPerson"
+          label={t("form.contactName")}
+          placeholder={t("form.placeholders.contactName")}
+          value={formData.contactPerson}
+          onChange={(value) => onChange("contactPerson", value)}
+        />
+        <div className="grid gap-4 md:grid-cols-2">
+          <TextInput
+            id="contactPhone"
+            label={t("form.contactPhone")}
+            placeholder={t("form.placeholders.phone")}
+            value={formData.contactPhone}
+            onChange={(value) => onChange("contactPhone", value)}
+          />
+          <TextInput
+            id="contactEmail"
+            label={t("form.contactEmail")}
+            placeholder={t("form.placeholders.contactEmail")}
+            type="email"
+            value={formData.contactEmail}
+            onChange={(value) => onChange("contactEmail", value)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NotesSection({
+  notes,
+  t,
+  onChange,
+}: {
+  notes: string;
+  t: ReturnType<typeof useScopedI18n>;
+  onChange: FormSectionProps["onChange"];
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="notes">Additional Information / Notes</Label>
+      <Textarea
+        id="notes"
+        value={notes}
+        onChange={(e) => onChange("notes", e.target.value)}
+        placeholder={t("form.placeholders.notes")}
+        rows={4}
+      />
+    </div>
+  );
+}
+
+function AccountTypeSection({
+  accountType,
+  t,
+  onChange,
+}: {
+  accountType: AccountType;
+  t: ReturnType<typeof useScopedI18n>;
+  onChange: FormSectionProps["onChange"];
+}) {
+  return (
+    <div className="space-y-4">
+      <h3 className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+        <UserCog className="size-4" />
+        {t("form.accountTypeRole")}
+      </h3>
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="accountType">{t("form.accountType")}</Label>
+          <Select
+            value={accountType}
+            onValueChange={(value: AccountType) =>
+              onChange("accountType", value)
+            }
+          >
+            <SelectTrigger id="accountType">
+              <SelectValue placeholder={t("form.placeholders.accountType")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="lender">{t("types.lender")}</SelectItem>
+              <SelectItem value="borrower">{t("types.borrower")}</SelectItem>
+              <SelectItem value="both">{t("types.both")}</SelectItem>
+              <SelectItem value="institution">
+                {t("types.institution")}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            {t("form.accountTypeDescription")}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RolesSection({
+  roles,
+  selectedRoles,
+  t,
+  onToggleRole,
+}: {
+  roles: RoleWithPermissions[] | undefined;
+  selectedRoles: Id<"roles">[];
+  t: ReturnType<typeof useScopedI18n>;
+  onToggleRole: (roleId: Id<"roles">) => void;
+}) {
+  if (!roles || roles.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-4">
+      <h3 className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+        <Shield className="size-4" />
+        {t("form.rolesWithAccess")}
+      </h3>
+      <div className="space-y-4 rounded-lg border border-border p-4">
+        <p className="text-sm text-muted-foreground">
+          {t("form.rolesDescription")}
+        </p>
+        <div className="space-y-3">
+          {roles.map((role) => (
+            <div key={role._id} className="flex items-center gap-x-2">
+              <Checkbox
+                id={`role-${role._id}`}
+                checked={selectedRoles.includes(role._id)}
+                onCheckedChange={() => onToggleRole(role._id)}
+              />
+              <Label
+                htmlFor={`role-${role._id}`}
+                className="flex-1 cursor-pointer text-sm font-normal"
+              >
+                {role.name}
+                {role.description && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    - {role.description}
+                  </span>
+                )}
+              </Label>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TextInput({
+  id,
+  label,
+  onChange,
+  placeholder,
+  type = "text",
+  value,
+}: {
+  id: string;
+  label: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  type?: string;
+  value: string;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+    </div>
+  );
+}
+
+function FormActions({
+  cancelLabel,
+  createLabel,
+  creatingLabel,
+  isSubmitting,
+}: {
+  cancelLabel: string;
+  createLabel: string;
+  creatingLabel: string;
+  isSubmitting: boolean;
+}) {
+  return (
+    <div className="flex justify-end gap-4 pt-4">
+      <Button type="button" variant="outline" asChild>
+        <Link href="/accounts">{cancelLabel}</Link>
+      </Button>
+      <Button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? (
+          <Loader2 className="mr-2 size-4 animate-spin" />
+        ) : (
+          <Save className="mr-2 size-4" />
+        )}
+        {isSubmitting ? creatingLabel : createLabel}
+      </Button>
     </div>
   );
 }

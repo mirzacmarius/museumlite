@@ -5,7 +5,6 @@ export function usePlatform() {
 
   React.useEffect(() => {
     const detectPlatform = () => {
-      // Check userAgentData first (modern API)
       if (
         typeof navigator !== "undefined" &&
         "userAgentData" in navigator &&
@@ -14,21 +13,17 @@ export function usePlatform() {
         const userAgentData = navigator.userAgentData as {
           platform?: string;
         };
-        setIsMac(userAgentData.platform === "macOS");
-        return;
+        return userAgentData.platform === "macOS";
       }
 
-      // Fallback to navigator.platform
       if (typeof navigator !== "undefined" && navigator.platform) {
-        setIsMac(navigator.platform.toUpperCase().indexOf("MAC") >= 0);
-        return;
+        return navigator.platform.toUpperCase().indexOf("MAC") >= 0;
       }
 
-      // Default to false if we can't detect
-      setIsMac(false);
+      return false;
     };
 
-    detectPlatform();
+    setIsMac(detectPlatform());
   }, []);
 
   return { isMac: !!isMac };

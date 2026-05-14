@@ -2,7 +2,6 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -703,7 +702,8 @@ function useClientFormattedDate(timestamp: number, locale: string) {
   const [formattedDate, setFormattedDate] = useState("");
 
   useEffect(() => {
-    setFormattedDate(formatDate(new Date(timestamp), locale));
+    const intlLocale = locale === "no" ? "nb-NO" : locale;
+    setFormattedDate(new Intl.DateTimeFormat(intlLocale).format(timestamp));
   }, [locale, timestamp]);
 
   return formattedDate;

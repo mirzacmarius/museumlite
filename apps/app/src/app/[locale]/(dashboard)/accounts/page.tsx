@@ -34,15 +34,31 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useState } from "react";
+import { Suspense, useCallback, useState } from "react";
 
 type AccountType = "lender" | "borrower" | "both" | "institution" | "patron";
 
 export default function AccountsPage() {
+  return (
+    <Suspense
+      fallback={
+        <DashboardListPageSkeleton
+          actionsCount={3}
+          filtersCount={1}
+          layout="list"
+        />
+      }
+    >
+      <AccountsPageContent />
+    </Suspense>
+  );
+}
+
+function AccountsPageContent() {
   const t = useScopedI18n("accounts");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
-  const searchParams = useSearchParams();
-  const typeParam = searchParams.get("type") as AccountType | null;
+  const { get } = useSearchParams();
+  const typeParam = get("type") as AccountType | null;
   const [searchQuery, setSearchQuery] = useState("");
   const [accountTypeFilter, setAccountTypeFilter] = useState<
     AccountType | "all"
