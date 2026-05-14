@@ -21,7 +21,7 @@ export function OrganizationSwitcher() {
     setCurrentOrganizationId,
     isLoading,
   } = useOrganization();
-  const router = useRouter();
+  const { replace } = useRouter();
 
   const handleOrganizationChange = (
     organizationId: typeof currentOrganizationId,
@@ -31,14 +31,14 @@ export function OrganizationSwitcher() {
     }
 
     setCurrentOrganizationId(organizationId);
-    router.replace("/");
+    replace("/");
   };
 
   if (isLoading) {
     return (
       <Button variant="ghost" className="gap-2 px-2" disabled>
         <Building2 className="size-4" />
-        <span className="text-sm font-medium">Loading...</span>
+        <span className="text-sm font-medium">Loading…</span>
       </Button>
     );
   }

@@ -23,7 +23,7 @@ const TreeContext = React.createContext<TreeContextValue>({
 });
 
 function useTreeContext<T = unknown>() {
-  return React.useContext(TreeContext) as TreeContextValue<T>;
+  return React.use(TreeContext) as TreeContextValue<T>;
 }
 
 interface TreeProps extends React.HTMLAttributes<HTMLDivElement> {

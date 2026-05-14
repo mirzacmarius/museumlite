@@ -8,8 +8,8 @@ import type { FunctionReturnType } from "convex/server";
 import {
   type ReactNode,
   createContext,
+  use,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -231,7 +231,7 @@ export function OrganizationProvider({
 }
 
 export function useOrganization() {
-  const context = useContext(OrganizationContext);
+  const context = use(OrganizationContext);
   if (context === undefined) {
     throw new Error(
       "useOrganization must be used within an OrganizationProvider",

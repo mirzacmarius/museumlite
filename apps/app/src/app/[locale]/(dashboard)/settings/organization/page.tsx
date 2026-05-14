@@ -233,10 +233,10 @@ export default function OrganizationSettingsPage() {
                   id="watermarkEnabled"
                   checked={watermarkSettings.isEnabled}
                   onCheckedChange={(checked) =>
-                    setWatermarkSettings({
-                      ...watermarkSettings,
+                    setWatermarkSettings((prev) => ({
+                      ...prev,
                       isEnabled: checked,
-                    })
+                    }))
                   }
                 />
               </div>
@@ -249,10 +249,10 @@ export default function OrganizationSettingsPage() {
                       id="watermarkText"
                       value={watermarkSettings.text}
                       onChange={(event) =>
-                        setWatermarkSettings({
-                          ...watermarkSettings,
+                        setWatermarkSettings((prev) => ({
+                          ...prev,
                           text: event.target.value,
-                        })
+                        }))
                       }
                       placeholder="(c) Your Organization Name"
                     />
@@ -263,10 +263,10 @@ export default function OrganizationSettingsPage() {
                     <Select
                       value={watermarkSettings.position}
                       onValueChange={(value) =>
-                        setWatermarkSettings({
-                          ...watermarkSettings,
+                        setWatermarkSettings((prev) => ({
+                          ...prev,
                           position: value as WatermarkPosition,
-                        })
+                        }))
                       }
                     >
                       <SelectTrigger id="watermarkPosition">
@@ -299,10 +299,10 @@ export default function OrganizationSettingsPage() {
                       step={0.05}
                       value={watermarkSettings.opacity}
                       onChange={(event) =>
-                        setWatermarkSettings({
-                          ...watermarkSettings,
+                        setWatermarkSettings((prev) => ({
+                          ...prev,
                           opacity: Number.parseFloat(event.target.value),
-                        })
+                        }))
                       }
                       className="w-full accent-primary"
                     />
@@ -312,7 +312,7 @@ export default function OrganizationSettingsPage() {
                     <p className="mb-2 text-xs font-medium text-muted-foreground">
                       Preview
                     </p>
-                    <div className="relative h-32 overflow-hidden rounded border bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
+                    <div className="relative h-32 overflow-hidden rounded border bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900">
                       {watermarkSettings.text ? (
                         <div
                           className={cn(

@@ -2,8 +2,8 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useClientDate } from "@/hooks/use-client-date-format";
 import { writeTextToClipboard } from "@/lib/clipboard";
-import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -62,6 +62,11 @@ interface WebhookItem {
   events: string[];
   isActive: boolean;
   lastTriggeredAt?: number;
+}
+
+function ClientDateText({ timestamp }: { timestamp?: number }) {
+  const locale = useCurrentLocale();
+  return useClientDate(timestamp, locale);
 }
 
 export default function DeveloperPage() {
@@ -124,7 +129,6 @@ export default function DeveloperPage() {
 function ApiKeysTab({
   organizationId,
 }: { organizationId: Id<"organizations"> }) {
-  const locale = useCurrentLocale();
   const t = useScopedI18n("settings");
   const apiKeys = useQuery(api.apiKeys.list, { organizationId });
   const createKey = useMutation(api.apiKeys.create);
@@ -240,16 +244,16 @@ function ApiKeysTab({
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <code className="rounded bg-muted px-2 py-0.5">
-                        {key.prefix}...
+                        {key.prefix}…
                       </code>
                       <span>
                         {t("apiKeys.created")}{" "}
-                        {formatDate(new Date(key.createdAt), locale)}
+                        <ClientDateText timestamp={key.createdAt} />
                       </span>
                       {key.lastUsedAt && (
                         <span>
                           {t("apiKeys.lastUsed")}{" "}
-                          {formatDate(new Date(key.lastUsedAt), locale)}
+                          <ClientDateText timestamp={key.lastUsedAt} />
                         </span>
                       )}
                     </div>

@@ -1,8 +1,8 @@
 "use client";
 
+import { MaterialsCombobox } from "@/components/materials-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { MaterialsCombobox } from "@/components/materials-combobox";
 import { TemplateCombobox } from "@/components/template-combobox";
 import { TypeCombobox } from "@/components/type-combobox";
 import { useScopedI18n } from "@/locales/client";
@@ -43,6 +43,15 @@ import { Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 type CounterScope = "global" | "year" | "month" | "day";
+
+const PAGE_HEADER = (
+  <div className="flex flex-col gap-2">
+    <h2 className="text-xl font-medium text-foreground">Preferences</h2>
+    <p className="text-sm text-muted-foreground">
+      Configure catalog vocabulary, numbering, workflows, and location tracking.
+    </p>
+  </div>
+);
 
 function SettingsSection({
   children,
@@ -173,8 +182,6 @@ export default function PreferencesSettingsPage() {
   const [saveTemplateDesc, setSaveTemplateDesc] = useState("");
   const [deleteTemplateId, setDeleteTemplateId] =
     useState<Id<"accessionTemplates"> | null>(null);
-  const [selectedCustomTemplateId, setSelectedCustomTemplateId] =
-    useState<Id<"accessionTemplates"> | null>(null);
   const [formData, setFormData] = useState({
     accessionNumberFormat: "",
     accessionCounterScope: "year" as CounterScope,
@@ -256,9 +263,7 @@ export default function PreferencesSettingsPage() {
     );
   }, [customTemplates, formData.accessionNumberFormat]);
 
-  useEffect(() => {
-    setSelectedCustomTemplateId(selectedCustomTemplate?._id || null);
-  }, [selectedCustomTemplate]);
+  const selectedCustomTemplateId = selectedCustomTemplate?._id ?? null;
 
   const openSaveTemplateModal = (isUpdate = false) => {
     if (!formData.accessionNumberFormat || !validation?.isValid) {
@@ -320,7 +325,6 @@ export default function PreferencesSettingsPage() {
           ...current,
           accessionNumberFormat: "",
         }));
-        setSelectedCustomTemplateId(null);
       }
       setDeleteTemplateId(null);
     } catch (err) {
@@ -370,20 +374,10 @@ export default function PreferencesSettingsPage() {
     }
   };
 
-  const pageHeader = (
-    <div className="flex flex-col gap-2">
-      <h2 className="text-xl font-medium text-foreground">Preferences</h2>
-      <p className="text-sm text-muted-foreground">
-        Configure catalog vocabulary, numbering, workflows, and location
-        tracking.
-      </p>
-    </div>
-  );
-
   if (!currentOrganizationId) {
     return (
       <div className="flex w-full flex-col gap-6">
-        {pageHeader}
+        {PAGE_HEADER}
         <div className="flex min-h-48 items-center justify-center rounded-lg border border-border bg-card p-6">
           <p className="text-muted-foreground">
             Please select an organization to manage preferences.
@@ -396,7 +390,7 @@ export default function PreferencesSettingsPage() {
   if (organization === undefined) {
     return (
       <div className="flex w-full flex-col gap-6">
-        {pageHeader}
+        {PAGE_HEADER}
         <div className="flex min-h-48 items-center justify-center rounded-lg border border-border bg-card p-6">
           <p className="text-muted-foreground">{tCommon("loading")}</p>
         </div>
@@ -407,7 +401,7 @@ export default function PreferencesSettingsPage() {
   if (organization === null) {
     return (
       <div className="flex w-full flex-col gap-6">
-        {pageHeader}
+        {PAGE_HEADER}
         <div className="flex min-h-48 items-center justify-center rounded-lg border border-border bg-card p-6">
           <p className="text-muted-foreground">{tCommon("noResults")}</p>
         </div>
@@ -417,7 +411,7 @@ export default function PreferencesSettingsPage() {
 
   return (
     <div className="flex w-full flex-col gap-6">
-      {pageHeader}
+      {PAGE_HEADER}
       {error ? (
         <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
           {error}
@@ -460,10 +454,10 @@ export default function PreferencesSettingsPage() {
                 customTemplates={customTemplateOptions}
                 value={formData.accessionNumberFormat}
                 onValueChange={(value) =>
-                  setFormData({
-                    ...formData,
+                  setFormData((prev) => ({
+                    ...prev,
                     accessionNumberFormat: value,
-                  })
+                  }))
                 }
                 placeholder={t("organization.chooseTemplate")}
                 validation={
@@ -492,10 +486,10 @@ export default function PreferencesSettingsPage() {
                 <Select
                   value={formData.accessionCounterScope}
                   onValueChange={(value: CounterScope) =>
-                    setFormData({
-                      ...formData,
+                    setFormData((prev) => ({
+                      ...prev,
                       accessionCounterScope: value,
-                    })
+                    }))
                   }
                 >
                   <SelectTrigger>
@@ -524,10 +518,10 @@ export default function PreferencesSettingsPage() {
                 description={t("organization.autoGenerateAccession")}
                 checked={formData.autoGenerateAccessionNumbers}
                 onCheckedChange={(checked) =>
-                  setFormData({
-                    ...formData,
+                  setFormData((prev) => ({
+                    ...prev,
                     autoGenerateAccessionNumbers: checked,
-                  })
+                  }))
                 }
               />
             </div>
@@ -542,10 +536,10 @@ export default function PreferencesSettingsPage() {
               description="When enabled, new object requests are routed for curator and admin approval. When disabled, submitted objects are approved and published immediately."
               checked={formData.accessionWorkflowEnabled}
               onCheckedChange={(checked) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   accessionWorkflowEnabled: checked,
-                })
+                }))
               }
             />
             <PreferenceSwitch
@@ -554,10 +548,10 @@ export default function PreferencesSettingsPage() {
               description="When enabled, deaccession requests require approval before objects are removed. When disabled, deaccession requests are applied immediately."
               checked={formData.deaccessionWorkflowEnabled}
               onCheckedChange={(checked) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   deaccessionWorkflowEnabled: checked,
-                })
+                }))
               }
             />
           </div>
@@ -571,16 +565,16 @@ export default function PreferencesSettingsPage() {
               description="When disabled, location navigation and object placement surfaces are hidden."
               checked={formData.locationTrackingEnabled}
               onCheckedChange={(checked) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   locationTrackingEnabled: checked,
-                })
+                }))
               }
             />
             <LocationTypesEditor
               locationTypes={formData.locationTypes}
               onChange={(locationTypes) =>
-                setFormData({ ...formData, locationTypes })
+                setFormData((prev) => ({ ...prev, locationTypes }))
               }
             />
           </div>
@@ -593,10 +587,10 @@ export default function PreferencesSettingsPage() {
             description={t("organization.detailedConditionReportsHint")}
             checked={formData.enableDetailedConditionReports}
             onCheckedChange={(checked) =>
-              setFormData({
-                ...formData,
+              setFormData((prev) => ({
+                ...prev,
                 enableDetailedConditionReports: checked,
-              })
+              }))
             }
           />
         </SettingsSection>

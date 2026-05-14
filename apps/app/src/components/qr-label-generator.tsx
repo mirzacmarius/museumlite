@@ -1,8 +1,10 @@
 "use client";
 
 import { cn } from "@v1/ui/utils";
+import Image from "next/image";
 import QRCode from "qrcode";
-import { forwardRef, useEffect, useRef, useState } from "react";
+import type * as React from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type LabelSize = "2x2" | "1x3";
 
@@ -17,6 +19,7 @@ interface QRLabelGeneratorProps {
   data: LabelData;
   size?: LabelSize;
   className?: string;
+  ref?: React.Ref<HTMLDivElement>;
 }
 
 /**
@@ -40,10 +43,12 @@ interface QRLabelGeneratorProps {
  * />
  * ```
  */
-export const QRLabelGenerator = forwardRef<
-  HTMLDivElement,
-  QRLabelGeneratorProps
->(({ data, size = "2x2", className }, ref) => {
+export function QRLabelGenerator({
+  data,
+  size = "2x2",
+  className,
+  ref,
+}: QRLabelGeneratorProps) {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -111,10 +116,13 @@ export const QRLabelGenerator = forwardRef<
             height: labelStyle.qrSize,
           }}
         >
-          <img
+          <Image
             src={qrCodeDataUrl}
             alt={`QR code for ${data.accessionNumber}`}
             className="size-full object-contain"
+            width={180}
+            height={180}
+            unoptimized
             style={{
               imageRendering: "pixelated",
             }}
@@ -168,7 +176,7 @@ export const QRLabelGenerator = forwardRef<
       <canvas ref={canvasRef} className="hidden" />
     </div>
   );
-});
+}
 
 QRLabelGenerator.displayName = "QRLabelGenerator";
 
@@ -182,41 +190,45 @@ interface QRLabelSheetProps {
   labels: LabelData[];
   size?: LabelSize;
   className?: string;
+  ref?: React.Ref<HTMLDivElement>;
 }
 
-export const QRLabelSheet = forwardRef<HTMLDivElement, QRLabelSheetProps>(
-  ({ labels, size = "2x2", className }, ref) => {
-    // Calculate grid layout based on label size
-    // For 2x2 labels: 4 per row (8.5in / 2in = 4.25)
-    // For 1x3 labels: 8 per row (8.5in / 1in = 8.5)
-    const gridCols = size === "2x2" ? 4 : 8;
+export function QRLabelSheet({
+  labels,
+  size = "2x2",
+  className,
+  ref,
+}: QRLabelSheetProps) {
+  // Calculate grid layout based on label size
+  // For 2x2 labels: 4 per row (8.5in / 2in = 4.25)
+  // For 1x3 labels: 8 per row (8.5in / 1in = 8.5)
+  const gridCols = size === "2x2" ? 4 : 8;
 
-    return (
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "w-full min-h-screen bg-white p-4",
+        "print:p-0 print:m-0",
+        className,
+      )}
+    >
       <div
-        ref={ref}
-        className={cn(
-          "w-full min-h-screen bg-white p-4",
-          "print:p-0 print:m-0",
-          className,
-        )}
+        className={cn("grid gap-2", "print:gap-0")}
+        style={{
+          gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
+        }}
       >
-        <div
-          className={cn("grid gap-2", "print:gap-0")}
-          style={{
-            gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
-          }}
-        >
-          {labels.map((label, index) => (
-            <QRLabelGenerator
-              key={`${label.accessionNumber}-${index}`}
-              data={label}
-              size={size}
-            />
-          ))}
-        </div>
+        {labels.map((label) => (
+          <QRLabelGenerator
+            key={`${label.accessionNumber}-${label.qrCodeUrl}`}
+            data={label}
+            size={size}
+          />
+        ))}
       </div>
-    );
-  },
-);
+    </div>
+  );
+}
 
 QRLabelSheet.displayName = "QRLabelSheet";

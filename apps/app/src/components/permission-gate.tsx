@@ -6,8 +6,8 @@ import { useQuery } from "convex/react";
 import {
   type ReactNode,
   createContext,
+  use,
   useCallback,
-  useContext,
   useMemo,
 } from "react";
 import { useOrganization } from "./organization-provider";
@@ -82,7 +82,7 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
  * Hook to access permission context
  */
 export function usePermissions(): PermissionContextType {
-  const context = useContext(PermissionContext);
+  const context = use(PermissionContext);
   if (context === undefined) {
     throw new Error("usePermissions must be used within a PermissionProvider");
   }
@@ -164,7 +164,7 @@ export function usePermission(
   permission: string,
 ): boolean {
   // For backwards compatibility, try to use context first
-  const context = useContext(PermissionContext);
+  const context = use(PermissionContext);
 
   // Fallback to individual query for backwards compatibility
   // This path should be avoided as it causes N+1 queries
@@ -194,7 +194,7 @@ export function usePermission(
  */
 export function useUserPermissions(organizationId: string | null): string[] {
   // For backwards compatibility, try to use context first
-  const context = useContext(PermissionContext);
+  const context = use(PermissionContext);
 
   // Fallback to individual query for backwards compatibility
   const permissions = useQuery(

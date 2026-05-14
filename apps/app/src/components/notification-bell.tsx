@@ -1,5 +1,7 @@
 "use client";
 
+import { useClientRelativeTime } from "@/hooks/use-client-date-format";
+import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -11,24 +13,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { useOrganization } from "./organization-provider";
 
-function formatRelativeTime(timestamp: number): string {
-  const now = Date.now();
-  const diff = now - timestamp;
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-  const weeks = Math.floor(days / 7);
-  const months = Math.floor(days / 30);
-  const years = Math.floor(days / 365);
-
-  if (seconds < 60) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-  if (weeks < 4) return `${weeks}w ago`;
-  if (months < 12) return `${months}mo ago`;
-  return `${years}y ago`;
+function NotificationTimestamp({ timestamp }: { timestamp: number }) {
+  const locale = useCurrentLocale();
+  return useClientRelativeTime(timestamp, locale, { addSuffix: true });
 }
 
 export function NotificationBell() {
@@ -143,7 +130,7 @@ export function NotificationBell() {
           <div className="max-h-96 overflow-y-auto">
             {isOpen && notificationCenter === undefined ? (
               <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
-                <p className="text-sm text-muted-foreground">Loading...</p>
+                <p className="text-sm text-muted-foreground">Loading…</p>
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
@@ -182,7 +169,9 @@ export function NotificationBell() {
                         </p>
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-muted-foreground">
-                            {formatRelativeTime(notification.createdAt)}
+                            <NotificationTimestamp
+                              timestamp={notification.createdAt}
+                            />
                           </span>
                           {!notification.read && (
                             <Button

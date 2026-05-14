@@ -62,8 +62,8 @@ export function PlanUsageStats({
           </div>
         </div>
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i}>
+          {["storage", "objects", "exports"].map((metric) => (
+            <div key={metric}>
               <div className="mb-1 flex items-end justify-between">
                 <div className="h-3 w-16 animate-pulse rounded bg-zinc-800" />
                 <div className="h-3 w-20 animate-pulse rounded bg-zinc-800" />
@@ -87,7 +87,7 @@ export function PlanUsageStats({
     >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <div className="size-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500" />
+          <div className="size-1.5 rounded-full bg-primary" />
           <span className="text-sm font-semibold text-zinc-200">
             {getTierDisplayName(stats.tier)}
           </span>
@@ -95,7 +95,7 @@ export function PlanUsageStats({
         {showUpgradeLink && !isEnterprise ? (
           <Link
             href="/settings/billing"
-            className="text-xs font-medium uppercase tracking-wide text-zinc-500 transition-colors hover:text-indigo-400"
+            className="text-xs font-medium uppercase tracking-wide text-zinc-500 transition-colors hover:text-primary"
           >
             Upgrade
           </Link>
@@ -117,7 +117,7 @@ export function PlanUsageStats({
               </span>
             )
           }
-          progressClassName="bg-indigo-500"
+          progressClassName="bg-primary"
           percentage={calculatePercentage(
             stats.storage.used,
             stats.storage.limit,

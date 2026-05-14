@@ -261,7 +261,8 @@ export function TemplateCombobox({
                         )}
                       />
                       <div
-                        className="flex-1 min-w-0 flex items-center justify-between gap-2"
+                        role="group"
+                        className="flex min-w-0 flex-1 items-center justify-between gap-2"
                         onClick={(e) => {
                           // Allow clicking on the template area to select it
                           if ((e.target as HTMLElement).closest("button")) {

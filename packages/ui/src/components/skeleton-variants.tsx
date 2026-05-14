@@ -1,5 +1,9 @@
 import { cn } from "../utils";
 
+function skeletonKeys(prefix: string, count: number) {
+  return Array.from({ length: count }, (_, index) => `${prefix}-${index}`);
+}
+
 interface SkeletonProps {
   className?: string;
 }
@@ -24,12 +28,8 @@ export function SkeletonTable({ className }: SkeletonProps) {
       )}
     >
       <div className="h-10 bg-card/40" />
-      {[...Array(5)].map((_, i) => (
-        <div
-          // biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton rows
-          key={i}
-          className="h-12 bg-card/20 border-t border-border/50"
-        />
+      {skeletonKeys("table-row", 5).map((key) => (
+        <div key={key} className="h-12 bg-card/20 border-t border-border/50" />
       ))}
     </div>
   );
@@ -87,10 +87,9 @@ export function SkeletonList({
           className,
         )}
       >
-        {[...Array(count)].map((_, i) => (
+        {skeletonKeys("grid-item", count).map((key) => (
           <div
-            // biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton items
-            key={i}
+            key={key}
             className="rounded-xl border border-border/60 overflow-hidden"
           >
             <div className="aspect-[4/3] bg-muted/40" />
@@ -106,10 +105,9 @@ export function SkeletonList({
 
   return (
     <div className={cn("space-y-3", className)}>
-      {[...Array(count)].map((_, i) => (
+      {skeletonKeys("list-item", count).map((key) => (
         <div
-          // biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton items
-          key={i}
+          key={key}
           className="flex items-center gap-4 rounded-lg border border-border/60 bg-card p-4"
         >
           <div className="size-12 rounded bg-muted/50" />
@@ -131,9 +129,8 @@ interface SkeletonFormProps extends SkeletonProps {
 export function SkeletonForm({ className, fields = 4 }: SkeletonFormProps) {
   return (
     <div className={cn("space-y-6", className)}>
-      {[...Array(fields)].map((_, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton fields
-        <div key={i} className="space-y-2">
+      {skeletonKeys("form-field", fields).map((key) => (
+        <div key={key} className="space-y-2">
           <div className="h-4 w-24 bg-muted/50 rounded" />
           <div className="h-10 w-full bg-muted/30 rounded-lg border border-border/60" />
         </div>
@@ -158,10 +155,9 @@ export function SkeletonStats({ className, count = 4 }: SkeletonStatsProps) {
         className,
       )}
     >
-      {[...Array(count)].map((_, i) => (
+      {skeletonKeys("stat", count).map((key) => (
         <div
-          // biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton stats
-          key={i}
+          key={key}
           className="rounded-xl border border-border/60 bg-card p-4"
         >
           <div className="flex items-center gap-3 mb-3">
@@ -185,15 +181,11 @@ export function SkeletonTimeline({
 }: SkeletonTimelineProps) {
   return (
     <div className={cn("space-y-4", className)}>
-      {[...Array(count)].map((_, i) => (
-        <div
-          // biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton timeline
-          key={i}
-          className="flex gap-4"
-        >
+      {skeletonKeys("timeline-item", count).map((key, index) => (
+        <div key={key} className="flex gap-4">
           <div className="flex flex-col items-center">
             <div className="size-8 rounded-full bg-muted/50" />
-            {i < count - 1 && (
+            {index < count - 1 && (
               <div className="w-0.5 flex-1 bg-border/60 my-2" />
             )}
           </div>

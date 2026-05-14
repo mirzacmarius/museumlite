@@ -9,7 +9,7 @@ import { Button } from "@v1/ui/button";
 import { Switch } from "@v1/ui/switch";
 import { useAction, useQuery } from "convex/react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { Suspense, useEffect, useRef, useState, useTransition } from "react";
 
 type BillingInterval = "month" | "year";
 type PaidTier = "pro" | "enterprise";
@@ -105,9 +105,10 @@ function PlanCard({
   );
 }
 
-export default function BillingSettings() {
+function BillingSettingsContent() {
   const locale = useCurrentLocale();
   const searchParams = useSearchParams();
+  const getSearchParam = searchParams.get.bind(searchParams);
   const t = useScopedI18n("billing");
   const { currentOrganization, currentOrganizationId } = useOrganization();
   const cachedProducts = useQuery(api.subscriptions.listAllProducts);
@@ -162,7 +163,7 @@ export default function BillingSettings() {
       return;
     }
 
-    if (searchParams.get("checkout") !== "success") {
+    if (getSearchParam("checkout") !== "success") {
       return;
     }
 
@@ -177,7 +178,7 @@ export default function BillingSettings() {
   }, [
     canManageBilling,
     currentOrganizationId,
-    searchParams,
+    getSearchParam,
     syncOrganizationSubscription,
   ]);
 
@@ -390,7 +391,7 @@ export default function BillingSettings() {
 
             {paidPlans.length === 0 ? (
               <div className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-                Loading paid plans...
+                Loading paid plans…
               </div>
             ) : null}
           </div>
@@ -430,12 +431,20 @@ export default function BillingSettings() {
                 onClick={handleManageSubscription}
                 disabled={isManagingPortal || isPending}
               >
-                {isManagingPortal ? "Working..." : t("manage")}
+                {isManagingPortal ? "Working…" : t("manage")}
               </Button>
             ) : null}
           </div>
         </div>
       ) : null}
     </div>
+  );
+}
+
+export default function BillingSettings() {
+  return (
+    <Suspense fallback={null}>
+      <BillingSettingsContent />
+    </Suspense>
   );
 }

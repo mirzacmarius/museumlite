@@ -26,23 +26,16 @@ export function SearchAutocomplete({
   debounceMs = 300,
 }: SearchAutocompleteProps) {
   const [open, setOpen] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState(value);
   const [debouncedValue, setDebouncedValue] = React.useState(value);
   const { currentOrganizationId } = useOrganization();
 
-  // Debounce the input value
   React.useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedValue(inputValue);
+      setDebouncedValue(value);
     }, debounceMs);
 
     return () => clearTimeout(timer);
-  }, [inputValue, debounceMs]);
-
-  // Sync with external value prop
-  React.useEffect(() => {
-    setInputValue(value);
-  }, [value]);
+  }, [value, debounceMs]);
 
   // Fetch suggestions based on debounced value
   const normalizedQuery = debouncedValue.trim();
@@ -73,7 +66,6 @@ export function SearchAutocomplete({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setInputValue(newValue);
     onValueChange?.(newValue);
 
     // Open popover when user starts typing or has history to show
@@ -88,7 +80,7 @@ export function SearchAutocomplete({
 
   const handleInputFocus = () => {
     // Show recent searches when focusing on empty input
-    if (!inputValue.trim() && searchHistory && searchHistory.length > 0) {
+    if (!value.trim() && searchHistory && searchHistory.length > 0) {
       setOpen(true);
     }
   };
@@ -96,7 +88,6 @@ export function SearchAutocomplete({
   const saveSearchHistory = useMutation(api.searchHistory.save);
 
   const handleSelectSuggestion = (suggestion: string) => {
-    setInputValue(suggestion);
     onValueChange?.(suggestion);
     setOpen(false);
 
@@ -113,7 +104,6 @@ export function SearchAutocomplete({
   };
 
   const handleClear = () => {
-    setInputValue("");
     onValueChange?.("");
     setOpen(false);
   };
@@ -129,7 +119,7 @@ export function SearchAutocomplete({
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
-            value={inputValue}
+            value={value}
             onChange={handleInputChange}
             onFocus={handleInputFocus}
             placeholder={placeholder}
@@ -139,7 +129,7 @@ export function SearchAutocomplete({
             aria-expanded={showDropdown}
             aria-controls={showDropdown ? "search-suggestions" : undefined}
           />
-          {inputValue && (
+          {value && (
             <button
               type="button"
               onClick={handleClear}
@@ -174,7 +164,7 @@ export function SearchAutocomplete({
                     "focus:bg-accent focus:text-accent-foreground focus:outline-none",
                   )}
                   role="option"
-                  aria-selected={inputValue === history.query}
+                  aria-selected={value === history.query}
                 >
                   <div className="flex items-center gap-2">
                     <Clock className="size-3.5 text-muted-foreground shrink-0" />
@@ -206,7 +196,7 @@ export function SearchAutocomplete({
                     "focus:bg-accent focus:text-accent-foreground focus:outline-none",
                   )}
                   role="option"
-                  aria-selected={inputValue === suggestion}
+                  aria-selected={value === suggestion}
                 >
                   <div className="flex items-center gap-2">
                     <Search className="size-3.5 text-muted-foreground shrink-0" />

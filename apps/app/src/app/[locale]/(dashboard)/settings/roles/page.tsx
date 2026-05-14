@@ -239,7 +239,10 @@ export default function RolesSettingsPage() {
                       id="role-name"
                       value={formData.name}
                       onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
+                        setFormData((prev) => ({
+                          ...prev,
+                          name: e.target.value,
+                        }))
                       }
                       placeholder={t("roleNamePlaceholder")}
                       required
@@ -253,10 +256,10 @@ export default function RolesSettingsPage() {
                       id="role-description"
                       value={formData.description}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData,
+                        setFormData((prev) => ({
+                          ...prev,
                           description: e.target.value,
-                        })
+                        }))
                       }
                       placeholder={t("descriptionPlaceholder")}
                       rows={3}
@@ -276,7 +279,7 @@ export default function RolesSettingsPage() {
                                 {perms.map((perm) => (
                                   <div
                                     key={perm._id}
-                                    className="flex items-center space-x-2"
+                                    className="flex items-center gap-x-2"
                                   >
                                     <Checkbox
                                       id={`perm-${perm._id}`}
@@ -336,7 +339,7 @@ export default function RolesSettingsPage() {
       <div className="grid gap-4 md:grid-cols-2">
         {roles === undefined ? (
           <div className="col-span-2 flex h-64 items-center justify-center">
-            <p className="text-muted-foreground">Loading roles...</p>
+            <p className="text-muted-foreground">Loading roles…</p>
           </div>
         ) : roles.length === 0 ? (
           <div className="col-span-2">
@@ -436,7 +439,7 @@ export default function RolesSettingsPage() {
                   id="edit-role-name"
                   value={formData.name}
                   onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
+                    setFormData((prev) => ({ ...prev, name: e.target.value }))
                   }
                   required
                 />
@@ -449,10 +452,10 @@ export default function RolesSettingsPage() {
                   id="edit-role-description"
                   value={formData.description}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
+                    setFormData((prev) => ({
+                      ...prev,
                       description: e.target.value,
-                    })
+                    }))
                   }
                   rows={3}
                 />
@@ -471,7 +474,7 @@ export default function RolesSettingsPage() {
                             {perms.map((perm) => (
                               <div
                                 key={perm._id}
-                                className="flex items-center space-x-2"
+                                className="flex items-center gap-x-2"
                               >
                                 <Checkbox
                                   id={`edit-perm-${perm._id}`}

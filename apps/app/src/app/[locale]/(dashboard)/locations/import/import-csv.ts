@@ -62,11 +62,12 @@ export function parseCSV(text: string): {
     };
   }
 
+  const headerIndexByName = new Map(
+    headers.map((header, index) => [header.toLowerCase(), index]),
+  );
   const columnMap = new Map<string, number>();
   for (const column of ALL_COLUMNS) {
-    const index = headers.findIndex(
-      (header) => header.toLowerCase() === column.toLowerCase(),
-    );
+    const index = headerIndexByName.get(column.toLowerCase()) ?? -1;
     if (index !== -1) {
       columnMap.set(column, index);
     }

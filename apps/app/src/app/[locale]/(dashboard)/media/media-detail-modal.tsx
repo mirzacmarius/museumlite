@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDistanceLocale } from "@/lib/format-date";
+import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -23,6 +23,11 @@ function formatFileSize(bytes: number): string {
   const sizes = ["B", "KB", "MB", "GB", "TB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${Number.parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`;
+}
+
+function RelativeTimestamp({ timestamp }: { timestamp: number }) {
+  const locale = useCurrentLocale();
+  return useClientRelativeTime(timestamp, locale, { addSuffix: true });
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -68,8 +73,6 @@ export function MediaDetailModal({
   onClose: () => void;
 }) {
   const t = useI18n();
-  const locale = useCurrentLocale();
-
   const item = useQuery(api.media.getWithMetadata, { mediaId });
   const versions = useQuery(api.mediaVersions.listVersions, { mediaId });
 
@@ -115,9 +118,7 @@ export function MediaDetailModal({
                 </p>
                 <p className="text-xs text-zinc-500">
                   {formatFileSize(item.fileSize)} &bull;{" "}
-                  {formatDistanceLocale(new Date(item.uploadedAt), locale, {
-                    addSuffix: true,
-                  })}
+                  <RelativeTimestamp timestamp={item.uploadedAt} />
                 </p>
               </div>
 
@@ -127,7 +128,7 @@ export function MediaDetailModal({
                 </p>
                 <Link
                   href={`/objects/${item.collectionId}`}
-                  className="text-sm text-indigo-400 hover:underline"
+                  className="text-sm text-primary hover:underline"
                 >
                   {item.collectionTitle}
                 </Link>
@@ -210,11 +211,9 @@ export function MediaDetailModal({
                               )}
                             </div>
                             <p className="text-xs text-zinc-500">
-                              {formatDistanceLocale(
-                                new Date(version.createdAt),
-                                locale,
-                                { addSuffix: true },
-                              )}
+                              <RelativeTimestamp
+                                timestamp={version.createdAt}
+                              />
                             </p>
                             <div className="flex items-center gap-2">
                               <span className="inline-flex rounded bg-zinc-800 px-2 py-0.5 text-xs capitalize text-zinc-300">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 export interface KeyboardShortcut {
   key: string;
@@ -56,62 +56,68 @@ export function useKeyboardShortcuts({
   onShowHelp,
 }: UseKeyboardShortcutsOptions = {}) {
   const router = useRouter();
-  const [goKeyPressed, setGoKeyPressed] = useState(false);
+  const goKeyPressedRef = useRef(false);
+  const onShowHelpRef = useRef(onShowHelp);
+  const routerRef = useRef(router);
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      const isInput =
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable;
+  useEffect(() => {
+    onShowHelpRef.current = onShowHelp;
+    routerRef.current = router;
+  }, [onShowHelp, router]);
 
-      if (isInput) return;
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    const target = e.target as HTMLElement;
+    const isInput =
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.isContentEditable;
 
-      if (e.key === "?" && !e.metaKey && !e.ctrlKey) {
-        e.preventDefault();
-        onShowHelp?.();
-        return;
+    if (isInput) return;
+
+    if (e.key === "?" && !e.metaKey && !e.ctrlKey) {
+      e.preventDefault();
+      onShowHelpRef.current?.();
+      return;
+    }
+
+    if (e.key === "o" && (e.metaKey || e.ctrlKey) && e.shiftKey) {
+      e.preventDefault();
+      routerRef.current.push("/objects/new");
+      return;
+    }
+
+    if (e.key === "l" && (e.metaKey || e.ctrlKey) && e.shiftKey) {
+      e.preventDefault();
+      routerRef.current.push("/loans/new");
+      return;
+    }
+
+    if (e.key === "g" || e.key === "G") {
+      goKeyPressedRef.current = true;
+      setTimeout(() => {
+        goKeyPressedRef.current = false;
+      }, 1000);
+      return;
+    }
+
+    if (goKeyPressedRef.current) {
+      goKeyPressedRef.current = false;
+      switch (e.key.toLowerCase()) {
+        case "d":
+          e.preventDefault();
+          routerRef.current.push("/");
+          break;
+        case "o":
+          e.preventDefault();
+          routerRef.current.push("/objects");
+          break;
+        case "l":
+          e.preventDefault();
+          routerRef.current.push("/loans");
+          break;
       }
-
-      if (e.key === "o" && (e.metaKey || e.ctrlKey) && e.shiftKey) {
-        e.preventDefault();
-        router.push("/objects/new");
-        return;
-      }
-
-      if (e.key === "l" && (e.metaKey || e.ctrlKey) && e.shiftKey) {
-        e.preventDefault();
-        router.push("/loans/new");
-        return;
-      }
-
-      if (e.key === "g" || e.key === "G") {
-        setGoKeyPressed(true);
-        setTimeout(() => setGoKeyPressed(false), 1000);
-        return;
-      }
-
-      if (goKeyPressed) {
-        setGoKeyPressed(false);
-        switch (e.key.toLowerCase()) {
-          case "d":
-            e.preventDefault();
-            router.push("/");
-            break;
-          case "o":
-            e.preventDefault();
-            router.push("/objects");
-            break;
-          case "l":
-            e.preventDefault();
-            router.push("/loans");
-            break;
-        }
-      }
-    },
-    [router, onShowHelp, goKeyPressed],
-  );
+    }
+  }, []);
 
   useEffect(() => {
     document.addEventListener("keydown", handleKeyDown);

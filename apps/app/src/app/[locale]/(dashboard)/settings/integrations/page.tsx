@@ -28,20 +28,22 @@ import { useMutation, useQuery } from "convex/react";
 import { BookOpen, Check, ChevronRight, Loader2, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const INTEGRATION_ICONS: Record<string, React.ReactNode> = {
   library: <BookOpen className="size-6" />,
 };
 
-export default function IntegrationsSettingsPage() {
+function IntegrationsSettingsContent() {
   const { currentOrganizationId } = useOrganization();
   const tToast = useScopedI18n("common.toast");
   const t = useScopedI18n("integrations");
   const tCommon = useScopedI18n("common");
   const searchParams = useSearchParams();
-  const router = useRouter();
+  const getSearchParam = searchParams.get.bind(searchParams);
+  const stringifySearchParams = searchParams.toString.bind(searchParams);
+  const { replace } = useRouter();
   const [disableDialogOpen, setDisableDialogOpen] = useState(false);
   const [subscribeDialogOpen, setSubscribeDialogOpen] = useState(false);
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(
@@ -65,19 +67,25 @@ export default function IntegrationsSettingsPage() {
   const disableIntegration = useMutation(api.integrations.disable);
 
   useEffect(() => {
-    const subscribedIntegrationId = searchParams?.get("subscribed");
+    const subscribedIntegrationId = getSearchParam("subscribed");
     if (
       subscribedIntegrationId &&
       currentOrganizationId &&
       availableIntegrations
     ) {
-      const newParams = new URLSearchParams(searchParams.toString());
+      const newParams = new URLSearchParams(stringifySearchParams());
       newParams.delete("subscribed");
-      router.replace(`?${newParams.toString()}`);
+      replace(`?${newParams.toString()}`);
       setPendingEnableIntegration(subscribedIntegrationId);
       toast.info(tToast("waitingSubscription"));
     }
-  }, [searchParams, currentOrganizationId, availableIntegrations, router]);
+  }, [
+    getSearchParam,
+    stringifySearchParams,
+    currentOrganizationId,
+    availableIntegrations,
+    replace,
+  ]);
 
   useEffect(() => {
     const tryEnablePendingIntegration = async () => {
@@ -351,5 +359,13 @@ export default function IntegrationsSettingsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function IntegrationsSettingsPage() {
+  return (
+    <Suspense fallback={null}>
+      <IntegrationsSettingsContent />
+    </Suspense>
   );
 }

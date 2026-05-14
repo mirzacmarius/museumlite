@@ -36,16 +36,63 @@ interface TypeComboboxProps {
   canDeleteTypes?: boolean;
 }
 
+const EMPTY_TYPE_VALUES: string[] = [];
+
+function SelectedTypeBadge({
+  type,
+  onRemove,
+}: {
+  type: string;
+  onRemove: (type: string) => void;
+}) {
+  return (
+    <div
+      role="listitem"
+      className="inline-flex items-center gap-1 rounded-md border bg-secondary px-1.5 py-0.5 text-xs"
+      onClick={(event) => {
+        event.stopPropagation();
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.stopPropagation();
+        }
+      }}
+    >
+      <span>{type}</span>
+      <span
+        role="button"
+        tabIndex={0}
+        onClick={(event) => {
+          event.stopPropagation();
+          onRemove(type);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.stopPropagation();
+            event.preventDefault();
+            onRemove(type);
+          }
+        }}
+        className="cursor-pointer hover:text-destructive"
+        aria-label={`Remove ${type}`}
+      >
+        <X className="size-3" />
+      </span>
+    </div>
+  );
+}
+
 export function TypeCombobox({
   organizationId,
   collectionId,
-  value = [],
+  value = EMPTY_TYPE_VALUES,
   onValueChange,
   placeholder = "Select or add types...",
   disabled = false,
   canDeleteTypes = true,
 }: TypeComboboxProps) {
   const [open, setOpen] = React.useState(false);
+  const listId = React.useId();
   const [inputValue, setInputValue] = React.useState("");
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [typeToDelete, setTypeToDelete] = React.useState<{
@@ -196,7 +243,10 @@ export function TypeCombobox({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <div
-            className="flex flex-wrap items-center gap-1 w-full min-h-[2.25rem] rounded-md border border-input bg-background px-2 py-1.5 text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-text"
+            role="combobox"
+            aria-expanded={open}
+            aria-controls={listId}
+            className="flex min-h-[2.25rem] w-full cursor-text flex-wrap items-center gap-1 rounded-md border border-input bg-background px-2 py-1.5 text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
             onClick={openAndFocusInput}
             onKeyDown={(e) => {
               if ((e.key === "Enter" || e.key === " ") && !disabled) {
@@ -207,39 +257,11 @@ export function TypeCombobox({
           >
             {/* Selected types as badges */}
             {selectedValues.map((type) => (
-              <div
+              <SelectedTypeBadge
                 key={type}
-                className="inline-flex items-center gap-1 rounded-md border bg-secondary px-1.5 py-0.5 text-xs"
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.stopPropagation();
-                  }
-                }}
-              >
-                <span>{type}</span>
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemove(type);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      handleRemove(type);
-                    }
-                  }}
-                  className="hover:text-destructive cursor-pointer"
-                  aria-label={`Remove ${type}`}
-                >
-                  <X className="size-3" />
-                </span>
-              </div>
+                type={type}
+                onRemove={handleRemove}
+              />
             ))}
 
             {/* Inline input for searching/adding */}
@@ -295,7 +317,7 @@ export function TypeCombobox({
           onOpenAutoFocus={(event) => event.preventDefault()}
         >
           <Command shouldFilter={false}>
-            <CommandList className="max-h-[300px]">
+            <CommandList id={listId} className="max-h-[300px]">
               <CommandEmpty>
                 {inputValue ? (
                   <div className="p-4 text-sm text-center">

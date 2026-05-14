@@ -132,20 +132,17 @@ export default function ImportLocationsPage() {
         batches.push(state.rows.slice(i, i + BATCH_SIZE));
       }
 
-      const allErrors: string[] = [];
-      for (let i = 0; i < batches.length; i++) {
-        const batch = batches[i];
-        if (!batch) continue;
-
-        const result = await importBatch({
-          organizationId: currentOrganizationId as Id<"organizations">,
-          jobId,
-          rows: batch,
-          batchIndex: i,
-        });
-
-        allErrors.push(...result.errors);
-      }
+      const results = await Promise.all(
+        batches.map((batch, batchIndex) =>
+          importBatch({
+            organizationId: currentOrganizationId as Id<"organizations">,
+            jobId,
+            rows: batch,
+            batchIndex,
+          }),
+        ),
+      );
+      const allErrors = results.flatMap((result) => result.errors);
 
       setState((prev) => ({
         ...prev,
@@ -301,7 +298,7 @@ export default function ImportLocationsPage() {
                       <Button
                         onClick={handleStartImport}
                         disabled={state.rows.length === 0}
-                        className="bg-indigo-600 hover:bg-indigo-500"
+                        className="bg-primary hover:bg-primary/90"
                       >
                         <Upload className="mr-2 size-4" />
                         {t("importLocations", {
@@ -450,7 +447,7 @@ export default function ImportLocationsPage() {
                   <Button variant="outline" onClick={handleReset}>
                     {t("importMore")}
                   </Button>
-                  <Button asChild className="bg-indigo-600 hover:bg-indigo-500">
+                  <Button asChild className="bg-primary hover:bg-primary/90">
                     <Link href="/locations">{t("viewLocations")}</Link>
                   </Button>
                 </div>

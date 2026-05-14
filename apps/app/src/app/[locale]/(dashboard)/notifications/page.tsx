@@ -1,7 +1,7 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
-import { formatDistanceLocale } from "@/lib/format-date";
+import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -104,6 +104,189 @@ function getNotificationLink(
   }
 }
 
+function CategoryTabs({
+  category,
+  unreadCount,
+  unreadByCategory,
+  onCategoryChange,
+}: {
+  category: CategoryType;
+  unreadCount: number;
+  unreadByCategory: Record<Exclude<CategoryType, "all">, number>;
+  onCategoryChange: (category: CategoryType) => void;
+}) {
+  const t = useI18n();
+
+  return (
+    <Tabs
+      value={category}
+      onValueChange={(value) => onCategoryChange(value as CategoryType)}
+      className="w-full"
+    >
+      <TabsList className="grid w-full grid-cols-6">
+        <TabsTrigger value="all" className="gap-2">
+          <Bell className="size-4" />
+          <span className="hidden sm:inline">
+            {t("notificationsPage.categories.all")}
+          </span>
+          {unreadCount > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+              {unreadCount}
+            </Badge>
+          )}
+        </TabsTrigger>
+        <TabsTrigger value="approvals" className="gap-2">
+          <ClipboardCheck className="size-4" />
+          <span className="hidden sm:inline">
+            {t("notificationsPage.categories.approvals")}
+          </span>
+          {unreadByCategory.approvals > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+              {unreadByCategory.approvals}
+            </Badge>
+          )}
+        </TabsTrigger>
+        <TabsTrigger value="reminders" className="gap-2">
+          <CalendarClock className="size-4" />
+          <span className="hidden sm:inline">
+            {t("notificationsPage.categories.reminders")}
+          </span>
+          {unreadByCategory.reminders > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+              {unreadByCategory.reminders}
+            </Badge>
+          )}
+        </TabsTrigger>
+        <TabsTrigger value="alerts" className="gap-2">
+          <AlertTriangle className="size-4" />
+          <span className="hidden sm:inline">
+            {t("notificationsPage.categories.alerts")}
+          </span>
+          {unreadByCategory.alerts > 0 && (
+            <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-xs">
+              {unreadByCategory.alerts}
+            </Badge>
+          )}
+        </TabsTrigger>
+        <TabsTrigger value="assignments" className="gap-2">
+          <UserCheck className="size-4" />
+          <span className="hidden sm:inline">
+            {t("notificationsPage.categories.assignments")}
+          </span>
+          {unreadByCategory.assignments > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+              {unreadByCategory.assignments}
+            </Badge>
+          )}
+        </TabsTrigger>
+        <TabsTrigger value="system" className="gap-2">
+          <Settings className="size-4" />
+          <span className="hidden sm:inline">
+            {t("notificationsPage.categories.system")}
+          </span>
+          {unreadByCategory.system > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+              {unreadByCategory.system}
+            </Badge>
+          )}
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
+  );
+}
+
+function NotificationRow({
+  notification,
+  onMarkRead,
+}: {
+  notification: NotificationItem;
+  onMarkRead: (notificationId: string) => void;
+}) {
+  const t = useI18n();
+  const locale = useCurrentLocale();
+  const Icon = getNotificationIcon(notification.type);
+  const link = getNotificationLink(
+    notification.relatedEntityType,
+    notification.relatedEntityId,
+  );
+  const createdAtLabel = useClientRelativeTime(notification.createdAt, locale, {
+    addSuffix: true,
+  });
+
+  const content = (
+    <div
+      className={cn(
+        "flex items-start gap-4 rounded-lg border border-border bg-card p-4 transition-colors",
+        !notification.read && "border-l-4 border-l-primary bg-primary/5",
+        link && "cursor-pointer hover:bg-muted/50",
+      )}
+    >
+      <div
+        className={cn(
+          "rounded-full p-2",
+          notification.read ? "bg-muted" : "bg-primary/10",
+        )}
+      >
+        <Icon
+          className={cn(
+            "size-4",
+            notification.read ? "text-muted-foreground" : "text-primary",
+          )}
+        />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className={cn("text-sm", !notification.read && "font-medium")}>
+              {notification.title}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {notification.message}
+            </p>
+          </div>
+          {!notification.read && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="size-8 flex-shrink-0 p-0"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onMarkRead(notification._id);
+              }}
+            >
+              <Check className="size-4" />
+            </Button>
+          )}
+        </div>
+
+        <div className="mt-2 flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            {createdAtLabel}
+          </span>
+          {link && (
+            <span className="flex items-center gap-1 text-xs text-primary">
+              {t("notificationsPage.viewDetails")}
+              <ArrowRight className="size-3" />
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  if (link) {
+    return (
+      <Link key={notification._id} href={link}>
+        {content}
+      </Link>
+    );
+  }
+
+  return <div key={notification._id}>{content}</div>;
+}
+
 export default function NotificationsPage() {
   const t = useI18n();
   const locale = useCurrentLocale();
@@ -163,7 +346,6 @@ export default function NotificationsPage() {
     system: 0,
   };
 
-  // Filter notifications by category and read status
   const notifications = allNotifications.filter((n: NotificationItem) => {
     const matchesCategory = category === "all" || n.category === category;
     const matchesFilter = filter === "all" || !n.read;
@@ -181,81 +363,12 @@ export default function NotificationsPage() {
         </p>
       </div>
 
-      {/* Category tabs */}
-      <Tabs
-        value={category}
-        onValueChange={(v) => setCategory(v as CategoryType)}
-        className="w-full"
-      >
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="all" className="gap-2">
-            <Bell className="size-4" />
-            <span className="hidden sm:inline">
-              {t("notificationsPage.categories.all")}
-            </span>
-            {unreadCount > 0 && (
-              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
-                {unreadCount}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="approvals" className="gap-2">
-            <ClipboardCheck className="size-4" />
-            <span className="hidden sm:inline">
-              {t("notificationsPage.categories.approvals")}
-            </span>
-            {unreadByCategory.approvals > 0 && (
-              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
-                {unreadByCategory.approvals}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="reminders" className="gap-2">
-            <CalendarClock className="size-4" />
-            <span className="hidden sm:inline">
-              {t("notificationsPage.categories.reminders")}
-            </span>
-            {unreadByCategory.reminders > 0 && (
-              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
-                {unreadByCategory.reminders}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="alerts" className="gap-2">
-            <AlertTriangle className="size-4" />
-            <span className="hidden sm:inline">
-              {t("notificationsPage.categories.alerts")}
-            </span>
-            {unreadByCategory.alerts > 0 && (
-              <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-xs">
-                {unreadByCategory.alerts}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="assignments" className="gap-2">
-            <UserCheck className="size-4" />
-            <span className="hidden sm:inline">
-              {t("notificationsPage.categories.assignments")}
-            </span>
-            {unreadByCategory.assignments > 0 && (
-              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
-                {unreadByCategory.assignments}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="system" className="gap-2">
-            <Settings className="size-4" />
-            <span className="hidden sm:inline">
-              {t("notificationsPage.categories.system")}
-            </span>
-            {unreadByCategory.system > 0 && (
-              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
-                {unreadByCategory.system}
-              </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <CategoryTabs
+        category={category}
+        unreadCount={unreadCount}
+        unreadByCategory={unreadByCategory}
+        onCategoryChange={setCategory}
+      />
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -318,98 +431,13 @@ export default function NotificationsPage() {
           />
         ) : (
           <div className="space-y-2">
-            {notifications.map((notification: NotificationItem) => {
-              const Icon = getNotificationIcon(notification.type);
-              const link = getNotificationLink(
-                notification.relatedEntityType,
-                notification.relatedEntityId,
-              );
-
-              const content = (
-                <div
-                  className={cn(
-                    "flex items-start gap-4 rounded-lg border border-border bg-card p-4 transition-colors",
-                    !notification.read &&
-                      "border-l-4 border-l-primary bg-primary/5",
-                    link && "hover:bg-muted/50 cursor-pointer",
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "rounded-full p-2",
-                      notification.read ? "bg-muted" : "bg-primary/10",
-                    )}
-                  >
-                    <Icon
-                      className={cn(
-                        "size-4",
-                        notification.read
-                          ? "text-muted-foreground"
-                          : "text-primary",
-                      )}
-                    />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p
-                          className={cn(
-                            "text-sm",
-                            !notification.read && "font-medium",
-                          )}
-                        >
-                          {notification.title}
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {notification.message}
-                        </p>
-                      </div>
-                      {!notification.read && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="size-8 p-0 flex-shrink-0"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleMarkRead(notification._id);
-                          }}
-                        >
-                          <Check className="size-4" />
-                        </Button>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceLocale(
-                          new Date(notification.createdAt),
-                          locale,
-                          { addSuffix: true },
-                        )}
-                      </span>
-                      {link && (
-                        <span className="flex items-center gap-1 text-xs text-primary">
-                          {t("notificationsPage.viewDetails")}
-                          <ArrowRight className="size-3" />
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-
-              if (link) {
-                return (
-                  <Link key={notification._id} href={link}>
-                    {content}
-                  </Link>
-                );
-              }
-
-              return <div key={notification._id}>{content}</div>;
-            })}
+            {notifications.map((notification: NotificationItem) => (
+              <NotificationRow
+                key={notification._id}
+                notification={notification}
+                onMarkRead={handleMarkRead}
+              />
+            ))}
           </div>
         )}
       </div>

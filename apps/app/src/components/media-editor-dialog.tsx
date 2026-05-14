@@ -5,7 +5,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useRef } from "react";
 import { toast } from "sonner";
 import {
   type EditMetadata,
@@ -28,7 +28,7 @@ export function MediaEditorDialog({
   onSaved,
 }: MediaEditorDialogProps) {
   const { currentOrganizationId } = useOrganization();
-  const [isSaving, setIsSaving] = useState(false);
+  const isSavingRef = useRef(false);
 
   // Load media file data
   const mediaFile = useQuery(
@@ -54,7 +54,7 @@ export function MediaEditorDialog({
         return;
       }
 
-      setIsSaving(true);
+      isSavingRef.current = true;
 
       try {
         // Generate upload URL
@@ -150,7 +150,7 @@ export function MediaEditorDialog({
             : "Failed to save edited media",
         );
       } finally {
-        setIsSaving(false);
+        isSavingRef.current = false;
       }
     },
     [
@@ -176,7 +176,7 @@ export function MediaEditorDialog({
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="size-5 animate-spin" />
-          <span>Loading media...</span>
+          <span>Loading media…</span>
         </div>
       </div>
     );

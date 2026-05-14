@@ -57,27 +57,28 @@ export async function MediaPageData({
   const fileType = parseFileTypeParam(searchParams?.fileType);
   const search = parseSearchParam(searchParams?.search);
 
-  const preloadedStats = await preloadQuery(
-    api.media.getStorageStats,
-    { organizationId: selectedOrg._id },
-    { token },
-  );
-  const preloadedUsage = await preloadQuery(
-    api.organizations.getUsageStats,
-    { organizationId: selectedOrg._id },
-    { token },
-  );
-
-  const preloadedMedia = await preloadQuery(
-    api.media.listByOrganization,
-    {
-      organizationId: selectedOrg._id,
-      fileType: fileType !== "all" ? fileType : undefined,
-      search: search !== "" ? search : undefined,
-      paginationOpts: { numItems: 20, cursor: null },
-    },
-    { token },
-  );
+  const [preloadedStats, preloadedUsage, preloadedMedia] = await Promise.all([
+    preloadQuery(
+      api.media.getStorageStats,
+      { organizationId: selectedOrg._id },
+      { token },
+    ),
+    preloadQuery(
+      api.organizations.getUsageStats,
+      { organizationId: selectedOrg._id },
+      { token },
+    ),
+    preloadQuery(
+      api.media.listByOrganization,
+      {
+        organizationId: selectedOrg._id,
+        fileType: fileType !== "all" ? fileType : undefined,
+        search: search !== "" ? search : undefined,
+        paginationOpts: { numItems: 20, cursor: null },
+      },
+      { token },
+    ),
+  ]);
 
   return (
     <MediaPageClient

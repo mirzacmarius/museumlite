@@ -35,15 +35,18 @@ interface MaterialsComboboxProps {
   disabled?: boolean;
 }
 
+const EMPTY_MATERIAL_VALUES: string[] = [];
+
 export function MaterialsCombobox({
   organizationId,
   collectionId,
-  value = [],
+  value = EMPTY_MATERIAL_VALUES,
   onValueChange,
   placeholder = "Select or add materials...",
   disabled = false,
 }: MaterialsComboboxProps) {
   const [open, setOpen] = React.useState(false);
+  const listId = React.useId();
   const [inputValue, setInputValue] = React.useState("");
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [materialToDelete, setMaterialToDelete] = React.useState<{
@@ -196,7 +199,10 @@ export function MaterialsCombobox({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <div
-            className="flex flex-wrap items-center gap-1 w-full min-h-[2.25rem] rounded-md border border-input bg-background px-2 py-1.5 text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-text"
+            role="combobox"
+            aria-expanded={open}
+            aria-controls={listId}
+            className="flex min-h-[2.25rem] w-full cursor-text flex-wrap items-center gap-1 rounded-md border border-input bg-background px-2 py-1.5 text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
             onClick={openAndFocusInput}
             onKeyDown={(e) => {
               if ((e.key === "Enter" || e.key === " ") && !disabled) {
@@ -209,6 +215,7 @@ export function MaterialsCombobox({
             {selectedValues.map((material) => (
               <div
                 key={material}
+                role="listitem"
                 className="inline-flex items-center gap-1 rounded-md border bg-secondary px-1.5 py-0.5 text-xs"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -299,7 +306,7 @@ export function MaterialsCombobox({
           onOpenAutoFocus={(event) => event.preventDefault()}
         >
           <Command shouldFilter={false}>
-            <CommandList className="max-h-[300px]">
+            <CommandList id={listId} className="max-h-[300px]">
               <CommandEmpty>
                 {inputValue ? (
                   <div className="p-4 text-sm text-center">

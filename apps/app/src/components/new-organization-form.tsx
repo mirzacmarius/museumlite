@@ -49,7 +49,7 @@ function isOrganizationSlugTakenError(error: unknown): boolean {
 
 export function NewOrganizationForm() {
   const t = useI18n();
-  const router = useRouter();
+  const { push } = useRouter();
   const createOrganization = useMutation(api.organizations.create);
   const { currentOrganization, setCurrentOrganizationId } = useOrganization();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,7 +85,7 @@ export function NewOrganizationForm() {
       });
 
       setCurrentOrganizationId(organizationId as Id<"organizations">);
-      router.push("/settings/organization");
+      push("/settings/organization");
     } catch (err) {
       if (isOrganizationSlugTakenError(err)) {
         setError(t("organizationsNew.slugTaken"));
@@ -119,7 +119,7 @@ export function NewOrganizationForm() {
               type="text"
               value={formData.name}
               onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
               }
               placeholder={t("organizationsNew.namePlaceholder")}
               required
@@ -135,7 +135,7 @@ export function NewOrganizationForm() {
               type="text"
               value={formData.slug}
               onChange={(e) =>
-                setFormData({ ...formData, slug: e.target.value })
+                setFormData((prev) => ({ ...prev, slug: e.target.value }))
               }
               placeholder={t("organizationsNew.slugPlaceholder")}
             />
@@ -151,10 +151,10 @@ export function NewOrganizationForm() {
             <Select
               value={formData.type}
               onValueChange={(value) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   type: value as typeof formData.type,
-                })
+                }))
               }
             >
               <SelectTrigger id="type">
@@ -218,7 +218,7 @@ export function NewOrganizationForm() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push("/settings/organization")}
+              onClick={() => push("/settings/organization")}
             >
               {t("organizationsNew.cancel")}
             </Button>

@@ -30,7 +30,7 @@ interface WizardContextValue {
 const WizardContext = React.createContext<WizardContextValue | null>(null);
 
 function useWizard() {
-  const context = React.useContext(WizardContext);
+  const context = React.use(WizardContext);
   if (!context) {
     throw new Error("useWizard must be used within a Wizard");
   }

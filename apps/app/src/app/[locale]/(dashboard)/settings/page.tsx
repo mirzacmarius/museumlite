@@ -13,6 +13,7 @@ import { useDoubleCheck } from "@v1/ui/utils";
 import type { UploadFileResponse } from "@xixixao/uploadstuff/react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Upload } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 
 export default function DashboardSettings() {
@@ -89,10 +90,13 @@ export default function DashboardSettings() {
             className="group relative flex cursor-pointer overflow-hidden rounded-full transition active:scale-95"
           >
             {avatarUrl ? (
-              <img
+              <Image
                 src={avatarUrl}
                 className="size-20 rounded-full object-cover"
                 alt={avatarAlt}
+                width={80}
+                height={80}
+                unoptimized
               />
             ) : (
               <div className="size-20 rounded-full bg-gradient-to-br from-lime-400 from-10% via-cyan-300 to-blue-500" />
@@ -149,10 +153,8 @@ export default function DashboardSettings() {
               {t("name.description")}
             </p>
           </div>
-          <nameForm.Field
-            name="name"
-            // biome-ignore lint/correctness/noChildrenProp: <explanation>
-            children={(field) => (
+          <nameForm.Field name="name">
+            {(field) => (
               <Input
                 placeholder={t("name.placeholder")}
                 autoComplete="name"
@@ -163,7 +165,7 @@ export default function DashboardSettings() {
                 className="w-full sm:w-80 bg-transparent"
               />
             )}
-          />
+          </nameForm.Field>
         </div>
         <div className="flex min-h-14 w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 rounded-lg rounded-t-none border-t border-border bg-secondary px-4 sm:px-6 py-3 sm:py-0 dark:bg-card">
           <p className="text-sm font-normal text-muted-foreground">
@@ -198,8 +200,8 @@ export default function DashboardSettings() {
             validators={{
               onSubmit: validators.username,
             }}
-            // biome-ignore lint/correctness/noChildrenProp: <explanation>
-            children={(field) => (
+          >
+            {(field) => (
               <Input
                 placeholder={t("username.placeholder")}
                 autoComplete="off"
@@ -213,7 +215,7 @@ export default function DashboardSettings() {
                 }`}
               />
             )}
-          />
+          </usernameForm.Field>
           {usernameForm.state.fieldMeta.username?.errors.length > 0 && (
             <p className="text-sm text-destructive dark:text-destructive-foreground">
               {usernameForm.state.fieldMeta.username?.errors.join(" ")}

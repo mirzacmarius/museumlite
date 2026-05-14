@@ -154,6 +154,7 @@ export default function DataPage() {
         });
 
         const batchSize = 50;
+        const importTasks = [];
         for (let i = 0; i < dataRows.length; i += batchSize) {
           const batch = dataRows.slice(i, i + batchSize);
           const batchData = batch.map((row) => {
@@ -170,57 +171,68 @@ export default function DataPage() {
 
           switch (importType) {
             case "objects":
-              await importObjectsBatch({
-                organizationId: currentOrganizationId as Id<"organizations">,
-                jobId,
-                rows: batchData as Parameters<
-                  typeof importObjectsBatch
-                >[0]["rows"],
-                batchIndex,
-              });
+              importTasks.push(
+                importObjectsBatch({
+                  organizationId: currentOrganizationId as Id<"organizations">,
+                  jobId,
+                  rows: batchData as Parameters<
+                    typeof importObjectsBatch
+                  >[0]["rows"],
+                  batchIndex,
+                }),
+              );
               break;
             case "accessions":
-              await importAccessionsBatch({
-                organizationId: currentOrganizationId as Id<"organizations">,
-                jobId,
-                rows: batchData as Parameters<
-                  typeof importAccessionsBatch
-                >[0]["rows"],
-                batchIndex,
-              });
+              importTasks.push(
+                importAccessionsBatch({
+                  organizationId: currentOrganizationId as Id<"organizations">,
+                  jobId,
+                  rows: batchData as Parameters<
+                    typeof importAccessionsBatch
+                  >[0]["rows"],
+                  batchIndex,
+                }),
+              );
               break;
             case "locations":
-              await importLocationsBatch({
-                organizationId: currentOrganizationId as Id<"organizations">,
-                jobId,
-                rows: batchData as Parameters<
-                  typeof importLocationsBatch
-                >[0]["rows"],
-                batchIndex,
-              });
+              importTasks.push(
+                importLocationsBatch({
+                  organizationId: currentOrganizationId as Id<"organizations">,
+                  jobId,
+                  rows: batchData as Parameters<
+                    typeof importLocationsBatch
+                  >[0]["rows"],
+                  batchIndex,
+                }),
+              );
               break;
             case "accounts":
-              await importAccountsBatch({
-                organizationId: currentOrganizationId as Id<"organizations">,
-                jobId,
-                rows: batchData as Parameters<
-                  typeof importAccountsBatch
-                >[0]["rows"],
-                batchIndex,
-              });
+              importTasks.push(
+                importAccountsBatch({
+                  organizationId: currentOrganizationId as Id<"organizations">,
+                  jobId,
+                  rows: batchData as Parameters<
+                    typeof importAccountsBatch
+                  >[0]["rows"],
+                  batchIndex,
+                }),
+              );
               break;
             case "loans":
-              await importLoansBatch({
-                organizationId: currentOrganizationId as Id<"organizations">,
-                jobId,
-                rows: batchData as Parameters<
-                  typeof importLoansBatch
-                >[0]["rows"],
-                batchIndex,
-              });
+              importTasks.push(
+                importLoansBatch({
+                  organizationId: currentOrganizationId as Id<"organizations">,
+                  jobId,
+                  rows: batchData as Parameters<
+                    typeof importLoansBatch
+                  >[0]["rows"],
+                  batchIndex,
+                }),
+              );
               break;
           }
         }
+        await Promise.all(importTasks);
       } catch (error) {
         console.error("Import error:", error);
       } finally {
@@ -473,7 +485,7 @@ export default function DataPage() {
                   {importing ? (
                     <>
                       <Loader2 className="mr-2 size-4 animate-spin" />
-                      Importing...
+                      Importing…
                     </>
                   ) : (
                     <>

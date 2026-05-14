@@ -22,29 +22,98 @@ import { Switch } from "@v1/ui/switch";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { Building2, Edit, MapPin, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useReducer } from "react";
+
+interface SiteFormData {
+  name: string;
+  description: string;
+  address: string;
+  isPrimary: boolean;
+}
+
+interface EditingSite {
+  _id: Id<"sites">;
+  name: string;
+  description?: string;
+  address?: string;
+  isPrimary: boolean;
+  isActive: boolean;
+}
+
+interface SitesPageState {
+  createDialogOpen: boolean;
+  editDialogOpen: boolean;
+  editingSite: EditingSite | null;
+  formData: SiteFormData;
+  isSubmitting: boolean;
+  error: string | null;
+}
+
+type SitesPageAction =
+  | { type: "setCreateDialogOpen"; open: boolean }
+  | { type: "setEditDialogOpen"; open: boolean }
+  | { type: "setEditingSite"; site: EditingSite | null }
+  | { type: "setFormData"; formData: SiteFormData }
+  | { type: "patchFormData"; patch: Partial<SiteFormData> }
+  | { type: "setIsSubmitting"; isSubmitting: boolean }
+  | { type: "setError"; error: string | null }
+  | { type: "resetForm" };
+
+const EMPTY_SITE_FORM: SiteFormData = {
+  name: "",
+  description: "",
+  address: "",
+  isPrimary: false,
+};
+
+const INITIAL_SITES_PAGE_STATE: SitesPageState = {
+  createDialogOpen: false,
+  editDialogOpen: false,
+  editingSite: null,
+  formData: EMPTY_SITE_FORM,
+  isSubmitting: false,
+  error: null,
+};
+
+function sitesPageReducer(
+  state: SitesPageState,
+  action: SitesPageAction,
+): SitesPageState {
+  switch (action.type) {
+    case "setCreateDialogOpen":
+      return { ...state, createDialogOpen: action.open };
+    case "setEditDialogOpen":
+      return { ...state, editDialogOpen: action.open };
+    case "setEditingSite":
+      return { ...state, editingSite: action.site };
+    case "setFormData":
+      return { ...state, formData: action.formData };
+    case "patchFormData":
+      return { ...state, formData: { ...state.formData, ...action.patch } };
+    case "setIsSubmitting":
+      return { ...state, isSubmitting: action.isSubmitting };
+    case "setError":
+      return { ...state, error: action.error };
+    case "resetForm":
+      return { ...state, formData: EMPTY_SITE_FORM };
+  }
+}
 
 export default function SitesSettingsPage() {
   const t = useScopedI18n("settings");
   const { currentOrganizationId } = useOrganization();
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingSite, setEditingSite] = useState<{
-    _id: Id<"sites">;
-    name: string;
-    description?: string;
-    address?: string;
-    isPrimary: boolean;
-    isActive: boolean;
-  } | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    address: "",
-    isPrimary: false,
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(
+    sitesPageReducer,
+    INITIAL_SITES_PAGE_STATE,
+  );
+  const {
+    createDialogOpen,
+    editDialogOpen,
+    editingSite,
+    formData,
+    isSubmitting,
+    error,
+  } = state;
 
   const sites = useQuery(
     api.sites.list,
@@ -69,14 +138,14 @@ export default function SitesSettingsPage() {
 
   const handleCreateSite = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    dispatch({ type: "setError", error: null });
 
     if (!formData.name.trim()) {
-      setError("Site name is required");
+      dispatch({ type: "setError", error: "Site name is required" });
       return;
     }
 
-    setIsSubmitting(true);
+    dispatch({ type: "setIsSubmitting", isSubmitting: true });
     try {
       await createSite({
         organizationId: currentOrganizationId as Id<"organizations">,
@@ -85,51 +154,55 @@ export default function SitesSettingsPage() {
         address: formData.address.trim() || undefined,
         isPrimary: formData.isPrimary,
       });
-      setFormData({
-        name: "",
-        description: "",
-        address: "",
-        isPrimary: false,
-      });
-      setCreateDialogOpen(false);
+      dispatch({ type: "resetForm" });
+      dispatch({ type: "setCreateDialogOpen", open: false });
     } catch (err) {
       console.error("Error creating site:", err);
-      setError(err instanceof Error ? err.message : "Failed to create site");
+      dispatch({
+        type: "setError",
+        error: err instanceof Error ? err.message : "Failed to create site",
+      });
     } finally {
-      setIsSubmitting(false);
+      dispatch({ type: "setIsSubmitting", isSubmitting: false });
     }
   };
 
   const handleEditSite = (site: NonNullable<typeof sites>[0]) => {
-    setEditingSite({
-      _id: site._id,
-      name: site.name,
-      description: site.description,
-      address: site.address,
-      isPrimary: site.isPrimary,
-      isActive: site.isActive,
+    dispatch({
+      type: "setEditingSite",
+      site: {
+        _id: site._id,
+        name: site.name,
+        description: site.description,
+        address: site.address,
+        isPrimary: site.isPrimary,
+        isActive: site.isActive,
+      },
     });
-    setFormData({
-      name: site.name,
-      description: site.description || "",
-      address: site.address || "",
-      isPrimary: site.isPrimary,
+    dispatch({
+      type: "setFormData",
+      formData: {
+        name: site.name,
+        description: site.description || "",
+        address: site.address || "",
+        isPrimary: site.isPrimary,
+      },
     });
-    setEditDialogOpen(true);
+    dispatch({ type: "setEditDialogOpen", open: true });
   };
 
   const handleUpdateSite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingSite) return;
 
-    setError(null);
+    dispatch({ type: "setError", error: null });
 
     if (!formData.name.trim()) {
-      setError("Site name is required");
+      dispatch({ type: "setError", error: "Site name is required" });
       return;
     }
 
-    setIsSubmitting(true);
+    dispatch({ type: "setIsSubmitting", isSubmitting: true });
     try {
       await updateSite({
         siteId: editingSite._id,
@@ -138,19 +211,17 @@ export default function SitesSettingsPage() {
         address: formData.address.trim() || undefined,
         isPrimary: formData.isPrimary,
       });
-      setEditingSite(null);
-      setFormData({
-        name: "",
-        description: "",
-        address: "",
-        isPrimary: false,
-      });
-      setEditDialogOpen(false);
+      dispatch({ type: "setEditingSite", site: null });
+      dispatch({ type: "resetForm" });
+      dispatch({ type: "setEditDialogOpen", open: false });
     } catch (err) {
       console.error("Error updating site:", err);
-      setError(err instanceof Error ? err.message : "Failed to update site");
+      dispatch({
+        type: "setError",
+        error: err instanceof Error ? err.message : "Failed to update site",
+      });
     } finally {
-      setIsSubmitting(false);
+      dispatch({ type: "setIsSubmitting", isSubmitting: false });
     }
   };
 
@@ -180,7 +251,12 @@ export default function SitesSettingsPage() {
             </p>
           </div>
           <PermissionGate permission="sites.create">
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+            <Dialog
+              open={createDialogOpen}
+              onOpenChange={(open) =>
+                dispatch({ type: "setCreateDialogOpen", open })
+              }
+            >
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="mr-2 size-4" />
@@ -211,10 +287,10 @@ export default function SitesSettingsPage() {
                         placeholder="e.g., Main Museum, Storage Facility"
                         value={formData.name}
                         onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            name: e.target.value,
-                          }))
+                          dispatch({
+                            type: "patchFormData",
+                            patch: { name: e.target.value },
+                          })
                         }
                         required
                       />
@@ -227,10 +303,10 @@ export default function SitesSettingsPage() {
                         placeholder="Describe this site..."
                         value={formData.description}
                         onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            description: e.target.value,
-                          }))
+                          dispatch({
+                            type: "patchFormData",
+                            patch: { description: e.target.value },
+                          })
                         }
                         rows={3}
                       />
@@ -243,16 +319,16 @@ export default function SitesSettingsPage() {
                         placeholder="123 Main St, City, State, ZIP"
                         value={formData.address}
                         onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            address: e.target.value,
-                          }))
+                          dispatch({
+                            type: "patchFormData",
+                            patch: { address: e.target.value },
+                          })
                         }
                         rows={2}
                       />
                     </div>
 
-                    <div className="flex items-center justify-between space-x-2 rounded-lg border p-3">
+                    <div className="flex items-center justify-between gap-x-2 rounded-lg border p-3">
                       <div className="space-y-0.5">
                         <Label htmlFor="isPrimary" className="font-medium">
                           Primary Site
@@ -265,10 +341,10 @@ export default function SitesSettingsPage() {
                         id="isPrimary"
                         checked={formData.isPrimary}
                         onCheckedChange={(checked) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            isPrimary: checked,
-                          }))
+                          dispatch({
+                            type: "patchFormData",
+                            patch: { isPrimary: checked },
+                          })
                         }
                       />
                     </div>
@@ -278,13 +354,15 @@ export default function SitesSettingsPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setCreateDialogOpen(false)}
+                      onClick={() =>
+                        dispatch({ type: "setCreateDialogOpen", open: false })
+                      }
                       disabled={isSubmitting}
                     >
                       Cancel
                     </Button>
                     <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? "Creating..." : "Create Site"}
+                      {isSubmitting ? "Creating…" : "Create Site"}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -381,7 +459,10 @@ export default function SitesSettingsPage() {
         </div>
 
         {/* Edit Dialog */}
-        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <Dialog
+          open={editDialogOpen}
+          onOpenChange={(open) => dispatch({ type: "setEditDialogOpen", open })}
+        >
           <DialogContent>
             <form onSubmit={handleUpdateSite}>
               <DialogHeader>
@@ -405,10 +486,10 @@ export default function SitesSettingsPage() {
                     placeholder="e.g., Main Museum, Storage Facility"
                     value={formData.name}
                     onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        name: e.target.value,
-                      }))
+                      dispatch({
+                        type: "patchFormData",
+                        patch: { name: e.target.value },
+                      })
                     }
                     required
                   />
@@ -421,10 +502,10 @@ export default function SitesSettingsPage() {
                     placeholder="Describe this site..."
                     value={formData.description}
                     onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        description: e.target.value,
-                      }))
+                      dispatch({
+                        type: "patchFormData",
+                        patch: { description: e.target.value },
+                      })
                     }
                     rows={3}
                   />
@@ -437,16 +518,16 @@ export default function SitesSettingsPage() {
                     placeholder="123 Main St, City, State, ZIP"
                     value={formData.address}
                     onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        address: e.target.value,
-                      }))
+                      dispatch({
+                        type: "patchFormData",
+                        patch: { address: e.target.value },
+                      })
                     }
                     rows={2}
                   />
                 </div>
 
-                <div className="flex items-center justify-between space-x-2 rounded-lg border p-3">
+                <div className="flex items-center justify-between gap-x-2 rounded-lg border p-3">
                   <div className="space-y-0.5">
                     <Label htmlFor="edit-isPrimary" className="font-medium">
                       Primary Site
@@ -459,10 +540,10 @@ export default function SitesSettingsPage() {
                     id="edit-isPrimary"
                     checked={formData.isPrimary}
                     onCheckedChange={(checked) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        isPrimary: checked,
-                      }))
+                      dispatch({
+                        type: "patchFormData",
+                        patch: { isPrimary: checked },
+                      })
                     }
                   />
                 </div>
@@ -473,15 +554,15 @@ export default function SitesSettingsPage() {
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    setEditDialogOpen(false);
-                    setEditingSite(null);
+                    dispatch({ type: "setEditDialogOpen", open: false });
+                    dispatch({ type: "setEditingSite", site: null });
                   }}
                   disabled={isSubmitting}
                 >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Updating..." : "Update Site"}
+                  {isSubmitting ? "Updating…" : "Update Site"}
                 </Button>
               </DialogFooter>
             </form>

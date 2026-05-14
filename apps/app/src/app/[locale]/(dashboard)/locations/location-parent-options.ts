@@ -22,6 +22,19 @@ export function getAvailableParentLocationOptions(
     return [];
   }
 
+  const locationsById = new Map(
+    locations.map((location) => [location._id, location]),
+  );
+  const locationsByParentId = new Map<
+    Id<"locations"> | undefined,
+    ParentOptionLocation[]
+  >();
+  for (const location of locations) {
+    const siblings = locationsByParentId.get(location.parentLocationId) ?? [];
+    siblings.push(location);
+    locationsByParentId.set(location.parentLocationId, siblings);
+  }
+
   const isDescendant = (location: ParentOptionLocation) => {
     if (location._id === locationId) {
       return true;
@@ -33,7 +46,7 @@ export function getAvailableParentLocationOptions(
         return true;
       }
 
-      const parent = locations.find((entry) => entry._id === currentParentId);
+      const parent = locationsById.get(currentParentId);
       currentParentId = parent?.parentLocationId;
     }
 
@@ -61,17 +74,13 @@ export function getAvailableParentLocationOptions(
       level,
     });
 
-    const children = locations.filter(
-      (entry) => entry.parentLocationId === location._id,
-    );
+    const children = locationsByParentId.get(location._id) ?? [];
     for (const child of children) {
       appendLocation(child, level + 1, displayName);
     }
   };
 
-  const rootLocations = locations.filter(
-    (location) => !location.parentLocationId,
-  );
+  const rootLocations = locationsByParentId.get(undefined) ?? [];
   for (const rootLocation of rootLocations) {
     appendLocation(rootLocation);
   }

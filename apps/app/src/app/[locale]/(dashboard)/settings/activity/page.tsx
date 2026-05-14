@@ -1,8 +1,8 @@
 "use client";
 
 import { useOrganization } from "@/components/organization-provider";
+import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { formatDistanceLocale } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -22,10 +22,14 @@ import { useQuery } from "convex/react";
 import { Calendar, Filter, RotateCcw, X } from "lucide-react";
 import { useState } from "react";
 
+function ActivityTimestamp({ timestamp }: { timestamp: number }) {
+  const locale = useCurrentLocale();
+  return useClientRelativeTime(timestamp, locale, { addSuffix: true });
+}
+
 export default function ActivityPage() {
   const { currentOrganizationId, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
-  const locale = useCurrentLocale();
   const t = useScopedI18n("activityLog");
 
   const [selectedUserId, setSelectedUserId] = useState<string>("");
@@ -358,9 +362,7 @@ export default function ActivityPage() {
                     </div>
 
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {formatDistanceLocale(new Date(entry.timestamp), locale, {
-                        addSuffix: true,
-                      })}
+                      <ActivityTimestamp timestamp={entry.timestamp} />
                     </span>
                   </div>
                 ))}

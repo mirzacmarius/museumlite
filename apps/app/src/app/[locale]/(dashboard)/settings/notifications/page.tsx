@@ -146,7 +146,7 @@ export default function NotificationSettingsPage() {
                   id="emailEnabled"
                   checked={formData.emailEnabled}
                   onCheckedChange={(checked) =>
-                    setFormData({ ...formData, emailEnabled: checked })
+                    setFormData((prev) => ({ ...prev, emailEnabled: checked }))
                   }
                 />
               </div>
@@ -161,7 +161,12 @@ export default function NotificationSettingsPage() {
                 value={formData.emailDigestFrequency}
                 onValueChange={(
                   value: "instant" | "daily" | "weekly" | "never",
-                ) => setFormData({ ...formData, emailDigestFrequency: value })}
+                ) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    emailDigestFrequency: value,
+                  }))
+                }
                 disabled={!formData.emailEnabled}
               >
                 <SelectTrigger id="emailDigestFrequency">
@@ -217,7 +222,7 @@ export default function NotificationSettingsPage() {
         {/* Save Button */}
         <div className="flex justify-end gap-4">
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Save Email Preferences"}
+            {isSubmitting ? "Saving…" : "Save Email Preferences"}
           </Button>
         </div>
       </form>
