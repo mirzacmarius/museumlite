@@ -32,7 +32,7 @@ export function ActivityTab({ workflowHistory }: ActivityTabProps) {
     }
   };
 
-  const sortedHistory = [...workflowHistory].sort(
+  const sortedHistory = workflowHistory.toSorted(
     (a, b) => b.approvedAt - a.approvedAt,
   );
 

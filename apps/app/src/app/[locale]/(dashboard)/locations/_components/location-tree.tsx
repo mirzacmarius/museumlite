@@ -106,7 +106,7 @@ function LocationTreeInner({
 
     if (allLocations) {
       // Sort locations by sortOrder first
-      const sortedLocations = [...allLocations].sort(
+      const sortedLocations = allLocations.toSorted(
         (a, b) => a.sortOrder - b.sortOrder,
       );
 

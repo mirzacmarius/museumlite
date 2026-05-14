@@ -32,14 +32,14 @@ describe("module catalog", () => {
   });
 
   test("keeps collection module tab labels aligned with collection modules", () => {
-    expect(Object.keys(COLLECTION_MODULE_TAB_LABELS).sort()).toEqual(
-      [...COLLECTION_MODULE_IDS].sort(),
+    expect(Object.keys(COLLECTION_MODULE_TAB_LABELS).toSorted()).toEqual(
+      COLLECTION_MODULE_IDS.toSorted(),
     );
   });
 
   test("keeps collection module access requirements aligned with collection modules", () => {
-    expect(Object.keys(COLLECTION_TYPE_MODULE_REQUIREMENTS).sort()).toEqual(
-      [...COLLECTION_MODULE_IDS].sort(),
+    expect(Object.keys(COLLECTION_TYPE_MODULE_REQUIREMENTS).toSorted()).toEqual(
+      COLLECTION_MODULE_IDS.toSorted(),
     );
   });
 

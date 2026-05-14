@@ -180,7 +180,7 @@ export const backfillLocationCodes = internalMutation({
 
     for (const [key, locations] of locationsByParent) {
       try {
-        const sortedLocations = [...locations].sort((left, right) => {
+        const sortedLocations = locations.toSorted((left, right) => {
           if (left.sortOrder !== right.sortOrder) {
             return left.sortOrder - right.sortOrder;
           }

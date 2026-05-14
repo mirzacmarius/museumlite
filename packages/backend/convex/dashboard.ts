@@ -201,8 +201,8 @@ export const getAnalytics = query({
     }
 
     const recentCollectionGroups = await Promise.all(
-      [...collectionGroups]
-        .sort((a, b) => b._creationTime - a._creationTime)
+      collectionGroups
+        .toSorted((a, b) => b._creationTime - a._creationTime)
         .slice(0, 4)
         .map(async (group) => {
           let imageUrl: string | undefined;
@@ -292,8 +292,8 @@ export const getAnalytics = query({
     );
 
     const recentObjects = await Promise.all(
-      [...collections]
-        .sort((a, b) => b._creationTime - a._creationTime)
+      collections
+        .toSorted((a, b) => b._creationTime - a._creationTime)
         .slice(0, 6)
         .map(async (collection) => {
           const primaryMedia = await ctx.db
@@ -360,8 +360,8 @@ export const getAnalytics = query({
     }
 
     const recentActivity = await Promise.all(
-      [...auditLogEntries]
-        .sort((a, b) => b.timestamp - a.timestamp)
+      auditLogEntries
+        .toSorted((a, b) => b.timestamp - a.timestamp)
         .slice(0, 12)
         .map(async (event) => {
           let type: "collection" | "loan" | "accession" | "deaccession" =

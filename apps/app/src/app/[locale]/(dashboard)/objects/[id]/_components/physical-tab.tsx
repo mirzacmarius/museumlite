@@ -27,7 +27,7 @@ function formatObjectType(value?: string) {
 }
 
 export function PhysicalTab({ collection }: PhysicalTabProps) {
-  const conditionHistory = [...(collection.conditionHistory ?? [])].sort(
+  const conditionHistory = (collection.conditionHistory ?? []).toSorted(
     (a, b) => b.changedAt - a.changedAt,
   );
   const latestConditionEntry = conditionHistory[0];

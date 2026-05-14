@@ -50,7 +50,7 @@ export function LocationSelector({
   }
 
   // Sort locations by path depth and name for better UX
-  const sortedLocations = [...locations].sort((a, b) => {
+  const sortedLocations = locations.toSorted((a, b) => {
     // First sort by path length (shallow to deep)
     if (a.path.length !== b.path.length) {
       return a.path.length - b.path.length;

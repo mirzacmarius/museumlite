@@ -2090,7 +2090,7 @@ function generatePolicyNumber(): string {
 
 function generateProvenanceChain(): typeof PROVENANCE_ENTRIES {
   const numEntries = Math.floor(Math.random() * 4) + 2;
-  const shuffled = [...PROVENANCE_ENTRIES].sort(() => Math.random() - 0.5);
+  const shuffled = PROVENANCE_ENTRIES.toSorted(() => Math.random() - 0.5);
   return shuffled.slice(0, numEntries);
 }
 
@@ -2128,7 +2128,7 @@ async function seedCollectionDetailsData(
   let groupAssignments = 0;
   for (const collection of collections) {
     const numGroups = Math.floor(Math.random() * 2) + 1;
-    const shuffledGroups = [...groupIds].sort(() => Math.random() - 0.5);
+    const shuffledGroups = groupIds.toSorted(() => Math.random() - 0.5);
     const selectedGroups = shuffledGroups.slice(0, numGroups);
 
     for (const groupId of selectedGroups) {
@@ -3406,9 +3406,9 @@ async function seedExhibitionsData(
       status === "active"
     ) {
       const numTasks = randomInt(5, 10);
-      const selectedTasks = [...INSTALLATION_TASKS]
-        .sort(() => Math.random() - 0.5)
-        .slice(0, numTasks);
+      const selectedTasks = INSTALLATION_TASKS.toSorted(
+        () => Math.random() - 0.5,
+      ).slice(0, numTasks);
 
       for (const task of selectedTasks) {
         const taskStatus =
@@ -3489,9 +3489,9 @@ async function seedConservationData(
 
   for (const collection of collectionsForTreatments) {
     const numTreatments = randomInt(1, 3);
-    const selectedTreatments = [...CONSERVATION_TREATMENTS]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, numTreatments);
+    const selectedTreatments = CONSERVATION_TREATMENTS.toSorted(
+      () => Math.random() - 0.5,
+    ).slice(0, numTreatments);
 
     for (const treatment of selectedTreatments) {
       const performedAt = now - randomInt(oneDay * 30, oneYear * 2);
@@ -3719,9 +3719,9 @@ async function seedTransitData(
     }
 
     const numHandling = randomInt(1, 4);
-    const specialHandling = [...SPECIAL_HANDLING]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, numHandling);
+    const specialHandling = SPECIAL_HANDLING.toSorted(
+      () => Math.random() - 0.5,
+    ).slice(0, numHandling);
 
     const numItems = randomInt(1, 4);
     const transitCollections = collections
