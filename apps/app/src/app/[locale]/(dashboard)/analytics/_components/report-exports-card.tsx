@@ -177,16 +177,33 @@ function escapeCSV(value: string | number | undefined): string {
   return str;
 }
 
-export function ReportExportsCard({
+type ExportingReport =
+  | "inventory"
+  | "loans"
+  | "compliance"
+  | "locations"
+  | "board"
+  | "insurance";
+
+interface ReportExportActions {
+  exporting: ExportingReport | null;
+  exportInventoryValuation: () => void;
+  exportLoanReport: () => void;
+  exportComplianceReport: () => void;
+  exportLocationReport: () => void;
+  exportAllReports: () => void;
+  exportBoardReport: () => void;
+  exportInsuranceReport: () => void;
+}
+
+function useReportExportActions({
   kpis,
   compliance,
   locationUtilization,
-}: ReportExportsCardProps) {
+}: ReportExportsCardProps): ReportExportActions {
   const locale = useCurrentLocale();
-  const t = useScopedI18n("analytics.reportExports");
   const csv = useScopedI18n("analytics.reportExports.csv");
-  const [exporting, setExporting] = useState<string | null>(null);
-  const hasCompliance = Boolean(compliance);
+  const [exporting, setExporting] = useState<ExportingReport | null>(null);
 
   const exportInventoryValuation = useCallback(() => {
     setExporting("inventory");
@@ -582,38 +599,26 @@ export function ReportExportsCard({
           csv("insurance.fineArt"),
           kpis.inventory.fineArt.itemCount,
           kpis.inventory.fineArt.valuedCount,
-          formatCurrency(
-            kpis.inventory.fineArt.totalValue,
-            locale as "en" | "fr" | "es" | "no",
-          ),
+          formatCurrency(kpis.inventory.fineArt.totalValue, locale),
         ],
         [
           csv("insurance.wineSpirits"),
           kpis.inventory.wine.itemCount,
           kpis.inventory.wine.valuedCount,
-          formatCurrency(
-            kpis.inventory.wine.totalValue,
-            locale as "en" | "fr" | "es" | "no",
-          ),
+          formatCurrency(kpis.inventory.wine.totalValue, locale),
         ],
         [
           csv("insurance.vehicles"),
           kpis.inventory.vehicles.itemCount,
           kpis.inventory.vehicles.valuedCount,
-          formatCurrency(
-            kpis.inventory.vehicles.totalValue,
-            locale as "en" | "fr" | "es" | "no",
-          ),
+          formatCurrency(kpis.inventory.vehicles.totalValue, locale),
         ],
         [],
         [
           csv("insurance.totalInsurableValue"),
           "",
           "",
-          formatCurrency(
-            kpis.inventory.totalValue,
-            locale as "en" | "fr" | "es" | "no",
-          ),
+          formatCurrency(kpis.inventory.totalValue, locale),
         ],
         [],
         [csv("insurance.itemsOnLoan")],
@@ -659,82 +664,155 @@ export function ReportExportsCard({
     }
   }, [kpis, locationUtilization, csv, locale]);
 
+  return {
+    exporting,
+    exportInventoryValuation,
+    exportLoanReport,
+    exportComplianceReport,
+    exportLocationReport,
+    exportAllReports,
+    exportBoardReport,
+    exportInsuranceReport,
+  };
+}
+
+function ReportExportsHeader() {
+  const t = useScopedI18n("analytics.reportExports");
+
+  return (
+    <CardHeader className="pb-3">
+      <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+        <span className="flex items-center gap-2">
+          <Download className="size-4" />
+          {t("title")}
+        </span>
+      </CardTitle>
+    </CardHeader>
+  );
+}
+
+interface PrimaryReportMenuProps {
+  report: "board" | "insurance";
+  label: string;
+  exporting: ExportingReport | null;
+  onExport: () => void;
+}
+
+function PrimaryReportMenu({
+  report,
+  label,
+  exporting,
+  onExport,
+}: PrimaryReportMenuProps) {
+  const t = useScopedI18n("analytics.reportExports");
+  const Icon = report === "board" ? FileText : Package;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-2">
+          {exporting === report ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Icon className="size-4" />
+          )}
+          {label}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuItem onClick={onExport}>
+          <FileSpreadsheet className="size-4 mr-2" />
+          {t("exportAsCSV")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+interface IndividualReportsMenuProps {
+  onExportInventoryValuation: () => void;
+  onExportLoanReport: () => void;
+  onExportComplianceReport: () => void;
+  onExportLocationReport: () => void;
+  onExportAllReports: () => void;
+}
+
+function IndividualReportsMenu({
+  onExportInventoryValuation,
+  onExportLoanReport,
+  onExportComplianceReport,
+  onExportLocationReport,
+  onExportAllReports,
+}: IndividualReportsMenuProps) {
+  const t = useScopedI18n("analytics.reportExports");
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-2">
+          <FileSpreadsheet className="size-4" />
+          {t("individualReports")}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuItem onClick={onExportInventoryValuation}>
+          {t("inventoryValuation")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onExportLoanReport}>
+          {t("loanStatusReport")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onExportComplianceReport}>
+          {t("complianceAudit")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onExportLocationReport}>
+          {t("locationUtilization")}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={onExportAllReports}>
+          {t("exportAllReports")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+export function ReportExportsCard(props: ReportExportsCardProps) {
+  const t = useScopedI18n("analytics.reportExports");
+  const {
+    exporting,
+    exportInventoryValuation,
+    exportLoanReport,
+    exportComplianceReport,
+    exportLocationReport,
+    exportAllReports,
+    exportBoardReport,
+    exportInsuranceReport,
+  } = useReportExportActions(props);
+
   return (
     <Card className="bg-muted/30 border-white/10 backdrop-blur-sm">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-          <span className="flex items-center gap-2">
-            <Download className="size-4" />
-            {t("title")}
-          </span>
-        </CardTitle>
-      </CardHeader>
+      <ReportExportsHeader />
       <CardContent>
         <div className="flex flex-wrap gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                {exporting === "board" ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <FileText className="size-4" />
-                )}
-                {t("boardReport")}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={exportBoardReport}>
-                <FileSpreadsheet className="size-4 mr-2" />
-                {t("exportAsCSV")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                {exporting === "insurance" ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Package className="size-4" />
-                )}
-                {t("insuranceReport")}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={exportInsuranceReport}>
-                <FileSpreadsheet className="size-4 mr-2" />
-                {t("exportAsCSV")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <FileSpreadsheet className="size-4" />
-                {t("individualReports")}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={exportInventoryValuation}>
-                {t("inventoryValuation")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={exportLoanReport}>
-                {t("loanStatusReport")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={exportComplianceReport}>
-                {t("complianceAudit")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={exportLocationReport}>
-                {t("locationUtilization")}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={exportAllReports}>
-                {t("exportAllReports")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <PrimaryReportMenu
+            report="board"
+            label={t("boardReport")}
+            exporting={exporting}
+            onExport={exportBoardReport}
+          />
+          <PrimaryReportMenu
+            report="insurance"
+            label={t("insuranceReport")}
+            exporting={exporting}
+            onExport={exportInsuranceReport}
+          />
+          <IndividualReportsMenu
+            onExportInventoryValuation={exportInventoryValuation}
+            onExportLoanReport={exportLoanReport}
+            onExportComplianceReport={exportComplianceReport}
+            onExportLocationReport={exportLocationReport}
+            onExportAllReports={exportAllReports}
+          />
         </div>
       </CardContent>
     </Card>
