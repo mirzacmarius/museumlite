@@ -51,9 +51,9 @@ export function EmptyState({
   };
 
   const iconSizes = {
-    sm: "h-8 w-8",
-    md: "h-12 w-12",
-    lg: "h-16 w-16",
+    sm: "size-8",
+    md: "size-12",
+    lg: "size-16",
   };
 
   const variantClasses = {
@@ -75,7 +75,7 @@ export function EmptyState({
           size={size === "sm" ? "sm" : "default"}
         >
           <a href={actionConfig.href}>
-            {ActionIcon && <ActionIcon className="mr-2 h-4 w-4" />}
+            {ActionIcon && <ActionIcon className="mr-2 size-4" />}
             {actionConfig.label}
           </a>
         </Button>
@@ -88,7 +88,7 @@ export function EmptyState({
         size={size === "sm" ? "sm" : "default"}
         onClick={actionConfig.onClick}
       >
-        {ActionIcon && <ActionIcon className="mr-2 h-4 w-4" />}
+        {ActionIcon && <ActionIcon className="mr-2 size-4" />}
         {actionConfig.label}
       </Button>
     );
@@ -159,9 +159,9 @@ export function EmptyState({
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
             >
-              <HelpCircle className="h-3 w-3" />
+              <HelpCircle className="size-3" />
               {helpLink.label}
-              <ExternalLink className="h-3 w-3" />
+              <ExternalLink className="size-3" />
             </a>
           )}
           {videoTutorial && (
@@ -171,9 +171,9 @@ export function EmptyState({
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
             >
-              <Play className="h-3 w-3" />
+              <Play className="size-3" />
               {videoTutorial.label}
-              <ExternalLink className="h-3 w-3" />
+              <ExternalLink className="size-3" />
             </a>
           )}
         </div>

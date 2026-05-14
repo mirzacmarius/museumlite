@@ -41,7 +41,7 @@ export default function ConservationPage() {
     return (
       <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-muted/50 p-8">
-          <GalleryVerticalEnd className="h-12 w-12 text-muted-foreground" />
+          <GalleryVerticalEnd className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
               {t("noOrganizationTitle")}
@@ -71,7 +71,7 @@ export default function ConservationPage() {
             <PermissionGate permission="collections.update">
               <Button asChild>
                 <Link href="/conservation/new">
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className="mr-2 size-4" />
                   {t("newTreatment")}
                 </Link>
               </Button>
@@ -132,7 +132,7 @@ function TreatmentList({
   if (filteredTreatments.length === 0) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-4">
-        <Wrench className="h-12 w-12 text-muted-foreground" />
+        <Wrench className="size-12 text-muted-foreground" />
         <div className="text-center">
           <p className="text-muted-foreground">{t("noTreatmentsFound")}</p>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -177,6 +177,7 @@ function TreatmentCard({ treatment }: { treatment: Treatment }) {
   const typeStyle =
     TREATMENT_TYPE_STYLES[treatment.treatmentType] ||
     TREATMENT_TYPE_STYLES.other;
+  const performedAt = formatDate(new Date(treatment.performedAt), locale);
 
   return (
     <Link
@@ -203,12 +204,12 @@ function TreatmentCard({ treatment }: { treatment: Treatment }) {
 
         <div className="flex flex-col gap-2 border-t border-border/50 pt-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>{formatDate(new Date(treatment.performedAt), locale)}</span>
+            <Calendar className="size-3.5 text-muted-foreground" />
+            <span>{performedAt}</span>
           </div>
           {treatment.performedByName && (
             <div className="flex items-center gap-1.5">
-              <User className="h-3.5 w-3.5 text-muted-foreground" />
+              <User className="size-3.5 text-muted-foreground" />
               <span>{treatment.performedByName}</span>
             </div>
           )}
@@ -217,7 +218,7 @@ function TreatmentCard({ treatment }: { treatment: Treatment }) {
 
       {treatment.collectionTitle && (
         <div className="mt-4 flex items-center gap-2 rounded-lg bg-background/50 px-3 py-2 text-xs text-muted-foreground group-hover:text-muted-foreground transition-colors">
-          <Box className="h-3.5 w-3.5" />
+          <Box className="size-3.5" />
           <span className="truncate">{treatment.collectionTitle}</span>
         </div>
       )}

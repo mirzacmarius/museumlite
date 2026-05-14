@@ -22,7 +22,7 @@ export default function LibraryFinesLoading() {
           <div className="border-b border-border px-6 py-4">
             <div className="flex gap-4">
               <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded bg-muted/40" />
+                <div className="size-4 rounded bg-muted/40" />
                 <div className="h-4 w-12 rounded bg-muted/40" />
               </div>
               <div className="h-10 w-40 rounded-lg bg-muted/60" />

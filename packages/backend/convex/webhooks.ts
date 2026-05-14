@@ -307,19 +307,20 @@ export const deleteWebhook = mutation({
       "organization.manage_settings",
     );
 
-    await ctx.db.delete(args.webhookId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: webhook.organizationId,
-      userId,
-      action: "deleted_webhook",
-      entityType: "webhook",
-      entityId: args.webhookId,
-      changes: {
-        name: webhook.name,
-        url: webhook.url,
-      },
-    });
+    await Promise.all([
+      ctx.db.delete(args.webhookId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: webhook.organizationId,
+        userId,
+        action: "deleted_webhook",
+        entityType: "webhook",
+        entityId: args.webhookId,
+        changes: {
+          name: webhook.name,
+          url: webhook.url,
+        },
+      }),
+    ]);
 
     return null;
   },
@@ -361,5 +362,3 @@ export const updateLastTriggered = internalMutation({
     return null;
   },
 });
-
-

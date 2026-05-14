@@ -43,7 +43,7 @@ export function DashboardHeader({ children }: { children: ReactNode }) {
         />
         <div className="flex items-center gap-2 text-xs">
           <span className="text-muted-foreground flex items-center gap-2">
-            <Building2 className="w-3.5 h-3.5" />
+            <Building2 className="size-3.5" />
             {currentOrganization?.name ?? "MuseumLite"}
           </span>
           <span className="text-muted-foreground/60">/</span>
