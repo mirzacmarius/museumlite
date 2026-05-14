@@ -138,19 +138,21 @@ export const create = mutation({
         workflowState.firstStep ?? 1,
       );
 
-      for (const approverId of usersToNotify) {
-        if (approverId !== userId) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: args.organizationId,
-            userId: approverId,
-            type: "workflow_pending",
-            title: "Acquisition Request Requires Approval",
-            message: `Acquisition request for "${args.title}" is pending your approval at step ${workflowState.firstStep ?? 1}.`,
-            relatedEntityType: "libraryAcquisitionRequest",
-            relatedEntityId: requestId,
-          });
-        }
-      }
+      await Promise.all(
+        usersToNotify.map((approverId) =>
+          approverId !== userId
+            ? ctx.runMutation(internal.audit.createNotificationInternal, {
+                organizationId: args.organizationId,
+                userId: approverId,
+                type: "workflow_pending",
+                title: "Acquisition Request Requires Approval",
+                message: `Acquisition request for "${args.title}" is pending your approval at step ${workflowState.firstStep ?? 1}.`,
+                relatedEntityType: "libraryAcquisitionRequest",
+                relatedEntityId: requestId,
+              })
+            : Promise.resolve(),
+        ),
+      );
     }
 
     return requestId;

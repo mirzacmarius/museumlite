@@ -27,13 +27,15 @@ export async function dispatchLoanItems(
 ) {
   const loanItems = await getLoanItems(ctx, loanId);
 
-  for (const item of loanItems) {
-    await markCollectionLoaned(ctx, {
-      collectionId: item.collectionId,
-      changedBy,
-      clearLocation: true,
-    });
-  }
+  await Promise.all(
+    loanItems.map((item) =>
+      markCollectionLoaned(ctx, {
+        collectionId: item.collectionId,
+        changedBy,
+        clearLocation: true,
+      }),
+    ),
+  );
 
   return {
     dispatchedItemIds: loanItems.map((item) => item._id),

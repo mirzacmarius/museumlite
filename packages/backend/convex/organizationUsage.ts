@@ -59,8 +59,11 @@ async function buildUsageCounterSnapshot(
   const mediaByType: Record<string, { bytes: number; count: number }> = {};
   let storageBytes = 0;
 
-  for (const media of mediaFiles) {
-    const mediaBytes = await getMediaStorageBytes(ctx, media);
+  const mediaStorageBytes = await Promise.all(
+    mediaFiles.map((media) => getMediaStorageBytes(ctx, media)),
+  );
+  for (const [index, media] of mediaFiles.entries()) {
+    const mediaBytes = mediaStorageBytes[index] ?? 0;
     storageBytes += mediaBytes;
 
     const current = mediaByType[media.fileType] ?? { bytes: 0, count: 0 };
@@ -70,8 +73,11 @@ async function buildUsageCounterSnapshot(
     };
   }
 
-  for (const version of mediaVersions) {
-    storageBytes += await getMediaVersionStorageBytes(ctx, version);
+  const mediaVersionStorageBytes = await Promise.all(
+    mediaVersions.map((version) => getMediaVersionStorageBytes(ctx, version)),
+  );
+  for (const versionBytes of mediaVersionStorageBytes) {
+    storageBytes += versionBytes;
   }
 
   return {

@@ -254,19 +254,21 @@ export async function recordWorkflowStepAdvance(
     toStep,
   );
 
-  for (const approverId of usersToNotify) {
-    if (approverId !== performedBy) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
-        organizationId,
-        userId: approverId,
-        type: "workflow_pending",
-        title: notification.title,
-        message: notification.message,
-        relatedEntityType: workflowType,
-        relatedEntityId: entityId,
-      });
-    }
-  }
+  await Promise.all(
+    usersToNotify.map((approverId) =>
+      approverId !== performedBy
+        ? ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId,
+            userId: approverId,
+            type: "workflow_pending",
+            title: notification.title,
+            message: notification.message,
+            relatedEntityType: workflowType,
+            relatedEntityId: entityId,
+          })
+        : Promise.resolve(),
+    ),
+  );
 
   return null;
 }

@@ -309,19 +309,21 @@ async function createDeaccessionRecord(
       workflowState.firstStep ?? 1,
     );
 
-    for (const approverId of usersToNotify) {
-      if (approverId !== userId) {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
-          organizationId: args.organizationId,
-          userId: approverId,
-          type: "workflow_pending",
-          title: "New Deaccession Requires Approval",
-          message: `Deaccession ${deaccessionNumber} is pending your approval at step ${workflowState.firstStep ?? 1}.`,
-          relatedEntityType: "deaccession",
-          relatedEntityId: deaccessionId,
-        });
-      }
-    }
+    await Promise.all(
+      usersToNotify.map((approverId) =>
+        approverId !== userId
+          ? ctx.runMutation(internal.audit.createNotificationInternal, {
+              organizationId: args.organizationId,
+              userId: approverId,
+              type: "workflow_pending",
+              title: "New Deaccession Requires Approval",
+              message: `Deaccession ${deaccessionNumber} is pending your approval at step ${workflowState.firstStep ?? 1}.`,
+              relatedEntityType: "deaccession",
+              relatedEntityId: deaccessionId,
+            })
+          : Promise.resolve(),
+      ),
+    );
   }
 
   if (!workflowConfig) {

@@ -268,9 +268,9 @@ export const setDefault = mutation({
       )
       .collect();
 
-    for (const t of allTemplates) {
-      await ctx.db.patch(t._id, { isDefault: false });
-    }
+    await Promise.all(
+      allTemplates.map((t) => ctx.db.patch(t._id, { isDefault: false })),
+    );
 
     // Set this template as default
     await ctx.db.patch(args.templateId, { isDefault: true });

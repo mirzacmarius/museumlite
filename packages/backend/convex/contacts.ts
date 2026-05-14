@@ -233,14 +233,16 @@ export const create = mutation({
         .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
         .collect();
 
-      for (const contact of existingPrimaryContacts) {
-        if (contact.isPrimary) {
-          await ctx.db.patch(contact._id, {
-            isPrimary: false,
-            updatedAt: Date.now(),
-          });
-        }
-      }
+      await Promise.all(
+        existingPrimaryContacts.map((contact) =>
+          contact.isPrimary
+            ? ctx.db.patch(contact._id, {
+                isPrimary: false,
+                updatedAt: Date.now(),
+              })
+            : Promise.resolve(),
+        ),
+      );
     }
 
     const contactId = await ctx.db.insert("contacts", {

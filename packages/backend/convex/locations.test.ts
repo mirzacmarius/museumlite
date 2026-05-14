@@ -113,16 +113,15 @@ async function createOrgUserWithLocationPermissions() {
       isSystemRole: false,
     });
 
-    for (const permissionId of [
-      readPermissionId,
-      createPermissionId,
-      updatePermissionId,
-    ]) {
-      await ctx.db.insert("rolePermissions", {
-        roleId,
-        permissionId,
-      });
-    }
+    await Promise.all(
+      [readPermissionId, createPermissionId, updatePermissionId].map(
+        (permissionId) =>
+          ctx.db.insert("rolePermissions", {
+            roleId,
+            permissionId,
+          }),
+      ),
+    );
 
     await ctx.db.insert("userOrganizations", {
       userId,

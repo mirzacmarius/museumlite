@@ -184,7 +184,11 @@ function collectStorageIdsFromValue(
   storageIds: Set<Id<"_storage">>,
   currentKey?: string,
 ) {
-  if (currentKey && storageIdFieldNames.has(currentKey) && typeof value === "string") {
+  if (
+    currentKey &&
+    storageIdFieldNames.has(currentKey) &&
+    typeof value === "string"
+  ) {
     storageIds.add(value as Id<"_storage">);
     return;
   }
@@ -243,8 +247,12 @@ async function getAdminOrganizationIdsForCurrentUser(ctx: AdminContext) {
 
   const adminOrganizationIds: Array<Id<"organizations">> = [];
 
-  for (const membership of memberships) {
-    const role = await ctx.db.get(membership.roleId);
+  const roles = await Promise.all(
+    memberships.map((membership) => ctx.db.get(membership.roleId)),
+  );
+
+  for (const [index, membership] of memberships.entries()) {
+    const role = roles[index];
     if (role?.name.toLowerCase() === "admin") {
       adminOrganizationIds.push(membership.organizationId);
     }
@@ -302,12 +310,16 @@ async function buildOrganizationFootprint(
       getUsageCounter(ctx, organizationId),
       ctx.db
         .query("notifications")
-        .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", organizationId),
+        )
         .collect(),
       collectOrganizationScopedDocs(ctx, "workflowSlaConfigs", organizationId),
       ctx.db
         .query("auditLog")
-        .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", organizationId),
+        )
         .collect(),
     ]);
 
@@ -372,12 +384,14 @@ type OrganizationPurgeSnapshot = {
   tableCounts: Array<{ count: number; table: string }>;
 };
 
-function getOrganizationDocsForTable<TableName extends OrganizationScopedTableName>(
+function getOrganizationDocsForTable<
+  TableName extends OrganizationScopedTableName,
+>(
   organizationDocuments: OrganizationPurgeSnapshot["organizationDocuments"],
   tableName: TableName,
 ) {
-  return (organizationDocuments.find((entry) => entry.table === tableName)?.docs ??
-    []) as Array<Doc<TableName>>;
+  return (organizationDocuments.find((entry) => entry.table === tableName)
+    ?.docs ?? []) as Array<Doc<TableName>>;
 }
 
 async function collectPurgeSnapshot(
@@ -410,7 +424,10 @@ async function collectPurgeSnapshot(
     organizationDocuments,
     "collections",
   );
-  const accounts = getOrganizationDocsForTable(organizationDocuments, "accounts");
+  const accounts = getOrganizationDocsForTable(
+    organizationDocuments,
+    "accounts",
+  );
   const loans = getOrganizationDocsForTable(organizationDocuments, "loans");
   const exhibitions = getOrganizationDocsForTable(
     organizationDocuments,
@@ -517,7 +534,9 @@ async function collectPurgeSnapshot(
     ctx.db
       .query("exhibitionDocuments")
       .collect()
-      .then((docs) => docs.filter((doc) => exhibitionIds.includes(doc.exhibitionId))),
+      .then((docs) =>
+        docs.filter((doc) => exhibitionIds.includes(doc.exhibitionId)),
+      ),
     ctx.db
       .query("transitItems")
       .collect()
@@ -533,15 +552,21 @@ async function collectPurgeSnapshot(
     ctx.db
       .query("installationTaskComments")
       .collect()
-      .then((docs) => docs.filter((doc) => installationTaskIds.includes(doc.taskId))),
+      .then((docs) =>
+        docs.filter((doc) => installationTaskIds.includes(doc.taskId)),
+      ),
     ctx.db
       .query("installationTaskChecklists")
       .collect()
-      .then((docs) => docs.filter((doc) => installationTaskIds.includes(doc.taskId))),
+      .then((docs) =>
+        docs.filter((doc) => installationTaskIds.includes(doc.taskId)),
+      ),
     ctx.db
       .query("userPreferences")
       .collect()
-      .then((docs) => docs.filter((doc) => doc.organizationId === organizationId)),
+      .then((docs) =>
+        docs.filter((doc) => doc.organizationId === organizationId),
+      ),
   ]);
 
   const conditionReports = await ctx.db
@@ -571,10 +596,12 @@ async function collectPurgeSnapshot(
     userSites,
   };
 
-  const childDocumentEntries = Object.entries(childDocuments).map(([table, docs]) => ({
-    table,
-    docs,
-  }));
+  const childDocumentEntries = Object.entries(childDocuments).map(
+    ([table, docs]) => ({
+      table,
+      docs,
+    }),
+  );
 
   const storageIds = uniqueStorageIds([
     ...collectStorageIdsFromDocs([
@@ -584,7 +611,9 @@ async function collectPurgeSnapshot(
       organizationDocuments.flatMap((entry) => entry.docs),
     ),
     ...collectStorageIdsFromDocs(
-      childDocumentEntries.flatMap((entry) => entry.docs as Array<Record<string, unknown>>),
+      childDocumentEntries.flatMap(
+        (entry) => entry.docs as Array<Record<string, unknown>>,
+      ),
     ),
   ]);
 
@@ -658,7 +687,8 @@ export const getOrganizationFootprintsInternal = internalQuery({
     );
 
     return footprints.filter(
-      (footprint): footprint is NonNullable<typeof footprint> => footprint !== null,
+      (footprint): footprint is NonNullable<typeof footprint> =>
+        footprint !== null,
     );
   },
 });
@@ -713,17 +743,29 @@ export const purgeOrganizationsInternal = internalMutation({
 
         await deleteDocuments(ctx, snapshot.childDocuments.rolePermissions);
         await deleteDocuments(ctx, snapshot.childDocuments.userSites);
-        await deleteDocuments(ctx, snapshot.childDocuments.collectionGroupItems);
+        await deleteDocuments(
+          ctx,
+          snapshot.childDocuments.collectionGroupItems,
+        );
         await deleteDocuments(ctx, snapshot.childDocuments.locationHistory);
-        await deleteDocuments(ctx, snapshot.childDocuments.organizationMoveRequests);
+        await deleteDocuments(
+          ctx,
+          snapshot.childDocuments.organizationMoveRequests,
+        );
         await deleteDocuments(ctx, snapshot.childDocuments.accountRoles);
         await deleteDocuments(ctx, snapshot.childDocuments.loanDocuments);
         await deleteDocuments(ctx, snapshot.childDocuments.conditionReports);
         await deleteDocuments(ctx, snapshot.childDocuments.loanItems);
         await deleteDocuments(ctx, snapshot.childDocuments.exhibitionDocuments);
         await deleteDocuments(ctx, snapshot.childDocuments.transitItems);
-        await deleteDocuments(ctx, snapshot.childDocuments.transitStatusUpdates);
-        await deleteDocuments(ctx, snapshot.childDocuments.installationTaskComments);
+        await deleteDocuments(
+          ctx,
+          snapshot.childDocuments.transitStatusUpdates,
+        );
+        await deleteDocuments(
+          ctx,
+          snapshot.childDocuments.installationTaskComments,
+        );
         await deleteDocuments(
           ctx,
           snapshot.childDocuments.installationTaskChecklists,

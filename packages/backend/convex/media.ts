@@ -402,11 +402,13 @@ export const setPrimary = mutation({
       .filter((q) => q.eq(q.field("isPrimary"), true))
       .collect();
 
-    for (const m of otherMedia) {
-      if (m._id !== args.mediaId) {
-        await ctx.db.patch(m._id, { isPrimary: false });
-      }
-    }
+    await Promise.all(
+      otherMedia.map((m) =>
+        m._id !== args.mediaId
+          ? ctx.db.patch(m._id, { isPrimary: false })
+          : Promise.resolve(),
+      ),
+    );
 
     // Set this as primary
     await ctx.db.patch(args.mediaId, { isPrimary: true });

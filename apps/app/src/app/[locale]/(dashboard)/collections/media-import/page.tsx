@@ -148,47 +148,49 @@ export default function MediaImportPage() {
         currentFileIndex: 0,
       }));
 
-      for (const [i, file] of state.mediaFiles.entries()) {
-        setState((prev) => ({ ...prev, currentFileIndex: i }));
+      await Promise.all(
+        state.mediaFiles.map(async (file, i) => {
+          setState((prev) => ({ ...prev, currentFileIndex: i }));
 
-        try {
-          const { uploadUrl } = await generateUrl({
-            organizationId: currentOrganizationId as Id<"organizations">,
-            jobId,
-            fileName: file.name,
-            fileSize: file.size,
-            mimeType: file.type,
-          });
+          try {
+            const { uploadUrl } = await generateUrl({
+              organizationId: currentOrganizationId as Id<"organizations">,
+              jobId,
+              fileName: file.name,
+              fileSize: file.size,
+              mimeType: file.type,
+            });
 
-          const uploadRes = await fetch(uploadUrl, {
-            method: "POST",
-            headers: { "Content-Type": file.type },
-            body: file,
-          });
+            const uploadRes = await fetch(uploadUrl, {
+              method: "POST",
+              headers: { "Content-Type": file.type },
+              body: file,
+            });
 
-          if (!uploadRes.ok)
-            throw new Error(`Upload failed: ${uploadRes.statusText}`);
-          const { storageId } = await uploadRes.json();
+            if (!uploadRes.ok)
+              throw new Error(`Upload failed: ${uploadRes.statusText}`);
+            const { storageId } = await uploadRes.json();
 
-          await recordFile({
-            organizationId: currentOrganizationId as Id<"organizations">,
-            jobId,
-            storageId: storageId as Id<"_storage">,
-            fileName: file.name,
-            fileSize: file.size,
-            mimeType: file.type,
-          });
-        } catch (err) {
-          console.error(`Error uploading ${file.name}:`, err);
-          setState((prev) => ({
-            ...prev,
-            uploadErrors: [
-              ...prev.uploadErrors,
-              `${file.name}: ${err instanceof Error ? err.message : "Unknown error"}`,
-            ],
-          }));
-        }
-      }
+            await recordFile({
+              organizationId: currentOrganizationId as Id<"organizations">,
+              jobId,
+              storageId: storageId as Id<"_storage">,
+              fileName: file.name,
+              fileSize: file.size,
+              mimeType: file.type,
+            });
+          } catch (err) {
+            console.error(`Error uploading ${file.name}:`, err);
+            setState((prev) => ({
+              ...prev,
+              uploadErrors: [
+                ...prev.uploadErrors,
+                `${file.name}: ${err instanceof Error ? err.message : "Unknown error"}`,
+              ],
+            }));
+          }
+        }),
+      );
 
       setState((prev) => ({ ...prev, step: "complete" }));
     } catch (err) {

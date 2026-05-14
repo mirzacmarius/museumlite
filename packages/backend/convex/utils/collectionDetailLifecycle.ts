@@ -22,11 +22,11 @@ async function deleteStorageIds(
   ctx: MutationCtx,
   storageIds: Array<Id<"_storage"> | undefined>,
 ) {
-  for (const storageId of storageIds) {
-    if (storageId) {
-      await ctx.storage.delete(storageId);
-    }
-  }
+  await Promise.all(
+    storageIds.map((storageId) =>
+      storageId ? ctx.storage.delete(storageId) : Promise.resolve(),
+    ),
+  );
 }
 
 async function deleteFineArtDetails(
@@ -37,12 +37,15 @@ async function deleteFineArtDetails(
     .query("fineArtDetails")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const detail of fineArtDetails) {
-    const provenanceDocumentIds =
-      detail.provenanceChain?.flatMap((entry) => entry.documentIds ?? []) ?? [];
-    await deleteStorageIds(ctx, provenanceDocumentIds);
-    await ctx.db.delete(detail._id);
-  }
+  await Promise.all(
+    fineArtDetails.map(async (detail) => {
+      const provenanceDocumentIds =
+        detail.provenanceChain?.flatMap((entry) => entry.documentIds ?? []) ??
+        [];
+      await deleteStorageIds(ctx, provenanceDocumentIds);
+      await ctx.db.delete(detail._id);
+    }),
+  );
 }
 
 async function moveFineArtDetails(
@@ -54,9 +57,11 @@ async function moveFineArtDetails(
     .query("fineArtDetails")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const detail of fineArtDetails) {
-    await ctx.db.patch(detail._id, { organizationId: targetOrganizationId });
-  }
+  await Promise.all(
+    fineArtDetails.map((detail) =>
+      ctx.db.patch(detail._id, { organizationId: targetOrganizationId }),
+    ),
+  );
 }
 
 async function deleteWineDetails(
@@ -67,9 +72,7 @@ async function deleteWineDetails(
     .query("wineDetails")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const detail of wineDetails) {
-    await ctx.db.delete(detail._id);
-  }
+  await Promise.all(wineDetails.map((detail) => ctx.db.delete(detail._id)));
 }
 
 async function moveWineDetails(
@@ -81,9 +84,11 @@ async function moveWineDetails(
     .query("wineDetails")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const detail of wineDetails) {
-    await ctx.db.patch(detail._id, { organizationId: targetOrganizationId });
-  }
+  await Promise.all(
+    wineDetails.map((detail) =>
+      ctx.db.patch(detail._id, { organizationId: targetOrganizationId }),
+    ),
+  );
 }
 
 async function deleteVehicleDetails(
@@ -94,12 +99,14 @@ async function deleteVehicleDetails(
     .query("vehicleDetails")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const detail of vehicleDetails) {
-    const serviceDocumentIds =
-      detail.serviceLog?.flatMap((entry) => entry.documentIds ?? []) ?? [];
-    await deleteStorageIds(ctx, serviceDocumentIds);
-    await ctx.db.delete(detail._id);
-  }
+  await Promise.all(
+    vehicleDetails.map(async (detail) => {
+      const serviceDocumentIds =
+        detail.serviceLog?.flatMap((entry) => entry.documentIds ?? []) ?? [];
+      await deleteStorageIds(ctx, serviceDocumentIds);
+      await ctx.db.delete(detail._id);
+    }),
+  );
 }
 
 async function moveVehicleDetails(
@@ -111,9 +118,11 @@ async function moveVehicleDetails(
     .query("vehicleDetails")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const detail of vehicleDetails) {
-    await ctx.db.patch(detail._id, { organizationId: targetOrganizationId });
-  }
+  await Promise.all(
+    vehicleDetails.map((detail) =>
+      ctx.db.patch(detail._id, { organizationId: targetOrganizationId }),
+    ),
+  );
 }
 
 async function deleteNaturalHistoryDetails(
@@ -124,9 +133,9 @@ async function deleteNaturalHistoryDetails(
     .query("naturalHistoryDetails")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const detail of naturalHistoryDetails) {
-    await ctx.db.delete(detail._id);
-  }
+  await Promise.all(
+    naturalHistoryDetails.map((detail) => ctx.db.delete(detail._id)),
+  );
 }
 
 async function moveNaturalHistoryDetails(
@@ -138,9 +147,11 @@ async function moveNaturalHistoryDetails(
     .query("naturalHistoryDetails")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const detail of naturalHistoryDetails) {
-    await ctx.db.patch(detail._id, { organizationId: targetOrganizationId });
-  }
+  await Promise.all(
+    naturalHistoryDetails.map((detail) =>
+      ctx.db.patch(detail._id, { organizationId: targetOrganizationId }),
+    ),
+  );
 }
 
 async function deleteArchiveDetails(
@@ -151,9 +162,7 @@ async function deleteArchiveDetails(
     .query("archiveDetails")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const detail of archiveDetails) {
-    await ctx.db.delete(detail._id);
-  }
+  await Promise.all(archiveDetails.map((detail) => ctx.db.delete(detail._id)));
 }
 
 async function moveArchiveDetails(
@@ -165,9 +174,11 @@ async function moveArchiveDetails(
     .query("archiveDetails")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const detail of archiveDetails) {
-    await ctx.db.patch(detail._id, { organizationId: targetOrganizationId });
-  }
+  await Promise.all(
+    archiveDetails.map((detail) =>
+      ctx.db.patch(detail._id, { organizationId: targetOrganizationId }),
+    ),
+  );
 }
 
 async function deleteCoinsStampsDetails(
@@ -178,9 +189,9 @@ async function deleteCoinsStampsDetails(
     .query("coinsStampsDetails")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const detail of coinsStampsDetails) {
-    await ctx.db.delete(detail._id);
-  }
+  await Promise.all(
+    coinsStampsDetails.map((detail) => ctx.db.delete(detail._id)),
+  );
 }
 
 async function moveCoinsStampsDetails(
@@ -192,9 +203,11 @@ async function moveCoinsStampsDetails(
     .query("coinsStampsDetails")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const detail of coinsStampsDetails) {
-    await ctx.db.patch(detail._id, { organizationId: targetOrganizationId });
-  }
+  await Promise.all(
+    coinsStampsDetails.map((detail) =>
+      ctx.db.patch(detail._id, { organizationId: targetOrganizationId }),
+    ),
+  );
 }
 
 const collectionDetailLifecycleAdapterByModule = {
@@ -239,9 +252,11 @@ export async function deleteCollectionDetailRecords(
   ctx: MutationCtx,
   collectionId: Id<"collections">,
 ) {
-  for (const adapter of collectionDetailLifecycleAdapters) {
-    await adapter.deleteRecords(ctx, collectionId);
-  }
+  await Promise.all(
+    collectionDetailLifecycleAdapters.map((adapter) =>
+      adapter.deleteRecords(ctx, collectionId),
+    ),
+  );
 }
 
 export async function moveCollectionDetailRecords(
@@ -249,7 +264,9 @@ export async function moveCollectionDetailRecords(
   collectionId: Id<"collections">,
   targetOrganizationId: Id<"organizations">,
 ) {
-  for (const adapter of collectionDetailLifecycleAdapters) {
-    await adapter.moveRecords(ctx, collectionId, targetOrganizationId);
-  }
+  await Promise.all(
+    collectionDetailLifecycleAdapters.map((adapter) =>
+      adapter.moveRecords(ctx, collectionId, targetOrganizationId),
+    ),
+  );
 }

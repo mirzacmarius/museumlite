@@ -248,7 +248,9 @@ export const getNotificationsByCategory = query({
       );
     }
 
-    const notifications = await notificationsQuery.order("desc").take(limit * 2);
+    const notifications = await notificationsQuery
+      .order("desc")
+      .take(limit * 2);
 
     // Filter by category types
     const filtered = notifications
@@ -405,16 +407,20 @@ export const bulkMarkRead = mutation({
       throw new Error("Not authenticated");
     }
 
-    let count = 0;
-    for (const notificationId of args.notificationIds) {
-      const notification = await ctx.db.get(notificationId);
-      if (notification && notification.userId === userId) {
-        await ctx.db.patch(notificationId, { read: true });
-        count++;
-      }
-    }
+    const notifications = await Promise.all(
+      args.notificationIds.map((notificationId) => ctx.db.get(notificationId)),
+    );
+    const readableNotificationIds = notifications.flatMap((notification) =>
+      notification?.userId === userId ? [notification._id] : [],
+    );
 
-    return count;
+    await Promise.all(
+      readableNotificationIds.map((notificationId) =>
+        ctx.db.patch(notificationId, { read: true }),
+      ),
+    );
+
+    return readableNotificationIds.length;
   },
 });
 

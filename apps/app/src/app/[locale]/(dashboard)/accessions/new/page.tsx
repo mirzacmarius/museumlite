@@ -68,53 +68,58 @@ export default function NewAccessionPage() {
 
       setUploadingFiles((prev) => [...prev, ...newUploads]);
 
-      for (const upload of newUploads) {
-        try {
-          setUploadingFiles((prev) =>
-            prev.map((u) =>
-              u.id === upload.id ? { ...u, status: "uploading" } : u,
-            ),
-          );
+      await Promise.all(
+        newUploads.map(async (upload) => {
+          try {
+            setUploadingFiles((prev) =>
+              prev.map((u) =>
+                u.id === upload.id ? { ...u, status: "uploading" } : u,
+              ),
+            );
 
-          const uploadUrl = await generateUploadUrl({
-            mimeType: upload.file.type || "application/octet-stream",
-          });
+            const uploadUrl = await generateUploadUrl({
+              mimeType: upload.file.type || "application/octet-stream",
+            });
 
-          const response = await fetch(uploadUrl, {
-            method: "POST",
-            headers: { "Content-Type": upload.file.type },
-            body: upload.file,
-          });
+            const response = await fetch(uploadUrl, {
+              method: "POST",
+              headers: { "Content-Type": upload.file.type },
+              body: upload.file,
+            });
 
-          if (!response.ok) {
-            throw new Error("Upload failed");
+            if (!response.ok) {
+              throw new Error("Upload failed");
+            }
+
+            const { storageId } = await response.json();
+
+            setUploadedDocuments((prev) => [
+              ...prev,
+              {
+                storageId: storageId as Id<"_storage">,
+                name: upload.file.name,
+              },
+            ]);
+
+            setUploadingFiles((prev) =>
+              prev.map((u) =>
+                u.id === upload.id
+                  ? { ...u, status: "complete", progress: 100 }
+                  : u,
+              ),
+            );
+          } catch (err) {
+            console.error("Upload error:", err);
+            setUploadingFiles((prev) =>
+              prev.map((u) =>
+                u.id === upload.id
+                  ? { ...u, status: "error", error: "Upload failed" }
+                  : u,
+              ),
+            );
           }
-
-          const { storageId } = await response.json();
-
-          setUploadedDocuments((prev) => [
-            ...prev,
-            { storageId: storageId as Id<"_storage">, name: upload.file.name },
-          ]);
-
-          setUploadingFiles((prev) =>
-            prev.map((u) =>
-              u.id === upload.id
-                ? { ...u, status: "complete", progress: 100 }
-                : u,
-            ),
-          );
-        } catch (err) {
-          console.error("Upload error:", err);
-          setUploadingFiles((prev) =>
-            prev.map((u) =>
-              u.id === upload.id
-                ? { ...u, status: "error", error: "Upload failed" }
-                : u,
-            ),
-          );
-        }
-      }
+        }),
+      );
 
       setTimeout(() => {
         setUploadingFiles((prev) =>

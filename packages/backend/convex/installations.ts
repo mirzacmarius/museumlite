@@ -190,17 +190,13 @@ export const deleteTask = mutation({
       .query("installationTaskComments")
       .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
       .collect();
-    for (const comment of comments) {
-      await ctx.db.delete(comment._id);
-    }
+    await Promise.all(comments.map((comment) => ctx.db.delete(comment._id)));
 
     const checklists = await ctx.db
       .query("installationTaskChecklists")
       .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
       .collect();
-    for (const item of checklists) {
-      await ctx.db.delete(item._id);
-    }
+    await Promise.all(checklists.map((item) => ctx.db.delete(item._id)));
 
     await ctx.db.delete(args.taskId);
 

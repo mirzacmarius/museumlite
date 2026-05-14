@@ -81,21 +81,27 @@ async function createRoleWithPermissions(
     });
   });
 
-  for (const permissionName of new Set(permissionNames)) {
-    const permissionId = await t.run(async (ctx) => {
-      return await ctx.db.insert("permissions", {
-        name: permissionName,
-        category: getPermissionCategory(permissionName),
-      });
-    });
+  const permissionIds = await Promise.all(
+    [...new Set(permissionNames)].map((permissionName) =>
+      t.run(async (ctx) => {
+        return await ctx.db.insert("permissions", {
+          name: permissionName,
+          category: getPermissionCategory(permissionName),
+        });
+      }),
+    ),
+  );
 
-    await t.run(async (ctx) => {
-      await ctx.db.insert("rolePermissions", {
-        roleId,
-        permissionId,
-      });
-    });
-  }
+  await Promise.all(
+    permissionIds.map((permissionId) =>
+      t.run(async (ctx) => {
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+          permissionId,
+        });
+      }),
+    ),
+  );
 
   return roleId;
 }

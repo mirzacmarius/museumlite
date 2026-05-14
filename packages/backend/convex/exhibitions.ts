@@ -222,11 +222,13 @@ export const update = mutation({
         .filter((q) => q.eq(q.field("isCurrent"), true))
         .collect();
 
-      for (const ex of currentExhibitions) {
-        if (ex._id !== args.id) {
-          await ctx.db.patch(ex._id, { isCurrent: false });
-        }
-      }
+      await Promise.all(
+        currentExhibitions.map((ex) =>
+          ex._id !== args.id
+            ? ctx.db.patch(ex._id, { isCurrent: false })
+            : Promise.resolve(),
+        ),
+      );
     }
 
     await ctx.db.patch(args.id, filteredUpdates);

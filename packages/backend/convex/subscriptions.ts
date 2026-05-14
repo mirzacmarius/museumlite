@@ -525,9 +525,9 @@ export const syncBillingProducts = action({
     });
     const items = products.result?.items ?? [];
 
-    for (const product of items) {
-      await upsertComponentProduct(ctx, product);
-    }
+    await Promise.all(
+      items.map((product) => upsertComponentProduct(ctx, product)),
+    );
 
     return { count: items.length };
   },

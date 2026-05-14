@@ -648,9 +648,7 @@ export const clearStepApprovals = internalMutation({
       )
       .collect();
 
-    for (const approval of approvals) {
-      await ctx.db.delete(approval._id);
-    }
+    await Promise.all(approvals.map((approval) => ctx.db.delete(approval._id)));
 
     return null;
   },
