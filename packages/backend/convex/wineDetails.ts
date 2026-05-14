@@ -2,7 +2,12 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
+import {
+  type MutationCtx,
+  type QueryCtx,
+  mutation,
+  query,
+} from "./_generated/server";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
@@ -23,8 +28,18 @@ const closureTypeValidator = v.union(
   v.literal("crown"),
 );
 
+interface DrinkingWindow {
+  _id: Id<"wineDetails">;
+  collectionId: Id<"collections">;
+  producer?: string;
+  vintage?: number;
+  peakWindowStart?: number;
+  peakWindowEnd?: number;
+  binNumber?: string;
+}
+
 async function requireWineModule(
-  ctx: any,
+  ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
 ) {
   await requireModuleEnabled(ctx, organizationId, "wine");
@@ -75,8 +90,10 @@ export const get = query({
       return null;
     }
 
-    await requireWineModule(ctx, collection.organizationId);
-    await requirePermission(ctx, collection.organizationId, "collections.read");
+    await Promise.all([
+      requireWineModule(ctx, collection.organizationId),
+      requirePermission(ctx, collection.organizationId, "collections.read"),
+    ]);
 
     const details = await ctx.db
       .query("wineDetails")
@@ -125,12 +142,10 @@ export const upsert = mutation({
       throw new Error("Collection not found");
     }
 
-    await requireWineModule(ctx, collection.organizationId);
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.update",
-    );
+    await Promise.all([
+      requireWineModule(ctx, collection.organizationId),
+      requirePermission(ctx, collection.organizationId, "collections.update"),
+    ]);
 
     const existing = await ctx.db
       .query("wineDetails")
@@ -195,8 +210,10 @@ export const remove = mutation({
       throw new Error("Wine details not found");
     }
 
-    await requireWineModule(ctx, details.organizationId);
-    await requirePermission(ctx, details.organizationId, "collections.delete");
+    await Promise.all([
+      requireWineModule(ctx, details.organizationId),
+      requirePermission(ctx, details.organizationId, "collections.delete"),
+    ]);
 
     await ctx.db.delete(args.wineDetailsId);
 
@@ -234,8 +251,10 @@ export const listByBin = query({
       throw new Error("Not authenticated");
     }
 
-    await requireWineModule(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
+    await Promise.all([
+      requireWineModule(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
 
     const wines = await ctx.db
       .query("wineDetails")
@@ -279,8 +298,10 @@ export const listDrinkingWindows = query({
       throw new Error("Not authenticated");
     }
 
-    await requireWineModule(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
+    await Promise.all([
+      requireWineModule(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
 
     const currentYear = new Date().getFullYear();
 
@@ -291,14 +312,18 @@ export const listDrinkingWindows = query({
       )
       .collect();
 
-    return wines
-      .filter(
-        (w) =>
-          w.peakWindowStart !== undefined &&
-          w.peakWindowEnd !== undefined &&
-          w.peakWindowStart <= currentYear + 5,
-      )
-      .map((w) => ({
+    const drinkingWindows: DrinkingWindow[] = [];
+
+    for (const w of wines) {
+      if (
+        w.peakWindowStart === undefined ||
+        w.peakWindowEnd === undefined ||
+        w.peakWindowStart > currentYear + 5
+      ) {
+        continue;
+      }
+
+      drinkingWindows.push({
         _id: w._id,
         collectionId: w.collectionId,
         producer: w.producer,
@@ -306,6 +331,9 @@ export const listDrinkingWindows = query({
         peakWindowStart: w.peakWindowStart,
         peakWindowEnd: w.peakWindowEnd,
         binNumber: w.binNumber,
-      }));
+      });
+    }
+
+    return drinkingWindows;
   },
 });
