@@ -72,20 +72,22 @@ export async function createOrgUserWithPermissions(
         isSystemRole: false,
       }),
     ]);
-    for (const permissionName of permissionNames) {
-      const permissionId = await ctx.db.insert("permissions", {
-        name: permissionName,
-        category:
-          permissionName.split(".")[0] ??
-          options.permissionCategoryFallback ??
-          "collections",
-      });
+    await Promise.all(
+      permissionNames.map(async (permissionName) => {
+        const permissionId = await ctx.db.insert("permissions", {
+          name: permissionName,
+          category:
+            permissionName.split(".")[0] ??
+            options.permissionCategoryFallback ??
+            "collections",
+        });
 
-      await ctx.db.insert("rolePermissions", {
-        roleId,
-        permissionId,
-      });
-    }
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+          permissionId,
+        });
+      }),
+    );
 
     await ctx.db.insert("userOrganizations", {
       userId,

@@ -1,8 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
 const appraisalTypeValidator = v.union(
@@ -59,9 +59,11 @@ export const create = mutation({
         .filter((q) => q.eq(q.field("isCurrentAppraisal"), true))
         .collect();
 
-      for (const appraisal of existingAppraisals) {
-        await ctx.db.patch(appraisal._id, { isCurrentAppraisal: false });
-      }
+      await Promise.all(
+        existingAppraisals.map((appraisal) =>
+          ctx.db.patch(appraisal._id, { isCurrentAppraisal: false }),
+        ),
+      );
     }
 
     const appraisalId = await ctx.db.insert("appraisals", {
@@ -240,9 +242,11 @@ export const setAsCurrent = mutation({
       .filter((q) => q.eq(q.field("isCurrentAppraisal"), true))
       .collect();
 
-    for (const existing of existingAppraisals) {
-      await ctx.db.patch(existing._id, { isCurrentAppraisal: false });
-    }
+    await Promise.all(
+      existingAppraisals.map((existing) =>
+        ctx.db.patch(existing._id, { isCurrentAppraisal: false }),
+      ),
+    );
 
     // Set this one as current
     await ctx.db.patch(args.appraisalId, { isCurrentAppraisal: true });
@@ -392,7 +396,7 @@ export const list = query({
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "collections.read");
 
-    let appraisals = await ctx.db
+    const appraisals = await ctx.db
       .query("appraisals")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
@@ -441,7 +445,7 @@ export const list = query({
 
     // Handle pagination
     const cursor = args.paginationOpts.cursor
-      ? parseInt(args.paginationOpts.cursor, 10)
+      ? Number.parseInt(args.paginationOpts.cursor, 10)
       : 0;
     const startIndex = cursor;
     const endIndex = Math.min(

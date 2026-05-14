@@ -17,45 +17,51 @@ export const deleteUserAccount = internalMutation({
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect();
 
-    for (const userOrganization of userOrganizations) {
-      await ctx.db.delete(userOrganization._id);
-    }
+    await Promise.all(
+      userOrganizations.map((userOrganization) =>
+        ctx.db.delete(userOrganization._id),
+      ),
+    );
 
     const authSessions = await ctx.db
       .query("authSessions")
       .withIndex("userId", (q) => q.eq("userId", args.userId))
       .collect();
 
-    for (const authSession of authSessions) {
-      const refreshTokens = await ctx.db
-        .query("authRefreshTokens")
-        .withIndex("sessionId", (q) => q.eq("sessionId", authSession._id))
-        .collect();
+    await Promise.all(
+      authSessions.map(async (authSession) => {
+        const refreshTokens = await ctx.db
+          .query("authRefreshTokens")
+          .withIndex("sessionId", (q) => q.eq("sessionId", authSession._id))
+          .collect();
 
-      for (const refreshToken of refreshTokens) {
-        await ctx.db.delete(refreshToken._id);
-      }
+        await Promise.all(
+          refreshTokens.map((refreshToken) => ctx.db.delete(refreshToken._id)),
+        );
 
-      await ctx.db.delete(authSession._id);
-    }
+        await ctx.db.delete(authSession._id);
+      }),
+    );
 
     const authAccounts = await ctx.db
       .query("authAccounts")
       .withIndex("userIdAndProvider", (q) => q.eq("userId", args.userId))
       .collect();
 
-    for (const authAccount of authAccounts) {
-      const verificationCode = await ctx.db
-        .query("authVerificationCodes")
-        .withIndex("accountId", (q) => q.eq("accountId", authAccount._id))
-        .unique();
+    await Promise.all(
+      authAccounts.map(async (authAccount) => {
+        const verificationCode = await ctx.db
+          .query("authVerificationCodes")
+          .withIndex("accountId", (q) => q.eq("accountId", authAccount._id))
+          .unique();
 
-      if (verificationCode) {
-        await ctx.db.delete(verificationCode._id);
-      }
+        if (verificationCode) {
+          await ctx.db.delete(verificationCode._id);
+        }
 
-      await ctx.db.delete(authAccount._id);
-    }
+        await ctx.db.delete(authAccount._id);
+      }),
+    );
 
     await ctx.db.delete(args.userId);
     return null;
@@ -82,32 +88,36 @@ export const relinkUserAuthRecords = internalMutation({
       .withIndex("userIdAndProvider", (q) => q.eq("userId", args.sourceUserId))
       .collect();
 
-    for (const authAccount of authAccounts) {
-      await ctx.db.patch(authAccount._id, { userId: args.targetUserId });
-    }
+    await Promise.all(
+      authAccounts.map((authAccount) =>
+        ctx.db.patch(authAccount._id, { userId: args.targetUserId }),
+      ),
+    );
 
     const userOrganizations = await ctx.db
       .query("userOrganizations")
       .withIndex("by_user", (q) => q.eq("userId", args.sourceUserId))
       .collect();
 
-    for (const userOrganization of userOrganizations) {
-      const existingMembership = await ctx.db
-        .query("userOrganizations")
-        .withIndex("by_user_and_organization", (q) =>
-          q
-            .eq("userId", args.targetUserId)
-            .eq("organizationId", userOrganization.organizationId),
-        )
-        .first();
+    await Promise.all(
+      userOrganizations.map(async (userOrganization) => {
+        const existingMembership = await ctx.db
+          .query("userOrganizations")
+          .withIndex("by_user_and_organization", (q) =>
+            q
+              .eq("userId", args.targetUserId)
+              .eq("organizationId", userOrganization.organizationId),
+          )
+          .first();
 
-      if (existingMembership) {
-        await ctx.db.delete(userOrganization._id);
-        continue;
-      }
+        if (existingMembership) {
+          await ctx.db.delete(userOrganization._id);
+          return;
+        }
 
-      await ctx.db.patch(userOrganization._id, { userId: args.targetUserId });
-    }
+        await ctx.db.patch(userOrganization._id, { userId: args.targetUserId });
+      }),
+    );
 
     return {
       authAccountsUpdated: authAccounts.length,

@@ -114,12 +114,9 @@ export const save = mutation({
       .take(101);
 
     if (allUserSearches.length > 100) {
-      for (let i = 100; i < allUserSearches.length; i++) {
-        const search = allUserSearches[i];
-        if (search) {
-          await ctx.db.delete(search._id);
-        }
-      }
+      await Promise.all(
+        allUserSearches.slice(100).map((search) => ctx.db.delete(search._id)),
+      );
     }
 
     return searchId;
@@ -151,9 +148,7 @@ export const clear = mutation({
       toDelete = searches.filter((s) => s.module === args.module);
     }
 
-    for (const search of toDelete) {
-      await ctx.db.delete(search._id);
-    }
+    await Promise.all(toDelete.map((search) => ctx.db.delete(search._id)));
 
     return null;
   },

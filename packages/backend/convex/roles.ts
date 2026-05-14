@@ -50,12 +50,14 @@ export const createRole = mutation({
     });
 
     // Assign permissions
-    for (const permissionId of args.permissionIds) {
-      await ctx.db.insert("rolePermissions", {
-        roleId,
-        permissionId,
-      });
-    }
+    await Promise.all(
+      args.permissionIds.map((permissionId) =>
+        ctx.db.insert("rolePermissions", {
+          roleId,
+          permissionId,
+        }),
+      ),
+    );
 
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: args.organizationId,
@@ -142,17 +144,17 @@ export const updateRole = mutation({
         .withIndex("by_role", (q) => q.eq("roleId", args.roleId))
         .collect();
 
-      for (const rp of existingPermissions) {
-        await ctx.db.delete(rp._id);
-      }
+      await Promise.all(existingPermissions.map((rp) => ctx.db.delete(rp._id)));
 
       // Add new permissions
-      for (const permissionId of args.permissionIds) {
-        await ctx.db.insert("rolePermissions", {
-          roleId: args.roleId,
-          permissionId,
-        });
-      }
+      await Promise.all(
+        args.permissionIds.map((permissionId) =>
+          ctx.db.insert("rolePermissions", {
+            roleId: args.roleId,
+            permissionId,
+          }),
+        ),
+      );
     }
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -218,9 +220,7 @@ export const deleteRole = mutation({
       .withIndex("by_role", (q) => q.eq("roleId", args.roleId))
       .collect();
 
-    for (const rp of rolePermissions) {
-      await ctx.db.delete(rp._id);
-    }
+    await Promise.all(rolePermissions.map((rp) => ctx.db.delete(rp._id)));
 
     // Delete role
     await ctx.db.delete(args.roleId);

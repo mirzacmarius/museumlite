@@ -66,21 +66,23 @@ async function createOrgWithRole(
     });
   });
 
-  for (const permissionName of new Set(permissionNames)) {
-    const permissionId = await t.run(async (ctx) => {
-      return await ctx.db.insert("permissions", {
-        name: permissionName,
-        category: getPermissionCategory(permissionName),
+  await Promise.all(
+    [...new Set(permissionNames)].map(async (permissionName) => {
+      const permissionId = await t.run(async (ctx) => {
+        return await ctx.db.insert("permissions", {
+          name: permissionName,
+          category: getPermissionCategory(permissionName),
+        });
       });
-    });
 
-    await t.run(async (ctx) => {
-      await ctx.db.insert("rolePermissions", {
-        roleId,
-        permissionId,
+      await t.run(async (ctx) => {
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+          permissionId,
+        });
       });
-    });
-  }
+    }),
+  );
 
   await t.run(async (ctx) => {
     await ctx.db.insert("userOrganizations", {

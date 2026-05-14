@@ -80,37 +80,41 @@ export async function publishAccessionObjectDraft(
     objectCount: 1,
   });
 
-  for (const collectionGroupId of [...new Set(collectionGroupIds)]) {
-    const group = await ctx.db.get(collectionGroupId);
-    if (group && group.organizationId === accession.organizationId) {
-      await ctx.db.insert("collectionGroupItems", {
-        collectionGroupId,
-        collectionId,
-        addedAt: catalogedAt,
-        addedBy: catalogedBy,
-      });
-      await ctx.db.patch(collectionGroupId, {
-        itemsCount: (group.itemsCount || 0) + 1,
-        lastModifiedAt: catalogedAt,
-        lastModifiedBy: catalogedBy,
-      });
-    }
-  }
+  await Promise.all(
+    [...new Set(collectionGroupIds)].map(async (collectionGroupId) => {
+      const group = await ctx.db.get(collectionGroupId);
+      if (group && group.organizationId === accession.organizationId) {
+        await ctx.db.insert("collectionGroupItems", {
+          collectionGroupId,
+          collectionId,
+          addedAt: catalogedAt,
+          addedBy: catalogedBy,
+        });
+        await ctx.db.patch(collectionGroupId, {
+          itemsCount: (group.itemsCount || 0) + 1,
+          lastModifiedAt: catalogedAt,
+          lastModifiedBy: catalogedBy,
+        });
+      }
+    }),
+  );
 
-  for (const draftMediaItem of accession.draftMedia || []) {
-    await insertCompletedMediaAsset(ctx, {
-      collectionId,
-      organizationId: accession.organizationId,
-      storageId: draftMediaItem.storageId,
-      fileName: draftMediaItem.fileName,
-      fileSize: draftMediaItem.fileSize,
-      mimeType: draftMediaItem.mimeType,
-      mediaCategory: draftMediaItem.mediaCategory,
-      isPrimary: draftMediaItem.isPrimary,
-      uploadedBy: catalogedBy,
-      uploadedAt: catalogedAt,
-    });
-  }
+  await Promise.all(
+    (accession.draftMedia || []).map((draftMediaItem) =>
+      insertCompletedMediaAsset(ctx, {
+        collectionId,
+        organizationId: accession.organizationId,
+        storageId: draftMediaItem.storageId,
+        fileName: draftMediaItem.fileName,
+        fileSize: draftMediaItem.fileSize,
+        mimeType: draftMediaItem.mimeType,
+        mediaCategory: draftMediaItem.mediaCategory,
+        isPrimary: draftMediaItem.isPrimary,
+        uploadedBy: catalogedBy,
+        uploadedAt: catalogedAt,
+      }),
+    ),
+  );
 
   return collectionId;
 }

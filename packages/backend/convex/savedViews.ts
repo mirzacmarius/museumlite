@@ -122,14 +122,15 @@ export const create = mutation({
         )
         .collect();
 
-      for (const view of existingViews) {
-        if (
-          view.organizationId === args.organizationId &&
-          view.isDefault === true
-        ) {
-          await ctx.db.patch(view._id, { isDefault: false });
-        }
-      }
+      await Promise.all(
+        existingViews
+          .filter(
+            (view) =>
+              view.organizationId === args.organizationId &&
+              view.isDefault === true,
+          )
+          .map((view) => ctx.db.patch(view._id, { isDefault: false })),
+      );
     }
 
     const viewId = await ctx.db.insert("savedViews", {
@@ -186,15 +187,18 @@ export const update = mutation({
         )
         .collect();
 
-      for (const v of existingViews) {
-        if (
-          v._id !== args.viewId &&
-          v.organizationId === view.organizationId &&
-          v.isDefault === true
-        ) {
-          await ctx.db.patch(v._id, { isDefault: false });
-        }
-      }
+      await Promise.all(
+        existingViews
+          .filter(
+            (existingView) =>
+              existingView._id !== args.viewId &&
+              existingView.organizationId === view.organizationId &&
+              existingView.isDefault === true,
+          )
+          .map((existingView) =>
+            ctx.db.patch(existingView._id, { isDefault: false }),
+          ),
+      );
     }
 
     const updates: Record<string, unknown> = {};

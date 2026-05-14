@@ -55,27 +55,29 @@ async function createTestOrg(
     accessions: "collections",
   };
 
-  for (const permName of permissions) {
-    const permissionId = await t.run(async (ctx) => {
-      const existing = await ctx.db
-        .query("permissions")
-        .filter((q) => q.eq(q.field("name"), permName))
-        .first();
-      if (existing) return existing._id;
-      const prefix = permName.split(".")[0] ?? "collections";
-      return await ctx.db.insert("permissions", {
-        name: permName,
-        category: categoryMap[prefix] ?? "collections",
+  await Promise.all(
+    permissions.map(async (permName) => {
+      const permissionId = await t.run(async (ctx) => {
+        const existing = await ctx.db
+          .query("permissions")
+          .filter((q) => q.eq(q.field("name"), permName))
+          .first();
+        if (existing) return existing._id;
+        const prefix = permName.split(".")[0] ?? "collections";
+        return await ctx.db.insert("permissions", {
+          name: permName,
+          category: categoryMap[prefix] ?? "collections",
+        });
       });
-    });
 
-    await t.run(async (ctx) => {
-      await ctx.db.insert("rolePermissions", {
-        roleId,
-        permissionId,
+      await t.run(async (ctx) => {
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+          permissionId,
+        });
       });
-    });
-  }
+    }),
+  );
 
   await t.run(async (ctx) => {
     await ctx.db.insert("userOrganizations", {

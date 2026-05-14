@@ -772,57 +772,58 @@ export default function CollectionEditPage() {
 
       setError(null);
 
-      for (const file of files) {
-        try {
-          const uploadUrlResult = await generateUploadUrl({
-            organizationId: collection.organizationId,
-            collectionId: typedCollectionId,
-            fileName: file.name,
-            fileSize: file.size,
-            mimeType: file.type,
-          });
+      try {
+        await Promise.all(
+          files.map(async (file) => {
+            const uploadUrlResult = await generateUploadUrl({
+              organizationId: collection.organizationId,
+              collectionId: typedCollectionId,
+              fileName: file.name,
+              fileSize: file.size,
+              mimeType: file.type,
+            });
 
-          if (!uploadUrlResult.uploadUrl) {
-            throw new Error(`Failed to generate upload URL for ${file.name}`);
-          }
+            if (!uploadUrlResult.uploadUrl) {
+              throw new Error(`Failed to generate upload URL for ${file.name}`);
+            }
 
-          const uploadResponse = await fetch(uploadUrlResult.uploadUrl, {
-            method: "POST",
-            body: file,
-          });
+            const uploadResponse = await fetch(uploadUrlResult.uploadUrl, {
+              method: "POST",
+              body: file,
+            });
 
-          if (!uploadResponse.ok) {
-            throw new Error(`Failed to upload ${file.name}`);
-          }
+            if (!uploadResponse.ok) {
+              throw new Error(`Failed to upload ${file.name}`);
+            }
 
-          const uploadResult = await uploadResponse.json();
-          const storageId = uploadResult.storageId as
-            | Id<"_storage">
-            | undefined;
+            const uploadResult = await uploadResponse.json();
+            const storageId = uploadResult.storageId as
+              | Id<"_storage">
+              | undefined;
 
-          if (!storageId) {
-            throw new Error(`No storage ID returned for ${file.name}`);
-          }
+            if (!storageId) {
+              throw new Error(`No storage ID returned for ${file.name}`);
+            }
 
-          await createMedia({
-            organizationId: collection.organizationId,
-            collectionId: typedCollectionId,
-            storageId,
-            fileName: file.name,
-            fileSize: file.size,
-            mimeType: file.type,
-            mediaCategory: "document",
-            isPrimary: false,
-          });
-        } catch (err) {
-          console.error(`Error uploading ${file.name}:`, err);
-          setError(
-            err instanceof Error
-              ? `Failed to upload ${file.name}: ${err.message}`
-              : `Failed to upload ${file.name}`,
-          );
-          break;
-        }
+            await createMedia({
+              organizationId: collection.organizationId,
+              collectionId: typedCollectionId,
+              storageId,
+              fileName: file.name,
+              fileSize: file.size,
+              mimeType: file.type,
+              mediaCategory: "document",
+              isPrimary: false,
+            });
+          }),
+        );
+      } catch (err) {
+        console.error("Error uploading documents:", err);
+        setError(
+          err instanceof Error
+            ? `Failed to upload documents: ${err.message}`
+            : "Failed to upload documents",
+        );
       }
     },
     [collection, createMedia, generateUploadUrl, typedCollectionId],

@@ -40,32 +40,34 @@ async function createOrgWithRole(
     });
   });
 
-  for (const permissionName of permissionNames) {
-    const category =
-      (permissionName.split(".")[0] as
-        | "collections"
-        | "loans"
-        | "locations"
-        | "sites"
-        | "media"
-        | "users"
-        | "organization"
-        | "accounts") ?? "collections";
+  await Promise.all(
+    permissionNames.map(async (permissionName) => {
+      const category =
+        (permissionName.split(".")[0] as
+          | "collections"
+          | "loans"
+          | "locations"
+          | "sites"
+          | "media"
+          | "users"
+          | "organization"
+          | "accounts") ?? "collections";
 
-    const permissionId = await t.run(async (ctx) => {
-      return await ctx.db.insert("permissions", {
-        name: permissionName,
-        category,
+      const permissionId = await t.run(async (ctx) => {
+        return await ctx.db.insert("permissions", {
+          name: permissionName,
+          category,
+        });
       });
-    });
 
-    await t.run(async (ctx) => {
-      await ctx.db.insert("rolePermissions", {
-        roleId,
-        permissionId,
+      await t.run(async (ctx) => {
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+          permissionId,
+        });
       });
-    });
-  }
+    }),
+  );
 
   await t.run(async (ctx) => {
     await ctx.db.insert("userOrganizations", {

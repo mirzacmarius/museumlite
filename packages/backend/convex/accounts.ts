@@ -244,14 +244,16 @@ export const create = mutation({
 
     // Associate roles with account if provided
     if (args.roleIds && args.roleIds.length > 0) {
-      for (const roleId of args.roleIds) {
-        await ctx.db.insert("accountRoles", {
-          accountId,
-          roleId,
-          addedAt: now,
-          addedBy: userId,
-        });
-      }
+      await Promise.all(
+        args.roleIds.map((roleId) =>
+          ctx.db.insert("accountRoles", {
+            accountId,
+            roleId,
+            addedAt: now,
+            addedBy: userId,
+          }),
+        ),
+      );
     }
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -342,18 +344,22 @@ export const update = mutation({
         .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
         .collect();
 
-      for (const accountRole of existingAccountRoles) {
-        await ctx.db.delete(accountRole._id);
-      }
+      await Promise.all(
+        existingAccountRoles.map((accountRole) =>
+          ctx.db.delete(accountRole._id),
+        ),
+      );
 
-      for (const roleId of args.roleIds) {
-        await ctx.db.insert("accountRoles", {
-          accountId: args.accountId,
-          roleId,
-          addedAt: now,
-          addedBy: userId,
-        });
-      }
+      await Promise.all(
+        args.roleIds.map((roleId) =>
+          ctx.db.insert("accountRoles", {
+            accountId: args.accountId,
+            roleId,
+            addedAt: now,
+            addedBy: userId,
+          }),
+        ),
+      );
     }
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -409,9 +415,9 @@ export const remove = mutation({
       .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
       .collect();
 
-    for (const accountRole of accountRoles) {
-      await ctx.db.delete(accountRole._id);
-    }
+    await Promise.all(
+      accountRoles.map((accountRole) => ctx.db.delete(accountRole._id)),
+    );
 
     await ctx.db.delete(args.accountId);
 
@@ -713,52 +719,40 @@ export const bulkExport = query({
       throw new Error("Not authenticated");
     }
 
-    const results: Array<{
-      _id: Id<"accounts">;
-      accountNumber: string;
-      accountType?: string;
-      businessName?: string;
-      firstName?: string;
-      lastName?: string;
-      contactPerson?: string;
-      email?: string;
-      phone?: string;
-      address?: string;
-      city?: string;
-      country?: string;
-      status?: string;
-      cardNumber?: string;
-      membershipType?: string;
-      createdAt: number;
-    }> = [];
+    const results = await Promise.all(
+      args.accountIds.map(async (accountId) => {
+        const account = await ctx.db.get(accountId);
+        if (!account) {
+          return null;
+        }
 
-    for (const accountId of args.accountIds) {
-      const account = await ctx.db.get(accountId);
-      if (!account) continue;
+        await requireModuleEnabled(ctx, account.organizationId, "accounts");
+        await requirePermission(ctx, account.organizationId, "accounts.read");
 
-      await requireModuleEnabled(ctx, account.organizationId, "accounts");
-      await requirePermission(ctx, account.organizationId, "accounts.read");
+        return {
+          _id: account._id,
+          accountNumber: account.accountNumber,
+          accountType: account.accountType,
+          businessName: account.businessName,
+          firstName: account.firstName,
+          lastName: account.lastName,
+          contactPerson: account.contactPerson,
+          email: account.email ?? account.contactEmail,
+          phone: account.phone ?? account.contactPhone,
+          address: account.address,
+          city: account.city,
+          country: account.country,
+          status: account.status,
+          cardNumber: account.cardNumber,
+          membershipType: account.membershipType,
+          createdAt: account.createdAt,
+        };
+      }),
+    );
 
-      results.push({
-        _id: account._id,
-        accountNumber: account.accountNumber,
-        accountType: account.accountType,
-        businessName: account.businessName,
-        firstName: account.firstName,
-        lastName: account.lastName,
-        contactPerson: account.contactPerson,
-        email: account.email ?? account.contactEmail,
-        phone: account.phone ?? account.contactPhone,
-        address: account.address,
-        city: account.city,
-        country: account.country,
-        status: account.status,
-        cardNumber: account.cardNumber,
-        membershipType: account.membershipType,
-        createdAt: account.createdAt,
-      });
-    }
-
-    return results;
+    return results.filter(
+      (account): account is Exclude<(typeof results)[number], null> =>
+        account !== null,
+    );
   },
 });
